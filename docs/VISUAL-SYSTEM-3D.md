@@ -116,6 +116,33 @@ technology by construction. So the 3D layer is permitted to *reinforce* meaning 
 The audience is on mid-range Android phones on campus wifi. That is the design target, not a
 fallback case.
 
+### Measured, not assumed
+
+| Budget | Limit | **Actual** |
+|---|---|---|
+| Initial JS, gzipped | keep it small | **51.9 KB** + 3.8 KB CSS |
+| 3D chunk, gzipped | ≤ 250 KB | **219.8 KB** |
+| 3D in the initial load | never | **absent** — no preload link in `dist/index.html` |
+
+Two things had to be fixed to get there, and both are the kind of mistake that
+ships silently:
+
+1. **`import * as THREE` defeats tree-shaking.** The namespace import pulled the
+   whole library and the chunk came out at 269 KB gzipped, over budget. Named
+   imports brought it to 220 KB. Also dropped `@react-three/drei` entirely — it
+   was there for `<OrbitControls>` with pan, zoom and rotate all disabled, which
+   is a dependency doing nothing.
+2. **`manualChunks` made Vite PRELOAD the 3D chunk.** Forcing three.js into a
+   named chunk emitted `<link rel="modulepreload" href="/assets/three-*.js">`
+   into `index.html`, so every student downloaded 220 KB of 3D on first paint
+   whether or not they ever opened the galaxy — precisely what the budget below
+   forbids. Removing `manualChunks` lets Rollup place three.js inside the dynamic
+   `GalaxyCanvas` chunk, fetched only on opt-in.
+
+**Verify both after any dependency change:** read the chunk sizes from
+`pnpm --filter @octa/web build`, and grep `dist/index.html` for `modulepreload`.
+A budget nobody measures is a wish.
+
 | Budget | Limit |
 |---|---|
 | 3D chunk, gzipped | **≤ 250 KB**, lazy-loaded, never in the initial bundle |

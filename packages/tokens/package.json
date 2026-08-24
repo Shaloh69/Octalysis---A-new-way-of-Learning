@@ -1,0 +1,12 @@
+{
+  "name": "@octa/tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./accents": "./accents.ts",
+    "./elements.svg": "./elements.svg"
+  },
+  "files": ["tokens.css", "accents.ts", "elements.svg"]
+}
