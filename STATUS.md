@@ -18,6 +18,7 @@ was assumed rather than run, it says so.
 | Invariants | 22 clean, 0 failures (3 notices expected on an unseeded database) |
 | Schema | applies from scratch locally **and on the live Supabase project** |
 | Denial suite vs Supabase | **38/38 pass on the real project** |
+| Supabase live state | 18 stages, 21 edges, 31 content blocks, 16 objectives, **3 pg_cron jobs scheduled** |
 | Initial JS bundle | 51.9 KB gz + 3.8 KB CSS |
 | 3D chunk | 219.8 KB gz, on demand only, no preload |
 | Bundle scan | clean — no answer keys, no server-only names, no source maps |
@@ -169,6 +170,14 @@ No load test, no backup rehearsal, no rollback drill, no Sentry.
    fine for one instructor and wrong the moment there is a TA. `VERIFICATION.md`
    V-18 has the fix if that changes.
 
-4. **The commit message on `322498e` says "180 tests" where the run reported 167.**
+4. **`db:push:reset` broke the live project once, and the fix is worth knowing.**
+   `drop schema public cascade` destroys the `ALTER DEFAULT PRIVILEGES` Supabase
+   attaches to that schema, so every table created afterwards had no grants and
+   the entire database answered `42501 permission denied` — to the grading
+   service too. RLS looked perfect; nothing could reach the tables to be
+   filtered. The script now restores the default privileges before applying the
+   schema. If you ever reset by hand in the SQL editor, do the same.
+
+5. **The commit message on `322498e` says "180 tests" where the run reported 167.**
    The number was right for a later commit, not that one. Noted rather than
    rewritten, because rewriting pushed history is worse than an inaccurate line.

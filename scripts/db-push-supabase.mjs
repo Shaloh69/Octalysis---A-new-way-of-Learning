@@ -20,7 +20,14 @@ import pg from "pg";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const FILES = ["db/schema.sql", "db/addendum-feedback.sql", "db/addendum-audit.sql"];
+const FILES = [
+  "db/schema.sql",
+  "db/addendum-feedback.sql",
+  "db/addendum-audit.sql",
+  // Scheduled work. This is where pg_cron actually EXISTS -- locally the
+  // extension is absent and the file only creates the functions.
+  "db/addendum-cron.sql",
+];
 const FORBIDDEN = "local-bootstrap";
 
 const c = {
@@ -118,11 +125,26 @@ async function main() {
   if (args.has("--reset")) {
     console.log(c.yellow("\n  --reset: dropping the public schema"));
     await client.query("drop schema public cascade; create schema public;");
-    await client.query(
-      "grant usage on schema public to anon, authenticated, service_role; " +
-        "grant all on schema public to postgres;",
-    );
-    console.log(c.green("  public schema recreated"));
+
+    // CRITICAL, and this took a broken project to learn.
+    //
+    // `drop schema public cascade` destroys the ALTER DEFAULT PRIVILEGES that
+    // Supabase attaches to that schema. Without restoring them, every table
+    // created afterwards has NO grants for anon/authenticated/service_role, and
+    // the whole database answers 42501 "permission denied" -- to the grading
+    // service too. RLS looks fine; nothing can reach the tables to be filtered.
+    //
+    // These must be set BEFORE schema.sql runs so its tables inherit them.
+    // schema.sql then revokes from anon deliberately, which is the intended end
+    // state (V-15).
+    await client.query(`
+      grant usage on schema public to anon, authenticated, service_role;
+      grant all   on schema public to postgres;
+      alter default privileges in schema public grant all on tables    to anon, authenticated, service_role;
+      alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+      alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+    `);
+    console.log(c.green("  public schema recreated, default privileges restored"));
   } else if (existing.rows[0].n > 0) {
     console.log(
       c.yellow(
