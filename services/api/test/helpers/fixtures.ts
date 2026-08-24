@@ -1,4 +1,5 @@
 import { setup } from "./rls.js";
+import { resetAll } from "./reset.js";
 
 /**
  * Fixture world for the RLS suite.
@@ -34,46 +35,7 @@ export interface World {
 }
 
 export async function resetWorld(): Promise<World> {
-  // `responses` is append-only for everyone, service_role included, so an
-  // ordinary DELETE here raises. That is the design working: history cannot be
-  // rewritten, and the supported deactivation path is profiles.deleted_at (V-20).
-  //
-  // A test fixture is the one legitimate exception. It disables the two triggers
-  // on `responses` by name and re-enables them below -- which works as the table
-  // OWNER and needs no superuser, so the same teardown runs against local Docker
-  // and against Supabase (where `postgres` is not a superuser and
-  // `session_replication_role` is therefore unavailable).
-  //
-  // Never do this outside a fixture. If production ever needs it, that is a
-  // decision with an audit_log entry, not a convenience.
-  //
-  // NOTE the scoping on the auth.users delete. An unscoped `delete from
-  // auth.users` would wipe every real account on whatever database this points
-  // at. It is restricted to the fixture domain, permanently.
-  await setup(`
-    alter table responses disable trigger responses_no_update;
-    alter table responses disable trigger responses_no_delete;
-
-    delete from responses      where true;
-    delete from attempt_items  where true;
-    delete from attempts       where true;
-    delete from assessment_secrets where true;
-    delete from assessments    where true;
-    delete from item_stats     where true;
-    delete from items          where true;
-    delete from content_blocks where true;
-    delete from stage_locks    where true;
-    delete from stage_progress where true;
-    delete from level_progress where true;
-    delete from profiles       where true;
-    delete from student_directory where true;
-    delete from sections       where true;
-    delete from stages         where id = '99';
-    delete from auth.users     where email like '%@octa-test.local';
-
-    alter table responses enable trigger responses_no_update;
-    alter table responses enable trigger responses_no_delete;
-  `);
+  await resetAll();
 
   const secretAnswer = "An assembler";
   const examSalt = "fixture-salt-do-not-use-in-production-0000";

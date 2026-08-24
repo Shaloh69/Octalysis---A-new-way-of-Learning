@@ -3,6 +3,8 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import pg from "pg";
 import { registerErrorHandler } from "./errors.js";
+import { registerAttemptRoutes } from "./routes/attempts.js";
+import { registerAuthRoutes, makeSupabaseAdmin } from "./routes/auth.js";
 import type { Env } from "./env.js";
 
 /**
@@ -45,9 +47,15 @@ export async function buildServer(env: Env): Promise<FastifyInstance> {
    * guarantee than it looks — see VERIFICATION.md V-26.3. Back it with a
    * Postgres table before relying on it for anything that matters.
    */
+  // Relaxed under NODE_ENV=test so an integration suite is not fighting the
+  // limiter while exercising engine behaviour. `test/ratelimit.spec.ts` builds a
+  // non-test server specifically to prove the limiter still trips.
+  const limitScale = env.NODE_ENV === "test" ? 1000 : 1;
+  app.decorate("limitScale", limitScale);
+
   await app.register(rateLimit, {
     global: false,
-    max: 100,
+    max: 100 * limitScale,
     timeWindow: "1 minute",
   });
 
@@ -77,6 +85,16 @@ export async function buildServer(env: Env): Promise<FastifyInstance> {
     env: env.NODE_ENV,
   }));
 
+  registerAttemptRoutes(app, env);
+
+  // Auth routes need the Supabase Admin API. Without a project configured they
+  // are simply not mounted, rather than mounted and failing at request time.
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    registerAuthRoutes(app, env, makeSupabaseAdmin(env));
+  } else {
+    app.log.warn("SUPABASE_URL / service role not set - auth routes not mounted");
+  }
+
   /** Readiness DOES check the database, and is not what the keep-alive pings. */
   app.get("/readyz", async (_req, reply) => {
     try {
@@ -93,5 +111,6 @@ export async function buildServer(env: Env): Promise<FastifyInstance> {
 declare module "fastify" {
   interface FastifyInstance {
     db: pg.Pool;
+    limitScale: number;
   }
 }
