@@ -5,6 +5,74 @@
 
 ---
 
+## 0. Live coordinates
+
+| Thing | Value |
+|---|---|
+| **Repository** | https://github.com/Shaloh69/Octalysis---A-new-way-of-Learning |
+| **Default branch** | `main` |
+| **Working branch** | **`shaloh-build`** — both pushed |
+| **Supabase project** | `lqvkqdaqtkhxmnvodmyr` · https://lqvkqdaqtkhxmnvodmyr.supabase.co |
+| **Supabase region** | `ap-northeast-1` (Tokyo) — closest free region to the Philippines |
+| **Supabase compute** | NANO (free), 60 max connections |
+| **Pooler host** | `aws-0-ap-northeast-1.pooler.supabase.com` — verified; `aws-1-…` returns "tenant not found" |
+| **Schema status** | **Applied and verified live** — 18 stages, 21 edges, 0 failing invariants |
+| **Denial suite vs Supabase** | **38/38 pass** against the live project |
+| Vercel / Render | Not yet created |
+
+```bash
+pnpm db:push:check    # connect, confirm it is Supabase, report state, change nothing
+pnpm db:push          # apply schema.sql + the two addenda (never local-bootstrap.sql)
+pnpm db:push:reset    # drop the public schema first, then apply
+
+# run the denial suite against Supabase instead of local Docker:
+DATABASE_URL="$SUPABASE_DB_SESSION" pnpm test:rls
+```
+
+`db-push-supabase.mjs` has three guards: it refuses the transaction pooler (`:6543` cannot run DDL
+reliably — use session mode on `:5432`), it refuses to run if `auth.users` is absent (that would
+mean it is pointed at a local database needing the four-file order), and it hard-refuses to load
+`local-bootstrap.sql` at all.
+
+### 0.1 Supabase setup checklist — do these before applying the schema
+
+Two of these are settings visible in the project-creation screen, and one of them Supabase itself
+recommends changing:
+
+- [ ] **Turn OFF "Automatically expose new tables."** Supabase's own UI says *"We recommend
+      disabling this to control access manually."* It is on by default. With it on, a table added
+      later is granted to the Data API roles automatically — which is precisely the mistake
+      `schema.sql` spends a `revoke all … from anon` undoing. Turn it off and grant deliberately.
+- [ ] **Leave "Enable Data API" ON.** The student app reads unlocked content through supabase-js,
+      and RLS is what protects it. Turning it off would push every read through the API service
+      for no security gain.
+- [ ] **Disable public signup.** Registration is roster-gated through `/auth/register`; public
+      signup would let anyone create an account.
+- [ ] **Enable email enumeration protection**, set the Site URL, and remove default wildcard
+      redirect entries.
+- [ ] **Do NOT apply `db/local-bootstrap.sql`.** Supabase already provides the `auth` schema,
+      `auth.uid()`, and the three roles. Applying it there shadows the real ones and every RLS test
+      silently becomes meaningless. Apply files 1–3 only.
+- [ ] **Confirm the dashboard shows "LAST BACKUP: No backups."** It will. That is the free tier, it
+      is expected, and it is why the `pg_dump` plan in §2.2 is not optional (V-26.2).
+- [ ] Run the **Security Advisor** after applying the schema.
+
+### 0.2 Rotate the database password — outstanding
+
+The database password was pasted into a chat transcript. It works, and it is currently in `.env`
+(gitignored, verified not tracked, and confirmed absent from every commit). **It should still be
+rotated**, because a credential written into a transcript, a log, or a screenshot is no longer a
+secret regardless of where else it is stored.
+
+**Project Settings → Database → Reset database password**, then update the three
+`SUPABASE_DB_*` lines in `.env`. Nothing else reads it.
+
+The same applies to the `service_role` key once it is added: it bypasses RLS entirely, so it is the
+single most dangerous string in the project. It belongs in `.env` and in Render's environment, and
+nowhere else — never in a message, never in a screenshot, never under a client-inlined prefix.
+
+---
+
 > **Status update.** Two things in this file have changed since it was written, both by decision:
 >
 > 1. **The repository will be one the user creates**, not the existing course repo. §1 below is
@@ -72,16 +140,19 @@ project evidence."* This is what that rule is for.
 The old `src/` and `index.html` come out in commit 3, not commit 1 — so that anyone reading the
 history sees the old app, then sees the specific security deletion, then sees the replacement.
 
-### 1.2 What is blocked right now
+### 1.2 What is blocked — resolved
 
-| Blocker | State | Needed |
-|---|---|---|
-| Local working directory is **not a git repository** | `git rev-parse` fails | `git clone` the repo, or `git init` + add the remote |
-| **`gh` is not authenticated** | `gh auth status` → not logged in | `gh auth login`, or set `GH_TOKEN` |
-| Collaborator access | Reported as already granted — **unverified**, because auth is missing | Confirm push rights on `shaloh-build` once authenticated |
+Both git blockers are cleared. The working directory is a repository, `origin` points at
+`Shaloh69/Octalysis---A-new-way-of-Learning`, and `main` and `shaloh-build` are both pushed.
+Credentials were already cached, so `gh auth login` was never needed.
 
-Nothing can be pushed until the first two are resolved. They are the user's to do; they involve
-credentials.
+What remains blocked, and on what:
+
+| Blocked | Needs |
+|---|---|
+| Real email/password sign-in | Supabase Auth settings configured (§0.1), plus the anon + service-role keys in `.env` |
+| Deployed URLs, keep-alive, cold-start measurement | Vercel and Render projects, which need `apps/web` to exist first (P2) |
+| Bundle scan against a real build | `apps/web` to exist (P2) |
 
 ---
 

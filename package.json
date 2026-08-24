@@ -20,7 +20,10 @@
     "test:rls": "pnpm --filter @octa/api test:rls",
     "lint": "pnpm -r --if-present lint",
     "build": "pnpm -r --if-present build",
-    "verify": "pnpm typecheck && pnpm test && pnpm db:invariants"
+    "verify": "pnpm typecheck && pnpm test && pnpm db:invariants",
+    "db:push": "node scripts/db-push-supabase.mjs",
+    "db:push:check": "node scripts/db-push-supabase.mjs --check",
+    "db:push:reset": "node scripts/db-push-supabase.mjs --reset"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

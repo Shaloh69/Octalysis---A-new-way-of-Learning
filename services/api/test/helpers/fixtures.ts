@@ -38,15 +38,21 @@ export async function resetWorld(): Promise<World> {
   // ordinary DELETE here raises. That is the design working: history cannot be
   // rewritten, and the supported deactivation path is profiles.deleted_at (V-20).
   //
-  // A test fixture is the one legitimate exception, so it takes the documented
-  // maintenance escape -- session_replication_role = 'replica' suspends user
-  // triggers (and FK triggers) for this session only. It is deliberate, it is
-  // scoped to teardown, and it is restored immediately below.
+  // A test fixture is the one legitimate exception. It disables the two triggers
+  // on `responses` by name and re-enables them below -- which works as the table
+  // OWNER and needs no superuser, so the same teardown runs against local Docker
+  // and against Supabase (where `postgres` is not a superuser and
+  // `session_replication_role` is therefore unavailable).
   //
-  // Never use this outside a fixture. If production ever needs it, that is a
+  // Never do this outside a fixture. If production ever needs it, that is a
   // decision with an audit_log entry, not a convenience.
+  //
+  // NOTE the scoping on the auth.users delete. An unscoped `delete from
+  // auth.users` would wipe every real account on whatever database this points
+  // at. It is restricted to the fixture domain, permanently.
   await setup(`
-    set session_replication_role = 'replica';
+    alter table responses disable trigger responses_no_update;
+    alter table responses disable trigger responses_no_delete;
 
     delete from responses      where true;
     delete from attempt_items  where true;
@@ -63,9 +69,10 @@ export async function resetWorld(): Promise<World> {
     delete from student_directory where true;
     delete from sections       where true;
     delete from stages         where id = '99';
-    delete from auth.users     where true;
+    delete from auth.users     where email like '%@octa-test.local';
 
-    set session_replication_role = 'origin';
+    alter table responses enable trigger responses_no_update;
+    alter table responses enable trigger responses_no_delete;
   `);
 
   const secretAnswer = "An assembler";
@@ -78,9 +85,25 @@ export async function resetWorld(): Promise<World> {
       insert into sections (code, term) values ('BSCPE-2A','2026-1'), ('BSCPE-2B','2026-1')
       returning id, code
     ),
-    ua as ( select auth.test_create_user('a@test.local','student') as id ),
-    ub as ( select auth.test_create_user('b@test.local','student') as id ),
-    ut as ( select auth.test_create_user('t@test.local','teacher') as id ),
+    -- Direct inserts rather than a helper function, so the same fixture runs
+    -- against local Docker and against Supabase (where the auth schema is real
+    -- and we do not add convenience functions to it). auth.users requires only
+    -- the id column; everything else is defaulted or nullable on both targets.
+    ua as (
+      insert into auth.users (id, email, raw_app_meta_data)
+      values (gen_random_uuid(), 'a@octa-test.local', '{"role":"student"}'::jsonb)
+      returning id
+    ),
+    ub as (
+      insert into auth.users (id, email, raw_app_meta_data)
+      values (gen_random_uuid(), 'b@octa-test.local', '{"role":"student"}'::jsonb)
+      returning id
+    ),
+    ut as (
+      insert into auth.users (id, email, raw_app_meta_data)
+      values (gen_random_uuid(), 't@octa-test.local', '{"role":"teacher"}'::jsonb)
+      returning id
+    ),
     dir as (
       insert into student_directory (student_id, full_name, section_id, status, claimed_by, claimed_at)
       select '21-0001','Student A',(select id from sec where code='BSCPE-2A'),'claimed'::claim_status,(select id from ua), now()
