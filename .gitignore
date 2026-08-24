@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env — NEVER commit. .env.example is the template.
+.env
+.env.*
+!.env.example
+
+# local database volume / dumps
+db/dumps/
+*.dump
+
+# editors + os
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# test + coverage
+coverage/
+.vitest/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# deploy
+.vercel/
+.render/

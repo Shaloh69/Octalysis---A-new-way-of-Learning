@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(supabase db reset --linked)",
+      "Bash(rm -rf *)",
+      "Read(./.env.local)",
+      "Read(./.env.production)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/guard.mjs" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash(pnpm build*)",
+        "hooks": [{ "type": "command", "command": "node scripts/scan-bundle.mjs" }]
+      }
+    ]
+  }
+}

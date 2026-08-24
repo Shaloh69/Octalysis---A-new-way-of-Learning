@@ -1,0 +1,6 @@
+# Normalise line endings so a Windows checkout does not churn every diff.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.woff2 binary
