@@ -1,0 +1,113 @@
+name: CI
+
+# Every commit: typecheck, the full test suite against a real Postgres, the
+# invariant runner, a production build, and the answer-key bundle scan.
+#
+# The RLS denial suite is the reason this needs a real database rather than a
+# mock. A mocked policy proves nothing -- the whole point is that Postgres
+# itself refuses.
+
+on:
+  push:
+    branches: [main, shaloh-build]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: octa
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      # CI talks to the service container directly, not through docker compose.
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/octa
+      PGPASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply the schema
+        # Same four files, same order as pnpm db:reset. The order is
+        # load-bearing: inv_24 calls sus_score(), defined in the feedback
+        # addendum.
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          for f in db/local-bootstrap.sql db/schema.sql db/addendum-feedback.sql db/addendum-audit.sql; do
+            echo "applying $f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --no-psqlrc -f "$f"
+          done
+
+      - name: Invariants
+        run: node scripts/db-invariants.mjs
+
+      - name: Content fidelity
+        # Fails if any block citing a source deck has drifted from it. This is
+        # the guard against plausible-sounding invented lecture text.
+        run: node scripts/sync-content.mjs --verify
+
+      - name: Sync content
+        run: node scripts/sync-content.mjs
+
+      - name: Content sync is idempotent
+        # A second run must change nothing. If it does, the pipeline is churning
+        # content_blocks.version and destroying it as an edit record.
+        run: |
+          out=$(node scripts/sync-content.mjs)
+          echo "$out"
+          echo "$out" | grep -q "Idempotent" || { echo "::error::sync-content is not idempotent"; exit 1; }
+
+      - name: Typecheck
+        run: pnpm -r --if-present typecheck
+
+      - name: Tests
+        run: pnpm -r --if-present test
+
+      - name: Build
+        run: pnpm -r --if-present build
+
+      - name: No secrets under the client prefix
+        # Vite inlines every VITE_* into the browser bundle at build time, so a
+        # server-only secret under that prefix is a published secret.
+        run: node scripts/check-env-names.mjs
+
+      - name: Bundle scan
+        # The permanent guard against the founding bug: the app OCTA replaces
+        # shipped every answer to the browser.
+        run: node scripts/scan-bundle.mjs
+
+      - name: 3D chunk stays out of the initial load
+        run: |
+          if grep -q 'modulepreload[^>]*three' apps/web/dist/index.html 2>/dev/null; then
+            echo "::error::the 3D chunk is preloaded on first paint - see VISUAL-SYSTEM-3D.md 5"
+            exit 1
+          fi
+          echo "3D chunk is on-demand only"

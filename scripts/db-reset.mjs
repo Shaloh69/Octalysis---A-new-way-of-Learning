@@ -29,6 +29,10 @@ const FILES = [
   "db/schema.sql",
   "db/addendum-feedback.sql",
   "db/addendum-audit.sql",
+  // Scheduled work. pg_cron and pg_net are guarded inside, so this applies
+  // cleanly to plain Postgres -- the functions are created either way, only the
+  // scheduling needs Supabase.
+  "db/addendum-cron.sql",
 ];
 
 const c = {

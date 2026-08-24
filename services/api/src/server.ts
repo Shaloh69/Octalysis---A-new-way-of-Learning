@@ -6,6 +6,7 @@ import { registerErrorHandler } from "./errors.js";
 import { registerAttemptRoutes } from "./routes/attempts.js";
 import { registerAuthRoutes, makeSupabaseAdmin } from "./routes/auth.js";
 import { registerStageRoutes } from "./routes/stages.js";
+import { registerConsoleRoutes } from "./routes/console.js";
 import type { Env } from "./env.js";
 
 /**
@@ -88,6 +89,7 @@ export async function buildServer(env: Env): Promise<FastifyInstance> {
 
   registerAttemptRoutes(app, env);
   registerStageRoutes(app, env);
+  registerConsoleRoutes(app, env);
 
   // Auth routes need the Supabase Admin API. Without a project configured they
   // are simply not mounted, rather than mounted and failing at request time.
