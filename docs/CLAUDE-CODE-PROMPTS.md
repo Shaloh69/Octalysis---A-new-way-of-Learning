@@ -60,6 +60,23 @@ stated, and it works keyboard-only. Say which of these you verified and which yo
 
 ## Part 2 — Phase prompts
 
+> **NUMBERING WARNING — this section predates `PHASES.md`.**
+>
+> The phase numbers below stop at P7 and do **not** match the authoritative list.
+> `docs/PHASES.md` is authoritative (P0–P10). Where they disagree:
+>
+> | Here | Actually |
+> |---|---|
+> | P5 Item analytics | **P7** in PHASES.md |
+> | P6 Simulators | **P6** — agrees |
+> | P7 Themes, audio, polish | **P9** in PHASES.md |
+> | — | **P5** is Stages 06–11, which has no prompt here |
+> | — | **P8** Feedback and **P10** Pilot/launch have no prompts here |
+>
+> Use the prompts below for their *content*, and take the phase number and the exit
+> criteria from `PHASES.md`. A contradiction between two documents is worse than an
+> error in one, because an agent reading both picks a side silently.
+
 Run these in order. **One phase per session.** Start each with `/clear`.
 
 ---

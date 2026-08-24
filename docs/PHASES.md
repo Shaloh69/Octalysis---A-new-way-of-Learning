@@ -100,7 +100,36 @@ Figures 1.1–1.4 become `kind='code'` blocks with the original listings intact.
 
 ---
 
-## P3 — The question engine · 2 weeks · **the important one**
+## P3 — The question engine · 2 weeks · **the important one** · ENGINE CORE DONE
+
+> **Status: the engine and its tests are built and green. The HTTP layer is not.**
+>
+> | Deliverable | State |
+> |---|---|
+> | `seed.ts` — SplitMix64, `Math.random` banned | done, 16 tests |
+> | `solvers.ts` — cycle-time, unit-convert, twos-complement, amat | done, 21 tests |
+> | `resolve.ts` — params, options, dedupe, shuffle | done, 16 tests |
+> | `blueprint.ts` — constraint fill + `BlueprintUnsatisfiable` | done, 14 tests |
+> | `grade.ts` — relative tolerance, unit stripping, per-objective scoring | done |
+> | `serialize/student.ts` — the ONE serializer, an allow-list | done, 25 tests with grade |
+> | **Three attempt endpoints** | **not built** |
+> | **DB wiring** (load pool, persist `attempt_items`, write `responses`) | **not built** |
+>
+> **130 tests green across the workspace; TypeScript strict clean.**
+>
+> Tests-first criteria from the original list, all passing: same seed produces an
+> identical paper over 100 runs · median item overlap 0% and p95 under 25% across
+> 4,950 student pairs · every constraint cell satisfied exactly over 200 papers ·
+> an unsatisfiable blueprint throws naming the cell and the shortfall ·
+> **cycle-time 133 MHz to 7.52 ns** · no student-facing payload contains an
+> answer key, verified by searching the serialised body for the actual secret.
+>
+> Three real bugs were found by running these tests rather than reading the code:
+> a distractor that collides with the correct answer at exactly 1000 MHz, two
+> algebraically identical distractors in `unit-convert`, and an O(n^2) scarcity
+> scorer that made a 70-item paper take minutes. See the commit body.
+
+### What P3 originally specified
 
 **Build:** `seed.ts` (splitmix64 or xoshiro, never `Math.random`), `solvers.ts`, `resolve.ts`,
 `blueprint.ts`, `grade.ts`. Three attempt endpoints. A single serializer that strips
