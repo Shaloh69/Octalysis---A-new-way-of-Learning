@@ -25,8 +25,15 @@ this syllabus.** They are prerequisite-level material, covered by Microprocessor
 before a student reaches CPE 412.
 
 **What survives, and it is the important half:** the syllabus has an orientation
-block plus **seventeen chapters**. OCTA's architecture is Stage 00 plus seventeen
+block plus **eighteen chapters**. OCTA's architecture is Stage 00 plus eighteen
 graded stages. The *shape* is exactly right; the *content* has to be replaced.
+
+> **It was seventeen until the syllabus was read properly.** The first pass read
+> the PDF, whose landscape table interleaves columns under `pdftotext`. Chapter
+> 18, *Distributed Systems Architecture*, has an **empty topics cell** — so
+> unlike every other chapter it left no fragment behind, and it vanished without
+> a trace. Reading the DOCX instead, where table cells are discrete XML,
+> recovered it along with all 110 unit outcomes. See `scripts/extract_syllabus.py`.
 
 ---
 
@@ -72,8 +79,9 @@ Dean/Program Head, College of Engineering.
 ### 1.2 Time allocation
 
 Orientation 1 hr · Chapter 1 (Introduction) 1 hr · **every other chapter 3 hrs**.
-Seventeen 3-hour blocks appear in the plan, which with the two 1-hour blocks
-totals ~53 lecture hours — consistent with 3 units over a standard term.
+Seventeen 3-hour blocks appear in the plan — chapters 2 through 18 — which with
+the two 1-hour blocks (orientation and chapter 1) totals **53 lecture hours**,
+consistent with 3 units over a standard term.
 
 Teaching activities named throughout: Lecture · Discussion · **Hands-on
 Laboratory**. Assessment tasks: Seat-work · Quiz · **Laboratory Exercises**.
@@ -85,7 +93,7 @@ Learning resources named: DLP · Computer/Laptop · **Simulation Software**.
 
 ---
 
-## 2. The seventeen chapters
+## 2. The eighteen chapters
 
 Transcribed from §VII, *Teaching and Learning Plan*.
 
@@ -109,6 +117,7 @@ Transcribed from §VII, *Teaching and Learning Plan*.
 | 15 | **Control Unit Operation** — 15.1 Micro-Operations · 15.2 Control of the Processor (control unit inputs, control unit logic) · 15.3 Hardwired Implementation | 3 |
 | 16 | **Microprogrammed Control** — 16.1 Basic Concepts · 16.2 Microinstruction Sequencing · 16.3 Microinstruction Execution | 3 |
 | 17 | **Multicore Computer** — 17.1 Hardware performance issues · 17.2 Software performance issues · 17.3 Multicore organization · 17.4 Intel x86 multicore | 3 |
+| 18 | **Distributed Systems Architecture** — the topics cell is **empty in the syllabus**; the four unit outcomes are the whole specification: *explain the advantages and disadvantages of different distributed systems architecture* · *discuss client-server and distributed object architecture* · *discuss the underlying principles of the CORBA standards* · *identify the new models in distributed computing* | 3 |
 
 ---
 
@@ -187,6 +196,29 @@ Each row lists the primary text plus **two or more** additional sources.
 | 15 | Control Unit Operation; micro-operations | Stallings ch.15 | Null & Lobur ch.4, control unit · nand2tetris ch.5, computer architecture (Nisan & Schocken) |
 | 16 | Microprogrammed Control | Stallings ch.16 | Null & Lobur ch.4, microprogrammed control · Yadin (2016) |
 | 17 | Multicore | Stallings ch.17 | Hennessy & Patterson ch.5, multiprocessors · *Dive into Systems* ch.14, parallel processing |
+| 18 | Distributed Systems Architecture | **none — Stallings does not cover this** | van Steen & Tanenbaum ch.2, architectures · OMG, *CORBA* v3.4 · Fielding (2000), architectural styles |
+
+### 4.1 Chapter 18 has no textbook, and that is worth saying plainly
+
+Every other chapter maps to a Stallings chapter of the same number. **Chapter 18
+does not.** *Computer Organization and Architecture* ends at multicore; the
+syllabus's own textbook does not contain a distributed-systems chapter, and the
+syllabus does not name a substitute. Its topics cell is empty.
+
+So this chapter is the one place where the teaching material has to be sourced
+entirely from outside the prescribed text. These three are open, citable, and
+each maps to a specific outcome rather than to the chapter in general:
+
+| Source | Author / body | Access | Which outcome it serves |
+|---|---|---|---|
+| *Distributed Systems*, 4th ed., ch. 2 (architectures) and ch. 3 | **Maarten van Steen & Andrew S. Tanenbaum** | Free personalised digital copy from [distributed-systems.net](https://www.distributed-systems.net/index.php/books/ds4/); v4.03, Jan 2025 | *Advantages and disadvantages of different architectures*; *client-server and distributed object architecture* |
+| *Common Object Request Broker Architecture (CORBA)*, v3.4, Feb 2021 | **Object Management Group (OMG)** | Free download, [omg.org/spec/CORBA/3.4](https://www.omg.org/spec/CORBA/3.4/) | *The underlying principles of the CORBA standards* — the primary source, not a summary of one |
+| *Architectural Styles and the Design of Network-based Software Architectures* (PhD dissertation, UC Irvine, 2000) | **Roy T. Fielding** | Free full text, [ics.uci.edu/~fielding](https://ics.uci.edu/~fielding/pubs/dissertation/top.htm) | *Identify the new models in distributed computing* — where REST came from, and why it displaced distributed objects |
+
+The Fielding dissertation earns its place: the outcome says *new* models, and a
+chapter that teaches CORBA without saying what replaced it and why teaches a
+dead standard as though it were current. CORBA is the syllabus's named
+requirement; the contrast is what makes it educational.
 
 **Recording these in the system.** Every reference belongs in the database, not
 in a bundle — a `references` table joined to `stages`, surfaced on each stage
@@ -247,7 +279,7 @@ Named as a learning resource on nearly every chapter. This raises Track D from
 
 ### 6.1 Stage map
 
-Orientation plus seventeen chapters, one stage each — the existing shape, new
+Orientation plus eighteen chapters, one stage each — the existing shape, new
 content. Archetypes assigned by what the chapter actually asks a student to do.
 
 | Stage | Chapter | Archetype | Why |
@@ -270,12 +302,17 @@ content. Archetypes assigned by what the chapter actually asks a student to do.
 | 15 | 15 Control Unit Operation | D simulator | Micro-operations, hardwired control |
 | 16 | 16 Microprogrammed Control | D simulator | Write microcode |
 | 17 | 17 Multicore | B computation | Speedup, scaling, Amdahl again — a deliberate callback to Stage 02 |
+| 18 | 18 Distributed Systems Architecture | A concept | Architectures and standards, argued. The only chapter with no computation in its outcomes |
 
-**Prerequisites** follow the chapter order, with the genuine joins the material
-implies: 04 needs 03 · 12 needs 03 and 11 · 14 needs 12 and 13 · 16 needs 15 ·
-17 needs 02 and 14. The full edge list needs the instructor's review before it
-goes into the seed, because **`stages.prereq` is the curriculum** and getting it
-wrong gates students incorrectly.
+**Prerequisites are a linear chain — settled, not proposed.** An earlier draft of
+this section proposed joins the material implies (12 needs 03 and 11, 17 needs 02
+and 14, and so on). Asked directly, the instructor said: *"I teach based on the
+order of the syllabus topics and go down the line."*
+
+`stages.prereq` gates real students out of real content, so it has to model the
+course **as taught**, not the subject's intellectual decomposition. Each chapter
+requires exactly the one before it: 18 edges, no forks, no joins, `18` the only
+leaf. The reasoning is in `SKILL-TREE-3D.md` §1.2.
 
 ### 6.2 What the level hierarchy becomes
 

@@ -13,12 +13,13 @@ was assumed rather than run, it says so.
 
 | | |
 |---|---|
-| Tests green | **195** (180 API + 15 web) |
+| Tests green | **206** (189 API + 17 web) · 1 skipped (live JWKS, needs `.env`) |
 | TypeScript strict | clean across 4 packages |
 | Invariants | 22 clean, 0 failures (3 notices expected on an unseeded database) |
 | Schema | applies from scratch locally **and on the live Supabase project** |
 | Denial suite vs Supabase | **38/38 pass on the real project** |
-| Supabase live state | 18 stages, 21 edges, 31 content blocks, 16 objectives, **3 pg_cron jobs scheduled** |
+| Local Postgres state | **19 stages, 18 edges** (one linear chain), 75 content blocks, **110 objectives** |
+| Supabase live state | seeded before V-47; **needs a re-push** for the 18-chapter seed |
 | Initial JS bundle | 51.9 KB gz + 3.8 KB CSS |
 | 3D chunk | 219.8 KB gz, on demand only, no preload |
 | Bundle scan | clean — no answer keys, no server-only names, no source maps |

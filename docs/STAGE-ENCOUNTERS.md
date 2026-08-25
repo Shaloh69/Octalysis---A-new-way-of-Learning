@@ -30,7 +30,7 @@ a format the student has not met ungraded.
 
 The map between nodes is not a layer on top of the syllabus — **the tree's connections *are* the
 prerequisites, and the prerequisites *are* the syllabus order.** Week 1 is Stage 00–01, week 5 is
-Stage 07, week 14 is Stage 17. `stages.prereq` in `db/schema.sql` is the single edge list, and
+Stage 07, and the last teaching week is Stage 18. `stages.prereq` in `db/schema.sql` is the single edge list, and
 `is_stage_unlocked()` is the only thing that decides whether a node is lit.
 
 What the tree adds over a list is **legibility of the ordering**. A syllabus is a list of weeks; a
@@ -49,7 +49,7 @@ in a list and obvious in a shape.
 Small, but real. And the teacher overrides any of it from the lock matrix, so if the class runs
 ahead or behind, **the tree bends to the class rather than the class to the tree.**
 
-> The full graph — 18 nodes, 20 edges, four forks, three joins, the 15-node critical path, and the
+> The full graph — 19 nodes, 18 edges, no forks, no joins, one chain from 00 to 18, and the
 > fact that Stage 08 is currently a dead end nothing depends on — is derived and drawn in
 > **`SKILL-TREE-3D.md` §1**, along with the galaxy rendering, the spatial grammar, and the
 > accessible DOM layer that is the actual source of truth.

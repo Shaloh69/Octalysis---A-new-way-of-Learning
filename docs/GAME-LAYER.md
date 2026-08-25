@@ -99,7 +99,7 @@ connected into one continuous object. That's a thesis demo that lands in thirty 
 
 ### Petal 2 — Development & Accomplishment · ▓▓▓▓▓
 
-- **Per-objective mastery**, not one global bar. 17 graded stages × ~4 objectives = ~70 mastery dials.
+- **Per-objective mastery**, not one global bar. 18 graded stages and 110 syllabus outcomes = 110 mastery dials.
 - **Skill tree = the real prerequisite graph.** Stage 13 (FDE) genuinely requires Stage 12; Stage
   10 (logic) genuinely requires Stage 09 (number systems). The tree is honest, not decorative.
 - **Growth curve**, not a hidden history: "attempt 1 wrong → attempt 3 correct" plotted.

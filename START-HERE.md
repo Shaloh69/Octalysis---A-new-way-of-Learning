@@ -10,7 +10,7 @@
 **OCTA** — a semester-long interactive learning platform for **CPE 412: Computer Architecture
 and Organization**, BS Computer Engineering, University of Cebu.
 
-Stage 00 orientation plus the syllabus's **17 chapters**, one stage each, across **four grading
+Stage 00 orientation plus the syllabus's **18 chapters**, one stage each, across **four grading
 periods** (Prelim, Midterm, Semi-finals, Finals). Textbook: Stallings, 9th ed. Prerequisite:
 Microprocessors.
 
@@ -49,7 +49,7 @@ heavy on intrinsic drives, light and always opt-in on pressure mechanics.
 | 10 | `docs/DESIGN-MANDATE.md` | the design mandate and the per-page checklist every page must clear |
 | 11 | `docs/SKILL-TREE-3D.md` | the map — the tree *is* the curriculum, the galaxy, and the accessible layer that is the source of truth |
 | 12 | `docs/LAB-MANUAL.md` | the seventeen laboratory exercises, one per chapter, authored for this course |
-| 12 | `docs/CPE412-CURRICULUM.md` | **READ THIS FIRST of the design docs.** The real syllabus, its 17 chapters, its references, and why the current stage content targets the wrong course |
+| 12 | `docs/CPE412-CURRICULUM.md` | **READ THIS FIRST of the design docs.** The real syllabus, its 18 chapters, its references (including §4.1, the one chapter Stallings does not cover), and why the pre-CPE412 stage content was replaced |
 | 13 | `docs/GAME-DESIGN.md` | **what kind of game this is**, the star map spec, per-stage themes, and the template list |
 | 13 | `docs/VISUAL-SYSTEM-3D.md` | the galaxy as the app's visual language — one canvas, three tiers, and where 3D is banned |
 | 13 | `docs/DELIVERY.md` | **where this ships:** the repo, the branch, local Docker, and what "alpha" means |

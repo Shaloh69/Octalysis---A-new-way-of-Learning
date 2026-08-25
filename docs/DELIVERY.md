@@ -16,7 +16,7 @@
 | **Supabase region** | `ap-northeast-1` (Tokyo) — closest free region to the Philippines |
 | **Supabase compute** | NANO (free), 60 max connections |
 | **Pooler host** | `aws-0-ap-northeast-1.pooler.supabase.com` — verified; `aws-1-…` returns "tenant not found" |
-| **Schema status** | **Applied and verified live** — 18 stages, 21 edges, 0 failing invariants |
+| **Schema status** | **Applied and verified live** — 19 stages, 18 edges, 0 failing invariants |
 | **Denial suite vs Supabase** | **38/38 pass** against the live project |
 | Vercel / Render | Not yet created |
 
@@ -277,8 +277,8 @@ carries the demo.
 Complete means complete in **data and behaviour**, not just pixels. All of the following, or it is
 not done:
 
-- [ ] **All 18 nodes present** — Stage 00 through 17, from `stages`, none hard-coded
-- [ ] **All 20 edges drawn** from `stages.prereq`, including the long `03 → 15` edge
+- [ ] **All 19 nodes present** — Stage 00 through 18, from `stages`, none hard-coded
+- [ ] **All 18 edges drawn** from `stages.prereq` — one linear chain, `00 → 01 → … → 18`
 - [ ] **Four node states** render correctly: locked / available / in progress / mastered
 - [ ] **Every lock states its reason and the distance** — *"Unlocks when Stage 09 reaches 70%.
       You're at 45%."* (`DESIGN-MANDATE.md` §1)

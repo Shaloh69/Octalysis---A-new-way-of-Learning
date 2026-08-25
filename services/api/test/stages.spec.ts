@@ -129,18 +129,19 @@ afterAll(async () => {
 const auth = (t: string) => ({ authorization: `Bearer ${t}` });
 
 describe("GET /api/v1/stages — the skill tree", () => {
-  it("returns all 18 nodes and 17 edges, matching the seed exactly", async () => {
+  it("returns all 19 nodes and 18 edges, matching the seed exactly", async () => {
     const res = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
     expect(res.statusCode).toBe(200);
     const { nodes, edges } = res.json();
 
     // INV-32 / INV-33: the map may not invent or forget a node or an edge.
-    expect(nodes).toHaveLength(18);
-    expect(edges).toHaveLength(17);
+    // Stage 00 (orientation) plus the 18 chapters of the CPE 412 syllabus.
+    expect(nodes).toHaveLength(19);
+    expect(edges).toHaveLength(18);
 
     const ids = nodes.map((n: { id: string }) => n.id).sort();
     expect(ids[0]).toBe("00");
-    expect(ids[ids.length - 1]).toBe("17");
+    expect(ids[ids.length - 1]).toBe("18");
   });
 
   it("every edge corresponds to a real prereq row in the database", async () => {
@@ -179,11 +180,11 @@ describe("GET /api/v1/stages — the skill tree", () => {
         const leaves = (nodes as Array<{ id: string }>)
           .map((n) => n.id)
           .filter((id) => !hasDependents.has(id));
-        expect(leaves).toEqual(["17"]);
+        expect(leaves).toEqual(["18"]);
       });
   });
 
-  it("act == grading period, evenly split 4/4/4/5", () => {
+  it("act == grading period, evenly split 5/4/4/5", () => {
     return app
       .inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) })
       .then((res) => {
@@ -191,9 +192,18 @@ describe("GET /api/v1/stages — the skill tree", () => {
         const counts = [1, 2, 3, 4].map(
           (a) => nodes.filter((n) => n.act === a && n.gradeable).length,
         );
-        // 17 chapters over four periods is 4/4/4/5. Confirmed by the instructor.
-        expect(counts).toEqual([4, 4, 4, 5]);
-        expect(counts.reduce((x, y) => x + y, 0)).toBe(17);
+        // EIGHTEEN chapters over four periods, evenly spaced as the instructor
+        // asked. 18/4 = 4.5, so 5/4/4/5 is as even as it divides. Chapter 1 is
+        // only 1 contact hour, which is why the extra chapter sits in act 1:
+        // by HOURS the periods are 13/12/12/15.
+        //
+        // It was seventeen until the syllabus was read from the DOCX rather
+        // than the PDF. Chapter 18 (Distributed Systems Architecture) has an
+        // empty topics cell, so column-interleaved PDF text erased it without
+        // a trace. This assertion is the thing that would notice it going
+        // missing again.
+        expect(counts).toEqual([5, 4, 4, 5]);
+        expect(counts.reduce((x, y) => x + y, 0)).toBe(18);
       });
   });
 

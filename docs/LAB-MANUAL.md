@@ -1,5 +1,5 @@
 # LAB-MANUAL.md
-### CPE 412 — seventeen laboratory exercises, authored for OCTA
+### CPE 412 — eighteen laboratory exercises, authored for OCTA
 
 The syllabus allots **3 laboratory hours** alongside 3 lecture units, weights
 **Laboratory Exercises at 10%**, requires they be **submitted on time**, and names
@@ -32,7 +32,7 @@ Every lab below states its verb. If you add one, state its verb too.
 | **B — Simulator** | High. A real model with real state | Anything where the *behaviour over time* is the concept |
 | **C — External tool** | Low to build, high to support | Where a real industry tool teaches more than we could model |
 
-**Eleven of seventeen are Tier A.** That is deliberate: Tier A labs can ship for
+**Ten of eighteen are Tier A.** That is deliberate: Tier A labs can ship for
 the whole semester while Tier B is still being built, and a lab that exists beats
 a simulator that is planned.
 
@@ -41,7 +41,7 @@ a simulator that is planned.
 Every lab produces **one artifact** — a completed worksheet, a saved
 configuration, a short written justification, or a screenshot with annotation.
 
-Graded on a **4-point rubric**, identical across all seventeen so students learn
+Graded on a **4-point rubric**, identical across all eighteen so students learn
 it once:
 
 | Points | Criterion |
@@ -65,7 +65,7 @@ find different numbers and have to compare *method*, which is the point.
 
 ---
 
-## 1. The seventeen labs
+## 1. The eighteen labs
 
 ### LAB 01 — Organization or Architecture?
 **Chapter 1 · Tier A · Archetype A · 1 hr**
@@ -400,14 +400,48 @@ and now the student can see why it governs the whole chapter.
 
 ---
 
+### LAB 18 — Place the Boundary
+**Chapter 18 · Tier A · Archetype A · 1.5 hr**
+
+**Verb:** *argue a trade-off* — matching the chapter's outcomes: *explain the
+advantages and disadvantages of different distributed systems architecture* and
+*discuss client-server and distributed object architecture*.
+
+One application, described in plain terms — a campus enrolment system, say, with
+a database, some reporting, and a few hundred concurrent users. Three candidate
+architectures are given: **two-tier client-server**, **three-tier
+client-server**, and a **distributed object** arrangement in the style the CORBA
+standards describe.
+
+For each, the student states where the boundary between client and server falls,
+which component does the work, and what crosses the wire. Then, for **three named
+stresses** — user count triples, the reporting query gets expensive, one server
+goes offline — they say what breaks first and why.
+
+**Artifact:** the three-by-three table, plus a one-paragraph recommendation
+naming the stress that decided it.
+
+**No arithmetic, on purpose.** Chapter 18 is the one chapter of the course with
+no computation in its outcomes — its verbs are *explain*, *discuss*, *identify*.
+A lab that invented a formula here would be measuring something the chapter does
+not teach. What is assessed instead is whether the student can hold three designs
+side by side and say what each one costs. The rubric's reasoning point does the
+work it was written for: an answer with no stated "because" caps at 3.
+
+**This is the last stage on the map**, and the only leaf in the graph. It is
+also the one lab that asks the student to design rather than trace — a
+deliberate close, after seventeen chapters spent taking machines apart.
+
+---
+
 ## 2. Build status and dependencies
 
 | Tier | Labs | Status |
 |---|---|---|
-| **A — Paper/DOM** | 01, 02, 04, 05, 06, 09, 10, 13, 17 | **Buildable now.** Forms, tables, parameterized numbers from the existing engine |
+| **A — Paper/DOM** | 01, 02, 04, 05, 06, 09, 10, 13, 17, 18 | **Buildable now.** Forms, tables, parameterized numbers from the existing engine |
 | **B — Simulator** | 03, 07, 08, 11, 12, 14, 15, 16 | Needs Track D. **Every one has a paper fallback** |
 
-**Nine labs can ship without a single simulator.** Eight want one. None is
+**Ten labs can ship without a single simulator.** Eight want one. None is
 blocked outright, because each Tier B lab degrades to a printed worksheet that
 loses the interactivity but keeps the exercise.
 
@@ -421,13 +455,20 @@ there is nowhere to put them today.
 
 | Period | Labs | Weight within the 10% |
 |---|---|---|
-| **Prelim** | 01–04 | 4 labs |
-| **Midterm** | 05–08 | 4 labs |
-| **Semi-finals** | 09–12 | 4 labs |
-| **Finals** | 13–17 | 5 labs |
+| **Prelim** | 01–05 | 5 labs |
+| **Midterm** | 06–09 | 4 labs |
+| **Semi-finals** | 10–13 | 4 labs |
+| **Finals** | 14–18 | 5 labs |
 
-Seventeen labs across roughly eighteen weeks is one per week with a week's slack
-— which the four examination weeks will consume.
+This mirrors the stage seed's 5/4/4/5 split exactly, and it has to — a lab
+belongs to the same grading period as the chapter it assesses, or the 10% lands
+in the wrong column. Chapter 1 is only one contact hour, which is what lets
+Prelim carry five.
+
+Eighteen labs across roughly eighteen teaching weeks is one per week with no
+slack, and the four examination weeks eat into it. **Two of the Prelim labs are
+short** (LAB 01 and LAB 02 are both under an hour) — that is the only give in
+the schedule, so plan the doubled-up week there rather than in Finals.
 
 ---
 

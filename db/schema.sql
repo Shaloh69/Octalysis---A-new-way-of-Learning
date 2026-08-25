@@ -15,7 +15,10 @@
 --   V-24 items.slug is unique per version.
 --   V-25 jwt_role() maps unknown claims to least privilege, never raises.
 -- DECISIONS APPLIED:
---   D1 Stage 08 wired into Stage 17's prerequisites (no dead-end node).
+--   D1 SUPERSEDED. Stage 08 was wired into Stage 17 to remove a dead-end
+--      node, back when the graph branched. The instructor teaches straight
+--      down the syllabus, so the graph is now ONE LINEAR CHAIN and there is
+--      no dead end to fix: every stage has exactly one dependent but the last.
 --   D4 teacher and admin are intentionally equivalent in this deployment.
 -- ============================================================
 
@@ -631,7 +634,7 @@ revoke all on all tables in schema public from anon;
 -- chapter 6 in class must not find chapter 6 locked because the graph decided
 -- they needed chapter 9 first.
 --
--- So: each chapter requires the one before it. One edge per stage, 17 edges,
+-- So: each chapter requires the one before it. One edge per stage, 18 edges,
 -- one chain, no forks and no joins. The teacher still opens any node early from
 -- the lock matrix, which is where flexibility belongs -- in a human decision
 -- with a reason and an audit entry, not in a graph nobody can see.
@@ -641,24 +644,25 @@ revoke all on all tables in schema public from anon;
 -- OCTA itself, which is a companion to that, not a replacement for it.
 -- ============================================================
 insert into stages (id, act, ordinal, title, est_minutes, prereq, published, gradeable, archetype, levels) values
- ('00',1, 0,'Orientation',                              20, '{}',      true, false, 'A', '{6}'),
- ('01',1,1,'Introduction',                             40, '{00}',    true, true,  'A', '{0,1,2,3,4,5,6}'),
- ('02',1,2,'Computer Evolution and Performance',       75, '{01}',    true, true,  'B', '{6,2}'),
- ('03',1,3,'Top Level View and Interconnection',       70, '{02}',    true, true,  'D', '{2,1}'),
- ('04',1,4,'Cache Memory',                             80, '{03}',    true, true,  'B', '{3,2}'),
- ('05',2,5,'Internal Memory',                          60, '{04}',    true, true,  'C', '{1,0}'),
- ('06',2,6,'External Memory',                          55, '{05}',    true, true,  'C', '{3}'),
- ('07',2,7,'Input/Output',                             70, '{06}',    true, true,  'D', '{3,1}'),
- ('08',2,8,'Operating System Support',                 70, '{07}',    true, true,  'D', '{3}'),
- ('09',3,9,'Computer Arithmetic',                      90, '{08}',    true, true,  'B', '{2,0}'),
- ('10',3,10,'Instruction Sets: Characteristics',        60, '{09}',    true, true,  'C', '{2}'),
- ('11',3,11,'Instruction Sets: Addressing and Formats', 65, '{10}',    true, true,  'D', '{2}'),
- ('12',3,12,'Processor Structure and Function',         80, '{11}',    true, true,  'D', '{1}'),
- ('13',4,13,'Reduced Instruction Set Computers',        60, '{12}',    true, true,  'A', '{2,1}'),
- ('14',4,14,'Instruction Level Parallelism',            70, '{13}',    true, true,  'D', '{1}'),
- ('15',4,15,'Control Unit Operation',                   75, '{14}',    true, true,  'D', '{1}'),
- ('16',4,16,'Microprogrammed Control',                  65, '{15}',    true, true,  'D', '{1}'),
- ('17',4,17,'Multicore Computers',                      60, '{16}',    true, true,  'B', '{1,0}');
+ ('00',1, 0,'Orientation',                                         20, '{}',      true, false, 'A', '{6}'),
+ ('01',1, 1,'Introduction',                                40, '{00}',    true, true,  'A', '{0,1,2,3,4,5,6}'),
+ ('02',1, 2,'Computer Evolution and Performance',          75, '{01}',    true, true,  'B', '{6,2}'),
+ ('03',1, 3,'Top Level View and Interconnection',          70, '{02}',    true, true,  'D', '{2,1}'),
+ ('04',1, 4,'Cache Memory',                                80, '{03}',    true, true,  'B', '{3,2}'),
+ ('05',1, 5,'Internal Memory',                             60, '{04}',    true, true,  'C', '{1,0}'),
+ ('06',2, 6,'External Memory',                             55, '{05}',    true, true,  'C', '{3}'),
+ ('07',2, 7,'Input/Output',                                70, '{06}',    true, true,  'D', '{3,1}'),
+ ('08',2, 8,'Operating System Support',                    70, '{07}',    true, true,  'D', '{3}'),
+ ('09',2, 9,'Computer Arithmetic',                         90, '{08}',    true, true,  'B', '{2,0}'),
+ ('10',3,10,'Instruction Sets: Characteristics',           60, '{09}',    true, true,  'C', '{2}'),
+ ('11',3,11,'Instruction Sets: Addressing and Formats',    65, '{10}',    true, true,  'D', '{2}'),
+ ('12',3,12,'Processor Structure and Function',            80, '{11}',    true, true,  'D', '{1}'),
+ ('13',3,13,'Reduced Instruction Set Computers',           60, '{12}',    true, true,  'A', '{2,1}'),
+ ('14',4,14,'Instruction Level Parallelism',               70, '{13}',    true, true,  'D', '{1}'),
+ ('15',4,15,'Control Unit Operation',                      75, '{14}',    true, true,  'D', '{1}'),
+ ('16',4,16,'Microprogrammed Control',                     65, '{15}',    true, true,  'D', '{1}'),
+ ('17',4,17,'Multicore Computers',                         60, '{16}',    true, true,  'B', '{1,0}'),
+ ('18',4,18,'Distributed Systems Architecture',            60, '{17}',    true, true,  'A', '{6,3}');
 
 insert into blueprints (name, scope, total_items, constraints) values
  -- The syllabus has FOUR major examinations at 30% combined, not one final.

@@ -23,7 +23,7 @@ session. It is the single highest-leverage file in the project.
 
 ## What this is
 Semester-long interactive learning platform for Computer Systems & Assembly Language
-(BS Computer Engineering, 14 weeks, Stage 00 plus 17 graded stages). Every student receives a structurally
+(BS Computer Engineering, Stage 00 plus 18 graded stages). Every student receives a structurally
 unique but psychometrically equivalent question paper.
 
 ## Repos

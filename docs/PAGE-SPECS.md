@@ -35,7 +35,7 @@ Sections, in order:
 CTA is **"Sign in with your student ID"** — not "Get started free". Access is roster-gated.
 
 ### `/course` — Full course map
-All 18 stages expanded: title, act, estimated minutes, prerequisites, learning objectives.
+All 19 stages expanded: title, act, estimated minutes, prerequisites, learning objectives.
 Public because there's nothing secret in a syllabus, and it doubles as the course outline the
 department will ask for.
 
@@ -85,7 +85,7 @@ See `GAME-DESIGN.md` §3.
 
 ### `/app/map` — Flat stage map
 
-**A first-class route, not a fallback.** Same 18 nodes and 21 edges as SVG plus real focusable
+**A first-class route, not a fallback.** Same 19 nodes and 18 edges as SVG plus real focusable
 buttons, always in the header, bookmarkable. Focus order follows curriculum order. This is the
 surface the accessibility floor is measured against, and it is what ships if the galaxy runs long.
 

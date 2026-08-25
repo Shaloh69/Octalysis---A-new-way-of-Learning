@@ -2,7 +2,7 @@
  * Deterministic layout for the stage map.
  *
  * SKILL-TREE-3D.md §3 argues against a force-directed graph library here, and
- * this file is the alternative: 18 nodes, positions computed once from data that
+ * this file is the alternative: 19 nodes, positions computed once from data that
  * already exists, pure and unit-testable.
  *
  * A force simulation would rearrange the map between sessions, which destroys

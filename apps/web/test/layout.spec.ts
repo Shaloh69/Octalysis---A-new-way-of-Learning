@@ -1,38 +1,87 @@
 import { describe, it, expect } from "vitest";
 import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../src/lib/layout";
 
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
 /**
- * INV-32 and INV-33 from SKILL-TREE-3D.md §9, as CI checks rather than SQL:
+ * INV-32 and INV-33 from SKILL-TREE-3D.md 9, as CI checks rather than SQL:
  * the map may not invent a node, forget one, or editorialise the curriculum.
  *
- * This mirrors db/schema.sql's seed exactly. If the seed changes and this does
- * not, these tests fail -- which is the point.
+ * THE SEED IS PARSED OUT OF db/schema.sql, NOT COPIED FROM IT.
+ *
+ * This block used to be a hand-maintained array with a comment promising that
+ * "if the seed changes and this does not, these tests fail". It did not. The
+ * seed went from 17 chapters to 18 and every assertion here kept passing
+ * against the stale copy, because nothing ever compared the two. A duplicate
+ * that claims to be a mirror is worse than an obvious duplicate.
+ *
+ * `stages.prereq` is the only edge list in the project (CLAUDE.md, "The skill
+ * tree"). Parsing it here is what makes that literally true for the web app.
  */
-const SEED = [
-  { id: "00", act: 1, ordinal: 0, levels: [6], prereq: [] },
-  { id: "01", act: 1, ordinal: 1, levels: [0, 1, 2, 3, 4, 5, 6], prereq: ["00"] },
-  { id: "02", act: 1, ordinal: 2, levels: [6, 2], prereq: ["01"] },
-  { id: "03", act: 1, ordinal: 3, levels: [2, 1], prereq: ["02"] },
-  { id: "04", act: 1, ordinal: 4, levels: [3, 2], prereq: ["03"] },
-  { id: "05", act: 2, ordinal: 5, levels: [1, 0], prereq: ["04"] },
-  { id: "06", act: 2, ordinal: 6, levels: [3], prereq: ["05"] },
-  { id: "07", act: 2, ordinal: 7, levels: [3, 1], prereq: ["06"] },
-  { id: "08", act: 2, ordinal: 8, levels: [3], prereq: ["07"] },
-  { id: "09", act: 3, ordinal: 9, levels: [2, 0], prereq: ["08"] },
-  { id: "10", act: 3, ordinal: 10, levels: [2], prereq: ["09"] },
-  { id: "11", act: 3, ordinal: 11, levels: [2], prereq: ["10"] },
-  { id: "12", act: 3, ordinal: 12, levels: [1], prereq: ["11"] },
-  { id: "13", act: 4, ordinal: 13, levels: [2, 1], prereq: ["12"] },
-  { id: "14", act: 4, ordinal: 14, levels: [1], prereq: ["13"] },
-  { id: "15", act: 4, ordinal: 15, levels: [1], prereq: ["14"] },
-  { id: "16", act: 4, ordinal: 16, levels: [1], prereq: ["15"] },
-  { id: "17", act: 4, ordinal: 17, levels: [1, 0], prereq: ["16"] },
-];
+const SCHEMA = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "..", "..", "..", "db", "schema.sql",
+);
+
+interface SeedRow {
+  id: string;
+  act: number;
+  ordinal: number;
+  levels: number[];
+  prereq: string[];
+}
+
+function parseSeed(): SeedRow[] {
+  const sql = readFileSync(SCHEMA, "utf8");
+  const start = sql.indexOf(
+    "insert into stages (id, act, ordinal, title, est_minutes, prereq, published, gradeable, archetype, levels) values",
+  );
+  if (start < 0) throw new Error("stages seed not found in db/schema.sql");
+  const body = sql.slice(start, sql.indexOf(";", start));
+
+  //  ('04',1, 4,'Cache Memory', 80, '{03}', true, true, 'B', '{3,2}')
+  const row =
+    /\('(\d{2})',\s*(\d+),\s*(\d+),\s*'(?:[^']|'')*',\s*(\d+),\s*'\{([^}]*)\}',\s*\w+,\s*\w+,\s*'[A-D]',\s*'\{([^}]*)\}'\)/g;
+
+  const rows: SeedRow[] = [];
+  for (const m of body.matchAll(row)) {
+    const split = (t: string) => (t.trim() === "" ? [] : t.split(",").map((x) => x.trim()));
+    rows.push({
+      id: m[1]!,
+      act: Number(m[2]),
+      ordinal: Number(m[3]),
+      prereq: split(m[5]!),
+      levels: split(m[6]!).map(Number),
+    });
+  }
+  return rows;
+}
+
+const SEED = parseSeed();
+
+/** Orientation plus the 18 chapters of the CPE 412 syllabus. */
+const CHAPTERS = 18;
+const STAGES = CHAPTERS + 1;
+
+describe("the seed parser itself", () => {
+  it("actually read rows out of db/schema.sql", () => {
+    // If the regex stops matching, every test below would pass vacuously on an
+    // empty array. This is the guard against that.
+    expect(SEED.length, "parsed nothing -- has the seed's column order changed?")
+      .toBe(STAGES);
+    expect(SEED[0]).toMatchObject({ id: "00", act: 1, ordinal: 0, prereq: [] });
+    expect(SEED.at(-1)!.id).toBe(String(CHAPTERS).padStart(2, "0"));
+    expect(SEED.every((s) => s.levels.length > 0)).toBe(true);
+  });
+});
+
 
 describe("the seed graph", () => {
-  it("is 18 nodes and 17 edges - one linear chain", () => {
-    expect(SEED).toHaveLength(18);
-    expect(SEED.reduce((a, s) => a + s.prereq.length, 0)).toBe(17);
+  it("is 19 nodes and 18 edges - one linear chain", () => {
+    expect(SEED).toHaveLength(STAGES);
+    expect(SEED.reduce((a, s) => a + s.prereq.length, 0)).toBe(CHAPTERS);
   });
 
   it("is acyclic — every prereq has a lower ordinal", () => {
@@ -56,7 +105,8 @@ describe("the seed graph", () => {
       expect(dependents(st.id).length, `${st.id} forks`).toBeLessThanOrEqual(1);
     }
     const hasDependents = new Set(SEED.flatMap((s) => s.prereq));
-    expect(SEED.map((s) => s.id).filter((id) => !hasDependents.has(id))).toEqual(["17"]);
+    expect(SEED.map((s) => s.id).filter((id) => !hasDependents.has(id)))
+      .toEqual([String(CHAPTERS).padStart(2, "0")]);
   });
 
   it("every chapter requires exactly the one before it", () => {
@@ -70,10 +120,12 @@ describe("the seed graph", () => {
     const byAct = new Map<number, string[]>();
     for (const s of SEED) byAct.set(s.act, [...(byAct.get(s.act) ?? []), s.id]);
     expect([...byAct.keys()].sort()).toEqual([1, 2, 3, 4]);
-    expect(byAct.get(1)).toEqual(["00", "01", "02", "03", "04"]); // Prelim
-    expect(byAct.get(2)).toEqual(["05", "06", "07", "08"]);       // Midterm
-    expect(byAct.get(3)).toEqual(["09", "10", "11", "12"]);       // Semi-finals
-    expect(byAct.get(4)).toEqual(["13", "14", "15", "16", "17"]); // Finals
+    // 18 chapters over four periods, evenly spaced: 5/4/4/5. Chapter 1 is only
+    // one contact hour, so by HOURS the periods are 13/12/12/15.
+    expect(byAct.get(1)).toEqual(["00", "01", "02", "03", "04", "05"]); // Prelim
+    expect(byAct.get(2)).toEqual(["06", "07", "08", "09"]);             // Midterm
+    expect(byAct.get(3)).toEqual(["10", "11", "12", "13"]);             // Semi-finals
+    expect(byAct.get(4)).toEqual(["14", "15", "16", "17", "18"]);       // Finals
   });
 });
 

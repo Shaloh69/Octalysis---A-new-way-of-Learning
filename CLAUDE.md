@@ -2,7 +2,7 @@
 
 Semester-long interactive learning platform for **CPE 412 — Computer Architecture and
 Organization** (BS Computer Engineering, University of Cebu). Stage 00 orientation plus the
-syllabus's **17 chapters**, one stage each, across four grading periods. Every student receives a
+syllabus's **18 chapters**, one stage each, across four grading periods. Every student receives a
 structurally unique but psychometrically equivalent question paper.
 
 **Textbook:** Stallings, *Computer Organization and Architecture: Designing for Performance*, 9th

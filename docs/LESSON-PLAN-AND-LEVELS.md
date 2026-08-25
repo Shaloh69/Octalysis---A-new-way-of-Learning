@@ -80,8 +80,9 @@ deck's "recode time-critical sections in assembly," but on hardware they have in
 
 ## 2. Week-by-week lesson plan
 
-Stage 00 is orientation. **17 graded stages** follow it. (See `VERIFICATION.md` finding V-1 — the
-docs previously said "17 stages" while the schema seeds 18 rows, 00–17.)
+Stage 00 is orientation. **18 graded stages** follow it, one per syllabus chapter, so the schema
+seeds 19 rows, 00–18. (See `VERIFICATION.md` V-1 for the original off-by-one, and V-47 for the
+chapter the PDF hid.)
 
 | Week | Stages | Archetype | Deck source | Contact focus |
 |---|---|---|---|---|

@@ -214,7 +214,7 @@ Two layers: a universal gate every page must clear, then page-specific must-have
 | Page | Must have |
 |---|---|
 | `/` | Live 17-node map as hero · **re-rollable sample item** (the one interaction that sells the product) · "Sign in with your student ID", not "Get started free" |
-| `/course` | All 18 stages with objectives, act, prereqs, minutes |
+| `/course` | All 19 stages with objectives, act, prereqs, minutes |
 | `/how-it-works` | The fairness argument in plain language · re-roll demo repeated |
 | `/for-teachers` | Roster, lock matrix, analytics, gradebook, feedback loop — with screenshots |
 | `/accessibility` | What's supported, what isn't yet, how to report a barrier |

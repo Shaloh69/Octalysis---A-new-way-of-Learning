@@ -83,7 +83,7 @@ describe("lock matrix", () => {
   it("returns a cell for every student x stage pair", async () => {
     const res = await app.inject({ method: "GET", url: "/api/v1/console/locks", headers: auth(teacherToken) });
     const { stages, students, cells } = res.json();
-    expect(stages).toHaveLength(18);
+    expect(stages).toHaveLength(19);   // orientation + 18 chapters
     expect(students.length).toBeGreaterThanOrEqual(2);
     expect(cells).toHaveLength(stages.length * students.length);
   });
@@ -205,7 +205,7 @@ describe("gradebook export", () => {
     const rows = lines.slice(1);
     expect(header).toMatch(/^student_id,full_name,stage_01/);
     // 17 gradeable stages: 00 is orientation and excluded.
-    expect(header.split(",")).toHaveLength(2 + 17);
+    expect(header.split(",")).toHaveLength(2 + 18);  // id, name, then one per gradeable chapter
     expect(rows.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -220,7 +220,7 @@ describe("gradebook export", () => {
     expect(res.body).toContain('"Dela Cruz, Juan ""JD"""');
     // Still the right number of columns despite the comma in the value.
     const row = res.body.split("\n").find((l) => l.startsWith("21-0001"))!;
-    expect(row.match(/,/g)!.length).toBeGreaterThanOrEqual(18);
+    expect(row.match(/,/g)!.length).toBeGreaterThanOrEqual(19);
   });
 });
 

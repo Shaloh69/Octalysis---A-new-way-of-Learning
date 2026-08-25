@@ -63,7 +63,7 @@ where:
 
 ---
 
-## 2. Curriculum — 14 weeks, Stage 00 plus 17 graded stages
+## 2. Curriculum — Stage 00 plus 18 graded stages, one per syllabus chapter
 
 Built from your two decks, then extended. **Deck coverage is exact** — nothing from your source
 material is dropped.
@@ -513,7 +513,7 @@ is blocking — the salt must move to a service-role-only table before any asses
 
 | Drive | Dial | Features in this build |
 |---|---|---|
-| **1 Epic Meaning** | ▓▓▓▓▓ | The bare-metal arc across all 18 stages; the Register Bar; capstone trace; exportable Engineer's Log PDF |
+| **1 Epic Meaning** | ▓▓▓▓▓ | The bare-metal arc across all 19 stages; the Register Bar; capstone trace; exportable Engineer's Log PDF |
 | **2 Accomplishment** | ▓▓▓▓▓ | Per-objective mastery (not one global bar); stage map as real dependency graph; attempt history as growth curve; weak-spot review queue; competency-named badges (**no generic XP**) |
 | **3 Creativity** | ▓▓▓▓▓ | Write-your-own assembly (Stage 15); FDE sequence builder; what-if sliders in Stage 16 cache sim; "break it on purpose" mode; re-roll a parameterized question to practise the *type* |
 | **4 Ownership** | ▓▓▓░░ | Theme choice; Architecture Notebook (auto-curated, exportable); "My Mistakes" deck; personal bests, private by default |

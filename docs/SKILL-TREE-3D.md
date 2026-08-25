@@ -39,63 +39,56 @@ There is no second data source. The graph is `stages.prereq`, seeded in `db/sche
 map may be authored twice.** If the map and the database disagree, the map is wrong.
 
 What the tree adds over a syllabus list is *legibility of the ordering*. A syllabus is a list of
-weeks; a tree shows why the order exists. Stage 13 (fetch–decode–execute) sits above Stage 12
-(von Neumann) because you cannot trace a cycle through a machine you cannot describe. That
-argument is invisible in a list and obvious in a shape.
+weeks; a tree shows why the order exists. Stage 04 (Cache Memory) sits below Stage 03 (Top Level
+View) because you cannot reason about a memory hierarchy inside a machine whose components you
+cannot yet name. That argument is invisible in a list and obvious in a shape.
 
 ### 1.1 The actual graph, derived from the seed
 
-18 nodes, 20 edges. This is not a sketch — it is what `stages.prereq` contains today:
+**19 nodes, 18 edges, one linear chain.** This is not a sketch — it is exactly what
+`stages.prereq` contains, and `apps/web/test/layout.spec.ts` parses that seed out of
+`db/schema.sql` at test time so the two cannot drift:
 
 ```
-00 ──▶ 01 ──▶ 02 ──▶ 03 ─┬──▶ 04 ──┬──▶ 05 ──▶ 06 ─┬──▶ 07 ─┬──▶ 08 ──┐
-                          │         │                │        │
-                          │         └────────────────┘        └──▶ 09 ──▶ 10 ──┐
-                          │                                                     │
-                          │                            11 ◀──────────────┬──────┘
-                          │                             │                │
-                          │                             ▼          (also needs 06)
-                          │                            12 ──▶ 13 ─┬──▶ 14 ──▶ 15 ◀─┐
-                          │                                        │               │
-                          │                                        └──▶ 16 ──▶ 17  │
-                          └────────────────────────────────────────────────────────┘
-                                              (15 also needs 03)
+00 ▶ 01 ▶ 02 ▶ 03 ▶ 04 ▶ 05 │ 06 ▶ 07 ▶ 08 ▶ 09 │ 10 ▶ 11 ▶ 12 ▶ 13 │ 14 ▶ 15 ▶ 16 ▶ 17 ▶ 18
+└──── act 1, Prelim ────┘ └─ act 2, Midterm ─┘ └─ act 3, Semis ─┘ └─── act 4, Finals ───┘
 ```
 
 | Property | Value | Consequence for the map |
 |---|---|---|
-| Nodes | 18 | **Small.** See §3 — this size decides the whole technology choice |
-| Edges | **21** | 20 as originally seeded, plus `08 → 17` from decision D1 |
-| Critical path | 15 nodes, `00→01→02→03→04→05→06→07→09→10→11→12→13→14→15` | The spine. Everything else hangs off it |
-| Forks (out-degree > 1) | `03 → {04, 05, 15}` · `06 → {07, 11}` · `07 → {08, 09}` · `13 → {14, 16}` | Where the galaxy gets arms |
-| Joins (in-degree > 1) | `05 ← {03,04}` · `11 ← {06,10}` · `15 ← {03,14}` · `17 ← {16,08}` | Where arms reconverge — visually the strongest moments |
-| Leaves (nothing depends on them) | `15`, `17` | `08` was one until D1 wired it into 17 |
+| Nodes | 19 | Orientation plus the syllabus's 18 chapters. **Small** — see §3, this size decides the whole technology choice |
+| Edges | 18 | One per chapter. Each requires exactly the one before it |
+| Critical path | All 19 nodes | The chain *is* the spine. Nothing hangs off it |
+| Forks (out-degree > 1) | none | — |
+| Joins (in-degree > 1) | none | — |
+| Leaves | `18` only | Distributed Systems Architecture, the last chapter |
 
-### 1.2 The three genuine forks
+### 1.2 There are no forks, and that is a finding, not a limitation
 
-Order is fixed almost everywhere, but three places have real slack, and the graph says so:
+An earlier draft of this document described four forks, three joins, and a 15-node critical path
+through a branching graph. That graph was a defensible reading of the *subject* — you really can
+learn number systems and spec sheets in either order — and the wrong reading of the *delivery*.
 
-1. **After Stage 07** — take 08 (spec sheets) or 09 (number systems) in either order.
-2. **After Stage 13** — take 14 (instruction sets) or 16 (memory hierarchy) in either order.
-3. **Stage 15 needs both 03 and 14** — you cannot write assembly until you have met mnemonics
-   *and* instruction encoding. The long edge from 03 all the way to 15 is the single most
-   informative line on the map; draw it, don't hide it.
+Asked directly, the instructor was unambiguous: **"I teach based on the order of the syllabus
+topics and go down the line."**
 
-Small, but real, and it is the difference between a tree that describes the material and a
-corridor that just gates it.
+`stages.prereq` gates real students out of real content. It therefore has to model the course as
+taught, not the subject's intellectual decomposition. A fork on the map is a promise that two
+orders are both supported; if lectures only ever run one of them, the map is lying in a way that
+costs a student marks.
 
-### 1.3 Stage 08 was a dead end. It is now wired in. (DECIDED)
+So the branching came out. What the map still teaches is the *vertical* axis — depth into the
+machine — which is where CPE 412's real structure lives: L6 at Introduction, down through cache
+and memory to L0 at Internal Memory, back up through instruction sets, down again to L1 for
+control unit operation and microprogramming. **The chain is horizontal; the descent is vertical.**
+That is the shape worth drawing, and a list cannot show it.
 
-Nothing used to list `08` as a prerequisite. In pure graph terms Stage 08 (Reading a Spec Sheet)
-was optional — only the week-by-week schedule put it in the path, and a leaf node on a map reads as
-skippable whether or not you mean it to.
+### 1.3 Every node is on the path
 
-**Decided (D1): wired in.** `db/schema.sql` now seeds Stage 17 with `prereq = '{16,08}'`. The
-dependency is real rather than cosmetic — 08's *"which machine is faster, and why"* is exactly the
-question Stage 17 formalises with CPI, MIPS and Amdahl's Law.
-
-**The graph is now 18 nodes and 21 edges**, with a third join (`17 ← {16, 08}`) and only two
-leaves (`15`, `17`). Every node is now on a path to something.
+The dead-end question ("nothing lists `08` as a prerequisite, so it reads as skippable") was
+decision **D1**, resolved by wiring `08` into `17`. **Linearisation superseded it.** In a chain
+every node but the last has exactly one dependent, so no node can read as optional and there is
+nothing left to wire.
 
 ### 1.4 The teacher still wins
 
@@ -168,7 +161,7 @@ It is a good library. **It is the wrong tool here, for three reasons:**
    meaningful. A map that rearranges itself between sessions destroys the spatial memory that
    makes a map worth having, and it cannot honour §2's axis assignments at all — the simulation
    decides positions, not your semantics.
-2. **18 nodes.** Force-directed layout exists to make *thousands* of nodes tractable. At 18 nodes
+2. **19 nodes.** Force-directed layout exists to make *thousands* of nodes tractable. At 19 nodes
    with a known DAG, positions should be computed once, deterministically, and committed. You can
    literally write them down.
 3. **It brings its own renderer and its own scene graph**, which then fights the postprocessing,
@@ -252,7 +245,7 @@ the numbers in any document, including this one.
 | Package | Link | Why |
 |---|---|---|
 | `@xyflow/react` (React Flow) | https://reactflow.dev · https://github.com/xyflow/xyflow | MIT. Nodes and edges are keyboard-focusable and operable out of the box — Tab to a node, Enter/Space to select, Escape to clear, arrow keys to move — and it exposes `nodesFocusable` / `edgesFocusable` / `disableKeyboardA11y`. Its a11y guide is at https://reactflow.dev/learn/advanced-use/accessibility |
-| *or* plain SVG + `<button>`s | — | **Seriously consider this.** 18 nodes and 20 edges is a small hand-written SVG. React Flow is built for user-editable node graphs; ours is read-only and fixed. If you only need focusable circles and lines, you do not need a graph framework. |
+| *or* plain SVG + `<button>`s | — | **Seriously consider this.** 19 nodes and 18 edges is a small hand-written SVG. React Flow is built for user-editable node graphs; ours is read-only and fixed. If you only need focusable circles and lines, you do not need a graph framework. |
 
 **Recommendation: plain SVG + real buttons.** Pick React Flow only if the console's
 objective-graph editor materialises and you want one library across both.
@@ -288,7 +281,7 @@ Android device on campus wifi.
 |---|---|---|
 | Added JS, gzipped | **≤ 250 KB** for the entire 3D chunk | It is an enhancement; it may not dominate the bundle |
 | Loading | **Lazy, `React.lazy` + dynamic import** | The 3D chunk must not exist in the initial bundle. Nothing on `/app` first paint depends on it |
-| Draw calls | ≤ 50 | 18 nodes, 20 edges, one instanced star field |
+| Draw calls | ≤ 50 | 19 nodes, 18 edges, one instanced star field |
 | Star field | One `<Points>` with an instanced buffer, ≤ 3,000 points | Not 3,000 meshes |
 | Target | 60fps desktop / **30fps floor mid-range Android** | Below the floor, auto-fall back to 2D and say so |
 | Idle | Canvas **stops rendering when the tab is hidden or the map is idle** | `frameloop="demand"` — a spinning galaxy burning battery in a student's pocket is a bug |
