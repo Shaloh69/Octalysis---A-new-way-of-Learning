@@ -618,23 +618,23 @@ revoke all on all tables in schema public from anon;
 --   act 3 Semi-finals chapters 9-12
 --   act 4 Finals      chapters 13-17
 --
--- PREREQ is the curriculum. Chapter order is the default, but these edges are
--- the real intellectual dependencies, which is why several are not simply n-1:
---   03 branches from 01, not 02 -- the top-level view needs org-vs-arch, not history
---   07 branches from 03         -- I/O needs interconnection, not the memory chain
---   09 branches from 01         -- arithmetic is largely self-contained
---   12 joins 03 and 11          -- processor structure needs buses AND instruction formats
---   14 joins 12 and 13          -- superscalar needs pipelining AND the RISC argument
---   08 joins 06 and 07          -- OS memory management pages to DISK, so virtual
---                                 memory genuinely needs external memory first
---   17 joins 02 and 14          -- multicore needs Amdahl AND ILP
+-- PREREQ is the curriculum, and it is LINEAR.
 --
--- LEAVES (08, 16, 17) are fine here, and that is a CHANGE of reasoning from the
--- previous course. Decision D1 wired a dead-end node in because "a leaf reads as
--- skippable". With four grading periods that concern is moot: every chapter in an
--- act is examined in that act's paper, so a leaf is still mandatory. Coverage is
--- enforced by the exam structure, not by the shape of the graph. Do not invent
--- prerequisite edges for graph aesthetics -- `stages.prereq` gates real students.
+-- Confirmed by the instructor: "I teach based on the order of the syllabus
+-- topics and go down the line." An earlier draft branched the graph on the
+-- intellectual dependencies between chapters (arithmetic is self-contained, I/O
+-- needs interconnection but not the memory chain, and so on). That was a
+-- defensible reading of the MATERIAL and the wrong reading of the COURSE.
+--
+-- `stages.prereq` gates real students. It must model how the course is actually
+-- delivered, not how the subject could be decomposed. A student who is at
+-- chapter 6 in class must not find chapter 6 locked because the graph decided
+-- they needed chapter 9 first.
+--
+-- So: each chapter requires the one before it. One edge per stage, 17 edges,
+-- one chain, no forks and no joins. The teacher still opens any node early from
+-- the lock matrix, which is where flexibility belongs -- in a human decision
+-- with a reason and an audit entry, not in a graph nobody can see.
 --
 -- est_minutes is PLATFORM time, not the syllabus's contact hours. The syllabus
 -- allots 3 hrs of lecture+lab per chapter; these are estimates of time spent in
@@ -642,23 +642,23 @@ revoke all on all tables in schema public from anon;
 -- ============================================================
 insert into stages (id, act, ordinal, title, est_minutes, prereq, published, gradeable, archetype, levels) values
  ('00',1, 0,'Orientation',                              20, '{}',      true, false, 'A', '{6}'),
- ('01',1, 1,'Introduction',                             40, '{00}',    true, true,  'A', '{0,1,2,3,4,5,6}'),
- ('02',1, 2,'Computer Evolution and Performance',       75, '{01}',    true, true,  'B', '{6,2}'),
- ('03',1, 3,'Top Level View and Interconnection',       70, '{01}',    true, true,  'D', '{2,1}'),
- ('04',1, 4,'Cache Memory',                             80, '{03}',    true, true,  'B', '{3,2}'),
- ('05',2, 5,'Internal Memory',                          60, '{04}',    true, true,  'C', '{1,0}'),
- ('06',2, 6,'External Memory',                          55, '{05}',    true, true,  'C', '{3}'),
- ('07',2, 7,'Input/Output',                             70, '{03}',    true, true,  'D', '{3,1}'),
- ('08',2, 8,'Operating System Support',                 70, '{06,07}', true, true,  'D', '{3}'),
- ('09',3, 9,'Computer Arithmetic',                      90, '{01}',    true, true,  'B', '{2,0}'),
+ ('01',1,1,'Introduction',                             40, '{00}',    true, true,  'A', '{0,1,2,3,4,5,6}'),
+ ('02',1,2,'Computer Evolution and Performance',       75, '{01}',    true, true,  'B', '{6,2}'),
+ ('03',1,3,'Top Level View and Interconnection',       70, '{02}',    true, true,  'D', '{2,1}'),
+ ('04',1,4,'Cache Memory',                             80, '{03}',    true, true,  'B', '{3,2}'),
+ ('05',2,5,'Internal Memory',                          60, '{04}',    true, true,  'C', '{1,0}'),
+ ('06',2,6,'External Memory',                          55, '{05}',    true, true,  'C', '{3}'),
+ ('07',2,7,'Input/Output',                             70, '{06}',    true, true,  'D', '{3,1}'),
+ ('08',2,8,'Operating System Support',                 70, '{07}',    true, true,  'D', '{3}'),
+ ('09',3,9,'Computer Arithmetic',                      90, '{08}',    true, true,  'B', '{2,0}'),
  ('10',3,10,'Instruction Sets: Characteristics',        60, '{09}',    true, true,  'C', '{2}'),
  ('11',3,11,'Instruction Sets: Addressing and Formats', 65, '{10}',    true, true,  'D', '{2}'),
- ('12',3,12,'Processor Structure and Function',         80, '{03,11}', true, true,  'D', '{1}'),
+ ('12',3,12,'Processor Structure and Function',         80, '{11}',    true, true,  'D', '{1}'),
  ('13',4,13,'Reduced Instruction Set Computers',        60, '{12}',    true, true,  'A', '{2,1}'),
- ('14',4,14,'Instruction Level Parallelism',            70, '{12,13}', true, true,  'D', '{1}'),
- ('15',4,15,'Control Unit Operation',                   75, '{12}',    true, true,  'D', '{1}'),
+ ('14',4,14,'Instruction Level Parallelism',            70, '{13}',    true, true,  'D', '{1}'),
+ ('15',4,15,'Control Unit Operation',                   75, '{14}',    true, true,  'D', '{1}'),
  ('16',4,16,'Microprogrammed Control',                  65, '{15}',    true, true,  'D', '{1}'),
- ('17',4,17,'Multicore Computers',                      60, '{02,14}', true, true,  'B', '{1,0}');
+ ('17',4,17,'Multicore Computers',                      60, '{16}',    true, true,  'B', '{1,0}');
 
 insert into blueprints (name, scope, total_items, constraints) values
  -- The syllabus has FOUR major examinations at 30% combined, not one final.

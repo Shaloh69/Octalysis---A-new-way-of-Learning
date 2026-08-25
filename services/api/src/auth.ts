@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { FastifyRequest } from "fastify";
 import { errors } from "./errors.js";
 import type { Env } from "./env.js";
+import { verifyAsymmetricJwt } from "./jwks.js";
 
 /**
  * Request identity.
@@ -88,12 +89,48 @@ function normaliseRole(claim: unknown): Role {
   return claim === "admin" ? "admin" : claim === "teacher" ? "teacher" : "student";
 }
 
-export function identityFrom(req: FastifyRequest, env: Env): Identity {
+/**
+ * Resolve the caller's identity from the Authorization header.
+ *
+ * TWO VERIFICATION PATHS, and the asymmetric one is the real one.
+ *
+ * Supabase's current key format (`sb_publishable_` / `sb_secret_`) signs access
+ * tokens with **ES256** against a JWKS endpoint. Verified against this project's
+ * live tokens:
+ *
+ *     {"alg":"ES256","kid":"78bb5bf6-...","typ":"JWT"}
+ *
+ * The HS256 path below is LEGACY. It survives only because the test suite mints
+ * its own HS256 tokens, and keeping it lets those tests run without reaching the
+ * network. If `SUPABASE_URL` is configured, asymmetric verification is used and
+ * HS256 is never consulted -- which is the correct precedence, because otherwise
+ * a leaked shared secret would forge tokens the real system would never issue.
+ */
+export async function identityFrom(req: FastifyRequest, env: Env): Promise<Identity> {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
     throw errors.unauthorized("Sign in to continue.");
   }
-  const payload = verifyJwt(header.slice(7).trim(), env);
+  const token = header.slice(7).trim();
+
+  let payload: JwtPayload;
+
+  if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+    try {
+      payload = await verifyAsymmetricJwt(token, {
+        supabaseUrl: env.SUPABASE_URL,
+        apikey: env.SUPABASE_ANON_KEY,
+        ...(env.JWT_AUDIENCE ? { audience: env.JWT_AUDIENCE } : {}),
+      });
+    } catch (err) {
+      req.log.info({ err: (err as Error).message }, "jwt rejected");
+      // One generic message. A token that says WHY it was rejected is an oracle.
+      throw errors.unauthorized("Your session is not valid. Sign in again.");
+    }
+  } else {
+    payload = verifyJwt(token, env);
+  }
+
   if (!payload.sub) throw errors.unauthorized("Your session is not valid. Sign in again.");
 
   return {

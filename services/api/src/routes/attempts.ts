@@ -43,7 +43,7 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
     "/api/v1/attempts",
     { config: { rateLimit: { max: 10 * app.limitScale, timeWindow: "1 minute" } } },
     async (req, reply) => {
-      const id = identityFrom(req, env);
+      const id = await identityFrom(req, env);
       const body = StartBody.safeParse(req.body);
       if (!body.success) throw errors.badRequest("An assessment id is required.");
 
@@ -86,7 +86,7 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
     "/api/v1/attempts/:id/answer",
     { config: { rateLimit: { max: 120 * app.limitScale, timeWindow: "1 minute" } } },
     async (req, reply) => {
-      const id = identityFrom(req, env);
+      const id = await identityFrom(req, env);
       const attemptId = (req.params as { id: string }).id;
 
       const body = AnswerBody.safeParse(req.body);
@@ -128,7 +128,7 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
    * POST /api/v1/attempts/:id/submit
    * -------------------------------------------------------- */
   app.post("/api/v1/attempts/:id/submit", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     const attemptId = (req.params as { id: string }).id;
 
     const attempt = await loadAttempt(app.db, attemptId);
@@ -169,7 +169,7 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
    * Resume. Key stripped while in progress.
    * -------------------------------------------------------- */
   app.get("/api/v1/attempts/:id", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     const attemptId = (req.params as { id: string }).id;
 
     const attempt = await loadAttempt(app.db, attemptId);

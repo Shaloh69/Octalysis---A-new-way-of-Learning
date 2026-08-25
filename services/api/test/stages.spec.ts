@@ -129,14 +129,14 @@ afterAll(async () => {
 const auth = (t: string) => ({ authorization: `Bearer ${t}` });
 
 describe("GET /api/v1/stages — the skill tree", () => {
-  it("returns all 18 nodes and 21 edges, matching the seed exactly", async () => {
+  it("returns all 18 nodes and 17 edges, matching the seed exactly", async () => {
     const res = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
     expect(res.statusCode).toBe(200);
     const { nodes, edges } = res.json();
 
     // INV-32 / INV-33: the map may not invent or forget a node or an edge.
     expect(nodes).toHaveLength(18);
-    expect(edges).toHaveLength(21);
+    expect(edges).toHaveLength(17);
 
     const ids = nodes.map((n: { id: string }) => n.id).sort();
     expect(ids[0]).toBe("00");
@@ -157,37 +157,43 @@ describe("GET /api/v1/stages — the skill tree", () => {
     expect(edges.length).toBe(dbEdges.size);
   });
 
-  it("the CPE 412 joins and leaves are exactly what the syllabus implies", () => {
-    // stages.prereq IS the curriculum, so this asserts the real dependencies
-    // rather than a shape. Source: docs/CPE412-CURRICULUM.md 6.1.
+  it("the curriculum is ONE LINEAR CHAIN, matching how the course is taught", () => {
+    // Confirmed by the instructor: taught in syllabus order, down the line.
+    // stages.prereq gates real students, so it models the COURSE, not the
+    // subject's intellectual decomposition.
     return app
       .inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) })
       .then((res) => {
         const { nodes, edges } = res.json();
-        const prereqOf = (id: string) =>
-          [...(nodes.find((n: { id: string }) => n.id === id).prereq as string[])].sort();
+        for (const n of nodes as Array<{ id: string; prereq: string[] }>) {
+          if (n.id === "00") {
+            expect(n.prereq).toEqual([]);
+          } else {
+            expect(n.prereq).toEqual([String(Number(n.id) - 1).padStart(2, "0")]);
+          }
+        }
+        const froms = edges.map((e: { from: string }) => e.from);
+        expect(new Set(froms).size, "a fork exists").toBe(froms.length);
 
-        // Three genuine joins.
-        expect(prereqOf("12")).toEqual(["03", "11"]); // buses AND instruction formats
-        expect(prereqOf("14")).toEqual(["12", "13"]); // pipelining AND the RISC argument
-        expect(prereqOf("17")).toEqual(["02", "14"]); // Amdahl AND ILP
-        expect(prereqOf("08")).toEqual(["06", "07"]); // virtual memory pages to disk
+        const hasDependents = new Set(froms);
+        const leaves = (nodes as Array<{ id: string }>)
+          .map((n) => n.id)
+          .filter((id) => !hasDependents.has(id));
+        expect(leaves).toEqual(["17"]);
+      });
+  });
 
-        // Branches that are NOT simply n-1.
-        expect(prereqOf("03")).toEqual(["01"]); // top-level view needs org-vs-arch, not history
-        expect(prereqOf("07")).toEqual(["03"]); // I/O needs interconnection, not the memory chain
-        expect(prereqOf("09")).toEqual(["01"]); // arithmetic is largely self-contained
-
-        // Leaves are legitimate now. With four grading periods every chapter in
-        // an act is examined in that act's paper, so a leaf is still mandatory --
-        // coverage comes from the exam structure, not the graph shape. This is a
-        // deliberate reversal of decision D1.
-        const hasDependents = new Set(edges.map((e: { from: string }) => e.from));
-        const leaves = nodes
-          .map((n: { id: string }) => n.id)
-          .filter((id: string) => !hasDependents.has(id))
-          .sort();
-        expect(leaves).toEqual(["08", "16", "17"]);
+  it("act == grading period, evenly split 4/4/4/5", () => {
+    return app
+      .inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) })
+      .then((res) => {
+        const nodes = res.json().nodes as Array<{ id: string; act: number; gradeable: boolean }>;
+        const counts = [1, 2, 3, 4].map(
+          (a) => nodes.filter((n) => n.act === a && n.gradeable).length,
+        );
+        // 17 chapters over four periods is 4/4/4/5. Confirmed by the instructor.
+        expect(counts).toEqual([4, 4, 4, 5]);
+        expect(counts.reduce((x, y) => x + y, 0)).toBe(17);
       });
   });
 

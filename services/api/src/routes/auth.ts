@@ -220,7 +220,7 @@ export function registerAuthRoutes(
   });
 
   app.post("/api/v1/console/roster/import", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
 
     const body = RosterBody.safeParse(req.body);

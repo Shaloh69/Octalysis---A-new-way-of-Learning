@@ -39,7 +39,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
    * GET /api/v1/stages   -- the whole map, resolved for this student
    * -------------------------------------------------------- */
   app.get("/api/v1/stages", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     const staff = isStaff(id);
 
     const { rows } = await app.db.query<StageRow>(
@@ -140,7 +140,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
    * `cb_read` policy enforces the same pair at the database level.
    * -------------------------------------------------------- */
   app.get("/api/v1/stages/:id", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     const stageId = (req.params as { id: string }).id;
     const staff = isStaff(id);
 
@@ -217,7 +217,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
    * GET /api/v1/progress  -- the 7x3 competency grid + depth
    * -------------------------------------------------------- */
   app.get("/api/v1/progress", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
 
     const { rows } = await app.db.query(
       `select o.level, o.competency,

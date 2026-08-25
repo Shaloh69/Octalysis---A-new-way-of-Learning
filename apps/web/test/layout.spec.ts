@@ -12,27 +12,27 @@ const SEED = [
   { id: "00", act: 1, ordinal: 0, levels: [6], prereq: [] },
   { id: "01", act: 1, ordinal: 1, levels: [0, 1, 2, 3, 4, 5, 6], prereq: ["00"] },
   { id: "02", act: 1, ordinal: 2, levels: [6, 2], prereq: ["01"] },
-  { id: "03", act: 1, ordinal: 3, levels: [2, 1], prereq: ["01"] },
+  { id: "03", act: 1, ordinal: 3, levels: [2, 1], prereq: ["02"] },
   { id: "04", act: 1, ordinal: 4, levels: [3, 2], prereq: ["03"] },
   { id: "05", act: 2, ordinal: 5, levels: [1, 0], prereq: ["04"] },
   { id: "06", act: 2, ordinal: 6, levels: [3], prereq: ["05"] },
-  { id: "07", act: 2, ordinal: 7, levels: [3, 1], prereq: ["03"] },
-  { id: "08", act: 2, ordinal: 8, levels: [3], prereq: ["06", "07"] },
-  { id: "09", act: 3, ordinal: 9, levels: [2, 0], prereq: ["01"] },
+  { id: "07", act: 2, ordinal: 7, levels: [3, 1], prereq: ["06"] },
+  { id: "08", act: 2, ordinal: 8, levels: [3], prereq: ["07"] },
+  { id: "09", act: 3, ordinal: 9, levels: [2, 0], prereq: ["08"] },
   { id: "10", act: 3, ordinal: 10, levels: [2], prereq: ["09"] },
   { id: "11", act: 3, ordinal: 11, levels: [2], prereq: ["10"] },
-  { id: "12", act: 3, ordinal: 12, levels: [1], prereq: ["03", "11"] },
+  { id: "12", act: 3, ordinal: 12, levels: [1], prereq: ["11"] },
   { id: "13", act: 4, ordinal: 13, levels: [2, 1], prereq: ["12"] },
-  { id: "14", act: 4, ordinal: 14, levels: [1], prereq: ["12", "13"] },
-  { id: "15", act: 4, ordinal: 15, levels: [1], prereq: ["12"] },
+  { id: "14", act: 4, ordinal: 14, levels: [1], prereq: ["13"] },
+  { id: "15", act: 4, ordinal: 15, levels: [1], prereq: ["14"] },
   { id: "16", act: 4, ordinal: 16, levels: [1], prereq: ["15"] },
-  { id: "17", act: 4, ordinal: 17, levels: [1, 0], prereq: ["02", "14"] },
+  { id: "17", act: 4, ordinal: 17, levels: [1, 0], prereq: ["16"] },
 ];
 
 describe("the seed graph", () => {
-  it("is 18 nodes and 21 edges", () => {
+  it("is 18 nodes and 17 edges - one linear chain", () => {
     expect(SEED).toHaveLength(18);
-    expect(SEED.reduce((a, s) => a + s.prereq.length, 0)).toBe(21);
+    expect(SEED.reduce((a, s) => a + s.prereq.length, 0)).toBe(17);
   });
 
   it("is acyclic — every prereq has a lower ordinal", () => {
@@ -45,23 +45,25 @@ describe("the seed graph", () => {
     }
   });
 
-  it("has three leaves, which is legitimate under four grading periods", () => {
-    // A deliberate reversal of decision D1. Every chapter in an act is examined
-    // in that act's paper, so a leaf is still mandatory -- coverage comes from
-    // the exam structure, not the graph shape.
+  it("is ONE CHAIN: no forks, no joins, a single leaf", () => {
+    // The instructor teaches in syllabus order, straight down the line, so the
+    // graph models the COURSE rather than the subject's intellectual structure.
+    // An earlier draft branched it; that was a defensible reading of the
+    // material and the wrong reading of the delivery.
+    const dependents = (id: string) => SEED.filter((s) => s.prereq.includes(id)).map((s) => s.id);
+    for (const st of SEED) {
+      expect(st.prereq.length, `${st.id} has ${st.prereq.length} prereqs`).toBeLessThanOrEqual(1);
+      expect(dependents(st.id).length, `${st.id} forks`).toBeLessThanOrEqual(1);
+    }
     const hasDependents = new Set(SEED.flatMap((s) => s.prereq));
-    const leaves = SEED.map((s) => s.id).filter((id) => !hasDependents.has(id));
-    expect(leaves.sort()).toEqual(["08", "16", "17"]);
+    expect(SEED.map((s) => s.id).filter((id) => !hasDependents.has(id))).toEqual(["17"]);
   });
 
-  it("has the branches the CPE 412 chapter dependencies imply", () => {
-    const dependents = (id: string) => SEED.filter((s) => s.prereq.includes(id)).map((s) => s.id);
-    // Chapter 1 fans out three ways: history, top-level view, arithmetic.
-    expect(dependents("01").sort()).toEqual(["02", "03", "09"]);
-    // Chapter 3 feeds both the memory chain and the I/O chain and the processor.
-    expect(dependents("03").sort()).toEqual(["04", "07", "12"]);
-    // Chapter 12 feeds RISC, control unit, and (with 13) superscalar.
-    expect(dependents("12").sort()).toEqual(["13", "14", "15"]);
+  it("every chapter requires exactly the one before it", () => {
+    for (const st of SEED) {
+      if (st.id === "00") { expect(st.prereq).toEqual([]); continue; }
+      expect(st.prereq).toEqual([String(Number(st.id) - 1).padStart(2, "0")]);
+    }
   });
 
   it("act == grading period, four of them", () => {

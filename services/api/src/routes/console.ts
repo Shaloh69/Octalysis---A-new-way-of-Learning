@@ -23,7 +23,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * GET /api/v1/console/roster
    * -------------------------------------------------------- */
   app.get("/api/v1/console/roster", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
 
     const { rows } = await app.db.query(
@@ -58,7 +58,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * The students x stages matrix.
    * -------------------------------------------------------- */
   app.get("/api/v1/console/locks", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
 
     const stages = await app.db.query(
@@ -129,7 +129,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
   });
 
   app.post("/api/v1/console/locks", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
 
     const body = LockBody.safeParse(req.body);
@@ -213,7 +213,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * variant the student saw, regenerated from their stored seed.
    * -------------------------------------------------------- */
   app.get("/api/v1/console/students/:userId", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
     const userId = (req.params as { userId: string }).userId;
 
@@ -281,7 +281,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * the student actually sat is reconstructed byte for byte.
    * -------------------------------------------------------- */
   app.get("/api/v1/console/attempts/:attemptId", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
     const attemptId = (req.params as { attemptId: string }).attemptId;
 
@@ -331,7 +331,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * GET /api/v1/console/audit
    * -------------------------------------------------------- */
   app.get("/api/v1/console/audit", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
     const limit = Math.min(Number((req.query as { limit?: string }).limit ?? 100), 500);
 
@@ -352,7 +352,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * GET /api/v1/console/audit/system  -- the invariant suite
    * -------------------------------------------------------- */
   app.get("/api/v1/console/audit/system", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
 
     const { rows } = await app.db.query(
@@ -381,7 +381,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * GET /api/v1/console/gradebook.csv
    * -------------------------------------------------------- */
   app.get("/api/v1/console/gradebook.csv", async (req, reply) => {
-    const id = identityFrom(req, env);
+    const id = await identityFrom(req, env);
     requireStaff(id);
 
     const stages = await app.db.query(
