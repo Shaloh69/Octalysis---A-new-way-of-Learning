@@ -39,6 +39,59 @@ right.**
 
 ---
 
+## 1B. The gaming mandate
+
+`GAME-DESIGN.md` is the full treatment. These are the rules that bind every page.
+
+### What kind of game this is
+
+**Gameful design, not gamification, and not a serious game.** Game *design* is
+used to make the real activity legible and motivating; game *tokens* are not
+bolted onto an unchanged activity. This is why OCTA has no XP, no currency and no
+global leaderboard, and it is not squeamishness — those are the elements that
+research cannot show produce learning, and the ones that read as manipulative.
+
+The genre OCTA resembles is **Zachtronics** — Turing Complete, TIS-100,
+Shenzhen I/O — not Duolingo. Those games have no points and no avatars. What
+they have is a real system with real rules and the freedom to solve it wrongly
+first, and the satisfaction is *comprehension*.
+
+### The five rules
+
+1. **Theatre dresses the practice. It never dresses the assessment.**
+   `STAGE-ENCOUNTERS.md` already says vary the practice, keep the assessment
+   steady. Visual language obeys the same rule: a lab may be a pixel-art
+   workbench; the Self-Test that follows is the same calm flat surface every
+   time. **No encounter theme class may appear on an assessment route**, and
+   that is a test, not a request.
+
+2. **A skin must say something true.** Stage 02's switchboard is honest because
+   the deck describes literal switches. Stage 15's DOS skin is honest because the
+   toolchain is 16-bit TASM. A theme chosen only because it looks different is
+   decoration, and decoration fails the mandate's fourth test.
+
+3. **Spectacle is capped at one moment per stage.** The Bring-Up, two seconds,
+   once. Adding a second celebration does not double the feeling; it halves the
+   first one.
+
+4. **The game layer may never be the only carrier of meaning.** Every fact the
+   3D scene expresses — state, depth, prerequisite — exists in text on the flat
+   route and in the star dialog. A `<canvas>` has no accessibility semantics at
+   all.
+
+5. **Difficulty comes from the material, never from the interface.** A student
+   fighting a drag interaction is not learning about cache associativity. Every
+   drag has a tap fallback and a keyboard path; that is a floor, not a feature.
+
+### What this explicitly does not authorise
+
+Streaks that punish · hearts or lives · timers on anything graded · loot boxes or
+random rewards attached to grades · a mascot with a face · confetti per question ·
+sound effects on failure. Every one of these was on the anti-pattern list before
+the gaming layer existed, and adding a galaxy does not change the argument.
+
+---
+
 ## 2. Introductions — earn the interface before it appears
 
 Every new interaction gets a **30-second first-run**, once, at the moment of first use. Never a

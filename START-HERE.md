@@ -40,7 +40,8 @@ heavy on intrinsic drives, light and always opt-in on pressure mechanics.
 | 9 | `docs/STAGE-ENCOUNTERS.md` | what the student actually touches, stage by stage |
 | 10 | `docs/DESIGN-MANDATE.md` | the design mandate and the per-page checklist every page must clear |
 | 11 | `docs/SKILL-TREE-3D.md` | the map — the tree *is* the curriculum, the galaxy, and the accessible layer that is the source of truth |
-| 12 | `docs/VISUAL-SYSTEM-3D.md` | the galaxy as the app's visual language — one canvas, three tiers, and where 3D is banned |
+| 12 | `docs/GAME-DESIGN.md` | **what kind of game this is**, the star map spec, per-stage themes, and the template list |
+| 13 | `docs/VISUAL-SYSTEM-3D.md` | the galaxy as the app's visual language — one canvas, three tiers, and where 3D is banned |
 | 13 | `docs/DELIVERY.md` | **where this ships:** the repo, the branch, local Docker, and what "alpha" means |
 | 14 | `CLAUDE.md` | conventions and hard rules — reloaded every session |
 

@@ -9,6 +9,21 @@ between stages is**, and how it gets rendered without breaking the accessibility
 
 ---
 
+> **SUPERSEDED IN PART — see `GAME-DESIGN.md` §2.** Four decisions in this file
+> have changed at the user's direction:
+>
+> | This file says | Now |
+> |---|---|
+> | 3D is an optional enhancement over a canonical DOM map | **3D is the student's default and primary map** |
+> | A toggle switches one page between 2D and 3D | **The flat map is a separate route,** `/app/map` |
+> | Clicking a node navigates to the stage | **Clicking a star opens a dialog**, which then offers "Enter stage" |
+> | §3 rejects `react-force-graph-3d` outright | **Reconsidered:** reject its LAYOUT, keep its picking and camera easing, with nodes pinned |
+>
+> Everything else here still holds — especially §1 (the tree is the curriculum),
+> §2 (the spatial grammar) and the rule that the accessible representation is
+> never a degraded mode. It is now a first-class *route* rather than a fallback,
+> which is a stronger position than the toggle was.
+
 ## 1. The tree is the curriculum, and it already exists
 
 There is no second data source. The graph is `stages.prereq`, seeded in `db/schema.sql`, and

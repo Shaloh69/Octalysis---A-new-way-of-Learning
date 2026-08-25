@@ -117,7 +117,6 @@ export const api = {
   stages: () => request<StageMapData>("/api/v1/stages"),
   stage: (id: string) => request<StageDetail>(`/api/v1/stages/${id}`),
   progress: () => request<ProgressGrid>("/api/v1/progress"),
-
   startAttempt: (assessmentId: string) =>
     request<{
       attemptId: string;
