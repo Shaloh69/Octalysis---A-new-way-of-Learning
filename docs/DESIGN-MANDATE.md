@@ -79,7 +79,15 @@ first, and the satisfaction is *comprehension*.
    route and in the star dialog. A `<canvas>` has no accessibility semantics at
    all.
 
-5. **Difficulty comes from the material, never from the interface.** A student
+5. **A playful mechanic is safe when its VERB is the objective's verb.**
+   Flipping bits IS representing a number; wiring gates IS building an adder.
+   Those are content, not decoration, and they can be as playful as you like.
+   Collecting coins while answering questions is not the objective — that is a
+   **seductive detail**, and the research is clear that interesting-but-unnecessary
+   material *measurably reduces* comprehension and transfer, even when it does
+   not visibly disrupt the lesson. The test is in `GAME-DESIGN.md` §8.3.
+
+6. **Difficulty comes from the material, never from the interface.** A student
    fighting a drag interaction is not learning about cache associativity. Every
    drag has a tap fallback and a keyboard path; that is a floor, not a feature.
 

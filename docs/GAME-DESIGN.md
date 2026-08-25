@@ -352,15 +352,267 @@ rows for one student needs contrast, not atmosphere.
 
 ---
 
-## 7. Decisions still needed
+## 7. Decisions taken
 
-1. **Does the pixel/Terraria theme survive contact with the audience?** A CpE
-   class may read it as juvenile — the brainstorm template's own warning about a
-   "childish arcade skin". Stage 09 is the test case; build one, show three
-   students, keep or cut on what they say rather than on taste.
-2. **Eight themes or three?** Eight is roughly three extra weeks of design work.
-   Three (base, pixel, instrument) gets most of the variety for a third of the
-   cost.
-3. **Console before or after the simulators?** The console is what makes the
-   pilot *runnable*; the simulators are what make it *good*. With a semester
-   deadline that ordering is a real trade.
+All three open questions are now settled:
+
+| Question | Decision |
+|---|---|
+| Does pixel/Terraria survive the audience? | **Yes — playful, even childish, games are in**, bounded by the verb rule in §8.3 |
+| Eight themes or three? | **Eight.** Locked, listed in §9 |
+| Console before or after the simulators? | **Both, in full.** The semester constraint is lifted; roadmap in §12 |
+
+---
+
+## 8. Playful mini-games — the research, and the rule that makes them safe
+
+**Decision: yes to playful, even childish, games — with one boundary that is not
+a matter of taste.** The evidence is genuinely two-sided and it is worth knowing
+both halves before building eighteen of these.
+
+### 8.1 The evidence against decoration
+
+The **seductive details effect** is one of the better-replicated findings in
+multimedia learning. Adding interesting-but-unnecessary material to instruction
+**measurably reduces comprehension and transfer**. Three mechanisms are proposed:
+
+- **Distraction** — attention goes to the entertaining thing instead of the content
+- **Disruption** — it breaks the coherent mental model the learner was building
+- **Schema activation** — it primes the wrong prior knowledge
+
+Mayer's **coherence principle** follows: people learn better when material
+unrelated to the objective is *excluded*. Recent work finds seductive details
+hamper learning **even when they do not visibly disrupt** the lesson — so "it
+didn't seem to get in the way" is not evidence that it didn't.
+
+**Read the definition carefully, because it is the whole argument.** A seductive
+detail requires BOTH conditions:
+
+1. it is interesting, **and**
+2. **it is not necessary to accomplish the learning objective**
+
+Condition 2 is the escape hatch, and it is a real one.
+
+### 8.2 The evidence for play
+
+Play in higher education is under-studied — fun is well accepted for children and
+rare in the adult-education literature — but what exists is encouraging about
+*climate* specifically. Students report that playfulness creates an environment
+that **feels safe and encourages risk-taking**, with positive affect and
+self-reported gains in engagement, retention and understanding.
+
+That matters enormously here. `GAME-LAYER.md` §5 already anchors on the CS
+test-anxiety research; a student who feels safe being wrong will attempt Stage 10
+instead of avoiding it.
+
+**But be honest about the ceiling:** meta-analytically, playful and game-based
+designs raise **near-term engagement** with **modest, context-dependent effects on
+achievement** and **limited evidence of better delayed retention or transfer**.
+
+> Play buys you attempts, not comprehension. Attempts are worth a great deal —
+> a student who tries Stage 10 four times learns more than one who opens it once
+> — but do not expect the fun itself to do the teaching.
+
+### 8.3 The rule
+
+> **A themed game is safe when the game's core VERB is the objective's verb.**
+
+The test, applied to any proposed mini-game:
+
+```
+Strip the theme away. Is the remaining activity still the learning objective?
+
+  YES  -> the theme is a SKIN. Safe. Make it as playful as you like.
+  NO   -> the activity WAS the theme. Now ask: is that activity the objective?
+            YES -> it is CONTENT, not decoration. Safe. This is the best case.
+            NO  -> it is a SEDUCTIVE DETAIL. Cut it. It measurably harms learning.
+```
+
+Worked through:
+
+| Proposed | Core verb | Objective's verb | Verdict |
+|---|---|---|---|
+| Stage 09: flip pixel-art bit toggles, watch overflow | flip bits to represent a value | represent a value in two's complement | **Same verb. Content.** Ship it |
+| Stage 10: drag gates, wire them, truth table fills | wire gates into an adder | build a half adder | **Same verb. Content.** Ship it |
+| Stage 02: throw switches, watch the instruction assemble | set switches to form machine code | read machine code as switch states | **Same verb. Content.** Ship it |
+| Collect coins while answering cycle-time questions | collect coins | compute cycle time | **Different. Seductive detail.** Cut |
+| Platformer where you jump onto the correct answer | jump and time a landing | compute cycle time | **Different. Seductive detail.** Cut |
+| A mascot that cheers between questions | none | none | **Pure decoration.** Cut |
+
+**The pattern:** every safe example is a game whose mechanic IS the concept. Every
+unsafe one wraps a quiz in an unrelated activity. That is also exactly what
+separates Turing Complete from a maths quiz with a dragon on it.
+
+### 8.4 Where playful is safe, and where it is banned
+
+| Surface | Playful? | Why |
+|---|---|---|
+| **The LAB / DRILL / REMIX / BUILD beat** | **Yes, fully** — when §8.3 passes | The mechanic is the objective |
+| **The Bring-Up moment** | **Yes** | Two seconds, no learning is happening, pure reward |
+| **The star dialog and map chrome** | **Yes, lightly** | Navigation, not instruction |
+| **First exposure to a concept (LEARN beat)** | **No** | Coherence principle: this is where seductive details do the most damage |
+| **Any assessment** | **No, ever** | Already the rule in §5.1 |
+| **Console** | **No** | A teacher scanning 40 rows needs contrast, not atmosphere |
+
+---
+
+## 9. The eight themes — LOCKED
+
+Decision taken: **eight**, not three. Full list, each with its asset source.
+
+| # | Theme | Stages | Look | Assets |
+|---|---|---|---|---|
+| 1 | **Base** (bare-metal / blueprint / phosphor) | 01, 06, 11 | The existing token system, unmodified | `packages/tokens` |
+| 2 | **Switchboard** | 02 | 1960s relay panel — brushed metal, toggle bats, panel lamps | Kenney UI Pack + custom nine-slice |
+| 3 | **Retro home computer** | 04 | 1980s BASIC — chunky border, cyan on blue, blocky glyphs | Kenney Pixel UI Pack |
+| 4 | **Pixel / Terraria** | 09 | Chunky bits, satisfying click, wood-and-stone nine-slice panels | Kenney Pixel UI Pack (750 assets, CC0) |
+| 5 | **Circuit sandbox** | 10, 12 | Dark board, copper traces, component silhouettes | Custom SVG + `elements.svg` |
+| 6 | **Bench instrument** | 07, 13 | Illuminated readouts, knurled dials, mono everywhere | Custom, token-driven |
+| 7 | **DOS / TASM** | 14, 15 | 80×25, CGA palette, authentic 8×16 bitmap font | Public-domain VGA font |
+| 8 | **Modern product** | 05, 08, 16, 17 | Clean, current, marketing-slick | Base tokens, lighter weight |
+
+**Stages 08 and 17 deliberately share theme 8** — a designed callback, so the
+student notices they can now decode what they could not in week six.
+
+Each theme is **four tokens and a panel skin**, not a redesign — see §5.2. Body
+text stays Inter, every number stays JetBrains Mono, and **contrast is computed
+and AA on all three base themes**. A theme that fails contrast does not ship.
+
+---
+
+## 10. The mini-game engine
+
+### 10.1 Choice: Phaser 3, via the official React + TypeScript template
+
+| Candidate | Verdict |
+|---|---|
+| **Phaser 3** — https://phaser.io · https://github.com/phaserjs/phaser | **Chosen.** MIT, the most mature 2D web framework, more ready-made templates than any alternative, and it has been used for educational content at scale |
+| **Official template** — https://github.com/phaserjs/template-react-ts | **Use this.** Phaser 3 + React + TypeScript + Vite, with a React↔Phaser communication bridge already built. Our exact stack |
+| Kaboom.js | Simpler and friendlier, but a smaller ecosystem and fewer patterns for the component-heavy work here |
+| PixiJS | A renderer, not a game framework. We would rebuild input, scenes and physics |
+| Plain DOM/SVG | **Still correct for several encounters** — see §10.3 |
+
+Comparison of Phaser 3 against Kaboom.js on identical mechanics, if the choice
+needs revisiting: https://github.com/ourcade/phaser3-vs-kaboomjs
+
+### 10.2 The cost, stated plainly
+
+Phaser is roughly **1 MB minified**. That is four times the entire 3D budget.
+
+Non-negotiable consequences:
+
+- **Lazy-loaded per stage**, never in the initial bundle — same discipline as the
+  galaxy chunk, and verified the same way (grep `dist/index.html` for a preload)
+- **Only stages that need a canvas game load it.** Most do not
+- The **initial bundle stays at 51.9 KB gzipped.** If a change moves that number,
+  the change is wrong
+
+### 10.3 Not everything should be a Phaser game
+
+A canvas game is the wrong tool when the interaction is fundamentally form-like,
+because canvas has no accessibility semantics — the same argument as the galaxy.
+
+| Encounter | Build with | Why |
+|---|---|---|
+| Card sort (01, 06) | **DOM** | It is a list reorder. Native drag + tap fallback, fully accessible |
+| Bit toggles (09) | **DOM** | Buttons with `aria-pressed`. Pixel art via CSS, not canvas |
+| Switch bank (02) | **DOM** | Same |
+| Ordering (11) | **DOM** | A reorderable list |
+| Sliders (04, 16, 17) | **DOM** | Native `<input type=range>` is keyboard-accessible for free |
+| **Gate sandbox (10)** | **Phaser** | Free-form spatial wiring on a canvas |
+| **Data path (12)** | **Phaser** | Same |
+| **FDE stepper (13)** | **Phaser** | Continuous animation is the content |
+| **Code editor + VM (15)** | **CodeMirror 6 + custom VM** | Not a game engine problem |
+
+**Four Phaser scenes, not eighteen.** Everything else is themed DOM — which is
+cheaper, faster, and accessible without extra work.
+
+---
+
+## 11. Mini-game designs, per stage
+
+Each passes the §8.3 verb test. Each names its theme.
+
+| Stage | Mini-game | Core verb = objective's verb |
+|---|---|---|
+| **02** Machine Language | **Switch Bank.** Eight physical toggles. Set them to assemble Figure 1.1's instruction byte by byte; the assembled instruction reads out in mono above. Get it wrong and the instruction is simply wrong — no buzzer | set switches ↔ read machine code as switch states |
+| **04** High-Level | **Payroll Remix.** Drag `hours` and `rate` sliders; BASIC, assembly and machine code panes update live and in lockstep | change inputs, trace consequences ↔ trace a procedural program |
+| **07** Units & Cycle Time | **The Bench.** A knurled frequency dial; cycle time reads out on an illuminated panel. Then rapid-fire drill with infinite re-roll | turn frequency into period ↔ compute cycle time |
+| **09** Number Systems | **Bit Forge.** Chunky pixel-art bit toggles at 8 and 16 bits. Flip the sign bit and watch the value invert; overflow makes the panel flash once, neutrally | flip bits to represent a value ↔ two's complement |
+| **10** Digital Logic | **Gate Sandbox.** Drag AND/OR/NOT/XOR onto a board, wire them, and the truth table fills itself in row by row as you go. Goal: a half adder | wire gates into an adder ↔ build a half adder |
+| **12** von Neumann | **Data Path.** Drag CPU, memory and I/O into their slots and connect the bus. When it is right, a value flows — and the single shared bus visibly constricts | assemble the architecture ↔ explain the bottleneck |
+| **13** Fetch–Decode–Execute | **The Stepper.** Play / pause / step with live registers. **Before each step you commit a prediction of the next register value.** The prediction is the assessment | predict then verify ↔ trace the cycle |
+| **14** Instruction Set | **Encoder.** Pick MOD, REG and R/M fields from dropdowns; the byte assembles in a hex grid as you choose | build an instruction byte ↔ instruction formats |
+| **15** Writing Assembly | **The Terminal.** Real editor, real 8086 subset, real registers. Then: here is a program that crashes — fix it | write and run assembly ↔ write and run assembly |
+| **16** Memory Hierarchy | **Cache Tuner.** Size, block size and associativity as sliders against a live hit-rate meter. **Target: beat 90%** | tune parameters to hit a target ↔ reason about locality |
+| **17** Performance | **The Budget.** One budget, several components. Amdahl's Law decides which purchase actually wins | allocate under a constraint ↔ apply Amdahl's Law |
+
+**Stage 13's predict-before-step is the single best mechanic in the list.**
+Commit-then-reveal is a real game mechanic, it makes the student's mental model
+explicit, and it converts a passive animation into an assessment. It is also
+already in `DESIGN-MANDATE.md` §1 as a demanded interaction.
+
+---
+
+## 12. Full implementation — the roadmap
+
+Semester constraint lifted; **both tracks, in full.** Ordered by what unblocks
+what, not by what is most fun to build.
+
+### Track A — Teacher console (unblocks running a class at all)
+
+| # | Deliverable |
+|---|---|
+| A1 | `apps/console` scaffold from `satnaing/shadcn-admin`, palette replaced with `packages/tokens`, no `slate-`/`blue-` classes surviving |
+| A2 | `/console/locks` — students × stages, reason prompt on every toggle, three visual states |
+| A3 | `/console/students/:id` — drill-down, exact variant regenerated from the seed |
+| A4 | `/console/roster` — CSV import, dry-run preview |
+| A5 | `/console/items` — bank, stats inline, re-roll preview, review queue |
+| A6 | `/console/gradebook` + `/console/audit/system` |
+| A7 | `/console/live` — Lecture Mode, projector view, **no names ever** |
+
+### Track B — The star map, properly
+
+| # | Deliverable |
+|---|---|
+| B1 | `layout3d.ts` — pinned, collision-aware positions. **Rebuild, not patch** |
+| B2 | `GalaxyMap` — pinned `react-force-graph-3d`, star field, selective bloom, drift |
+| B3 | `StarDialog` — focus-trapped, themed per stage, the seven contents in §3.3 |
+| B4 | Camera focus easing on select; dim non-neighbours |
+| B5 | `/app/map` — the flat route, rebuilt from real geometry |
+| B6 | Redirects: reduced motion, no WebGL, ≤640px |
+| B7 | Keyboard: arrows traverse along edges, Tab follows curriculum order |
+
+### Track C — Themes
+
+| # | Deliverable |
+|---|---|
+| C1 | `packages/tokens/encounters.css` — the eight overlays |
+| C2 | One nine-slice panel component, `border-image` |
+| C3 | Kenney Pixel UI Pack vendored + credited in `/public/CREDITS.md` |
+| C4 | CI contrast check extended to encounter tokens |
+| C5 | **Test: no encounter theme class on any assessment route** |
+
+### Track D — The games (the part that makes it a game)
+
+| # | Deliverable |
+|---|---|
+| D1 | DOM encounters: `SwitchBank`, `BitForge`, `CardSort`, `SliderRig`, `Encoder` |
+| D2 | Phaser harness — lazy per stage, React↔Phaser bridge, from the official template |
+| D3 | **Gate Sandbox** (10) — the flagship |
+| D4 | **The Stepper** (13) with predict-before-step |
+| D5 | **Data Path** (12) |
+| D6 | **The Terminal** (15) — CodeMirror + 8086 subset VM |
+| D7 | **Cache Tuner** (16) + **The Budget** (17) |
+
+### Track E — Content
+
+| # | Deliverable |
+|---|---|
+| E1 | Stages 06–11 authored from `chapter1-deck.md` |
+| E2 | Stages 12–17 authored (largely new material) |
+| E3 | Item bank toward ~40 per stage — **the real project** (`VERIFICATION.md` V-6) |
+
+**Suggested order: A → B → C → D → E**, with E running continuously alongside
+everything from the start. The console makes a pilot possible; the map makes it
+navigable; themes make it feel like itself; the games make it worth doing twice.
