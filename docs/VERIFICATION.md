@@ -1227,3 +1227,69 @@ themes, three Phaser scenes, five SQL files — grep for the old quantity as a
 number and as a word, across every file, before considering the change applied.
 Every finding in this pass except V-37 and V-40 would have been caught by that
 one habit.
+
+---
+
+# Sixth verification pass — the syllabus
+
+Triggered by `CPE 412.docx.pdf` arriving in the repository. One finding, and it
+is the largest in the project's history.
+
+## 🔴 V-46 · OCTA was built against the wrong course
+
+The syllabus is **CPE 412 — Computer Architecture and Organization**, University
+of Cebu, prepared by Engr. Roland B. Fernandez, MEP, effective August 2025. Its
+textbook is **Stallings, *Computer Organization and Architecture: Designing for
+Performance*, 9th ed.** Its prerequisite is **Microprocessors**.
+
+OCTA's authored content is *"Computer Systems & Assembly Language"*, built from a
+Day 1 languages deck and Null & Lobur chapter 1.
+
+**Stages 01–05 as authored are not in this syllabus.** What programming is,
+machine language, assembly language, high-level languages, why assembly matters
+— that is prerequisite material, covered by Microprocessors before a student
+reaches CPE 412. The content is correct; it is aimed at the wrong course.
+
+Three further structural mismatches:
+
+1. **Four assessment periods, not one.** Prelim, Midterm, Semi-finals, Finals at
+   30% combined, with chapter quizzes a separate 30%. `blueprints.scope` is
+   `'stage' | 'final'` and cannot express this.
+2. **A 20% Project** — "a real life OS algorithm design and implementation case".
+   There is no submission, rubric or document-feedback surface anywhere in the
+   build.
+3. **Laboratory Exercises are 10% of the grade** and "must be submitted on
+   time". `GAME-LAYER.md` §2 explicitly designs the lab beat as *"optional but
+   always available"*.
+
+**What survives, and it is most of the engineering:** the syllabus is an
+orientation block plus **seventeen chapters**. OCTA is Stage 00 plus seventeen
+graded stages. The seeded-paper engine, the RLS model, the blueprint filler, the
+console API, the content pipeline and the map are all course-agnostic and need
+no change at all.
+
+**Full analysis, the 17-chapter outline, per-chapter references with author
+credits, and the proposed rebuild: `docs/CPE412-CURRICULUM.md`.**
+
+**Not fixed in this pass**, deliberately. Six questions in that file's §7 are the
+instructor's to answer — starting with whether CPE 412 *replaces* the old course
+or joins it, because if OCTA must serve both then `courses` becomes a table and
+every stage, blueprint and item becomes course-scoped. That is a change worth
+making before the item bank exists rather than after.
+
+## The pattern, a sixth time
+
+Passes 1–2: documents disagreeing with each other.
+Pass 3: documents describing protections the schema did not implement.
+Pass 4: schema valid, reviewed, and wrong at runtime.
+Pass 5: a document disagreeing with itself.
+**Pass 6: the whole corpus internally consistent, and aimed at the wrong target.**
+
+Every previous pass checked OCTA against OCTA. None of them could have caught
+this, because the thing that was wrong was the premise — and the premise was
+never checked against a primary source. `docs/source/` held two lecture decks
+and no syllabus.
+
+**The habit to add:** the authoritative course document is the first artifact to
+obtain and the first to verify against. It is now archived at
+`docs/source/CPE 412.docx.pdf` with a text extraction beside it.

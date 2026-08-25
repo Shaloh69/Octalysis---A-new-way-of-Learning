@@ -1,0 +1,1044 @@
+                                                               University of Cebu (UC)                                                    School Year:      2024-2025
+
+                                                      College of Engineering (COE)                                                        Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                         )  CMO No. 87 series of 2017
+
+        ---
+        
+
+I. Course Information
+
+Course Code: CPE 412                                                       LEC Units            3 Course Description:
+Course Title: Computer Architecture and Organization                       LAB Units:
+Pre-requisite(s): Microprocessors                                          LEC Hours:                This course includes the study of the evolution of computer architecture and the factors influencing the design of
+                                                                                                1
+
+                                                                                                     hardware and software elements of computer systems. The focus is on the understanding of the design issues
+                                                                                                     specifically the instruction set architecture and hardware architecture.
+                                                                                                3
+
+Co-requisite(s): None                                                      LAB Hours: 3
+
+II. Institutional Statements of Vision, Mission, Core Values and Graduate Outcomes
+
+   UC Vision (UCV)                        UC Mission (UCM)                                  UC Core Values (UCCV)                                         UC Graduate Outcomes (UCGO)
+
+UCV1. Democratize            University of Cebu commits to:                These are the core values that UC believes in:            UC Graduates will be able to:
+         quality education.  UCM1. Serve as an active catalyst in          UCCV1. Innovation "Be the visionary and the industry      UCGO1. Demonstrate skills and competencies in one's educational level and
+
+UCV2. Be the visionary                 providing efficient and effective               leader."                                                  field of discipline for lifelong learning;
+         and industry                  delivery of educational services;   UCCV2. Camaraderie "Living in the spirit of harmony and   UCGO2. Express proficiency in both oral and written communication;
+         leader.             UCM2. Pursue excellence in instruction,                                                                 UCGO3. Demonstrate social accountability and ethical responsibility towards
+                                       research and community service                  approachability."
+UCV3. Give hope and                    towards social and economic         UCCV3. Alignment "All activities are geared towards core              the community and the environment;
+         transform lives.              development as well as                                                                        UCGO4. Exhibit proactive and collaborative attributes in diverse society;
+                                       environmental sustainability; and               values and priorities."                       UCGO5. Utilize appropriate technology; and
+                             UCM3. Foster an organizational culture that   UCCV4. Respect "Always a professional, mindful of God,    UCGO6. Manifest ethical behavior in diverse situations.
+                                       nurtures employee productivity and
+                                       engagement.                                     university, the community and self."
+                                                                           UCCV5. Excellence "To be great at whatever it is we do
+
+                                                                                       and go for the best."
+
+III. Departmental Statements of Vision, Mission, Goals and Core Values
+
+COE Vision (COEV)            COE Mission (COEM)                            COE Core Values (COECV)                                        COE Goals (COEG)
+
+Course Title                               Date Effective:                 Date Revised:        Prepared by:                              Approved by:                               Page
+                                                                                                                                                                                     1 of 18
+      CPE 412 ­ Computer Architecture and         August 2025                     July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                            Faculty                               Dean/Program Head
+                                                               University of Cebu (UC)                                                                                            School Year:  2024-2025
+
+                                           College of Engineering (COE)                                                                                                           Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                                                                 )  CMO No. 87 series of 2017
+
+---                                  We commit to provide quality and affordable engineering    The Core Values of the College of Engineering are:                             The College of Engineering will apply resources and pursue opportunities to achieve the following
+                                    programs that will produce engineering graduates who are    1.Commitment ­ We commit to ideals of the university, diligent performance of  strategic goals:
+                                    responsive to the needs of the local and global community.  our duties and responsibilities, and to the education of our students.         1. Be the institution of first choice for high school students in Central Visayas who wish to pursue
+ The College of Engineering will                                                                2.Collaboration ­ We promote teamwork and building partnership across          careers in engineering.
+   be recognized as one of the                                                                  discipline and with the community.                                             2. Produce graduates who are highly valued both local and global employers and accepted for
+                                                                                                3.Openness ­ We encourage transparency in our dealings and treat all our       graduate study.
+ leading engineering institutions                                                               stakeholders fairly.                                                           3. Be a service provider of the continuing professional development for engineering and technical
+in the Philippines through quality                                                              4.Excellence ­ We foster excellence in learning and teaching, research, and    professionals in Central Visayas and Mindanao.
+                                                                                                extension services.                                                            4. Establish a strong academic-industry linkage among the private corporations and government
+      research, excellence in                                                                   5. Ethics ­ We practice professionalism, integrity, and accountability.        institutions.
+   engineering instruction, and
+   relevant extension services.
+
+Course Title                               Date Effective:                                      Date Revised:        Prepared by:                                                 Approved by:                               Page
+                                                                                                                                                                                                                             2 of 18
+      CPE 412 ­ Computer Architecture and         August 2025                                          July 7, 2025         Engr. Roland B. Fernandez, MEP                                 Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                                                 Faculty                                                  Dean/Program Head
+                                                               University of Cebu (UC)                                                                               School Year:  2024-2025
+
+                                                College of Engineering (COE)                                                                                         Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                             )                                         CMO No. 87 series of 2017
+
+---
+
+
+IV. UC-COE Graduate Attributes
+
+                                           UCV                 UCM                  UCCV  UCGO                                CO                                                   COECV      COEG
+
+            Graduate Attributes (GAs)                                                                                                   COEM
+
+  GA1. Lifelong Learner                                                                                                       EV
+  GA2. Effective Communicator
+  GA3. Ethically Responsible               1 23 1 2 3 12 3 4 5 1 2 3 4 5 6 11 2 3 1 2 3 123 4
+  GA4. Socially Collaborative
+  GA5. Team Player                                                                        n
+  GA6. Technically Competent
+  GA7. Entrepreneurial
+  GA8. Solution-Oriented
+
+V. PEO-PILO-GA Mapping
+
+     Program Educational Objectives                                                            Program Outcomes (POs)                                                             Graduate Attributes (GAs)
+                                                                                                                                                                     12345678
+       (PEOs)                             By the time of graduation, the students of the BSCPE program shall have :
+                                          PO1. An ability to apply knowledge of mathematics and science to solve complex engineering problems.
+A few years after graduation, our         PO2. An ability to design and conduct experiments, as well as to analyze and interpret data.
+                                          PO3. An ability to design a system, component, or process to meet desired needs within realistic constraints such as
+BSCPE graduates:
+PEO1. Demonstrated life-long learning             economic, environmental, social, political, ethical, health and safety, manufacturability, and sustainability, in
+
+       through acquisition of advance             accordance with standards.
+                                          PO4. An ability to function on multidisciplinary teams.
+PEO2.  degree programs, continuous        PO5. An ability to identify, formulate, and solve complex engineering problems.
+       engagement on personal and         PO6. An understanding of professional and ethical responsibility.
+       professional growth and            PO7. An ability to communicate effectively.
+       development;                       PO8. Broad education necessary to understand the impact of engineering solutions in a global, economic, environmental,
+       Shown ability to solve complex
+       engineering problems by                    and societal context.
+       undertaking and involving in       PO9. Recognition of the need for, and an ability to engage in life-long learning.
+       projects, individual or in teams,  PO10. Knowledge of contemporary issues.
+                                          PO11. An ability to use techniques, skills, and modern engineering tools necessary for engineering practice.
+       that advocates public health and
+
+       safety standards, environmental
+
+       preservation and rehabilitation,
+
+       and community development ; and
+
+Course Title                               Date Effective:     Date Revised:        Prepared by:                              Approved by:                                                    Page
+                                                                                                                                                                                              3 of 18
+      CPE 412 ­ Computer Architecture and         August 2025         July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                 Faculty                              Dean/Program Head
+                                                               University of Cebu (UC)                                                                   School Year:  2024-2025
+
+                                                         College of Engineering (COE)                                                                    Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                 )                         CMO No. 87 series of 2017
+
+---    Manifested a strong sense of     PO12. Knowledge and understanding of engineering and management principles as a member and leader in a team, to
+       professionalism through                  manage projects and in multidisciplinary environments.
+       commitment to excellence,
+PEO3.  enthusiasm to learning, ethical
+       behavior and integrity and
+       exceptional leadership.
+
+VI. PO-CILO Activation Mapping                                                                                                                          Program Outcomes (POs)
+                                                                                                                               1 2 3 4 5 6 7 8 9 10 11 12 13 14
+                                               Course Intended Learning Outcomes (CILOs)
+   By the end of the course, you should be able to:                                                                                         E
+
+    CILO 1. Develop a deeper understanding of computer systems design with emphasis on pipelined Intel and ARM machines;                    E
+
+    CILO 2. Know basic design principles and techniques for performance improvement.                                                        E
+                                                                                                                                            E
+    CILO 3. Use some simulation tools and appreciate the importance of simulation as the primary means of validating designs.
+
+    CILO 4: Practice professional skills in design and analysis, project management, and presentation
+
+Course Outputs (appropriate rubrics may be shown below or in separate page)
+
+CILO#  Required Output / Assessment Tasks (ATs of Learning)    Weight                                                             Specification / Remarks
+
+1, 2, 3 Project                                                                             The project will involve a real life OS algorithm design and implementation case, which will assess how the students
+                                                                                    20% will make judicious choices of OS algorithm design and constructs to use to address requirements needed to solve
+
+                                                                                            the given problem.
+
+1, 2, 3 Quizzes                                                                     30% Includes chapter quizzes, long quizzes,
+
+1, 2, 3 Laboratory Exercises                                                        10%
+
+1, 2, 3 Major Examinations                                                          30% Prelim, Midterm, Semi-finals, Finals
+
+1, 2, 3 Class Participation (Seatwork, Assignment, etc)                             10%
+
+Course Title                               Date Effective:     Date Revised:        Prepared by:                                  Approved by:                                    Page
+                                                                                                                                                                                  4 of 18
+      CPE 412 ­ Computer Architecture and         August 2025         July 7, 2025         Engr. Roland B. Fernandez, MEP                  Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                 Faculty                                  Dean/Program Head
+                                                               University of Cebu (UC)                                        School Year:  2024-2025
+
+                                           College of Engineering (COE)                                                       Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                             )  CMO No. 87 series of 2017
+
+---
+
+
+                                                               TOTAL:               100%
+
+Course Title                               Date Effective:     Date Revised:        Prepared by:                              Approved by:                               Page
+                                                                                                                                                                         5 of 18
+      CPE 412 ­ Computer Architecture and         August 2025         July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                 Faculty                              Dean/Program Head
+                                                                  University of Cebu (UC)                                                     School Year:   2024-2025
+
+                                                     College of Engineering (COE)                                                             Semester/Term: 1st
+
+                                            BSCPE Bachelor of Science in Computer Engineering (                                            )           CMO No. 87 series of 2017
+
+                       ---
+                       
+
+VII. Teaching and Learning Plan
+
+CILO  Unit Outcomes                                                  Topics                             Teaching & Learning       Assessment Tasks        Learning Resources /            Time
+                                                               (Course Outline)                                                                                                          Frame
+#     (Chapter or unit ILOs)                                                                              Activities (TLAs)        (ATs for Learning)           References
+                                               University and College VMGO-Core Values and                                                                                               1 hr
+       Explain how the course relates to the       Graduate Outcomes Orientation                     Presentation             Oral Recitation           DLP
+                                                                                                     Discussion                                         UC Student Manual
+      program; how the program relates to      Program Educational Objectives and Program            Workshop                                           COE Course Catalog
+                                                   Intended Learning Outcomes Orientation
+      the departmental and institutional
+                                               Course / CILO Orientation
+      graduate outcomes; how the graduate
+
+      outcomes relate to UC and CCS
+
+      VMGO-CV Statements.
+
+1  Define Computer Organization and 1. Introduction                                                  Lecture                  Seat-work                 DLP                              1 hrs
+                                                                                                     Discussion               Quiz
+      Computer Architecture                   1.1 Organization and Architecture                      Hands-on Laboratory                                Computer/Laptop
+
+       Differentiate Computer Organization 1.2 Structure and Function                                                                                   Simulation Software
+
+           and Computer Architecture
+       Illustrate the functional view of a
+
+           computer system
+       Discuss the different sequences
+
+           possible of a computer operation
+       Elaborate the major components of a
+
+              computer system.                2. Computer Evolution and Performance                  Lecture                  Seat-work                 DLP                              3 hrs
+1, 2  Outline the history of computers
+
+      according to different generations      2.1 A Brief History of Computers                       Discussion               Quiz                      Computer/Laptop
+
+       Define the different techniques built in The First Generation: Vacuum Tubes                   Hands-on Laboratory      Laboratory exercises      Simulation Software
+
+           contemporary for computer processors
+       Examine the different ways in bridging The Second Generation: Transistors
+
+                                                         The Third Generation: Integrated Circuits
+           the gap between logic and memory
+
+      performance.                            Later Generations
+
+       Outline the evolution of Intel         2.2 Designing for Performance
+
+           microprocessor product line        Microprocessor Speed
+       Define the ARM architecture            Performance Balance
+       Identify different ARM embedded        Improvements in Chip Organization and Architecture
+
+           devices
+
+Course Title                                  Date Effective:     Date Revised:                     Prepared by:                              Approved by:                               Page
+                                                                                                                                                                                         6 of 18
+      CPE 412 ­ Computer Architecture and            August 2025         July 7, 2025                      Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                                 Faculty                              Dean/Program Head
+                                                                         University of Cebu (UC)                                           School Year:  2024-2025
+
+                                                                   College of Engineering (COE)                                            Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                          )     CMO No. 87 series of 2017
+
+---
+
+
+           Present an ARM System organization 2.3 Multicore, MICs, and GPGPUs
+
+ Compute for Cycles per Instruction 2.4 The Evolution of the Intel x86 Architecture
+
+(CPI), MIPS Rate and MFLOPS Rate 2.5 Embedded Systems and the ARM
+
+based on a given computer system                     Embedded Systems
+situation.                                           ARM Evolution
+
+                                                     2.6 Performance Assessment
+
+                                                     Clock Speed and Instructions per Second
+
+                                                     Benchmarks
+
+                                                     Amdahl's Law
+
+1, 2  List the three concepts of a Von               Little's Law                                 Lecture               Seat-work              DLP                                    3 hrs
+                                                     3. Top Level View of Computer Function and
+              Neuman Architecture                    Interconnection                              Discussion            Quiz                   Computer/Laptop
+         Define a hardwired program                  3.1 Computer Components
+         Discuss the functions of a computer         3.2 Computer Function                        Hands-on Laboratory   Laboratory Exercises   Simulation Software
+         Examine a program execution                 Instruction Fetch and Execute
+                                                     Interrupts
+              example.                               I/O Function
+         Draw the instruction cycle state            3.3 Interconnection Structures
+                                                     3.4 Bus Interconnection
+              diagram                                Bus Structure
+         Identify the different registers utilized   Multiple-Bus Hierarchies
+                                                     Elements of Bus Design
+              during program execution               3.5 Point-to-Point Interconnect
+         Discuss the concept of Interrupts           QPI Physical Layer
+         Compare and contrast the execution
+
+              of a program with no interrupts, with
+
+              short wait interrupts and long wait
+
+              interrupts
+         Enumerate the elements of Bus
+
+     design                                          QPI Link Layer
+ Define Point-to point interconnect                  QPI Routing Layer
+ Discuss the PCI architecture                        QPI Protocol Layer
+
+                                                     3.6 PCI Express
+
+                                                     PCI Physical and Logical Architecture
+
+                                                     PCIe Physical Layer
+
+Course Title                                         Date Effective:      Date Revised:          Prepared by:                              Approved by:                               Page
+                                                                                                                                                                                      7 of 18
+      CPE 412 ­ Computer Architecture and                   August 2025          July 7, 2025           Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                              Faculty                              Dean/Program Head
+                                                                     University of Cebu (UC)                                        School Year:  2024-2025
+
+                                                            College of Engineering (COE)                                            Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                   )     CMO No. 87 series of 2017
+
+---
+
+
+                                           PCIe Transaction Layer
+
+                                           PCIe Data Link Layer
+
+     1, 2,  Define Cache Memory            4. Cache Memory                                 Lecture               Seat-work              DLP                                    3 hrs
+      3  Discuss the characteristics of a  4.1 Computer Memory System Overview
+                                                                                           Discussion            Quiz                   Computer/Laptop
+
+           memory                          Characteristics of Memory Systems               Hands-on Laboratory   Laboratory Exercises   Simulation Software
+      Illustrate the memory hierarchy      The Memory Hierarchy
+      Explain each element of cache        4.2 Cache Memory Principles
+                                           4.3 Elements of Cache Design
+           memory design
+      Compute for cache addresses and
+
+           size                            Cache Addresses
+      Illustrate the memory mapping        Cache Size
+      Draw the memory utilization using    Mapping Function
+
+     LRU, LFU, FIFO and Random             Replacement Algorithms
+
+           Replacement Algorithm
+      Discuss the evolution of Intel's Cache Write Policy
+
+     memory and ARM Cache                  Line Size
+
+     Organization                          Number of Caches
+
+                                           4.4 Pentium 4 Cache Organization
+
+                                           4.5 ARM Cache Organization
+
+     1, 2,  Discuss the concept of a memory cell 5. Internal Memory                        Lecture               Seat-work              DLP                                    3 hrs
+
+     3  Differentiate DRAM and SRAM        5.1 Semiconductor Main Memory                   Discussion            Quiz                   Computer/Laptop
+
+      Illustrate the cell structures of DRAM Organization                                  Hands-on Laboratory   Laboratory Exercises   Simulation Software
+
+          and SRAM                         DRAM and SRAM
+      Define the different types of ROM
+
+      Define Error correction code         Types of ROM
+
+      Calculate for the Parity bits of an 8 bit Chip Logic
+
+          data value                       Chip Packaging
+      Identify advanced DRAM               Module Organization
+
+          organizations                    Interleaved Memory
+                                           5.2 Error Correction
+
+                                           5.3 Advanced DRAM Organization
+
+                                           Synchronous DRAM
+
+Course Title                               Date Effective:           Date Revised:        Prepared by:                              Approved by:                               Page
+                                                                                                                                                                               8 of 18
+      CPE 412 ­ Computer Architecture and         August 2025               July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                       Faculty                              Dean/Program Head
+                                                                               University of Cebu (UC)                                        School Year:  2024-2025
+
+                                                              College of Engineering (COE)                                                    Semester/Term: 1st
+
+                                             BSCPE Bachelor of Science in Computer Engineering (                                           )     CMO No. 87 series of 2017
+
+---
+
+
+                                                             Rambus DRAM
+
+                                                DDR SDRAM
+
+                                                Cache DRAM
+
+1, 2,  Identify different types of external     6. External Memory                                   Lecture               Seat-work              DLP                                    3 hrs
+
+3  memory                                       6.1 Magnetic Disk                                    Discussion            Quiz                   Computer/Laptop
+                                                Magnetic Read and Write Mechanisms
+    Define a magnetic disk                      Data Organization and Formatting                     Hands-on Laboratory   Laboratory Exercises   Simulation Software
+
+    Discuss the magnetic disk
+
+   organization
+
+    Differentiate CAV and Multiple zone Physical Characteristics
+
+   recording                                    Disk Performance Parameters
+
+    Define the physical characteristics of a 6.2 RAID
+
+        Disk System                             RAID Level 0
+    Computer for the Rotational delay,          RAID Level 1
+                                                RAID Level 2
+        Transfer time of disk                   RAID Level 3
+    Define RAID                                 RAID Level 4
+    Identify and discuss the different RAID     RAID Level 5
+                                                RAID Level 6
+        levels                                  6.3 Solid State Drives
+    Discuss the different types of Optical      Flash Memory
+                                                SSD Compared to HDD
+        Disk                                    SSD Organization
+    Discuss the process of reading or
+
+        writing data of the different external
+
+        memory
+    Discuss the properties of a Tape drive
+
+                                                Practical Issues
+
+                                                6.4 Optical Memory
+
+                                                Compact Disk
+
+                                                Digital Versatile Disk
+
+                                                High-Definition Optical Disks
+
+                                                            6.5 Magnetic Tape                        Lecture               Seat-work              DLP                                    3 hrs
+1, 2,  Explain the use of I/O modules as part 7. Input/Output
+
+3  of a computer organization.                  7.1 External Devices                                 Discussion            Quiz                   Computer/Laptop
+
+                                                Keyboard/Monitor                                     Hands-on Laboratory   Laboratory Exercises   Simulation Software
+
+Course Title                                    Date Effective:                Date Revised:        Prepared by:                              Approved by:                               Page
+                                                                                                                                                                                         9 of 18
+      CPE 412 ­ Computer Architecture and              August 2025                    July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                                 Faculty                              Dean/Program Head
+                                                                     University of Cebu (UC)                                             School Year:  2024-2025
+
+                                                               College of Engineering (COE)                                              Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                        )          CMO No. 87 series of 2017
+
+---
+
+
+           Understand the difference between Disk Drive
+
+        programmed I/O and interrupt-driven     7.2 I/O Modules
+                                                Module Function
+        I/O and discuss their relative merits.  I/O Module Structure
+    Discuss an overview of the operation        7.3 Programmed I/O
+                                                Overview of Programmed I/O
+        of direct memory access.                I/O Commands
+    Explain the function and use of I/O         I/O Instructions
+
+        channels.
+    Explain an overview of Thunderbolt.
+    Explain an overview of InfiniBand.
+
+                                                7.4 Interrupt-Driven I/O
+
+                                                Interrupt Processing
+
+                                                Design Issues
+
+                                                Intel 82C59A Interrupt Controller
+
+                                                The Intel 82C55A Programmable Peripheral Interface
+
+                                                7.5 Direct Memory Access
+
+                                                Drawbacks of Programmed and Interrupt-Driven I/O
+
+                                                DMA Function
+
+                                                Intel 8237A DMA Controller
+
+                                                7.6 I/O Channels and Processors
+
+                                                The Evolution of the I/O Function
+
+                                                Characteristics of I/O Channels
+
+                                                7.7 The External Interface: Thunderbolt and
+
+                                                InfiniBand
+
+                                                Types of Interfaces
+
+                                                Point-to-Point and Multipoint Configurations
+
+                                                Thunderbolt
+
+                                                InfiniBand
+
+1, 2,  Summarize, at a top level, the key       8. Operating System Support                          Lecture               Seat-work              DLP                               3 hrs
+
+3  functions of an operating system (OS). 8.1 Operating System Overview                              Discussion            Quiz                   Computer/Laptop
+
+                                                Operating System Objectives and Functions            Hands-on Laboratory   Laboratory Exercises   Simulation Software
+
+                                                Types of Operating Systems
+
+Course Title                                    Date Effective:           Date Revised:        Prepared by:                              Approved by:                                Page
+                                                                                                                                                                                    10 of 18
+      CPE 412 ­ Computer Architecture and              August 2025               July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                            Faculty                              Dean/Program Head
+                                                                       University of Cebu (UC)                                              School Year:  2024-2025
+
+                                                                 College of Engineering (COE)                                               Semester/Term: 1st
+
+                                                BSCPE Bachelor of Science in Computer Engineering (                                      )     CMO No. 87 series of 2017
+
+---
+
+
+         Discuss the evolution of operating        8.2 Scheduling
+
+             systems for early simple batch        Long-Term Scheduling
+                                                   Medium-Term Scheduling
+             systems to modern complex systems.    Short-Term Scheduling
+         Explain the differences among long-,      8.3 Memory Management
+                                                   Swapping
+             medium-, and short-term scheduling.   Partitioning
+         Understand the reason for memory          Paging
+                                                   Virtual Memory
+             partitioning and explain the various  Translation Lookaside Buffer
+
+             techniques that are used.
+         Assess the relative advantages of
+
+             paging and segmentation.
+         Define virtual memory.
+
+                                                   Segmentation
+
+                                                   8.4 Pentium Memory Management
+
+                                                   Address Spaces
+
+                                                   Segmentation
+
+                                                   Paging
+
+                                                   8.5 ARM Memory Management
+
+                                                   Memory System Organization
+
+                                                   Virtual Memory Address Translation
+
+                                                   Memory-Management Formats
+
+                                                   Access Control
+
+     1, 2,  Understand the distinction between 9. Computer Arithmetic                              Lecture               Seat-work              DLP                                    3 hrs
+
+     3  the way in which numbers are               9.1 The Arithmetic and Logic Unit               Discussion            Quiz                   Computer/Laptop
+
+        represented (the binary format) and 9.2 Integer Representation                             Hands-on Laboratory   Laboratory Exercises   Simulation Software
+
+             the algorithms used for the basic     Sign-Magnitude Representation
+                                                   Twos Complement Representation
+             arithmetic operations.
+         Explain twos complement
+
+        representation.                            Range Extension
+
+         Present an overview of the techniques Fixed-Point Representation
+
+        for doing basic arithmetic operation in 9.3 Integer Arithmetic
+
+        two's complement notation.                 Negation
+
+                                                   Addition and Subtraction
+
+Course Title                                       Date Effective:           Date Revised:        Prepared by:                              Approved by:                                Page
+                                                                                                                                                                                       11 of 18
+      CPE 412 ­ Computer Architecture and                 August 2025               July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                               Faculty                              Dean/Program Head
+                                                                        University of Cebu (UC)                                                   School Year:  2024-2025
+
+                                                                    College of Engineering (COE)                                                  Semester/Term: 1st
+
+                                              BSCPE Bachelor of Science in Computer Engineering (                                              )     CMO No. 87 series of 2017
+
+---
+
+
+         Understand the use of significand,         Multiplication
+
+             base, and exponent in the              Division
+                                                    9.4 Floating-Point Representation
+             representation of floating-point       Principles
+                                                    IEEE Standard for Binary Floating-Point
+             numbers.                               Representation
+         Present an overview of the IEEE 754        9.5 Floating-Point Arithmetic
+
+             standard for floating-point
+
+             representation.
+         Understand some of the key concepts
+
+        related to floating-point arithmetic,       Addition and Subtraction
+
+        including guard bits, rounding,             Multiplication and Division
+
+        subnormal numbers, underflow and            Precision Considerations
+        overflow.                                   IEEE Standard for Binary Floating-Point Arithmetic
+
+     1, 2,  Present an overview of essential        10. Instruction Sets: Characteristics and Function   Lecture               Seat-work              DLP                                    3 hrs
+
+     3  characteristics of machine instructions. 10.1 Machine Instruction Characteristics                Discussion            Quiz                   Computer/Laptop
+
+         Describe the types of operands used Elements of a Machine Instruction                           Hands-on Laboratory   Laboratory Exercises   Simulation Software
+
+             in typical machine instruction sets.
+         Present an overview of x86 and ARM Instruction Representation
+
+        data types.                                 Instruction Types
+
+         Describe the types of operands             Number of Addresses
+
+        supported by typical machine                Instruction Set Design
+
+             instruction sets.                      10.2 Types of Operands
+         Present an overview of x86 and ARM         Numbers
+                                                    Characters
+             operation types.                       Logical Data
+         Understand the differences among big       10.3 Intel x86 and ARM Data Types
+
+             endian, little endian, and bi-endian.
+
+                                                    x86 Data Types
+
+                                                    ARM Data Types
+
+                                                    10.4 Types of Operations
+
+                                                    Data Transfer
+
+                                                    Arithmetic
+
+                                                    Logical
+
+                                                    Conversion
+
+Course Title                                        Date Effective:           Date Revised:             Prepared by:                              Approved by:                                Page
+                                                                                                                                                                                             12 of 18
+      CPE 412 ­ Computer Architecture and                  August 2025               July 7, 2025              Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                                     Faculty                              Dean/Program Head
+                                                                           University of Cebu (UC)                                        School Year:  2024-2025
+
+                                                                           College of Engineering (COE)                                   Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                         )     CMO No. 87 series of 2017
+
+---
+
+
+                                                             Input/Output
+
+                                             System Control
+
+                                             Transfer of Control
+
+                                             10.5 Intel x86 and ARM Operation Types
+
+                                             x86 Operation Types
+
+                                             ARM Operation Types
+
+1, 2,  Describe the various types of         11. Instructions Sets: Addressing Modes and Format  Lecture               Seat-work              DLP                                    3 hrs
+
+3     addressing modes common in             11.1 Addressing                                     Discussion            Quiz                   Computer/Laptop
+                                                                                                 Hands-on Laboratory   Laboratory Exercises   Simulation Software
+           instruction sets.                 Immediate Addressing
+       Present an overview of x86 and ARM
+                                             Direct Addressing
+
+      addressing modes.
+
+       Summarize the issues and trade-offs Indirect Addressing
+
+      involved in designing an instruction Register Addressing
+
+      format.                                Register Indirect Addressing
+
+       Present an overview of x86 and ARM Displacement Addressing
+
+           instruction formats.              Stack Addressing
+       Understand the distinction between    11.2 x86 and ARM Addressing Modes
+                                             x86 Addressing Modes
+           machine language and assembly     ARM Addressing Modes
+
+           language.
+
+                                             11.3 Instruction Formats
+
+                                             Instruction Length
+
+                                             Allocation of Bits
+
+                                             Variable-Length Instructions
+
+                                             11.4 x86 and ARM Instruction Formats
+
+                                             x86 Instruction Formats
+
+1, 2,  Distinguish between user-visible and  ARM Instruction Formats                             Lecture               Seat-work              DLP                                    3 hrs
+                                             12. Processor Structure and Function
+3, 4  control/status registers, and discuss  12.1 Processor Organization                         Discussion            Quiz                   Computer/Laptop
+                                             12.2 Register Organization
+      the purposes of registers in each      User-Visible Registers                              Hands-on Laboratory   Laboratory Exercises   Simulation Software
+                                             Control and Status Registers
+           category.
+       Summarize the instruction cycle.
+
+Course Title                                 Date Effective:               Date Revised:        Prepared by:                              Approved by:                                Page
+                                                                                                                                                                                     13 of 18
+      CPE 412 ­ Computer Architecture and           August 2025                   July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                             Faculty                              Dean/Program Head
+                                                                        University of Cebu (UC)                                              School Year:  2024-2025
+
+                                                    College of Engineering (COE)                                                             Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                            )     CMO No. 87 series of 2017
+
+---                                                 Example Microprocessor Register Organizations
+
+
+           Discuss the principle behind
+
+           instruction pipelining and how it works  12.3 Instruction Cycle
+                                                    The Indirect Cycle
+           in practice.                             Data Flow
+       Compare and contrast the various             12.4 Instruction Pipelining
+                                                    Pipelining Strategy
+           forms of pipeline hazards.               Pipeline Performance
+       Present an overview of the x86
+
+           processor structure.
+       Present an overview of the ARM
+
+      processor structure.                          Pipeline Hazards
+
+                                                    Dealing with Branches
+
+                                                    Intel 80486 Pipelining
+
+                                                    12.5 The x86 Processor Family
+
+                                                    Register Organization
+
+                                                    Interrupt Processing
+
+                                                    12.6 The ARM Processor
+
+                                                    Processor Organization
+
+                                                    Processor Modes
+
+                                                    Register Organization
+
+                                                    Interrupt Processing
+
+1, 2,  Provide an overview research results Reduced Instruction Set Computers                       Lecture               Seat-work              DLP                                    3 hrs
+
+3, 4  on instruction execution characteristics 13.1 Instruction Execution Characteristics           Discussion            Quiz                   Computer/Laptop
+
+           that motivated the development of the    Operations                                      Hands-on Laboratory   Laboratory Exercises   Simulation Software
+                                                    Operands
+           RISC approach.                           Procedure Calls
+       Summarize the key characteristics of         Implications
+
+           RISC machines.
+       Understand the design and
+
+      performance implications of using a 13.2 The Use of a Large Register File
+
+           large register file.                     Register Windows
+       Understand the use of compiler-based         Global Variables
+                                                    Large Register File versus Cache
+           register optimization to improve         13.3 Compiler-Based Register Optimization
+
+           performance.
+
+                                                    13.4 Reduced Instruction Set Architecture
+
+Course Title                                        Date Effective:         Date Revised:          Prepared by:                              Approved by:                                Page
+                                                                                                                                                                                        14 of 18
+      CPE 412 ­ Computer Architecture and                  August 2025             July 7, 2025           Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                                Faculty                              Dean/Program Head
+                                                                         University of Cebu (UC)                                                School Year:  2024-2025
+
+                                                                    College of Engineering (COE)                                                Semester/Term: 1st
+
+                                            BSCPE Bachelor of Science in Computer Engineering (                                              )         CMO No. 87 series of 2017
+
+---
+
+
+         Discuss the implication of a RISC         Why CISC
+
+             architecture for pipeline design and  Characteristics of Reduced Instruction Set
+             performance.                          Architectures
+         List and explain key approaches to        CISC versus RISC Characteristics
+             pipeline optimization on a RISC       13.5 RISC Pipelining
+             machine.                              Pipelining with Regular Instructions
+
+                                                   Optimization of Pipelining
+
+                                                   13.6 MIPS R4000
+
+                                                   Instruction Set
+
+                                                   Instruction Pipeline
+
+                                                   13.7 SPARC
+
+                                                   SPARC Register Set
+
+                                                   Instruction Set
+
+                                                   Instruction Format
+
+                                                   13.8 RISC versus CISC Controversy
+
+     1, 2,  Explain the difference between         14. Instruction Level Parallelism and Superscalar       Lecture               Seat-work              DLP                                3 hrs
+
+     3  superscalar and superpipelined             Parallelism                                             Discussion            Quiz                   Computer/Laptop
+                                                                                                           Hands-on Laboratory   Laboratory Exercises   Simulation Software
+             approaches.                           14.1 Overview
+         Define instruction-level parallelism.     Superscalar versus Superpipelined
+         Discuss dependencies and resource
+
+                                                     Limitations
+        conflicts as limitations to instruction
+
+        level parallelism                          14.2 Design Issues
+
+         Present an overview of the design         Instruction-Level Parallelism and Machine Parallelism
+
+             issues involved in instruction-level  Instruction Issue Policy
+             parallelism.                          Register Renaming
+         Compare and contrast techniques of        Machine Parallelism
+             improving pipeline performance in     Branch Prediction
+             RISC machines and superscalar         Superscalar Execution
+             machines.                             Superscalar Implementation
+                                                   15. Control Unit Operation
+     1, 2,  Discuss the Micro operations of the    15.1 Micro-Operations                                   Lecture               Seat-work              DLP                                3 hrs
+                                                                                                           Discussion            Quiz
+     3  Control Unit                                                                                                                                    Computer/Laptop
+
+Course Title                                       Date Effective:       Date Revised:                Prepared by:                              Approved by:                                Page
+                                                                                                                                                                                           15 of 18
+      CPE 412 ­ Computer Architecture and                 August 2025           July 7, 2025                 Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                                   Faculty                              Dean/Program Head
+                                                                          University of Cebu (UC)                                          School Year:  2024-2025
+
+                                                     College of Engineering (COE)                                                          Semester/Term: 1st
+
+                                               BSCPE Bachelor of Science in Computer Engineering (                                      )     CMO No. 87 series of 2017
+
+---
+
+
+         Identify the flow of the instruction        The Fetch Cycle                              Hands-on Laboratory   Laboratory Exercises   Simulation Software
+
+             cycle.                                  The Indirect Cycle
+         Determine the functions that the            The Interrupt Cycle
+                                                     The Execute Cycle
+             control unit must perform to cause the  The Instruction Cycle
+                                                     15.2 Control of the Processor
+             micro-operations to be performed.       Functional Requirements
+         Familiarize the block diagram of the
+
+             Control Unit
+         Provide a typical list of the inputs and
+
+             outputs of a control unit.              Control Signals
+         List three types of control signals.        A Control Signals Example
+         Briefly explain what is meant by a          Internal Processor Organization
+                                                     The Intel 8085
+             hardwired implementation of a control   15.3 Hardwired Implementation
+
+             unit
+
+                                                     Control Unit Inputs
+
+     1, 2,  Discuss the principles of                Control Unit Logic                           Lecture               Seat-work              DLP                                    3 hrs
+                                                     16. Microprogrammed Control
+     3  microprogrammed control                      16.1 Basic Concepts                          Discussion            Quiz                   Computer/Laptop
+                                                     Microinstructions
+         Enumerate the advantages and                Microprogrammed Control Unit                 Hands-on Laboratory   Laboratory Exercises   Simulation Software
+                                                     Wilkes Control
+             disadvantages of microprogrammed        Advantages and Disadvantages
+         Identify the design consideration of        16.2 Microinstruction Sequencing
+
+             microinstruction sequencing
+         Outline the sequence of
+
+        microinstruction execution
+
+                                                     Design Considerations
+
+                                                     Sequencing Techniques
+
+                                                     Address Generation
+
+                                                     LSI-11 Microinstruction Sequencing
+
+                                                     16.3 Microinstruction Execution
+
+                                                     A Taxonomy of Microinstructions
+
+                                                     Microinstruction Encoding
+
+                                                     LSI-11 Microinstruction Execution
+
+                                                     IBM 3033 Microinstruction Execution
+
+Course Title                                         Date Effective:        Date Revised:        Prepared by:                              Approved by:                                Page
+                                                                                                                                                                                      16 of 18
+      CPE 412 ­ Computer Architecture and                   August 2025            July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                              Faculty                              Dean/Program Head
+                                                                  University of Cebu (UC)                                            School Year:  2024-2025
+
+                                              College of Engineering (COE)                                                           Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                    )     CMO No. 87 series of 2017
+
+---
+
+
+      Discuss the principles of multicore     17. Multicore Computer                        Lecture               Seat-work              DLP                                    3 hrs
+
+          computers                           17.1 Hardware performance issues              Discussion            Quiz                   Computer/Laptop
+      Enumerate and discuss the issues of     17.2 Software performance issues
+                                              17.3 Multicore organization                   Hands-on Laboratory   Laboratory Exercises   Simulation Software
+          multicore technologies in both      17.4 Intel x86 organization
+                                                                                            Lecture               Seat-work              DLP                                    3 hrs
+          hardware and software performance   18. Distributed Systems Architecture
+      Explain the multicore organization
+      Illustrate the x86 organization.
+      Explain the advantages and
+
+     disadvantages of different distributed                                                 Discussion            Quiz                   Computer/Laptop
+
+          systems architecture.                                                             Hands-on Laboratory   Laboratory Exercises   Simulation Software
+      Discuss client-server and distributed
+
+          object architecture.
+      Discuss the underlying principles of
+
+          the CORBA standards.
+      Identify the new models in distributed
+
+     computing.
+
+Course Title                                  Date Effective:         Date Revised:        Prepared by:                              Approved by:                                Page
+                                                                                                                                                                                17 of 18
+      CPE 412 ­ Computer Architecture and            August 2025             July 7, 2025         Engr. Roland B. Fernandez, MEP              Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                        Faculty                              Dean/Program Head
+                                                               University of Cebu (UC)                                                          School Year:                 2024-2025
+
+                                                  College of Engineering (COE)                                                                  Semester/Term: 1st
+
+                                           BSCPE Bachelor of Science in Computer Engineering (                                               )                               CMO No. 87 series of 2017
+
+---                                                                                 References (APA Format including citations):
+
+
+Textbook(s) and References
+
+              Textbook (APA Format):
+
+William Stallings. Computer Organization and      Henessy J and Patterson D. Computer Architecture: A Quantitative Approarch. 5th Edition
+Architecture: Designing for Performance. 9th Ed.  Yadin A., (2016) Computer Systems Architecture. CRC Press. Taylor & Francis Group
+                                                  Null L and Loburr J. (2003) The Essentials of Computer Organization and Architecture. Jones and Barlett Publishers
+Pearson Education, Inc.                           Stallings, W (2013) Computer Organization and Architecture: International Edition. 8th Edition, Pearson Education Limited
+                                                  UC. (2011). Students Manual 2015. Cebu: Rex BookStore.
+
+VIII. Other Information (Classroom Rules and Policies/ Teacher Information, etc.)                                                                       Teacher Information
+                                                                                                                                                Engr. Roland B. Fernandez, MEP
+                                                                                    Classroom Rules / Policies
+      1. Cheating is not allowed.
+      2. Textbook is required.
+      3. School policy for required attendance/tardiness is followed (maximum of 9 absences for MWF classes and 7 absences for TTH classes)
+      4. Three (3) late is equivalent to 1 absent.
+      5. Laboratory exercises and Machine Project must be submitted on time. Late submission is not accepted.
+      6.
+
+Course Title                               Date Effective:     Date Revised:        Prepared by:                                                Approved by:                                Page
+                                                                                                                                                                                           18 of 18
+      CPE 412 ­ Computer Architecture and         August 2025         July 7, 2025         Engr. Roland B. Fernandez, MEP                                Engr. Roland B. Fernandez, MEP
+                    Organization
+                                                                                                                 Faculty                                                Dean/Program Head
+
