@@ -1,6 +1,14 @@
 # VISUAL-SYSTEM-3D.md
 ### The galaxy as the app's visual language — one canvas, three tiers, and the places it is banned
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 `SKILL-TREE-3D.md` specifies the map. **This file specifies everything else** — backgrounds,
 ambient depth, and the shared machinery that makes 3D affordable across the whole app rather than
 a per-page cost.

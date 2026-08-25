@@ -223,13 +223,30 @@ async function sync(client, stages, { dryRun }) {
   let inserted = 0, updated = 0, unchanged = 0, removed = 0, objectives = 0;
 
   for (const stage of stages) {
-    const { rows: stageRows } = await client.query("select id from stages where id = $1", [
+    const { rows: stageRows } = await client.query("select id, title from stages where id = $1", [
       stage.stageId,
     ]);
     if (stageRows.length === 0) {
       throw new Error(
         `${stage.file}: stage "${stage.stageId}" is not seeded in db/schema.sql. ` +
           `Content may not invent a stage.`,
+      );
+    }
+
+    // THE FILE'S TITLE MUST MATCH THE SEEDED TITLE.
+    //
+    // Stage ids are positional, so a curriculum change RENAMES what "01" means
+    // while the file keeps its filename. Without this check, switching from the
+    // old course to CPE 412 would have silently written "What Programming Is"
+    // into the stage now seeded as "Introduction" -- correct-looking content on
+    // the wrong chapter, which is worse than no content because nothing appears
+    // broken. Caught during the CPE 412 migration; this is the guard.
+    const seededTitle = stageRows[0].title;
+    if (stage.fm.title && stage.fm.title !== seededTitle) {
+      throw new Error(
+        `${stage.file}: front matter says "${stage.fm.title}" but stage ${stage.stageId} is ` +
+          `seeded as "${seededTitle}". Stage ids are positional -- a curriculum change renames ` +
+          `what an id means. Fix the file, or move it to docs/source/superseded-course/.`,
       );
     }
 

@@ -18,11 +18,15 @@ gets shipped.
   answer. Name the misconception in a comment.
 - Blueprint sampling excludes stages where `gradeable = false`.
 
-## Assembly interpreter
-Stage 15 is TASM x86-16 (see docs/TOOLCHAIN-CORRECTION.md), NOT MARIE. The interpreter lives in
-`src/engine/x86/` and must be deterministic — Stage 15 items are graded by running a program
-server-side and comparing register state. Same program + same seeded inputs = same final state,
-always.
+## Simulators
+CPE 412 has no assembly-writing stage — 8086 is the Microprocessors prerequisite. What it does
+need, and what the syllabus asks for by naming "Simulation Software" on nearly every chapter, is
+modelling: the instruction cycle (ch 3), I/O mechanisms (ch 7), scheduling and paging (ch 8),
+instruction encoding (ch 11), pipeline hazards (ch 12), ILP (ch 14), micro-operations (ch 15) and
+microcode (ch 16).
+
+Each must be **deterministic and inspectable**, because lab exercises are graded by comparing
+final state. Same inputs + same seed = same final state, always. See `docs/LAB-MANUAL.md`.
 
 ## Errors
 `{ error: { code, message } }`. Auth failures use ONE generic message for unknown-user and

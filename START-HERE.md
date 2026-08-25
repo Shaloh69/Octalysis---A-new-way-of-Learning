@@ -7,8 +7,16 @@
 
 ## 1. What we are building
 
-**OCTA** — a semester-long (14-week, 17-stage) interactive learning platform for
-**Computer Systems & Assembly Language**, BS Computer Engineering.
+**OCTA** — a semester-long interactive learning platform for **CPE 412: Computer Architecture
+and Organization**, BS Computer Engineering, University of Cebu.
+
+Stage 00 orientation plus the syllabus's **17 chapters**, one stage each, across **four grading
+periods** (Prelim, Midterm, Semi-finals, Finals). Textbook: Stallings, 9th ed. Prerequisite:
+Microprocessors.
+
+> This **replaced** an earlier target course. `docs/CPE412-CURRICULUM.md` records what changed and
+> why; `docs/VERIFICATION.md` V-46 is the finding. Design docs carry a banner wherever their stage
+> references describe the superseded curriculum.
 
 Three things make it different from a quiz app:
 
@@ -40,6 +48,7 @@ heavy on intrinsic drives, light and always opt-in on pressure mechanics.
 | 9 | `docs/STAGE-ENCOUNTERS.md` | what the student actually touches, stage by stage |
 | 10 | `docs/DESIGN-MANDATE.md` | the design mandate and the per-page checklist every page must clear |
 | 11 | `docs/SKILL-TREE-3D.md` | the map — the tree *is* the curriculum, the galaxy, and the accessible layer that is the source of truth |
+| 12 | `docs/LAB-MANUAL.md` | the seventeen laboratory exercises, one per chapter, authored for this course |
 | 12 | `docs/CPE412-CURRICULUM.md` | **READ THIS FIRST of the design docs.** The real syllabus, its 17 chapters, its references, and why the current stage content targets the wrong course |
 | 13 | `docs/GAME-DESIGN.md` | **what kind of game this is**, the star map spec, per-stage themes, and the template list |
 | 13 | `docs/VISUAL-SYSTEM-3D.md` | the galaxy as the app's visual language — one canvas, three tiers, and where 3D is banned |

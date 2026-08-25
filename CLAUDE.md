@@ -1,8 +1,13 @@
 # OCTA — project context
 
-Semester-long interactive learning platform for **Computer Systems & Assembly Language**
-(BS Computer Engineering). Stage 00 orientation plus 17 graded stages over 14 weeks. Every
-student receives a structurally unique but psychometrically equivalent question paper.
+Semester-long interactive learning platform for **CPE 412 — Computer Architecture and
+Organization** (BS Computer Engineering, University of Cebu). Stage 00 orientation plus the
+syllabus's **17 chapters**, one stage each, across four grading periods. Every student receives a
+structurally unique but psychometrically equivalent question paper.
+
+**Textbook:** Stallings, *Computer Organization and Architecture: Designing for Performance*, 9th
+ed. **Prerequisite:** Microprocessors. Syllabus archived at `docs/source/CPE 412.docx.pdf`;
+full analysis in `docs/CPE412-CURRICULUM.md`.
 
 Read `START-HERE.md` before your first task. Read `VERIFICATION.md` before touching the schema.
 
@@ -99,20 +104,24 @@ accessibility semantics, so reduced motion, absent WebGL and small viewports all
 
 ## Structure of the domain
 
-- **Stage** — one lesson unit. Has an `archetype` (A concept / B computation / C artifact /
+- **Stage** — one chapter of the syllabus. Has an `archetype` (A concept / B computation / C artifact /
   D simulator) that determines its beat sequence. See `docs/LESSON-PLAN-AND-LEVELS.md`.
 - **Level** — abstraction level 0–6 from the Computer Level Hierarchy. Progression is *depth*,
   not points.
 - **Competency** — `read` | `trace` | `build` at a given level. 7 × 3 = 21 cells. This replaces XP.
 - **Bring-Up** — a subsystem coming online on stage completion. One celebration per stage, no more.
+- **Act == grading period.** Four of them: Prelim (ch 1-4), Midterm (5-8), Semi-finals (9-12),
+  Finals (13-17). This is a change: acts used to be a narrative arc.
 
-## Toolchain — do not substitute
+## Toolchain
 
-The course is **16-bit DOS x86 with Borland TASM**, not MARIE. Stages 13-15 use 8086 registers,
-8086 addressing modes, and TASM/MASM syntax. See `docs/TOOLCHAIN-CORRECTION.md`.
+CPE 412's prerequisite is **Microprocessors**, so 8086 assembly is assumed knowledge rather than
+taught here. Where the course shows listings (chapters 10 and 11) they are **Intel x86**, matching
+the textbook.
 
-Never bundle `TASM.EXE` or `TLINK.EXE` — they are proprietary (Embarcadero). Validate with UASM
-or the built-in interpreter instead.
+`docs/TOOLCHAIN-CORRECTION.md` documents the TASM decision for the SUPERSEDED course. Its rule
+still stands if assembly tooling is ever bundled: never ship `TASM.EXE` or `TLINK.EXE`, they are
+proprietary (Embarcadero).
 
 ## Design mandate
 

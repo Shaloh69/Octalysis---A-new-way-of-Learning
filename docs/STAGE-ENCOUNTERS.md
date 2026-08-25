@@ -1,6 +1,14 @@
 # STAGE-ENCOUNTERS.md
 ### What a student actually touches at each node
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 `PAGE-SPECS.md` says what routes exist. `LESSON-PLAN-AND-LEVELS.md` says which archetype each
 stage uses. **This file says what the interaction physically is** — the thing under the student's
 finger.

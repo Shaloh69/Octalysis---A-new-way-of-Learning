@@ -1,6 +1,14 @@
 # SKILL-TREE-3D.md
 ### The galaxy map — spatial grammar, real stack, and the fallback that is actually the source of truth
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 `STAGE-ENCOUNTERS.md` says what a student touches inside a stage. **This file says what the map
 between stages is**, and how it gets rendered without breaking the accessibility floor.
 

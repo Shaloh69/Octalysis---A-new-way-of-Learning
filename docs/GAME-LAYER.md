@@ -1,6 +1,14 @@
 # GAME-LAYER.md
 ### OCTA as a game — the core loop, all 8 petals implemented, and the per-student accent system
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 The brainstorm template is the design brief. This file turns all 52 of its ideas into concrete
 mechanics, anchored to what's actually in the two source decks. Nothing here is a skin over a
 worksheet — every mechanic is doing pedagogical work.

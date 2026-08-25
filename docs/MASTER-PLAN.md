@@ -3,6 +3,14 @@
 **Stack:** Vite + React + TS (Vercel) · Node API (Render) · Supabase (Postgres + Auth + Storage)
 **Replaces:** `Computer-Systems-Interactive-Lecture-Companion-` (full rebuild, content preserved)
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 ---
 
 ## 0. Before anything else — two decisions to make

@@ -1,5 +1,13 @@
 # OCTALYSIS — Claude Code Prompt Pack
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 How to actually get this built without Claude Code drifting, inventing course content, or
 producing a nice-looking app with no working question engine.
 

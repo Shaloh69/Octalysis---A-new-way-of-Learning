@@ -1,6 +1,14 @@
 # PAGE-SPECS.md
 ### Every route, its contents, its states
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 Conventions used throughout:
 - **Empty / error copy is specified, not left to the implementer.** Errors explain what happened
   and how to fix it. They don't apologize and they're never vague.

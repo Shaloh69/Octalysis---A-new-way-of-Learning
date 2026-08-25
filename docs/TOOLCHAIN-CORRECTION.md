@@ -1,6 +1,14 @@
 # TOOLCHAIN-CORRECTION.md
 ### The course is TASM x86-16 DOS, not MARIE. This changes Stages 13–15.
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 **Status:** supersedes `MASTER-PLAN.md` §2 (Stage 15), `LESSON-PLAN-AND-LEVELS.md` §2 (weeks
 11–12), `GAME-LAYER.md` §3 (Petal 3), and `PHASES.md` P6. Read before P5.
 

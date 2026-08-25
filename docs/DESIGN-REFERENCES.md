@@ -1,6 +1,14 @@
 # DESIGN-REFERENCES.md
 ### Real templates, real links, and what to take from each
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 Rule for all of these: **take the layout and the solved problems. Leave the identity.**
 Every one of these ships with slate/blue + Inter everywhere. If you use any of them as-is,
 OCTA looks like every other admin panel on the internet. Replace the token layer with

@@ -605,37 +605,92 @@ revoke all on assessment_secrets from authenticated, anon;
 revoke all on all tables in schema public from anon;
 
 -- ============================================================
--- SEED — Stage 00 plus 17 graded stages
--- D1: Stage 17 now requires Stage 08. Previously nothing depended on 08, which
--- made "Reading a Spec Sheet" a dead-end node the map would render as skippable.
--- The dependency is real: 08's "which machine is faster, and why" is the question
--- 17 formalises with CPI, MIPS and Amdahl's Law.
+-- SEED — CPE 412: Computer Architecture and Organization
+--
+-- Stage 00 (orientation) plus the SEVENTEEN CHAPTERS of the syllabus, in order.
+-- Source: `docs/source/CPE 412.docx.pdf`, section VII Teaching and Learning Plan.
+-- Textbook: Stallings, Computer Organization and Architecture, 9th ed.
+--
+-- ACT == GRADING PERIOD. The syllabus has four major examinations, so the four
+-- acts are Prelim / Midterm / Semi-finals / Finals rather than a narrative arc:
+--   act 1 Prelim      chapters 1-4
+--   act 2 Midterm     chapters 5-8
+--   act 3 Semi-finals chapters 9-12
+--   act 4 Finals      chapters 13-17
+--
+-- PREREQ is the curriculum. Chapter order is the default, but these edges are
+-- the real intellectual dependencies, which is why several are not simply n-1:
+--   03 branches from 01, not 02 -- the top-level view needs org-vs-arch, not history
+--   07 branches from 03         -- I/O needs interconnection, not the memory chain
+--   09 branches from 01         -- arithmetic is largely self-contained
+--   12 joins 03 and 11          -- processor structure needs buses AND instruction formats
+--   14 joins 12 and 13          -- superscalar needs pipelining AND the RISC argument
+--   08 joins 06 and 07          -- OS memory management pages to DISK, so virtual
+--                                 memory genuinely needs external memory first
+--   17 joins 02 and 14          -- multicore needs Amdahl AND ILP
+--
+-- LEAVES (08, 16, 17) are fine here, and that is a CHANGE of reasoning from the
+-- previous course. Decision D1 wired a dead-end node in because "a leaf reads as
+-- skippable". With four grading periods that concern is moot: every chapter in an
+-- act is examined in that act's paper, so a leaf is still mandatory. Coverage is
+-- enforced by the exam structure, not by the shape of the graph. Do not invent
+-- prerequisite edges for graph aesthetics -- `stages.prereq` gates real students.
+--
+-- est_minutes is PLATFORM time, not the syllabus's contact hours. The syllabus
+-- allots 3 hrs of lecture+lab per chapter; these are estimates of time spent in
+-- OCTA itself, which is a companion to that, not a replacement for it.
 -- ============================================================
 insert into stages (id, act, ordinal, title, est_minutes, prereq, published, gradeable, archetype, levels) values
- ('00',1, 0,'Boot Sequence',                       20, '{}',      true, false, 'A', '{6}'),
- ('01',1, 1,'What Programming Is',                 40, '{00}',    true, true,  'A', '{6}'),
- ('02',1, 2,'Machine Language',                    45, '{01}',    true, true,  'C', '{2}'),
- ('03',1, 3,'Assembly Language',                   45, '{02}',    true, true,  'C', '{4}'),
- ('04',1, 4,'High-Level Languages',                50, '{03}',    true, true,  'C', '{5,3}'),
- ('05',1, 5,'Why Assembly Still Matters',          40, '{03,04}', true, true,  'C', '{4,3}'),
- ('06',2, 6,'Organization vs Architecture',        45, '{05}',    true, true,  'A', '{0,1,2,3,4,5,6}'),
- ('07',2, 7,'Units, Measures & Cycle Time',        60, '{06}',    true, true,  'B', '{6,2}'),
- ('08',2, 8,'Reading a Spec Sheet',                50, '{07}',    true, true,  'C', '{6,2}'),
- ('09',2, 9,'Number Systems & Data Representation',75, '{07}',    true, true,  'B', '{2,0}'),
- ('10',2,10,'Digital Logic Level',                 75, '{09}',    true, true,  'D', '{0}'),
- ('11',3,11,'The Computer Level Hierarchy',        45, '{06,10}', true, true,  'A', '{0,1,2,3,4,5,6}'),
- ('12',3,12,'The von Neumann Model',               50, '{11}',    true, true,  'A', '{2,1}'),
- ('13',3,13,'Fetch-Decode-Execute',                60, '{12}',    true, true,  'D', '{1}'),
- ('14',3,14,'Instruction Set Architecture',        60, '{13}',    true, true,  'D', '{2}'),
- ('15',3,15,'Writing Assembly (TASM x86-16)',      90, '{03,14}', true, true,  'D', '{4}'),
- ('16',4,16,'Memory Hierarchy',                    75, '{13}',    true, true,  'B', '{3,2}'),
- ('17',4,17,'Performance & the Future',            60, '{16,08}', true, true,  'B', '{1,0}');
+ ('00',1, 0,'Orientation',                              20, '{}',      true, false, 'A', '{6}'),
+ ('01',1, 1,'Introduction',                             40, '{00}',    true, true,  'A', '{0,1,2,3,4,5,6}'),
+ ('02',1, 2,'Computer Evolution and Performance',       75, '{01}',    true, true,  'B', '{6,2}'),
+ ('03',1, 3,'Top Level View and Interconnection',       70, '{01}',    true, true,  'D', '{2,1}'),
+ ('04',1, 4,'Cache Memory',                             80, '{03}',    true, true,  'B', '{3,2}'),
+ ('05',2, 5,'Internal Memory',                          60, '{04}',    true, true,  'C', '{1,0}'),
+ ('06',2, 6,'External Memory',                          55, '{05}',    true, true,  'C', '{3}'),
+ ('07',2, 7,'Input/Output',                             70, '{03}',    true, true,  'D', '{3,1}'),
+ ('08',2, 8,'Operating System Support',                 70, '{06,07}', true, true,  'D', '{3}'),
+ ('09',3, 9,'Computer Arithmetic',                      90, '{01}',    true, true,  'B', '{2,0}'),
+ ('10',3,10,'Instruction Sets: Characteristics',        60, '{09}',    true, true,  'C', '{2}'),
+ ('11',3,11,'Instruction Sets: Addressing and Formats', 65, '{10}',    true, true,  'D', '{2}'),
+ ('12',3,12,'Processor Structure and Function',         80, '{03,11}', true, true,  'D', '{1}'),
+ ('13',4,13,'Reduced Instruction Set Computers',        60, '{12}',    true, true,  'A', '{2,1}'),
+ ('14',4,14,'Instruction Level Parallelism',            70, '{12,13}', true, true,  'D', '{1}'),
+ ('15',4,15,'Control Unit Operation',                   75, '{12}',    true, true,  'D', '{1}'),
+ ('16',4,16,'Microprogrammed Control',                  65, '{15}',    true, true,  'D', '{1}'),
+ ('17',4,17,'Multicore Computers',                      60, '{02,14}', true, true,  'B', '{1,0}');
 
 insert into blueprints (name, scope, total_items, constraints) values
- ('Final Knowledge Check', 'final', 70, '{
-    "by_act":   {"1":18,"2":20,"3":20,"4":12},
-    "by_bloom": {"remember":14,"understand":21,"apply":25,"analyze":10},
-    "by_type":  {"S":38,"P":22,"G":10},
+ -- The syllabus has FOUR major examinations at 30% combined, not one final.
+ -- by_act doubles as by_period because act == grading period in this seed.
+ ('Prelim Examination',      'final', 40, '{
+    "by_act":   {"1":40},
+    "by_bloom": {"remember":8,"understand":12,"apply":14,"analyze":6},
+    "by_type":  {"S":22,"P":13,"G":5},
+    "max_per_objective": 3,
+    "exclude_non_gradeable_stages": true,
+    "difficulty_target": 0.62
+  }'::jsonb),
+ ('Midterm Examination',     'final', 40, '{
+    "by_act":   {"2":40},
+    "by_bloom": {"remember":8,"understand":12,"apply":14,"analyze":6},
+    "by_type":  {"S":22,"P":13,"G":5},
+    "max_per_objective": 3,
+    "exclude_non_gradeable_stages": true,
+    "difficulty_target": 0.62
+  }'::jsonb),
+ ('Semi-final Examination',  'final', 40, '{
+    "by_act":   {"3":40},
+    "by_bloom": {"remember":8,"understand":12,"apply":14,"analyze":6},
+    "by_type":  {"S":22,"P":13,"G":5},
+    "max_per_objective": 3,
+    "exclude_non_gradeable_stages": true,
+    "difficulty_target": 0.62
+  }'::jsonb),
+ ('Final Examination',       'final', 50, '{
+    "by_act":   {"4":50},
+    "by_bloom": {"remember":10,"understand":15,"apply":18,"analyze":7},
+    "by_type":  {"S":27,"P":16,"G":7},
     "max_per_objective": 3,
     "exclude_non_gradeable_stages": true,
     "difficulty_target": 0.62

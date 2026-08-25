@@ -1,6 +1,14 @@
 # PROMPT-LIBRARY.md
 ### Reusable prompt shapes, and the design-phase prompts
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 `docs/CLAUDE-CODE-PROMPTS.md` has the P0–P3 engine prompts. This file has the **templates** you
 reuse for everything else, plus the UI prompts for P5, P6, and P9.
 

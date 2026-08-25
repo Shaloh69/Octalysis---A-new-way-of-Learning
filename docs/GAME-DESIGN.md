@@ -1,6 +1,14 @@
 # GAME-DESIGN.md
 ### The gaming layer — what kind of game this is, what it takes to build, and the templates to build it from
 
+> **COURSE CHANGED — read `docs/CPE412-CURRICULUM.md` first.**
+>
+> OCTA now targets **CPE 412 — Computer Architecture and Organization** (Stallings,
+> 9th ed.), replacing the earlier "Computer Systems & Assembly Language". The
+> **design principles in this file remain valid and course-agnostic**; any
+> reference below to a specific stage TITLE, number or topic describes the
+> superseded curriculum. The authoritative stage list is `db/schema.sql`'s seed.
+
 `DESIGN-MANDATE.md` governs whether a control earns its place. **This file governs
 whether the thing feels like a game** — and is honest about the difference
 between feeling like one and being one.

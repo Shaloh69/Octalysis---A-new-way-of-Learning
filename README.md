@@ -1,6 +1,6 @@
 # OCTA
 
-Interactive learning platform for **Computer Systems & Assembly Language**
+Interactive learning platform for **CPE 412 — Computer Architecture and Organization**
 (BS Computer Engineering, UCLM). Stage 00 orientation plus 17 graded stages across 14 weeks.
 
 Motivation design based on the **Octalysis Framework** by Yu-kai Chou.

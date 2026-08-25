@@ -10,23 +10,23 @@ import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../src/lib/lay
  */
 const SEED = [
   { id: "00", act: 1, ordinal: 0, levels: [6], prereq: [] },
-  { id: "01", act: 1, ordinal: 1, levels: [6], prereq: ["00"] },
-  { id: "02", act: 1, ordinal: 2, levels: [2], prereq: ["01"] },
-  { id: "03", act: 1, ordinal: 3, levels: [4], prereq: ["02"] },
-  { id: "04", act: 1, ordinal: 4, levels: [5, 3], prereq: ["03"] },
-  { id: "05", act: 1, ordinal: 5, levels: [4, 3], prereq: ["03", "04"] },
-  { id: "06", act: 2, ordinal: 6, levels: [0, 1, 2, 3, 4, 5, 6], prereq: ["05"] },
-  { id: "07", act: 2, ordinal: 7, levels: [6, 2], prereq: ["06"] },
-  { id: "08", act: 2, ordinal: 8, levels: [6, 2], prereq: ["07"] },
-  { id: "09", act: 2, ordinal: 9, levels: [2, 0], prereq: ["07"] },
-  { id: "10", act: 2, ordinal: 10, levels: [0], prereq: ["09"] },
-  { id: "11", act: 3, ordinal: 11, levels: [0, 1, 2, 3, 4, 5, 6], prereq: ["06", "10"] },
-  { id: "12", act: 3, ordinal: 12, levels: [2, 1], prereq: ["11"] },
-  { id: "13", act: 3, ordinal: 13, levels: [1], prereq: ["12"] },
-  { id: "14", act: 3, ordinal: 14, levels: [2], prereq: ["13"] },
-  { id: "15", act: 3, ordinal: 15, levels: [4], prereq: ["03", "14"] },
-  { id: "16", act: 4, ordinal: 16, levels: [3, 2], prereq: ["13"] },
-  { id: "17", act: 4, ordinal: 17, levels: [1, 0], prereq: ["16", "08"] },
+  { id: "01", act: 1, ordinal: 1, levels: [0, 1, 2, 3, 4, 5, 6], prereq: ["00"] },
+  { id: "02", act: 1, ordinal: 2, levels: [6, 2], prereq: ["01"] },
+  { id: "03", act: 1, ordinal: 3, levels: [2, 1], prereq: ["01"] },
+  { id: "04", act: 1, ordinal: 4, levels: [3, 2], prereq: ["03"] },
+  { id: "05", act: 2, ordinal: 5, levels: [1, 0], prereq: ["04"] },
+  { id: "06", act: 2, ordinal: 6, levels: [3], prereq: ["05"] },
+  { id: "07", act: 2, ordinal: 7, levels: [3, 1], prereq: ["03"] },
+  { id: "08", act: 2, ordinal: 8, levels: [3], prereq: ["06", "07"] },
+  { id: "09", act: 3, ordinal: 9, levels: [2, 0], prereq: ["01"] },
+  { id: "10", act: 3, ordinal: 10, levels: [2], prereq: ["09"] },
+  { id: "11", act: 3, ordinal: 11, levels: [2], prereq: ["10"] },
+  { id: "12", act: 3, ordinal: 12, levels: [1], prereq: ["03", "11"] },
+  { id: "13", act: 4, ordinal: 13, levels: [2, 1], prereq: ["12"] },
+  { id: "14", act: 4, ordinal: 14, levels: [1], prereq: ["12", "13"] },
+  { id: "15", act: 4, ordinal: 15, levels: [1], prereq: ["12"] },
+  { id: "16", act: 4, ordinal: 16, levels: [1], prereq: ["15"] },
+  { id: "17", act: 4, ordinal: 17, levels: [1, 0], prereq: ["02", "14"] },
 ];
 
 describe("the seed graph", () => {
@@ -45,17 +45,33 @@ describe("the seed graph", () => {
     }
   });
 
-  it("has exactly two leaves after D1 wired 08 into 17", () => {
+  it("has three leaves, which is legitimate under four grading periods", () => {
+    // A deliberate reversal of decision D1. Every chapter in an act is examined
+    // in that act's paper, so a leaf is still mandatory -- coverage comes from
+    // the exam structure, not the graph shape.
     const hasDependents = new Set(SEED.flatMap((s) => s.prereq));
     const leaves = SEED.map((s) => s.id).filter((id) => !hasDependents.has(id));
-    expect(leaves.sort()).toEqual(["15", "17"]);
+    expect(leaves.sort()).toEqual(["08", "16", "17"]);
   });
 
-  it("has the three documented forks", () => {
+  it("has the branches the CPE 412 chapter dependencies imply", () => {
     const dependents = (id: string) => SEED.filter((s) => s.prereq.includes(id)).map((s) => s.id);
-    expect(dependents("07").sort()).toEqual(["08", "09"]);
-    expect(dependents("13").sort()).toEqual(["14", "16"]);
-    expect(SEED.find((s) => s.id === "15")!.prereq.sort()).toEqual(["03", "14"]);
+    // Chapter 1 fans out three ways: history, top-level view, arithmetic.
+    expect(dependents("01").sort()).toEqual(["02", "03", "09"]);
+    // Chapter 3 feeds both the memory chain and the I/O chain and the processor.
+    expect(dependents("03").sort()).toEqual(["04", "07", "12"]);
+    // Chapter 12 feeds RISC, control unit, and (with 13) superscalar.
+    expect(dependents("12").sort()).toEqual(["13", "14", "15"]);
+  });
+
+  it("act == grading period, four of them", () => {
+    const byAct = new Map<number, string[]>();
+    for (const s of SEED) byAct.set(s.act, [...(byAct.get(s.act) ?? []), s.id]);
+    expect([...byAct.keys()].sort()).toEqual([1, 2, 3, 4]);
+    expect(byAct.get(1)).toEqual(["00", "01", "02", "03", "04"]); // Prelim
+    expect(byAct.get(2)).toEqual(["05", "06", "07", "08"]);       // Midterm
+    expect(byAct.get(3)).toEqual(["09", "10", "11", "12"]);       // Semi-finals
+    expect(byAct.get(4)).toEqual(["13", "14", "15", "16", "17"]); // Finals
   });
 });
 
@@ -95,27 +111,29 @@ describe("computeLayout — the vertical axis IS the level hierarchy", () => {
     // Stage 10 is the gate level; Stage 01 is the user level. Depth on the map
     // and depth into the machine are the same motion -- that is what makes this
     // pass the design mandate's teaching test rather than being decoration.
-    const gates = positions.get("10")!;
-    const user = positions.get("01")!;
+    // Stage 05 (Internal Memory) reaches L0; Stage 02 (Evolution/Performance)
+    // sits at the user level. Depth on the map is depth into the machine.
+    const gates = positions.get("05")!;
+    const user = positions.get("02")!;
     expect(gates.y).toBeGreaterThan(user.y);
     expect(gates.level).toBe(0);
-    expect(user.level).toBe(6);
+    expect(user.level).toBe(2);
   });
 
   it("places a stage at the DEEPEST level it touches", () => {
-    // Stage 09 declares [2, 0]. It belongs at L0 on an axis that means depth.
+    // Stage 09 (Computer Arithmetic) declares [2, 0] -- it belongs at L0.
     expect(positions.get("09")!.level).toBe(0);
-    // Stage 04 declares [5, 3].
-    expect(positions.get("04")!.level).toBe(3);
+    // Stage 04 (Cache Memory) declares [3, 2] -- deepest is 2.
+    expect(positions.get("04")!.level).toBe(2);
   });
 
   it("treats Stages 06 and 11 as spanning all levels, not sitting at one", () => {
-    // They are ABOUT the hierarchy rather than in it, so they render as columns.
-    expect(positions.get("06")!.spansAllLevels).toBe(true);
-    expect(positions.get("11")!.spansAllLevels).toBe(true);
-    expect(positions.get("06")!.level).toBeNull();
+    // Chapter 1 (Introduction) is the org-vs-architecture chapter -- it is ABOUT
+    // the hierarchy rather than sitting in it, so it renders as a column.
+    expect(positions.get("01")!.spansAllLevels).toBe(true);
+    expect(positions.get("01")!.level).toBeNull();
 
-    for (const id of ["01", "09", "10", "13"]) {
+    for (const id of ["02", "09", "12", "17"]) {
       expect(positions.get(id)!.spansAllLevels).toBe(false);
     }
   });
@@ -125,12 +143,12 @@ describe("computeLayout — the vertical axis IS the level hierarchy", () => {
       const p = positions.get(id)!;
       return Math.round(Math.atan2(p.z3, p.x3) * 1000);
     };
-    // Same act, same arm angle.
-    expect(angleOf("01")).toBe(angleOf("05"));
-    expect(angleOf("16")).toBe(angleOf("17"));
-    // Different acts, different arms.
-    expect(angleOf("01")).not.toBe(angleOf("07"));
-    expect(angleOf("07")).not.toBe(angleOf("12"));
+    // Same act (grading period), same arm angle.
+    expect(angleOf("01")).toBe(angleOf("04")); // both Prelim
+    expect(angleOf("16")).toBe(angleOf("17")); // both Finals
+    // Different periods, different arms.
+    expect(angleOf("01")).not.toBe(angleOf("07")); // Prelim vs Midterm
+    expect(angleOf("07")).not.toBe(angleOf("12")); // Midterm vs Semi-finals
   });
 });
 

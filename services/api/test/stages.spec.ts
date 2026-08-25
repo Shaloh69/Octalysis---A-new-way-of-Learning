@@ -33,6 +33,37 @@ async function syncContent(): Promise<void> {
   });
 }
 
+/**
+ * Seed content the READER tests can assert against.
+ *
+ * These tests used to depend on `content/stages/*.md` having authored prose, and
+ * they broke the moment the curriculum changed and that content was archived --
+ * which is the wrong coupling. A reader test should prove the READER works, not
+ * that a particular chapter has been written yet.
+ *
+ * `syncContent()` above still runs, so the pipeline itself stays covered.
+ */
+const CANARY = "CANARY-BLOCK-round-trips-through-the-reader";
+// Two lines, so the round-trip test also proves newlines survive the pipeline.
+const CODE_BODY = ["mov ax, bx", "add ax, 1"].join(String.fromCharCode(10));
+
+async function seedReaderContent(): Promise<void> {
+  await setup(
+    `insert into content_blocks (stage_id, ordinal, kind, body_md, meta)
+     values ('00', 1, 'prose', $1, '{}'::jsonb),
+            ('00', 2, 'code',  $2, '{"caption":"Listing A"}'::jsonb),
+            ('05', 1, 'prose', 'Locked content a student must not read.', '{}'::jsonb)
+     on conflict (stage_id, ordinal) do update
+       set kind = excluded.kind, body_md = excluded.body_md, meta = excluded.meta`,
+    [CANARY, CODE_BODY],
+  );
+  await setup(
+    `insert into objectives (id, stage_id, code, bloom_level, level, competency, description)
+     values ('05.1','05','05.1','remember',1,'read','Preview objective for a locked stage')
+     on conflict (id) do nothing`,
+  );
+}
+
 const JWT_SECRET = "test-secret-at-least-32-characters-long-000000";
 
 function mintToken(userId: string, role: string): string {
@@ -56,6 +87,7 @@ let teacherToken: string;
 beforeAll(async () => {
   await resetAll();
   await syncContent();
+  await seedReaderContent();
   const { rows } = await setup(
     `with s as (insert into sections (code, term) values ('BSCPE-2A','2026-1') returning id),
           u as (insert into auth.users (id,email,raw_app_meta_data)
@@ -125,21 +157,38 @@ describe("GET /api/v1/stages — the skill tree", () => {
     expect(edges.length).toBe(dbEdges.size);
   });
 
-  it("Stage 08 is wired into Stage 17 — no node is a dead end (D1)", async () => {
-    const res = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
-    const { nodes, edges } = res.json();
+  it("the CPE 412 joins and leaves are exactly what the syllabus implies", () => {
+    // stages.prereq IS the curriculum, so this asserts the real dependencies
+    // rather than a shape. Source: docs/CPE412-CURRICULUM.md 6.1.
+    return app
+      .inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) })
+      .then((res) => {
+        const { nodes, edges } = res.json();
+        const prereqOf = (id: string) =>
+          [...(nodes.find((n: { id: string }) => n.id === id).prereq as string[])].sort();
 
-    const s17 = nodes.find((n: { id: string }) => n.id === "17");
-    expect(s17.prereq.sort()).toEqual(["08", "16"]);
-    expect(edges).toContainEqual({ from: "08", to: "17" });
+        // Three genuine joins.
+        expect(prereqOf("12")).toEqual(["03", "11"]); // buses AND instruction formats
+        expect(prereqOf("14")).toEqual(["12", "13"]); // pipelining AND the RISC argument
+        expect(prereqOf("17")).toEqual(["02", "14"]); // Amdahl AND ILP
+        expect(prereqOf("08")).toEqual(["06", "07"]); // virtual memory pages to disk
 
-    // Only 15 and 17 should now be leaves.
-    const hasDependents = new Set(edges.map((e: { from: string }) => e.from));
-    const leaves = nodes
-      .map((n: { id: string }) => n.id)
-      .filter((id: string) => !hasDependents.has(id))
-      .sort();
-    expect(leaves).toEqual(["15", "17"]);
+        // Branches that are NOT simply n-1.
+        expect(prereqOf("03")).toEqual(["01"]); // top-level view needs org-vs-arch, not history
+        expect(prereqOf("07")).toEqual(["03"]); // I/O needs interconnection, not the memory chain
+        expect(prereqOf("09")).toEqual(["01"]); // arithmetic is largely self-contained
+
+        // Leaves are legitimate now. With four grading periods every chapter in
+        // an act is examined in that act's paper, so a leaf is still mandatory --
+        // coverage comes from the exam structure, not the graph shape. This is a
+        // deliberate reversal of decision D1.
+        const hasDependents = new Set(edges.map((e: { from: string }) => e.from));
+        const leaves = nodes
+          .map((n: { id: string }) => n.id)
+          .filter((id: string) => !hasDependents.has(id))
+          .sort();
+        expect(leaves).toEqual(["08", "16", "17"]);
+      });
   });
 
   it("Stage 00 is available and Stage 05 is locked for a fresh student", async () => {
@@ -215,12 +264,28 @@ describe("GET /api/v1/stages/:id — the reader", () => {
     expect(body.blocks[0]).toHaveProperty("body");
   });
 
-  it("carries the deck content verbatim through to the reader", async () => {
-    const res = await app.inject({ method: "GET", url: "/api/v1/stages/04", headers: auth(teacherToken) });
-    const bodies = res.json().blocks.map((b: { body: string }) => b.body).join("\n");
-    // Figure 1.3, straight from the instructor's own deck.
-    expect(bodies).toContain("gross = hours * rate");
-    expect(bodies).toContain("net = gross - fwt - socsec - state");
+  it("round-trips a block body byte-for-byte, newlines and caption included", async () => {
+    // This used to assert Figure 1.3 from the old course's deck, and it broke the
+    // moment the curriculum changed -- the wrong coupling. A reader test should
+    // prove the READER works, not that a particular chapter has been authored.
+    // CPE 412 content does not exist yet; see STATUS.md.
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/v1/stages/00",
+      headers: auth(teacherToken),
+    });
+    const blocks = res.json().blocks as Array<{
+      kind: string;
+      body: string;
+      meta: Record<string, string>;
+    }>;
+
+    expect(blocks.map((b) => b.body)).toContain(CANARY);
+
+    const code = blocks.find((b) => b.kind === "code")!;
+    expect(code.body).toBe(CODE_BODY);
+    expect(code.body.split(String.fromCharCode(10))).toHaveLength(2);
+    expect(code.meta.caption).toBe("Listing A");
   });
 
   it("a LOCKED stage returns its objectives but NOT its content", async () => {
@@ -231,7 +296,7 @@ describe("GET /api/v1/stages/:id — the reader", () => {
     // Read-only preview of what is next is deliberate. The prose is not.
     expect(body.objectives.length).toBeGreaterThan(0);
     expect(body.blocks).toEqual([]);
-    expect(res.body).not.toContain("Advantages of Assembly Language");
+    expect(res.body).not.toContain("Locked content a student must not read");
   });
 
   it("an unpublished stage is invisible to a student and visible to staff", async () => {
