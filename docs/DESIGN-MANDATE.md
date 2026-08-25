@@ -193,7 +193,8 @@ Two layers: a universal gate every page must clear, then page-specific must-have
 - [ ] **Six states** implemented: loading (skeleton, not a spinner), empty, locked, error, offline, saving
 - [ ] **380px** wide with no horizontal scroll and no clipped controls
 - [ ] **Keyboard-only** completable, visible focus on every interactive element
-- [ ] **All three themes** pass WCAG AA, verified by computation not by eye
+- [ ] **All three base themes AND every encounter theme** pass WCAG AA, verified by computation
+      not by eye. A theme that fails contrast does not ship
 - [ ] **Zero literal hex** — every colour from `packages/tokens` (the hook enforces this)
 - [ ] **Mono for every number**, register value, hex, listing
 - [ ] **`prefers-reduced-motion`** honoured

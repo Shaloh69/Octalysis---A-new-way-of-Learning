@@ -8,12 +8,15 @@ Read `START-HERE.md` before your first task. Read `VERIFICATION.md` before touch
 
 ## Repos
 
-- `apps/web` — Vite + React 18 + TS + Tailwind v4 + shadcn/ui → **Vercel** (public + student)
-- `apps/console` — same stack → **Vercel** (teacher/admin)
+- `apps/web` — Vite + React 18 + TS, hand-written CSS over `packages/tokens` → **Vercel**
+  (public + student). No Tailwind, no shadcn: its surfaces are bespoke.
+- `apps/console` — Vite + React 18 + TS + shadcn/ui → **Vercel** (teacher/admin). Data tables and
+  forms, where a component library genuinely pays.
 - `services/api` — Node 20 + Fastify + TS → **Render** (generation, grading, admin ops)
 - `packages/contracts` — Zod schemas shared across all three
 - `packages/tokens` — three themes + accent derivation, as CSS custom properties
-- `db` — Supabase Postgres. Apply in order: `schema.sql` → `addendum-feedback.sql` → `addendum-audit.sql`
+- `db` — Supabase Postgres. Apply in order: `schema.sql` → `addendum-feedback.sql` →
+  `addendum-audit.sql` → `addendum-cron.sql` (local prepends `local-bootstrap.sql`)
 
 ## Hard rules
 
@@ -42,20 +45,24 @@ Read `START-HERE.md` before your first task. Read `VERIFICATION.md` before touch
 - Server errors: `{ error: { code, message } }`. Never a stack trace, never raw SQL.
 - Vitest. Every question-engine function needs a test. UI does not.
 - Conventional commits, small and frequent. The commit history is project evidence.
-- Do not add: `htm`, an ORM over Supabase, a second UI library, `localStorage` for anything
-  gradeable, client-side scoring.
+- Do not add: `htm`, an ORM over Supabase, a second UI component library, `localStorage` for
+  anything gradeable, client-side scoring.
+- **Explicitly allowed, and only these:** `three` + `@react-three/fiber` (the star map),
+  `react-force-graph-3d` (picking and camera easing, nodes pinned), `phaser` (three canvas
+  encounters only — stages 10, 12, 13), `codemirror` (stage 15). Each is **lazy-loaded per
+  route** and none may enter the initial bundle. See `GAME-DESIGN.md` §10.
 
 ## Local stack — production runs here until cloud projects exist
 
 ```bash
 pnpm db:up      # Postgres 16 in Docker on :54329
-pnpm db:reset   # drop, recreate, apply all four SQL files, run invariants
+pnpm db:reset   # drop, recreate, apply all five SQL files, run invariants
 pnpm test:rls   # the 38-test denial suite
 pnpm verify     # typecheck + tests + invariants
 ```
 
 Apply order is load-bearing: `local-bootstrap.sql` → `schema.sql` → `addendum-feedback.sql` →
-`addendum-audit.sql`. **`local-bootstrap.sql` is LOCAL ONLY** — it supplies the `auth` schema and
+`addendum-audit.sql` → `addendum-cron.sql`. **`local-bootstrap.sql` is LOCAL ONLY** — it supplies the `auth` schema and
 the three roles that Supabase provides; running it against a Supabase project would shadow the
 real ones and every RLS test would become a lie.
 
@@ -70,9 +77,10 @@ Three Postgres semantics this project has already been bitten by — see `VERIFI
 
 ## Delivery — read `docs/DELIVERY.md` before deploying or committing
 
-- **Ships to** `github.com/CodenameTempest14/Computer-Systems-Interactive-Lecture-Companion-`,
-  branch **`shaloh-build`**, cut from `master`. That repo *is* the app OCTA replaces — its
-  `src/data/lessonData.js` is the bug. Delete it in its own commit, with the reason in the body.
+- **Ships to** `github.com/Shaloh69/Octalysis---A-new-way-of-Learning`, branch **`shaloh-build`**.
+  The repo OCTA *replaces* is `CodenameTempest14/Computer-Systems-Interactive-Lecture-Companion-`,
+  whose `src/data/lessonData.js` shipped every answer to the browser. That is the bug this project
+  exists to fix; it is not a dependency and nothing is merged from it.
 - **Everything is on a free tier:** Vercel Hobby ×2, Render Free ×1, Supabase Free ×1.
 - **Render Free has no cron jobs.** Every scheduled job — unlocks, nightly `item_stats`, invariant
   runs, keep-alive — runs on **Supabase Cron (`pg_cron` + `pg_net`)**. Never write a Render Cron.
@@ -84,8 +92,10 @@ Three Postgres semantics this project has already been bitten by — see `VERIFI
 
 The tree is not a visualisation of the curriculum — it **is** the curriculum. `stages.prereq` is
 the only edge list; nothing about the map may be authored twice. The 3D galaxy is a presentation
-layer over a DOM layer that is always rendered and is the source of truth: a `<canvas>` has no
-accessibility semantics, so the map must work with WebGL disabled. See `docs/SKILL-TREE-3D.md`.
+layer. `/app` is the 3D galaxy and is the student's default; `/app/map` is a flat, fully
+keyboard-operable route that is always available and is never a degraded mode. A `<canvas>` has no
+accessibility semantics, so reduced motion, absent WebGL and small viewports all redirect to
+`/app/map`. See `docs/SKILL-TREE-3D.md` and `docs/GAME-DESIGN.md` §2.
 
 ## Structure of the domain
 
@@ -114,8 +124,12 @@ which tests each passes.
 ## Design
 
 Colors, type, spacing, and motion come from `packages/tokens`. **Never write a literal hex outside
-that package** — a hook blocks it. Three themes (`bare-metal`, `blueprint`, `phosphor`) plus a
+that package** — a hook blocks it. Three base themes (`bare-metal`, `blueprint`, `phosphor`) plus a
 per-student accent derived in OKLCH from a stored hue, not a stored hex.
+
+On top of those sit **eight encounter themes** (`GAME-DESIGN.md` §9) — each is four tokens and a
+nine-slice panel, never a redesign. They dress the LAB beat and never an assessment, and they are
+held to the same computed AA contrast on all three base themes.
 
 Type roles: display `Space Grotesk`, body `Inter`, mono `JetBrains Mono`. All numbers, register
 values, hex, machine code, and assembly listings render in mono.

@@ -970,3 +970,260 @@ semantics.
 
 Reading found V-15. Reading could never have found V-28, V-29, or V-30. The only thing that
 distinguishes a security control from a comment is that something ran it and watched it deny.
+
+---
+
+# Fifth verification pass — after the game-design decisions
+
+Run after `GAME-DESIGN.md` landed and four decisions changed (3D as default, flat
+map as a separate route, star dialog, eight encounter themes). Checks were run
+mechanically with grep, not by eye — which is how the first two passes found V-10
+and V-11, and how this one found V-33.
+
+**Fourteen findings. All fixed in this pass.** Every one is a contradiction
+introduced by a correction that was applied in one place and not swept.
+
+---
+
+## 🔴 V-31 · `SKILL-TREE-3D.md` contradicted its own superseded banner
+
+The file carries a banner at the top saying four decisions changed. **Its body
+still argued the old position in seven places** — the §3 heading flatly rejecting
+a force-directed library, the architecture diagram labelling the DOM layer
+"ALWAYS RENDERED / OPTIONAL, enhancement", the ≤640px rule, the "the galaxy is
+genuinely optional" paragraph, the settings toggle, the P9 row, and the open
+question asking whether 3D is in scope at all.
+
+**This is the worst shape of documentation drift**, because a reader who skims
+the banner and then reads the body comes away with the *old* model, and the
+banner makes them confident they are current.
+
+**Fixed:** the body now argues the new position. The §3 heading is narrowed to
+"Do not use a force-directed **LAYOUT**", which is the part of that argument that
+survived — §3.2 already reconsidered the library for picking and camera easing.
+
+## 🔴 V-33 · `GAME-DESIGN.md` contradicted itself: fourteen themes vs eight
+
+§5.3 assigns a theme per stage and names **fourteen distinct themes**: Bench
+instrument, Blueprint, Circuit sandbox, DOS/TASM, Hex editor, Instrument HUD,
+Modern dashboard, Modern embedded, Modern product page, Phosphor terminal,
+Pixel/Terraria, Retro home computer, Schematic, Switchboard.
+
+§9, written after the "eight themes" decision, names **eight**.
+
+Both tables are in the same file, roughly four hundred lines apart. §5.3 was
+written before the decision and never revisited.
+
+**Fixed** by folding the six extras into the eight: Hex editor → DOS/TASM ·
+Instrument HUD → Bench instrument · Modern dashboard → Modern product · Modern
+embedded → Modern product · Phosphor terminal → Base · Schematic → Circuit
+sandbox. The stage assignments in §5.3 and §9 now agree row for row.
+
+## 🟠 V-34 · Two stages had no theme at all
+
+§9's stage lists cover 01, 02, 04–17 — **Stages 00 and 03 appear nowhere.** A
+student would reach Stage 03 and the theme system would have no answer for it.
+
+**Fixed:** both assigned to Base. Stage 00 is orientation with nothing to dress;
+Stage 03 is the phosphor terminal, which is a base theme rather than a ninth one.
+
+## 🟠 V-35 · "Four Phaser scenes" is three
+
+§10.3's own table assigns Phaser to stages 10, 12 and 13, and stage 15 to
+**CodeMirror 6 plus a custom VM** — which is not a game engine. The prose
+directly under the table said four.
+
+Off-by-one in a dependency count is not cosmetic: it is the difference between
+"we need Phaser for the editor" and "we do not", and Phaser is roughly 1 MB.
+
+**Fixed:** "Three Phaser scenes, not eighteen — stages 10, 12 and 13."
+
+## 🟠 V-36 · `CLAUDE.md` forbade the libraries the new design requires
+
+The conventions list says *"Do not add: … a second UI library"*. The game design
+adds **three** runtime dependencies — `react-force-graph-3d`, `phaser`,
+`codemirror` — on top of `three` and `@react-three/fiber`.
+
+Read literally, the new design violates the project's own rule. Read charitably,
+the rule meant *component* libraries. An agent reading both picks one silently,
+which is exactly the failure mode these passes exist to prevent.
+
+**Fixed:** the rule now says "a second UI **component** library", followed by an
+explicit allow-list naming all five, what each is for, which stages may load it,
+and the requirement that every one is lazy-loaded per route and none enters the
+initial bundle.
+
+## 🟠 V-37 · `/app/map` existed in three documents and no route spec
+
+`GAME-DESIGN.md`, `SKILL-TREE-3D.md` and `CLAUDE.md` all reference `/app/map` as
+a first-class route. **`PAGE-SPECS.md` — the file whose entire job is "every
+route, its contents, its states" — had never heard of it**, and still described
+`/app` as a single combined stage map.
+
+**Fixed:** `/app` respecified as the galaxy with its redirect rules, `/app/map`
+added as its own route with the must-haves, and the original combined entry
+retained beneath both so nothing is lost.
+
+## 🟠 V-38 · `apps/web` documented a stack it does not have
+
+Both `CLAUDE.md` and `apps/web/CLAUDE.md` say **"Vite + React 18 + TS + Tailwind
+v4 + shadcn/ui"**. Neither Tailwind nor shadcn is installed. The app is
+hand-written CSS over `packages/tokens`.
+
+This one predates the game work — it has been wrong since the app was built —
+and it is the most actionable kind of wrong, because an agent would `import` from
+a library that is not there.
+
+**Fixed:** both corrected, with the reason stated. The student app's surfaces are
+bespoke (star map, reader, competency grid, themed encounters), so a component
+library would be carried for almost no reuse. **`apps/console` is the opposite
+case and genuinely should use shadcn** — that distinction is now written down
+rather than assumed.
+
+## 🟠 V-42 · The apply order lost a file
+
+`CLAUDE.md` lists three SQL files and says `pnpm db:reset` applies "all four".
+There are now **five**: `local-bootstrap.sql` → `schema.sql` →
+`addendum-feedback.sql` → `addendum-audit.sql` → `addendum-cron.sql`.
+
+The order is load-bearing — `inv_24` calls `sus_score()` from the feedback
+addendum — so a partial list is a working database that is quietly missing its
+scheduled jobs.
+
+**Fixed** in all three places it appears in that file.
+
+## 🟠 V-43 · `CLAUDE.md` still shipped to the wrong repository
+
+It named `CodenameTempest14/Computer-Systems-Interactive-Lecture-Companion-` as
+the destination, branch cut from `master`. The actual destination has been
+`Shaloh69/Octalysis---A-new-way-of-Learning` for six commits.
+
+The old repo is the app OCTA **replaces**, not where it ships.
+
+**Fixed:** destination corrected, and the old repo kept in the text with its role
+made explicit — it is the source of the `lessonData.js` bug, it is not a
+dependency, and nothing is merged from it.
+
+## 🟡 V-32 · `VISUAL-SYSTEM-3D.md` still called 3D an enhancement
+
+Two places: the build-order section, and the note about the chunk being fetched
+"only on opt-in".
+
+**Fixed.** The nuance worth keeping is that 3D is now the default *surface* while
+still being built *after* the flat route — `/app/map` is what the accessibility
+floor is measured against and what ships if the galaxy runs long.
+
+## 🟡 V-39 · Tracks A–E floated free of P0–P10
+
+`GAME-DESIGN.md` §12 introduces five tracks. `PHASES.md` has eleven phases. The
+two numbering systems shared no stated relationship, which is V-8 repeating
+itself with different letters.
+
+**Fixed:** a mapping table, plus the statement that the tracks are a **re-cut of
+the same work** and `PHASES.md` stays authoritative for exit criteria.
+
+## 🟡 V-40 · `/public/CREDITS.md` was cited and did not exist
+
+Referenced by `PHASES.md` P9 and by `GAME-DESIGN.md` §12's track C.
+
+**Fixed:** written at `apps/web/public/CREDITS.md`, with the fonts and libraries
+that are actually vendored today and explicit *"not yet vendored"* lines for the
+Kenney packs — so it does not claim assets that are not there.
+
+## 🟡 V-41 · The contrast check did not cover the new themes
+
+`DESIGN-MANDATE.md` §5.1 requires "All three themes pass WCAG AA". There are now
+three base themes **and eight encounter overlays**, and an overlay changes
+surface, edge and ink — every token contrast depends on.
+
+**Fixed:** the checklist item now covers both, with "a theme that fails contrast
+does not ship" stated in the same line.
+
+## 🟡 V-44 · `CLAUDE.md`'s skill-tree paragraph predated the route split
+
+It described "a DOM layer that is always rendered and is the source of truth",
+which was true of the toggle architecture and is not true of the route
+architecture.
+
+**Fixed:** it now describes `/app` and `/app/map` and the three redirect
+conditions.
+
+---
+
+## 🔴 V-45 · The bundle scanner was both too loud and too quiet
+
+Found by running the scan against a real build after the doc fixes, rather than
+by reading it. Two independent defects, in opposite directions.
+
+**Too loud — substring matching.** The scan used `text.includes(value)` on every
+live answer value of four characters or more. The fixture bank contains SI
+prefixes, so `tera` matched inside `iterate` in the three.js chunk and `peta`
+matched a minified identifier. **Three false positives on a completely clean
+build.**
+
+That is not a cosmetic problem. This scanner is the permanent guard against the
+one bug the whole project exists to fix, it is wired as a build hook, and **a
+guard that cries wolf gets switched off.** A scanner nobody trusts is worse than
+no scanner, because its presence implies a check that is not happening.
+
+**Fixed** with whole-token matching — the value must be bounded by a
+non-identifier character. A real leak looks like `"An assembler"` or `,"tera",`
+in a string literal or JSON blob, and both still match. `iterate` does not.
+
+**Too quiet — snake_case only.** The forbidden-token list named the *database*
+columns: `correct_value`, `correct_spec`, `solver_ref`. But the thing that would
+actually appear in a JavaScript bundle is the *API and TypeScript* spelling:
+`correctValue`, `correctIndex`, `resolvedParams`.
+
+A deliberately planted `const __leak = {"correctValue":"An assembler"}` **sailed
+straight through and the scan reported clean.**
+
+**Fixed** by adding the camelCase forms. Both paths were then re-verified by
+planting each kind of leak and watching the scan catch it:
+
+```
+TEST 1  forbidden key name   {"correctValue":"x"}   -> 1 finding: correctValue
+TEST 2  live answer value    ["giga"]               -> 1 finding: ANSWER KEY giga
+restored                                            -> Clean
+```
+
+**The lesson, and it generalises:** every one of these guards — the bundle scan,
+the env-name check, the denial suite — needs a test that plants the thing it is
+looking for. `check-env-names.mjs` had one from the start and was correct.
+`scan-bundle.mjs` did not, and was wrong in two directions simultaneously for its
+entire existence.
+
+## What this pass did not find
+
+Worth recording, because a pass that only reports problems is not calibrated:
+
+- **The 18 nodes / 21 edges figure is consistent** across `SKILL-TREE-3D.md`,
+  `STAGE-ENCOUNTERS.md`, the schema seed, the API, and the web layout tests.
+- **Every internal file reference resolves.** The only unresolved token is
+  `content/stages/NN.md`, which is a filename pattern and was already documented
+  as such in the second pass.
+- **The verb rule in `GAME-DESIGN.md` §8.3 and rule 5 in `DESIGN-MANDATE.md`
+  §1B agree**, and neither contradicts the "vary the practice, keep the
+  assessment steady" rule in `STAGE-ENCOUNTERS.md`.
+- **No document claims a test count that the suite does not produce**, other than
+  the one commit message already flagged in `STATUS.md`.
+- **The eight themes in §9 now cover all 18 stages** with no stage unassigned and
+  no theme named that is not on the list.
+
+## The pattern, a fifth time
+
+Pass 1–2: documents disagreeing with each other.
+Pass 3: documents describing protections the schema did not implement.
+Pass 4: schema that was valid, reviewed, and wrong at runtime.
+**Pass 5: a single document disagreeing with itself** (V-33), and a correction
+applied to a banner but not to the body it was warning about (V-31).
+
+The new failure mode is **distance**. `GAME-DESIGN.md` is 618 lines; §5.3 and §9
+are four hundred lines apart and were written days apart in reasoning-time. A
+file long enough to hold two contradictory tables will hold them.
+
+**Mitigation for next time:** when a decision changes a *quantity* — eight
+themes, three Phaser scenes, five SQL files — grep for the old quantity as a
+number and as a word, across every file, before considering the change applied.
+Every finding in this pass except V-37 and V-40 would have been caught by that
+one habit.

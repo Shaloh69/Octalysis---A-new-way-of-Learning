@@ -149,7 +149,7 @@ stratum. That is a free, honest piece of visual information straight out of the 
 
 ---
 
-## 3. Do not use a force-directed graph library
+## 3. Do not use a force-directed LAYOUT (but see §3.2 on the library)
 
 The obvious pick for "3D node graph in React" is
 [`react-force-graph-3d`](https://github.com/vasturiano/react-force-graph) (MIT, wraps
@@ -191,7 +191,7 @@ This is the part that keeps the 3D map from breaking the project's own accessibi
    │  real <button>s, focusable│   │  three.js / R3F canvas    │
    │  aria, labels, lock copy  │   │  aria-hidden="true"       │
    │  keyboard + screen reader │   │  pointer-events: none     │
-   │  ALWAYS RENDERED          │   │  OPTIONAL, enhancement    │
+   │  ALWAYS AT /app/map       │   │  THE DEFAULT AT /app      │
    └───────────────────────────┘   └───────────────────────────┘
 ```
 
@@ -211,15 +211,16 @@ Consequences that are non-negotiable:
   appears. Test this by disabling WebGL in the browser, not by hoping.
 - **`prefers-reduced-motion` disables camera drift, parallax, and bloom pulsing.** The map becomes
   a static projection. State still changes, instantly, per `DESIGN-MANDATE.md` §3.
-- **At ≤ 640px the 2D map is the default** and 3D is opt-in. See §6.
+- **At ≤ 640px `/app` redirects to `/app/map`.** 3D stays reachable by direct link.
 - **Focus order follows curriculum order** (`ordinal`), never screen position. A student tabbing
   through the map walks the syllabus.
 - **Every lock still states its reason and distance** — *"Unlocks when Stage 09 reaches 70%.
   You're at 45%."* The 3D layer may dim a node; the DOM layer must still say why in words.
 
 If building both layers is too much for the semester, **build the DOM layer and ship it.** It is
-the one that satisfies the requirements. The galaxy is the enhancement, and it is genuinely
-optional — which is exactly the property that makes it safe to attempt.
+the one that satisfies the requirements. The galaxy is now the DEFAULT surface at `/app`, and the
+flat map is a first-class route rather than a fallback -- a stronger accessibility position than
+the toggle it replaced, because a route is bookmarkable, linkable and never hidden in a setting.
 
 ---
 
@@ -289,7 +290,7 @@ Android device on campus wifi.
 - Viewport ≤ 640px → **2D map**, with a "View in 3D" control.
 - `prefers-reduced-motion` → **2D map**, always. Not a degraded 3D.
 - WebGL unavailable or context lost → **2D map**, silently.
-- Everything else → 3D, with a persistent toggle in `/app/settings` (Ownership, Petal 4 — and it
+- Everything else → 3D at `/app`, with `/app/map` always in the header (Ownership, Petal 4 — and it
   passes all four mandate tests: it changes what you see, its label is legible, it is reversible,
   and it is a genuine preference rather than a number).
 
@@ -325,7 +326,7 @@ The map is not one deliverable. Splitting it is what keeps it from eating the se
 |---|---|
 | **P2** | `layout.ts` (pure, tested) + the **2D DOM map** with real lock reasons. This is the map. It ships. |
 | **P5** | Interactive polish on the 2D map: read-only preview of the next stage's objectives, act grouping, mastery rings |
-| **P9** | **The galaxy.** Lazy-loaded 3D layer, toggle, reduced-motion and small-viewport fallbacks, Stage 11's stratum re-label |
+| **P9** | **The galaxy.** Lazy-loaded 3D layer at `/app`, star dialog, reduced-motion and small-viewport redirects to `/app/map`, Stage 11's stratum re-label |
 | P9+ | Optional: bring-up flythrough on stage completion, reusing the existing 2000ms `--dur-bringup` budget — **not a new celebration**, the same one, seen from the map |
 
 **Do not build the 3D layer before P9.** It is the highest-risk, lowest-necessity component in the
@@ -353,7 +354,7 @@ Add to the suite (`docs/AUDITS.md`, `db/addendum-audit.sql`):
 Three, and they are the instructor's, not Claude Code's:
 
 1. ~~Stage 08's dead end~~ — **decided: wired in.** See §1.3.
-2. **Is the 3D map in scope at all for the pilot semester?** It is a P9 item behind a toggle, and
+2. ~~Is the 3D map in scope for the pilot?~~ **Decided: yes, and it is the default.** It is a P9 item, and
    P10 is a two-week pilot. Cutting it costs nothing that a student would notice.
 3. **Does the galaxy framing survive contact with the instructor's taste?** The brainstorm template
    warns against a "childish arcade skin," and this is the single design decision in the project

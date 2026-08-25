@@ -137,7 +137,7 @@ ships silently:
    into `index.html`, so every student downloaded 220 KB of 3D on first paint
    whether or not they ever opened the galaxy — precisely what the budget below
    forbids. Removing `manualChunks` lets Rollup place three.js inside the dynamic
-   `GalaxyCanvas` chunk, fetched only on opt-in.
+   `GalaxyCanvas` chunk, fetched when `/app` loads rather than with the whole app.
 
 **Verify both after any dependency change:** read the chunk sizes from
 `pnpm --filter @octa/web build`, and grep `dist/index.html` for `modulepreload`.
@@ -205,7 +205,9 @@ Pin exact versions at install time. Do not add a second 3D library, a second ani
 
 ## 8. Build order
 
-3D is an enhancement layered onto a complete app, never a prerequisite for one.
+3D is now the student's DEFAULT map surface (`GAME-DESIGN.md` §2), but it is still built after
+the flat route exists — `/app/map` is what the accessibility floor is measured against, and it is
+what ships if the galaxy runs long.
 
 | Phase | Deliverable |
 |---|---|

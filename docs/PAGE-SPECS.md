@@ -68,7 +68,20 @@ Standard. `/maintenance` matters — you will need it during a mid-semester migr
 
 ## 2. Student app — `apps/web/app/*`, role `student`
 
-### `/app` — Stage Map (the hub)
+### `/app` — The galaxy (the hub)
+
+**3D star map, the student's default.** Clicking a star opens a dialog naming the stage, its
+state, its lock reason and distance, and what the encounter actually is — then offers "Enter
+stage". `prefers-reduced-motion`, absent WebGL, and viewports ≤ 640px redirect to `/app/map`.
+See `GAME-DESIGN.md` §3.
+
+### `/app/map` — Flat stage map
+
+**A first-class route, not a fallback.** Same 18 nodes and 21 edges as SVG plus real focusable
+buttons, always in the header, bookmarkable. Focus order follows curriculum order. This is the
+surface the accessibility floor is measured against, and it is what ships if the galaxy runs long.
+
+### `/app` — Stage Map (original spec, now split across the two routes above)
 **Data:** `stages`, `stage_progress`, `is_stage_unlocked()` per stage.
 
 - The 17-node dependency graph, laid out by Act. Node states: locked / available / in progress /

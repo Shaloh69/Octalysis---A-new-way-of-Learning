@@ -45,12 +45,45 @@ const FORBIDDEN = [
   "assessment_secrets",
   "engine/solvers",
   "solver_ref",
+  // camelCase forms. The database columns are snake_case, but the API and the
+  // TypeScript that would actually leak into a bundle are camelCase -- and a
+  // planted `{"correctValue":"An assembler"}` sailed straight past the
+  // snake_case-only list, which is how this gap was found.
+  "correctValue",
+  "correctIndex",
+  "correctSpec",
+  "resolvedParams",
+  "examSalt",
+  "solverRef",
+  "rationaleTemplate",
   // The original sin, by name.
   "lessonData",
 ];
 
 const BUNDLE_DIRS = ["apps/web/dist", "apps/console/dist"];
 const SCANNABLE = new Set([".js", ".mjs", ".cjs", ".css", ".html", ".json", ".txt"]);
+
+/**
+ * Whole-token match, not substring.
+ *
+ * A plain `includes()` is useless here: the answer "tera" matched inside
+ * `iterate` in the three.js bundle, and "peta" matched a minified identifier.
+ * Three false positives on a clean build, and a scanner that cries wolf gets
+ * switched off -- which is worse than no scanner, because this one is the
+ * permanent guard against the bug the whole project exists to fix.
+ *
+ * So: the value must appear bounded by something that is not an identifier
+ * character. A real leak looks like `"An assembler"` or `,"tera",` in a JSON
+ * blob or a string literal; both satisfy this. `iterate` does not.
+ */
+const RE_SPECIAL = /[.*+?^${}()|[\]\\]/g;
+
+function matchesWholeToken(haystack, needle) {
+  const escaped = needle.replace(RE_SPECIAL, "\\$&");
+  // Node 20+ supports lookbehind, which keeps this exact and readable.
+  const re = new RegExp(`(?<![A-Za-z0-9_])${escaped}(?![A-Za-z0-9_])`);
+  return re.test(haystack);
+}
 
 async function walk(dir) {
   const out = [];
@@ -139,7 +172,7 @@ async function main() {
         }
       }
       for (const answer of live.values) {
-        if (text.includes(answer)) {
+        if (matchesWholeToken(text, answer)) {
           findings.push({ file, kind: "ANSWER KEY", detail: answer.slice(0, 60) });
         }
       }

@@ -273,25 +273,27 @@ different look".
 
 | Stage | Encounter | Theme | Why it is honest |
 |---|---|---|---|
-| 01 What Programming Is | Card sort | **Blueprint** (base) | No machine yet; nothing to dress |
+| 01 What Programming Is | Card sort | **Base** (blueprint) | No machine yet; nothing to dress |
 | 02 Machine Language | Eight toggle switches | **Switchboard** — 1960s relay panel, metal, toggle bats | This is literally what the deck describes: microscopic switches, off and on |
-| 03 Assembly Language | Split pane, mnemonic ↔ opcode | **Phosphor terminal** (base) | Where mnemonics lived |
+| 03 Assembly Language | Split pane, mnemonic ↔ opcode | **Base** (phosphor) | Where mnemonics lived |
 | 04 High-Level Languages | Payroll remix | **Retro home computer** — 1980s BASIC, chunky border, cyan on blue | Figure 1.3 *is* a BASIC listing |
-| 05 Why Assembly Matters | ESP32 register write | **Modern embedded** — dark IDE, clean, current | It is their actual hardware, today |
-| 06 Org vs Architecture | Card sort | **Blueprint** (base) | Conceptual, deliberately plain |
+| 05 Why Assembly Matters | ESP32 register write | **Modern product** — dark IDE, clean, current | It is their actual hardware, today |
+| 06 Org vs Architecture | Card sort | **Base** (blueprint) | Conceptual, deliberately plain |
 | 07 Units & Cycle Time | Frequency dial + drill | **Bench instrument** — brushed panel, illuminated readout | It is a measurement, so it looks like measuring equipment |
-| 08 Spec Sheet | 2026 sheet, hotspots | **Modern product page** — clean, current, marketing-slick | The lesson is decoding marketing copy; it must look like marketing copy |
+| 08 Spec Sheet | 2026 sheet, hotspots | **Modern product** — clean, current, marketing-slick | The lesson is decoding marketing copy; it must look like marketing copy |
 | 09 Number Systems | Bit-flip toggles | **Pixel / Terraria** — chunky bits, satisfying click, nine-slice panels | Bits are discrete and blocky; pixel art is *literally* a grid of bits |
 | 10 Digital Logic | Drag gates, wire them | **Circuit sandbox** — dark board, copper traces, Turing Complete look | The most game-like stage; it should look like the game it resembles |
 | 11 Level Hierarchy | Order seven levels | **Base + the reveal** | The Depth Gauge gets named here. Nothing may distract |
-| 12 von Neumann | Assemble the data path | **Schematic** — hairline technical drawing | It is an architecture diagram |
-| 13 Fetch–Decode–Execute | The stepper | **Instrument HUD** — live registers, mono everywhere | Motion here is content |
-| 14 Instruction Set | Field encoder | **Hex editor** — dense, monospace, byte-grid | Encoding is a byte-level activity |
+| 12 von Neumann | Assemble the data path | **Circuit sandbox** — hairline schematic variant | It is an architecture diagram |
+| 13 Fetch–Decode–Execute | The stepper | **Bench instrument** — live registers, mono everywhere | Motion here is content |
+| 14 Instruction Set | Field encoder | **DOS / TASM** — dense, monospace, byte-grid | Encoding is a byte-level activity |
 | 15 Writing Assembly | Real editor, run it | **DOS / TASM** — 80×25, CGA palette, authentic | The course toolchain is 16-bit DOS TASM; the skin is honest |
-| 16 Memory Hierarchy | Cache simulator | **Modern dashboard** — sliders, live charts | It is a tuning problem |
-| 17 Performance & Future | Upgrade puzzle | **Modern product page** — mirrors Stage 08 | Deliberate callback: same look, now you can read it properly |
+| 16 Memory Hierarchy | Cache simulator | **Modern product** — sliders, live charts | It is a tuning problem |
+| 17 Performance & Future | Upgrade puzzle | **Modern product** — mirrors Stage 08 | Deliberate callback: same look, now you can read it properly |
 
-Eight distinct themes, several reused. **Two of them (08 and 17) are reused on
+Every row above uses one of the **eight** themes in §9 — an earlier draft of this
+table named fourteen, which is the contradiction the fifth verification pass
+caught. Several are reused. **Two of them (08 and 17) are reused on
 purpose** so the student notices they can now decode what they could not in week
 six — that is a designed callback, not a shortcut.
 
@@ -462,7 +464,7 @@ Decision taken: **eight**, not three. Full list, each with its asset source.
 
 | # | Theme | Stages | Look | Assets |
 |---|---|---|---|---|
-| 1 | **Base** (bare-metal / blueprint / phosphor) | 01, 06, 11 | The existing token system, unmodified | `packages/tokens` |
+| 1 | **Base** (bare-metal / blueprint / phosphor) | 00, 01, 03, 06, 11 | The existing token system, unmodified | `packages/tokens` |
 | 2 | **Switchboard** | 02 | 1960s relay panel — brushed metal, toggle bats, panel lamps | Kenney UI Pack + custom nine-slice |
 | 3 | **Retro home computer** | 04 | 1980s BASIC — chunky border, cyan on blue, blocky glyphs | Kenney Pixel UI Pack |
 | 4 | **Pixel / Terraria** | 09 | Chunky bits, satisfying click, wood-and-stone nine-slice panels | Kenney Pixel UI Pack (750 assets, CC0) |
@@ -524,7 +526,8 @@ because canvas has no accessibility semantics — the same argument as the galax
 | **FDE stepper (13)** | **Phaser** | Continuous animation is the content |
 | **Code editor + VM (15)** | **CodeMirror 6 + custom VM** | Not a game engine problem |
 
-**Four Phaser scenes, not eighteen.** Everything else is themed DOM — which is
+**Three Phaser scenes, not eighteen** — stages 10, 12 and 13. Stage 15 is
+CodeMirror plus a VM, which is not a game-engine problem.** Everything else is themed DOM — which is
 cheaper, faster, and accessible without extra work.
 
 ---
@@ -612,6 +615,19 @@ what, not by what is most fun to build.
 | E1 | Stages 06–11 authored from `chapter1-deck.md` |
 | E2 | Stages 12–17 authored (largely new material) |
 | E3 | Item bank toward ~40 per stage — **the real project** (`VERIFICATION.md` V-6) |
+
+### How the tracks map onto `PHASES.md`
+
+The tracks are a **re-cut of the same work**, not a replacement numbering.
+`PHASES.md` stays authoritative for exit criteria.
+
+| Track | Phases it covers |
+|---|---|
+| A Console | **P4**, plus P7's review queue and P8's triage tab |
+| B Star map | **P2** (flat route) and **P9** (galaxy) |
+| C Themes | **P9** |
+| D Games | **P5** (DOM encounters) and **P6** (Phaser + editor) |
+| E Content | **P2** and **P5**, then continuous |
 
 **Suggested order: A → B → C → D → E**, with E running continuously alongside
 everything from the start. The console makes a pilot possible; the map makes it

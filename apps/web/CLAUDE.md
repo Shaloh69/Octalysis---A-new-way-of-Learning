@@ -1,6 +1,11 @@
 # apps/web — student + public
 
-Vite + React 18 + TS + Tailwind v4 + shadcn/ui. Deploys to Vercel.
+Vite + React 18 + TS. Deploys to Vercel.
+
+**Styling is hand-written CSS over `packages/tokens`, not Tailwind and not shadcn/ui.** An earlier
+draft of this file claimed both; neither is installed. The student app's surfaces are bespoke
+(star map, reader, competency grid, themed encounters), so a component library would have been
+carried for almost no reuse. `apps/console` is the opposite case and DOES use shadcn.
 Route groups: `/` public (unauthenticated), `/app/*` student (role `student`).
 
 ## Never in this package
