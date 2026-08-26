@@ -1,0 +1,79 @@
+/*
+ * OCTA console — the only stylesheet.
+ *
+ * Everything visual resolves to a custom property from @octa/tokens. There is
+ * not one literal colour in this file; `scripts/scan-console-palette.mjs` fails
+ * the build if one appears.
+ */
+@import "@octa/tokens/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+
+  html {
+    /* The console is dense, numeric, and read for long stretches. */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--surface-0);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    line-height: var(--lh-sm);
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-display);
+    font-weight: 600;
+  }
+
+  /*
+   * Focus is VISIBLE, always, and never removed.
+   *
+   * PHASES.md P9 and the definition of done both require keyboard operation.
+   * The console is where a teacher changes a student's access, so an
+   * invisible focus ring here is a correctness problem, not a polish one.
+   */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: var(--border-thick) solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Tabular numerals everywhere digits are compared down a column. */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-mono);
+  }
+}
+
+@layer components {
+  /*
+   * One scroll container for wide tables. The gradebook is 20 columns and the
+   * lock matrix is 19; neither may make the PAGE scroll sideways.
+   */
+  .table-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

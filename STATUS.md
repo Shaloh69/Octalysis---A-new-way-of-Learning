@@ -13,7 +13,7 @@ was assumed rather than run, it says so.
 
 | | |
 |---|---|
-| Tests green | **206** (189 API + 17 web) · 1 skipped (live JWKS, needs `.env`) |
+| Tests green | **239** (204 API + 18 console + 17 web) · 1 skipped (live JWKS, needs `.env`) |
 | TypeScript strict | clean across 4 packages |
 | Invariants | 22 clean, 0 failures (3 notices expected on an unseeded database) |
 | Schema | applies from scratch locally **and on the live Supabase project** |
@@ -22,7 +22,9 @@ was assumed rather than run, it says so.
 | Supabase live state | seeded before V-47; **needs a re-push** for the 18-chapter seed |
 | Initial JS bundle | 51.9 KB gz + 3.8 KB CSS |
 | 3D chunk | 219.8 KB gz, on demand only, no preload |
-| Bundle scan | clean — no answer keys, no server-only names, no source maps |
+| Bundle scan | clean across **both** bundles — student and staff profiles, proven in four directions |
+| Console bundle | 103.8 KB gz initial · Recharts on demand · zero modulepreload |
+| Console palette | clean — no upstream colour utility, no literal hex, no `dark:` variant |
 
 Run it all: `pnpm db:up && pnpm db:reset && pnpm verify`
 
@@ -85,7 +87,7 @@ Three bugs found by running: a distractor colliding with the correct answer at
 exactly 1000 MHz, two algebraically identical distractors, and an O(n²) scarcity
 scorer.
 
-### P4 — Console v1 · **API DONE · UI NOT BUILT**
+### P4 — Console v1 · **DONE**
 
 Routes: roster, lock matrix, lock set with a **mandatory reason**, student
 drill-down, audit log, system audit, gradebook CSV. 13 tests including
@@ -94,8 +96,19 @@ staff-only enforcement on every route.
 The drill-down regenerates a student's exact paper from the stored seed and is
 asserted byte-identical to what the student saw.
 
-**Not built:** `apps/console`. The API is complete and tested; there is no React
-app in front of it.
+**Now built.** `apps/console` is Vite + React 18 + TS + Tailwind, with the
+palette bound to `packages/tokens` — Tailwind's default palette is **deleted**,
+not extended, so an upstream colour utility produces no CSS and
+`scripts/scan-console-palette.mjs` turns that into a build failure.
+
+Eight pages: locks, students, student detail, attempt drill-down, gradebook,
+content status, audit log, system health, feedback. The role guard reads
+`app_metadata` from the JWT and never `profiles.role`, and 18 tests cover the
+pure logic — including twelve malformed claims that must all resolve to
+`student`, and a `user_metadata.role` that must never be believed.
+
+The gradebook is the only lazy route: Recharts is ~105 KB gz and nothing else
+imports it.
 
 ### P5 — Stages 06–11 · **NOT BUILT**
 
@@ -112,7 +125,7 @@ FDE stepper, x86-16 interpreter, cache simulator. `MASTER-PLAN.md` §13.6 alread
 names the fallback: ship Stages 15 and 16 as read + parameterized questions and
 add simulators later.
 
-### P7 — Item analytics · **SQL DONE · UI NOT BUILT**
+### P7 — Item analytics · **SQL DONE · REVIEW QUEUE UI NOT BUILT**
 
 `recompute_item_stats()` computes p-value and point-biserial discrimination and
 auto-flags after 30 exposures. **Verified against real submitted attempts** — 8
@@ -120,10 +133,22 @@ items updated with correct p-values.
 
 Scheduled nightly via `pg_cron`. No review-queue UI.
 
-### P8 — Feedback · **SCHEMA ONLY**
+### P8 — Feedback · **DONE**
 
-`feedback`, `feedback_prompts` and `sus_score()` exist and are covered by
-`inv_24`. No routes, no UI.
+Five routes plus a triage page. A content report attaches the **exact resolved
+variant** the student saw, replayed from their seed server-side — the client is
+never asked, and a report against someone else's attempt is filed with no
+variant at all rather than confirming that attempt exists. That denial is
+tested.
+
+SUS is scored by `sus_score()` in the database, never in TypeScript. The tests
+pin all four reference points, including the one that catches the classic
+implementation bug: **all 5s is 50, not 100** — the scale alternates polarity,
+so the real maximum is `5,1,5,1,…`.
+
+The survey does not nag: three sessions plus one completed attempt, and it stops
+after two dismissals. The gate is server-side, so clearing the browser does not
+reset it.
 
 ### P9 — Themes, motion, accessibility, 3D · **SUBSTANTIALLY DONE**
 

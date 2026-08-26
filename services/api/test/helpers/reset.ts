@@ -20,6 +20,14 @@ export async function resetAll(): Promise<void> {
     alter table responses disable trigger responses_no_update;
     alter table responses disable trigger responses_no_delete;
 
+    -- feedback FIRST: feedback.item_id references items(id) with no cascade,
+    -- so once any suite files a content report, every later reset fails on
+    -- "update or delete on table items violates foreign key constraint
+    -- feedback_item_id_fkey". That is correct FK behaviour -- production never
+    -- deletes an item, it retires one (hard rule 6) -- but the fixtures do.
+    delete from feedback           where true;
+    delete from feedback_prompts   where true;
+
     delete from responses          where true;
     delete from attempt_items      where true;
     delete from attempts           where true;

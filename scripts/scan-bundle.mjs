@@ -34,33 +34,61 @@ const c = {
   bold: (s) => `\x1b[1m${s}\x1b[0m`,
 };
 
-/** Names that must never survive into a browser bundle. */
-const FORBIDDEN = [
+/**
+ * TWO BUNDLES, TWO RULES. Conflating them makes this scanner useless in both
+ * directions, so the distinction is the most important thing in this file.
+ *
+ * `apps/web` is the STUDENT bundle. It must not contain the answer-key field
+ * names at all. There is no legitimate reason for `correctValue` to appear in
+ * code a student downloads, so its mere presence is a finding -- that is the
+ * early warning, well before an actual value leaks.
+ *
+ * `apps/console` is STAFF-ONLY and its whole purpose is showing the key: the
+ * attempt drill-down renders `correctValue` beside what the student answered,
+ * and `ai_after_submit` grants staff that read in the database too. Flagging it
+ * there would be crying wolf, and a scanner that cries wolf gets switched off.
+ *
+ * What stays forbidden in BOTH: secrets, service-role names, and engine
+ * internals. No browser needs the exam salt or the solver registry, whoever is
+ * driving it.
+ *
+ * And the check that matters most runs against BOTH regardless of profile: a
+ * live answer VALUE baked into any bundle is a leak, because a bundle is a
+ * static file and a static file has no idea who is asking.
+ */
+const FORBIDDEN_ALWAYS = [
   "SERVICE_ROLE",
   "service_role",
-  "correct_value",
-  "correct_spec",
   "exam_salt",
   "EXAM_SALT_SECRET",
   "assessment_secrets",
   "engine/solvers",
   "solver_ref",
-  // camelCase forms. The database columns are snake_case, but the API and the
-  // TypeScript that would actually leak into a bundle are camelCase -- and a
-  // planted `{"correctValue":"An assembler"}` sailed straight past the
-  // snake_case-only list, which is how this gap was found.
-  "correctValue",
-  "correctIndex",
-  "correctSpec",
-  "resolvedParams",
   "examSalt",
   "solverRef",
-  "rationaleTemplate",
   // The original sin, by name.
   "lessonData",
 ];
 
-const BUNDLE_DIRS = ["apps/web/dist", "apps/console/dist"];
+/** Additionally forbidden in the STUDENT bundle only. */
+const FORBIDDEN_STUDENT = [
+  "correct_value",
+  "correct_spec",
+  // camelCase forms. The database columns are snake_case, but the API and the
+  // TypeScript that would actually leak into a bundle are camelCase -- and a
+  // planted `{"correctValue":"An assembler"}` sailed straight past the
+  // snake_case-only list, which is how this gap was found (V-45).
+  "correctValue",
+  "correctIndex",
+  "correctSpec",
+  "resolvedParams",
+  "rationaleTemplate",
+];
+
+const BUNDLES = [
+  { dir: "apps/web/dist", audience: "student", forbidden: [...FORBIDDEN_ALWAYS, ...FORBIDDEN_STUDENT] },
+  { dir: "apps/console/dist", audience: "staff", forbidden: FORBIDDEN_ALWAYS },
+];
 const SCANNABLE = new Set([".js", ".mjs", ".cjs", ".css", ".html", ".json", ".txt"]);
 
 /**
@@ -132,7 +160,7 @@ async function liveAnswerStrings() {
 async function main() {
   console.log(c.bold("\nOCTA — client bundle scan\n"));
 
-  const present = BUNDLE_DIRS.filter((d) => existsSync(resolve(ROOT, d)));
+  const present = BUNDLES.filter((b) => existsSync(resolve(ROOT, b.dir)));
   if (present.length === 0) {
     console.log(c.dim("  No client bundles found. Nothing to scan — build first.\n"));
     process.exit(0);
@@ -149,8 +177,8 @@ async function main() {
     console.log(c.yellow("  This is a WEAKER scan. Run it against a seeded database before release."));
   }
 
-  for (const dir of present) {
-    const abs = resolve(ROOT, dir);
+  for (const bundle of present) {
+    const abs = resolve(ROOT, bundle.dir);
     for (const file of await walk(abs)) {
       const ext = extname(file);
 
@@ -166,9 +194,13 @@ async function main() {
       const text = await readFile(file, "utf8");
       scanned++;
 
-      for (const token of FORBIDDEN) {
+      for (const token of bundle.forbidden) {
         if (text.includes(token)) {
-          findings.push({ file, kind: "forbidden token", detail: token });
+          findings.push({
+            file,
+            kind: "forbidden token",
+            detail: `${token}  (${bundle.audience} bundle)`,
+          });
         }
       }
       for (const answer of live.values) {
@@ -179,7 +211,13 @@ async function main() {
     }
   }
 
-  console.log(c.dim(`  ${scanned} file(s) scanned across ${present.length} bundle(s)\n`));
+  console.log(
+    c.dim(
+      `  ${scanned} file(s) scanned across ${present.length} bundle(s): ` +
+        present.map((b) => `${b.dir} (${b.audience})`).join(", ") +
+        "\n",
+    ),
+  );
 
   if (findings.length === 0) {
     console.log(c.green("  Clean. No answer keys, no server-only names, no source maps.\n"));

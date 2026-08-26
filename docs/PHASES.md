@@ -152,7 +152,26 @@ width) — never a random number near the answer.
 
 ---
 
-## P4 — Console v1 · 2 weeks
+## P4 — Console v1 · **DONE**
+
+> | Exit criterion | Result |
+> |---|---|
+> | Teacher can lock/unlock any student × stage, reason in `audit_log` | pass — mandatory client and server; INV-22 checks it in the database |
+> | Drill-down regenerates the exact variant from the stored seed | pass — `/attempts/:id`, asserted byte-identical in `console.spec.ts` |
+> | Route guard reads role from the JWT, not `profiles` | pass — 18 tests, including 12 malformed claims and a `user_metadata.role` that must never be believed |
+> | Zero upstream palette classes remain | pass — Tailwind's palette is DELETED, not extended; `scan-console-palette.mjs` fails the build on any upstream utility, literal hex, or `dark:` variant |
+>
+> Three findings came out of building it — V-51, V-52, V-53. None was catchable
+> before the console existed: one was masked because the API bypasses RLS, one
+> needed a table that did not exist yet, and one needed a second bundle before
+> the ambiguity was even meaningful.
+>
+> **Built the shadcn *approach*** — Radix primitives with the component source
+> owned in-repo under `src/components/ui/` — rather than cloning the template.
+> Cloning imports a demo app to delete, and its palette is the thing the last
+> exit criterion forbids.
+
+### What P4 originally specified
 
 **Build:** clone `satnaing/shadcn-admin` into `apps/console`, strip demo pages, keep shell +
 command palette + data table + theme provider. **Replace its palette with our three themes** —
@@ -211,7 +230,19 @@ nightly `run_invariants()` → `audit_runs` job. See `DELIVERY.md` §2.2.
 
 ---
 
-## P8 — Feedback system · 1 week
+## P8 — Feedback system · **API + TRIAGE UI DONE**
+
+> | Exit criterion | Result |
+> |---|---|
+> | A content report reaches the queue with the exact resolved variant | pass — replayed from the seed server-side; a report against another student's attempt attaches nothing, and that denial is tested |
+> | The SUS prompt waits for 3 sessions + 1 completed workflow | pass — gated server-side, so clearing the browser does not reset it; stops after two dismissals |
+> | SUS scoring verified against a hand-computed example | pass — all four reference points. **All 5s scores 50, not 100**: the scale alternates polarity, so the true maximum is `5,1,5,1,…`. Getting that backwards is the classic SUS bug, and the test pins it deliberately |
+> | A teacher can see the status of their own submitted feedback | **not built** — triage is staff-wide; there is no per-reporter view |
+>
+> **Also not built:** the student-side flag and report widgets in `apps/web`.
+> The routes they post to exist and are tested.
+
+### What P8 originally specified
 
 Contextual flag, inline content report, SUS survey with its trigger gate, `/console/feedback`
 with both tabs. See `PAGE-SPECS.md` §4.

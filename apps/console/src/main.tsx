@@ -1,0 +1,16 @@
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "./App";
+import { applyStoredTheme } from "./lib/session";
+import "./index.css";
+
+applyStoredTheme();
+
+const el = document.getElementById("root");
+if (!el) throw new Error("#root is missing from index.html");
+
+createRoot(el).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);

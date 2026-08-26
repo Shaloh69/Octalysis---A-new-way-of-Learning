@@ -57,11 +57,22 @@ $$;
 alter table feedback         enable row level security;
 alter table feedback_prompts enable row level security;
 
+-- V-51: these three read `is_staff()`, not `jwt_role() = 'admin'`.
+--
+-- Decision D4 makes teacher and admin the SAME PERSON in this deployment, and
+-- 31 of the 34 policies in this database say so by calling is_staff(). These
+-- three said 'admin' only, so a teacher could lock a student out of a stage but
+-- could not read the report the student filed about it -- a rule nobody wrote
+-- down and nobody would have predicted from the other 31.
+--
+-- If teacher and admin are ever separated (VERIFICATION.md V-18 has the shape),
+-- triage permissions are a deliberate decision to take THEN, in one place,
+-- rather than a difference that survived by accident.
 create policy fb_insert on feedback for insert
   with check (user_id = auth.uid());
 create policy fb_read   on feedback for select
-  using (user_id = auth.uid() or jwt_role() = 'admin');
+  using (user_id = auth.uid() or is_staff());
 create policy fb_admin  on feedback for update
-  using (jwt_role() = 'admin') with check (jwt_role() = 'admin');
+  using (is_staff()) with check (is_staff());
 create policy fp_own    on feedback_prompts for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());

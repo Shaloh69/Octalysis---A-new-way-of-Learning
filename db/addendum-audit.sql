@@ -21,7 +21,8 @@ create table if not exists audit_runs (
   notes        text
 );
 alter table audit_runs enable row level security;
-create policy ar_admin on audit_runs for select using (jwt_role() = 'admin');
+-- V-51: is_staff(), not admin-only. See the note in addendum-feedback.sql.
+create policy ar_admin on audit_runs for select using (is_staff());
 
 -- ============================================================
 -- INVARIANTS

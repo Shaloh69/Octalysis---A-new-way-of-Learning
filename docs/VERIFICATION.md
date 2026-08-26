@@ -1415,3 +1415,126 @@ it does not see exactly 18 chapters, and `layout.spec.ts` refuses to pass if it
 does not parse exactly 19 stage rows. Neither would have caught V-47 on its own
 — but together with the syllabus's own contact-hour arithmetic (17 × 3 hrs + 2 ×
 1 hr = 53 hours, which only balances at eighteen chapters) they would have.
+
+---
+
+# Eighth pass — building the console against the documents
+
+The console had a complete, tested API and no UI. Building the UI meant reading
+every rule written for it and checking the rest of the system actually held them.
+Three things did not.
+
+## 🔴 V-51 · Three policies said `admin` where 34 said `is_staff()`
+
+Decision **D4** makes teacher and admin the same person in this deployment, and
+31 of the 34 policies say so by calling `is_staff()`. Three did not:
+
+| Policy | Table | Was |
+|---|---|---|
+| `fb_read` | `feedback` | `jwt_role() = 'admin'` |
+| `fb_admin` | `feedback` | `jwt_role() = 'admin'` |
+| `ar_admin` | `audit_runs` | `jwt_role() = 'admin'` |
+
+So a teacher could lock a student out of a stage, regenerate their exam paper,
+and export the gradebook — but could not read the report that student filed
+about a broken question, or see last night's invariant run. Nobody wrote that
+rule down and nobody would predict it from the other 31.
+
+This was invisible while the console had no UI, because `services/api` reaches
+these tables as `service_role`, which bypasses RLS entirely. **The API tests
+passed and would have kept passing.** It would have surfaced the first time a
+teacher opened the feedback page against a database where the API was not the
+only reader.
+
+**Fixed:** all three now call `is_staff()`. If teacher and admin are ever
+separated (V-18 has the shape), triage permissions become a deliberate decision
+taken in one place rather than a difference that survived by accident.
+
+## 🔴 V-52 · The fixture reset could not run twice once feedback existed
+
+`feedback.item_id` references `items(id)` with no cascade. `resetAll()` deletes
+`items`. The moment any suite filed a content report, every later reset failed:
+
+```
+update or delete on table "items" violates foreign key constraint
+"feedback_item_id_fkey" on table "feedback"
+```
+
+Six of twelve test files failed at file level — 105 tests skipped, not failed,
+which is the shape that makes this dangerous. A skipped test is green-adjacent
+in a summary line and proves nothing.
+
+The FK itself is right: production never deletes an item, it **retires** one
+(hard rule 6). The fixtures do delete, so `resetAll()` now clears `feedback` and
+`feedback_prompts` first, in dependency order like everything else in that file.
+
+**The general shape, again:** adding a table that references an existing one
+silently breaks teardown for every suite that ran before it. `resetAll()` exists
+precisely so that stays a one-line fix in one place.
+
+## 🟠 V-53 · The bundle scanner conflated two audiences
+
+`scripts/scan-bundle.mjs` listed `apps/console/dist` in its scan set from the
+start, against a single `FORBIDDEN` list built for the STUDENT bundle. The
+console's first build failed the scan on `correctValue` and `resolvedParams`.
+
+**Both readings of that failure are wrong.** It is not a leak — the attempt
+drill-down exists to show the key, and `ai_after_submit` grants staff the same
+read in the database. And it is not noise to be silenced by dropping the console
+from the scan, which would have thrown away the check that matters most.
+
+The scanner now carries **two profiles**:
+
+| | student (`apps/web`) | staff (`apps/console`) |
+|---|---|---|
+| `correctValue`, `correct_spec`, `resolvedParams`, … | **forbidden** | allowed — that is the page's job |
+| `service_role`, `exam_salt`, `engine/solvers`, `lessonData` | forbidden | **forbidden** |
+| a LIVE answer value from the database | **forbidden** | **forbidden** |
+
+The last row is the one that carries the weight. A bundle is a static file, and
+a static file has no idea who is asking — so a baked-in answer value is a leak
+regardless of who was meant to download it.
+
+**Proven by four negative controls, all run:**
+
+1. `correctValue` planted in the student bundle → **fires**
+2. the same string planted in the console bundle → **correctly silent**
+3. a live answer value (`An assembler`, pulled from the database) planted in the
+   console bundle → **fires**
+4. `service_role` planted in the console bundle → **fires**
+
+Control 2 is the one worth keeping. Without it the scanner would be tuned to a
+rule nobody stated, and the next person to see it fire on the console would
+delete the check rather than read it.
+
+## What this pass verified by running it
+
+- `pnpm verify` — typecheck, **lint (now included)**, tests, invariants
+- **204 API tests + 1 skipped · 18 console · 17 web** = 239
+- `pnpm test:rls` — **38/38**
+- `scan:bundle` clean across **both** bundles, non-vacuous in four directions
+- `scan:palette` clean, non-vacuous in three (upstream class, literal hex,
+  `dark:` variant all planted and all caught)
+- console builds: **103.75 KB gz initial**, Recharts split into an on-demand
+  chunk, and `dist/index.html` verified to contain **zero** `modulepreload`
+  links — the exact trap `apps/web` fell into with three.js
+
+## The pattern, an eighth time
+
+Passes 1–2: documents disagreeing with each other.
+Pass 3: documents describing protections the schema did not implement.
+Pass 4: schema valid, reviewed, and wrong at runtime.
+Pass 5: a document disagreeing with itself.
+Pass 6: the corpus internally consistent, aimed at the wrong course.
+Pass 7: aimed at the right course, having silently lost part of it.
+**Pass 8: rules that were correct and untested, because nothing exercised them.**
+
+All three findings here share one property: **no existing test could have caught
+any of them**, and not because the tests were weak. V-51 was masked because the
+API bypasses RLS. V-52 needed a table that did not exist yet. V-53 needed a
+second bundle to exist before the ambiguity in the scanner was even meaningful.
+
+**The habit to add:** when a component is built for the first time, re-read the
+rules written *for* it and check what has been enforcing them in the meantime.
+"The tests pass" and "the rule is enforced" are different claims, and the gap
+between them is exactly the size of the thing nobody has built yet.

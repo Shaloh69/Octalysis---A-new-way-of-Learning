@@ -328,6 +328,84 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
   });
 
   /* ----------------------------------------------------------
+   * GET /api/v1/console/content
+   *
+   * Authoring status per stage. This exists because the honest answer to "is
+   * the course ready" is per-chapter, and an aggregate hides it.
+   *
+   * A stage is SCAFFOLD until someone writes its prose. `scripts/gen-stages.mjs`
+   * emits a `kind='callout'` block with `meta.kind='scaffold'` for every chapter
+   * that has only its syllabus outline, so the gap is a queryable fact rather
+   * than something a reader has to notice. `content/stages/README.md` explains
+   * why the generator refuses to invent the missing text.
+   * -------------------------------------------------------- */
+  app.get("/api/v1/console/content", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+
+    const { rows } = await app.db.query(
+      `select s.id, s.title, s.act, s.ordinal, s.archetype, s.levels,
+              s.est_minutes, s.published, s.gradeable,
+              (select count(*)::int from content_blocks cb where cb.stage_id = s.id)
+                as blocks,
+              (select count(*)::int from content_blocks cb
+                where cb.stage_id = s.id and cb.meta->>'kind' = 'scaffold')
+                as scaffold_blocks,
+              (select count(*)::int from objectives o where o.stage_id = s.id)
+                as objectives,
+              (select count(*)::int from items i
+                where i.stage_id = s.id and i.status = 'live')
+                as live_items,
+              (select count(*)::int from items i
+                where i.stage_id = s.id and i.status <> 'live')
+                as draft_items
+         from stages s
+        order by s.ordinal`,
+    );
+
+    const stages = rows.map((r) => {
+      const blocks = Number(r.blocks);
+      const scaffold = Number(r.scaffold_blocks);
+      return {
+        id: r.id,
+        title: r.title,
+        act: Number(r.act),
+        ordinal: Number(r.ordinal),
+        archetype: r.archetype,
+        levels: r.levels,
+        estMinutes: Number(r.est_minutes),
+        published: r.published,
+        gradeable: r.gradeable,
+        blocks,
+        objectives: Number(r.objectives),
+        liveItems: Number(r.live_items),
+        draftItems: Number(r.draft_items),
+        // Three states, and they are genuinely different:
+        //   empty     nothing synced at all
+        //   scaffold  objectives and a topic outline, no teaching text
+        //   authored  real prose exists
+        authoring: blocks === 0 ? "empty" : scaffold > 0 ? "scaffold" : "authored",
+      };
+    });
+
+    const gradeable = stages.filter((s) => s.gradeable);
+    return reply.send({
+      stages,
+      summary: {
+        total: stages.length,
+        authored: stages.filter((s) => s.authoring === "authored").length,
+        scaffold: stages.filter((s) => s.authoring === "scaffold").length,
+        empty: stages.filter((s) => s.authoring === "empty").length,
+        objectives: stages.reduce((a, s) => a + s.objectives, 0),
+        liveItems: stages.reduce((a, s) => a + s.liveItems, 0),
+        // PHASES.md targets ~40 live items per gradeable stage. The bank is the
+        // schedule, so the shortfall is stated as a number rather than implied.
+        itemTarget: gradeable.length * 40,
+      },
+    });
+  });
+
+  /* ----------------------------------------------------------
    * GET /api/v1/console/audit
    * -------------------------------------------------------- */
   app.get("/api/v1/console/audit", async (req, reply) => {

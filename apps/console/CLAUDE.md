@@ -1,25 +1,68 @@
 # apps/console — teacher + admin
 
+Vite + React 18 + TS + Tailwind + Radix. `pnpm --filter @octa/console dev` on :5174.
+
 ## Provenance
-The app shell is adapted from github.com/satnaing/shadcn-admin (Vite + React + TS + shadcn).
-Some components are modified from upstream shadcn for RTL support — do NOT assume they match the
-shadcn docs. The palette has been replaced with `packages/tokens`. Never reintroduce slate/blue;
-a lint rule fails the build on `slate-` or `blue-` utility classes.
+Built as **shadcn's approach, not shadcn's template**: Radix primitives with the component source
+owned in-repo under `src/components/ui/`. Cloning `satnaing/shadcn-admin` would have imported a
+demo app to delete, and its slate/blue palette is the thing the P4 exit criteria forbid.
+
+Do NOT assume these components match the shadcn docs — they are ours, and they are smaller.
+
+## The palette is `packages/tokens`, and the config enforces it
+`tailwind.config.ts` **deletes** Tailwind's default palette rather than extending it. An upstream
+colour utility is therefore not a rule violation that renders fine; it produces no CSS at all, and
+`scripts/scan-console-palette.mjs` (`pnpm lint`) turns that into a build failure. The scanner also
+rejects a literal hex and any `dark:` variant — themes are driven by `[data-theme]`, never by a
+Tailwind variant, so there must be exactly one palette mechanism.
+
+It flags a banned utility **even inside a comment**, on purpose. A rule you can document your way
+around is not a rule.
 
 ## Auth
 Route guards read role from JWT `app_metadata`, never from `profiles.role`. A student who edits
 their profiles row must still be blocked.
 
-## Pages, in order of how much they'll actually be used
-1. `/console/students/:id` — regenerate the exact variant a student saw from their stored seed
-2. `/console/locks` — students x stages matrix, reason prompt on every toggle
-3. `/console/items` — bank, stats inline, preview-instance with re-roll
-4. `/console/roster`, `/gradebook`, `/analytics`, `/live`, `/feedback`, `/audit`, `/content`,
-   `/assessments`, `/audit/system`
+`roleFromClaims()` mirrors `jwt_role()` including its failure mode: anything unknown, missing or
+malformed maps to **least privilege**. Never read `user_metadata` — it is client-writable through
+the Supabase auth API, and reading it instead of `app_metadata` is a privilege escalation that
+looks like a one-word typo in review. There is a test for that exact substitution.
+
+The guard decides what to RENDER and nothing more. Every console route calls `requireStaff()` on
+the server and RLS denies beneath it, so deleting this file would make the app ruder, not less
+secure.
+
+## Pages
+| Route | What it is for |
+|---|---|
+| `/locks` | students × stages. Reason mandatory on every toggle. **Never computes a lock** — `is_stage_unlocked()` decides, the same authority the student app reads |
+| `/students`, `/students/:id` | roster, import (dry-run first), progress, attempt list |
+| `/attempts/:id` | the exact paper, replayed from the stored seed. The only place the key is shown |
+| `/gradebook` | mastery per stage + class average. **Lazy-loaded** — Recharts is ~105 KB gz and nothing else imports it |
+| `/content` | per-chapter authoring status: authored / scaffold / empty |
+| `/audit` | who changed what and why. Read-only, and there is no delete control by design |
+| `/system` | `run_invariants()`, live |
+| `/feedback` | reports with the resolved variant attached, and the SUS score |
+
+**Not built:** `/console/items` (the bank and review queue), `/console/live` and its projector
+view, `/console/assessments`, `/console/analytics`.
 
 ## Rules
 - Every write that changes student-visible state writes to `audit_log` with actor and reason.
-- Projector view (`/console/live/present`) shows NO names, ever. Aggregates only.
+- Projector view (`/console/live/present`) shows NO names, ever. Aggregates only. **Not built yet
+  — build it that way from the first commit, not as a later pass.**
 - Editing a live item creates a new row sharing `family_id` with `version + 1`, and retires the
   old row. The confirm dialog must say that stats do not carry over, in those words.
 - Tables: TanStack Table. Charts: Recharts. Do not add another table or chart library.
+- `danger` styling is for destructive STAFF actions only. It is never used to tell a student they
+  were wrong — incorrect answers get a neutral response, and this view goes on a projector.
+- Pure logic lives in `src/lib/` and is tested. UI is not tested. `parseRoster` is there because
+  `Dela Cruz, Juan Miguel` is the normal case here, not an edge case.
+
+## The bundle carries the answer key, and that is correct
+`scripts/scan-bundle.mjs` runs **two profiles**. The student bundle must not contain
+`correctValue` at all; this one may, because the drill-down exists to show it and
+`ai_after_submit` grants staff the same read in the database.
+
+What is forbidden in both: `service_role`, `exam_salt`, engine internals — and **any live answer
+value from the database**. A bundle is a static file, and a static file has no idea who is asking.
