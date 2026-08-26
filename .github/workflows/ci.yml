@@ -56,12 +56,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Apply the schema
-        # Same four files, same order as pnpm db:reset. The order is
+        # Same five files, same order as pnpm db:reset. The order is
         # load-bearing: inv_24 calls sus_score(), defined in the feedback
         # addendum.
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
-          for f in db/local-bootstrap.sql db/schema.sql db/addendum-feedback.sql db/addendum-audit.sql; do
+          for f in db/local-bootstrap.sql db/schema.sql db/addendum-feedback.sql db/addendum-audit.sql db/addendum-cron.sql; do
             echo "applying $f"
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --no-psqlrc -f "$f"
           done
@@ -88,6 +88,18 @@ jobs:
       - name: Typecheck
         run: pnpm -r --if-present typecheck
 
+      - name: WCAG AA contrast
+        # P9 exit criterion, and design.md: "verified by computation not by eye."
+        # 1080 checks -- 3 themes x 12 accents x 30 real foreground/background
+        # pairs. It has failed once and been fixed; that is the point of it.
+        run: node scripts/check-contrast.mjs
+
+      - name: Console palette
+        # The console shell descends from a template whose palette is slate and
+        # blue. Tailwind's default palette is deleted, so an upstream utility
+        # produces NO CSS -- silent, and invisible in review. This makes it loud.
+        run: node scripts/scan-console-palette.mjs
+
       - name: Tests
         run: pnpm -r --if-present test
 
@@ -111,3 +123,13 @@ jobs:
             exit 1
           fi
           echo "3D chunk is on-demand only"
+
+      - name: Charts stay out of the console's initial load
+        # Same rule, same reason: Recharts is ~105 KB gz and only the gradebook
+        # imports it. A teacher opening /locks mid-class must not pay for it.
+        run: |
+          if grep -q 'modulepreload' apps/console/dist/index.html 2>/dev/null; then
+            echo "::error::the console preloads a lazy chunk on first paint"
+            exit 1
+          fi
+          echo "console lazy chunks are on-demand only"

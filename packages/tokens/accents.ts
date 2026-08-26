@@ -17,9 +17,23 @@
  * Lightness and chroma are fixed per theme in tokens.css, which is what
  * keeps contrast constant across every hue in this list.
  *
- * INV-26 (docs/AUDITS.md) verifies in CI that all twelve pass WCAG AA
- * against all three themes and stay mutually distinguishable under
- * protanopia and deuteranopia simulation.
+ * `scripts/check-contrast.mjs` verifies in CI that all twelve pass WCAG AA
+ * against all three themes -- 1080 computed checks, and it has failed and
+ * been fixed once.
+ *
+ * IT DOES NOT VERIFY that the twelve stay mutually distinguishable under
+ * protanopia and deuteranopia. This file used to claim that, and the claim was
+ * not achievable: measured at an OKLab floor of 0.06, **at most five** hues can
+ * coexist under dichromacy, because the hue circle collapses toward a single
+ * blue/yellow axis. Ten of these twelve also land near a status colour, and no
+ * reassignment fixes that either -- the four status hues are deliberately
+ * spread around the same circle.
+ *
+ * The real guarantee is WCAG 1.4.1: **colour is never the only channel.** Every
+ * status carries a word or a glyph as well as a hue. The accent is
+ * personalisation -- it is never compared to another accent and never encodes
+ * meaning -- so its hue only has to avoid being an EXACT duplicate of a status
+ * hue, which is gated at 8 degrees.
  */
 
 export type AccentPreset = {
@@ -31,7 +45,10 @@ export type AccentPreset = {
 
 export const ACCENTS: AccentPreset[] = [
   { id: "copper",       name: "Copper",       hue:  45, blurb: "Trace metal. The default." },
-  { id: "solder",       name: "Solder",       hue:  75, blurb: "Warm tin-lead sheen." },
+  // Was hue 75, which is the WARNING hue exactly: a student picking Solder got
+  // the warning colour as their personal accent, in all three themes. Moved to
+  // 90 (brassier, still warm) -- 15 degrees clear of warning and 10 of Ground.
+  { id: "solder",       name: "Solder",       hue:  90, blurb: "Warm brass-and-tin sheen." },
   { id: "phosphor",     name: "Phosphor",     hue: 140, blurb: "CRT green." },
   { id: "trace",        name: "Trace",        hue: 160, blurb: "Etched board." },
   { id: "oscilloscope", name: "Oscilloscope", hue: 185, blurb: "Signal cyan." },

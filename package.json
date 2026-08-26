@@ -20,11 +20,12 @@
     "test:rls": "pnpm --filter @octa/api test:rls",
     "lint": "pnpm -r --if-present lint",
     "build": "pnpm -r --if-present build",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm db:invariants",
+    "verify": "pnpm typecheck && pnpm lint && pnpm check:contrast && pnpm test && pnpm db:invariants",
     "db:push": "node scripts/db-push-supabase.mjs",
     "db:push:check": "node scripts/db-push-supabase.mjs --check",
     "db:push:reset": "node scripts/db-push-supabase.mjs --reset",
-    "scan:palette": "node scripts/scan-console-palette.mjs"
+    "scan:palette": "node scripts/scan-console-palette.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

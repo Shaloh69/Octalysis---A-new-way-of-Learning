@@ -84,17 +84,17 @@
 
   --ink:        oklch(0.92 0.008 250);  /* primary text */
   --ink-muted:  oklch(0.72 0.010 250);  /* secondary */
-  --ink-faint:  oklch(0.55 0.010 250);  /* tertiary, disabled */
+  --ink-faint:  oklch(0.61 0.010 250);  /* tertiary, disabled */
 
   --line:       oklch(0.34 0.014 250);
-  --line-strong:oklch(0.46 0.016 250);
+  --line-strong:oklch(0.51 0.016 250);
 
   /* Accent — hue varies per student, L and C do not. */
   --accent:       oklch(0.72 0.150 var(--accent-hue));
   --accent-hover: oklch(0.78 0.160 var(--accent-hue));
   --accent-muted: oklch(0.30 0.060 var(--accent-hue));
   --accent-fg:    oklch(0.15 0.020 var(--accent-hue));
-  --accent-ring:  oklch(0.72 0.150 var(--accent-hue) / 0.45);
+  --accent-ring:  oklch(0.72 0.150 var(--accent-hue) / 0.75);
 
   /* Semantic — NEVER derived from accent. Red must always mean
      danger regardless of what hue the student chose. */
@@ -109,7 +109,7 @@
 
   /* Locked state is deliberately quiet, not alarming.
      A lock is not an error. */
-  --locked:     oklch(0.48 0.008 250);
+  --locked:     oklch(0.60 0.008 250);
   --locked-bg:  oklch(0.19 0.006 250);
 
   --shadow-1: 0 1px 2px oklch(0 0 0 / 0.4);
@@ -128,16 +128,16 @@
 
   --ink:        oklch(0.24 0.020 250);
   --ink-muted:  oklch(0.45 0.018 250);
-  --ink-faint:  oklch(0.60 0.014 250);
+  --ink-faint:  oklch(0.53 0.014 250);
 
   --line:       oklch(0.86 0.008 250);
-  --line-strong:oklch(0.74 0.012 250);
+  --line-strong:oklch(0.66 0.012 250);
 
   --accent:       oklch(0.48 0.140 var(--accent-hue));
   --accent-hover: oklch(0.42 0.150 var(--accent-hue));
   --accent-muted: oklch(0.92 0.040 var(--accent-hue));
   --accent-fg:    oklch(0.98 0.010 var(--accent-hue));
-  --accent-ring:  oklch(0.48 0.140 var(--accent-hue) / 0.45);
+  --accent-ring:  oklch(0.48 0.140 var(--accent-hue) / 0.75);
 
   --success:    oklch(0.46 0.130 150);
   --success-bg: oklch(0.94 0.040 150);
@@ -148,7 +148,7 @@
   --info:       oklch(0.47 0.110 230);
   --info-bg:    oklch(0.94 0.035 230);
 
-  --locked:     oklch(0.62 0.006 250);
+  --locked:     oklch(0.51 0.006 250);
   --locked-bg:  oklch(0.93 0.004 250);
 
   --shadow-1: 0 1px 2px oklch(0.24 0.02 250 / 0.10);
@@ -168,7 +168,7 @@
 
   --ink:        oklch(0.90 0.140 150);
   --ink-muted:  oklch(0.72 0.110 150);
-  --ink-faint:  oklch(0.56 0.080 150);
+  --ink-faint:  oklch(0.59 0.080 150);
 
   --line:       oklch(0.36 0.050 150);
   --line-strong:oklch(0.50 0.070 150);
@@ -177,7 +177,7 @@
   --accent-hover: oklch(0.86 0.120 var(--accent-hue));
   --accent-muted: oklch(0.26 0.050 var(--accent-hue));
   --accent-fg:    oklch(0.12 0.020 var(--accent-hue));
-  --accent-ring:  oklch(0.80 0.110 var(--accent-hue) / 0.45);
+  --accent-ring:  oklch(0.80 0.110 var(--accent-hue) / 0.75);
 
   --success:    oklch(0.85 0.150 150);
   --success-bg: oklch(0.24 0.060 150);
@@ -188,7 +188,7 @@
   --info:       oklch(0.82 0.100 200);
   --info-bg:    oklch(0.25 0.045 200);
 
-  --locked:     oklch(0.48 0.030 150);
+  --locked:     oklch(0.58 0.030 150);
   --locked-bg:  oklch(0.16 0.018 150);
 
   --shadow-1: 0 0 0 1px oklch(0.36 0.05 150);

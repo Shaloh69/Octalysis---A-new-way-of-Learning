@@ -1538,3 +1538,125 @@ second bundle to exist before the ambiguity in the scanner was even meaningful.
 rules written *for* it and check what has been enforcing them in the meantime.
 "The tests pass" and "the rule is enforced" are different claims, and the gap
 between them is exactly the size of the thing nobody has built yet.
+
+---
+
+# Ninth pass — the contrast check that was documented and did not exist
+
+`packages/tokens/accents.ts` said, in a comment at the top of the file:
+
+> *INV-26 (docs/AUDITS.md) verifies in CI that all twelve pass WCAG AA against
+> all three themes and stay mutually distinguishable under protanopia and
+> deuteranopia simulation.*
+
+`PHASES.md` P9 makes it an exit criterion. `.claude/rules/design.md` says
+*"verified by computation not by eye."* **No such check existed.** This pass
+wrote it — `scripts/check-contrast.mjs`, 1080 computed checks — and it failed
+immediately.
+
+## 🔴 V-54 · Four tokens failed WCAG AA, in every theme
+
+| Token | Role | Was | Needed |
+|---|---|---|---|
+| `--ink-faint` | tertiary text — timestamps, hints, table meta | 3.61–4.48:1 | 4.5:1 |
+| `--locked` | locked-stage labels | 2.83–3.00:1 | 4.5:1 |
+| `--line-strong` | input and card borders | 2.30–2.49:1 | 3.0:1 |
+| `--accent-ring` | the focus indicator | 2.01–2.84:1 | 3.0:1 |
+
+The last one is the serious one. **The focus ring failed 3:1 on all three
+themes and all twelve accents** — a 45%-alpha ring composited over the card
+surface. Keyboard-only operation is in the definition of done, and the indicator
+that makes it possible was below the threshold everywhere.
+
+The others are the same mistake in slower motion: `--ink-faint` is described in
+the token file as "tertiary, disabled", and WCAG does exempt genuinely disabled
+controls — but the token is used for live metadata throughout the console, so it
+is body text and is now held to 4.5:1.
+
+**Why nobody caught it by eye.** Every colour here is authored in OKLCH, which
+is perceptually uniform: two colours with the same `L` genuinely *look* equally
+light. WCAG relative luminance is not OKLCH lightness, and the gap between them
+is widest in the yellows and cyans — which is where three of the twelve accents
+live. The palette looked evenly balanced and was not compliant.
+
+**Fixed** by computing the minimum lightness that clears the threshold per token
+per theme, and raising the ring to 0.75 alpha. All 1080 checks now pass.
+
+## 🔴 V-55 · An accent shipped as an exact duplicate of the warning hue
+
+`solder` was hue **75**. `--warning` is hue **75**. A student choosing Solder
+got the warning colour as their personal accent, in all three themes — on their
+progress bar, their focus ring, their buttons.
+
+Moved to 90. The check now gates any accent within 8° of a status hue.
+
+## 🟠 V-56 · The documented dichromacy guarantee is not achievable
+
+The claim was that all twelve accents "stay mutually distinguishable under
+protanopia and deuteranopia simulation." Measured:
+
+- at an OKLab floor of 0.06, **at most five** hues can coexist under dichromacy
+- at 0.04, at most eight
+- **ten of the twelve** also land within that floor of a status colour, and no
+  reassignment fixes it — the four status hues are deliberately spread around
+  the same circle
+
+The hue circle collapses toward a single blue/yellow axis for a dichromat. This
+is not a palette that was chosen badly; it is a property of the vision.
+
+**So the requirement was wrong, not the palette.** The real guarantee is WCAG
+1.4.1: *colour is never the only channel*. Every status in this project already
+carries a word or a glyph — badges are labelled, the lock matrix uses ●/○/·
+plus a heavier border, and an incorrect answer is told in words rather than in
+red. The accent is personalisation: never compared to another accent, never
+encoding meaning.
+
+The check now **gates** what is achievable and meaningful (AA contrast; no
+duplicate status hue) and **reports** the dichromat separations as information,
+with the mitigation named in the output. `accents.ts` records the corrected
+claim and the measurement behind it.
+
+**This is the failure mode worth naming:** a documented guarantee that cannot be
+met is worse than no guarantee, because it reads as done. It survived because
+nothing executed it. The fix was not to weaken the check until it passed, nor to
+distort the palette chasing an impossible target, but to work out what was
+actually true and gate that.
+
+## 🟡 V-57 · CI applied four SQL files where `db:reset` applies five
+
+`addendum-cron.sql` was missing from the CI schema step. CI therefore tested a
+database without `recompute_item_stats()`, `apply_scheduled_locks()` or
+`run_invariants_nightly()` — the three scheduled jobs the whole free-tier
+hosting plan depends on. Local `pnpm db:reset` applied all five, so the drift was
+invisible to anyone running it locally, which is everyone.
+
+Fixed, and the comment above it now says *five* so the next mismatch is visible
+in review.
+
+## What this pass verified by running it
+
+- `scripts/check-contrast.mjs` — **1080 checks, all passing**, proven
+  non-vacuous three ways: darkening `--ink` produced 4 failures; restoring the
+  accent to hue 75 produced the duplicate finding; weakening the ring to 0.45
+  produced 35 focus-ring failures
+- `pnpm verify` now runs **typecheck → lint → contrast → tests → invariants**
+- CI gained the contrast gate, the palette gate, and a modulepreload guard for
+  the console matching the one `apps/web` already had
+
+## The pattern, a ninth time
+
+Pass 3 found documents describing protections the schema did not implement.
+**Pass 9 found a document describing a check that did not exist, asserting a
+guarantee that could not exist.**
+
+Two different failures wearing one sentence. The check was missing — that is an
+ordinary gap, and writing it found four real AA violations including a broken
+focus indicator. But the *guarantee* was also unachievable, and that is the more
+interesting half: it had been written down, cited by an invariant number, and
+carried forward through eight verification passes without anyone being able to
+run it and discover it was impossible.
+
+**The habit to add:** a comment that claims CI verifies something must name the
+script that does it. `accents.ts` cited "INV-26 (docs/AUDITS.md)" — and there is
+no INV-26 in `AUDITS.md`. **The citation pointed at nothing.** A number is not
+executable and, as it turns out, was not even resolvable; a filename is both.
