@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { readFileSync } from "node:fs";
 import { createHmac } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -205,6 +206,42 @@ describe("GET /api/v1/stages — the skill tree", () => {
         expect(counts).toEqual([5, 4, 4, 5]);
         expect(counts.reduce((x, y) => x + y, 0)).toBe(18);
       });
+  });
+
+  it("three examinations are period-scoped; the FINALS is cumulative", async () => {
+    // Read from db/schema.sql, NOT from the database.
+    //
+    // `seedItemBank()` replaces the blueprints with test fixtures, so querying
+    // the live database here would assert something about the fixtures and
+    // nothing about the curriculum. The seed is the curriculum fact -- the same
+    // reason apps/web/test/layout.spec.ts parses the stage seed rather than
+    // holding a copy of it.
+    const sql = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "db", "schema.sql"),
+      "utf8",
+    );
+    const seed = sql.slice(sql.indexOf("insert into blueprints"));
+
+    const byAct = (name: string): Record<string, number> => {
+      const at = seed.indexOf(`'${name}'`);
+      expect(at, `${name} is not in the blueprint seed`).toBeGreaterThan(-1);
+      const m = /"by_act":\s*(\{[^}]*\})/.exec(seed.slice(at, at + 900));
+      expect(m, `${name} has no by_act`).not.toBeNull();
+      return JSON.parse(m![1]!) as Record<string, number>;
+    };
+
+    expect(byAct("Prelim Examination")).toEqual({ "1": 40 });
+    expect(byAct("Midterm Examination")).toEqual({ "2": 40 });
+    expect(byAct("Semi-final Examination")).toEqual({ "3": 40 });
+
+    const finals = byAct("Final Examination");
+    expect(Object.keys(finals).sort()).toEqual(["1", "2", "3", "4"]);
+    expect(Object.values(finals).reduce((a, b) => a + b, 0)).toBe(50);
+
+    // NOT sampled evenly. Chapters 14-18 appear in no other examination, so
+    // Act 4 carries almost half the paper; an even split would test the Prelim
+    // material a third time and the control unit once.
+    expect(finals["4"]!).toBeGreaterThan(finals["1"]! + finals["2"]!);
   });
 
   it("Stage 00 is available and Stage 05 is locked for a fresh student", async () => {

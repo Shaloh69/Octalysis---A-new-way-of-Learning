@@ -368,9 +368,13 @@ export const api = {
       `/api/v1/console/items/${encodeURIComponent(id)}/preview?seed=${encodeURIComponent(seed)}`,
     ),
 
-  setItemStatus: (id: string, status: string, reason?: string) =>
+  setItemStatus: (
+    id: string,
+    status: string,
+    opts: { reason?: string; selfApproved?: boolean } = {},
+  ) =>
     request<{ ok: true; status: string }>(
       `/api/v1/console/items/${encodeURIComponent(id)}/status`,
-      { method: "PATCH", body: JSON.stringify({ status, ...(reason ? { reason } : {}) }) },
+      { method: "PATCH", body: JSON.stringify({ status, ...opts }) },
     ),
 };

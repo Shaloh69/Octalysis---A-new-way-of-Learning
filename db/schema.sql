@@ -667,6 +667,8 @@ insert into stages (id, act, ordinal, title, est_minutes, prereq, published, gra
 insert into blueprints (name, scope, total_items, constraints) values
  -- The syllabus has FOUR major examinations at 30% combined, not one final.
  -- by_act doubles as by_period because act == grading period in this seed.
+ -- Prelim, Midterm and Semi-final each cover their own period. The FINALS is
+ -- cumulative -- see the note on it below.
  ('Prelim Examination',      'final', 40, '{
     "by_act":   {"1":40},
     "by_bloom": {"remember":8,"understand":12,"apply":14,"analyze":6},
@@ -691,8 +693,17 @@ insert into blueprints (name, scope, total_items, constraints) values
     "exclude_non_gradeable_stages": true,
     "difficulty_target": 0.62
   }'::jsonb),
+ -- THE FINALS IS CUMULATIVE. Confirmed by the instructor: it covers the whole
+ -- course, not only the Finals period. The other three examinations remain
+ -- scoped to their own grading period.
+ --
+ -- The weighting is NOT even. 8/8/10/24 across the four acts puts almost half
+ -- the paper on Act 4, which is the material examined nowhere else -- chapters
+ -- 14-18 have no later exam to appear in. Sampling all eighteen chapters evenly
+ -- would mean the Finals tested the Prelim material a third time and the
+ -- control unit once.
  ('Final Examination',       'final', 50, '{
-    "by_act":   {"4":50},
+    "by_act":   {"1":8,"2":8,"3":10,"4":24},
     "by_bloom": {"remember":10,"understand":15,"apply":18,"analyze":7},
     "by_type":  {"S":27,"P":16,"G":7},
     "max_per_objective": 3,

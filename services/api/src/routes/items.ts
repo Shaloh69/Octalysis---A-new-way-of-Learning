@@ -46,6 +46,14 @@ const ListQuery = z.object({
 const StatusBody = z.object({
   status: z.enum(["draft", "review", "live", "retired"]),
   reason: z.string().trim().max(500).optional(),
+  /**
+   * An explicit "I have re-checked this answer key myself".
+   *
+   * Only accepted when the author is the ONLY member of staff. It is not a way
+   * around the review rule -- it is what the review rule degrades to when there
+   * is nobody else, and it is recorded as such.
+   */
+  selfApproved: z.boolean().optional(),
 });
 
 const ItemFields = z.object({
@@ -357,12 +365,42 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
     const item = cur.rows[0]!;
 
     if (body.data.status === "live") {
-      // Rule 3. Approving your own item is how a wrong key reaches a live bank.
+      /*
+       * Rule 3, and the one place it bends.
+       *
+       * Approving your own item is how a wrong key reaches a live bank. But
+       * decision D4 makes teacher and admin the same person in this deployment,
+       * so on a one-instructor install the strict rule means NOTHING can ever
+       * go live -- a correctness rule that stops the system working is not a
+       * correctness rule, it is a bug.
+       *
+       * So: if a second member of staff exists, the strict rule stands and
+       * there is no override. If the author is the only one, they may publish
+       * their own work by saying so explicitly, and it is recorded as a
+       * self-approval rather than as a review. The moment a TA is added, this
+       * tightens by itself -- no setting to remember to change.
+       */
       if (item.author_id === id!.userId) {
-        throw errors.forbidden(
-          "An item cannot be approved by the person who wrote it. Ask another " +
-            "member of staff to review it.",
+        const staff = await app.db.query(
+          `select count(*)::int as n from profiles
+            where role in ('teacher','admin') and deleted_at is null and id <> $1`,
+          [id!.userId],
         );
+        const othersExist = Number(staff.rows[0]!.n) > 0;
+
+        if (othersExist) {
+          throw errors.forbidden(
+            "An item cannot be approved by the person who wrote it. Ask another " +
+              "member of staff to review it.",
+          );
+        }
+        if (!body.data.selfApproved) {
+          throw errors.badRequest(
+            "You wrote this item, and you are the only member of staff. You can " +
+              "publish it, but you must confirm you have re-checked the answer " +
+              "key yourself. That confirmation is recorded.",
+          );
+        }
       }
       // A static item with no correct value would grade every student wrong,
       // silently, for as long as it stayed live.
@@ -386,7 +424,14 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
       [
         id!.userId,
         itemId,
-        JSON.stringify({ from: item.status, to: body.data.status, reason: body.data.reason ?? null }),
+        JSON.stringify({
+          from: item.status,
+          to: body.data.status,
+          reason: body.data.reason ?? null,
+          // Distinguishable from a real review, forever, in one field.
+          selfApproved:
+            body.data.status === "live" && item.author_id === id!.userId ? true : undefined,
+        }),
       ],
     );
 

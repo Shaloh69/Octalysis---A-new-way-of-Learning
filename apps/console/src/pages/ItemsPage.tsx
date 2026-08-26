@@ -222,6 +222,7 @@ function PreviewDialog({
   const [seed, setSeed] = useState("preview-1");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [selfApproved, setSelfApproved] = useState(false);
   const { data, error, loading } = useAsync<ResolvedPreview | null>(
     () => (item ? api.previewItem(item.id, seed) : Promise.resolve(null)),
     [item?.id, seed],
@@ -234,7 +235,7 @@ function PreviewDialog({
     setBusy(true);
     setErr(null);
     try {
-      await api.setItemStatus(item.id, status);
+      await api.setItemStatus(item.id, status, selfApproved ? { selfApproved: true } : {});
       onChanged();
       onClose();
     } catch (e) {
@@ -311,6 +312,33 @@ function PreviewDialog({
           </>
         ) : null}
 
+        {item.status === "review" ? (
+          /*
+           * The self-approval acknowledgement.
+           *
+           * The server decides whether this is even allowed -- it is refused
+           * outright while a second member of staff exists, so this box is a
+           * fallback for a one-instructor install rather than a way around the
+           * review rule. Ticking it is recorded in audit_log as a
+           * self-approval, distinguishable from a real review forever.
+           */
+          <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-line bg-surface-0 p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 accent-accent"
+              checked={selfApproved}
+              onChange={(e) => setSelfApproved(e.target.checked)}
+            />
+            <span className="text-sm text-ink">
+              I wrote this item and have re-checked the answer key myself.
+              <span className="mt-0.5 block text-xs text-ink-muted">
+                Only needed when you are the only member of staff. Recorded in the audit log as a
+                self-approval. If someone else can review it, ask them instead.
+              </span>
+            </span>
+          </label>
+        ) : null}
+
         {err ? (
           <p className="mb-2 text-sm text-danger" role="alert">
             {err}
@@ -345,11 +373,7 @@ function PreviewDialog({
           ) : null}
         </DialogFooter>
 
-        {item.status === "review" ? (
-          <p className="mt-2 text-xs text-ink-faint">
-            You cannot approve an item you wrote yourself. The server refuses it.
-          </p>
-        ) : null}
+
       </DialogContent>
     </Dialog>
   );
