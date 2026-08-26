@@ -55,6 +55,56 @@ describe("roster import — a comma in a name is the normal case", () => {
   });
 });
 
+describe("roster import — the format a teacher actually pastes", () => {
+  it("accepts an ID and name separated by SPACES", () => {
+    // The instructor's own example. A university enrolment list copied out of a
+    // PDF or a printed sheet has no commas at all, and requiring one would
+    // reject the entire roster while giving no clue why.
+    const { rows, bad } = parseRoster("23212905  Shem Joshua M. Dumpor");
+    expect(bad).toBe(0);
+    expect(rows[0]).toEqual({ studentId: "23212905", fullName: "Shem Joshua M. Dumpor" });
+  });
+
+  it("accepts a tab-separated line, which is what a spreadsheet copy gives", () => {
+    const { rows } = parseRoster("23212905	Shem Joshua M. Dumpor");
+    expect(rows[0]).toEqual({ studentId: "23212905", fullName: "Shem Joshua M. Dumpor" });
+  });
+
+  it("accepts a dashed ID format too", () => {
+    const { rows } = parseRoster("21-1234-567  Santos, Maria");
+    expect(rows[0]).toEqual({ studentId: "21-1234-567", fullName: "Santos, Maria" });
+  });
+
+  it("still splits a COMMA line on the first comma only", () => {
+    // The two rules must not fight. A comma line has no leading-ID-then-space
+    // shape, so it falls through to the comma rule and the name keeps its comma.
+    const { rows } = parseRoster("23212905,Dumpor, Shem Joshua M.");
+    expect(rows[0]).toEqual({ studentId: "23212905", fullName: "Dumpor, Shem Joshua M." });
+  });
+
+  it("does not mangle a line that starts with a NAME rather than an ID", () => {
+    // The space rule is safe only because it anchors on a numeric ID. A line
+    // beginning with a name must not be split at its first space.
+    const { rows, bad } = parseRoster("Shem Joshua M. Dumpor, 23212905");
+    expect(bad).toBe(0);
+    expect(rows[0]!.studentId).toBe("Shem Joshua M. Dumpor");
+  });
+
+  it("reads a whole pasted class list", () => {
+    const { rows, bad } = parseRoster(
+      [
+        "23212905  Shem Joshua M. Dumpor",
+        "23212906  Santos, Maria Clara",
+        "",
+        "23212907\tReyes, Ana",
+      ].join("\n"),
+    );
+    expect(bad).toBe(0);
+    expect(rows).toHaveLength(3);
+    expect(rows[1]!.fullName).toBe("Santos, Maria Clara");
+  });
+});
+
 describe("gradebook CSV — reads exactly what the server writes", () => {
   it("round-trips a quoted field containing a comma", () => {
     expect(splitCsvLine('21-1,"Dela Cruz, Juan",100,80')).toEqual([

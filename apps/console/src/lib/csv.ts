@@ -26,14 +26,24 @@ export interface RosterParse {
 /**
  * Parse a pasted roster.
  *
- * The format is `ID,Full Name` and the name may itself contain commas, so the
- * FIRST comma is the only separator: everything after it is the name. This is
- * not RFC-4180 — it is the shape a university export actually arrives in, where
- * the ID is a rigid code and the name is free text.
- *
- * A quoted name (`21-1,"Dela Cruz, Juan"`) is also accepted, because a teacher
- * who exports from a spreadsheet will get one.
+ * TWO formats are accepted, and the order they are tried in matters. See the
+ * comment inside the loop.
  */
+
+/**
+ * An ID at the start of a line: digits, optionally with dashes.
+ *
+ * `23212905` and `21-1234-567` are both real university formats. Anchoring on
+ * this is what lets a SPACE-separated paste work at all -- see below.
+ */
+// The name must begin with a real character, NOT a comma.
+//
+// Without `[^,\s]` the two rules fight: `21-1 , Santos, Maria` -- a comma line
+// that happens to have a space before the comma -- matched here and produced the
+// name ", Santos, Maria", comma and all. Requiring a non-comma first character
+// makes that line fall through to the comma rule, where it belongs.
+const LEADING_ID = /^([0-9][0-9-]{2,})[ 	]+([^,\s].*)$/;
+
 export function parseRoster(text: string): RosterParse {
   const rows: RosterLine[] = [];
   let bad = 0;
@@ -42,14 +52,37 @@ export function parseRoster(text: string): RosterParse {
     const line = raw.trim();
     if (!line) continue;
 
-    const comma = line.indexOf(",");
-    if (comma === -1) {
-      bad++;
-      continue;
-    }
+    let id: string;
+    let name: string;
 
-    const id = line.slice(0, comma).trim();
-    let name = line.slice(comma + 1).trim();
+    /*
+     * TWO FORMATS, and the second is the one a teacher will actually paste.
+     *
+     * `23212905  Shem Joshua M. Dumpor` -- an ID and a name separated by
+     * whitespace, which is how a university enrolment list arrives when copied
+     * out of a PDF or a printed sheet. Requiring a comma would reject the
+     * entire roster and give no clue why.
+     *
+     * It is safe to split on the first whitespace ONLY because the ID is a
+     * rigid numeric code: the regex above will not match a name, so a line that
+     * does not start with an ID falls through to the comma rule instead of
+     * being mangled.
+     */
+    const spaced = LEADING_ID.exec(line);
+    if (spaced) {
+      id = spaced[1]!;
+      name = spaced[2]!.trim();
+    } else {
+      // `ID,Full Name` -- and the name may itself contain commas, so the FIRST
+      // comma is the only separator. "Dela Cruz, Juan Miguel" is one name.
+      const comma = line.indexOf(",");
+      if (comma === -1) {
+        bad++;
+        continue;
+      }
+      id = line.slice(0, comma).trim();
+      name = line.slice(comma + 1).trim();
+    }
 
     // A spreadsheet export quotes any field containing a comma, and doubles
     // quotes inside it. Unwrap before anything else looks at the name.
@@ -61,7 +94,7 @@ export function parseRoster(text: string): RosterParse {
       bad++;
       continue;
     }
-    // A header row is RECOGNISED, not assumed to be line 1 — teachers paste
+    // A header row is RECOGNISED, not assumed to be line 1 -- teachers paste
     // fragments from the middle of a spreadsheet as often as whole files.
     if (/^student_?\s?id$/i.test(id)) continue;
 
