@@ -13,7 +13,7 @@ was assumed rather than run, it says so.
 
 | | |
 |---|---|
-| Tests green | **239** (204 API + 18 console + 17 web) · 1 skipped (live JWKS, needs `.env`) |
+| Tests green | **252** (217 API + 18 console + 17 web) · 1 skipped (live JWKS, needs `.env`) |
 | TypeScript strict | clean across 4 packages |
 | Invariants | 22 clean, 0 failures (3 notices expected on an unseeded database) |
 | Schema | applies from scratch locally **and on the live Supabase project** |
@@ -125,13 +125,34 @@ FDE stepper, x86-16 interpreter, cache simulator. `MASTER-PLAN.md` §13.6 alread
 names the fallback: ship Stages 15 and 16 as read + parameterized questions and
 add simulators later.
 
-### P7 — Item analytics · **SQL DONE · REVIEW QUEUE UI NOT BUILT**
+### P7 — Item analytics · **DONE**
 
 `recompute_item_stats()` computes p-value and point-biserial discrimination and
 auto-flags after 30 exposures. **Verified against real submitted attempts** — 8
-items updated with correct p-values.
+items updated with correct p-values. Scheduled nightly via `pg_cron`.
 
-Scheduled nightly via `pg_cron`. No review-queue UI.
+The bank now has routes and a page. Three of its four rules are refusals, and
+each is tested by watching it refuse:
+
+- **An item cannot be edited in place.** There is no `PUT`. An edit creates a
+  new version sharing `family_id` and retires the old row — never deletes it,
+  because `attempt_items` points at it and a paper must stay regenerable for
+  years. The API returns the words *"Statistics do not carry over"* so a script
+  author cannot miss what the confirm dialog says.
+- **Nobody approves their own item.** The author is refused with a message
+  telling them to ask someone else. Tested with a second staff account, because
+  asserting it without one proves nothing.
+- **A static item with no correct answer cannot go live.** It would mark every
+  student wrong, silently, for as long as it stayed there.
+
+Preview runs the **real** `resolveItem()` with a caller-supplied seed, so a
+teacher re-rolls and sees the actual spread of variants their students will get.
+A preview through a different code path would be a preview of something else.
+
+The page reads the psychometrics rather than just printing them: under 30
+exposures it says the numbers mean nothing yet, and a **negative** point-biserial
+is called out as *"the key is probably wrong"* — which is what it almost always
+means.
 
 ### P8 — Feedback · **DONE**
 

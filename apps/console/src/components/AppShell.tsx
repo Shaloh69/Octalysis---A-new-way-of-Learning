@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Users, Lock, BookOpen, Table2, ScrollText, ShieldCheck, MessageSquare,
-  LogOut, Menu, X,
+  Boxes, LogOut, Menu, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } from "@/lib/session";
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 const NAV = [
   { to: "/locks", label: "Locks", icon: Lock, hint: "Open or close a stage for one student" },
   { to: "/students", label: "Students", icon: Users, hint: "Roster, progress, and paper drill-down" },
+  { to: "/items", label: "Items", icon: Boxes, hint: "The bank: preview, review, approve, retire" },
   { to: "/gradebook", label: "Gradebook", icon: Table2, hint: "Mastery per stage, exportable" },
   { to: "/content", label: "Content", icon: BookOpen, hint: "Stages, objectives, authoring status" },
   { to: "/audit", label: "Audit log", icon: ScrollText, hint: "Who changed what, and why" },

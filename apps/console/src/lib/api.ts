@@ -238,6 +238,50 @@ export interface FeedbackEntry {
   createdAt: string;
 }
 
+export interface BankItem {
+  id: string;
+  familyId: string;
+  slug: string;
+  stageId: string;
+  objectiveId: string | null;
+  objectiveText: string | null;
+  type: "S" | "P" | "G";
+  status: "draft" | "review" | "live" | "retired";
+  version: number;
+  bloom: string;
+  targetDifficulty: number | null;
+  /** The TEMPLATE, with its `{f}` slots. Never a resolved instance. */
+  stemTemplate: string;
+  solverRef: string | null;
+  authorName: string | null;
+  reviewerName: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  stats: {
+    exposures: number;
+    /** Difficulty. HIGH means EASY -- it is the proportion who got it right. */
+    pValue: number | null;
+    /** Point-biserial. Negative almost always means the key is wrong. */
+    discrimination: number | null;
+    flagged: boolean;
+    flagReason: string | null;
+  };
+}
+
+/** Staff-only, and it carries the key. See the note at the top of this file. */
+export interface ResolvedPreview {
+  seed: string;
+  item: {
+    stem: string;
+    options: string[];
+    correctValue: string;
+    correctIndex: number;
+    rationale: string;
+    resolvedParams: Record<string, unknown>;
+  } | null;
+  error?: string;
+}
+
 export interface SetLockInput {
   scope: "global" | "section" | "user";
   stageId: string;
@@ -307,4 +351,26 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(input),
     }),
+
+  items: (filter: { stageId?: string | null; status?: string | null; flagged?: string | null }) => {
+    const q = new URLSearchParams();
+    if (filter.stageId) q.set("stageId", filter.stageId);
+    if (filter.status) q.set("status", filter.status);
+    if (filter.flagged) q.set("flagged", filter.flagged);
+    const qs = q.toString();
+    return request<{ items: BankItem[]; summary: Record<string, number> }>(
+      `/api/v1/console/items${qs ? `?${qs}` : ""}`,
+    );
+  },
+
+  previewItem: (id: string, seed: string) =>
+    request<ResolvedPreview>(
+      `/api/v1/console/items/${encodeURIComponent(id)}/preview?seed=${encodeURIComponent(seed)}`,
+    ),
+
+  setItemStatus: (id: string, status: string, reason?: string) =>
+    request<{ ok: true; status: string }>(
+      `/api/v1/console/items/${encodeURIComponent(id)}/status`,
+      { method: "PATCH", body: JSON.stringify({ status, ...(reason ? { reason } : {}) }) },
+    ),
 };

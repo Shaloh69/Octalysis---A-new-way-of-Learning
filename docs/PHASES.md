@@ -214,7 +214,19 @@ because Stage 15 questions are graded by running it server-side.
 
 ---
 
-## P7 — Item analytics · 1 week
+## P7 — Item analytics · **DONE**
+
+> | Exit criterion | Result |
+> |---|---|
+> | A deliberately-broken item gets flagged automatically within one night | pass — `recompute_item_stats()` auto-flags after 30 exposures, on `pg_cron`, verified against real submitted attempts |
+> | Editing a live item creates v+1, retires v, and the UI says so before you confirm | pass — and the API returns the words "Statistics do not carry over" too, so a script author cannot miss it |
+>
+> Two refusals were added beyond the original criteria, because a bank UI
+> without them will eventually ship a wrong key to a real exam: **nobody
+> approves their own item**, and **a static item with no correct answer cannot
+> go live**. Both are tested by watching them refuse.
+
+### What P7 originally specified
 
 Nightly **Supabase Cron** (`pg_cron`) recomputing `item_stats`: p-value, point-biserial
 discrimination, distractor histogram, variant drift (p-value bucketed by param quintile). Auto-flag
