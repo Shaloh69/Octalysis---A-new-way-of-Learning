@@ -25,7 +25,10 @@
     "db:push:check": "node scripts/db-push-supabase.mjs --check",
     "db:push:reset": "node scripts/db-push-supabase.mjs --reset",
     "scan:palette": "node scripts/scan-console-palette.mjs",
-    "check:contrast": "node scripts/check-contrast.mjs"
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "backup": "node scripts/backup.mjs",
+    "backup:dump": "node scripts/backup.mjs --dump-only",
+    "backup:verify": "node scripts/backup.mjs --verify"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

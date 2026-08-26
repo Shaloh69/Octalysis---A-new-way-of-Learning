@@ -162,9 +162,32 @@ under reduced motion or a small viewport, and silently absent when WebGL fails.
 **Not done:** audio (Howler), automated axe/contrast checks in CI, and a manual
 screen-reader pass.
 
-### P10 — Pilot & hardening · **NOT STARTED**
+### P10 — Pilot & hardening · **PARTLY DONE**
 
-No load test, no backup rehearsal, no rollback drill, no Sentry.
+**Done:**
+
+- **Backups exist and the restore is rehearsed.** `pnpm backup` dumps *and*
+  restores into a scratch database, then checks five things: row counts match,
+  `run_invariants()` returns the same verdict as the source, RLS is still on for
+  every table in `public`, the append-only triggers survived, and
+  `attempt_items` keeps its policies. Proven non-vacuous twice — a truncated
+  dump and a dump that restores with RLS disabled are both caught, and the
+  second is the dangerous one because it restores cleanly and looks like
+  success.
+- **`docs/RUNBOOK.md`** — rollback in under two minutes, restore procedure,
+  grade-dispute procedure, escalation, and an explicit list of what is *not*
+  covered.
+- **Accessibility gate in CI** — 1080 computed WCAG checks (P9).
+
+**Still not done, and each needs something that does not exist yet:**
+
+| Gap | Blocked on |
+|---|---|
+| Load test, 40 concurrent | A deployed Render instance. The thing under test is a 512 MB box with no scaling; a laptop cannot stand in for it |
+| 7-day pause behaviour | A deliberately quiet week on a scratch project. **Do not assume `pg_cron` counts as activity** |
+| Off-site backup copies | Somewhere that is not this laptop. The rehearsal is real; the off-site half is not set up |
+| Sentry | A project. No error tracking on either app today |
+| `/maintenance` page | Nothing — just not built |
 
 ---
 
