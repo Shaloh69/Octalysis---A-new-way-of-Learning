@@ -1,23 +1,79 @@
-import { useEffect, useState, useCallback } from "react";
-import { StageMap } from "./components/StageMap";
-import { StageReader } from "./components/StageReader";
-import { ProgressGrid } from "./components/ProgressGrid";
+import { useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Link,
+  NavLink,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useNavigate,
+} from "react-router-dom";
 import { RegisterBar } from "./components/RegisterBar";
 import { DepthGauge } from "./components/DepthGauge";
-import { api, ApiError, type StageMapData, type ProgressGrid as Grid } from "./lib/api";
-
-type View = { name: "map" } | { name: "stage"; id: string } | { name: "progress" };
+import { FeedbackWidget } from "./components/FeedbackWidget";
+import { SusSurvey } from "./components/SusSurvey";
+import { LoginPage, RegisterPage } from "./pages/AuthPages";
+import {
+  CheckPage,
+  MaintenancePage,
+  MapPage,
+  NotFoundPage,
+  ProgressPage,
+  StagePage,
+} from "./pages/StudentPages";
+import { SettingsPage } from "./pages/SettingsPage";
+import { api, type ProgressGrid as Grid, type StageMapData } from "./lib/api";
+import { currentIdentity, onAuthChange, signOut, type Identity } from "./lib/auth";
 
 /**
- * Six states, every surface (DESIGN-MANDATE §5.1): loading, empty, locked,
- * error, offline, saving. The three that apply to a read-only view are here;
- * `locked` is the stage reader's job and `saving` belongs to the attempt runner.
+ * The student app.
+ *
+ * REAL ROUTES, and that is the point of this file. It used to be a three-way
+ * `useState` switch: no deep link to a stage, no browser back button, and no
+ * URL a student could send to a classmate. `react-router-dom` was already a
+ * dependency and was never imported.
+ *
+ * The shell is deliberately thin. It owns the Register Bar, the Depth Gauge,
+ * the offline banner and the auth gate; everything else is a route.
  */
-export default function App(): JSX.Element {
-  const [view, setView] = useState<View>({ name: "map" });
+
+function useIdentity() {
+  const [identity, setIdentity] = useState<Identity | null | undefined>(undefined);
+
+  useEffect(() => {
+    let live = true;
+    const read = () => {
+      void currentIdentity().then((i) => {
+        if (live) setIdentity(i);
+      });
+    };
+    read();
+    const off = onAuthChange(read);
+    return () => {
+      live = false;
+      off();
+    };
+  }, []);
+
+  return identity;
+}
+
+/** Everything under `/app` requires a session. */
+function RequireSession(): JSX.Element {
+  const identity = useIdentity();
+  if (identity === undefined) {
+    return <div className="state state-loading">Checking your session…</div>;
+  }
+  if (identity === null) return <Navigate to="/login" replace />;
+  return <Outlet />;
+}
+
+function AppShell(): JSX.Element {
+  const identity = useIdentity();
+  const nav = useNavigate();
   const [map, setMap] = useState<StageMapData | null>(null);
   const [grid, setGrid] = useState<Grid | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
@@ -31,28 +87,17 @@ export default function App(): JSX.Element {
     };
   }, []);
 
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const [m, g] = await Promise.all([api.stages(), api.progress()]);
-      setMap(m);
-      setGrid(g);
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not reach the server. Check your connection and try again.",
-      );
-    }
-  }, []);
-
+  // The gauge and bar need the map, and every route under here needs it too --
+  // but each route loads its own, so this is only for the chrome.
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  const openStage = useCallback((id: string) => {
-    setView({ name: "stage", id });
-    window.scrollTo({ top: 0 });
+    void Promise.all([api.stages(), api.progress()])
+      .then(([m, g]) => {
+        setMap(m);
+        setGrid(g);
+      })
+      .catch(() => {
+        /* the route below will show the real error; chrome degrades quietly */
+      });
   }, []);
 
   return (
@@ -71,71 +116,71 @@ export default function App(): JSX.Element {
       )}
 
       <div className="app-body">
-        <DepthGauge depth={grid?.depth ?? 6} revealed={(map?.nodes.find((n) => n.id === "11")?.state ?? "locked") !== "locked"} />
+        <DepthGauge
+          depth={grid?.depth ?? 6}
+          revealed={(map?.nodes.find((n) => n.id === "11")?.state ?? "locked") !== "locked"}
+        />
 
         <main id="main" className="app-main">
           <nav className="app-nav" aria-label="Main">
-            <button
-              type="button"
-              onClick={() => setView({ name: "map" })}
-              aria-current={view.name === "map" ? "page" : undefined}
-            >
+            <NavLink to="/app" end>
               Map
-            </button>
+            </NavLink>
+            <NavLink to="/app/progress">Progress</NavLink>
+            <NavLink to="/app/settings">Settings</NavLink>
             <button
               type="button"
-              onClick={() => setView({ name: "progress" })}
-              aria-current={view.name === "progress" ? "page" : undefined}
+              className="app-nav-out"
+              onClick={async () => {
+                await signOut();
+                nav("/login", { replace: true });
+              }}
             >
-              Progress
+              Sign out
             </button>
           </nav>
 
-          {error && (
-            <div className="state state-error" role="alert">
-              <h2>That did not load</h2>
-              <p>{error}</p>
-              <button type="button" onClick={() => void load()}>
-                Try again
-              </button>
-            </div>
-          )}
-
-          {!error && !map && <MapSkeleton />}
-
-          {!error && map && view.name === "map" && <StageMap data={map} onOpen={openStage} />}
-
-          {!error && map && view.name === "stage" && (
-            <StageReader
-              stageId={view.id}
-              onBack={() => setView({ name: "map" })}
-              onProgressChanged={() => void load()}
-            />
-          )}
-
-          {!error && grid && view.name === "progress" && <ProgressGrid data={grid} />}
+          <Outlet />
         </main>
       </div>
+
+      {/* Both are gated on their own terms and render nothing until earned. */}
+      <FeedbackWidget />
+      {identity && <SusSurvey />}
     </div>
   );
 }
 
-/** A skeleton, not a spinner: it shows the SHAPE of what is coming. */
-function MapSkeleton(): JSX.Element {
+export default function App(): JSX.Element {
   return (
-    <div className="state state-loading" aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading the stage map</span>
-      <div className="skel skel-title" />
-      <div className="skel-row">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="skel skel-node" />
-        ))}
-      </div>
-      <div className="skel-row">
-        {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className="skel skel-node" />
-        ))}
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/app" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/maintenance" element={<MaintenancePage />} />
+
+        <Route element={<RequireSession />}>
+          <Route element={<AppShell />}>
+            {/*
+             * `/app` and `/app/map` are the SAME page. The galaxy is a
+             * decorative layer on the first and suppressed on the second --
+             * neither is a fallback, and nothing redirects, so every URL works
+             * on every device. See pages/StudentPages.tsx.
+             */}
+            <Route path="/app" element={<MapPage />} />
+            <Route path="/app/map" element={<MapPage flat />} />
+            <Route path="/app/stage/:id" element={<StagePage />} />
+            <Route path="/app/stage/:id/check" element={<CheckPage />} />
+            <Route path="/app/progress" element={<ProgressPage />} />
+            <Route path="/app/settings" element={<SettingsPage />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Router>
   );
 }
+
+export { Link };

@@ -38,10 +38,11 @@ const c = {
  * TWO BUNDLES, TWO RULES. Conflating them makes this scanner useless in both
  * directions, so the distinction is the most important thing in this file.
  *
- * `apps/web` is the STUDENT bundle. It must not contain the answer-key field
- * names at all. There is no legitimate reason for `correctValue` to appear in
- * code a student downloads, so its mere presence is a finding -- that is the
- * early warning, well before an actual value leaks.
+ * `apps/web` is the STUDENT bundle. It must not contain the DATABASE column
+ * names or the engine's internal shapes -- seeing either means something has
+ * reached past `serialize/student.ts`. It MAY contain `correctValue`, because a
+ * student legitimately receives one after submitting; see the note on
+ * FORBIDDEN_STUDENT below for why that exception exists and what replaced it.
  *
  * `apps/console` is STAFF-ONLY and its whole purpose is showing the key: the
  * attempt drill-down renders `correctValue` beside what the student answered,
@@ -70,15 +71,35 @@ const FORBIDDEN_ALWAYS = [
   "lessonData",
 ];
 
-/** Additionally forbidden in the STUDENT bundle only. */
+/**
+ * Additionally forbidden in the STUDENT bundle only.
+ *
+ * `correctValue` IS NOT ON THIS LIST, and that is a deliberate correction.
+ *
+ * It used to be. The rule was written when the student app had no way to sit an
+ * assessment, so any mention of the answer key in that bundle was, correctly, a
+ * red flag. Building the attempt runner made the assumption false: a student
+ * legitimately receives `correctValue` once they submit -- `ai_after_submit` in
+ * db/schema.sql grants exactly that read, and `StudentVerdict` in
+ * serialize/student.ts is the payload that carries it.
+ *
+ * So the FIELD NAME is now expected in the student bundle. What is not, and
+ * never will be, is a live answer VALUE baked into a static file -- and that
+ * check is untouched below, runs against both bundles, and is the one carrying
+ * the weight. Keeping a name-based rule that the design had outgrown would have
+ * meant either a permanently red gate or an engineer renaming a field to get
+ * past it, and both are worse than checking the thing that actually matters.
+ *
+ * Everything still listed here is engine or authoring surface that no student
+ * payload contains at any point in the lifecycle.
+ */
 const FORBIDDEN_STUDENT = [
+  // The snake_case DB columns. The student app never speaks SQL, so seeing a
+  // column name there means something is reaching past the serializer.
   "correct_value",
   "correct_spec",
-  // camelCase forms. The database columns are snake_case, but the API and the
-  // TypeScript that would actually leak into a bundle are camelCase -- and a
-  // planted `{"correctValue":"An assembler"}` sailed straight past the
-  // snake_case-only list, which is how this gap was found (V-45).
-  "correctValue",
+  // camelCase engine internals. The planted `{"correctValue":"An assembler"}`
+  // that found V-45 is now covered by the live-value check instead.
   "correctIndex",
   "correctSpec",
   "resolvedParams",

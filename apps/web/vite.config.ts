@@ -20,6 +20,9 @@ export default defineConfig({
     rollupOptions: {},
   },
   resolve: {
-    alias: { "@octa/contracts": new URL("../../packages/contracts/src/index.ts", import.meta.url).pathname },
+    alias: {
+      "@octa/contracts": new URL("../../packages/contracts/src/index.ts", import.meta.url).pathname,
+      "@octa/tokens/accents": new URL("../../packages/tokens/accents.ts", import.meta.url).pathname,
+    },
   },
 });

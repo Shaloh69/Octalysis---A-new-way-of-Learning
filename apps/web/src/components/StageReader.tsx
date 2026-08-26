@@ -11,10 +11,13 @@ import { api, ApiError, type StageDetail } from "../lib/api";
 export function StageReader({
   stageId,
   onBack,
+  onStartCheck,
 }: {
   stageId: string;
   onBack: () => void;
   onProgressChanged?: () => void;
+  /** Opens the attempt runner. Absent on surfaces that cannot sit a check. */
+  onStartCheck?: (assessmentId: string, title: string) => void;
 }): JSX.Element {
   const [stage, setStage] = useState<StageDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,13 +101,85 @@ export function StageReader({
       {stage.locked ? (
         <LockedNotice stageId={stage.id} />
       ) : (
-        <div className="reader-body">
-          {stage.blocks.map((b) => (
-            <Block key={b.ordinal} kind={b.kind} body={b.body} meta={b.meta} />
-          ))}
-        </div>
+        <>
+          <div className="reader-body">
+            {stage.blocks.map((b) => (
+              <Block key={b.ordinal} kind={b.kind} body={b.body} meta={b.meta} />
+            ))}
+          </div>
+
+          {stage.assessment && onStartCheck && (
+            <CheckCard
+              assessment={stage.assessment}
+              onStart={() => onStartCheck(stage.assessment!.id, stage.assessment!.title)}
+            />
+          )}
+        </>
       )}
     </article>
+  );
+}
+
+/**
+ * The stage check.
+ *
+ * Sits at the END of the reading, deliberately: a student who has scrolled this
+ * far has met the material, and a check button at the top invites guessing at
+ * it instead.
+ *
+ * It states what it costs before it is pressed -- attempts used and remaining --
+ * because discovering you had one try after using it is the kind of surprise
+ * that is entirely avoidable.
+ */
+function CheckCard({
+  assessment,
+  onStart,
+}: {
+  assessment: NonNullable<StageDetail["assessment"]>;
+  onStart: () => void;
+}): JSX.Element {
+  const left = assessment.attemptsAllowed - assessment.attemptsUsed;
+  const closed = assessment.closesAt ? new Date(assessment.closesAt) < new Date() : false;
+  const notOpen = assessment.opensAt ? new Date(assessment.opensAt) > new Date() : false;
+  const exhausted = left <= 0;
+
+  return (
+    <section className="check-card">
+      <h2>{assessment.title}</h2>
+
+      <p className="check-meta mono">
+        {assessment.attemptsAllowed === 1
+          ? "One attempt"
+          : `${assessment.attemptsUsed} of ${assessment.attemptsAllowed} attempts used`}
+      </p>
+
+      {notOpen && (
+        <p className="check-note">
+          This opens {new Date(assessment.opensAt!).toLocaleString()}.
+        </p>
+      )}
+      {closed && <p className="check-note">This closed on {new Date(assessment.closesAt!).toLocaleString()}.</p>}
+      {exhausted && !closed && (
+        <p className="check-note">
+          You have used every attempt. Your instructor can grant another.
+        </p>
+      )}
+
+      <p className="check-blurb">
+        Your questions are generated for you — the numbers differ from everyone else&apos;s.
+        Answers save as you give them, so a lost connection costs you the current question and
+        nothing more.
+      </p>
+
+      <button
+        type="button"
+        className="btn-primary"
+        onClick={onStart}
+        disabled={notOpen || closed || exhausted}
+      >
+        {assessment.attemptsUsed > 0 && !exhausted ? "Start another attempt" : "Start the check"}
+      </button>
+    </section>
   );
 }
 

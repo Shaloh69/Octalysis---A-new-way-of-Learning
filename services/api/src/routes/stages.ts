@@ -187,6 +187,33 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       [stageId],
     );
 
+    /*
+     * The stage's check, if it has one.
+     *
+     * A stage assessment is an `assessments` row whose blueprint is scoped to
+     * this stage. Without this the reader had no assessment id to start, so the
+     * question engine -- the longest thing in the project to build -- had no
+     * way in from the student app at all.
+     *
+     * Scoped to the student's own section, or to a section-less assessment that
+     * applies to everyone. `attempts_allowed` comes back so the reader can say
+     * how many tries remain rather than discovering it on a rejected POST.
+     */
+    const assessment = await app.db.query(
+      `select a.id, a.title, a.attempts_allowed, a.opens_at, a.closes_at,
+              (select count(*)::int from attempts at
+                where at.assessment_id = a.id and at.user_id = $2) as used
+         from assessments a
+         join blueprints b on b.id = a.blueprint_id
+        where b.scope = 'stage' and b.stage_id = $1
+          and (a.section_id is null or a.section_id = (
+                select section_id from profiles where id = $2))
+        order by a.created_at desc
+        limit 1`,
+      [stageId, id?.userId ?? null],
+    );
+    const a0 = assessment.rows[0];
+
     return reply.send({
       id: stage.id,
       title: stage.title,
@@ -210,6 +237,16 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         meta: b.meta ?? {},
         version: Number(b.version),
       })),
+      assessment: a0
+        ? {
+            id: a0.id,
+            title: a0.title,
+            attemptsAllowed: Number(a0.attempts_allowed),
+            attemptsUsed: Number(a0.used ?? 0),
+            opensAt: a0.opens_at,
+            closesAt: a0.closes_at,
+          }
+        : null,
     });
   });
 

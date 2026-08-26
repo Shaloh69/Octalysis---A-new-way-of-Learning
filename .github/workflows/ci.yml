@@ -94,6 +94,13 @@ jobs:
         # pairs. It has failed once and been fixed; that is the point of it.
         run: node scripts/check-contrast.mjs
 
+      - name: Syllabus-to-textbook chapter map
+        # Ten of eighteen chapters are numbered differently in the 10th edition
+        # than in the 9th the syllabus was written against. This fails if the
+        # map drifts -- including a title check that fires on an edition swap.
+        # Skips cleanly on a fresh clone, where the book is not present.
+        run: node scripts/check-book-map.mjs
+
       - name: Console palette
         # The console shell descends from a template whose palette is slate and
         # blue. Tailwind's default palette is deleted, so an upstream utility

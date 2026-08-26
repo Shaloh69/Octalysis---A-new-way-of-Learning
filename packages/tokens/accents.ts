@@ -68,8 +68,23 @@ export function applyAccent(hue: number, el: HTMLElement = document.documentElem
   el.style.setProperty("--accent-hue", String(hue));
 }
 
+/**
+ * The default, as a value rather than an index.
+ *
+ * `ACCENTS[0]` is `AccentPreset | undefined` under `noUncheckedIndexedAccess`,
+ * so the old fallback did not typecheck once anything strict imported this
+ * file -- which nothing did until the student settings page arrived. Naming the
+ * default explicitly is both type-safe and clearer than trusting array order.
+ */
+const COPPER: AccentPreset = {
+  id: "copper",
+  name: "Copper",
+  hue: 45,
+  blurb: "Trace metal. The default.",
+};
+
 export function accentById(id: string): AccentPreset {
-  return ACCENTS.find((a) => a.id === id) ?? ACCENTS[0];
+  return ACCENTS.find((a) => a.id === id) ?? COPPER;
 }
 
 /**

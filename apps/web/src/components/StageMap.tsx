@@ -24,6 +24,15 @@ const GalaxyCanvas = lazy(() => import("./GalaxyCanvas"));
 interface Props {
   data: StageMapData;
   onOpen: (stageId: string) => void;
+  /**
+   * `/app/map` asks for the flat view BY CHOICE, not by capability.
+   *
+   * The galaxy is already suppressed automatically under reduced motion, on a
+   * small viewport, and when WebGL fails. This adds a fourth reason -- the
+   * student asked -- so the flat route is never a degraded mode. Nothing
+   * redirects, so a link into the course works on every device.
+   */
+  flat?: boolean;
 }
 
 type Mode = "2d" | "3d";
@@ -45,7 +54,7 @@ function useIsSmallViewport(): boolean {
   return small;
 }
 
-export function StageMap({ data, onOpen }: Props): JSX.Element {
+export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
   const isSmall = useIsSmallViewport();
   const reduced = prefersReducedMotion();
 
@@ -64,7 +73,10 @@ export function StageMap({ data, onOpen }: Props): JSX.Element {
   const positions = useMemo(() => computeLayout(data.nodes), [data.nodes]);
   const bounds = useMemo(() => layoutBounds(positions), [positions]);
 
-  const canUse3d = !reduced && !isSmall;
+  // `flat` is the FOURTH reason the canvas can be absent, alongside reduced
+  // motion, a small viewport, and WebGL failing. All four are equal; none of
+  // them makes this a fallback view.
+  const canUse3d = !reduced && !isSmall && !flat;
   const showGalaxy = mode === "3d" && canUse3d;
 
   const setModePersisted = (m: Mode): void => {

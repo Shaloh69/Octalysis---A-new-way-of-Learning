@@ -182,3 +182,78 @@ Complementary lightweight instruments, if you want a second signal:
 
 Skip NPS. "Would you recommend this to a colleague?" is close to meaningless for a required
 course tool, and a panel will ask why you used it.
+
+---
+
+## 7. The auth screens — game feel, and where it comes from
+
+Sign-in and registration are the first thing anyone sees, and in this system
+they get to be the most theatrical thing in it. Everywhere else the design
+mandate says *keep it quiet and spend boldness in one place*. **This is that
+place.**
+
+### 7.1 The idea: signing in IS the machine booting
+
+Not generic sci-fi. The subject's own world.
+
+A computer starting up runs **POST — Power-On Self-Test**: it counts memory,
+identifies devices, reports what it found, and then hands control to the system.
+That sequence is *already the thing this course teaches*, and it maps onto
+authentication exactly:
+
+| POST does | The screen does |
+|---|---|
+| Counts memory, device by device | Fields arrive one at a time, panel frame assembling |
+| Reports each check as it passes | Each validation prints a line, mono, left-aligned |
+| Halts loudly on a failure | A rejected sign-in prints a fault line and stops |
+| Hands off: `SYSTEM READY` | The Register Bar comes alive and the map loads |
+
+So the animation is not decoration bolted onto a form — **it is the first
+lesson**, and a student who reaches Stage 03 (the instruction cycle) has already
+watched a fetch–decode–execute rhythm on the login screen without being told.
+
+**This is the one place a "loading" delay is allowed to be deliberate.** Not
+long — the whole sequence is under a second — and `prefers-reduced-motion` skips
+straight to the end state.
+
+### 7.2 Real references, and what each one is for
+
+| Source | License / access | What we take |
+|---|---|---|
+| **[Arwes](https://arwes.dev/)** — futuristic sci-fi UI framework, [github.com/arwes/arwes](https://github.com/arwes/arwes) | MIT, **no longer actively maintained** | The *assembly* idea: frames draw themselves in, content fades after the frame lands. We take the **timing discipline**, not the library — it is unmaintained and we are not adding a dependency |
+| **[Cosmic UI](https://github.com/rizkimuhammada/cosmic-ui)** — React + Tailwind sci-fi components | Open source; check the repo before vendoring | Its **Frame SVG decoration system** — a panel's shape is a separate layer from its content. We rebuild this in CSS rather than importing it |
+| **[CSS-Tricks — Notched Boxes](https://css-tricks.com/notched-boxes/)** | Article | The `clip-path: polygon()` notch, driven by a `--notch` custom property. This is how the panel gets cut corners with **no images and no extra elements** |
+| **[CSS-Tricks — Cut corners using mask and clip-path](https://css-tricks.com/cut-corners-using-css-mask-and-clip-path-properties/)** | Article | The mask alternative, for when a notched element also needs a background image |
+| **[Dave Rupert — Sci-fi rectangles with `corner-shape`](https://daverupert.com/2025/07/sci-fi-rectangles-with-corner-shape/)** | Article | `corner-shape: bevel` — two lines, responsive, animatable. Used as **progressive enhancement** on top of the clip-path, because support is still landing |
+
+**What we deliberately do NOT take:** neon cyan-on-black, glitch text, scanline
+overlays, and chromatic aberration. Every sci-fi kit ships them, they are the
+reason "sci-fi UI" reads as a costume, and they fight a palette that has to hold
+WCAG AA on three themes. The boldness goes into **motion and rhythm**, not into
+colour.
+
+### 7.3 The rules this screen still obeys
+
+Being the theatrical screen does not exempt it from anything:
+
+- **Every colour from `packages/tokens`.** The login screen has no palette of
+  its own; it uses the student's chosen accent, which they have not chosen yet,
+  so it uses the default — Copper.
+- **`prefers-reduced-motion` skips the sequence entirely.** Not "shortens" —
+  the end state renders immediately, and no information is carried only by the
+  animation.
+- **Keyboard-first.** The sequence must never trap focus or move it. A student
+  who tabs straight into the password field while the frame is still drawing
+  gets the field, not a fight.
+- **One generic failure message.** The theatre stops at the copy: an unknown ID
+  and a wrong password print the *same* fault line, because anything else is an
+  enumeration oracle. See `services/api/src/routes/auth.ts`.
+- **380px.** The panel is a single column below 560px, and the sequence is the
+  same.
+
+### 7.4 Where else this vocabulary is allowed
+
+Nowhere, by default. The boot sequence belongs to the auth screens and the
+**Bring-Up** moment at the end of a stage (`GAME-DESIGN.md` §5) — one
+orchestrated moment per stage, no more. Reusing it on ordinary panels would
+turn a signature into wallpaper.

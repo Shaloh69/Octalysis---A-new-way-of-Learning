@@ -57,6 +57,15 @@ export interface StageDetail {
   mastery?: number;
   objectives: Array<{ id: string; description: string; bloom: string; level?: number; competency?: string }>;
   blocks: ContentBlock[];
+  /** The stage's check, if one is scheduled for this student's section. */
+  assessment: {
+    id: string;
+    title: string;
+    attemptsAllowed: number;
+    attemptsUsed: number;
+    opensAt: string | null;
+    closesAt: string | null;
+  } | null;
 }
 
 export interface ProgressGrid {
@@ -139,6 +148,36 @@ export const api = {
     }>(`/api/v1/attempts/${attemptId}/answer`, {
       method: "POST",
       body: JSON.stringify({ ordinal, answer, ...(timeMs !== undefined ? { timeMs } : {}) }),
+    }),
+
+  /* ---- feedback. The routes existed and tested; nothing called them. ---- */
+
+  sendFeedback: (input: {
+    channel: "flag" | "content_report" | "csat";
+    category?: string;
+    body?: string;
+    route?: string;
+    context?: Record<string, unknown>;
+    /** Together these let the SERVER reconstruct the exact variant seen. */
+    attemptId?: string;
+    ordinal?: number;
+  }) =>
+    request<{ id: string; variantAttached: boolean }>("/api/v1/feedback", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  /** May the SUS survey appear? The gate is server-side; see SusSurvey.tsx. */
+  feedbackPrompt: () =>
+    request<{ show: boolean; sessions: number; completed: number }>("/api/v1/feedback/prompt"),
+
+  dismissPrompt: () =>
+    request<{ ok: true }>("/api/v1/feedback/prompt/dismiss", { method: "POST" }),
+
+  submitSus: (answers: number[]) =>
+    request<{ score: number }>("/api/v1/feedback/sus", {
+      method: "POST",
+      body: JSON.stringify({ answers }),
     }),
 
   submit: (attemptId: string) =>

@@ -6,7 +6,10 @@
     "jsx": "react-jsx",
     "types": ["vite/client"],
     "baseUrl": ".",
-    "paths": { "@octa/contracts": ["../../packages/contracts/src/index.ts"] }
+    "paths": {
+      "@octa/contracts": ["../../packages/contracts/src/index.ts"],
+      "@octa/tokens/accents": ["../../packages/tokens/accents.ts"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "vite.config.ts"]
 }
