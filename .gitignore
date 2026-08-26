@@ -35,3 +35,17 @@ pnpm-debug.log*
 # deploy
 .vercel/
 .render/
+
+# Copyrighted course textbook, and everything extracted from it.
+#
+# The book is Stallings, Computer Organization and Architecture, 10th ed. The
+# EXTRACTED TEXT IS THE SAME COPYRIGHTED WORK -- slicing a PDF does not create a
+# new one -- so both stay out of the repository. What IS committed is the
+# authored lesson content under content/stages/, which is original prose written
+# from the book and citing it, plus short quoted definitions.
+#
+# Anyone rebuilding this needs their own copy of the book and one command:
+#   pnpm book:extract
+*.pdf
+!docs/source/CPE 412.docx.pdf
+docs/source/book/

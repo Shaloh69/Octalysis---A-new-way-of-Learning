@@ -179,23 +179,23 @@ Each row lists the primary text plus **two or more** additional sources.
 
 | Ch | Topic | Primary | Additional references |
 |---|---|---|---|
-| 1 | Organization vs Architecture | Stallings ch.1 | Null & Lobur ch.1 · *Dive into Systems* ch.1 (Matthews, Newhall, Webb) |
-| 2 | Evolution & Performance; Amdahl's, Little's Law | Stallings ch.2 | Hennessy & Patterson ch.1 (quantitative principles, Amdahl's Law) · CS61C notes, performance (Yan et al.) |
+| 1 | Organization vs Architecture | Stallings ch.1 §1.1–1.2 | Null & Lobur ch.1 · *Dive into Systems* ch.1 (Matthews, Newhall, Webb) |
+| 2 | Evolution & Performance; Amdahl's, Little's Law | Stallings ch.1 §1.4–1.7 + ch.2 | Hennessy & Patterson ch.1 (quantitative principles, Amdahl's Law) · CS61C notes, performance (Yan et al.) |
 | 3 | Function & Interconnection; buses, PCIe | Stallings ch.3 | Null & Lobur ch.4 · CMU 18-447 lectures on datapath and interconnect (Hoe) |
 | 4 | Cache Memory | Stallings ch.4 | *Dive into Systems* ch.11, storage & memory hierarchy · Hennessy & Patterson ch.2, memory hierarchy design |
 | 5 | Internal Memory; DRAM, ECC | Stallings ch.5 | Yadin (2016) ch. on memory · CMU 18-447, main memory and DRAM (Hoe) |
 | 6 | External Memory; RAID, SSD | Stallings ch.6 | Hennessy & Patterson, appendix on storage systems · Yadin (2016) |
 | 7 | Input/Output; DMA, interrupt-driven I/O | Stallings ch.7 | Null & Lobur ch.7 · *Dive into Systems* ch.13 (Matthews, Newhall, Webb) |
 | 8 | Operating System Support | Stallings ch.8 | *Dive into Systems* ch.13, OS interaction · CS61C notes, virtual memory (Yan et al.) |
-| 9 | Computer Arithmetic; two's complement, IEEE-754 | Stallings ch.9 | *Dive into Systems* ch.4, binary and integer representation · MIT 6.004 arithmetic lectures (MIT OCW) |
-| 10 | Instruction Sets: characteristics | Stallings ch.10 | Hennessy & Patterson appendix A, instruction set principles · MIT 6.004, instruction sets |
-| 11 | Addressing Modes and Formats | Stallings ch.11 | Null & Lobur ch.5 · CS61C notes, RISC-V instruction formats (Yan et al.) |
-| 12 | Processor Structure; pipelining | Stallings ch.12 | Hennessy & Patterson appendix C, pipelining · MIT 6.004, pipelined processors |
-| 13 | RISC; RISC vs CISC | Stallings ch.13 | Hennessy & Patterson ch.1 and appendix A · CMU 18-447, ISA design tradeoffs (Hoe) |
-| 14 | ILP and Superscalar | Stallings ch.14 | Hennessy & Patterson ch.3, ILP and its exploitation · CMU 18-447, out-of-order execution (Hoe) |
-| 15 | Control Unit Operation; micro-operations | Stallings ch.15 | Null & Lobur ch.4, control unit · nand2tetris ch.5, computer architecture (Nisan & Schocken) |
-| 16 | Microprogrammed Control | Stallings ch.16 | Null & Lobur ch.4, microprogrammed control · Yadin (2016) |
-| 17 | Multicore | Stallings ch.17 | Hennessy & Patterson ch.5, multiprocessors · *Dive into Systems* ch.14, parallel processing |
+| 9 | Computer Arithmetic; two's complement, IEEE-754 | Stallings ch.10 (+ ch.9) | *Dive into Systems* ch.4, binary and integer representation · MIT 6.004 arithmetic lectures (MIT OCW) |
+| 10 | Instruction Sets: characteristics | Stallings ch.12 | Hennessy & Patterson appendix A, instruction set principles · MIT 6.004, instruction sets |
+| 11 | Addressing Modes and Formats | Stallings ch.13 | Null & Lobur ch.5 · CS61C notes, RISC-V instruction formats (Yan et al.) |
+| 12 | Processor Structure; pipelining | Stallings ch.14 | Hennessy & Patterson appendix C, pipelining · MIT 6.004, pipelined processors |
+| 13 | RISC; RISC vs CISC | Stallings ch.15 | Hennessy & Patterson ch.1 and appendix A · CMU 18-447, ISA design tradeoffs (Hoe) |
+| 14 | ILP and Superscalar | Stallings ch.16 | Hennessy & Patterson ch.3, ILP and its exploitation · CMU 18-447, out-of-order execution (Hoe) |
+| 15 | Control Unit Operation; micro-operations | Stallings ch.20 | Null & Lobur ch.4, control unit · nand2tetris ch.5, computer architecture (Nisan & Schocken) |
+| 16 | Microprogrammed Control | Stallings ch.21 | Null & Lobur ch.4, microprogrammed control · Yadin (2016) |
+| 17 | Multicore | Stallings ch.18 (+ ch.17) | Hennessy & Patterson ch.5, multiprocessors · *Dive into Systems* ch.14, parallel processing |
 | 18 | Distributed Systems Architecture | **none — Stallings does not cover this** | van Steen & Tanenbaum ch.2, architectures · OMG, *CORBA* v3.4 · Fielding (2000), architectural styles |
 
 ### 4.1 Chapter 18 has no textbook, and that is worth saying plainly
@@ -219,6 +219,33 @@ The Fielding dissertation earns its place: the outcome says *new* models, and a
 chapter that teaches CORBA without saying what replaced it and why teaches a
 dead standard as though it were current. CORBA is the syllabus's named
 requirement; the contrast is what makes it educational.
+
+### 4.2 The book is the 10th edition, and it is numbered differently
+
+The syllabus prescribes the **9th edition**. The copy actually available is the
+**10th**, which splits chapter 1 in two, inserts *Number Systems* and *Digital
+Logic* as chapters 9 and 11, and moves the control-unit chapters to the end.
+
+**Ten of the eighteen chapters therefore carry a different number in the book
+than the number the syllabus gives them.** The worst case is silent: syllabus
+chapter 15 is *Control Unit Operation*, but **book chapter 15 is RISC** — a
+citation of "Stallings ch.15" sends a student to a real chapter about the wrong
+subject.
+
+The chapter numbers in the table above are the **10th edition's**.
+`content/book-map.json` is the machine-readable mapping, and `pnpm book:map`
+checks it against the extracted book — including a title check that fails loudly
+if someone swaps the edition.
+
+Two consequences worth knowing before authoring:
+
+- **Syllabus chapter 2 spans two book chapters.** Evolution is book ch.1 from
+  §1.4 on; performance assessment (clock speed, MIPS, Amdahl, Little) is the
+  whole of book ch.2.
+- **The 10th edition dropped the functional-view figures** the 9th had at
+  Figures 1.2–1.5, which is what syllabus outcome 01.4 alludes to. The content
+  survives as the four functions in §1.2; the pictures do not. Stage 01 says so
+  in a callout rather than omitting it quietly.
 
 **Recording these in the system.** Every reference belongs in the database, not
 in a bundle — a `references` table joined to `stages`, surfaced on each stage

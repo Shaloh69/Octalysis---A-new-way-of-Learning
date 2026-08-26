@@ -132,6 +132,35 @@ async function verifyAgainstSource(stages) {
     } catch { /* deck absent; nothing to verify against */ }
   }
 
+  // THE TEXTBOOK IS A SOURCE TOO, one file per chapter, named `ch-04.md` and so
+  // on. A block written from the book carries `source="ch-04.md 4.3"` and every
+  // quoted span in it is then proved to appear in that chapter, character for
+  // character, exactly as the lecture decks already were.
+  //
+  // The chapter number is the BOOK's, not the syllabus's -- they differ for ten
+  // of eighteen chapters in this edition. `content/book-map.json` is the
+  // translation and `scripts/check-book-map.mjs` proves it still holds.
+  //
+  // The book is gitignored (it is copyrighted), so on a fresh clone there is
+  // nothing here and blocks citing it are simply not checked. That is a real
+  // weakening and `--verify` says so rather than reporting a clean run.
+  let bookChapters = 0;
+  for (let n = 1; n <= 21; n++) {
+    const f = `ch-${String(n).padStart(2, "0")}.md`;
+    try {
+      decks[f] = await readFile(resolve(ROOT, "docs/source/book", f), "utf8");
+      bookChapters++;
+    } catch { /* not extracted; see above */ }
+  }
+  if (bookChapters === 0) {
+    console.log(
+      c.yellow(
+        "  The textbook is not extracted, so blocks citing it cannot be verified.\n" +
+        "  It is gitignored by design. Run `pnpm book:extract` with your own copy.",
+      ),
+    );
+  }
+
   const problems = [];
   let checked = 0;
 

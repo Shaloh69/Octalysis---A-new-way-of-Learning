@@ -19,11 +19,28 @@
 //   node scripts/gen-stages.mjs --seed    print the SQL seed rows
 
 import { execFileSync } from "node:child_process";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * Syllabus chapter -> BOOK chapter.
+ *
+ * These differ for ten of eighteen chapters, because the syllabus is written
+ * against Stallings 9th ed and the available copy is the 10th. Citing the
+ * syllabus number would send a student to a real chapter about the wrong
+ * subject -- syllabus 15 is Control Unit Operation, book 15 is RISC.
+ */
+const BOOK_MAP = JSON.parse(readFileSync(resolve(ROOT, "content/book-map.json"), "utf8"));
+const bookCite = (syllabusN) => {
+  const m = BOOK_MAP.chapters.find((c) => c.syllabus === syllabusN);
+  if (!m || m.book === null) return null;
+  const also = m.also?.length ? ` and ch. ${m.also.join(", ch. ")}` : "";
+  const secs = m.sections?.length ? ` §${m.sections.join(", §")}` : "";
+  return `chapter ${m.book}${secs}${also}`;
+};
 
 /**
  * Per-chapter assignments. `n` is the syllabus chapter number.
@@ -150,6 +167,26 @@ if (process.argv.includes("--seed")) {
 // ---------- write the content scaffolds ----------
 mkdirSync(resolve(ROOT, "content/stages"), { recursive: true });
 
+const FORCE = process.argv.includes("--force");
+const skipped = [];
+
+/**
+ * NEVER overwrite an authored chapter.
+ *
+ * A scaffold announces itself: `gen-stages` writes a callout carrying
+ * `kind="scaffold"`, and authoring a chapter means replacing it. So a file
+ * WITHOUT that marker is somebody's writing, and regenerating would destroy it
+ * silently -- the worst possible failure here, because the syllabus extraction
+ * would still succeed and the run would report a cheerful "wrote 19 files".
+ *
+ * `--force` overrides, for when the syllabus itself changes and every chapter
+ * genuinely has to be re-derived.
+ */
+function isAuthored(file) {
+  if (!existsSync(file)) return false;
+  return !readFileSync(file, "utf8").includes('kind="scaffold"');
+}
+
 const orientation = `---
 stage: "00"
 title: Orientation
@@ -241,16 +278,42 @@ chapters.forEach((ch, i) => {
     ...topics.map((t) => `- ${t}`),
     "",
     "<!-- block: callout -->",
-    "**References for this chapter.** Primary: Stallings, *Computer Organization",
-    `and Architecture: Designing for Performance*, 9th ed., chapter ${n}.`,
-    "Additional per-chapter sources with author credits are listed in",
+    "**References for this chapter.**",
+    ...(bookCite(n)
+      ? [
+          "Primary: Stallings, *Computer Organization and Architecture: Designing",
+          `for Performance*, **10th ed.**, ${bookCite(n)}.`,
+          "",
+          "Your syllabus is written against the 9th edition, where this material",
+          `carries a different number for ten of the eighteen chapters. See`,
+          "`content/book-map.json`.",
+        ]
+      : [
+          "**Stallings does not cover this chapter, in either edition.** Its three",
+          "open sources are listed in `docs/CPE412-CURRICULUM.md` §4.1 — they are",
+          "not a convenience here, they are the only material this chapter has.",
+        ]),
+    "",
+    "Additional per-chapter sources with author credits are in",
     "`docs/CPE412-CURRICULUM.md` §4.",
     "",
   ].join("\n");
 
-  writeFileSync(resolve(ROOT, `content/stages/${id}.md`), fm + body, "utf8");
+  const target = resolve(ROOT, `content/stages/${id}.md`);
+  if (!FORCE && isAuthored(target)) {
+    skipped.push(id);
+    return;
+  }
+  writeFileSync(target, fm + body, "utf8");
 });
 
-console.log(`\nWrote 19 stage files (orientation + 18 chapters).`);
+console.log(`\nWrote ${19 - skipped.length} stage file(s) of 19.`);
 console.log(`${objectiveCount} objectives transcribed from the syllabus.`);
-console.log(`Prose deliberately NOT generated -- hard rule 5.\n`);
+if (skipped.length > 0) {
+  console.log(
+    `\nSKIPPED ${skipped.length} authored chapter(s): ${skipped.join(", ")}\n` +
+      `They hold real prose and were left alone. --force re-derives every chapter\n` +
+      `from the syllabus, which DISCARDS that writing.`,
+  );
+}
+console.log(`\nProse is never generated -- hard rule 5. See content/stages/README.md.\n`);

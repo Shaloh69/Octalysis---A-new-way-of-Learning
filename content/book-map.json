@@ -1,0 +1,78 @@
+{
+  "$comment": [
+    "Syllabus chapter -> textbook chapter, for Stallings, Computer Organization",
+    "and Architecture, 10th ed. (ISBN 0134102118).",
+    "",
+    "THE SYLLABUS IS WRITTEN AGAINST THE 9th EDITION AND THE BOOK IS THE 10th.",
+    "The 10th splits chapter 1 in two, inserts Number Systems and Digital Logic",
+    "as chapters 9 and 11, and moves the control-unit chapters to the end. TEN OF",
+    "EIGHTEEN chapters therefore carry a different number in the book than the",
+    "number the syllabus gives them.",
+    "",
+    "This file is what stops a lesson citing 'Stallings ch.15' for Control Unit",
+    "Operation when chapter 15 of the book the student is holding is RISC.",
+    "Verified by scripts/check-book-map.mjs, which reads the extracted manifest.",
+    "",
+    "`book` is the primary chapter. `also` is genuinely required reading, not a",
+    "see-also. `sections` narrows it where the syllabus wants only part."
+  ],
+  "edition": {
+    "title": "Computer Organization and Architecture: Designing for Performance",
+    "author": "William Stallings",
+    "edition": "10th",
+    "isbn": "0134102118",
+    "syllabusPrescribes": "9th",
+    "note": "The syllabus prescribes the 9th ed. The available copy is the 10th. Substance is equivalent for every mapped chapter; the NUMBERING is not."
+  },
+  "chapters": [
+    {
+      "syllabus": 1,
+      "title": "Introduction",
+      "book": 1,
+      "sections": ["1.1", "1.2", "1.3"],
+      "note": "Only the opening sections. The rest of book ch.1 is the evolution material the syllabus puts in its chapter 2."
+    },
+    {
+      "syllabus": 2,
+      "title": "Computer Evolution and Performance",
+      "book": 1,
+      "also": [2],
+      "note": "SPLIT ACROSS TWO BOOK CHAPTERS. Evolution (vacuum tubes to multicore, the x86 and ARM lines) is book ch.1 from 1.4 on; performance assessment (clock speed, MIPS, Amdahl, Little) is the whole of book ch.2. This is the single biggest structural difference between the editions."
+    },
+    { "syllabus": 3, "title": "Top Level View of Computer Function and Interconnection", "book": 3 },
+    { "syllabus": 4, "title": "Cache Memory", "book": 4,
+      "note": "Includes Appendix 4A, Performance Characteristics of Two-Level Memories, which is where the hit-ratio and average-access-time maths lives." },
+    { "syllabus": 5, "title": "Internal Memory", "book": 5 },
+    { "syllabus": 6, "title": "External Memory", "book": 6 },
+    { "syllabus": 7, "title": "Input/Output", "book": 7 },
+    { "syllabus": 8, "title": "Operating System Support", "book": 8 },
+    {
+      "syllabus": 9,
+      "title": "Computer Arithmetic",
+      "book": 10,
+      "also": [9],
+      "note": "Book ch.9 (Number Systems) does not exist in the 9th ed and is assumed knowledge here — the prerequisite is Microprocessors. It is listed because two's complement and floating-point representation are defined there, not in ch.10."
+    },
+    { "syllabus": 10, "title": "Instruction Sets: Characteristics and Function", "book": 12,
+      "note": "Includes Appendix 12A on endianness." },
+    { "syllabus": 11, "title": "Instruction Sets: Addressing Modes and Format", "book": 13 },
+    { "syllabus": 12, "title": "Processor Structure and Function", "book": 14 },
+    { "syllabus": 13, "title": "Reduced Instruction Set Computers", "book": 15 },
+    { "syllabus": 14, "title": "Instruction Level Parallelism and Superscalar Parallelism", "book": 16 },
+    { "syllabus": 15, "title": "Control Unit Operation", "book": 20 },
+    { "syllabus": 16, "title": "Microprogrammed Control", "book": 21 },
+    {
+      "syllabus": 17,
+      "title": "Multicore Computer",
+      "book": 18,
+      "also": [17],
+      "note": "Book ch.17 (Parallel Processing) carries the multiprocessor organisation and cache-coherence material the syllabus lists under its chapter 17."
+    },
+    {
+      "syllabus": 18,
+      "title": "Distributed Systems Architecture",
+      "book": null,
+      "note": "NOT IN THE BOOK, in either edition. Stallings ends at GPGPUs; there is no client-server, distributed-object or CORBA chapter. Its topics cell in the syllabus is also empty, so the four unit outcomes are the entire specification. The three open sources in docs/CPE412-CURRICULUM.md §4.1 are not a convenience here — they are the only material this chapter has."
+    }
+  ]
+}
