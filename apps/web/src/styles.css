@@ -1140,3 +1140,9 @@ button {
 .submit-actions button:first-child { min-height: 44px; padding: var(--space-3) var(--space-4); background: var(--surface-2); color: var(--ink); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); font: inherit; cursor: pointer; }
 .submit-err { color: var(--danger); margin: 0 0 var(--space-3); }
 .submit-ok { color: var(--success); margin: 0 0 var(--space-3); }
+
+/* An encounter panel inside the reader. The theme tokens come from
+   packages/tokens via [data-encounter]; this is only its box. */
+.encounter { margin: var(--space-6) 0; }
+.encounter h2, .encounter h3 { color: var(--enc-ink); font-family: var(--font-display); }
+.encounter a { color: var(--enc-accent); }

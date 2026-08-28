@@ -162,6 +162,35 @@ function deltaOklab(a, b) {
 
 const OKLCH = /oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+|var\(--accent-hue\))\s*(?:\/\s*([\d.]+)\s*)?\)/;
 
+/** The eight encounter themes, parsed from `[data-encounter="x"]` blocks. */
+export function parseEncounters() {
+  const css = readFileSync(TOKENS, "utf8");
+  const out = {};
+  const blockRe = /\[data-encounter="([\w-]+)"\]\s*\{([^}]*)\}/g;
+  let m;
+  while ((m = blockRe.exec(css)) !== null) {
+    const name = m[1];
+    out[name] ??= {};
+    for (const line of m[2].split(";")) {
+      const d = line.match(/(--enc-[\w-]+)\s*:\s*(.+)/);
+      if (!d) continue;
+      const val = d[2].trim();
+      // `base` aliases the token system; it inherits and needs no check of
+      // its own -- those pairs are already covered above.
+      if (!val.startsWith("oklch(")) continue;
+      const pm = val.match(OKLCH);
+      if (!pm) continue;
+      out[name][d[1]] = {
+        L: Number(pm[1]),
+        C: Number(pm[2]),
+        H: pm[3] === "var(--accent-hue)" ? "ACCENT" : Number(pm[3]),
+        alpha: pm[4] === undefined ? 1 : Number(pm[4]),
+      };
+    }
+  }
+  return out;
+}
+
 function parseTokens() {
   const css = readFileSync(TOKENS, "utf8");
   const themes = { "bare-metal": {}, blueprint: {}, phosphor: {} };
@@ -436,11 +465,89 @@ async function main() {
     );
   }
 
+  /* ------------------------------------------- the eight encounter themes ---- */
+
+  /**
+   * `GAME-DESIGN.md` §9: "a theme that fails contrast does not ship." This is
+   * the check that makes that sentence true rather than aspirational.
+   *
+   * The themes are SELF-CONTAINED -- each brings its own panel, ink and accent
+   * -- so text pairs are checked once rather than once per base theme. The one
+   * thing that genuinely varies is how the panel sits ON the page, so the panel
+   * EDGE is checked against all three page grounds at the 3:1 non-text
+   * threshold.
+   */
+  console.log(c.bold("\n  Encounter themes\n"));
+
+  const encounters = parseEncounters();
+  const encFailures = [];
+  let encChecks = 0;
+
+  for (const [name, tok] of Object.entries(encounters)) {
+    const panel = tok["--enc-panel"];
+    if (!panel) continue; // `base` aliases the token system; already covered
+
+    const panelRgb = oklchToSrgb(panel.L, panel.C, panel.H);
+    const pairs = [
+      ["--enc-ink", 4.5, "body text on the panel"],
+      ["--enc-accent", 4.5, "the theme accent as text"],
+      ["--enc-edge", 3.0, "the panel edge (UI)"],
+    ];
+
+    let worst = Infinity;
+    for (const [fg, min, label] of pairs) {
+      const t = tok[fg];
+      if (!t) continue;
+      const ratio = contrast(oklchToSrgb(t.L, t.C, t.H), panelRgb);
+      encChecks++;
+      worst = Math.min(worst, ratio);
+      if (ratio < min) {
+        encFailures.push({ theme: name, label, ratio, min, against: "its own panel" });
+      }
+    }
+
+    // And the panel against each page ground it can sit on.
+    for (const [themeName, base] of Object.entries(themes)) {
+      const ground = base["--surface-0"];
+      if (!ground) continue;
+      const groundRgb = oklchToSrgb(ground.L, ground.C, ground.H === "ACCENT" ? 45 : ground.H);
+      const edge = tok["--enc-edge"];
+      if (!edge) continue;
+      const ratio = contrast(oklchToSrgb(edge.L, edge.C, edge.H), groundRgb);
+      encChecks++;
+      if (ratio < 3.0) {
+        encFailures.push({
+          theme: name,
+          label: "panel edge against the page",
+          ratio,
+          min: 3.0,
+          against: themeName,
+        });
+      }
+    }
+
+    console.log(
+      `  ${encFailures.some((f) => f.theme === name) ? c.red("FAIL") : c.green("PASS")}  ` +
+        `${name.padEnd(13)} ${c.dim(`worst internal pair ${worst.toFixed(2)}:1`)}`,
+    );
+  }
+  console.log(
+    c.dim(
+      `\n  ${encChecks} encounter checks across ` +
+        `${Object.keys(encounters).length - 1} themed panels`,
+    ),
+  );
+
   /* --------------------------------------------------------------- verdict */
 
   console.log("");
-  if (failures.length === 0 && duplicates.length === 0) {
-    console.log(c.green(`  Clean. ${checks} checks, every pair at or above AA.\n`));
+  if (failures.length === 0 && duplicates.length === 0 && encFailures.length === 0) {
+    console.log(
+      c.green(
+        `  Clean. ${checks + encChecks} checks (${checks} palette, ${encChecks} encounter), ` +
+          `every pair at or above AA.\n`,
+      ),
+    );
     process.exit(0);
   }
 
@@ -454,6 +561,21 @@ async function main() {
       console.log(c.dim(`      ${f.fgName} on ${f.bgName}`));
     }
     if (failures.length > 40) console.log(c.dim(`  …and ${failures.length - 40} more`));
+  }
+
+  if (encFailures.length > 0) {
+    console.log(c.red(`
+  ${encFailures.length} encounter theme failure(s):
+`));
+    for (const f of encFailures) {
+      console.log(
+        `  ${c.red(f.ratio.toFixed(2) + ":1")} ${c.dim("needs " + f.min)}  ` +
+          `${f.theme} · ${f.label} · vs ${f.against}`,
+      );
+    }
+    console.log(
+      c.dim("\n  GAME-DESIGN.md §9: a theme that fails contrast does not ship.\n"),
+    );
   }
 
   if (duplicates.length > 0) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, ApiError, type StageDetail } from "../lib/api";
+import { encounterFor } from "../lib/encounters";
 
 /**
  * The stage reader.
@@ -103,9 +104,21 @@ export function StageReader({
       ) : (
         <>
           <div className="reader-body">
-            {stage.blocks.map((b) => (
-              <Block key={b.ordinal} kind={b.kind} body={b.body} meta={b.meta} />
-            ))}
+            {stage.blocks.map((b) =>
+              /*
+               * A LAB block wears the stage's encounter theme; everything else
+               * stays in the token system. The wrapper carries `data-encounter`
+               * and the CSS does the rest -- four tokens and a panel skin, never
+               * a redesign.
+               */
+              b.kind === "lab" ? (
+                <div key={b.ordinal} data-encounter={encounterFor(stage.id)} className="encounter">
+                  <Block kind={b.kind} body={b.body} meta={b.meta} />
+                </div>
+              ) : (
+                <Block key={b.ordinal} kind={b.kind} body={b.body} meta={b.meta} />
+              ),
+            )}
           </div>
 
           {stage.assessment && onStartCheck && (

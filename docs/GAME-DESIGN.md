@@ -470,23 +470,46 @@ separates Turing Complete from a maths quiz with a dragon on it.
 
 Decision taken: **eight**, not three. Full list, each with its asset source.
 
-| # | Theme | Stages | Look | Assets |
+| # | Theme | Stages | Look | Built from |
 |---|---|---|---|---|
-| 1 | **Base** (bare-metal / blueprint / phosphor) | 00, 01, 03, 06, 11 | The existing token system, unmodified | `packages/tokens` |
-| 2 | **Switchboard** | 02 | 1960s relay panel — brushed metal, toggle bats, panel lamps | Kenney UI Pack + custom nine-slice |
-| 3 | **Retro home computer** | 04 | 1980s BASIC — chunky border, cyan on blue, blocky glyphs | Kenney Pixel UI Pack |
-| 4 | **Pixel / Terraria** | 09 | Chunky bits, satisfying click, wood-and-stone nine-slice panels | Kenney Pixel UI Pack (750 assets, CC0) |
-| 5 | **Circuit sandbox** | 10, 12 | Dark board, copper traces, component silhouettes | Custom SVG + `elements.svg` |
-| 6 | **Bench instrument** | 07, 13 | Illuminated readouts, knurled dials, mono everywhere | Custom, token-driven |
-| 7 | **DOS / TASM** | 14, 15 | 80×25, CGA palette, authentic 8×16 bitmap font | Public-domain VGA font |
-| 8 | **Modern product** | 05, 08, 16, 17 | Clean, current, marketing-slick | Base tokens, lighter weight |
+| 1 | **Base** | 01, 06, 11, 13 | The token system, unmodified | `packages/tokens` |
+| 2 | **Switchboard** | 02, 15 | 1960s relay panel — brushed metal, panel lamps | Two hairline gradients. No asset |
+| 3 | **Retro home computer** | 04 | 1980s BASIC — chunky border, cyan on blue | Border width and two tokens |
+| 4 | **Pixel** | 09 | Chunky bits, square corners, stepped edge | `image-rendering: pixelated`, no asset |
+| 5 | **Circuit sandbox** | 03, 12, 14 | Dark board, copper traces | Two gradients at 16px |
+| 6 | **Bench instrument** | 05, 07 | Illuminated readout, mono everywhere | `--font-mono` on the panel |
+| 7 | **DOS** | 10, 16 | 80×25, CGA palette, flat and square | `--font-mono`, zero radius |
+| 8 | **Modern product** | 08, 17, 18 | Clean, current, lighter weight | Base tokens, larger radius |
 
-**Stages 08 and 17 deliberately share theme 8** — a designed callback, so the
+**Stage numbers are the 18-chapter curriculum**, not the 17-chapter draft this
+table was first written against.
+
+**NO ASSET PACKS.** The original table cited Kenney's CC0 packs and a
+public-domain VGA font. None is used, and none is needed: every one of these is
+four tokens plus a gradient or a border rule. Adding ~750 sprite assets to get
+seven panel skins would have been a large download, a licence file, and an
+attribution page for something CSS does in six lines. If a theme ever genuinely
+needs artwork, Kenney remains the right source — it just does not yet.
+
+**Stages 08, 17 and 18 deliberately share theme 8** — a designed callback, so the
 student notices they can now decode what they could not in week six.
 
 Each theme is **four tokens and a panel skin**, not a redesign — see §5.2. Body
 text stays Inter, every number stays JetBrains Mono, and **contrast is computed
-and AA on all three base themes**. A theme that fails contrast does not ship.
+and AA**. A theme that fails contrast does not ship, and that is now literally
+true: `scripts/check-contrast.mjs` runs **42 encounter checks** and CI fails on
+any of them. It has already rejected one — `modern`'s panel edge at 2.82:1
+against its own panel.
+
+**They are SELF-CONTAINED**, which is the decision that makes them safe. Each
+brings its own panel, ink and accent, so it looks identical on all three base
+themes and needs checking once rather than 8 × 3 times. The only thing that
+genuinely varies is how the panel sits *on* the page, so the panel edge is
+checked against all three page grounds at the 3:1 non-text threshold.
+
+**They dress the LAB beat and never an assessment.** A themed exam would mean
+two students sitting the same paper in different clothes, and the fairness
+argument this whole project rests on is that the papers are equivalent.
 
 ---
 

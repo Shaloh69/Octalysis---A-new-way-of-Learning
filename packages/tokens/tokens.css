@@ -265,3 +265,148 @@ code, kbd, samp, pre, .mono, .register-value, .hex, .listing,
   border-left: var(--border-thick) solid var(--ink-faint);
   background: var(--surface-2);
 }
+
+/* ============================================================
+   THE EIGHT ENCOUNTER THEMES
+   GAME-DESIGN.md §9. Each is FOUR TOKENS AND A PANEL SKIN, never
+   a redesign. Body text stays Inter, every number stays JetBrains
+   Mono, and a theme that fails contrast does not ship —
+   scripts/check-contrast.mjs checks all eight.
+
+   THEY ARE SELF-CONTAINED, and that is the design decision that
+   makes them safe. An encounter panel brings its own ground, its
+   own ink and its own accent, so it looks the same on all three
+   base themes and needs checking once rather than 8 × 3 times.
+   The only thing that varies with the base theme is how the panel
+   sits ON the page, so `--enc-edge` is checked against all three
+   page grounds at the 3:1 non-text threshold.
+
+   These dress the LAB beat and NEVER an assessment. A themed exam
+   would mean two students sitting the same paper in different
+   clothes, and the fairness argument this whole project rests on
+   is that the papers are equivalent.
+   ============================================================ */
+
+[data-encounter] {
+  --enc-radius: var(--radius-md);
+  --enc-border: var(--border-thick);
+  background: var(--enc-panel);
+  color: var(--enc-ink);
+  border: var(--enc-border) solid var(--enc-edge);
+  border-radius: var(--enc-radius);
+  padding: var(--space-5);
+}
+
+/* Every theme's own accent, used only inside the panel. It never
+   colours correct/incorrect — that stays the base token set, so a
+   verdict means the same thing in every encounter. */
+[data-encounter] .enc-accent { color: var(--enc-accent); }
+[data-encounter] .enc-edge   { border-color: var(--enc-edge); }
+
+/* 1 — BASE. Stages 01, 06, 11, 13. The token system, unmodified. */
+[data-encounter="base"] {
+  --enc-panel:  var(--surface-1);
+  --enc-ink:    var(--ink);
+  --enc-edge:   var(--line-strong);
+  --enc-accent: var(--accent);
+}
+
+/* 2 — SWITCHBOARD. Stages 02, 15. 1960s relay panel: brushed
+   metal, toggle bats, panel lamps. Warm grey ground, amber lamp. */
+[data-encounter="switchboard"] {
+  --enc-panel:  oklch(0.30 0.012 80);
+  --enc-ink:    oklch(0.93 0.010 80);
+  --enc-edge:   oklch(0.58 0.020 80);
+  --enc-accent: oklch(0.80 0.140 75);
+  --enc-radius: var(--radius-sm);
+}
+/* The brushed-metal grain: two hairline gradients, no image. */
+[data-encounter="switchboard"] {
+  background-image: repeating-linear-gradient(
+    90deg,
+    oklch(1 0 0 / 0.028) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+/* 3 — RETRO HOME COMPUTER. Stage 04. 1980s BASIC: chunky border,
+   cyan on blue. The border IS the look, so it is thicker. */
+[data-encounter="retro"] {
+  --enc-panel:  oklch(0.28 0.090 255);
+  --enc-ink:    oklch(0.92 0.070 200);
+  --enc-edge:   oklch(0.62 0.120 240);
+  --enc-accent: oklch(0.86 0.130 195);
+  --enc-radius: 0;
+  --enc-border: 6px;
+}
+
+/* 4 — PIXEL. Stage 09. Chunky bits, wood-and-stone panels. Square
+   corners and a stepped edge; binary arithmetic is the one place
+   a satisfying click earns its keep. */
+[data-encounter="pixel"] {
+  --enc-panel:  oklch(0.32 0.030 60);
+  --enc-ink:    oklch(0.94 0.020 70);
+  --enc-edge:   oklch(0.60 0.060 55);
+  --enc-accent: oklch(0.82 0.140 90);
+  --enc-radius: 0;
+  --enc-border: 4px;
+  image-rendering: pixelated;
+}
+
+/* 5 — CIRCUIT SANDBOX. Stages 03, 12, 14. Dark board, copper
+   traces. The trace grid is a gradient, not an asset. */
+[data-encounter="circuit"] {
+  --enc-panel:  oklch(0.24 0.045 150);
+  --enc-ink:    oklch(0.93 0.020 150);
+  --enc-edge:   oklch(0.56 0.080 145);
+  --enc-accent: oklch(0.78 0.130 55);
+  background-image:
+    linear-gradient(oklch(1 0 0 / 0.030) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(1 0 0 / 0.030) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* 6 — BENCH INSTRUMENT. Stages 05, 07. Illuminated readout,
+   knurled dials, mono everywhere. */
+[data-encounter="bench"] {
+  --enc-panel:  oklch(0.22 0.014 210);
+  --enc-ink:    oklch(0.92 0.014 210);
+  --enc-edge:   oklch(0.54 0.030 210);
+  --enc-accent: oklch(0.80 0.140 165);
+}
+/* On a bench instrument every value is a readout, so the whole
+   panel is mono rather than only the numbers. */
+[data-encounter="bench"] { font-family: var(--font-mono); }
+[data-encounter="bench"] p,
+[data-encounter="bench"] li { font-family: var(--font-body); }
+
+/* 7 — DOS. Stages 10, 11, 16. 80×25, CGA. Square, flat, no radius,
+   and the font is the point. */
+[data-encounter="dos"] {
+  --enc-panel:  oklch(0.20 0.055 265);
+  --enc-ink:    oklch(0.92 0.030 250);
+  --enc-edge:   oklch(0.55 0.090 265);
+  --enc-accent: oklch(0.85 0.140 100);
+  --enc-radius: 0;
+  --enc-border: var(--border-hair);
+  font-family: var(--font-mono);
+}
+
+/* 8 — MODERN PRODUCT. Stages 08, 17, 18, and 06. Clean, current,
+   lighter weight. Stages 08 and 17 share it on purpose — a
+   callback, so a student notices they can now decode what they
+   could not in week six. */
+[data-encounter="modern"] {
+  --enc-panel:  oklch(0.26 0.008 265);
+  --enc-ink:    oklch(0.94 0.006 265);
+  --enc-edge:   oklch(0.55 0.014 265);
+  --enc-accent: oklch(0.78 0.120 265);
+  --enc-radius: var(--radius-lg);
+  --enc-border: var(--border-hair);
+}
+
+/* An encounter never animates under reduced motion, same as
+   everything else. Nothing here depends on movement to be read. */
+@media (prefers-reduced-motion: reduce) {
+  [data-encounter] { transition: none; animation: none; }
+}
