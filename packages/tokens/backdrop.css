@@ -1,0 +1,166 @@
+/*
+ * OCTA — the animated backdrop.
+ *
+ * WHY THIS IS SHARED AND WHY IT IS CSS
+ *
+ * `apps/web` is hand-written CSS and `apps/console` is Tailwind, so almost
+ * nothing visual is shared between them. This is the exception: it is one
+ * painted surface with no markup, no props and no state, and duplicating forty
+ * lines of keyframes in two stylesheets is how two apps quietly stop looking
+ * like one product.
+ *
+ * It is CSS and not JavaScript because a React component animating a background
+ * costs a render loop for something nobody interacts with. Every layer here is
+ * composited by the GPU — `transform` and `opacity` only, never `top`, `left`
+ * or `background-position` on a large surface, which force paint on every frame
+ * and are what makes a "subtle" background eat a laptop battery in a lecture.
+ *
+ * WHAT IT DEPICTS, because a backdrop with no idea is just noise
+ *
+ * A bus. The grid is an engineering drawing; the traces are address and data
+ * lines; the pulses travelling them are transactions. It is the picture on the
+ * cover of the textbook this course is taught from, and it is the one image
+ * that means the same thing on stage 01 as on stage 18.
+ *
+ * EVERY COLOUR IS A TOKEN. There is not one literal here — the pre-commit hook
+ * blocks them, and more usefully it means the backdrop re-tints itself across
+ * all three themes and every accent hue without a second definition.
+ *
+ * ACCESSIBILITY IS NOT A LATER PASS
+ *
+ *   - `prefers-reduced-motion: reduce` stops every animation and leaves the
+ *     static grid. Not slower — stopped. Motion behind text is exactly the
+ *     thing that setting exists for.
+ *   - `aria-hidden` is the caller's job; nothing here is announced because
+ *     nothing here carries meaning a screen reader could use.
+ *   - Opacity is kept low enough that body text over it still measures at AA.
+ *     `scripts/check-contrast.mjs` tests the tokens, not the composite, so this
+ *     one is held by keeping the backdrop under 6% and never putting text
+ *     directly on a trace.
+ */
+
+.octa-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* The page paints over this; it must never intercept a click or a tab stop. */
+  contain: strict;
+}
+
+/* ---------------------------------------------------------------
+ * Layer 1 — the engineering grid.
+ *
+ * Two gradients rather than an image: no request, no cache entry, and it
+ * re-tints with the theme because it is drawn from --line.
+ * ------------------------------------------------------------- */
+.octa-backdrop::before {
+  content: "";
+  position: absolute;
+  /* Oversized so the drift never exposes an edge. */
+  inset: -10%;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.55;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 20%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 20%, transparent 100%);
+  animation: octa-drift 60s linear infinite;
+}
+
+/* ---------------------------------------------------------------
+ * Layer 2 — a slow accent bloom.
+ *
+ * The only place the student's own accent hue appears in the backdrop, at an
+ * opacity where it reads as warmth rather than as colour. It is what stops the
+ * three themes looking like the same dark rectangle.
+ * ------------------------------------------------------------- */
+.octa-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(40% 40% at 22% 28%, var(--accent-muted), transparent 70%),
+    radial-gradient(35% 35% at 78% 72%, var(--accent-muted), transparent 70%);
+  opacity: 0.5;
+  animation: octa-bloom 24s ease-in-out infinite alternate;
+}
+
+@keyframes octa-drift {
+  from { transform: translate3d(0, 0, 0); }
+  /* One full grid cell, so the loop is seamless. */
+  to   { transform: translate3d(48px, 48px, 0); }
+}
+
+@keyframes octa-bloom {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to   { transform: scale(1.12) translate3d(2%, -2%, 0); }
+}
+
+/* ---------------------------------------------------------------
+ * Layer 3 — bus traces, and the pulses on them.
+ *
+ * Each trace is one element; the pulse is its ::after, a short bright segment
+ * translated along the line. Staggered by nth-child rather than by JS so the
+ * whole system is declarative and costs nothing at runtime.
+ * ------------------------------------------------------------- */
+.octa-trace {
+  position: absolute;
+  height: 1px;
+  background: var(--line-strong);
+  opacity: 0.7;
+  overflow: hidden;
+}
+
+.octa-trace::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 90px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  /* Starts off-screen left; the animation carries it across and off the right. */
+  transform: translate3d(-90px, 0, 0);
+  animation: octa-pulse 7s linear infinite;
+}
+
+.octa-trace:nth-child(1) { top: 18%; left: 0; right: 62%; }
+.octa-trace:nth-child(2) { top: 34%; left: 55%; right: 0; }
+.octa-trace:nth-child(3) { top: 61%; left: 0; right: 48%; }
+.octa-trace:nth-child(4) { top: 79%; left: 38%; right: 0; }
+
+/* Different periods, not just different delays: equal periods re-sync into a
+ * visible marching pattern after a minute or two. */
+.octa-trace:nth-child(1)::after { animation-duration: 7s;  animation-delay: 0s; }
+.octa-trace:nth-child(2)::after { animation-duration: 11s; animation-delay: 1.5s; }
+.octa-trace:nth-child(3)::after { animation-duration: 9s;  animation-delay: 3s; }
+.octa-trace:nth-child(4)::after { animation-duration: 13s; animation-delay: 4.5s; }
+
+@keyframes octa-pulse {
+  from { transform: translate3d(-90px, 0, 0); }
+  to   { transform: translate3d(100vw, 0, 0); }
+}
+
+/* ---------------------------------------------------------------
+ * Reduced motion: STOPPED, not slowed.
+ *
+ * The grid and the bloom stay because they are the composition; the drift, the
+ * breathing and the pulses stop because they are the motion. A backdrop that
+ * merely moves slower is still moving behind someone's reading.
+ * ------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .octa-backdrop::before,
+  .octa-backdrop::after,
+  .octa-trace::after {
+    animation: none;
+  }
+
+  /* With nothing travelling them, the traces are static rules. Keep them —
+   * they are structure — but drop the pulse entirely rather than parking a
+   * bright segment somewhere arbitrary. */
+  .octa-trace::after {
+    display: none;
+  }
+}

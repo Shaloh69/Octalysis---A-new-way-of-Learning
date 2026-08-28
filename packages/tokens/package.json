@@ -6,7 +6,13 @@
   "exports": {
     "./tokens.css": "./tokens.css",
     "./accents": "./accents.ts",
-    "./elements.svg": "./elements.svg"
+    "./elements.svg": "./elements.svg",
+    "./backdrop.css": "./backdrop.css"
   },
-  "files": ["tokens.css", "accents.ts", "elements.svg"]
+  "files": [
+    "tokens.css",
+    "backdrop.css",
+    "accents.ts",
+    "elements.svg"
+  ]
 }

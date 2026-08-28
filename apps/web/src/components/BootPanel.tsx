@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Backdrop } from "./Backdrop";
 
 /**
  * The POST panel — the frame that assembles itself around the auth forms.
@@ -67,6 +68,10 @@ export function BootPanel({ title, subtitle, lines, children }: Props): JSX.Elem
 
   return (
     <div className={"boot" + (ready ? " boot-ready" : "")}>
+      {/* Grid, accent bloom and bus pulses — the same @octa/tokens/backdrop.css
+       * the console imports, so sign-in looks like one product on both. */}
+      <Backdrop />
+
       <div className="boot-frame" aria-hidden="true">
         {/* Four corner brackets that draw in. Decorative only. */}
         <span className="boot-corner boot-corner-tl" />

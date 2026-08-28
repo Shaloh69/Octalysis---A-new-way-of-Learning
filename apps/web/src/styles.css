@@ -12,6 +12,9 @@
  */
 
 @import "@octa/tokens/tokens.css";
+/* The shared animated backdrop -- the same file the console imports, so the two
+ * apps cannot drift into looking like different products. */
+@import "@octa/tokens/backdrop.css";
 
 /* --------------------------------------------------------------
  * Accent, derived not stored
@@ -1165,3 +1168,7 @@ button {
   margin: 0 0 var(--space-3);
 }
 .block-planned p { color: var(--ink); }
+
+/* The boot panel stacks above the fixed backdrop (z-index 0). Without this the
+ * backdrop's own stacking context would paint the grid over the form. */
+.boot { position: relative; z-index: 1; }

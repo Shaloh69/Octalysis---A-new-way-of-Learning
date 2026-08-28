@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Backdrop } from "@/components/Backdrop";
 
 /**
  * The console's POST frame.
@@ -70,23 +71,8 @@ export function BootFrame({ title, subtitle, lines, children }: Props): JSX.Elem
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
-      {/*
-       * The backdrop: an engineering grid, drawn from the line token so it
-       * re-tints with the theme and cannot drift from the palette. Two
-       * gradients, no image, no request.
-       */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
-          maskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent 100%)",
-          WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent 100%)",
-          opacity: 0.5,
-        }}
-      />
+      {/* Grid, accent bloom and bus pulses — @octa/tokens/backdrop.css. */}
+      <Backdrop />
 
       <section
         className="relative w-full max-w-md border border-line-strong bg-surface-1 p-6 shadow-2"

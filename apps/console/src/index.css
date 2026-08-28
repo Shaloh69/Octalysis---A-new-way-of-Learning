@@ -6,6 +6,9 @@
  * the build if one appears.
  */
 @import "@octa/tokens/tokens.css";
+/* The shared animated backdrop. One painted surface, no markup, no state --
+ * see the header of that file for why it is shared when almost nothing else is. */
+@import "@octa/tokens/backdrop.css";
 
 @tailwind base;
 @tailwind components;
