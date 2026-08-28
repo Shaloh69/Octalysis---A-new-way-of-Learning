@@ -166,6 +166,81 @@ Step 3 is the important one — if it agrees with everything, it hasn't read the
 
 ---
 
+## 5B. THE DESIGN-REVIEW KICKSTART PROMPT
+
+For a session whose job is the design pass, not the build. It needs
+**Playwright MCP connected** — `.mcp.json` configures it; restart Claude Code
+and approve the server, then check `/mcp` says `playwright`.
+
+Why a second prompt rather than the one above: this work fails differently. The
+build fails loudly, by not compiling. A design pass fails quietly, by producing
+confident opinions about pages nobody looked at. So this prompt spends its first
+half forbidding conclusions until there are captures on disk.
+
+````
+This session is a DESIGN REVIEW. Do not write feature code until I say go.
+
+Read first, completely, no skimming:
+  CLAUDE.md · START-HERE.md §4 · .claude/rules/design.md
+  docs/DESIGN-MANDATE.md · docs/DESIGN-REFERENCES.md · docs/PAGE-SPECS.md
+  docs/GAME-DESIGN.md · docs/GAME-LAYER.md · docs/VISUAL-SYSTEM-3D.md
+  docs/SKILL-TREE-3D.md · docs/STAGE-ENCOUNTERS.md
+  packages/tokens/tokens.css · packages/tokens/backdrop.css
+
+Then CAPTURE BEFORE YOU CONCLUDE. Use Playwright MCP. Do not describe a page
+you have not loaded, and do not compare against a template you have not opened.
+
+  Ours:      https://octa-web-beige.vercel.app   (student, public routes)
+             https://octa-console.vercel.app     (staff — see the note below)
+  Reference: https://shadcn-admin.netlify.app
+             plus the demos cited in DESIGN-REFERENCES.md §1-3
+
+Capture every page at 1440px AND at 380px. 380px is a hard requirement in the
+definition of done, not a nice-to-have, and it is where our layouts are least
+tested.
+
+Then report, and STOP:
+
+1. A table: our page | closest reference | what theirs solves that ours does not.
+   Be specific — "denser table rows, 32px not 44px" beats "cleaner".
+2. The three worst surfaces we have, ranked, with the capture that proves it.
+3. Where our own documents CONTRADICT each other. Six subjects are authored two
+   or three times: templates, the star map, encounter themes, animation rules,
+   accent colour, per-page checklists. Name one owner per subject and say which
+   copies should become pointers.
+4. What you would change, smallest-first, each with the test it must still pass.
+5. Anything in DESIGN-MANDATE.md §1 you think is WRONG. Four tests — consequence,
+   legibility, reversibility, teaching. If you agree with all of it you have not
+   read it against the screenshots.
+
+Constraints that are not negotiable, and that a redesign will tempt you to break:
+  - Every colour, size, space and duration comes from packages/tokens. A literal
+    hex outside that package is blocked by a hook. Tailwind's default palette is
+    DELETED in the console, not extended, so an upstream colour utility emits no
+    CSS at all.
+  - `pnpm check:contrast` computes 1122 pairs and has already rejected a theme.
+    Anything you propose must survive it on all three themes.
+  - prefers-reduced-motion must STOP motion, not slow it.
+  - A wrong answer is never red, never a buzzer, never a shake.
+  - One orchestrated moment per stage. No confetti per question.
+
+Two things you will otherwise discover the hard way:
+  - The console shows a SIGN-IN PAGE and nothing else until a staff account
+    exists. Everything past that gate needs Supabase configured. Do not report
+    the console as "one page".
+  - Console screenshots contain real student names on /students, /gradebook and
+    /attempts. .playwright/ is gitignored for that reason. Never paste one into
+    a document, an artifact, or a commit.
+````
+
+**Why this shape:** step 3 is the one that pays. The docs are 2,674 lines across
+eight files and they already caused a real bug — `apps/console/CLAUDE.md` told a
+reader to build a projector view that existed, because the fact lived in three
+places and two rotted. Step 5 is the honesty check, same as step 3 in the build
+kickstart: agreement means it did not look.
+
+---
+
 ## 6. After the kickstart
 
 Run one phase per session. `/clear` between phases. Phase prompts are in
