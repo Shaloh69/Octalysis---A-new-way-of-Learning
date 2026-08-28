@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
 import {
   Users, Lock, BookOpen, Table2, ScrollText, ShieldCheck, MessageSquare,
   Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X,
@@ -50,18 +50,38 @@ export function AppShell() {
    * and reads nothing. Role comes from the JWT, never from profiles.role — a
    * student who rewrites their own profiles row is still a student here.
    */
-  if (identity === null || !isStaff(identity.role)) {
+  // Nobody signed in: send them to the sign-in page rather than a dead-end.
+  // This used to render a screen with one link to the student app and NO WAY
+  // IN, which is what a deployed console showed a teacher on first open.
+  if (identity === null) return <Navigate to="/signin" replace />;
+
+  /*
+   * Signed in, but a student. A different situation and a different screen:
+   * there is nothing to try again here, so it explains and offers the two
+   * things that can help -- the app they actually want, and a way OUT of this
+   * session so a teacher sharing the machine can sign in.
+   */
+  if (!isStaff(identity.role)) {
     return (
       <main className="mx-auto max-w-md p-8">
         <h1 className="mb-2 font-display text-xl">This is the teacher console</h1>
         <p className="mb-5 text-sm text-ink-muted">
-          {identity === null
-            ? "You are not signed in."
-            : "Your account is a student account. If that is wrong, your instructor can change it."}
+          You are signed in as <span className="num">{identity.email ?? "a student"}</span>, which
+          is a student account. If that is wrong, your instructor can change it.
         </p>
-        <Button asChild variant="outline">
-          <a href={import.meta.env.VITE_WEB_URL ?? "http://localhost:5173"}>Go to the student app</a>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild>
+            <a href={import.meta.env.VITE_WEB_URL ?? "http://localhost:5173"}>
+              Go to the student app
+            </a>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => void signOut().then(() => navigate("/signin", { replace: true }))}
+          >
+            Sign in as someone else
+          </Button>
+        </div>
       </main>
     );
   }

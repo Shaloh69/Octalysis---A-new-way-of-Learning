@@ -96,6 +96,25 @@ Set these in the dashboard — never in the file:
 origin produces a browser CORS failure that looks exactly like the API being
 down, and you will spend twenty minutes checking Render before you check this.
 
+### Two things that will fail the build before your code ever runs
+
+**Do not add `corepack enable`.** Render's image has pnpm at `/usr/bin/pnpm` on
+a read-only filesystem, and corepack's first act is to unlink the binary it is
+replacing:
+
+```
+Internal Error: EROFS: read-only file system, unlink '/usr/bin/pnpm'
+```
+
+It is also unnecessary — Render reads `packageManager` from `package.json` and
+provisions that pnpm itself.
+
+**Node is pinned to 20.18.1**, in `.node-version` and in `render.yaml`. The
+`engines` field says `>=20.11.0`, which is an open range, and Render resolved it
+to **Node 26** — a version nothing here has ever been tested on. An open engines
+range on a host that always takes the newest is a build that changes underneath
+you with no commit to blame.
+
 Verify: `curl https://<api>/healthz` → `{"ok":true}`.
 
 ---

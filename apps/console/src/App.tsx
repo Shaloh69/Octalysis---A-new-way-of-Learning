@@ -13,6 +13,7 @@ import { AssessmentsPage } from "./pages/AssessmentsPage";
 import { AuditPage } from "./pages/AuditPage";
 import { SystemPage } from "./pages/SystemPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
+import { SignInPage } from "./pages/SignInPage";
 
 /**
  * The gradebook is lazy, and it is the only page that is.
@@ -34,6 +35,13 @@ export function App() {
   return (
     <Router>
       <Routes>
+        {/*
+         * Sign-in sits OUTSIDE the shell, and must. AppShell redirects an
+         * unauthenticated visitor here; if this route were inside it, that
+         * redirect would land on itself forever.
+         */}
+        <Route path="/signin" element={<SignInPage />} />
+
         <Route element={<AppShell />}>
           {/* Locks first: it is the page a teacher opens mid-class. */}
           <Route path="/" element={<Navigate to="/locks" replace />} />

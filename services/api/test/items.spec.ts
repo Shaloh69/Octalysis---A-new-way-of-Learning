@@ -180,7 +180,7 @@ describe("preview runs the REAL engine", () => {
     expect(a.json().item.correctValue).toBeTruthy();
   });
 
-  it("re-rolls: a different seed gives a different instance", async () => {
+  it("re-rolls: a parameterized item really does vary across seeds", async () => {
     const list = await app.inject({
       method: "GET", url: "/api/v1/console/items?status=live", headers: auth(teacherToken),
     });
@@ -189,17 +189,30 @@ describe("preview runs the REAL engine", () => {
     const p = list.json().items.find((i: { type: string }) => i.type === "P");
     if (!p) return; // no P items seeded in this world
 
-    const a = await app.inject({
-      method: "GET",
-      url: `/api/v1/console/items/${p.id}/preview?seed=seed-one`,
-      headers: auth(teacherToken),
-    });
-    const b = await app.inject({
-      method: "GET",
-      url: `/api/v1/console/items/${p.id}/preview?seed=seed-two`,
-      headers: auth(teacherToken),
-    });
-    expect(a.json().item.stem).not.toBe(b.json().item.stem);
+    /*
+     * TWO SEEDS IS THE WRONG TEST, and this used to be two seeds.
+     *
+     * A parameter space is finite -- a bus-speed item might draw from eight
+     * values -- so two independent draws collide roughly one run in eight, and
+     * the suite failed intermittently with "expected X not to be X". A flaky
+     * assertion in a project whose whole claim is that its gates are real is
+     * worse than no assertion: it teaches you to re-run instead of read.
+     *
+     * The property actually wanted is not "these two differ" but "this item is
+     * parameterized at all". Sample a dozen seeds and require more than one
+     * distinct stem: true whenever the item varies, and false only when it is
+     * secretly fixed -- which is the bug worth catching.
+     */
+    const stems = new Set<string>();
+    for (let i = 0; i < 12; i++) {
+      const r = await app.inject({
+        method: "GET",
+        url: `/api/v1/console/items/${p.id}/preview?seed=seed-${i}`,
+        headers: auth(teacherToken),
+      });
+      stems.add(r.json().item.stem as string);
+    }
+    expect(stems.size).toBeGreaterThan(1);
   });
 });
 

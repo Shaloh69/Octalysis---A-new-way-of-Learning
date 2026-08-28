@@ -107,6 +107,45 @@ export async function getIdentity(): Promise<Identity | null> {
   };
 }
 
+export type SignInResult = { ok: true } | { ok: false; message: string };
+
+/**
+ * Sign a staff member in.
+ *
+ * **Email and password, never a student ID.** A student ID identifies someone
+ * on the roster; staff are not on it, and offering that field here would invite
+ * a teacher to type a number that can never work.
+ *
+ * ONE FAILURE MESSAGE, for every cause.
+ *
+ * A wrong password, an address with no account, and a disabled account all
+ * return the same sentence. `services/api` already does this for the student
+ * path -- "Auth failures use ONE generic message for unknown-user and
+ * wrong-password alike -- no enumeration" (`services/api/CLAUDE.md`) -- and
+ * distinguishing them here would rebuild the oracle that rule exists to close,
+ * on the app that holds the answer keys.
+ *
+ * Signing in does NOT make anyone staff. It establishes who they are; the JWT's
+ * `app_metadata.role` decides what they see, `requireStaff()` decides what the
+ * server answers, and RLS decides what the database returns. A student who
+ * signs in here reaches the "this is a student account" screen and nothing else.
+ */
+export async function signIn(email: string, password: string): Promise<SignInResult> {
+  const c = supabase();
+  if (!c) {
+    // Not a credential failure -- a build that shipped without its Supabase
+    // variables. Saying so plainly saves an hour of retyping a correct password.
+    return {
+      ok: false,
+      message:
+        "This console was built without its Supabase settings, so it cannot sign anyone in. VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are missing.",
+    };
+  }
+  const { error } = await c.auth.signInWithPassword({ email: email.trim(), password });
+  if (error) return { ok: false, message: "That email and password did not match an account." };
+  return { ok: true };
+}
+
 export async function signOut(): Promise<void> {
   const c = supabase();
   if (c) await c.auth.signOut();

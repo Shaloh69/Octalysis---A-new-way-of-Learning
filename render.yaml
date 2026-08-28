@@ -28,11 +28,20 @@ services:
     branch: main
 
     # pnpm workspace: install from the root, build only this package.
-    # --prod=false is LOAD-BEARING. `NODE_ENV: production` is set below, and
-    # pnpm reads it: without this flag the install skips devDependencies, so
-    # `tsc` is absent and the build fails on its first command. The failure
-    # reads as a missing binary, not as a config choice, so it is named here.
-    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @octa/api build
+    # NO `corepack enable`. Render's image ships pnpm at /usr/bin/pnpm on a
+    # READ-ONLY filesystem, and corepack's first act is to unlink the binary it
+    # is replacing:
+    #
+    #   Internal Error: EROFS: read-only file system, unlink '/usr/bin/pnpm'
+    #
+    # It is not needed either. Render reads `packageManager` in package.json and
+    # provisions that pnpm itself.
+    #
+    # --prod=false IS load-bearing. `NODE_ENV: production` is set below and pnpm
+    # reads it: without the flag the install skips devDependencies, so `tsc` is
+    # absent and the build dies on its first command, reading as a broken
+    # toolchain rather than a config choice.
+    buildCommand: pnpm install --frozen-lockfile --prod=false && pnpm --filter @octa/api build
     startCommand: pnpm --filter @octa/api start
 
     # Trivially cheap by design -- it is polled, and a health check that touches
@@ -42,8 +51,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Pinned here AND in `.node-version`, because `engines: >=20.11.0` in
+      # package.json is an open range and Render resolved it to Node 26 -- a
+      # version this project has never run a test on.
       - key: NODE_VERSION
-        value: "20"
+        value: "20.18.1"
 
       # ---- set in the Render dashboard, never in this file ----
       # DATABASE_URL must be the Supabase POOLER connection string (port 6543),
