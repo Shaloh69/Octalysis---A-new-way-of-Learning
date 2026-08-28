@@ -82,7 +82,7 @@ octa/
 │       ├── day1-deck.md
 │       └── chapter1-deck.md
 ├── content/
-│   └── stages/00.md … 17.md     # authoring source of truth for lesson content
+│   └── stages/00.md … 18.md     # authoring source of truth. 01-07 authored, 08-18 planned
 ├── apps/
 │   ├── web/                     # Vite + React 18 + TS  → Vercel   (public + student)
 │   └── console/                 # Vite + React 18 + TS  → Vercel   (teacher/admin)

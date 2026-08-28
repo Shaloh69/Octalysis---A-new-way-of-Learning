@@ -13,12 +13,14 @@ was assumed rather than run, it says so.
 
 | | |
 |---|---|
-| Tests green | **252** (217 API + 18 console + 17 web) · 1 skipped (live JWKS, needs `.env`) |
+| Tests green | **291** (250 API + 24 console + 17 web) · 1 skipped (live JWKS, needs `.env`) |
 | TypeScript strict | clean across 4 packages |
 | Invariants | 22 clean, 0 failures (3 notices expected on an unseeded database) |
 | Schema | applies from scratch locally **and on the live Supabase project** |
 | Denial suite vs Supabase | **38/38 pass on the real project** |
-| Local Postgres state | **19 stages, 18 edges** (one linear chain), 75 content blocks, **110 objectives** |
+| Local Postgres state | **19 stages, 18 edges** (one linear chain), **110 objectives**, chapters 1–7 authored |
+| Contrast | **1122 computed checks** — 1080 palette, 42 encounter themes |
+| Deploy config | `vercel.json` ×2, `render.yaml`, client `.env.example` ×2, `docs/DEPLOY.md` |
 | Supabase live state | seeded before V-47; **needs a re-push** for the 18-chapter seed |
 | Initial JS bundle | 51.9 KB gz + 3.8 KB CSS |
 | 3D chunk | 219.8 KB gz, on demand only, no preload |
@@ -87,7 +89,7 @@ Three bugs found by running: a distractor colliding with the correct answer at
 exactly 1000 MHz, two algebraically identical distractors, and an O(n²) scarcity
 scorer.
 
-### P4 — Console v1 · **DONE**
+### P4 — Console v1 · **DONE (11 pages)**
 
 Routes: roster, lock matrix, lock set with a **mandatory reason**, student
 drill-down, audit log, system audit, gradebook CSV. 13 tests including
@@ -101,8 +103,9 @@ palette bound to `packages/tokens` — Tailwind's default palette is **deleted**
 not extended, so an upstream colour utility produces no CSS and
 `scripts/scan-console-palette.mjs` turns that into a build failure.
 
-Eight pages: locks, students, student detail, attempt drill-down, gradebook,
-content status, audit log, system health, feedback. The role guard reads
+Eleven routes: locks, live (+ projector), students, student detail, attempt
+drill-down, assessments, items, submissions, gradebook, content status, audit
+log, system health, feedback. The role guard reads
 `app_metadata` from the JWT and never `profiles.role`, and 18 tests cover the
 pure logic — including twelve malformed claims that must all resolve to
 `student`, and a `user_metadata.role` that must never be believed.
@@ -188,6 +191,16 @@ under reduced motion or a small viewport, and silently absent when WebGL fails.
 **Not done:** audio (Howler), automated axe/contrast checks in CI, and a manual
 screen-reader pass.
 
+### The student app · **DONE**
+
+Nine routes, real routing. Sign in and register (the POST boot sequence), the
+map in both galaxy and flat form, the stage reader, **the attempt runner**,
+progress, your work (submissions), settings, and `/maintenance`.
+
+Before this the app was a three-way `useState` switch with no login page and no
+way to sit an assessment — the two gaps that made everything else untestable by
+a real student.
+
 ### P10 — Pilot & hardening · **PARTLY DONE**
 
 **Done:**
@@ -213,7 +226,7 @@ screen-reader pass.
 | 7-day pause behaviour | A deliberately quiet week on a scratch project. **Do not assume `pg_cron` counts as activity** |
 | Off-site backup copies | Somewhere that is not this laptop. The rehearsal is real; the off-site half is not set up |
 | Sentry | A project. No error tracking on either app today |
-| `/maintenance` page | Nothing — just not built |
+| Load test, 7-day pause, off-site backups, Sentry | see below |
 
 ---
 

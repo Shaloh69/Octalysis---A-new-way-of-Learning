@@ -84,13 +84,20 @@ non-enumerating). Login and register pages.
 
 ---
 
-## P2 — Content pipeline + Stages 00–05 · 2 weeks
+## P2 — Content pipeline + Stages 00–07 · 2 weeks
 
 **Build:** `scripts/sync-content.ts` — parses `/content/stages/*.md`, writes `content_blocks`,
 bumps version on change, idempotent. Stage reader UI. Stage map with real lock reasons.
 
-**Content:** Stages 01–05 from `docs/source/day1-deck.md`. **Definitions and figures verbatim.**
-Figures 1.1–1.4 become `kind='code'` blocks with the original listings intact.
+**Content:** Stages 01–07, written from **Stallings 10th ed.**, sliced by its own outline into
+`content/book/`. **Definitions and figures verbatim** — `sync-content.mjs --verify` checks all 25
+quoted definitions against the extracted text and fails on a paraphrase.
+
+**Chapters 08–18 ship as a declared future update.** They carry their verbatim syllabus
+objectives and topic outline plus a `kind="planned"` callout that tells the student the teaching
+text is coming. `pnpm check:objectives` gates all 110 objectives against the syllabus DOCX so the
+scaffold cannot drift from the course while it waits. Hard rule 5 is why: prose nobody has checked
+against the textbook is worse than an honest gap, because a student cannot tell the difference.
 
 **Exit criteria**
 - [ ] Fixing a typo in a stage requires no redeploy

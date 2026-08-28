@@ -292,19 +292,35 @@ not done:
 
 ### 3.2 Alpha scope
 
+**This scope was widened during the build.** What actually shipped is below; the narrower plan it
+replaced is recorded in §3.5, because the difference is the useful part.
+
 | In | Out |
 |---|---|
-| Auth: roster import, ID + email + password | Stages 06–17 *content* |
-| **The complete skill tree, both layers** | Simulators (FDE stepper, x86-16, cache) |
-| Stage content for **00–05** only | The 70-item Power-On Self Test |
-| Per-stage Self-Test with a starter item bank | Item analytics and psychometrics |
-| Teacher console: roster + lock matrix | Feedback system and SUS survey |
-| Depth Gauge, competency grid (sparse but real) | Audio |
-| All six P0 denial tests green | Lecture Mode |
+| Auth: roster import, ID + email + password | Stage prose for chapters **08–18** |
+| **The complete skill tree, both layers** | Simulators (FDE stepper, cache, pipeline, microcode) |
+| Stage content for **00–07** | The 70-item Power-On Self Test |
+| Per-stage Self-Test, the generator, and grading | The five themed encounter *components* |
+| Teacher console: 11 routes, roster + lock matrix | `/console/analytics`, `/console/settings` |
+| Submissions: labs, the project, late marking | Audio |
+| Lecture Mode and the projector view | Off-site backups |
+| Feedback, the SUS survey, item psychometrics | |
+| Depth Gauge, competency grid (sparse but real) | |
+| The 38-test denial suite green | |
 
-**What the alpha must not do:** be used for a real grade. Mastery numbers over six stages and a
+**What the alpha must not do:** be used for a real grade. Mastery numbers over seven stages and a
 starter bank are not psychometrically meaningful, and `item_stats` will not have the ≥30 exposures
 that make a p-value mean anything. Say so on the page.
+
+**Chapters 08–18 are a declared future update, not a gap.** Each of those eleven stage files
+carries its **verbatim syllabus objectives** and topic outline — `pnpm check:objectives` gates all
+110 against the DOCX — plus a `kind="planned"` callout that says so in the student's own reading
+view. Hard rule 5 forbids inventing course content, and a chapter of plausible paragraphs nobody
+had checked against Stallings would be **worse than an honest gap**: a student cannot tell the
+difference, and would revise from it.
+
+Those stage nodes still exist, still lock and unlock, still carry objectives. It is the prose that
+is pending, and the page says which.
 
 ### 3.3 Phase mapping, and the one re-ordering this forces
 
@@ -337,9 +353,24 @@ the alpha ships with a complete, accessible, honest 2D skill tree and loses noth
 - [ ] `run_invariants()` returns zero `fail`-severity rows on the deployed database
 - [ ] Deployed: two Vercel projects, one Render service, one Supabase project — all free tier
 - [ ] `pg_cron` heartbeat live, and the 7-day pause behaviour actually observed
-- [ ] A student account can complete Stages 00–05 end to end, keyboard-only, at 380px
+- [ ] A student account can complete Stages 00–07 end to end, keyboard-only, at 380px
 - [ ] Bundle scan finds zero answer strings in either client bundle
 - [ ] `shaloh-build` pushed, with the `lessonData.js` deletion commit in the history
+
+### 3.5 What changed from the original alpha scope, and why
+
+The table in §3.2 used to end at chapter 05 and put the feedback system, Lecture Mode and item
+psychometrics **out** of scope. All three shipped anyway, and two content chapters were added.
+
+The reason is that the cut line moved from *"how much"* to *"how verifiable"*. Everything that
+could be **proven** — a denial test, a computed contrast ratio, a quote checked against the
+extracted book, an invariant — went in, because that work is cheap to trust later. Everything
+whose correctness rests on someone having read it carefully once — eleven more chapters of prose,
+eight simulators — was held back rather than shipped unverified.
+
+That is also why the two remaining console routes are the ones they are: `/analytics` cannot say
+anything true until items have ≥30 exposures, and `/settings` would only wrap environment
+variables in a form.
 
 ---
 

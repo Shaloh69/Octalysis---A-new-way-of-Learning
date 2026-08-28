@@ -43,14 +43,23 @@ secure.
 | `/audit` | who changed what and why. Read-only, and there is no delete control by design |
 | `/system` | `run_invariants()`, live |
 | `/feedback` | reports with the resolved variant attached, and the SUS score |
+| `/items` | the bank and its review queue. Approve, retire, version. p-value and discrimination per item once `item_stats` has them |
+| `/assessments` | **the route that made the engine reachable.** Creating one mints the exam salt. The feasibility check answers *"can this blueprint be filled?"* naming the shortfall cell, before a student presses Start rather than at Start |
+| `/submissions` | the lab and project marking queue. A graded submission's content freezes; regrade is an explicit, audited unlock |
+| `/live`, `/live/present` | Lecture Mode and the projector view |
 
-**Not built:** `/console/items` (the bank and review queue), `/console/live` and its projector
-view, `/console/assessments`, `/console/analytics`.
+**Not built:** `/console/analytics` — the psychometrics view. `item_stats` is computed nightly and
+`/items` shows p-value and discrimination per item; what is missing is the cohort-level chart, and
+it cannot say anything true until items have ≥30 exposures. `/console/settings` is also absent;
+every setting it would hold is currently an environment variable.
 
 ## Rules
 - Every write that changes student-visible state writes to `audit_log` with actor and reason.
-- Projector view (`/console/live/present`) shows NO names, ever. Aggregates only. **Not built yet
-  — build it that way from the first commit, not as a later pass.**
+- Projector view (`/console/live/present`) shows NO names, ever. Aggregates only. This is
+  enforced in the **payload**, not the render: `routes/live.ts` never selects `full_name`,
+  `student_id` or `user_id`, so a future component cannot leak one by accident. Below
+  `MIN_COHORT = 5` responses the answer spread is `[]` — with four students in a room, a
+  distribution names people.
 - Editing a live item creates a new row sharing `family_id` with `version + 1`, and retires the
   old row. The confirm dialog must say that stats do not carry over, in those words.
 - Tables: TanStack Table. Charts: Recharts. Do not add another table or chart library.
