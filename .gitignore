@@ -49,3 +49,9 @@ pnpm-debug.log*
 *.pdf
 !docs/source/CPE 412.docx.pdf
 docs/source/book/
+
+# Playwright MCP captures. Screenshots of the deployed apps, taken during design
+# review -- evidence for a conversation, not source. They also contain whatever
+# was on screen at the time, which on the console means real student names, so
+# they must never be committed.
+.playwright/
