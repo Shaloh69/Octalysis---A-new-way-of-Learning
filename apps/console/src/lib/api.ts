@@ -282,6 +282,30 @@ export interface ResolvedPreview {
   error?: string;
 }
 
+export interface Submission {
+  id: string;
+  kind: "lab" | "project" | "participation";
+  stageId: string | null;
+  slug: string;
+  title: string;
+  bodyMd: string;
+  attachments: Array<{ name: string; path: string }>;
+  payload: Record<string, unknown>;
+  status: "draft" | "submitted" | "returned" | "graded" | "voided";
+  submittedAt: string | null;
+  score: number | null;
+  maxScore: number | null;
+  rubric: Record<string, unknown>;
+  feedbackMd: string | null;
+  gradedAt: string | null;
+  dueAt: string | null;
+  /** A FACT, not a penalty. Whether it costs marks is the grader's call. */
+  isLate: boolean;
+  studentName: string;
+  studentId: string;
+  graderName: string | null;
+}
+
 export interface SetLockInput {
   scope: "global" | "section" | "user";
   stageId: string;
@@ -367,6 +391,32 @@ export const api = {
     request<ResolvedPreview>(
       `/api/v1/console/items/${encodeURIComponent(id)}/preview?seed=${encodeURIComponent(seed)}`,
     ),
+
+  submissions: (status?: string) =>
+    request<{ submissions: Submission[]; summary: Record<string, number> }>(
+      `/api/v1/console/submissions${status ? `?status=${encodeURIComponent(status)}` : ""}`,
+    ),
+
+  gradeSubmission: (
+    id: string,
+    input: {
+      score: number;
+      maxScore: number;
+      rubric?: Record<string, unknown> | undefined;
+      feedbackMd?: string | undefined;
+    },
+  ) =>
+    request<{ ok: true }>(`/api/v1/console/submissions/${encodeURIComponent(id)}/grade`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  /** The ONLY way a graded submission becomes editable again. Reason required. */
+  returnSubmission: (id: string, reason: string) =>
+    request<{ ok: true }>(`/api/v1/console/submissions/${encodeURIComponent(id)}/return`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
 
   setItemStatus: (
     id: string,

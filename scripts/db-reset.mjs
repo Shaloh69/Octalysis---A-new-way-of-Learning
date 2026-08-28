@@ -7,6 +7,7 @@
 //   local-bootstrap.sql   auth schema + the three roles (LOCAL ONLY)
 //   schema.sql            tables, functions, RLS, grants, seed
 //   addendum-feedback.sql feedback + sus_score()
+//   addendum-submissions.sql labs/project/participation -- 40% of the grade
 //   addendum-audit.sql    invariants + run_invariants()   <- calls sus_score()
 //
 // Then runs the invariant suite and reports. Exits non-zero if any FAIL-severity
@@ -28,6 +29,9 @@ const FILES = [
   "db/local-bootstrap.sql",
   "db/schema.sql",
   "db/addendum-feedback.sql",
+  // BEFORE audit, and the order is load-bearing: run_invariants() registers
+  // INV-31, whose function is defined in this file.
+  "db/addendum-submissions.sql",
   "db/addendum-audit.sql",
   // Scheduled work. pg_cron and pg_net are guarded inside, so this applies
   // cleanly to plain Postgres -- the functions are created either way, only the

@@ -1108,3 +1108,35 @@ button {
   .runner-foot { flex-direction: column; }
   .runner-submit { margin-left: 0; }
 }
+
+/* ============================================================
+   SUBMISSIONS — labs, project, participation. 40% of the grade.
+   ============================================================ */
+.submit-page { max-width: 46rem; }
+.submit-intro { color: var(--ink-muted); margin: 0 0 var(--space-5); }
+.submit-empty { color: var(--ink-muted); }
+.submit-list { list-style: none; padding: 0; margin: 0 0 var(--space-6); display: flex; flex-direction: column; gap: var(--space-3); }
+.submit-row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3); background: var(--surface-1); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); }
+.submit-row button { margin-left: auto; min-height: 44px; padding: var(--space-2) var(--space-4); background: var(--surface-2); color: var(--ink); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); font: inherit; cursor: pointer; }
+.submit-status { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: var(--radius-full); border: var(--border-hair) solid; }
+.submit-status-draft { color: var(--ink-faint); border-color: var(--line); }
+.submit-status-submitted { color: var(--warning); border-color: var(--warning); background: var(--warning-bg); }
+.submit-status-returned { color: var(--info); border-color: var(--info); background: var(--info-bg); }
+.submit-status-graded { color: var(--success); border-color: var(--success); background: var(--success-bg); }
+.submit-slug { font-size: var(--text-xs); color: var(--ink-faint); }
+.submit-title { flex: 1; min-width: 8rem; }
+.submit-score { font-weight: 600; }
+.submit-late { font-size: var(--text-xs); color: var(--warning); margin: var(--space-1) 0 0 var(--space-3); }
+.submit-detail { padding: var(--space-4); border: var(--border-hair) solid var(--line); border-top: 0; border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: var(--surface-1); }
+.submit-detail h3 { font-family: var(--font-display); font-size: var(--text-base); margin: var(--space-4) 0 var(--space-2); }
+.submit-graded { color: var(--success); margin: 0 0 var(--space-3); }
+.submit-feedback, .submit-body { white-space: pre-wrap; color: var(--ink-muted); margin: 0; }
+.submit-new { margin-top: var(--space-6); }
+.submit-new summary { cursor: pointer; padding: var(--space-3); background: var(--surface-2); border-radius: var(--radius-sm); min-height: 44px; display: flex; align-items: center; }
+.submit-form { padding: var(--space-4) 0; }
+.submit-form textarea { width: 100%; padding: var(--space-3); background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); color: var(--ink); font: inherit; }
+.submit-select { width: 100%; padding: var(--space-3); background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); color: var(--ink); font: inherit; min-height: 44px; }
+.submit-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.submit-actions button:first-child { min-height: 44px; padding: var(--space-3) var(--space-4); background: var(--surface-2); color: var(--ink); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); font: inherit; cursor: pointer; }
+.submit-err { color: var(--danger); margin: 0 0 var(--space-3); }
+.submit-ok { color: var(--success); margin: 0 0 var(--space-3); }

@@ -56,12 +56,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Apply the schema
-        # Same five files, same order as pnpm db:reset. The order is
+        # Same six files, same order as pnpm db:reset. The order is
         # load-bearing: inv_24 calls sus_score(), defined in the feedback
         # addendum.
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
-          for f in db/local-bootstrap.sql db/schema.sql db/addendum-feedback.sql db/addendum-audit.sql db/addendum-cron.sql; do
+          for f in db/local-bootstrap.sql db/schema.sql db/addendum-feedback.sql db/addendum-submissions.sql db/addendum-audit.sql db/addendum-cron.sql; do
             echo "applying $f"
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --no-psqlrc -f "$f"
           done

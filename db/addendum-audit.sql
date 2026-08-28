@@ -311,7 +311,11 @@ declare
     ['INV-27','inv_27_archetype_beats','warn'],
     ['INV-28','inv_28_objectives_tagged','fail'],
     ['INV-29','inv_29_grid_reachable','warn'],
-    ['INV-30','inv_30_no_ungradeable_items','fail']
+    ['INV-30','inv_30_no_ungradeable_items','fail'],
+    -- Defined in addendum-submissions.sql, which is why that file applies
+    -- BEFORE this one. A graded row with no score looks finished in every
+    -- list and contributes nothing to the total.
+    ['INV-31','inv_31_graded_submissions_complete','fail']
   ];
   c    text[];
   cnt  bigint;

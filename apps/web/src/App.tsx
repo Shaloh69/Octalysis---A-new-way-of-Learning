@@ -23,6 +23,7 @@ import {
   StagePage,
 } from "./pages/StudentPages";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SubmitPage } from "./pages/SubmitPage";
 import { api, type ProgressGrid as Grid, type StageMapData } from "./lib/api";
 import { currentIdentity, onAuthChange, signOut, type Identity } from "./lib/auth";
 
@@ -127,6 +128,7 @@ function AppShell(): JSX.Element {
               Map
             </NavLink>
             <NavLink to="/app/progress">Progress</NavLink>
+            <NavLink to="/app/work">Your work</NavLink>
             <NavLink to="/app/settings">Settings</NavLink>
             <button
               type="button"
@@ -173,6 +175,7 @@ export default function App(): JSX.Element {
             <Route path="/app/stage/:id" element={<StagePage />} />
             <Route path="/app/stage/:id/check" element={<CheckPage />} />
             <Route path="/app/progress" element={<ProgressPage />} />
+            <Route path="/app/work" element={<SubmitPage />} />
             <Route path="/app/settings" element={<SettingsPage />} />
           </Route>
         </Route>

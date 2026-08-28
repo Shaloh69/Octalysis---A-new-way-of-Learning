@@ -150,6 +150,19 @@ export const api = {
       body: JSON.stringify({ ordinal, answer, ...(timeMs !== undefined ? { timeMs } : {}) }),
     }),
 
+  /* ---- submissions: labs, the project, participation. 40% of the grade. ---- */
+
+  mySubmissions: () => request<{ submissions: unknown[] }>("/api/v1/submissions"),
+
+  saveSubmission: (
+    slug: string,
+    input: { kind: string; title: string; bodyMd: string; submit: boolean; stageId?: string },
+  ) =>
+    request<{ id: string; status: string; submittedAt: string | null; isLate: boolean }>(
+      `/api/v1/submissions/${encodeURIComponent(slug)}`,
+      { method: "PUT", body: JSON.stringify(input) },
+    ),
+
   /* ---- feedback. The routes existed and tested; nothing called them. ---- */
 
   sendFeedback: (input: {

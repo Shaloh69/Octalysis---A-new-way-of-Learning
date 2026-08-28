@@ -27,6 +27,10 @@ export async function resetAll(): Promise<void> {
     -- deletes an item, it retires one (hard rule 6) -- but the fixtures do.
     delete from feedback           where true;
     delete from feedback_prompts   where true;
+    -- Submissions reference auth.users and stages. Same lesson as V-52: adding
+    -- a table that points at an existing one silently breaks teardown for every
+    -- suite that ran before it.
+    delete from submissions        where true;
 
     delete from responses          where true;
     delete from attempt_items      where true;
