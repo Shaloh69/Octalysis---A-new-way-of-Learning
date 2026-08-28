@@ -10,8 +10,7 @@
 | Thing | Value |
 |---|---|
 | **Repository** | https://github.com/Shaloh69/Octalysis---A-new-way-of-Learning |
-| **Default branch** | `main` |
-| **Working branch** | **`shaloh-build`** — both pushed |
+| **Branch** | **`main`**, and only `main`. See §1.1 |
 | **Supabase project** | `lqvkqdaqtkhxmnvodmyr` · https://lqvkqdaqtkhxmnvodmyr.supabase.co |
 | **Supabase region** | `ap-northeast-1` (Tokyo) — closest free region to the Philippines |
 | **Supabase compute** | NANO (free), 60 max connections |
@@ -78,7 +77,8 @@ nowhere else — never in a message, never in a screenshot, never under a client
 > 1. **The repository will be one the user creates**, not the existing course repo. §1 below is
 >    retained because the old repo is still the app OCTA replaces, and the `lessonData.js`
 >    deletion is still worth doing as evidence — but on a fresh repo the branch is simply the
->    working branch. Branch name stays **`shaloh-build`**.
+>    working branch. **That branch is now `main`** — see §1.1 for why it stopped being
+>    `shaloh-build`.
 > 2. **There are no cloud projects, and none are needed yet.** "Production" runs locally in
 >    Docker — see §2.0. The same `db/schema.sql`, the same policies, and the same denial suite
 >    that will run on Supabase run here first. This is not a mock; it is the real schema on real
@@ -109,16 +109,33 @@ project exists:
 architecture (pnpm monorepo, server-side grading, RLS). The old tree and the new tree share no
 files.
 
-### 1.1 The branch
+### 1.1 The branch is `main`, and this was learned the hard way
 
-**Branch name: `shaloh-build`.**
+**Work on `main`. Push to `main`. There is no second branch.**
 
-Cut it from `master`, not as an orphan:
+For eighteen commits the work lived on `shaloh-build` while `main` sat at the P0
+skeleton — 70 files, where `apps/web` contained one `CLAUDE.md` and nothing
+else. That was fine right up to the moment anything outside this repository had
+an opinion, and then it cost an hour:
+
+- **Render's new-service form defaulted to `main`.** Caught before deploying.
+- **Vercel cloned `main` and built it.** No `package.json`, no `vercel.json`, so
+  it fell through to the Vite preset's `vite build` and died with
+  `vite: command not found`, exit 127, in two seconds. The log named the branch
+  on line two and the error on line eleven, and only the error looked relevant.
+
+Every host defaults to `main`. A default branch that does not build is a trap
+that arms itself once and fires on every service you ever connect. `main` was
+fast-forwarded to `shaloh-build` (a clean ancestor, no merge commit) and
+`shaloh-build` was deleted on both ends.
+
+The original plan below cut the branch from the old repo's `master`. It is kept
+because the reasoning about the `lessonData.js` deletion still holds:
 
 ```bash
 git clone https://github.com/CodenameTempest14/Computer-Systems-Interactive-Lecture-Companion-.git octa
 cd octa
-git checkout -b shaloh-build master
+git checkout -b octa-rebuild master   # historical; the work now lives on main
 ```
 
 **Why from `master` rather than `--orphan`:** the first commits on this branch delete
@@ -143,8 +160,10 @@ history sees the old app, then sees the specific security deletion, then sees th
 ### 1.2 What is blocked — resolved
 
 Both git blockers are cleared. The working directory is a repository, `origin` points at
-`Shaloh69/Octalysis---A-new-way-of-Learning`, and `main` and `shaloh-build` are both pushed.
-Credentials were already cached, so `gh auth login` was never needed.
+`Shaloh69/Octalysis---A-new-way-of-Learning`, and everything is on `main`.
+Credentials were already cached, so `gh auth login` was never needed — note that
+`gh` itself is **not** authenticated, so anything needing the GitHub API (default-branch
+checks, release automation) needs `gh auth login` first.
 
 What remains blocked, and on what:
 
@@ -355,7 +374,7 @@ the alpha ships with a complete, accessible, honest 2D skill tree and loses noth
 - [ ] `pg_cron` heartbeat live, and the 7-day pause behaviour actually observed
 - [ ] A student account can complete Stages 00–07 end to end, keyboard-only, at 380px
 - [ ] Bundle scan finds zero answer strings in either client bundle
-- [ ] `shaloh-build` pushed, with the `lessonData.js` deletion commit in the history
+- [ ] `main` pushed, with the `lessonData.js` deletion commit in the history
 
 ### 3.5 What changed from the original alpha scope, and why
 
@@ -388,7 +407,8 @@ Three points from that guidance that bite hardest here:
 1. **Separate research from implementation.** Use plan mode. The kickstart prompt in
    `START-HERE.md` §5 is this idea applied once, at the start; do it again at every phase boundary.
 2. **Start from a clean git state and commit checkpoints often**, so a bad direction is one
-   `git revert` away. On `shaloh-build` this matters more than usual — there is no other copy.
+   `git revert` away. This matters more than usual here — `main` is the only branch, so there
+   is no other copy and nothing to fall back to.
 3. **`CLAUDE.md` is persistent memory and is kept in context.** When a rule gets discovered the
    hard way, it goes in `CLAUDE.md`, not in a comment nobody reloads.
 

@@ -85,7 +85,7 @@ work out what went wrong.
 **Or redeploy the previous commit from git:**
 ```bash
 git log --oneline -5                       # find the last good SHA
-git push origin <good-sha>:shaloh-build -f # only if you are certain
+git push origin <good-sha>:main -f         # only if you are certain
 ```
 
 `-f` rewrites the branch. Prefer the dashboard route in a live incident; use
@@ -192,7 +192,7 @@ never edit history.
 |---|---|
 | **Owner / first contact** | Shem Joshua Dumpor — `dumporshemjoshua@gmail.com` |
 | **Course** | CPE 412, University of Cebu, College of Engineering |
-| **Repo** | `github.com/Shaloh69/Octalysis---A-new-way-of-Learning`, branch `shaloh-build` |
+| **Repo** | `github.com/Shaloh69/Octalysis---A-new-way-of-Learning`, branch `main` |
 | **Hosting** | Vercel Hobby ×2 (web, console) · Render Free ×1 (api) · Supabase Free ×1 |
 
 **Fill in before the pilot:** a second contact who can reach the owner, and the

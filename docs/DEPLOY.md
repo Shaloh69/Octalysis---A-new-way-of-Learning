@@ -76,7 +76,11 @@ thing that proves RLS is doing its job on the deployment students will use.
 
 ## 2. Render — the API
 
-Connect the repo; Render reads `render.yaml`. Branch **`shaloh-build`**.
+Connect the repo; Render reads `render.yaml`. Branch **`main`**.
+
+Use **New → Blueprint**, not New → Web Service. A manually created service ignores
+`render.yaml` forever, and you hand-maintain the build command, start command
+and health check instead.
 
 Set these in the dashboard — never in the file:
 

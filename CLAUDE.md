@@ -82,7 +82,10 @@ Three Postgres semantics this project has already been bitten by — see `VERIFI
 
 ## Delivery — read `docs/DELIVERY.md` before deploying or committing
 
-- **Ships to** `github.com/Shaloh69/Octalysis---A-new-way-of-Learning`, branch **`shaloh-build`**.
+- **Ships to** `github.com/Shaloh69/Octalysis---A-new-way-of-Learning`, branch **`main`**.
+  Work on `main` and push to `main`. `shaloh-build` is gone — it existed for eighteen commits
+  while `main` sat on the P0 skeleton, and every host defaults to `main`: Vercel and Render each
+  built the skeleton, failed differently, and cost an hour between them.
   The repo OCTA *replaces* is `CodenameTempest14/Computer-Systems-Interactive-Lecture-Companion-`,
   whose `src/data/lessonData.js` shipped every answer to the browser. That is the bug this project
   exists to fix; it is not a dependency and nothing is merged from it.

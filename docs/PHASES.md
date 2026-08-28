@@ -7,7 +7,8 @@ if you can't tick them all, the phase isn't done, regardless of how much code ex
 **Where the alpha sits:** the alpha release is **P0 → P4 (partial), plus a complete skill tree** —
 not all topics implemented, but every one of the 19 nodes, all 18 prerequisite edges, and full
 server-resolved lock behaviour. Definition, scope boundary, and exit criteria in `DELIVERY.md` §3.
-Everything ships to branch `shaloh-build` on the existing course repo; see `DELIVERY.md` §1.
+Everything ships to branch `main` on `Shaloh69/Octalysis---A-new-way-of-Learning`; see
+`DELIVERY.md` §1.
 
 ---
 

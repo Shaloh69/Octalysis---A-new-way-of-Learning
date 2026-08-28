@@ -25,7 +25,7 @@ services:
     runtime: node
     plan: free
     region: singapore # closest to Cebu of the free-tier regions
-    branch: shaloh-build
+    branch: main
 
     # pnpm workspace: install from the root, build only this package.
     # --prod=false is LOAD-BEARING. `NODE_ENV: production` is set below, and
