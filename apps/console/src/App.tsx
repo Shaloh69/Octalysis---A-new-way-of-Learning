@@ -8,6 +8,7 @@ import { AttemptPage } from "./pages/AttemptPage";
 import { ContentPage } from "./pages/ContentPage";
 import { ItemsPage } from "./pages/ItemsPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
+import { LivePage } from "./pages/LivePage";
 import { AuditPage } from "./pages/AuditPage";
 import { SystemPage } from "./pages/SystemPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
@@ -36,6 +37,7 @@ export function App() {
           {/* Locks first: it is the page a teacher opens mid-class. */}
           <Route path="/" element={<Navigate to="/locks" replace />} />
           <Route path="/locks" element={<LocksPage />} />
+          <Route path="/live" element={<LivePage />} />
           <Route path="/students" element={<StudentsPage />} />
           <Route path="/students/:userId" element={<StudentDetailPage />} />
           <Route path="/attempts/:attemptId" element={<AttemptPage />} />

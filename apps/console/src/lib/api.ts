@@ -306,6 +306,16 @@ export interface Submission {
   graderName: string | null;
 }
 
+export interface LiveSnapshot {
+  cohort: number;
+  /** True when the cohort is too small for an aggregate to stay anonymous. */
+  suppressed: boolean;
+  minCohort: number;
+  stages: Array<{ stageId: string; students: number; avgMastery: number }>;
+  spread: Array<{ ordinal: number; answered: number; correct: number }>;
+  at: string;
+}
+
 export interface SetLockInput {
   scope: "global" | "section" | "user";
   stageId: string;
@@ -391,6 +401,9 @@ export const api = {
     request<ResolvedPreview>(
       `/api/v1/console/items/${encodeURIComponent(id)}/preview?seed=${encodeURIComponent(seed)}`,
     ),
+
+  /** Lecture Mode. Carries NO name, student id, or user id -- by construction. */
+  live: () => request<LiveSnapshot>("/api/v1/console/live"),
 
   submissions: (status?: string) =>
     request<{ submissions: Submission[]; summary: Record<string, number> }>(
