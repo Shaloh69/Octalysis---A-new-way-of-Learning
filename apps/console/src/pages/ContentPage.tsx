@@ -15,10 +15,10 @@ import { ErrorNote, Loading } from "@/components/ui/empty";
  * Three states, and they are genuinely different things:
  *
  *   authored  real prose exists, written from the chapter's references
- *   scaffold  objectives and the syllabus topic outline, no teaching text
+ *   planned   objectives and the syllabus topic outline, no teaching text yet
  *   empty     nothing synced at all
  *
- * **Scaffold is not a bug.** `scripts/gen-stages.mjs` transcribes what the
+ * **Planned is not a bug.** `scripts/gen-stages.mjs` transcribes what the
  * syllabus contains and refuses to invent the rest — hard rule 5, and
  * `content/stages/README.md` explains why. A stage that shows its shape is
  * honest; a stage filled with plausible-sounding paragraphs nobody vetted is
@@ -51,8 +51,8 @@ export function ContentPage() {
       <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Chapters authored" value={`${summary.authored}/${summary.total}`}
               note={summary.authored === 0 ? "None yet" : undefined} />
-        <Stat label="Awaiting prose" value={String(summary.scaffold)}
-              note="Objectives and topic outline present" />
+        <Stat label="Planned" value={String(summary.planned)}
+              note="Objectives and outline ready; prose to come" />
         <Stat label="Objectives" value={String(summary.objectives)}
               note="Transcribed from the syllabus" />
         <Stat
@@ -115,8 +115,8 @@ export function ContentPage() {
                 <TD>
                   {s.authoring === "authored" ? (
                     <Badge tone="success">Authored</Badge>
-                  ) : s.authoring === "scaffold" ? (
-                    <Badge tone="warning">Needs prose</Badge>
+                  ) : s.authoring === "planned" ? (
+                    <Badge tone="info">Planned</Badge>
                   ) : (
                     <Badge tone="neutral">Empty</Badge>
                   )}

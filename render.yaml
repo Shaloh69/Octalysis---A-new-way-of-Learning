@@ -1,0 +1,72 @@
+# ============================================================
+# OCTA — services/api on Render (free tier)
+#
+# THREE FREE-TIER FACTS THIS FILE IS SHAPED BY, all in DELIVERY.md §2:
+#
+#   1. The instance SPINS DOWN after ~15 minutes idle, and the next request
+#      pays a ~60 second cold start. A cold start mid-lecture is the worst
+#      failure mode in this system, which is why `/healthz` must stay trivially
+#      cheap and why something pings it during class hours.
+#
+#   2. RENDER FREE HAS NO CRON JOBS. Do not add one here and do not look for
+#      one. Every scheduled job -- the keep-alive, nightly item stats, the
+#      invariant run -- is `pg_cron` + `pg_net` on Supabase, where the data
+#      already is. See db/addendum-cron.sql.
+#
+#   3. 750 instance-hours a month. Keeping one service awake 24/7 burns ~730 of
+#      them, so the keep-alive is scheduled for CLASS HOURS, not always-on.
+#
+# Deploy: connect this repo in the Render dashboard; it reads this file.
+# ============================================================
+
+services:
+  - type: web
+    name: octa-api
+    runtime: node
+    plan: free
+    region: singapore # closest to Cebu of the free-tier regions
+    branch: shaloh-build
+
+    # pnpm workspace: install from the root, build only this package.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @octa/api build
+    startCommand: pnpm --filter @octa/api start
+
+    # Trivially cheap by design -- it is polled, and a health check that touches
+    # the database turns a keep-alive into load.
+    healthCheckPath: /healthz
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+
+      # ---- set in the Render dashboard, never in this file ----
+      # DATABASE_URL must be the Supabase POOLER connection string (port 6543),
+      # not the direct one. A free Render instance opening direct connections
+      # will exhaust Supabase's limit under a class of forty.
+      - key: DATABASE_URL
+        sync: false
+      - key: EXAM_SALT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+
+      - key: ENGINE_VERSION
+        value: "1.0.0"
+
+      # Both Vercel apps, comma separated. A wrong value here is the most
+      # likely cause of "it works locally and not deployed": the browser gets a
+      # CORS failure that looks like the API being down.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

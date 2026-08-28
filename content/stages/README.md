@@ -7,6 +7,21 @@ Orientation plus the eighteen chapters of the CPE 412 syllabus.
 database is the **runtime** source of truth (so a typo fix needs no redeploy); these files are the
 **authoring** source of truth (so content is reviewable in git).
 
+## Chapters 1-7 are authored. 8-18 are planned.
+
+**Chapters 1 through 7 have full lesson text**, written from the textbook, with
+every quoted definition verified against it by `sync-content.mjs --verify`.
+
+**Chapters 8 through 18 carry their objectives and topic outline and say so.**
+Their callout tells the student plainly that the teaching text is coming in a
+later update. That is a deliberate state, not an unfinished one -- and it is
+better than prose nobody has checked, which is how a wrong definition reaches a
+student with the platform's authority behind it.
+
+The console's Content page reports the three states -- `authored`, `planned`,
+`empty` -- per chapter, so "is the course ready" has a per-chapter answer rather
+than a percentage that hides which chapter is missing.
+
 ## These files are GENERATED, and only partly
 
 `scripts/gen-stages.mjs` writes every file here from `docs/source/CPE 412.docx` — the authoritative

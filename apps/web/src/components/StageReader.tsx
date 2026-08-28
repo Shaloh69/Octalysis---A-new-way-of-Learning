@@ -238,8 +238,26 @@ function Block({
   }
 
   if (kind === "callout") {
+    /*
+     * A PLANNED chapter says so, and says it in its own voice rather than as a
+     * warning. Chapters 1-7 are written; 8-18 carry their syllabus objectives
+     * and topic outline while the teaching text is authored.
+     *
+     * It gets its own treatment because the alternative -- an ordinary callout
+     * a student skims past -- lets an unfinished chapter read as a finished
+     * one, and finding that out halfway through revision is the worst possible
+     * moment.
+     */
+    if (meta.kind === "planned" || meta.kind === "scaffold") {
+      return (
+        <aside className="block-planned" role="note">
+          <p className="block-planned-tag mono">Coming in a later update</p>
+          <Paragraphs body={body} />
+        </aside>
+      );
+    }
     return (
-      <aside className="block-callout">
+      <aside className="block-callout" data-kind={meta.kind ?? undefined}>
         <Paragraphs body={body} />
       </aside>
     );

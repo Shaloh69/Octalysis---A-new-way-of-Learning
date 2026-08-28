@@ -110,14 +110,19 @@ pure logic — including twelve malformed claims that must all resolve to
 The gradebook is the only lazy route: Recharts is ~105 KB gz and nothing else
 imports it.
 
-### P5 — Stages 06–11 · **NOT BUILT**
+### P5 — Stage content · **CHAPTERS 1–7 AUTHORED, 8–18 PLANNED**
 
-Content for 06–17 is not authored. The pipeline, the map, and the reader all
-handle them the moment the markdown exists — the stages are seeded and the map
-renders all 18 nodes today.
+**Chapters 1 through 7 have full lesson text**, written from Stallings 10th ed.,
+with every quoted definition verified against the book character-for-character
+by `sync-content.mjs --verify`. That is the whole Prelim period plus two.
 
-The encounter components (`CardSort`, `BitArray`, `SliderRig`, `NodeCanvas`) do
-not exist.
+**Chapters 8 through 18 carry their syllabus objectives and topic outline** and
+say plainly that the teaching text is coming in a later update. A deliberate,
+declared state — the console's Content page reports `authored` / `planned` /
+`empty` per chapter, so "is the course ready" has a per-chapter answer.
+
+The eight **encounter themes** are built and contrast-checked. The encounter
+*components* (`CardSort`, `BitArray`, `SliderRig`, `NodeCanvas`) do not exist.
 
 ### P6 — Simulators · **NOT BUILT**
 

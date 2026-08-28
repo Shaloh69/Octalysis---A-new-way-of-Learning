@@ -202,8 +202,8 @@ export interface ContentStage {
   objectives: number;
   liveItems: number;
   draftItems: number;
-  /** `scaffold` is not a bug -- see the note in pages/ContentPage.tsx. */
-  authoring: "authored" | "scaffold" | "empty";
+  /** `planned` is not a bug -- see the note in pages/ContentPage.tsx. */
+  authoring: "authored" | "planned" | "empty";
 }
 
 export interface ContentStatus {
@@ -211,7 +211,7 @@ export interface ContentStatus {
   summary: {
     total: number;
     authored: number;
-    scaffold: number;
+    planned: number;
     empty: number;
     objectives: number;
     liveItems: number;

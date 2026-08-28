@@ -1146,3 +1146,22 @@ button {
 .encounter { margin: var(--space-6) 0; }
 .encounter h2, .encounter h3 { color: var(--enc-ink); font-family: var(--font-display); }
 .encounter a { color: var(--enc-accent); }
+
+/* A chapter whose teaching text is still to come. Distinct from a callout on
+   purpose -- an unfinished chapter must never read as a finished one. */
+.block-planned {
+  margin: var(--space-6) 0;
+  padding: var(--space-5);
+  background: var(--info-bg);
+  border: var(--border-hair) solid var(--info);
+  border-left: var(--border-thick) solid var(--info);
+  border-radius: var(--radius-md);
+}
+.block-planned-tag {
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--info);
+  margin: 0 0 var(--space-3);
+}
+.block-planned p { color: var(--ink); }

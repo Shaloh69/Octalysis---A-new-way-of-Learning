@@ -276,11 +276,15 @@ describe("content status tells the truth about what is authored", () => {
     expect(stages.length).toBe(summary.total);
     expect(summary.total).toBeGreaterThan(0);
     for (const s of stages) {
-      expect(["authored", "scaffold", "empty"]).toContain(s.authoring);
+      expect(["authored", "planned", "empty"]).toContain(s.authoring);
     }
-    // authored + scaffold + empty must account for every stage. A fourth state
+    // authored + planned + empty must account for every stage. A fourth state
     // appearing silently would make the page under-report the gap.
-    expect(summary.authored + summary.scaffold + summary.empty).toBe(summary.total);
+    //
+    // `planned` was called `scaffold` until chapters 1-7 were authored and the
+    // rest were declared a future update rather than an unfinished one. This
+    // assertion is what caught the rename.
+    expect(summary.authored + summary.planned + summary.empty).toBe(summary.total);
   });
 
   it("sets the item target from GRADEABLE stages only", async () => {

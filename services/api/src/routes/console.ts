@@ -333,11 +333,16 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * Authoring status per stage. This exists because the honest answer to "is
    * the course ready" is per-chapter, and an aggregate hides it.
    *
-   * A stage is SCAFFOLD until someone writes its prose. `scripts/gen-stages.mjs`
-   * emits a `kind='callout'` block with `meta.kind='scaffold'` for every chapter
-   * that has only its syllabus outline, so the gap is a queryable fact rather
-   * than something a reader has to notice. `content/stages/README.md` explains
-   * why the generator refuses to invent the missing text.
+   * A stage is PLANNED until someone writes its prose. `scripts/gen-stages.mjs`
+   * emits a callout carrying `meta.kind='planned'` for every chapter that has
+   * only its syllabus outline, so the gap is a queryable fact rather than
+   * something a reader has to notice.
+   *
+   * Chapters 1-7 are authored. 8-18 carry their objectives and topic outline
+   * and say plainly that the teaching text is coming -- which is the honest
+   * state, and better than prose nobody has checked.
+   *
+   * (`scaffold` is still matched so an older sync is not misreported as done.)
    * -------------------------------------------------------- */
   app.get("/api/v1/console/content", async (req, reply) => {
     const id = await identityFrom(req, env);
@@ -349,7 +354,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
               (select count(*)::int from content_blocks cb where cb.stage_id = s.id)
                 as blocks,
               (select count(*)::int from content_blocks cb
-                where cb.stage_id = s.id and cb.meta->>'kind' = 'scaffold')
+                where cb.stage_id = s.id and cb.meta->>'kind' in ('scaffold','planned'))
                 as scaffold_blocks,
               (select count(*)::int from objectives o where o.stage_id = s.id)
                 as objectives,
@@ -384,7 +389,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
         //   empty     nothing synced at all
         //   scaffold  objectives and a topic outline, no teaching text
         //   authored  real prose exists
-        authoring: blocks === 0 ? "empty" : scaffold > 0 ? "scaffold" : "authored",
+        authoring: blocks === 0 ? "empty" : scaffold > 0 ? "planned" : "authored",
       };
     });
 
@@ -394,7 +399,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
       summary: {
         total: stages.length,
         authored: stages.filter((s) => s.authoring === "authored").length,
-        scaffold: stages.filter((s) => s.authoring === "scaffold").length,
+        planned: stages.filter((s) => s.authoring === "planned").length,
         empty: stages.filter((s) => s.authoring === "empty").length,
         objectives: stages.reduce((a, s) => a + s.objectives, 0),
         liveItems: stages.reduce((a, s) => a + s.liveItems, 0),

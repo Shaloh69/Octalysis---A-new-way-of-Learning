@@ -184,7 +184,8 @@ const skipped = [];
  */
 function isAuthored(file) {
   if (!existsSync(file)) return false;
-  return !readFileSync(file, "utf8").includes('kind="scaffold"');
+  const t = readFileSync(file, "utf8");
+  return !t.includes('kind="scaffold"') && !t.includes('kind="planned"');
 }
 
 const orientation = `---
@@ -264,8 +265,8 @@ chapters.forEach((ch, i) => {
     `Chapter ${n} of the syllabus. ${ch.time} of contact time; archetype ` +
       `${a.archetype} because ${a.why}.`,
     "",
-    '<!-- block: callout kind="scaffold" -->',
-    "**This chapter has no lesson prose yet.**",
+    '<!-- block: callout kind="planned" -->',
+    "**The lesson text for this chapter is not written yet.**",
     "",
     "The objectives above and the topic outline below are transcribed from the",
     "course syllabus. The teaching text is authored from the references listed",

@@ -66,3 +66,21 @@ chapters into a hosted platform is not. So:
 
 If a chapter genuinely has no source for an outcome, **stop and say so.** The instructor authors
 it; you do not.
+
+## Authoring status, and how to leave a chapter unfinished
+
+**Chapters 1-7 are authored. 8-18 are planned**, by decision -- the course ships with the first
+grading period fully written and the rest following in later updates.
+
+A planned chapter carries `<!-- block: callout kind="planned" -->` and tells the student, in plain
+words, that the teaching text is coming. **Never leave a chapter looking finished when it is not**,
+and never fill the gap with plausible-sounding paragraphs to make a page look complete.
+
+## The objectives are not yours to reword
+
+They are the syllabus's contract, transcribed verbatim from the DOCX. `pnpm check:objectives`
+diffs every chapter against it and fails on any difference; `--fix` restores them.
+
+This gate exists because chapter 3 was authored with **seven paraphrased objectives where the
+syllabus has eleven** -- four outcomes the course is accountable for had quietly stopped
+existing, and the only signal was an objective count dropping in a sync summary.
