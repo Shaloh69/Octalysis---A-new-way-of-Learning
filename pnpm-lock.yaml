@@ -175,6 +175,9 @@ importers:
       pg:
         specifier: ^8.13.1
         version: 8.23.0
+      tsx:
+        specifier: ^4.19.1
+        version: 4.23.12
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -185,9 +188,6 @@ importers:
       '@types/pg':
         specifier: ^8.11.10
         version: 8.23.1
-      tsx:
-        specifier: ^4.19.1
-        version: 4.23.12
       typescript:
         specifier: ^5.6.3
         version: 5.9.3

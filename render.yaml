@@ -28,7 +28,11 @@ services:
     branch: shaloh-build
 
     # pnpm workspace: install from the root, build only this package.
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @octa/api build
+    # --prod=false is LOAD-BEARING. `NODE_ENV: production` is set below, and
+    # pnpm reads it: without this flag the install skips devDependencies, so
+    # `tsc` is absent and the build fails on its first command. The failure
+    # reads as a missing binary, not as a config choice, so it is named here.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @octa/api build
     startCommand: pnpm --filter @octa/api start
 
     # Trivially cheap by design -- it is polled, and a health check that touches
