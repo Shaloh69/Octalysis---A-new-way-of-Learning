@@ -3,7 +3,7 @@
   "framework": "vite",
   "buildCommand": "cd ../.. && pnpm --filter @octa/web build",
   "outputDirectory": "dist",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile --prod=false",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],

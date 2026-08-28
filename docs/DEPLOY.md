@@ -109,6 +109,36 @@ Each has a `vercel.json` that sets the build command, the SPA rewrite and
 security headers. Set the environment variables from the matching
 `.env.example`.
 
+### The setting that makes or breaks a monorepo build
+
+**Settings → General → Root Directory → tick "Include files outside of the
+Root Directory in the Build Step."**
+
+Without it Vercel uploads only the root files and the app's own folder — 44 of
+this repo's 229 — and **`packages/contracts` and `packages/tokens` are not among
+them.** Both are `workspace:*` dependencies of both apps.
+
+The failure is silent and slow, which is what makes it expensive:
+
+```
+Downloading 44 deployment files...
+Running "install" command: 'cd ../.. && pnpm install --frozen-lockfile ...'
+Already up-to-date
+```
+
+...and then nothing, until the build times out. `pnpm install` finishing in
+under a second on a machine that just said *"Previous build caches not
+available"* is the tell: it installed nothing, because from the app folder
+`cd ../..` landed somewhere with no workspace in it. There is no error line to
+search for.
+
+Count the files in the log against `git ls-files | wc -l`. If it is short, this
+is why.
+
+`--prod=false` is on both install commands for the same reason it is on
+Render's: `vite`, `tsc` and `vitest` are devDependencies, and a build host that
+sets `NODE_ENV=production` makes pnpm skip exactly the tools the build needs.
+
 **Everything with a `VITE_` prefix is public.** Vite inlines it into the bundle
 at build time. `pnpm check:env` fails the build if a server-only name appears
 with that prefix.
