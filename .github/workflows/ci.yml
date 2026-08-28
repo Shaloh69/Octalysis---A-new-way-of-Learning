@@ -69,6 +69,12 @@ jobs:
       - name: Invariants
         run: node scripts/db-invariants.mjs
 
+      - name: Stage objectives match the syllabus
+        # The objectives are the syllabus's contract, not the author's prose.
+        # Authoring a chapter is where they get quietly reworded -- chapter 3
+        # lost four outcomes exactly that way.
+        run: node scripts/sync-objectives.mjs
+
       - name: Content fidelity
         # Fails if any block citing a source deck has drifted from it. This is
         # the guard against plausible-sounding invented lecture text.

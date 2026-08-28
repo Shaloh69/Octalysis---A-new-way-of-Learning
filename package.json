@@ -20,7 +20,7 @@
     "test:rls": "pnpm --filter @octa/api test:rls",
     "lint": "pnpm -r --if-present lint",
     "build": "pnpm -r --if-present build",
-    "verify": "pnpm typecheck && pnpm lint && pnpm check:contrast && pnpm book:map && pnpm test && pnpm db:invariants",
+    "verify": "pnpm typecheck && pnpm lint && pnpm check:contrast && pnpm check:objectives && pnpm book:map && pnpm test && pnpm db:invariants",
     "db:push": "node scripts/db-push-supabase.mjs",
     "db:push:check": "node scripts/db-push-supabase.mjs --check",
     "db:push:reset": "node scripts/db-push-supabase.mjs --reset",
@@ -30,7 +30,8 @@
     "backup:dump": "node scripts/backup.mjs --dump-only",
     "backup:verify": "node scripts/backup.mjs --verify",
     "book:extract": "python scripts/extract_book.py \"Computer Organization and Architecture 10th - William Stallings (1).pdf\" docs/source/book",
-    "book:map": "node scripts/check-book-map.mjs"
+    "book:map": "node scripts/check-book-map.mjs",
+    "check:objectives": "node scripts/sync-objectives.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",
