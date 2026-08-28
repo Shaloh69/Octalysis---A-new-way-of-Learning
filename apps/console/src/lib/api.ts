@@ -316,6 +316,43 @@ export interface LiveSnapshot {
   at: string;
 }
 
+export interface Blueprint {
+  id: string;
+  name: string;
+  scope: "stage" | "final";
+  stageId: string | null;
+  totalItems: number;
+  constraints: Record<string, unknown>;
+}
+
+export interface Assessment {
+  id: string;
+  title: string;
+  attemptsAllowed: number;
+  opensAt: string | null;
+  closesAt: string | null;
+  createdAt: string;
+  blueprintId: string;
+  blueprintName: string;
+  scope: "stage" | "final";
+  stageId: string | null;
+  totalItems: number;
+  sectionCode: string | null;
+  attempts: number;
+  submitted: number;
+}
+
+/** Asked BEFORE an assessment is created -- see pages/AssessmentsPage.tsx. */
+export interface Feasibility {
+  blueprintId: string;
+  name: string;
+  totalItems: number;
+  poolSize: number;
+  enoughItems: boolean;
+  shortfalls: Array<{ dimension: string; cell: string; need: number; have: number }>;
+  satisfiable: boolean;
+}
+
 export interface SetLockInput {
   scope: "global" | "section" | "user";
   stageId: string;
@@ -404,6 +441,29 @@ export const api = {
 
   /** Lecture Mode. Carries NO name, student id, or user id -- by construction. */
   live: () => request<LiveSnapshot>("/api/v1/console/live"),
+
+  assessments: () =>
+    request<{ assessments: Assessment[]; blueprints: Blueprint[] }>(
+      "/api/v1/console/assessments",
+    ),
+
+  blueprintFeasibility: (id: string) =>
+    request<Feasibility>(
+      `/api/v1/console/blueprints/${encodeURIComponent(id)}/feasibility`,
+    ),
+
+  createAssessment: (input: {
+    blueprintId: string;
+    title: string;
+    attemptsAllowed: number;
+    sectionId?: string | null;
+    opensAt?: string;
+    closesAt?: string;
+  }) =>
+    request<{ id: string }>("/api/v1/console/assessments", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
 
   submissions: (status?: string) =>
     request<{ submissions: Submission[]; summary: Record<string, number> }>(

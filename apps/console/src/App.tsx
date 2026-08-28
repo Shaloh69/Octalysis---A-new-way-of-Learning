@@ -9,6 +9,7 @@ import { ContentPage } from "./pages/ContentPage";
 import { ItemsPage } from "./pages/ItemsPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { LivePage } from "./pages/LivePage";
+import { AssessmentsPage } from "./pages/AssessmentsPage";
 import { AuditPage } from "./pages/AuditPage";
 import { SystemPage } from "./pages/SystemPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
@@ -49,6 +50,7 @@ export function App() {
               </Suspense>
             }
           />
+          <Route path="/assessments" element={<AssessmentsPage />} />
           <Route path="/items" element={<ItemsPage />} />
           <Route path="/submissions" element={<SubmissionsPage />} />
           <Route path="/content" element={<ContentPage />} />

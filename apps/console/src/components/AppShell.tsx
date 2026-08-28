@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   Users, Lock, BookOpen, Table2, ScrollText, ShieldCheck, MessageSquare,
-  Boxes, ClipboardCheck, Radio, LogOut, Menu, X,
+  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } from "@/lib/session";
@@ -19,6 +19,7 @@ const NAV = [
   { to: "/locks", label: "Locks", icon: Lock, hint: "Open or close a stage for one student" },
   { to: "/students", label: "Students", icon: Users, hint: "Roster, progress, and paper drill-down" },
   { to: "/live", label: "Live", icon: Radio, hint: "What the room is doing. Projector view: no names, ever" },
+  { to: "/assessments", label: "Assessments", icon: FileCheck2, hint: "What a student can open. Nothing to sit without one" },
   { to: "/items", label: "Items", icon: Boxes, hint: "The bank: preview, review, approve, retire" },
   { to: "/submissions", label: "Submissions", icon: ClipboardCheck, hint: "Labs, project, participation — 40% of the grade" },
   { to: "/gradebook", label: "Gradebook", icon: Table2, hint: "Mastery per stage, exportable" },
