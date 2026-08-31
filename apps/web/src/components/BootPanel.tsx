@@ -67,43 +67,52 @@ export function BootPanel({ title, subtitle, lines, children }: Props): JSX.Elem
   }, [lines]);
 
   return (
-    <div className={"boot" + (ready ? " boot-ready" : "")}>
-      {/* Grid, accent bloom and bus pulses — the same @octa/tokens/backdrop.css
-       * the console imports, so sign-in looks like one product on both. */}
+    /*
+     * The backdrop is a SIBLING of the panel, never a child.
+     *
+     * Nested inside `.boot` it painted on top of the panel's own background --
+     * children paint above their parent's background box, so a bus trace ran
+     * straight through the word "Password" -- and `.boot`'s clip-path cropped
+     * the fixed backdrop to the panel, which is why the traces stopped dead at
+     * its edges. Both symptoms, one cause.
+     */
+    <>
       <Backdrop />
 
-      <div className="boot-frame" aria-hidden="true">
-        {/* Four corner brackets that draw in. Decorative only. */}
-        <span className="boot-corner boot-corner-tl" />
-        <span className="boot-corner boot-corner-tr" />
-        <span className="boot-corner boot-corner-bl" />
-        <span className="boot-corner boot-corner-br" />
+      <div className={"boot" + (ready ? " boot-ready" : "")}>
+        <div className="boot-frame" aria-hidden="true">
+          {/* Four corner brackets that draw in. Decorative only. */}
+          <span className="boot-corner boot-corner-tl" />
+          <span className="boot-corner boot-corner-tr" />
+          <span className="boot-corner boot-corner-bl" />
+          <span className="boot-corner boot-corner-br" />
+        </div>
+
+        <div className="boot-inner">
+          <header className="boot-head">
+            <p className="boot-eyebrow mono">OCTA · POWER-ON SELF-TEST</p>
+            <h1 className="boot-title">{title}</h1>
+            {subtitle && <p className="boot-sub">{subtitle}</p>}
+          </header>
+
+          {/*
+           * The POST readout. `aria-hidden` because it is atmosphere, not
+           * content -- a screen reader announcing "MEM 640K OK" before the form
+           * would be noise. Everything a student actually needs is in the form.
+           */}
+          <ul className="boot-post mono" aria-hidden="true">
+            {lines.map((l, i) => (
+              <li key={l.label} className={i < shown ? "boot-post-on" : ""}>
+                <span className="boot-post-label">{l.label}</span>
+                <span className="boot-post-dots" />
+                <span className="boot-post-value">{l.value}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="boot-form">{children}</div>
+        </div>
       </div>
-
-      <div className="boot-inner">
-        <header className="boot-head">
-          <p className="boot-eyebrow mono">OCTA · POWER-ON SELF-TEST</p>
-          <h1 className="boot-title">{title}</h1>
-          {subtitle && <p className="boot-sub">{subtitle}</p>}
-        </header>
-
-        {/*
-         * The POST readout. `aria-hidden` because it is atmosphere, not
-         * content -- a screen reader announcing "MEM 640K OK" before the form
-         * would be noise. Everything a student actually needs is in the form.
-         */}
-        <ul className="boot-post mono" aria-hidden="true">
-          {lines.map((l, i) => (
-            <li key={l.label} className={i < shown ? "boot-post-on" : ""}>
-              <span className="boot-post-label">{l.label}</span>
-              <span className="boot-post-dots" />
-              <span className="boot-post-value">{l.value}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="boot-form">{children}</div>
-      </div>
-    </div>
+    </>
   );
 }

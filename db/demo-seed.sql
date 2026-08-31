@@ -24,7 +24,12 @@
 -- makes every chart look correct and hides the two things a teacher opens the
 -- gradebook to find: who is drowning, and which item everybody missed.
 --
--- Run:  node scripts/seed-demo.mjs        (drops the demo rows first, re-seeds)
+-- Run:  docker exec -i octa-db psql -U postgres -d octa < db/demo-seed.sql
+--
+-- RUNNING THE TEST SUITE DESTROYS THIS. `pnpm verify` calls `resetAll()`, which
+-- truncates the tables and re-seeds its own fixtures -- two students called
+-- Student A and Student B. If the console suddenly shows a class of two, that
+-- is what happened. Re-run this file.
 -- ============================================================
 
 begin;
@@ -49,8 +54,12 @@ delete from stage_locks     where scope_user_id::text like 'dddddddd-%';
 delete from profiles        where id::text like 'dddddddd-%';
 delete from student_directory where student_id like '232129%';
 delete from assessments     where title like '[demo]%';
-delete from auth.users      where id::text like 'dddddddd-%';
+-- Sections BEFORE auth.users (sections.teacher_id references the teacher), and
+-- assessments must let go of the section first. Both FKs were found by running
+-- this file twice, which is the only way a teardown block ever gets tested.
+update assessments set section_id = null;
 delete from sections        where code = 'BSCPE - 4';
+delete from auth.users      where id::text like 'dddddddd-%';
 
 -- ---------------------------------------------------------------
 -- The section and its teacher.
@@ -204,5 +213,32 @@ cross join (values
 ) as ch(channel, status, body)
 where p.role = 'student' and p.student_id is not null
   and (('x'||substr(md5(p.id::text||ch.channel),1,2))::bit(8)::int % 4) = 0;
+
+-- ---------------------------------------------------------------
+-- Evict the test suite's own fixtures.
+--
+-- `pnpm verify` leaves `Student A` / `Student B` in `BSCPE-2A` behind. They are
+-- harmless to the tests and ruinous to a screenshot: a roster that is 24 real
+-- names and two placeholders reads as a bug in the product rather than as
+-- residue from a test run.
+--
+-- Assessments are REPOINTED rather than deleted -- an assessment with attempts
+-- against it is evidence, and the console has a page for them.
+-- ---------------------------------------------------------------
+delete from feedback       where user_id in (select id from profiles where id::text not like 'dddddddd-%');
+delete from submissions    where user_id in (select id from profiles where id::text not like 'dddddddd-%');
+delete from stage_progress where user_id in (select id from profiles where id::text not like 'dddddddd-%');
+delete from level_progress where user_id in (select id from profiles where id::text not like 'dddddddd-%');
+delete from attempt_items  where attempt_id in (select a.id from attempts a join profiles p on p.id = a.user_id
+                                                 where p.id::text not like 'dddddddd-%');
+delete from responses      where attempt_id in (select a.id from attempts a join profiles p on p.id = a.user_id
+                                                 where p.id::text not like 'dddddddd-%');
+delete from attempts       where user_id in (select id from profiles where id::text not like 'dddddddd-%');
+update student_directory set claimed_by = null, status = 'unclaimed'
+  where claimed_by in (select id from profiles where id::text not like 'dddddddd-%');
+delete from profiles       where id::text not like 'dddddddd-%';
+delete from student_directory where student_id not like '232129%';
+update assessments set section_id = 'dddddddd-5EC0-4000-8000-000000000001' where section_id is not null;
+delete from sections where code <> 'BSCPE - 4';
 
 commit;
