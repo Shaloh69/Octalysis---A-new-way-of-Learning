@@ -55,3 +55,19 @@ docs/source/book/
 # was on screen at the time, which on the console means real student names, so
 # they must never be committed.
 .playwright/
+
+# design/ -- the redesign's visual pass (docs/redesign/FOLDER-STRUCTURE.md).
+# Split deliberately: a small permanent contract is committed, the large
+# disposable output is not.
+#
+#   design/templates/    COMMITTED. One reference screenshot per route.
+#   design/baselines/    COMMITTED. Playwright's snapshotDir. Machine-managed.
+#   design/specs/        COMMITTED. The capture specs themselves.
+#   design/screenshots/  ignored -- ad-hoc dev captures, dated subfolders.
+#   design/qa-report/    ignored -- Playwright's HTML reporter output.
+#
+# Same reasoning as .playwright/ above, and it binds harder on the two
+# committed folders because they are permanent: fixture data only, never a
+# real student or teacher name.
+design/screenshots/
+design/qa-report/

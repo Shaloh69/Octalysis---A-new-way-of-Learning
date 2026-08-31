@@ -2,7 +2,7 @@
   "name": "octa",
   "version": "0.1.0",
   "private": true,
-  "description": "OCTA \u2014 interactive learning platform for Computer Systems & Assembly Language",
+  "description": "OCTA — interactive learning platform for Computer Systems & Assembly Language",
   "packageManager": "pnpm@9.12.0",
   "engines": {
     "node": ">=20.11.0"
@@ -32,12 +32,17 @@
     "book:extract": "python scripts/extract_book.py \"Computer Organization and Architecture 10th - William Stallings (1).pdf\" docs/source/book",
     "book:map": "node scripts/check-book-map.mjs",
     "check:objectives": "node scripts/sync-objectives.mjs",
-    "check:env": "node scripts/check-env-names.mjs"
+    "check:env": "node scripts/check-env-names.mjs",
+    "check:boundary": "node scripts/check-redesign-boundary.mjs",
+    "qa": "playwright test",
+    "qa:update": "playwright test --update-snapshots",
+    "qa:report": "playwright show-report design/qa-report"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^22.7.5",
+    "pg": "^8.13.1",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.3",
-    "pg": "^8.13.1"
+    "vitest": "^2.1.3"
   }
 }
