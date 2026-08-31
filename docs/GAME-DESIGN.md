@@ -120,12 +120,22 @@ Non-negotiables that survive the change:
 
 - **Every route in the header**, on every page. `/app/map` is never hidden behind
   a settings toggle.
-- **`prefers-reduced-motion` redirects `/app` to `/app/map`** on entry, with a
-  one-line notice and a link back. Not a silent swap.
-- **WebGL unavailable or context lost → same redirect.** A `<canvas>` has no
-  accessibility semantics; when the canvas cannot exist the student is sent
-  somewhere that does, not left with a blank hero.
-- **≤ 640px defaults to `/app/map`.** 3D remains reachable by direct link.
+> **Superseded by the F-5 ruling, 1 September 2026.** These three bullets each
+> described a **redirect**. The app has never redirected — it degrades in place,
+> deliberately, and that is the better answer because a route that always works
+> on every device beats one that bounces you elsewhere. **`VISUAL-SYSTEM-3D.md`
+> §5's degradation ladder is now the single owner of this behaviour.** What did
+> change: 3D used to default to *off* behind a `localStorage` preference, which
+> no document sanctioned and which made the map invisible to most students.
+> See `docs/PROGRESS.md` F-5.
+
+- **`prefers-reduced-motion` → the flat presentation, on the same route**, with
+  a one-line notice. Not a silent swap, and not a redirect.
+- **WebGL unavailable or context lost → the same fallback, silently.** A
+  `<canvas>` has no accessibility semantics; when the canvas cannot exist the
+  DOM layer is already underneath it, so nothing needs to move.
+- **≤ 640px gets the flat presentation too.** 3D remains reachable by
+  preference on a device that can handle it.
 - **The star dialog is a real DOM dialog** — `<dialog>` or a focus-trapped modal
   — not a 3D billboard. Its content is text a screen reader can read.
 - **The 3D scene stays `aria-hidden`.** The canvas is pixels; the dialog, the

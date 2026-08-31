@@ -10,16 +10,23 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## Current phase
 
-**R0 — Scope, Guardrails, and Playwright Setup. Work complete; four rulings
-outstanding before R1 can start.**
+**R0 — COMPLETE, including every ruling. R1 is unblocked and is the next
+session.**
 
-R1 is **blocked**, not merely "next": three of the open findings below change
-`layout.ts`'s formula, which is R1.1's first deliverable.
+All five decisions came back on 1 September 2026 and are folded into the phase
+files and the spec, not just recorded here. The findings section below is kept
+as the reasoning behind each ruling — it is evidence, not a to-do list.
 
 ## Completed phases
 
-- **R0** — everything in the phase file except the R0.1b decisions, which are
-  the human's to make and are listed under "Open findings" below.
+- **R0** — scope, guardrails, Playwright, the package move, and all R0.1b
+  decisions.
+
+## Next phase
+
+**R1 — Solar System Foundation.** Start at
+`docs/redesign/phases/R1-solar-system-foundation.md` §R1.1, which now carries
+the decided formula. Tests first.
 
 ## R0 checklist status
 
@@ -33,10 +40,13 @@ R1 is **blocked**, not merely "next": three of the open findings below change
       and the existing `apps/web/src/lib/layout.ts`
 - [x] Scope boundary restated and confirmed
 
-### R0.1b — Open decisions surfaced, not resolved ⏳
-- [x] Five minigame proposals summarised for a ruling — **awaiting answer**
+### R0.1b — Open decisions surfaced AND resolved ✅
+- [x] Five minigame proposals put to the human — **all five approved**
 - [x] `ADAPTIVE-SCORING-PROPOSAL.md` confirmed parked, out of scope for this track
-- [ ] Any approved minigame gets its R3.2b line **before** R3 starts
+- [x] All five written into R3 §R3.2b **at R0**, per that section's own rule
+      about not adding them mid-phase
+- [x] F-1 … F-5 ruled; folded into `SOLAR-SYSTEM-SPEC.md`, `phases/R1`,
+      `DESIGN-MANDATE-V2.md`, and the four documents F-5 demoted to pointers
 
 ### R0.2 — Boundary technically enforceable ✅
 - [x] `is_stage_unlocked()` call sites recorded (below)
@@ -102,15 +112,20 @@ the database after `node scripts/sync-content.mjs`.
 | L6 | 1 — stage 01 | 5 | 4.5% |
 
 - **Stage 00 has ZERO objectives.** No moons, so "planet radius = mean of its
-  moons' radii" is undefined for it. It is also the first planet a student ever
-  sees.
+  moons' radii" is undefined for it — and it is the first planet a student ever
+  sees. **F-1 rules the fallback:** `Math.min(...stages.levels)`, which puts it
+  on ring 6.
 - **Every stage's objectives are unanimous in level** — all 18 stages with
   objectives have a single distinct `objectives.level`. So the mean-of-moons
   radius always evaluates to that one level, and no planet's moons span more
   than one ring.
 - **Ring sequence 00→18:** `(undefined), 6, 2, 1, 2, 0, 3, 1, 3, 0, 2, 2, 1, 1,
   1, 1, 1, 0, 3`. That is **12 ring crossings and 9 direction reversals** over
-  18 edges — `SOLAR-SYSTEM-SPEC.md` §1.3 says 13 crossings; 9 reversals is right.
+  18 edges. §1.3 said 13 crossings and opened the sequence `6,6,…`, assuming a
+  Stage 00 value the rule never defined; **both corrected in the spec**.
+- **Stages 12–16 are five consecutive ordinals all on ring L1**, carrying 26
+  moons. The last third of the course runs flat along one ring — it does not
+  corkscrew. This is what F-2's occupancy spacing has to make legible.
 - **L4 and L5 are genuinely empty** for this syllabus. That is true information,
   not a gap to fill.
 - The **moon data path exists and works**: `content/stages/*.md` front matter →
@@ -175,11 +190,37 @@ objectives, 215 content blocks.
 
 ---
 
-## Open findings — ALL need a ruling before R1
+## Rulings — decided 1 September 2026
 
-Numbered so later sessions and the phase files can cite them.
+| # | Ruling | Landed in |
+|---|---|---|
+| **F-1** | **Mean of moons, plus an explicit Stage 00 fallback** to `Math.min(...stages.levels)` | `SOLAR-SYSTEM-SPEC.md` §1.1 · `phases/R1` §R1.1 |
+| **F-2** | **Ring spacing allocated by occupancy**, not even steps | same |
+| **F-3** | **Angle sweeps ~300°**, leaving a visible gap between Stage 18 and Stage 00 | same |
+| **F-4** | **Stage 01 keeps its all-levels rendering** | same |
+| **F-5** | **3D is the default on capable devices, degrading in place. Nothing redirects.** `VISUAL-SYSTEM-3D.md` §5 is the owner | `phases/R1` §R1.2 · pointers added to `CLAUDE.md`, `GAME-DESIGN.md` §2.1, `SKILL-TREE-3D.md` §4, `PAGE-SPECS.md` §2 |
+| **Minigames** | **All five approved.** Constraints in each proposal still bind; each waits on its chapter being authored | `phases/R3` §R3.2b · `MINIGAME-PROPOSALS.md` header |
+
+**The one that changes the most work: F-5.** Degrade-in-place is already built
+and stays. What must change in R1 is the *default* — 3D currently sits behind
+`localStorage["octa:map-mode"]` defaulting to flat, so no student sees a canvas
+unless they find the toggle.
+
+**The one most likely to be misread later: the minigame approval.** Approved is
+not the same as buildable. **Chapters 01–07 are authored; 08–18 are scaffolds**
+carrying only syllabus objectives and a topic outline
+(`services/api/src/routes/console.ts:341`). All five approved minigames sit on
+stages 14–18, and The Descent's payoff stage (16) and gate stage (11) are
+scaffolds too. So the expected R3 outcome is five *deferred* lines with the
+reason recorded — which is not a reversal of the approval, and not a slip.
+
+## The findings behind those rulings
+
+Kept because the measurements are the reasoning, and a later session should not
+have to rebuild them. Numbered so the phase files can cite them.
 
 ### F-1 · Moon-derived planet radius is the number the code already computes, and it breaks Stage 00
+**RULED: mean of moons, with an explicit Stage 00 fallback to `Math.min(...stages.levels)`.**
 `SOLAR-SYSTEM-SPEC.md` §1.1's longest argument retires a collapse rule for
 `stages.levels`. That rule already exists in shipped, tested code —
 `Math.min(...levels)`, `apps/web/src/lib/layout.ts:69` — and because every
@@ -193,6 +234,7 @@ inherit their planet's ring; (b) keep moon-derivation and state a Stage 00
 fallback explicitly; (c) something else.
 
 ### F-2 · The crowding §1.1 claims to fix is not fixed
+**RULED: adopt occupancy-proportional ring spacing.**
 Stated reason for the change was that L1 "would carry over a third of both
 planets and moons." Measured after the correction: **7 of 19 planets and 43 of
 110 moons**, on the second-smallest circumference. Worse, stages 12–16 are five
@@ -205,12 +247,14 @@ permitted by the reworded `DESIGN-MANDATE-V2.md` §1B ("ordering is data, spacin
 is typography").
 
 ### F-3 · Angle = ordinal over a full 360° closes a loop on a chain that has none
+**RULED: adopt the ~300° sweep with a visible gap.**
 Stage 18 lands ~19° from Stage 00. The single most important true fact about
 this graph is that it is a chain with no forks and no return, and the layout
 draws it as a near-closed ring.
 **Proposal:** sweep ~300° with a visible gap, or advance radius per turn.
 
 ### F-4 · Stage 01 loses information the galaxy carried
+**RULED: preserve the all-levels rendering.**
 `stages.levels` is `{0,1,2,3,4,5,6}` and the current map renders it as a column
 crossing every stratum (`layout.ts:66`, `spansAllLevels`). Its objectives are
 all level 6, so under the new rule it collapses to a point on the outermost
@@ -218,6 +262,8 @@ ring and "this stage is *about* the hierarchy" disappears. The spec never
 mentions the regression.
 
 ### F-5 · `/app` does not redirect and never renders a canvas — and that is deliberate code, contradicting four documents
+**RULED: 3D default on capable devices, degrade in place, nothing redirects.
+`VISUAL-SYSTEM-3D.md` §5 owns the rule; the other four documents now point at it.**
 Measured, all four combinations: `/app` → `/app`, `canvas=0`, always. `/app` and
 `/app/map` are the same component with a `flat` prop; 3D is opt-in via
 `localStorage["octa:map-mode"]`, defaulting to `"2d"`. The code says so in a
@@ -235,7 +281,10 @@ to `/app/map`. Two separate questions, and the second is the dangerous one:
    system R1–R5 builds is invisible to every student unless they find a toggle.**
    That is not a detail; it decides whether this redesign has a user.
 
-**Not mine to fix.** Both are product decisions.
+~~**Not mine to fix.** Both are product decisions.~~ **Both answered.** Question 1
+resolved in favour of degrade-in-place, with §5 named as owner. Question 2
+resolved: 3D becomes the default, so R1 must remove the default-off behaviour
+while keeping the preference as a genuine override.
 
 ### F-6 · The map graphic is close to unreadable at both widths
 See `design/before-r0/`. At 1440px the graph occupies a fraction of the width as
@@ -275,13 +324,23 @@ more prominently, not less. Still the instructor's call.
 
 ## Next concrete step
 
-1. Get rulings on **F-1 through F-5** and the five minigame proposals.
-2. F-1/F-2/F-3/F-4 land in `layout.ts` → fold the answers into
-   `docs/redesign/phases/R1-solar-system-foundation.md` §R1.1.
-3. F-5 decides whether R1 also has to re-establish the redirect/default rules,
-   or whether the solar system inherits the current opt-in model. **Do not start
-   R1 without this one** — it changes what R1 is building.
-4. Then R1.1: `layout.ts`, tests first.
+**Start R1.** Everything it needs is decided and written down.
+
+1. `layout.ts` — tests first, per `phases/R1` §R1.1. Six unit tests are named
+   there: INV-32 for planets, INV-32 extended to all 110 moons,
+   moon-to-planet aggregation, the Stage 00 fallback by name, radius monotonic
+   in level, and radius independent of the cosmetic seed. Plus F-3's
+   largest-gap assertion.
+2. Then §R1.2 — make 3D the default, keep degrade-in-place, and turn R0's
+   recorded viewport × motion matrix into hard assertions.
+3. **Before R1.4's performance check, note what is not installed:**
+   `@react-three/drei`, `@react-three/postprocessing` and
+   `react-force-graph-3d` are all absent, and `VISUAL-SYSTEM-3D.md` §5 records
+   that drei was deliberately *dropped* to get the chunk under 250 KB (219.8 KB
+   measured). Re-measure before assuming headroom.
+4. Housekeeping the rulings created, cheapest first: `GAME-DESIGN.md` §11's
+   table (rewrite for the 18-chapter curriculum, add the five minigames) and
+   §12's Track D.
 
 ## Which parts of this were actually run, and what I am unsure about
 

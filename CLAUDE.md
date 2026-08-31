@@ -100,10 +100,13 @@ Three Postgres semantics this project has already been bitten by — see `VERIFI
 
 The tree is not a visualisation of the curriculum — it **is** the curriculum. `stages.prereq` is
 the only edge list; nothing about the map may be authored twice. The 3D galaxy is a presentation
-layer. `/app` is the 3D galaxy and is the student's default; `/app/map` is a flat, fully
+layer. `/app` is the 3D map and is the student's default; `/app/map` is a flat, fully
 keyboard-operable route that is always available and is never a degraded mode. A `<canvas>` has no
-accessibility semantics, so reduced motion, absent WebGL and small viewports all redirect to
-`/app/map`. See `docs/SKILL-TREE-3D.md` and `docs/GAME-DESIGN.md` §2.
+accessibility semantics, so reduced motion, absent WebGL and small viewports fall back to the flat
+presentation — **in place, on the same route, without redirecting.**
+**`docs/VISUAL-SYSTEM-3D.md` §5's degradation ladder owns this rule; every other document points
+at it.** (R0 ruling, 1 Sep 2026: four documents each restated a redirect the app has never done,
+and the app's degrade-in-place answer is the better one. `docs/PROGRESS.md` F-5.) See `docs/SKILL-TREE-3D.md` and `docs/GAME-DESIGN.md` §2.
 
 ## Structure of the domain
 

@@ -208,11 +208,15 @@ accessible WebGL: keep native DOM interactivity and let the canvas be pixels.
 Consequences that are non-negotiable:
 
 - **If WebGL fails to initialise, is lost, or is disabled, the map still works.** No error state,
-  no "your browser is unsupported" — the DOM layer is already there and the canvas simply never
-  appears. Test this by disabling WebGL in the browser, not by hoping.
+  no "your browser is unsupported", and no redirect — the DOM layer is already there and the canvas
+  simply never appears. Test this by disabling WebGL in the browser, not by hoping. **Note this
+  bullet already describes degrade-in-place**, which is why §5 of `VISUAL-SYSTEM-3D.md` won the
+  F-5 ruling: this was the consistent answer all along, and the redirect language elsewhere in this
+  file was the outlier.
 - **`prefers-reduced-motion` disables camera drift, parallax, and bloom pulsing.** The map becomes
   a static projection. State still changes, instantly, per `DESIGN-MANDATE.md` §3.
-- **At ≤ 640px `/app` redirects to `/app/map`.** 3D stays reachable by direct link.
+- **At ≤ 640px `/app` falls back to the flat presentation in place** — it does **not** redirect.
+  `VISUAL-SYSTEM-3D.md` §5's degradation ladder owns this; see `docs/PROGRESS.md` F-5.
 - **Focus order follows curriculum order** (`ordinal`), never screen position. A student tabbing
   through the map walks the syllabus.
 - **Every lock still states its reason and distance** — *"Unlocks when Stage 09 reaches 70%.

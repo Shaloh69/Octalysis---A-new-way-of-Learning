@@ -1,6 +1,25 @@
 # SOLAR-SYSTEM-SPEC.md — The Galaxy, Redone as a Solar System
 ### Supersedes the spatial concept in `SKILL-TREE-3D.md` and `GAME-DESIGN.md` §2-4. Everything else in those files — the two-layer accessibility architecture, the performance budget, the stack choice, the invariants — carries over and is restated here, not reinvented.
 
+> **Revised twice. Read the second banner too.**
+>
+> **R0 ruling, 1 September 2026 — four corrections, all measured against the
+> live database, all now binding:**
+>
+> | # | Correction | Where |
+> |---|---|---|
+> | **F-1** | A stage with **no objectives** falls back to `Math.min(...stages.levels)`. Stage 00 has zero objectives, so "mean of its moons" was undefined for the first planet a student ever sees | §1.1 |
+> | **F-2** | Ring radii are spaced by **occupancy**, not evenly. L1 carries 7 of 19 planets and 43 of 110 moons; even steps put 39% of the bodies on the second-smallest circumference | §1.1 |
+> | **F-3** | Angle sweeps **~300°, not 360°**. At a full turn Stage 18 lands ~19° from Stage 00 and the map draws a closed ring around a chain that has no return | §1.1 |
+> | **F-4** | **Stage 01 keeps its all-levels rendering.** Its objectives are all level 6, so mean-of-moons alone would collapse the one stage that is *about* the hierarchy into a point on the outermost ring | §1.1 |
+>
+> Two claims below did not survive the same review and are corrected in place:
+> §1.1's promise that a stage's moons would "visibly spread across the rings it
+> actually touches" **cannot happen in this course** (every stage's objectives
+> are level-unanimous), and §1.3's ring sequence silently assumed a Stage 00
+> value the rule never defined and counts **13** crossings where there are
+> **12**. The SQL behind every number is in `docs/PROGRESS.md`.
+>
 > **Revised after R0's real-data review.** The R0 read against
 > `db/schema.sql`, `content/stages/`, and `services/api/src/engine/seed.ts`
 > found four spec bugs and one factual error about the seed mechanism in the
@@ -66,15 +85,37 @@ honest than the original rule:
   collapse needed
 - **Planet radius** = the mean of its own moons' radii — a computed
   statistic, not an assumption. A stage that's entirely one level sits
-  exactly on that ring, same as before. A stage spanning several levels sits
-  at their center of mass, with its own moons visibly spread across the
-  rings it actually touches — which is a *better* rendering of "this stage
-  spans several levels" than the old single-Y-coordinate galaxy ever
-  managed, not a downgrade from it
-- **Ring visual weight is non-uniform, proportional to real occupancy.**
-  Ring radii stay at fixed, evenly-spaced steps (L0 innermost through L6
-  outermost) for predictability, but each ring's *stroke width and opacity*
-  scales with how many planets+moons actually sit on it. A ring with nothing
+  exactly on that ring.
+
+  **What this bullet used to promise, and why it can't deliver it:** it said a
+  multi-level stage would sit at its moons' center of mass "with its own moons
+  visibly spread across the rings it actually touches." R0 checked all 19
+  chapters. **Every stage's objectives declare a single, unanimous level** — so
+  no planet's moons span more than one ring, no planet ever sits between rings,
+  and the mean always lands exactly on a ring. The spread this rule was
+  designed to render does not exist in this course's data. The rule is kept
+  because it is the honest way to compute the number and stays correct if a
+  future chapter ever does span levels — but it is no longer claimed as an
+  improvement on the old single-coordinate galaxy, because on this data the two
+  produce the same answer.
+
+- **A stage with no objectives falls back to `Math.min(...stages.levels)`
+  (F-1).** Stage 00 is the only one — zero objectives, so no moons and no
+  mean. The fallback puts it on ring 6, which is where the existing map already
+  places it. Write it as a named branch with a comment, not a trailing default
+  that hides the case.
+- **Ring SPACING is proportional to occupancy (F-2), and so is ring weight.**
+  The original rule kept radii at fixed, evenly-spaced steps and varied only
+  stroke width and opacity. Measured, that fails the very thing it set out to
+  fix: L1 ends up carrying **7 of 19 planets and 43 of 110 moons — 39% of
+  everything — on the second-smallest circumference**, which is the same
+  crowding inversion §1.1 was written to correct. So the radial *step* is
+  allocated from each ring's load, giving crowded rings more circumference to
+  spread across. **Two things this may never break, both unit-tested:** radius
+  stays strictly monotonic in level (L0 always innermost), and radius is
+  identical for every student. `DESIGN-MANDATE-V2.md` §1B states the principle
+  — *ordering is data, spacing is typography*. Stroke width and opacity still
+  scale with occupancy too. A ring with nothing
   on it (L4, L5, honestly, for this syllabus) renders as a thin, dim
   baseline circle — present for the Computer Level Hierarchy's sake, not
   pretending to be occupied. Don't force content onto an empty ring to make
@@ -87,8 +128,13 @@ principled left to live spatially — R0 caught this too: Act-as-angle-within-
 ring was about to become an arbitrary formula once critical-path position
 moved onto the flight path, and an arbitrary formula is decoration, which
 `SKILL-TREE-3D.md` §2's bar exists to prevent. **Angle instead = `ordinal`,
-swept once around the full 360° for the whole 19-stage sequence** — Stage 00
-near the top, Stage 18 most of the way back around. This is real data doing
+swept across ~300° — NOT a full turn (F-3)** — Stage 00 near the top, Stage 18
+about five-sixths of the way round, with a deliberate, visible gap between
+them. The original rule said "once around the full 360°", which puts Stage 18
+roughly 19° from Stage 00 and draws a closed ring — and a closed ring says the
+curriculum returns to its start. It does not: 19 nodes, 18 edges, one chain, no
+forks, no return (§0). The gap is the part that tells the truth, so it has to
+be wide enough to read as one. This is real data doing
 real work (the same role radius played for critical-path position in the old
 galaxy, now that radius is spoken for), and it has a direct payoff for §1.3
 below: since angle now moves smoothly and predictably with curriculum order,
@@ -104,8 +150,8 @@ Updated table:
 
 | Old (galaxy) | New (solar system), corrected |
 |---|---|
-| Y (height) = Computer Level | **Orbit radius** = Computer Level. **Moons: their own objective's real level.** Planets: the mean of their own moons' levels |
-| Spiral arm (θ) = Act | **Angle** = `ordinal`, swept once around 360° for the full sequence. Act moves to a HUD chip + flight-path color banding, not a spatial axis |
+| Y (height) = Computer Level | **Orbit radius** = Computer Level. **Moons: their own objective's real level.** Planets: the mean of their own moons' levels, falling back to `min(stages.levels)` when a stage has no objectives (F-1). Ring *spacing* is allocated by occupancy, not even steps (F-2) |
+| Spiral arm (θ) = Act | **Angle** = `ordinal`, swept across **~300°, not a full turn** (F-3), leaving a visible gap between the last stage and the first. Act moves to a HUD chip + flight-path color banding, not a spatial axis |
 | Radius (r) = critical-path position | **The flight path** (§1.3) — now a spiral, since angle already carries ordinal order |
 | Node brightness = mastery | Planet surface glow / lit hemisphere = mastery, 0 → 1 |
 | Node lit/dark = unlocked/locked | Planet illuminated vs. dim/unformed; locked = dashed orbit outline, no body |
@@ -117,8 +163,17 @@ the whole course is descending toward. This is the same idea `SKILL-TREE-3D.md`
 added") — the solar system version makes it literal instead of abstract:
 **you are flying toward the hardware, and the hardware is the sun.**
 
-Seven concentric rings, L0 through L6, radius increasing outward, fixed
-step size. `layout.ts`'s pure function maps `stages[]` + each stage's
+**Stage 01 still renders as crossing every stratum (F-4).** It declares
+`{0,1,2,3,4,5,6}` in `stages.levels`, and the existing map already draws it as a
+column crossing all seven — the honest rendering of a stage that is *about* the
+hierarchy rather than sitting in it. Its objectives are all level 6, so
+mean-of-moons alone would quietly collapse it to a point on the outermost ring
+and lose that. Keep the `spansAllLevels` flag and render it as a radial spoke or
+ring-crossing band. **It is the only such stage** — the code comment naming 06
+and 11 describes the superseded curriculum.
+
+Seven concentric rings, L0 through L6, radius increasing outward, step size
+allocated by occupancy per F-2 above. `layout.ts`'s pure function maps `stages[]` + each stage's
 `objectives[]` to a `Map<stageId | objectiveId, Vec3>` — a genuinely bigger
 contract than the old "one node per stage" version, and R1's unit tests need
 to cover the new moon-to-planet aggregation specifically (see R1.1's
@@ -156,8 +211,11 @@ in a solar system than it ever was in a galaxy." That diagram carries its own
 *Instruction Sets: Characteristics* at level 2, not L0 — the actual L0 stages
 are 05, 09, and 17. The dive-and-climb story doesn't happen. R0 computed the
 real ring sequence from `db/schema.sql`: **00→18 moves
-`6,6,2,1,2,0,3,1,3,0,2,2,1,1,1,1,1,0,3`** — 13 ring crossings and 9 direction
-reversals across 18 edges. That's not a dive and a partial climb, it's a real
+`(00: no objectives — F-1 places it on 6), 6,2,1,2,0,3,1,3,0,2,2,1,1,1,1,1,0,3`**
+— **12** ring crossings and 9 direction reversals across 18 edges. (This
+sequence originally opened `6,6,…`, quietly assuming a Stage 00 value the rule
+never defined, and counted 13 crossings. Recomputed from the live `objectives`
+table; the SQL is in `docs/PROGRESS.md`.) That's not a dive and a partial climb, it's a real
 back-and-forth across most of the depth range, repeatedly.
 
 **The honest version is still a good story, it's just a different one.**
@@ -173,7 +231,15 @@ the material demands it. That's worth saying to a student directly, once,
 probably at the Stage 11 reveal alongside the ring labels: *"Notice it
 doesn't go straight down. Neither does learning this."*
 
-**What this means for rendering, concretely, since 13 crossings in 18 edges
+**One shape fact the original text missed, and it is the awkward one:** stages
+**12 through 16 are five consecutive ordinals all on ring L1**, carrying 26
+moons between them. Whatever else the path does, its last third does not
+corkscrew — it runs flat along a single ring. F-2's occupancy spacing is what
+makes that stretch legible instead of a pile-up. Do not also try to fix it by
+nudging any of those five off L1: that would be adjusting data to suit a
+picture, which is the one move this whole section exists to forbid.
+
+**What this means for rendering, concretely, since 12 crossings in 18 edges
 is genuinely a lot of line for the eye to track:**
 - Render the path with a depth-based opacity/color gradient along its
   length (older segments dimmer, the current position brightest) rather

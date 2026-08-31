@@ -1,5 +1,16 @@
 # MINIGAME-PROPOSALS.md — Five More Mini-Games, None of Them Decoration
-### Status: PROPOSED, not decided. Same treatment as every other "not mine to fix" item in this project (see `SKILL-TREE-3D.md` §10) — these need the instructor's sign-off before they're scheduled into Track D. Nothing here is added to `GAME-DESIGN.md` §11's table silently.
+### Status: **ALL FIVE APPROVED, 1 September 2026.** Superseded header below kept for the reasoning, not the status.
+> The instructor's ruling came in at R0.1b: all five are approved and scheduled into
+> `docs/redesign/phases/R3-page-templates-and-redesign.md` §R3.2b. Two things that ruling does
+> **not** change: every "what this explicitly is not" constraint below still binds (no lives, no
+> game-over, no timer feeding a grade, never the only path through a stage, ungraded and
+> opt-in), and each one still waits on its own chapter being authored — **chapters 01–07 are
+> written; 08–18 are scaffolds**, and all five of these sit on 14–18. A minigame for a lesson
+> that does not exist yet is a game, not a learning activity (root `CLAUDE.md` hard rule 5).
+> `GAME-DESIGN.md` §11's table and §12's Track D both need updating for this, together with the
+> rewrite that table already needs for the 18-chapter curriculum.
+
+### Original header — PROPOSED, not decided. Same treatment as every other "not mine to fix" item in this project (see `SKILL-TREE-3D.md` §10) — these need the instructor's sign-off before they're scheduled into Track D. Nothing here is added to `GAME-DESIGN.md` §11's table silently.
 
 ---
 

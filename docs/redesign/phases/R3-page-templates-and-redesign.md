@@ -39,17 +39,89 @@ through `docs/PROGRESS.md`, not rushed into one.
 - [ ] `/app/notebook` · `/app/mistakes` · `/app/progress`
 - [ ] `/app/live` · `/app/settings` · `/app/help`
 
-## R3.2b — Approved minigames only (check R0.1b's decisions before starting this)
-Skip this section entirely if nothing was approved in R0.1b. For anything
-that was:
-- [ ] Build per `MINIGAME-PROPOSALS.md`'s spec for that proposal, including
-      its explicit "what this is not" constraints (no lives, no graded
-      timer, never the only path through the stage)
-- [ ] Confirm the primary DOM/accessible encounter for that stage still
-      works completely without the minigame — test this directly, don't
-      assume it because the minigame is "just an addition"
-- [ ] Screenshot the minigame's entry point (the opt-in button/link) and the
-      minigame itself, same discipline as every other page
+## R3.2b — Minigames: ALL FIVE APPROVED in R0.1b
+
+**Ruling, 1 September 2026: all five proposals in `MINIGAME-PROPOSALS.md` are
+approved.** They are no longer proposals. Lines added here at R0 rather than
+mid-phase, per R0.1b's own rule.
+
+Every one of them, without exception, is bound by the constraints each proposal
+states about itself: **no lives, no game-over, no timer feeding a grade, never
+the only path through its stage, ungraded and opt-in.** Those are not flavour
+text — they are what makes each one pass `GAME-DESIGN.md` §8.3's verb test
+instead of being a seductive detail.
+
+### Read this before scheduling any of them
+
+**All five target stages whose lesson text does not exist yet.** Chapters
+**01–07 are authored; 08–18 are scaffolds** carrying their syllabus objectives
+and topic outline and saying plainly that the teaching text is coming
+(`services/api/src/routes/console.ts:341`, and every scaffold file says so in a
+`kind="planned"` callout). The five approved minigames sit on stages **14, 15,
+17, 18** — and The Descent pays off at **16**. Every one of those is a scaffold.
+So is Stage 11, which gates The Descent.
+
+That does not un-approve anything. It fixes the ORDER: a minigame is practice
+for a lesson, and root `CLAUDE.md` hard rule 5 forbids inventing the lesson to
+have something to practise. **Build each one when its chapter is authored, not
+before.** If that means none of the five are buildable during R3, the honest
+outcome is five deferred lines with the reason recorded — not five games
+attached to outlines.
+
+The one piece of work that IS available now, and is worth doing in R3: the
+**opt-in entry point** pattern — the "Try it as a game" affordance sitting
+beside a stage's primary encounter, proving it is genuinely optional and never
+on the required path. That is a template question, which is what R3 is for, and
+it is testable against an authored chapter.
+
+### The two DOM builds — cheapest, and they prove the pattern
+- [ ] **The Amdahl 500** — Stage 17 bonus, prediction race. `motion.dev` only;
+      `MINIGAME-PROPOSALS.md` §4 says the honest answer is probably "no Phaser
+      at all". Decide that explicitly before writing a scene. Race pace must be
+      driven by the *actual computed speedup ratio*, not an arbitrary tween —
+      that is the entire reason it passes the verb test
+- [ ] **Mnemonic Sprint** — Stage 15 bonus, mnemonic-syntax fluency drill.
+      Text input plus timer, DOM. No leaderboard (§1B's ban on competitive
+      rankings). **Note the toolchain:** the proposal's example says TASM
+      syntax; root `CLAUDE.md` says listings are **Intel x86**, matching the
+      textbook, and TASM belongs to the superseded course. Use x86, and check
+      `TOOLCHAIN-CORRECTION.md` before authoring a single prompt
+
+### The three Phaser scenes
+- [ ] **Hazard Interceptor** — Stage 14, ILP. Classify each instruction's
+      hazard type before it leaves the pipeline. A wrong tag stalls that one
+      instruction visibly, which is the real consequence, and shows the correct
+      classification. No buzzer
+- [ ] **The Descent** — unlocked *after* Stage 11, paid off at Stage 16.
+      Never at Stage 11 itself: `GAME-DESIGN.md` §11 marks that stage
+      "nothing may distract". Does **not** replace Stage 16's DOM Cache Tuner,
+      which stays required and primary
+- [ ] **Fault Line** — Stage 18, distributed systems. Network/traffic
+      language throughout, never combat language — reframing the tower-defense
+      template's verbs is the thing that keeps it content rather than costume
+
+### Applies to all five
+- [ ] Confirm the primary DOM/accessible encounter for that stage still works
+      completely without the minigame — test it directly, don't assume it
+      because the minigame is "just an addition"
+- [ ] Screenshot the opt-in entry point *and* the minigame itself, same
+      discipline as every other page
+- [ ] **Initial bundle must not move.** `GAME-DESIGN.md` §10.2's method: grep
+      `dist/index.html` for `modulepreload`, confirm the 51.9 KB gz baseline is
+      unchanged. Three new lazy scenes are three more chances to accidentally
+      preload Phaser
+- [ ] **Each one waits on its own chapter being authored** — see the note at
+      the top of this section. Confirm the chapter has real teaching text, not
+      a `kind="planned"` callout, before building its game
+
+### Housekeeping this ruling creates
+- [ ] `GAME-DESIGN.md` §11's mini-game table still maps to the **superseded**
+      curriculum and now needs five new rows too. Rewrite it for the
+      18-chapter syllabus and add all five in one pass —
+      `MINIGAME-PROPOSALS.md` §"What happens next" already asks for exactly this
+- [ ] Add the five to `GAME-DESIGN.md` §12's Track D
+- [ ] `MINIGAME-PROPOSALS.md`'s header still says PROPOSED. Change it to record
+      the ruling and its date, so the file stops contradicting this one
 
 ## R3.3 — Teacher console (15 routes)
 Use `CONSOLE-DATA-AND-TEMPLATES.md` for these, not just `TEMPLATE-LINKS.md`'s
@@ -85,7 +157,10 @@ wherever it's triggered, not as a per-route task:
 - [ ] Both loading screens (R3.4) built and verified
 - [ ] Console pages built per `CONSOLE-DATA-AND-TEMPLATES.md`'s merges, not
       just the shadcn-admin default
-- [ ] Any approved minigame (R3.2b) built and confirmed non-blocking
+- [ ] All five approved minigames (R3.2b) built and confirmed non-blocking,
+      **or** explicitly deferred with the reason recorded. Deferral is the
+      expected outcome for all five while chapters 08–18 are scaffolds — that
+      is a real answer, not a slip, and it is not a reversal of R0.1b's approval
 - [ ] `design/templates/` fully populated and committed
 - [ ] `docs/PROGRESS.md` reflects real progress through this phase — given
       the size, update it after every batch of routes, not just at the end

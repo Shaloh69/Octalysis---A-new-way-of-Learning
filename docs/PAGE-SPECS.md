@@ -78,10 +78,12 @@ Standard. `/maintenance` matters — you will need it during a mid-semester migr
 
 ### `/app` — The galaxy (the hub)
 
-**3D star map, the student's default.** Clicking a star opens a dialog naming the stage, its
-state, its lock reason and distance, and what the encounter actually is — then offers "Enter
-stage". `prefers-reduced-motion`, absent WebGL, and viewports ≤ 640px redirect to `/app/map`.
-See `GAME-DESIGN.md` §3.
+**3D map, the student's default.** Clicking a planet opens a dialog naming the stage, its state,
+its lock reason and distance, and what the encounter actually is — then offers "Enter stage".
+`prefers-reduced-motion`, absent WebGL, and viewports ≤ 640px **fall back to the flat presentation
+in place, on this same route — they do not redirect.** `VISUAL-SYSTEM-3D.md` §5's degradation
+ladder is the owner of that rule (R0 ruling, `docs/PROGRESS.md` F-5). For the map itself see
+`docs/redesign/SOLAR-SYSTEM-SPEC.md`.
 
 ### `/app/map` — Flat stage map
 
