@@ -85,11 +85,36 @@ export default {
       "3xl": ["var(--text-3xl)", "var(--lh-3xl)"],
     },
     extend: {
+      /*
+       * `spacing` feeds padding, margin and gap -- and, by Tailwind's default,
+       * width and height too. THAT LAST PART SHIPPED A BUG: `h-9` on every
+       * input and button resolved to --space-9 (6rem) and drew a 96px box.
+       *
+       * Space is a layout ladder that steps fast; size is a control ladder that
+       * steps slowly in the range space skips. They are separated below, and
+       * the size values match Tailwind's own numerics so `h-9` means what a
+       * developer reading the class name assumes it means.
+       */
       spacing: {
         1: "var(--space-1)", 2: "var(--space-2)", 3: "var(--space-3)",
         4: "var(--space-4)", 5: "var(--space-5)", 6: "var(--space-6)",
         7: "var(--space-7)", 8: "var(--space-8)", 9: "var(--space-9)",
       },
+      height: {
+        4: "var(--size-4)",   5: "var(--size-5)",   6: "var(--size-6)",
+        7: "var(--size-7)",   8: "var(--size-8)",   9: "var(--size-9)",
+        10: "var(--size-10)", 11: "var(--size-11)", 12: "var(--size-12)",
+        "control-sm": "var(--control-h-sm)",
+        "control-md": "var(--control-h-md)",
+        "control-lg": "var(--control-h-lg)",
+      },
+      width: {
+        4: "var(--size-4)",   5: "var(--size-5)",   6: "var(--size-6)",
+        7: "var(--size-7)",   8: "var(--size-8)",   9: "var(--size-9)",
+        10: "var(--size-10)", 11: "var(--size-11)", 12: "var(--size-12)",
+      },
+      minWidth:  { 4: "var(--size-4)", 8: "var(--size-8)", 9: "var(--size-9)" },
+      minHeight: { 4: "var(--size-4)", 8: "var(--size-8)", 9: "var(--size-9)" },
       boxShadow: {
         1: "var(--shadow-1)",
         2: "var(--shadow-2)",

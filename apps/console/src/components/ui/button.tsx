@@ -22,10 +22,10 @@ const buttonVariants = cva(
         danger: "bg-danger-bg text-danger border border-danger hover:bg-danger hover:text-surface-0",
       },
       size: {
-        sm: "h-8 px-3 text-xs",
-        md: "h-9 px-4 text-sm",
+        sm: "h-control-sm px-3 text-xs",
+        md: "h-control-md px-4 text-sm",
         lg: "h-11 px-6 text-base",
-        icon: "h-9 w-9",
+        icon: "h-control-md w-9",
       },
     },
     defaultVariants: { variant: "default", size: "md" },

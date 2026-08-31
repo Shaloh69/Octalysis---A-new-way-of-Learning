@@ -38,6 +38,31 @@
   --space-4: 1rem;    --space-5: 1.5rem;  --space-6: 2rem;
   --space-7: 3rem;    --space-8: 4rem;    --space-9: 6rem;
 
+  /*
+   * SIZE is a different ladder from SPACE, and conflating them shipped a bug.
+   *
+   * The space ladder above is a LAYOUT scale: it steps fast, because the useful
+   * gaps between blocks are 4, 8, 12, 16, 24, 32, 48... Sizes do not step like
+   * that. An icon is 16 or 20px, a text input is 36px, a button is 32 or 36 or
+   * 44 — a slow, dense ladder in the range the space scale skips over entirely.
+   *
+   * The console mapped Tailwind's numeric utilities onto the SPACE ladder, so
+   * `h-9` on every input and button resolved to `--space-9` = 6rem and rendered
+   * a 96px box. Nobody saw it, because until the sign-in page existed nobody
+   * had opened the console.
+   *
+   * These deliberately match Tailwind's own numeric rem values, so `h-9` means
+   * 2.25rem the way every developer reading the class name expects.
+   */
+  --size-4:  1rem;     --size-5:  1.25rem;  --size-6:  1.5rem;
+  --size-7:  1.75rem;  --size-8:  2rem;     --size-9:  2.25rem;
+  --size-10: 2.5rem;   --size-11: 2.75rem;  --size-12: 3rem;
+
+  /* Form controls, named by role rather than by number. */
+  --control-h-sm: 2rem;     /* dense table actions */
+  --control-h-md: 2.25rem;  /* the default: inputs, buttons, selects */
+  --control-h-lg: 2.75rem;  /* touch targets on the tablet at the front */
+
   --radius-sm: 3px;  --radius-md: 6px;  --radius-lg: 10px;
   --radius-full: 999px;
 
