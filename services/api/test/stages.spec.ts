@@ -185,7 +185,7 @@ describe("GET /api/v1/stages — the skill tree", () => {
       });
   });
 
-  it("act == grading period, evenly split 5/4/4/5", () => {
+  it("act == grading period, on the instructor's ranges", () => {
     return app
       .inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) })
       .then((res) => {
@@ -193,17 +193,32 @@ describe("GET /api/v1/stages — the skill tree", () => {
         const counts = [1, 2, 3, 4].map(
           (a) => nodes.filter((n) => n.act === a && n.gradeable).length,
         );
-        // EIGHTEEN chapters over four periods, evenly spaced as the instructor
-        // asked. 18/4 = 4.5, so 5/4/4/5 is as even as it divides. Chapter 1 is
-        // only 1 contact hour, which is why the extra chapter sits in act 1:
-        // by HOURS the periods are 13/12/12/15.
-        //
-        // It was seventeen until the syllabus was read from the DOCX rather
-        // than the PDF. Chapter 18 (Distributed Systems Architecture) has an
-        // empty topics cell, so column-interleaved PDF text erased it without
-        // a trace. This assertion is the thing that would notice it going
-        // missing again.
-        expect(counts).toEqual([5, 4, 4, 5]);
+        /*
+         * THE RANGES ARE THE INSTRUCTOR'S (2 Sep 2026), not an even division:
+         * Prelim covers chapters 1-4, Midterm 5-8, Semi-finals 9-12, Finals
+         * 13-17. Stage NN is chapter NN. Counting GRADEABLE stages only, that
+         * is 4/4/4 plus the Finals.
+         *
+         * This replaces a 5/4/4/5 split that had been reasoned about as "as
+         * even as 18 divides". It was even; it was also not what the syllabus
+         * says, and it put chapter 5 in the Prelim, 9 in the Midterm and 13 in
+         * the Semi-finals. Since `db/schema.sql`'s blueprints scope by
+         * `by_act`, every one of the four examinations sampled a chapter from
+         * beyond its own grading period -- a student revising to the syllabus
+         * would have been right and the generated paper wrong. Evenness was
+         * never the requirement.
+         *
+         * The Finals carries SIX because chapter 18 sits there. The ruling's
+         * ranges stop at 17, but chapter 18 exists and is gradeable, and every
+         * stage must belong to a period for `by_act` to reach it. Flagged in
+         * PROGRESS.md F-7 rather than decided.
+         *
+         * Chapter 18 was missing entirely until the syllabus was read from the
+         * DOCX rather than the PDF: it has an empty topics cell, so
+         * column-interleaved PDF text erased it without a trace. The total
+         * below is what would notice that happening again.
+         */
+        expect(counts).toEqual([4, 4, 4, 6]);
         expect(counts.reduce((x, y) => x + y, 0)).toBe(18);
       });
   });

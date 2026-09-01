@@ -815,7 +815,36 @@ Worth doing: correct §5's numbers, and decide whether `scan:bundle` should gain
 a size assertion so the next drift is caught by CI rather than by someone
 reading a document three phases later.
 
-### F-7 · Inherited from DESIGN-REVIEW-01, and this redesign makes it worse
+### F-7 · RESOLVED 2 Sep 2026 — and the drift was not cosmetic
+
+**The instructor ruled:** Prelim covers chapters 1-4, Midterm 5-8, Semi-finals
+9-12, Finals 13-17, **and the Finals is cumulative — it covers 1-17.**
+
+`db/schema.sql` was one stage out on every boundary: it grouped 00-05 / 06-09 /
+10-13 / 14-18, putting chapter 5 in the Prelim, 9 in the Midterm and 13 in the
+Semi-finals. **That was never a labelling problem.** The examination blueprints
+scope by `by_act`, so each of the four papers was sampling one chapter from
+beyond its own grading period — a student revising to the syllabus would have
+been right and the generated paper wrong. Three rows changed (05→2, 09→3, 13→4)
+and all four exams re-scoped with them.
+
+The cumulative half was already correct: the Final Examination blueprint weights
+all four acts 8/8/10/24, with the heavier end on material examined nowhere else.
+
+Act names are now printed, and the Finals carries **"cumulative — covers the
+whole course"** beside it. It is the one period whose name misdescribes its
+scope, and a student who reads "Finals · 13-18" and revises only those chapters
+has been misled by a label we chose. The stage range stays printed beside every
+name so the grouping is checkable rather than trusted.
+
+**STILL OPEN — chapter 18.** The ruling's ranges stop at 17, but chapter 18
+(Distributed Systems Architecture) exists, is published and is gradeable. It
+sits in Act 4 because every stage must belong to a period for `by_act` to reach
+it, and omitting it would silently drop it from the only cumulative exam. That
+is an assumption, not a ruling: **is chapter 18 examinable, and in which
+period?**
+
+### F-7 (original) · Inherited from DESIGN-REVIEW-01
 **D-3, act grouping.** Three sources, three answers: `StageMap.tsx:297` renders
 narrative act names, `stages.act` groups 00–05/06–09/10–13/14–18, and `CLAUDE.md`
 says Prelim 1–4 / Midterm 5–8 / Semis 9–12 / Finals 13–17. Confirmed still
@@ -1029,6 +1058,45 @@ version has deliberately removed.
 now dead — nothing imports it but its own test file, `apps/web/test/layout.spec.ts`.
 Deleting a module and its suite is a bigger call than this pass needed, so it is
 flagged rather than taken.
+
+### F-22 · Stage 00 has objectives, and the sun's burst became chance
+
+**Stage 00, ruled 2 Sep 2026.** Orientation is "part 2 of the tutorial": it
+explains what the course covers, what a student will encounter, and how the
+learning system works. Five objectives authored in `content/stages/00.md`.
+
+Every one is about the course's shape or about OCTA itself — the four grading
+periods, how a stage unlocks, how to read a lock's distance, how to move between
+map/list/progress, and why every paper differs but is equivalent. **None assert
+anything about computer architecture**, so hard rule 5 holds: this is not
+invented course content, and chapters 01-18 still carry the subject matter.
+
+Safe by construction: stage 00 stays `gradeable: false` and every blueprint sets
+`exclude_non_gradeable_stages: true`, so these can never be sampled into an
+examination. They exist to give orientation moons, a competency footprint, and
+something a student can actually check off.
+
+They also do NOT name the seven levels. The depth gauge stays unexplained until
+Stage 11 — the prose has always respected that ("What it measures is named later
+in the course") and the objectives keep the same line.
+
+**F-1's fallback survives its own obsolescence.** Stage 00 was the only stage
+with no objectives, so the mean-of-moons fallback now has no real data
+exercising it. The branch stays — nothing stops a future chapter being authored
+before its objectives — but the test no longer leans on stage 00 staying empty.
+It builds a synthetic objective-less stage instead, and a second test records
+"every stage has objectives" as a fact that goes red if that ever changes. A
+test whose fixture can be deleted by unrelated content work is not a guard.
+
+**The sun's burst is now a random event**, roughly one click in twelve. §1.1b
+reserved it for "the first time a student interacts with the sun", which needed
+a durable has-this-person-ever signal: a session flag re-fires the "first" time
+every visit, `localStorage` re-fires it on every new browser, so the one thing
+the moment had to be — once — was the thing neither could promise. Chance needs
+no memory. It is also better behaved: a once-ever burst can be missed by
+clicking while looking elsewhere and then never seen again, where this one stays
+possible, which makes the sun worth touching twice. One `pulse` ref carries both
+intensities, so there is no second piece of state.
 
 ## Performance and QA numbers — measured, not assumed
 

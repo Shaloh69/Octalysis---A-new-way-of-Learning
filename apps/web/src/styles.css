@@ -2225,3 +2225,6 @@ button {
     opacity: 1;
   }
 }
+
+/* The Finals' scope note. Quieter than the name, louder than nothing. */
+.act-head-note { color: var(--ink-faint); font-weight: 400; font-size: 0.78rem; }

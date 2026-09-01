@@ -120,12 +120,32 @@ describe("the seed graph", () => {
     const byAct = new Map<number, string[]>();
     for (const s of SEED) byAct.set(s.act, [...(byAct.get(s.act) ?? []), s.id]);
     expect([...byAct.keys()].sort()).toEqual([1, 2, 3, 4]);
-    // 18 chapters over four periods, evenly spaced: 5/4/4/5. Chapter 1 is only
-    // one contact hour, so by HOURS the periods are 13/12/12/15.
-    expect(byAct.get(1)).toEqual(["00", "01", "02", "03", "04", "05"]); // Prelim
-    expect(byAct.get(2)).toEqual(["06", "07", "08", "09"]);             // Midterm
-    expect(byAct.get(3)).toEqual(["10", "11", "12", "13"]);             // Semi-finals
-    expect(byAct.get(4)).toEqual(["14", "15", "16", "17", "18"]);       // Finals
+
+    /*
+     * THE INSTRUCTOR'S RANGES, 2 Sep 2026: Prelim covers chapters 1-4, Midterm
+     * 5-8, Semi-finals 9-12, Finals 13-17. Stage NN is chapter NN, and stage 00
+     * is orientation, which is ungraded and sits with the Prelim.
+     *
+     * This corrects a ONE-STAGE DRIFT the seed carried: it grouped 00-05 /
+     * 06-09 / 10-13 / 14-18, which put chapter 5 in the Prelim, chapter 9 in
+     * the Midterm and chapter 13 in the Semi-finals. That was never cosmetic —
+     * `db/schema.sql`'s blueprints scope by `by_act`, so each of the four
+     * examinations was sampling one chapter beyond its own grading period. A
+     * student revising their syllabus would have been right and the generated
+     * paper wrong.
+     */
+    expect(byAct.get(1)).toEqual(["00", "01", "02", "03", "04"]); // Prelim, ch 1-4
+    expect(byAct.get(2)).toEqual(["05", "06", "07", "08"]);       // Midterm, ch 5-8
+    expect(byAct.get(3)).toEqual(["09", "10", "11", "12"]);       // Semi-finals, ch 9-12
+
+    /*
+     * Chapter 18 is the open edge. The ruling's ranges stop at 17, but chapter
+     * 18 exists and is gradeable, so it sits with the Finals — every stage must
+     * belong to a period for `by_act` to reach it, and omitting it would
+     * silently drop it from the only cumulative examination. Flagged in
+     * `PROGRESS.md` F-7, not decided here.
+     */
+    expect(byAct.get(4)).toEqual(["13", "14", "15", "16", "17", "18"]); // Finals
   });
 });
 

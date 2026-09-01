@@ -810,31 +810,62 @@ test.describe("the DOM layer stays the accessibility contract", () => {
 });
 
 test.describe("the stages page carries the act grouping", () => {
-  test("groups all 19 by act, with a numeral and a range, and never a name", async ({ page }) => {
+  test("groups all 19 into the four NAMED grading periods", async ({ page }) => {
     await signIn(page, "progressing");
     await openStageList(page);
 
-    // Four grading periods. The map draws; this page reads.
     const acts = page.locator(".stage-act");
-    expect(await acts.count(), "four acts").toBe(4);
+    expect(await acts.count(), "four grading periods").toBe(4);
     expect(await page.locator(".stage-row").count(), "all 19 still present").toBe(19);
 
     /*
-     * NEVER a name. Three sources give three different groupings
-     * (DESIGN-REVIEW-01 D-3 / PROGRESS F-7) and it is still the instructor's
-     * call, so a numeral and a stage range are printed instead. "Prelim" over
-     * a group containing chapter 05 would be worse than nothing, because a
-     * student would believe it and plan a review week around it.
+     * NAMED, as of the instructor's ruling (2 Sep 2026). This test previously
+     * asserted the OPPOSITE -- that no name is ever printed -- because three
+     * sources gave three groupings and printing "Prelim" over a group holding
+     * chapter 05 would have misled a student into revising the wrong chapters.
+     * The ruling settled the ranges, `db/schema.sql` was corrected to match,
+     * and so this now guards the ruling rather than the silence.
      */
     const text = await page.locator(".stage-acts").innerText();
-    expect(text, "act names are still unresolved -- do not print one")
-      .not.toMatch(/Prelim|Midterm|Semi-?final|Finals/i);
-    await expect(page.locator(".act-head").first()).toContainText(/Act I/);
+    for (const name of ["Prelim", "Midterm", "Semi-finals", "Finals"]) {
+      expect(text, `${name} must be named`).toContain(name);
+    }
+
+    /*
+     * The Finals is CUMULATIVE and must say so. It is the one period whose name
+     * does not describe its scope -- it draws on the whole course, not only
+     * chapters 13-17 -- and a student who reads the heading and revises only
+     * its own chapters has been misled by a label we chose.
+     */
+    expect(text, "the Finals' scope cannot be left implicit").toMatch(/cumulative/i);
+
+    // The range stays printed beside each name, so the grouping is checkable
+    // rather than something a student has to take on trust.
     await expect(page.locator(".act-head").first()).toContainText(/Stages \d{2}–\d{2}/);
 
     // Grouping is presentational: focus order still walks the syllabus.
     const ids = await page.locator(".stage-row-id").allInnerTexts();
     expect(ids, "curriculum order, never screen position").toEqual([...ids].sort());
+  });
+
+  test("the periods match the ruled chapter ranges", async ({ page }) => {
+    /*
+     * The ranges themselves, asserted from the rendered page.
+     *
+     * Prelim 1-4, Midterm 5-8, Semi-finals 9-12, Finals 13-17 (+18, the open
+     * edge). The seed carried a one-stage drift until this ruling, and because
+     * the examination blueprints scope by `by_act` that drift meant every paper
+     * sampled a chapter from beyond its own grading period. This is the
+     * assertion that would catch it coming back.
+     */
+    await signIn(page, "progressing");
+    await openStageList(page);
+
+    const heads = await page.locator(".act-head").allInnerTexts();
+    expect(heads[0], "Prelim covers chapters 1-4, after orientation").toMatch(/Stages 00–04/);
+    expect(heads[1], "Midterm covers chapters 5-8").toMatch(/Stages 05–08/);
+    expect(heads[2], "Semi-finals covers chapters 9-12").toMatch(/Stages 09–12/);
+    expect(heads[3], "Finals covers 13-17, plus chapter 18").toMatch(/Stages 13–18/);
   });
 });
 

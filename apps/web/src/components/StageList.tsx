@@ -54,27 +54,25 @@ const STATE_WORD: Record<StageNode["state"], string> = {
   mastered: "Mastered",
 };
 
+import { ACT_NAMES, ACT_NOTE } from "../lib/acts";
+
 const ROMAN = ["", "I", "II", "III", "IV"] as const;
 
 /**
- * The four grading periods, as headings — WITHOUT naming them.
+ * The four grading periods, as headings, NAMED.
  *
- * This is where the act text went when it left the map. The map now draws;
- * this page reads. But the heading is a Roman numeral and a stage range, never
- * "Prelim" or "Midterm", and that is a deliberate dodge rather than an
- * oversight: **three sources give three different groupings.** `stages.act`
- * groups 00–05 / 06–09 / 10–13 / 14–18, root `CLAUDE.md` says Prelim 1–4 /
- * Midterm 5–8 / Semis 9–12 / Finals 13–17, and the superseded `StageMap`
- * rendered narrative act names that match neither.
+ * This is where the act text went when it left the map. The map draws; this
+ * page reads.
  *
- * See `DESIGN-REVIEW-01.md` D-3 and `PROGRESS.md` F-7 — still the instructor's
- * call, and unchanged by this page. Printing "Prelim" over a group that
- * contains chapter 05 would be worse than printing nothing, because a student
- * would believe it and plan a review week around it. A numeral and the range
- * are true under all three readings.
+ * It printed a bare Roman numeral until 2 Sep 2026, because three sources gave
+ * three groupings (`stages.act`, root `CLAUDE.md`, and the superseded map) and
+ * printing "Prelim" over a group containing chapter 05 would have been worse
+ * than printing nothing — a student would have believed it and revised the
+ * wrong chapters. The instructor ruled, `db/schema.sql` was corrected to match,
+ * and there is now one answer. See `lib/acts.ts` and `PROGRESS.md` F-7.
  *
- * The range is stated in full so the grouping is checkable at a glance: if the
- * instructor's answer differs, the disagreement is visible rather than buried.
+ * The stage range is still printed beside the name, so the grouping stays
+ * checkable at a glance rather than being something you have to trust.
  */
 function ActHead({ act, stages }: { act: number; stages: StageNode[] }): JSX.Element {
   const done = stages.filter((n) => n.state === "mastered").length;
@@ -88,8 +86,13 @@ function ActHead({ act, stages }: { act: number; stages: StageNode[] }): JSX.Ele
       <span className="act-head-main">
         <span className="act-head-line">
           <span className="act-head-title">
-            Act {ROMAN[act] ?? act}
+            {ACT_NAMES[act] ?? `Act ${ROMAN[act] ?? act}`}
             <span className="act-head-range mono"> · Stages {first}–{last}</span>
+            {ACT_NOTE[act] && (
+              // The Finals is the one period whose name does not describe its
+              // scope. Printed, not left to be discovered in a syllabus PDF.
+              <span className="act-head-note"> · {ACT_NOTE[act]}</span>
+            )}
           </span>
           <span className="act-head-count mono">
             {done}/{stages.length} mastered

@@ -245,10 +245,21 @@ function Sun({
     // The click flash decays whether or not motion is reduced -- otherwise a
     // reduced-motion user would trigger it once and have it stick on forever.
     if (pulse.current > 0) {
-      pulse.current = Math.max(0, pulse.current - delta * (frozen ? 8 : 2.2));
+      /*
+       * `pulse` carries BOTH the decay and the size: it starts at 1 for the
+       * ordinary flash and at 2 for the burst, so one ref drives two intensities
+       * with no second piece of state and no branch in the hot path.
+       *
+       * Normalising by `peak` keeps the decay curve identical for both -- the
+       * burst is bigger and brighter, not longer. A burst that also outlasted
+       * the pulse would read as a stutter rather than a flare.
+       */
+      const peak = pulse.current > 1 ? 2 : 1;
+      pulse.current = Math.max(0, pulse.current - delta * peak * (frozen ? 8 : 2.2));
       if (flash.current) {
-        flash.current.scale.setScalar(1 + (1 - pulse.current) * 1.8);
-        flash.current.material.opacity = frozen ? 0 : pulse.current * 0.5;
+        const level = pulse.current / peak;
+        flash.current.scale.setScalar(1 + (1 - level) * (peak > 1 ? 3.4 : 1.8));
+        flash.current.material.opacity = frozen ? 0 : level * (peak > 1 ? 0.75 : 0.5);
       }
     }
 
@@ -1108,9 +1119,27 @@ export default function SolarSystemCanvas({
   return (
     <Canvas
       onPointerMissed={() => {
-        // Clicking empty space -- including the sun, which has no collider of
-        // its own -- pulses it. A single flash, never a loop. §1.1b.
-        sunPulse.current = 1;
+        /*
+         * Clicking empty space -- including the sun, which has no collider of
+         * its own -- pulses it. A single flash, never a loop. §1.1b.
+         *
+         * THE BURST IS A RANDOM EVENT, roughly one click in twelve, ruled
+         * 2 Sep 2026. §1.1b originally reserved it for "the first time a
+         * student interacts with the sun", which needed a durable
+         * has-this-person-ever signal: a session flag re-fires the "first" time
+         * on every visit, and `localStorage` re-fires it on every new browser,
+         * so the one thing the moment must be -- once -- was the one thing
+         * neither could promise. Chance needs no memory at all.
+         *
+         * It is also better behaved. A once-ever burst is a moment a student
+         * can miss by clicking the sun while looking elsewhere, and then never
+         * see again. This one stays possible, which makes the sun worth
+         * touching twice.
+         *
+         * Still bounded by §1B rule 3: the calm pulse is the common case, the
+         * burst is uncommon enough to stay an event, and neither loops.
+         */
+        sunPulse.current = Math.random() < 1 / 12 ? 2 : 1;
       }}
       camera={{ position: [distance, distance * 0.62, distance], fov: 50 }}
       gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}

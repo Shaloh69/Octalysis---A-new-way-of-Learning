@@ -643,21 +643,38 @@ revoke all on all tables in schema public from anon;
 -- allots 3 hrs of lecture+lab per chapter; these are estimates of time spent in
 -- OCTA itself, which is a companion to that, not a replacement for it.
 -- ============================================================
+-- ACT == GRADING PERIOD, and the ranges are the instructor's (2 Sep 2026):
+--   Act 1 Prelim      chapters 1-4    stages 00-04  (00 is orientation, not graded)
+--   Act 2 Midterm     chapters 5-8    stages 05-08
+--   Act 3 Semi-finals chapters 9-12   stages 09-12
+--   Act 4 Finals      chapters 13-17  stages 13-18
+--
+-- This CORRECTS a one-stage drift. The seed previously grouped 00-05 / 06-09 /
+-- 10-13 / 14-18, which put chapter 5 in the Prelim, chapter 9 in the Midterm
+-- and chapter 13 in the Semi-finals. Because the blueprints below scope by
+-- `by_act`, that drift was not cosmetic: every one of the four examinations
+-- sampled one chapter beyond its own grading period. `DESIGN-REVIEW-01` D-3.
+--
+-- STAGE 18 IS THE OPEN EDGE. The ruling's ranges stop at chapter 17, but
+-- chapter 18 exists, is published and is gradeable. It sits in Act 4 here
+-- because every stage must belong to a period for `by_act` to reach it, and
+-- leaving it out would silently exclude it from the only cumulative exam.
+-- Flagged rather than decided -- see PROGRESS.md F-7.
 insert into stages (id, act, ordinal, title, est_minutes, prereq, published, gradeable, archetype, levels) values
  ('00',1, 0,'Orientation',                                         20, '{}',      true, false, 'A', '{6}'),
  ('01',1, 1,'Introduction',                                40, '{00}',    true, true,  'A', '{0,1,2,3,4,5,6}'),
  ('02',1, 2,'Computer Evolution and Performance',          75, '{01}',    true, true,  'B', '{6,2}'),
  ('03',1, 3,'Top Level View and Interconnection',          70, '{02}',    true, true,  'D', '{2,1}'),
  ('04',1, 4,'Cache Memory',                                80, '{03}',    true, true,  'B', '{3,2}'),
- ('05',1, 5,'Internal Memory',                             60, '{04}',    true, true,  'C', '{1,0}'),
+ ('05',2, 5,'Internal Memory',                             60, '{04}',    true, true,  'C', '{1,0}'),
  ('06',2, 6,'External Memory',                             55, '{05}',    true, true,  'C', '{3}'),
  ('07',2, 7,'Input/Output',                                70, '{06}',    true, true,  'D', '{3,1}'),
  ('08',2, 8,'Operating System Support',                    70, '{07}',    true, true,  'D', '{3}'),
- ('09',2, 9,'Computer Arithmetic',                         90, '{08}',    true, true,  'B', '{2,0}'),
+ ('09',3, 9,'Computer Arithmetic',                         90, '{08}',    true, true,  'B', '{2,0}'),
  ('10',3,10,'Instruction Sets: Characteristics',           60, '{09}',    true, true,  'C', '{2}'),
  ('11',3,11,'Instruction Sets: Addressing and Formats',    65, '{10}',    true, true,  'D', '{2}'),
  ('12',3,12,'Processor Structure and Function',            80, '{11}',    true, true,  'D', '{1}'),
- ('13',3,13,'Reduced Instruction Set Computers',           60, '{12}',    true, true,  'A', '{2,1}'),
+ ('13',4,13,'Reduced Instruction Set Computers',           60, '{12}',    true, true,  'A', '{2,1}'),
  ('14',4,14,'Instruction Level Parallelism',               70, '{13}',    true, true,  'D', '{1}'),
  ('15',4,15,'Control Unit Operation',                      75, '{14}',    true, true,  'D', '{1}'),
  ('16',4,16,'Microprogrammed Control',                     65, '{15}',    true, true,  'D', '{1}'),

@@ -103,7 +103,7 @@ describe("the parsers themselves", () => {
   it("read real rows, so nothing below passes vacuously on an empty array", () => {
     expect(STAGES, "parsed no stages -- has the seed's column order changed?").toHaveLength(19);
     expect(OBJECTIVES.length, "parsed no objectives -- has the front matter shape changed?")
-      .toBe(110);
+      .toBe(115);
   });
 
   it("every objective belongs to a seeded stage", () => {
@@ -131,7 +131,7 @@ describe("INV-32 — no invented or forgotten bodies", () => {
     }
   });
 
-  it("places every objective as a moon, and nothing else — all 110", () => {
+  it("places every objective as a moon, and nothing else — all 115", () => {
     expect(moons()).toHaveLength(OBJECTIVES.length);
     for (const o of OBJECTIVES) {
       const b = LAYOUT.bodies.get(o.id);
@@ -168,18 +168,39 @@ describe("F-1 — planet ring is the mean of its moons, with a stated fallback",
     }
   });
 
-  it("falls back to min(levels) for a stage with NO objectives — stage 00", () => {
-    // Stage 00 is Orientation. It has zero objectives, so the mean is undefined,
-    // and it is the first planet a student ever sees. The fallback is stated,
-    // not improvised.
+  /*
+   * F-1's fallback used to be exercised by real data: stage 00 was the one
+   * stage with no objectives. It has five as of 2 Sep 2026, authored on the
+   * instructor's ruling that orientation should explain the course and the
+   * learning system.
+   *
+   * THE FALLBACK STAYS, and so does its test. Nothing prevents a future chapter
+   * being authored before its objectives are written, and that is exactly when
+   * a mean-of-an-empty-set would put a planet at NaN. What changes is that the
+   * test now builds the case itself instead of relying on stage 00 to keep
+   * being empty — a test whose fixture can be edited away by unrelated content
+   * work is not a guard.
+   */
+  it("falls back to min(levels) for a stage with NO objectives", () => {
+    const orphan: StageInput = { id: "99", act: 4, ordinal: 99, levels: [3, 5, 6] };
+    const built = computeSolarLayout([...STAGES, orphan], OBJECTIVES);
+
+    const ring = built.bodies.get("99")!.ring;
+    expect(ring, "mean of nothing is not a number; min(levels) is").toBe(3);
+    for (const v of [ring, built.bodies.get("99")!.radius, built.bodies.get("99")!.x]) {
+      expect(Number.isFinite(v), "the fallback exists to prevent exactly this").toBe(true);
+    }
+  });
+
+  it("and the real seed no longer needs it — every stage has objectives", () => {
+    // Recorded as a fact, not a requirement. If a chapter is ever authored
+    // ahead of its objectives this goes red, which is the moment to check the
+    // planet landed where its author expected rather than on the fallback.
     const zeroObjective = STAGES.filter(
       (s) => !OBJECTIVES.some((o) => o.stageId === s.id),
-    );
-    expect(zeroObjective.map((s) => s.id), "expected exactly stage 00").toEqual(["00"]);
-
-    const stage00 = STAGES.find((s) => s.id === "00")!;
-    expect(LAYOUT.bodies.get("00")!.ring).toBe(Math.min(...stage00.levels));
-    expect(LAYOUT.bodies.get("00")!.ring).toBe(6);
+    ).map((s) => s.id);
+    expect(zeroObjective, "a stage with no objectives falls back — is that intended?")
+      .toEqual([]);
   });
 
   it("produces no NaN anywhere, which is what the fallback exists to prevent", () => {
@@ -425,8 +446,12 @@ describe("the shape the data actually makes", () => {
     expect(moons().filter((m) => m.parentId === "03")).toHaveLength(11);
   });
 
-  it("gives stage 00 none, and does not crash doing it", () => {
-    expect(moons().filter((m) => m.parentId === "00")).toHaveLength(0);
+  it("gives stage 00 its five orientation moons", () => {
+    // Orientation had none until 2 Sep 2026. Its objectives are about the
+    // course's shape and the learning system rather than about architecture --
+    // it is `gradeable: false`, and every blueprint sets
+    // `exclude_non_gradeable_stages`, so they can never reach an examination.
+    expect(moons().filter((m) => m.parentId === "00")).toHaveLength(5);
   });
 
   it("never places two bodies at exactly the same point", () => {
