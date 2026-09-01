@@ -104,7 +104,17 @@ honest than the original rule:
   mean. The fallback puts it on ring 6, which is where the existing map already
   places it. Write it as a named branch with a comment, not a trailing default
   that hides the case.
-- **Ring SPACING is proportional to occupancy (F-2), and so is ring weight.**
+- **Ring spacing GROWS outward.** The radial step is not constant: each ring
+  out gets proportionally more room than the one inside it, so the gap between
+  L5 and L6 is visibly larger than the gap between L0 and L1. That is what
+  "sense of scale" means here, and it is not the same as widening everything
+  uniformly — a uniform widening just makes a bigger flat disc.
+
+  It stays a **fixed, deterministic function of level**: same curve for every
+  student, computed once, never phase-dependent and never a function of time or
+  progress. See the note on radius below.
+
+- **Ring SPACING is also proportional to occupancy (F-2), and so is ring weight.**
   The original rule kept radii at fixed, evenly-spaced steps and varied only
   stroke width and opacity. Measured, that fails the very thing it set out to
   fix: L1 ends up carrying **7 of 19 planets and 43 of 110 moons — 39% of
@@ -115,7 +125,11 @@ honest than the original rule:
   stays strictly monotonic in level (L0 always innermost), and radius is
   identical for every student. `DESIGN-MANDATE-V2.md` §1B states the principle
   — *ordering is data, spacing is typography*. Stroke width and opacity still
-  scale with occupancy too. A ring with nothing
+  scale with occupancy too, **from a deliberately low base.** Rings are scale
+  reference, not a dominant visual element: thin, dim, present. Seven bright
+  concentric circles compete with the bodies that carry the actual state, and
+  the bodies must win. Occupancy still modulates weight on top of that lowered
+  floor — this lowers the floor, it does not replace the rule. A ring with nothing
   on it (L4, L5, honestly, for this syllabus) renders as a thin, dim
   baseline circle — present for the Computer Level Hierarchy's sake, not
   pretending to be occupied. Don't force content onto an empty ring to make
@@ -172,12 +186,35 @@ and lose that. Keep the `spansAllLevels` flag and render it as a radial spoke or
 ring-crossing band. **It is the only such stage** — the code comment naming 06
 and 11 describes the superseded curriculum.
 
-Seven concentric rings, L0 through L6, radius increasing outward, step size
-allocated by occupancy per F-2 above. `layout.ts`'s pure function maps `stages[]` + each stage's
+Seven concentric rings, L0 through L6, radius increasing outward on a growing
+curve, step size also allocated by occupancy per F-2 above. The sun at their
+centre is specified in §1.1b. `layout.ts`'s pure function maps `stages[]` + each stage's
 `objectives[]` to a `Map<stageId | objectiveId, Vec3>` — a genuinely bigger
 contract than the old "one node per stage" version, and R1's unit tests need
 to cover the new moon-to-planet aggregation specifically (see R1.1's
 updated checklist), not just re-run the old per-stage position test.
+
+### Why "closer to the sun as you progress" needs no moving radius
+
+A natural next request is to make planets drift inward as a student advances.
+**It is not needed, and implementing it would break the thing that makes this
+map honest.**
+
+The curriculum already trends inward. §1.3's real ring sequence runs
+`6, 2, 1, 2, 0, 3, 1, 3, 0, 2, 2, 1, 1, 1, 1, 1, 0, 3` — it starts at the
+outermost ring and spends its whole back half on L1 and L0, with genuine
+fluctuation on the way. So when progressive reveal (§1.4b) shows only what a
+student has reached, **the revealed region moves inward over the semester on its
+own**, against fixed positions.
+
+That is an emergent property of real data, not a mechanic. It costs nothing, it
+cannot desynchronise from the curriculum, and it stays true if the syllabus
+changes. Animating radius would replace a fact with an effect that merely looks
+like the fact — and would put a time-varying value inside the one axis that
+carries the Computer Level Hierarchy.
+
+**Do not implement anything that makes radius a function of time, completion
+order, or progress.**
 
 **One rule that must not get patched back in later, because R0 flagged
 exactly this temptation: radius is fixed per ring, never phase-dependent.**
@@ -189,6 +226,57 @@ legible as moving" accessibility rule (§5). Cosmetic phase offset rotates
 the *entire system* by one fixed angle per student — every stage's angle
 shifts by the same amount, so relative ordering and all radii stay exactly
 what the data says, always.
+
+### 1.1b The sun's liveliness — elemental, not anthropomorphic
+
+**Ruling, recorded so a later session finding an animated sun does not wonder
+whether the mascot ban quietly eroded:** the sun is animated and rewarding to
+interact with, but deliberately has **no face, no character, and no
+personality-read animations** — no idle looking-around, no dancing, no emoting.
+`DESIGN-MANDATE-V2.md` §1B's ban on "a mascot with a face" **stands as written**.
+This section specifies the alternative that was built instead; it is not an
+exception to that ban.
+
+The reasoning beyond the ban itself: `GAME-DESIGN.md` §1 stakes this project's
+genre out as Zachtronics-adjacent and specifically *not* Duolingo-adjacent, and
+a smiling, dancing sun is exactly that pattern. It would also undercut what the
+sun is *for* — it is the machine itself, the destination the whole course
+descends toward. A destination with a face becomes a companion, and a star is
+already among the most visually alive objects there is without needing to emote.
+
+**Corona flare.** Continuous, slow, irregular flame-like motion at the limb.
+Ambient decoration in the same category as the starfield's drift — it carries
+no information, and `prefers-reduced-motion` **freezes it entirely**, same as
+everything else in this document.
+
+**Click response.** A bright pulse flashing outward from the sun when it is
+clicked. Fast and satisfying, a single clear reaction to a real interaction —
+**not a loop**. This is feedback, which is why it is allowed to be sharp where
+idle motion must stay quiet.
+
+**Slow light-ray sweep.** Soft rays rotating very slowly around the sun, barely
+perceptible moment to moment. It gives the sun continuous presence without
+demanding attention. Same ambient-motion budget rules as orbit drift:
+`frameloop="demand"`, frozen under reduced motion.
+
+**Particle burst — the orientation moment only.** The first time a student
+interacts with the sun, a one-time, brighter, more expansive version of the
+click pulse. **This is that moment's actual spectacle budget** under
+`GAME-DESIGN.md` §1B rule 3 (one spectacle moment per stage). It does not
+repeat: every later click gets the calmer pulse instead.
+
+**Performance.** All of it stays inside the sun's own share of the existing
+≤50 draw-call ceiling. Corona, rays and particles use the **same instancing
+technique already proven for the starfield and the unfocused-tier moons** —
+one buffer, one draw call each. Do not introduce a second rendering approach
+for the sun; the budget has headroom precisely because nothing here has needed
+one yet.
+
+**Accessibility, stated rather than implied.** None of this animation carries
+information a screen reader needs. `/app/map`'s text description of the sun —
+the machine the student is descending toward — is **exactly as informative
+with zero animation as with all of it**. That is the test every ambient effect
+in this document has to pass, and it is why all of it is safe to freeze.
 
 ### 1.2 Stage 11's reveal, preserved exactly
 
@@ -289,6 +377,44 @@ that's a curriculum-policy change and belongs in a review of
   glance-level detail, not a destination — opening a stage is still done by
   clicking the planet, per §2 below
 
+### 1.4b Progressive reveal — the 3D layer only
+
+**Only planets the student has reached render in the 3D scene:** completed
+ones, and the current unlocked one. A locked planet has no body — its orbit is
+there, its ring is there, and the space where it will be is empty.
+
+On completing a stage, the next planet **forms**: a distinct one-time visual
+moment, plus a calm notification — *"A new celestial body has formed."*
+
+**This is a map event, not a second Bring-Up.** `GAME-DESIGN.md` §1B rule 3
+caps spectacle at one moment per stage and that cap still holds: the Bring-Up
+owns the celebration budget at 2000ms with its own jingle. The formation is
+quieter and shorter by design, and it must not read as competing. If the two
+ever fight for attention, the formation is the one that gets trimmed.
+
+#### The hard requirement that travels with it
+
+> **`/app/map`'s DOM layer keeps showing all 19 stages, locked ones included,
+> in full text, exactly as it does today. The 3D layer may withhold for
+> effect; the accessible layer never does.**
+
+This is stated here, explicitly, rather than left to be inferred — because the
+camera-fly-in and HUD were left implicit inside a broader checklist line once
+before and were silently skipped for two phases as a result.
+
+The reasoning is not decorative. A student planning their semester needs the
+whole syllabus shape: what is coming, in what order, how much is left. Hiding
+that is a legitimate *aesthetic* choice for the presentation layer and an
+illegitimate one for the only representation some students can use. It is the
+same line `DESIGN-MANDATE-V2.md` §5 already draws for the Stage 11 ring reveal:
+*"the withholding is allowed to be cosmetic, it is not allowed to be an
+accessibility gap."*
+
+Concretely: `/app/map` lists every stage with its title, state, lock reason and
+distance whether or not its planet exists in the scene. The two layers
+deliberately disagree about what is *visible*; they never disagree about what
+is *true*.
+
 ---
 
 ## 2. Approach and land — the planet dialog redone as signs, corrected after R0
@@ -328,6 +454,14 @@ a compact **HUD ring** appears around the planet, not a modal wall of text.
 | "What you will actually do" (a paragraph) | A **small pictogram** matching the stage's encounter theme, sitting *beside* one still-printed summary line from `stages.summary` — the pictogram speeds recognition, it doesn't replace the sentence |
 | Prerequisites, named, each a link | A **thin traced line back along the flight path** to the prerequisite planet, visually, **plus the prerequisite still named in text** in the HUD (a line alone fails a screen reader and fails anyone who can't easily trace a thin line across a busy scene) |
 | Primary action | One button: **"Enter"** — or nothing at all if locked, since the padlock icon plus the printed reason already say there's nothing to enter yet |
+
+**Additive, on the planet itself: a small flag above any fully mastered
+planet.** It sits *alongside* the existing full-glow mastery state, never
+instead of it — the same icon-augments-the-signal pattern §2 already uses for
+the lock reason, and the same reason: a glance-level marker is faster than
+reading a glow's brightness, but it must not become the only carrier. Mastery
+is still in the glow, still in the HUD's state line, and still in `/app/map`'s
+text.
 
 **What doesn't change:** focus-trap, Escape closes, background stops
 animating while open, themed per the stage's encounter theme (`GAME-DESIGN.md`
@@ -440,6 +574,22 @@ flat colour + roughness/metalness per theme-tinted ring, no photographic
 textures) over downloaded planet textures. It keeps bundle size inside the
 existing ≤250 KB budget and needs no license file.
 
+### Planet surface colour comes from the student's biome
+
+A planet's material is tinted by **the same seeded biome that student already
+gets for that stage** (`BIOME-AND-LOADING-SPEC.md` §3): arctic reads pale
+blue-white, desert warm yellow-orange, jungle green, volcanic ember, and so on.
+
+**This is not a second randomisation system.** It is the existing biome seed —
+derived from `student_id` through the one cosmetic endpoint — expressed in one
+more place. Adding a separate "planet theme" roll would mean two cosmetic
+systems that could disagree with each other, and a student whose landing scene
+is a desert standing on a green planet.
+
+Same boundary as everything else in §3: it changes what a student looks at,
+never what they can do. The tint runs through the same contrast pipeline as the
+palette variants, against `--solar-ground`, at the 3:1 non-text threshold.
+
 **If procedural ends up looking too plain and real sprites/models are
 wanted, three concrete Kenney sources — same supplier already trusted for
 audio, all CC0, no attribution required (though appreciated):**
@@ -470,8 +620,21 @@ starfield" — never included the 110 moons, which are the entire reason this
 redesign exists (the "more subtopics" ask). Fixed below with a real
 level-of-detail strategy, not just a bigger number.**
 
-**The LOD rule:** moons don't need individual pickable geometry until a
-student is actually looking at their planet. Two tiers:
+**The LOD rule, refined:** at overview scale **most moons are not drawn at
+all** — not dim dots, absent. 110 specks around 19 planets is noise at a zoom
+level where a planet is itself only a few pixels across, and it costs legibility
+to say nothing.
+
+**A seeded subset stays visible as a preview: roughly one moon in five, chosen
+by the student's own cosmetic seed**, rendered larger than a dot so it reads as
+a body rather than grain. Which moons those are varies per student and is
+purely cosmetic — the *count* is real data and unchanged, and every moon is
+listed in full on `/app/map` regardless of what the scene draws.
+
+The performance bound is unchanged and still comfortably met: the visible subset
+is one instanced mesh, so it is one draw call whether it holds 20 moons or 110.
+
+Two tiers:
 - **Unfocused (the default view of the whole system):** all 110 moons render
   as **one instanced mesh** — same technique already planned for the
   starfield, one draw call, dim/lit/mastered state carried per-instance via
@@ -489,6 +652,26 @@ student is actually looking at their planet. Two tiers:
 | Draw calls | ≤ 50 | 19 planet draws + 7 ring draws + 1 flight-path line + 1 instanced starfield + **1 instanced moon mesh (all 110, unfocused tier)** + up to **11 individual moon overlays** for whichever single planet is currently focused ≈ high 30s at worst, verify against the real number once built, don't assume the estimate holds without measuring |
 | Orbiting motion | Ambient only, `frameloop="demand"` when idle | Planets (and moons, in their instanced tier) may drift continuously **only** as ambient decoration — `prefers-reduced-motion` freezes every body at its deterministic base position. Orbit angle is never load-bearing information; a frozen system must be exactly as legible as a moving one, which is also why §1.1 forbids radius ever depending on this motion |
 | WebGL unavailable / reduced motion / ≤640px | Fall back to `/app/map` | Unchanged. The flat map's content changes to match §1-2 (ring/planet/moon language instead of star/node language) but the *mechanism* — DOM canonical layer, always present — does not change at all. The flat map's moon list doesn't need a LOD tier at all — it's a real list, not a rendered scene, so all 110 just render as list items grouped under their stage |
+
+### Comets — ambient, and permanently meaningless
+
+Occasional comets cross the field. They are in **exactly the same category as
+the background starfield**: atmosphere, drawn cheaply, carrying nothing.
+
+**The rule that ships with them, because this is the kind of thing that gets
+quietly promoted later:**
+
+> A comet never encodes data, never gates anything, never becomes clickable,
+> and never marks a stage, an event or a deadline.
+
+If a future session wants a comet to *mean* something — mark an upcoming
+assessment, celebrate a streak, point at the next stage — that is a **new
+decision** and it has to pass the same test everything else in this document
+passes: does the interaction carry real data, and does it change what the
+student knows, can do, or can see? It is not an extension of "comets exist",
+and "we already have comets" is not an argument for it. §0's bar is the whole
+reason this map is not decoration; a decorative element that gradually acquires
+meaning is how that bar gets lost without anyone deciding to lose it.
 
 All of §7's accessibility contract checklist items apply verbatim, plus one
 addition specific to moons:
