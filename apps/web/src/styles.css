@@ -1676,3 +1676,60 @@ button {
 .act-list-fold[open] > summary::after { content: "▴"; }
 .act-list-fold > summary:hover { color: var(--ink); }
 .act-list-fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --------------------------------------------------------------
+ * Loading states — the backdrop moving through them
+ * ------------------------------------------------------------ */
+
+/*
+ * §4.1 hub warp. The star field is ALREADY on screen behind every route, so a
+ * warp is that field accelerating rather than an overlay covering the page.
+ * Expressed as a class on the backdrop, so it costs nothing when idle.
+ *
+ * Scale plus a brief blur reads as speed without a second render pass: the
+ * whole point of §4.1's budget note is that a loading state must never itself
+ * become the reason a page feels slow.
+ */
+.solar-backdrop {
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    filter var(--dur-base) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
+}
+
+.solar-backdrop.is-warping {
+  transform: scale(1.12);
+  filter: blur(2px) brightness(1.25);
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Skipped, not slowed. The hook already declines to set the class; this is
+     the second belt, for a preference that changes mid-session. */
+  .solar-backdrop,
+  .solar-backdrop.is-warping {
+    transition: none;
+    transform: none;
+    filter: none;
+    opacity: 1;
+  }
+}
+
+/*
+ * §4.2 stage/moon loading. The destination biome arriving early, which is also
+ * the hand-off OUT of the backdrop: entering a stage is the one navigation
+ * where the solar system stops being the background, and the biome resolving in
+ * is what makes that a departure rather than a disappearance.
+ */
+.biome-arrive {
+  animation: biome-arrive var(--dur-base) var(--ease-out);
+}
+
+@keyframes biome-arrive {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .biome-arrive { animation: none; }
+}

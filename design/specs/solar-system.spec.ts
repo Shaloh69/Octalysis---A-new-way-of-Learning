@@ -269,6 +269,85 @@ test.describe("the degradation ladder — falls back in place, never redirects",
   });
 });
 
+test.describe("loading states — the backdrop moving through them", () => {
+  test("the warp fires on hub navigation, not on arrival", async ({ page }, testInfo) => {
+    /*
+     * BIOME-AND-LOADING-SPEC.md §4.1, as revised for the full-page backdrop:
+     * this is the star field ALREADY on screen accelerating, not an overlay.
+     * First paint is an arrival, not a navigation — warping on it would greet
+     * every student with an animation before they had done anything.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "no backdrop at 380px");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+
+    expect(await page.locator(".solar-backdrop.is-warping").count(), "no warp on arrival")
+      .toBe(0);
+
+    await page.getByRole("link", { name: "Progress" }).click();
+    await expect(page.locator(".solar-backdrop.is-warping")).toHaveCount(1);
+
+    // And it ends. A loading state that never clears is a stuck page.
+    await expect(page.locator(".solar-backdrop.is-warping")).toHaveCount(0, { timeout: 4000 });
+  });
+
+  test("reduced motion skips the warp entirely rather than slowing it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "no backdrop at 380px");
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    // Under reduced motion the backdrop does not render at all (ladder rung 1),
+    // so there is nothing to warp -- which is the strongest form of "skipped".
+    expect(await page.locator(".solar-backdrop").count()).toBe(0);
+    await page.getByRole("link", { name: "Progress" }).click();
+    await page.waitForTimeout(300);
+    expect(await page.locator(".solar-backdrop.is-warping").count()).toBe(0);
+  });
+
+  test("a content surface has no backdrop, so the warp cannot follow a student in", async ({ page }) => {
+    // §4.2's transition owns the way into a stage, not §4.1's. Two loading
+    // animations for one navigation would be a bug.
+    await signIn(page);
+    await page.goto("/app/stage/00", { waitUntil: "networkidle" });
+    await page.waitForTimeout(600);
+
+    expect(await page.locator(".solar-backdrop").count(), "no backdrop on a stage").toBe(0);
+    expect(await page.locator(".solar-backdrop.is-warping").count()).toBe(0);
+  });
+});
+
+test.describe("the map override in settings", () => {
+  test("turning the map off falls back to flat, everywhere", async ({ page }, testInfo) => {
+    /*
+     * VISUAL-SYSTEM-3D.md §5's last line, and the last rung of its ladder to be
+     * built. Rungs 1-5 all decide FOR the student; this is the student
+     * deciding, and §5 requires it to exist for that reason.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "already flat at 380px");
+
+    await signIn(page);
+    await page.goto("/app/settings", { waitUntil: "networkidle" });
+    await page.getByRole("radio", { name: /Flat map only/i }).check();
+
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+    expect(await page.locator("canvas").count(), "the override must be honoured").toBe(0);
+    expect(new URL(page.url()).pathname, "and must not redirect").toBe("/app");
+
+    // Reversible, which is the mandate's third test.
+    await page.goto("/app/settings", { waitUntil: "networkidle" });
+    await page.getByRole("radio", { name: /Solar system/i }).check();
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+    expect(await page.locator("canvas").count()).toBe(1);
+  });
+});
+
 test.describe("the DOM layer stays the accessibility contract", () => {
   test("every stage is a real control, whatever the canvas is doing", async ({ page }) => {
     await signIn(page);

@@ -133,7 +133,7 @@ function AppShell(): JSX.Element {
   const backdrop = !onContentSurface;
 
   return (
-    <SolarProvider data={map} active={backdrop}>
+    <SolarProvider data={map} active={backdrop} pathname={location.pathname}>
       <div className={`app${backdrop ? " app-over-solar" : ""}`}>
       <a className="skip-link" href="#main">
         Skip to content

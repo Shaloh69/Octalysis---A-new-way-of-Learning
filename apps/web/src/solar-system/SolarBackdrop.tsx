@@ -4,6 +4,7 @@ import { computeSolarLayout, type SolarLayout } from "./layout";
 import { useCosmetics } from "./cosmetic-seed";
 import type { StageMapData } from "../lib/api";
 import type { ScreenPoint } from "./SolarSystemCanvas";
+import { useHubWarp } from "./Warp";
 
 const SolarSystemCanvas = lazy(() => import("./SolarSystemCanvas"));
 
@@ -100,10 +101,13 @@ export function useSolar(): SolarContextValue {
 export function SolarProvider({
   data,
   active,
+  pathname,
   children,
 }: {
   data: StageMapData | null;
   active: boolean;
+  /** Current route, so hub-level navigation can trigger the warp (§4.1). */
+  pathname: string;
   children: ReactNode;
 }): JSX.Element {
   const projection = useRef<Map<string, ScreenPoint>>(new Map());
@@ -129,6 +133,9 @@ export function SolarProvider({
     window.addEventListener("resize", recheck);
     return () => window.removeEventListener("resize", recheck);
   }, []);
+
+  // §4.1 — the star field accelerating between hub routes, not an overlay.
+  const warping = useHubWarp(pathname, active);
 
   const { cosmetics } = useCosmetics();
 
@@ -176,7 +183,10 @@ export function SolarProvider({
   return (
     <SolarContext.Provider value={value}>
       {active && allowed && data && layout && (
-        <div className="solar-backdrop" aria-hidden="true">
+        <div
+          className={`solar-backdrop${warping ? " is-warping" : ""}`}
+          aria-hidden="true"
+        >
           <Suspense fallback={null}>
             <SolarSystemCanvas
               nodes={data.nodes}

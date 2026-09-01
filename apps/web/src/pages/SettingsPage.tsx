@@ -52,6 +52,16 @@ export function SettingsPage(): JSX.Element {
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // The map override. Read once; the map picks it up on the next render because
+  // `SolarBackdrop` re-reads localStorage through its own ladder check.
+  const [mapMode, setMapMode] = useState<"2d" | "3d">(() => {
+    try {
+      return localStorage.getItem("octa:map-mode") === "2d" ? "2d" : "3d";
+    } catch {
+      return "3d";
+    }
+  });
+
   // Read-only: the callsign is seeded server-side from student_id and is not
   // something the student can change. Nothing here writes it back.
   const { cosmetics } = useCosmetics();
@@ -144,6 +154,63 @@ export function SettingsPage(): JSX.Element {
               style={{ background: `oklch(0.72 0.15 ${a.hue})` }}
             />
             <span className="settings-accent-name">{a.name}</span>
+          </label>
+        ))}
+      </div>
+
+      {/*
+        The map's manual override -- `VISUAL-SYSTEM-3D.md` §5's last line, and
+        the last rung of its ladder that had never been built.
+        
+        Rungs 1-5 all decide FOR the student: reduced motion, small viewport,
+        absent WebGL, a measured sub-30fps run, Save-Data. Every one of them is
+        the app choosing. This is the student choosing, and §5 requires it to
+        exist for exactly that reason: an automatic ladder with no manual escape
+        hatch is a system that has decided it knows better.
+        
+        Two options, not three. §5 says "Full / Reduced / Off", but Reduced and
+        Off are the same thing here — there is one 3D surface, and it is either
+        drawn or it is not. A third setting that did nothing different would
+        fail the mandate's consequence test.
+      */}
+      <h2>The map</h2>
+      <p className="settings-note">
+        The solar system is the background across the app. Turning it off gives
+        you the flat map everywhere instead — the same 19 stages, the same lock
+        reasons, no animation. Nothing about what you can do changes either way.
+      </p>
+      <div className="settings-themes" role="radiogroup" aria-label="Map rendering">
+        {(
+          [
+            ["3d", "Solar system", "The default, where your device can hold it."],
+            ["2d", "Flat map only", "Text and shapes. Lighter on battery."],
+          ] as const
+        ).map(([value, name, blurb]) => (
+          <label
+            key={value}
+            className={"settings-theme" + (mapMode === value ? " is-on" : "")}
+          >
+            <input
+              type="radio"
+              name="map-mode"
+              value={value}
+              checked={mapMode === value}
+              onChange={() => {
+                setMapMode(value);
+                try {
+                  localStorage.setItem("octa:map-mode", value);
+                  // Choosing the solar system also clears a remembered
+                  // too-slow verdict: the student is overruling the guard,
+                  // which is what an override is for. It will simply measure
+                  // again and can fire again if the device really cannot cope.
+                  if (value === "3d") localStorage.removeItem("octa:map-too-slow");
+                } catch {
+                  /* private window; the preference just does not persist */
+                }
+              }}
+            />
+            <span className="settings-theme-name">{name}</span>
+            <span className="settings-theme-blurb">{blurb}</span>
           </label>
         ))}
       </div>

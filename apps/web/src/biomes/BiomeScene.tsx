@@ -27,6 +27,14 @@ import { loadBiome, type BiomeManifest } from "./registry";
  * than "no layers means draw the tokens": otherwise every un-sourced biome
  * would quietly render as a tinted rectangle and look done.
  *
+ * IT IS ALSO THE LOADING TRANSITION (`BIOME-AND-LOADING-SPEC.md` §4.2).
+ * Entering a stage is the one navigation where the solar system stops being the
+ * background — content surfaces opt out — so the biome resolving in is what
+ * makes that a departure rather than a disappearance. `PAGE-SPECS.md` §5's rule
+ * is "skeletons matching final layout, never a centred spinner"; a biome
+ * preview is the game-native form of that, not an exception to it. Frozen to a
+ * single static frame under reduced motion.
+ *
  * ACCESSIBILITY. `aria-hidden`, and no text equivalent. This is the one place
  * in the redesign where "needs no accessible equivalent" is the correct call,
  * and it is correct precisely because a biome carries zero pedagogical weight:
@@ -67,7 +75,11 @@ export function BiomeScene({ name }: Props): JSX.Element | null {
   if (!hasArt && !isProcedural) return null;
 
   return (
-    <div className="biome" data-biome-render={hasArt ? "art" : "procedural"} aria-hidden="true">
+    <div
+      className="biome biome-arrive"
+      data-biome-render={hasArt ? "art" : "procedural"}
+      aria-hidden="true"
+    >
       {manifest.layers.map((layer) => (
         <div
           key={layer.src}

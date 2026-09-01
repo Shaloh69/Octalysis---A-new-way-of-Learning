@@ -27,6 +27,12 @@ student, 14 console. What has landed under R3 so far:
   moons, mastery flags, comets, and the sun's non-anthropomorphic liveliness
 - **The solar system as the app background** (`SOLAR-SYSTEM-SPEC.md` §1.5) with
   content surfaces opting out, and the prerequisite-trace toggle (§1.6)
+- **Both loading screens** (`BIOME-AND-LOADING-SPEC.md` §4), built as states
+  the backdrop moves through rather than overlays: the hub warp (§4.1) and the
+  biome arrival that hands off out of the backdrop into a stage (§4.2)
+- **The map override on `/app/settings`** — `VISUAL-SYSTEM-3D.md` §5's last
+  line, and the last rung of its ladder to be built. Rungs 1–5 all decide *for*
+  the student; this is the student deciding, which is why §5 requires it
 
 Not yet started in R3: the actual per-route template pass against
 `TEMPLATE-LINKS.md`, which is what §R3.1–R3.3 enumerate.
@@ -666,7 +672,13 @@ from the student's own preference so clearing one does not clear the other.
 Asserted both ways: a remembered verdict falls back, and the guard stays quiet
 on a machine that holds 30fps.
 
-Still not built from §5: the `/app/settings` **Full / Reduced / Off** override.
+~~Still not built from §5: the `/app/settings` Full / Reduced / Off
+override.~~ **BUILT.** Two options rather than three: §5 says "Full / Reduced /
+Off", but Reduced and Off are the same thing here — there is one 3D surface and
+it is either drawn or it is not, and a third setting that did nothing different
+would fail the mandate's consequence test. Choosing the solar system also
+clears a remembered too-slow verdict, because a student overruling the guard is
+what an override is for; it re-measures and can fire again.
 
 ### F-12 · R3 cannot be completed as written — ~20 of its routes do not exist
 **NEW. The biggest planning fact for the next session.**
