@@ -501,6 +501,37 @@ no visible edges. The act list beneath it carries all the actual information, an
 carries it well. Same class as `DESIGN-REVIEW-01` D-1, and invisible to every
 green gate. R1/R3 input, not a blocker.
 
+### F-12 · R3 cannot be completed as written — ~20 of its routes do not exist
+**NEW. The biggest planning fact for the next session.**
+
+R3's definition of done says "all 44 routes checked, each with a template
+screenshot and an implementation screenshot on file." Counted against the real
+app:
+
+| | Routes in `TEMPLATE-LINKS.md` | Actually built |
+|---|---|---|
+| Public | 13 | 4 — `/`, `/login`, `/register`, `/maintenance` |
+| Student | 16 | 7 — `/app`, `/app/map`, `/app/stage/:id`, `…/check`, `/app/progress`, `/app/settings`, `/app/work` |
+| Console | 15 | 14 |
+
+`apps/web/src/pages/` holds **four files**. Missing: `/course`,
+`/how-it-works`, `/for-teachers`, `/accessibility`, `/about`,
+`/forgot-password`, `/reset-password`, `/404`, `/500`,
+`/app/stage/:id/results/:attemptId`, `/app/final`, `/app/lab` and its three
+simulators, `/app/notebook`, `/app/mistakes`, `/app/live`, `/app/help`.
+
+**A template pass cannot be applied to a page that does not exist**, and
+building them is not a template pass — `/app/lab/fde` means building the FDE
+stepper, which is P6 and `GAME-DESIGN.md` §6.4 calls "the part that actually
+makes it a game". Several also depend on chapters 08–18 being authored, which
+they are not.
+
+So R3's real scope is: **template-pass the ~25 routes that exist**, and treat
+the ~19 that do not as P-phase build work scheduled separately. The console is
+in good shape (14 of 15) and is where the template merges in
+`CONSOLE-DATA-AND-TEMPLATES.md` actually pay off; the student app is where the
+gap is. This needs a ruling before R3 is planned as a whole.
+
 ### F-10 · The 3D layer had never used a design token
 **NEW in R2, and the most consequential finding so far.**
 
