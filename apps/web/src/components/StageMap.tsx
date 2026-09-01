@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, Suspense, lazy, useEffect } from "react";
 import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../lib/layout";
 import { computeSolarLayout } from "../solar-system/layout";
+import type { ScreenPoint } from "../solar-system/SolarSystemCanvas";
 import { useCosmetics } from "../solar-system/cosmetic-seed";
 import type { StageNode, StageMapData } from "../lib/api";
 
@@ -113,6 +114,16 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
   // like and nothing about what it says or what can be done with it.
   const { cosmetics } = useCosmetics();
 
+  /*
+   * Where each planet is on screen, written every frame by the canvas's
+   * Projector and read by the button overlay below.
+   *
+   * A ref, not state: the camera drifts continuously, and routing 19 positions
+   * through React each frame would re-render the entire map sixty times a
+   * second in order to move some buttons.
+   */
+  const projection = useRef<Map<string, ScreenPoint>>(new Map());
+
   // Stage 11 names the rings. Server-derived, like every other state on this
   // page -- the client renders the reveal, it does not decide it.
   const ringsNamed =
@@ -170,8 +181,19 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
               frozen={reduced}
               rotationOffset={cosmetics.rotationOffset}
               paletteVariant={cosmetics.paletteVariant}
+              projection={projection}
             />
           </Suspense>
+
+          {/*
+            SKILL-TREE-3D.md §4's actual architecture, finally built: real
+            <button>s positioned over their 3D counterparts. The canvas is
+            pixels and stays aria-hidden; these are the controls.
+
+            The container is pointer-events:none and each button re-enables it,
+            so the empty space between planets does not swallow clicks.
+          */}
+          <PlanetHits data={data} projection={projection} onOpen={onOpen} />
         </div>
       )}
 
@@ -191,6 +213,89 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
         SVG's spatial arrangement carries information a screen reader cannot get.
       */}
       <ActList data={data} onOpen={onOpen} />
+    </div>
+  );
+}
+
+/**
+ * The button layer over the solar system.
+ *
+ * Every stage is a real, labelled, focusable control — the canvas carries none
+ * of that, because a <canvas> has no accessibility semantics at all.
+ *
+ * FOCUS ORDER IS CURRICULUM ORDER, never screen position: `data.nodes` arrives
+ * sorted by ordinal and is rendered in that order, so tabbing through the map
+ * walks the syllabus. That is why this maps over the nodes rather than over the
+ * projection, which has no meaningful order.
+ *
+ * Positions are applied imperatively from an rAF loop rather than through
+ * React, so a drifting camera costs one transform per button per frame instead
+ * of a full re-render.
+ */
+function PlanetHits({
+  data,
+  projection,
+  onOpen,
+}: {
+  data: StageMapData;
+  projection: React.MutableRefObject<Map<string, ScreenPoint>>;
+  onOpen: (id: string) => void;
+}): JSX.Element {
+  const refs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  useEffect(() => {
+    let frame = 0;
+    const tick = (): void => {
+      for (const [id, el] of refs.current) {
+        const p = projection.current.get(id);
+        if (!p || !p.visible) {
+          el.style.opacity = "0";
+          el.style.pointerEvents = "none";
+          continue;
+        }
+        el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%)`;
+        el.style.opacity = "1";
+        el.style.pointerEvents = "auto";
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [projection]);
+
+  return (
+    <div className="map-hits">
+      {data.nodes.map((n) => (
+        <button
+          key={n.id}
+          type="button"
+          ref={(el) => {
+            if (el) refs.current.set(n.id, el);
+            else refs.current.delete(n.id);
+          }}
+          className={`map-hit map-hit-${n.state}`}
+          // A locked planet is still focusable and still activatable -- opening
+          // it is how a student finds out WHY it is locked, and the design
+          // mandate calls a lock with no visible reason the single most
+          // demotivating element in ed-tech.
+          aria-disabled={n.state === "locked"}
+          onClick={() => onOpen(n.id)}
+        >
+          <span className="sr-only">
+            {`Stage ${n.id}, ${n.title}. `}
+            {n.state === "locked"
+              ? `Locked. ${n.lockReason?.message ?? ""}`
+              : n.state === "mastered"
+                ? "Mastered."
+                : n.state === "in_progress"
+                  ? `In progress, ${Math.round(n.mastery * 100)} percent.`
+                  : "Available."}
+          </span>
+          <span aria-hidden="true" className="map-hit-id mono">
+            {n.id}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }

@@ -192,8 +192,16 @@ toggle.
 - [x] R0's recorded matrix turned into hard assertions
 - [x] Only one map draws at a time — the flat SVG is suppressed when the system
       is showing
-- [ ] **DEFERRED, stated rather than quietly skipped:** DOM controls are not yet
-      *positioned over* their planets. `SKILL-TREE-3D.md` §4's overlay wants
+- [x] **DONE — was deferred from R1, built after R2.** Real `<button>`s are now
+      positioned over their planets: `PlanetHits` in `StageMap.tsx` reads
+      screen-space positions written each frame by `Projector` in
+      `SolarSystemCanvas.tsx`. A ref, not state — the camera drifts, and
+      routing 19 positions through React frame would re-render the map sixty
+      times a second to move some buttons. Focus order is curriculum order, not
+      screen position. Mutation-verified: dropping the seeded rotation from the
+      projector moves stage 00's button ~600px off its planet, so the alignment
+      is real and not a coincidence.
+- [ ] ~~DEFERRED~~ superseded by the line above. `SKILL-TREE-3D.md` §4's overlay wants
       real buttons projected onto their 3D counterparts. Today the act list
       carries all 19 stages as real labelled buttons in curriculum order, which
       satisfies the accessibility contract, but the projection is not built. R1

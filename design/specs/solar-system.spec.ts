@@ -207,6 +207,55 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     });
   });
 
+  test("every planet has a real control positioned over it", async ({ page }, testInfo) => {
+    // SKILL-TREE-3D.md §4's two-layer architecture, which R1 deferred and R3
+    // built: "every click, focus and screen-reader announcement is handled by
+    // real DOM elements positioned over their 3D counterparts."
+    test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+    await page.locator(".map-hit").first().waitFor();
+
+    const state = await page.evaluate(() => {
+      const hits = [...document.querySelectorAll<HTMLElement>(".map-hit")];
+      return {
+        total: hits.length,
+        placed: hits.filter((el) => el.style.opacity === "1").length,
+        // Distinct positions: if the projection silently failed, every button
+        // would stack at the same point and still "exist".
+        distinct: new Set(hits.map((el) => el.style.transform)).size,
+        order: hits.map((el) => el.querySelector(".map-hit-id")?.textContent ?? ""),
+      };
+    });
+
+    expect(state.total, "19 stages, 19 controls").toBe(19);
+    expect(state.placed, "every planet projected on screen").toBe(19);
+    expect(state.distinct, "buttons stacked -- projection failed").toBeGreaterThan(15);
+
+    // Focus order is CURRICULUM order, never screen position. A student
+    // tabbing through the map walks the syllabus.
+    expect(state.order).toEqual(
+      Array.from({ length: 19 }, (_, i) => String(i).padStart(2, "0")),
+    );
+  });
+
+  test("a locked planet's control still announces why", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+
+    // The canvas carries none of this -- it is aria-hidden and has no
+    // accessibility semantics at all. The buttons over it do.
+    const locked = page.locator('.map-hit[aria-disabled="true"]').first();
+    await expect(locked).toHaveCount(1);
+    await expect(locked).toContainText(/Locked\./);
+    await expect(locked).toContainText(/Unlocks when Stage \d+/);
+  });
+
   test("a locked stage still says why, in words, with the distance", async ({ page }) => {
     await signIn(page);
     await page.goto("/app", { waitUntil: "networkidle" });

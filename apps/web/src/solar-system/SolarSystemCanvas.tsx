@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState, useEffect } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 // Named imports, not `import * as THREE`. A namespace import defeats
 // tree-shaking and pushed the old galaxy chunk to 269 KB gzipped against a
 // documented 250 KB budget (VISUAL-SYSTEM-3D.md §5).
-import { BufferAttribute, BufferGeometry, Color } from "three";
+import { BufferAttribute, BufferGeometry, Color, Vector3 } from "three";
 
 import type { SolarLayout } from "./layout";
 import { LEVELS } from "./layout";
@@ -73,6 +73,23 @@ interface Props {
    * passed and only the screenshot showed it.
    */
   paletteVariant: number;
+  /**
+   * Where each planet currently is ON SCREEN, in CSS pixels relative to the
+   * canvas box. Written every frame by `Projector` below.
+   *
+   * A mutable ref rather than state, deliberately: the camera drifts
+   * continuously, so pushing 19 positions through React each frame would
+   * re-render the whole map sixty times a second to move some buttons. The
+   * overlay reads this ref from its own loop and writes transforms directly.
+   */
+  projection: React.MutableRefObject<Map<string, ScreenPoint>>;
+}
+
+export interface ScreenPoint {
+  readonly x: number;
+  readonly y: number;
+  /** False when the body is behind the camera, so the overlay can hide it. */
+  readonly visible: boolean;
 }
 
 /**
@@ -429,6 +446,58 @@ function Drift({ frozen, distance }: { frozen: boolean; distance: number }): nul
   return null;
 }
 
+/**
+ * Projects each planet's world position into screen space, every frame.
+ *
+ * This is the half of `SKILL-TREE-3D.md` §4's two-layer architecture that R1
+ * deferred: "every click, focus, and screen-reader announcement is handled by
+ * real DOM elements positioned over their 3D counterparts." The canvas is
+ * pixels and stays `aria-hidden`; the buttons that sit on top of it are the
+ * actual controls.
+ *
+ * Writes into a ref rather than calling back into React — see the prop's note.
+ */
+function Projector({
+  nodes,
+  layout,
+  rotationOffset,
+  projection,
+}: {
+  nodes: StageNode[];
+  layout: SolarLayout;
+  rotationOffset: number;
+  projection: React.MutableRefObject<Map<string, ScreenPoint>>;
+}): null {
+  const { camera, size } = useThree();
+
+  useFrame(() => {
+    if (typeof document !== "undefined" && document.hidden) return;
+
+    const cos = Math.cos(rotationOffset);
+    const sin = Math.sin(rotationOffset);
+    const v = new Vector3();
+
+    for (const n of nodes) {
+      const body = layout.bodies.get(n.id);
+      if (!body) continue;
+
+      // The scene is rotated by one seeded angle at the <group>, so the same
+      // rotation has to be applied here -- the layout's coordinates are the
+      // unrotated truth and the buttons must land on what is actually drawn.
+      v.set(body.x * cos + body.z * sin, body.y, -body.x * sin + body.z * cos);
+      v.project(camera);
+
+      projection.current.set(n.id, {
+        x: (v.x * 0.5 + 0.5) * size.width,
+        y: (-v.y * 0.5 + 0.5) * size.height,
+        visible: v.z < 1,
+      });
+    }
+  });
+
+  return null;
+}
+
 export default function SolarSystemCanvas({
   nodes,
   layout,
@@ -436,6 +505,7 @@ export default function SolarSystemCanvas({
   frozen,
   rotationOffset,
   paletteVariant,
+  projection,
 }: Props): JSX.Element | null {
   const [failed, setFailed] = useState(false);
 
@@ -485,6 +555,12 @@ export default function SolarSystemCanvas({
         <Planets nodes={nodes} layout={layout} paletteVariant={paletteVariant} />
       </group>
 
+      <Projector
+        nodes={nodes}
+        layout={layout}
+        rotationOffset={rotationOffset}
+        projection={projection}
+      />
       <Drift frozen={frozen} distance={distance} />
     </Canvas>
   );

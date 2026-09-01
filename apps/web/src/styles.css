@@ -1280,3 +1280,62 @@ button {
   color: var(--accent);
   letter-spacing: 0.04em;
 }
+
+/* --------------------------------------------------------------
+ * Planet hit layer — the controls over the solar system
+ * ------------------------------------------------------------ */
+
+/*
+ * SKILL-TREE-3D.md §4: the canvas is pixels and is aria-hidden; these buttons
+ * are the map's actual controls. The container ignores pointer events so the
+ * empty space between planets does not swallow clicks, and each button turns
+ * them back on for itself.
+ */
+.map-hits {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.map-hit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Positioned imperatively from an rAF loop, so no transition here -- a
+     transition would fight the per-frame transform and lag the planet. */
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--ink-muted);
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* 44px is the touch-target floor, and it is bigger than most planets render --
+   which is correct: the target should be easier to hit than the art is to see. */
+.map-hit-id {
+  font-size: 0.62rem;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.map-hit:hover .map-hit-id,
+.map-hit:focus-visible .map-hit-id {
+  opacity: 1;
+}
+
+.map-hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.map-hit[aria-disabled="true"] {
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-hit-id { transition: none; }
+}
