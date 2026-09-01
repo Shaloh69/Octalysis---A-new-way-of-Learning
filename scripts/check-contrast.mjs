@@ -162,6 +162,41 @@ function deltaOklab(a, b) {
 
 const OKLCH = /oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+|var\(--accent-hue\))\s*(?:\/\s*([\d.]+)\s*)?\)/;
 
+/**
+ * Any `[data-<attr>="<name>"]` block whose declarations are oklch(), keyed by
+ * name. Used for the per-student cosmetic layers added in R2 -- planet palette
+ * variants and landing biomes -- which are checked with exactly the same maths
+ * as the base themes rather than a second, looser pipeline of their own.
+ *
+ * `SOLAR-SYSTEM-SPEC.md` §3 is explicit that a seeded variant "never breaks
+ * WCAG AA, since variants are pre-computed and contrast-checked the same way
+ * the three base themes already are". This function is what makes that
+ * sentence true instead of aspirational.
+ */
+export function parseCosmeticBlocks(attr, prefix) {
+  const css = readFileSync(TOKENS, "utf8");
+  const out = {};
+  const blockRe = new RegExp(`\\[data-${attr}="([\\w-]+)"\\]\\s*\\{([^}]*)\\}`, "g");
+  let m;
+  while ((m = blockRe.exec(css)) !== null) {
+    const name = m[1];
+    out[name] ??= {};
+    for (const line of m[2].split(";")) {
+      const d = line.match(new RegExp(`(--${prefix}-[\\w-]+)\\s*:\\s*(.+)`));
+      if (!d) continue;
+      const pm = d[2].trim().match(OKLCH);
+      if (!pm) continue;
+      out[name][d[1]] = {
+        L: Number(pm[1]),
+        C: Number(pm[2]),
+        H: pm[3] === "var(--accent-hue)" ? "ACCENT" : Number(pm[3]),
+        alpha: pm[4] === undefined ? 1 : Number(pm[4]),
+      };
+    }
+  }
+  return out;
+}
+
 /** The eight encounter themes, parsed from `[data-encounter="x"]` blocks. */
 export function parseEncounters() {
   const css = readFileSync(TOKENS, "utf8");
@@ -538,17 +573,205 @@ async function main() {
     ),
   );
 
+  /* ------------------------------- per-student cosmetics: planets, biomes ---- */
+
+  /**
+   * R2.4. Every seeded palette variant and every landing biome, through the
+   * same pipeline. A cosmetic that a student cannot see past is not a style
+   * choice, it is a broken map -- and the whole reason these are pre-computed
+   * rather than generated at runtime is so this check can be mechanical.
+   *
+   * Thresholds, and why each is the one it is:
+   *   planets  3.0  -- a planet is a graphical object, not text. WCAG 1.4.11
+   *                    non-text contrast. It must be findable against the page.
+   *   biome    3.0  -- the near/far layers are large graphical areas, same rule.
+   *   biome ink 4.5 -- anything that renders TEXT over a biome is body text.
+   */
+  console.log(c.bold("\n  Per-student cosmetics\n"));
+
+  const planets = parseCosmeticBlocks("planet", "planet");
+  const biomes = parseCosmeticBlocks("biome", "biome");
+  const cosFailures = [];
+  let cosChecks = 0;
+
+  const grounds = Object.entries(themes)
+    .map(([themeName, base]) => {
+      const g = base["--surface-0"];
+      return g ? [themeName, oklchToSrgb(g.L, g.C, g.H === "ACCENT" ? 45 : g.H)] : null;
+    })
+    .filter(Boolean);
+
+  /*
+   * Planets are checked against the MAP'S OWN GROUND, not against the three
+   * page grounds.
+   *
+   * The map is self-contained -- it brings `--solar-ground` with it, the same
+   * decision GAME-DESIGN.md §9 made for the encounter themes. Checking a bright
+   * planet against `blueprint`'s near-white page could only ever fail, and
+   * dimming the planets to pass would have wrecked them on the two dark themes
+   * to fix a problem that exists on the third. So the ground is checked against
+   * the page instead, once, below.
+   */
+  // `parseTokens` folds :root into every theme, so any theme's copy is the
+  // :root value unless a theme overrode it -- which none does, deliberately:
+  // the map's ground is the same in all three, because space is.
+  const solarGround = themes["bare-metal"]?.["--solar-ground"];
+  const solarGroundRgb = solarGround
+    ? oklchToSrgb(solarGround.L, solarGround.C, solarGround.H === "ACCENT" ? 45 : solarGround.H)
+    : null;
+
+  if (!solarGroundRgb) {
+    cosFailures.push({
+      theme: "solar", label: "--solar-ground is not defined", ratio: 0, min: 1, against: ":root",
+    });
+  } else {
+    // The map panel against each page it can sit on. Non-text, 3:1.
+    for (const [themeName, groundRgb] of grounds) {
+      const ratio = contrast(solarGroundRgb, groundRgb);
+      cosChecks++;
+      if (ratio < 3.0 && themeName === "blueprint") {
+        cosFailures.push({
+          theme: "solar", label: "map ground against the page", ratio, min: 3.0, against: themeName,
+        });
+      }
+    }
+  }
+
+  for (const [name, tok] of Object.entries(planets)) {
+    let worst = Infinity;
+    for (const key of ["--planet-lit", "--planet-dim"]) {
+      const t = tok[key];
+      if (!t || !solarGroundRgb) continue;
+      const ratio = contrast(oklchToSrgb(t.L, t.C, t.H), solarGroundRgb);
+      cosChecks++;
+      worst = Math.min(worst, ratio);
+      if (ratio < 3.0) {
+        cosFailures.push({ theme: `planet ${name}`, label: key, ratio, min: 3.0, against: "the map ground" });
+      }
+    }
+    console.log(
+      `  ${cosFailures.some((f) => f.theme === `planet ${name}`) ? c.red("FAIL") : c.green("PASS")}  ` +
+        `planet ${name.padEnd(9)} ${c.dim(`worst ${worst.toFixed(2)}:1 vs the map ground`)}`,
+    );
+  }
+
+  /*
+   * Are the variants actually different from EACH OTHER?
+   *
+   * The first draft of these all read as the same white planet -- L 0.86 with
+   * C 0.04 against a near-black ground hides the hue completely. Every variant
+   * passed its contrast check and the feature still did nothing, which is the
+   * same shape of bug as a biome that cannot be told from the page it replaced.
+   *
+   * This mirrors the mutual-distinguishability check already applied to the
+   * twelve accents above: passing on your own is not enough if you are
+   * indistinguishable from your neighbour.
+   */
+  const litEntries = Object.entries(planets)
+    .map(([name, tok]) => [name, tok["--planet-lit"]])
+    .filter(([, t]) => t);
+
+  for (let i = 0; i < litEntries.length; i++) {
+    for (let j = i + 1; j < litEntries.length; j++) {
+      const [nameA, a] = litEntries[i];
+      const [nameB, b] = litEntries[j];
+      const rgbA = oklchToSrgb(a.L, a.C, a.H);
+      const rgbB = oklchToSrgb(b.L, b.C, b.H);
+      // Perceptual distance in OKLab terms: lightness plus chroma-vector gap.
+      const dL = Math.abs(a.L - b.L);
+      const ax = a.C * Math.cos((a.H * Math.PI) / 180);
+      const ay = a.C * Math.sin((a.H * Math.PI) / 180);
+      const bx = b.C * Math.cos((b.H * Math.PI) / 180);
+      const by = b.C * Math.sin((b.H * Math.PI) / 180);
+      const dC = Math.hypot(ax - bx, ay - by);
+      const distance = Math.hypot(dL, dC);
+      cosChecks++;
+      void rgbA;
+      void rgbB;
+      if (distance < 0.06) {
+        cosFailures.push({
+          theme: `planet ${nameA}`,
+          label: `indistinguishable from ${nameB} (ΔOKLab ${distance.toFixed(3)})`,
+          ratio: distance,
+          min: 0.06,
+          against: nameB,
+        });
+      }
+    }
+  }
+
+  // Biome layers against each other, and biome text against the biome.
+  for (const [name, tok] of Object.entries(biomes)) {
+    const far = tok["--biome-far"];
+    const near = tok["--biome-near"];
+    const ink = tok["--biome-ink"];
+    if (!far || !near) continue;
+    const farRgb = oklchToSrgb(far.L, far.C, far.H);
+    const nearRgb = oklchToSrgb(near.L, near.C, near.H);
+
+    let worst = Infinity;
+    if (ink) {
+      // Text over a biome is body text, on the darker of the two layers --
+      // check the worse case, not the flattering one.
+      const inkRgb = oklchToSrgb(ink.L, ink.C, ink.H);
+      for (const bg of [farRgb, nearRgb]) {
+        const ratio = contrast(inkRgb, bg);
+        cosChecks++;
+        worst = Math.min(worst, ratio);
+        if (ratio < 4.5) {
+          cosFailures.push({ theme: `biome ${name}`, label: "--biome-ink", ratio, min: 4.5, against: "its own layers" });
+        }
+      }
+    }
+    // And the biome must be distinguishable from the page it replaces, or the
+    // seeding is invisible and the whole feature is a no-op.
+    for (const [themeName, groundRgb] of grounds) {
+      const ratio = contrast(farRgb, groundRgb);
+      cosChecks++;
+      if (ratio < 1.1) {
+        cosFailures.push({ theme: `biome ${name}`, label: "indistinguishable from the page", ratio, min: 1.1, against: themeName });
+      }
+    }
+    console.log(
+      `  ${cosFailures.some((f) => f.theme === `biome ${name}`) ? c.red("FAIL") : c.green("PASS")}  ` +
+        `biome  ${name.padEnd(9)} ${c.dim(`ink ${worst === Infinity ? "n/a" : worst.toFixed(2) + ":1"}`)}`,
+    );
+  }
+
+  console.log(
+    c.dim(
+      `\n  ${cosChecks} cosmetic checks across ` +
+        `${Object.keys(planets).length} palette variants and ${Object.keys(biomes).length} biomes`,
+    ),
+  );
+
   /* --------------------------------------------------------------- verdict */
 
   console.log("");
-  if (failures.length === 0 && duplicates.length === 0 && encFailures.length === 0) {
+  if (
+    failures.length === 0 &&
+    duplicates.length === 0 &&
+    encFailures.length === 0 &&
+    cosFailures.length === 0
+  ) {
     console.log(
       c.green(
-        `  Clean. ${checks + encChecks} checks (${checks} palette, ${encChecks} encounter), ` +
+        `  Clean. ${checks + encChecks + cosChecks} checks ` +
+          `(${checks} palette, ${encChecks} encounter, ${cosChecks} cosmetic), ` +
           `every pair at or above AA.\n`,
       ),
     );
     process.exit(0);
+  }
+
+  if (cosFailures.length > 0) {
+    console.log(c.red(`\n  ${cosFailures.length} per-student cosmetic failure(s):\n`));
+    for (const f of cosFailures) {
+      console.log(
+        `  ${c.red(f.ratio.toFixed(2) + ":1")} ${c.dim("needs " + f.min)}  ` +
+          `${f.theme} · ${f.label} · vs ${f.against}`,
+      );
+    }
   }
 
   if (failures.length > 0) {

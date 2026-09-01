@@ -435,3 +435,118 @@ code, kbd, samp, pre, .mono, .register-value, .hex, .listing,
 @media (prefers-reduced-motion: reduce) {
   [data-encounter] { transition: none; animation: none; }
 }
+
+/* ============================================================
+   PLANET PALETTE VARIANTS — per-student, cosmetic only
+   ============================================================
+
+   docs/redesign/SOLAR-SYSTEM-SPEC.md §3. Four variants, picked by a seed
+   derived from `student_id` alone (services/api/src/routes/cosmetics.ts).
+
+   WHAT THESE MAY AND MAY NOT DO. They change how a planet's surface looks.
+   They never change which ring it sits on, whether it is locked, how many
+   moons it has, or anything else a student could act on. If a variant could
+   change what two students can DO rather than what their session LOOKS like,
+   it does not belong in this block.
+
+   `--planet-lit` is an available stage, `--planet-dim` a locked one. Mastery
+   keeps using `--accent`, which is the student's own chosen hue and is the one
+   colour allowed to mark their own progress — a seeded variant may not
+   override it.
+
+   Every value below is checked by `scripts/check-contrast.mjs` at the 3:1
+   non-text threshold against all three page grounds. A planet a student cannot
+   pick out of the background is not a style choice, it is a broken map, and
+   the variants are pre-computed exactly so that check can be mechanical. */
+
+/* The map brings its own ground, and that is the decision that makes the
+   variants safe.
+
+   `blueprint` is a LIGHT theme (--surface-0 is oklch(0.97 …)). A planet's
+   "lit" state means bright, so checking a bright planet against a near-white
+   page can only ever fail — and it did, for all four variants, the first time
+   this ran. Lowering the planets to pass would have made them muddy on the two
+   dark themes to fix a problem that only exists on the third.
+
+   So the solar system is SELF-CONTAINED, exactly as GAME-DESIGN.md §9 already
+   decided for the eight encounter themes and for the same reason: each brings
+   its own ground, so it looks identical on all three base themes and needs
+   checking once rather than 4 × 3 times. Space is dark in every theme. The one
+   thing that genuinely varies is how the map panel sits ON the page, so the
+   ground itself is checked against all three page grounds at the 3:1 non-text
+   threshold — the same treatment §9 gives a panel edge. */
+:root {
+  --solar-ground: oklch(0.14 0.014 260);
+}
+
+/* Chroma is the point, and the first draft did not have enough of it.
+
+   Rendered side by side, v0-v3 all read as the same white planet: at L 0.86
+   with C 0.04 the hue difference is invisible against a near-black ground. A
+   palette variant nobody can tell from another palette variant is a no-op
+   wearing a feature's name -- the same failure the contrast check caught for
+   the cave biome, which was indistinguishable from the page it replaced.
+
+   So the check now asserts the variants are mutually distinguishable, and
+   these carry the chroma to pass it. There is room: the binding constraint is
+   `--planet-dim` at 3.5:1 against the map ground, and lightness is what drives
+   that, not chroma. */
+
+[data-planet="v0"] {
+  --planet-lit: oklch(0.90 0.020 250);
+  --planet-dim: oklch(0.54 0.014 250);
+}
+
+[data-planet="v1"] {
+  --planet-lit: oklch(0.84 0.115 195);
+  --planet-dim: oklch(0.52 0.070 195);
+}
+
+[data-planet="v2"] {
+  --planet-lit: oklch(0.86 0.135 85);
+  --planet-dim: oklch(0.54 0.080 85);
+}
+
+[data-planet="v3"] {
+  --planet-lit: oklch(0.80 0.120 340);
+  --planet-dim: oklch(0.50 0.075 340);
+}
+
+/* ============================================================
+   LANDING BIOMES — per-student, cosmetic only
+   ============================================================
+
+   docs/redesign/BIOME-AND-LOADING-SPEC.md. Seven, procedural, no asset packs
+   — the same reasoning GAME-DESIGN.md §9 already applied to the eight
+   encounter themes: four tokens and a gradient beat 750 sprites, a licence
+   file and an attribution page for something CSS does in six lines.
+
+   A biome is scenery around a stage's landing, seeded per student. Student A
+   lands on Stage 09 in a jungle and Student B in a desert; both get the Pixel
+   encounter theme for the actual bit-toggle exercise, because that one is
+   per-stage, locked, and content-honest. Same lesson, same difficulty, same
+   grade, different weather.
+
+   `--biome-far` is the horizon, `--biome-near` the foreground silhouette,
+   `--biome-ink` any text that has to sit on top. Checked by the same script at
+   the same thresholds as everything else.
+
+   ACCESSIBILITY, stated once here because it is the exception it looks like:
+   biome art is decorative and carries no information the content does not also
+   state in text, so it needs no text equivalent. That is the ONE place in this
+   redesign where "no accessible equivalent needed" is the right call, and it
+   is right precisely because the biome carries zero pedagogical weight. */
+
+[data-biome="neutral"]  { --biome-far: oklch(0.24 0.012 250); --biome-near: oklch(0.19 0.014 250); --biome-ink: oklch(0.93 0.010 250); }
+[data-biome="jungle"]   { --biome-far: oklch(0.28 0.045 150); --biome-near: oklch(0.20 0.050 155); --biome-ink: oklch(0.94 0.020 140); }
+[data-biome="desert"]   { --biome-far: oklch(0.33 0.045 70);  --biome-near: oklch(0.24 0.050 55);  --biome-ink: oklch(0.95 0.020 75); }
+[data-biome="arctic"]   { --biome-far: oklch(0.32 0.025 220); --biome-near: oklch(0.23 0.028 230); --biome-ink: oklch(0.95 0.012 220); }
+[data-biome="volcanic"] { --biome-far: oklch(0.26 0.055 35);  --biome-near: oklch(0.18 0.048 25);  --biome-ink: oklch(0.94 0.022 45); }
+[data-biome="cave"]     { --biome-far: oklch(0.27 0.028 285); --biome-near: oklch(0.19 0.026 290); --biome-ink: oklch(0.93 0.014 285); }
+[data-biome="ocean"]    { --biome-far: oklch(0.27 0.040 235); --biome-near: oklch(0.19 0.045 245); --biome-ink: oklch(0.94 0.018 230); }
+
+/* Reduced motion freezes a biome to a single static frame, same rule as
+   everywhere else in this project. Nothing here depends on movement to read. */
+@media (prefers-reduced-motion: reduce) {
+  [data-biome] { transition: none; animation: none; }
+}

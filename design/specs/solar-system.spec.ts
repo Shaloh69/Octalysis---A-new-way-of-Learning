@@ -62,9 +62,19 @@ async function capture(page: Page, name: string, testInfo: TestInfo): Promise<vo
   await testInfo.attach(name, { path: file, contentType: "image/png" });
 }
 
-/** The canvas needs a moment to mount and draw before it is worth capturing. */
-async function settle(page: Page): Promise<void> {
-  await page.waitForTimeout(1800);
+/**
+ * Wait for the page to be genuinely ready, not for a fixed number of
+ * milliseconds.
+ *
+ * This was `waitForTimeout(1800)`, which passed serially and failed at eight
+ * parallel workers against a single dev server -- the signature of a sleep
+ * standing in for a real wait. The act list is the DOM layer and always
+ * renders; the canvas is lazy-loaded, so it is waited for only where the
+ * degradation ladder says it should exist.
+ */
+async function settle(page: Page, expectCanvas = false): Promise<void> {
+  await page.locator(".act-list").waitFor();
+  if (expectCanvas) await page.locator("canvas").waitFor();
 }
 
 test.describe("the solar system renders", () => {
@@ -76,7 +86,7 @@ test.describe("the solar system renders", () => {
 
     await signIn(page);
     await page.goto("/app", { waitUntil: "networkidle" });
-    await settle(page);
+    await settle(page, true);
 
     expect(await page.locator("canvas").count()).toBe(1);
     expect(new URL(page.url()).pathname, "nothing redirects").toBe("/app");
@@ -88,7 +98,7 @@ test.describe("the solar system renders", () => {
 
     await signIn(page, "progressing");
     await page.goto("/app", { waitUntil: "networkidle" });
-    await settle(page);
+    await settle(page, true);
 
     // The headline is server-derived and is the cheapest proof that this
     // student's state actually reached the page.
@@ -104,7 +114,7 @@ test.describe("the solar system renders", () => {
 
     await signIn(page);
     await page.goto("/app", { waitUntil: "networkidle" });
-    await settle(page);
+    await settle(page, true);
 
     expect(await page.locator("canvas").count()).toBe(1);
     expect(await page.locator("svg.map-svg").count()).toBe(0);

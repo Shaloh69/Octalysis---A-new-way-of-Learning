@@ -49,6 +49,14 @@ export default defineConfig({
   },
 
   fullyParallel: true,
+  /*
+   * Capped. These specs run against ONE Vite dev server and ONE API process,
+   * and eight workers each opening one or two pages saturates them -- the
+   * failure mode is a page that never finishes hydrating, which reads as a
+   * product bug rather than a harness one. The specs also wait on real
+   * conditions rather than fixed timeouts now; this is the second belt.
+   */
+  workers: process.env.CI ? 2 : 4,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: [

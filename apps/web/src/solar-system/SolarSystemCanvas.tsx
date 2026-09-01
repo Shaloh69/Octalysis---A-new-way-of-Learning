@@ -47,17 +47,88 @@ interface Props {
   ringsNamed: boolean;
   /** Freeze all ambient motion. Reduced motion, and QA captures. */
   frozen: boolean;
+  /**
+   * The student's whole-system rotation offset, in radians.
+   *
+   * ONE angle, applied to the ENTIRE scene as a single group rotation — never
+   * per ring and never per planet. That is what keeps it safely cosmetic: a
+   * global rotation cannot disturb relative ordering or any radius, and radius
+   * is the semantic axis (it encodes the Computer Level Hierarchy).
+   *
+   * It is applied HERE, at the renderer, and deliberately not inside
+   * `layout.ts`. That function takes stages and objectives and nothing else;
+   * `services/api/test/cosmetics.spec.ts` fails if it ever learns what a
+   * student is.
+   */
+  rotationOffset: number;
+  /**
+   * The student's palette variant index.
+   *
+   * Passed in even though the colours themselves come from CSS, because the
+   * token reads below are memoised and CSS custom properties are not reactive.
+   * Without this in the dependency list the canvas resolves `--planet-lit` at
+   * mount -- before the cosmetics fetch has landed and set `data-planet` on
+   * <html> -- caches the fallback, and every student's planets render the same
+   * white. That is exactly what happened, twice, and both times the tests
+   * passed and only the screenshot showed it.
+   */
+  paletteVariant: number;
 }
 
-/** Read a resolved CSS custom property as a THREE.Color. */
+/**
+ * Read a resolved CSS custom property as a THREE.Color.
+ *
+ * THE BUG THIS REPLACES, because it is worth knowing about: the previous
+ * version did `new Color(raw)` on the token's value, and **every token in this
+ * project is authored in OKLCH**. three.js's colour parser does not understand
+ * `oklch()` — it handles hex, rgb(), hsl() and named colours. So every read
+ * threw, hit the catch, and returned the hardcoded HSL fallback.
+ *
+ * The 3D layer had therefore never used a single design token. It looked
+ * plausible, so nothing caught it: `scan:palette` passes (no literal hex),
+ * `check:contrast` passes (it checks tokens, and these were tokens — they just
+ * were not reaching the scene), and TypeScript sees a valid call. It surfaced
+ * only when two students with different palette variants rendered identically
+ * in a screenshot.
+ *
+ * `VISUAL-SYSTEM-3D.md` §6 is explicit: "Never write a literal hex in a 3D
+ * scene... Read the resolved CSS custom properties once at scene setup and
+ * convert." This is the convert step, finally doing the conversion.
+ *
+ * HOW: paint one pixel and read it back. The browser already knows how to turn
+ * any CSS colour — OKLCH, `color-mix()`, whatever arrives next — into sRGB, and
+ * reimplementing OKLCH → sRGB here would be a second copy of maths that
+ * `scripts/check-contrast.mjs` already owns, free to drift from it.
+ */
 function tokenColor(name: string, fallbackHsl: [number, number, number]): Color {
-  if (typeof window === "undefined") return new Color().setHSL(...fallbackHsl);
+  const fallback = (): Color => new Color().setHSL(...fallbackHsl);
+  if (typeof window === "undefined" || typeof document === "undefined") return fallback();
+
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  if (!raw) return new Color().setHSL(...fallbackHsl);
+  if (!raw) return fallback();
+
   try {
-    return new Color(raw);
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return fallback();
+
+    // A value the browser cannot parse leaves fillStyle at its previous value,
+    // so seed a sentinel and check it actually moved. Without this an
+    // unparseable token would silently paint black, which is worse than the
+    // fallback because it looks deliberate.
+    const sentinel = "#ff00ff";
+    ctx.fillStyle = sentinel;
+    ctx.fillStyle = raw;
+    if (ctx.fillStyle === sentinel) return fallback();
+
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    if (r === undefined || g === undefined || b === undefined) return fallback();
+    return new Color(r / 255, g / 255, b / 255);
   } catch {
-    return new Color().setHSL(...fallbackHsl);
+    return fallback();
   }
 }
 
@@ -82,9 +153,9 @@ function circleGeometry(radius: number, segments = 128): BufferGeometry {
  * deliberately NOT the student's accent colour: the accent marks the student's
  * own progress, and it may never carry semantic meaning (apps/web/CLAUDE.md).
  */
-function Sun({ frozen }: { frozen: boolean }): JSX.Element {
-  const core = useMemo(() => tokenColor("--ink", [0.1, 0.6, 0.86]), []);
-  const halo = useMemo(() => tokenColor("--accent-muted", [0.1, 0.4, 0.5]), []);
+function Sun({ frozen, paletteVariant }: { frozen: boolean; paletteVariant: number }): JSX.Element {
+  const core = useMemo(() => tokenColor("--planet-lit", [0.1, 0.6, 0.86]), [paletteVariant]);
+  const halo = useMemo(() => tokenColor("--accent-muted", [0.1, 0.4, 0.5]), [paletteVariant]);
   const ref = useRef<{ scale: { setScalar: (n: number) => void } } | null>(null);
   const t = useRef(0);
 
@@ -220,11 +291,23 @@ function FlightPath({
  * Colour is never the only signal: a locked planet is also smaller and dimmer,
  * and the DOM layer says "Locked" in words with the reason and the distance.
  */
-function Planets({ nodes, layout }: { nodes: StageNode[]; layout: SolarLayout }): JSX.Element {
-  const accent = useMemo(() => tokenColor("--accent", [0.08, 0.55, 0.5]), []);
-  const ink = useMemo(() => tokenColor("--ink", [0.6, 0.05, 0.85]), []);
-  const locked = useMemo(() => tokenColor("--locked", [0.6, 0.05, 0.3]), []);
-  const line = useMemo(() => tokenColor("--line", [0.6, 0.05, 0.3]), []);
+function Planets({
+  nodes,
+  layout,
+  paletteVariant,
+}: {
+  nodes: StageNode[];
+  layout: SolarLayout;
+  paletteVariant: number;
+}): JSX.Element {
+  // `--planet-lit` / `--planet-dim` come from the student's seeded palette
+  // variant (`[data-planet="vN"]` in packages/tokens). Mastery stays on
+  // `--accent`, which is the student's OWN chosen hue and the one colour
+  // allowed to mark their own progress -- a seeded variant may not override it.
+  const accent = useMemo(() => tokenColor("--accent", [0.08, 0.55, 0.5]), [paletteVariant]);
+  const ink = useMemo(() => tokenColor("--planet-lit", [0.6, 0.05, 0.85]), [paletteVariant]);
+  const locked = useMemo(() => tokenColor("--planet-dim", [0.6, 0.05, 0.3]), [paletteVariant]);
+  const line = useMemo(() => tokenColor("--line", [0.6, 0.05, 0.3]), [paletteVariant]);
 
   const outer = layout.ringRadii[6] ?? 1;
   const inner = layout.ringRadii[0] ?? 0;
@@ -351,6 +434,8 @@ export default function SolarSystemCanvas({
   layout,
   ringsNamed,
   frozen,
+  rotationOffset,
+  paletteVariant,
 }: Props): JSX.Element | null {
   const [failed, setFailed] = useState(false);
 
@@ -388,11 +473,18 @@ export default function SolarSystemCanvas({
       onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
       dpr={[1, 1.6]}
     >
+      {/* The star field sits outside the rotation: it is the sky, not the
+          system, and rotating it too would cancel the effect out entirely. */}
       <StarField />
-      <Rings layout={layout} />
-      <FlightPath nodes={nodes} layout={layout} />
-      <Sun frozen={frozen} />
-      <Planets nodes={nodes} layout={layout} />
+
+      {/* One group, one angle, everything inside it. See the prop's comment. */}
+      <group rotation={[0, rotationOffset, 0]}>
+        <Rings layout={layout} />
+        <FlightPath nodes={nodes} layout={layout} />
+        <Sun frozen={frozen} paletteVariant={paletteVariant} />
+        <Planets nodes={nodes} layout={layout} paletteVariant={paletteVariant} />
+      </group>
+
       <Drift frozen={frozen} distance={distance} />
     </Canvas>
   );

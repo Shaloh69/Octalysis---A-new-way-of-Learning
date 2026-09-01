@@ -297,6 +297,12 @@ button {
 .map-solar {
   position: relative;
   z-index: 1;
+  /* The map brings its own ground. `blueprint` is a light theme, and a star
+     field on a near-white page is not a star field -- see the note beside
+     --solar-ground in packages/tokens/tokens.css. Same decision GAME-DESIGN.md
+     9 already made for the encounter themes, for the same reason. */
+  background: var(--solar-ground);
+  border-radius: var(--radius-sm);
   width: 100%;
   height: min(54vh, 540px);
   margin-bottom: 1.5rem;

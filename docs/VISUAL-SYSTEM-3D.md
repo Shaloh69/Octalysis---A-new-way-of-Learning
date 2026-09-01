@@ -32,7 +32,7 @@ Instead: a single persistent canvas lives behind the app shell. Routes do not cr
 
 ```
    <AppShell>
-     <GalaxyCanvas />            one WebGL context, fixed, behind everything
+     <SolarSystemCanvas />       one WebGL context, in flow, behind the text
      <Routes>                    ordinary DOM, on top, fully accessible
    </AppShell>
 ```
@@ -126,11 +126,21 @@ fallback case.
 
 ### Measured, not assumed
 
-| Budget | Limit | **Actual** |
+| Budget | Limit | **Actual**, re-measured in R1 |
 |---|---|---|
-| Initial JS, gzipped | keep it small | **51.9 KB** + 3.8 KB CSS |
-| 3D chunk, gzipped | ≤ 250 KB | **219.8 KB** |
+| Initial JS, gzipped | keep it small | **70.5 KB** + 7.5 KB CSS |
+| 3D chunk, gzipped | ≤ 250 KB | **220.4 KB** |
 | 3D in the initial load | never | **absent** — no preload link in `dist/index.html` |
+
+> **The first two numbers used to read 51.9 KB and 3.8 KB, and they were
+> stale.** R1 measured 69.6 KB / 7.5 KB at HEAD *before* any solar-system code
+> — a 34% drift on the JS line, accumulated across P4–P9. The sentence three
+> paragraphs down ("A budget nobody measures is a wish") turned out to describe
+> this table: `pnpm scan:bundle` checks for answer-key and secret leaks, not
+> size, so nothing in CI had ever compared these figures to reality. The 3D
+> chunk budget — the one that actually protects the phone audience — held.
+> Worth deciding whether `scan:bundle` should gain a size assertion.
+
 
 Two things had to be fixed to get there, and both are the kind of mistake that
 ships silently:
@@ -145,7 +155,7 @@ ships silently:
    into `index.html`, so every student downloaded 220 KB of 3D on first paint
    whether or not they ever opened the galaxy — precisely what the budget below
    forbids. Removing `manualChunks` lets Rollup place three.js inside the dynamic
-   `GalaxyCanvas` chunk, fetched when `/app` loads rather than with the whole app.
+   `SolarSystemCanvas` chunk, fetched when `/app` loads rather than with the whole app.
 
 **Verify both after any dependency change:** read the chunk sizes from
 `pnpm --filter @octa/web build`, and grep `dist/index.html` for `modulepreload`.
@@ -183,7 +193,24 @@ preference rather than a number.
 **Never write a literal hex in a 3D scene.** The hook blocks it in `apps/`, and the per-student
 accent system depends on every colour flowing through a token.
 
-Read the resolved CSS custom properties once at scene setup and convert:
+Read the resolved CSS custom properties once at scene setup and convert.
+
+> **This did not work for the first two years of the 3D layer, and it is worth
+> knowing why.** The conversion was `new THREE.Color(raw)`, and every token in
+> this project is authored in OKLCH — which three.js's colour parser does not
+> understand. Every read threw, hit its catch, and returned a hardcoded HSL
+> fallback, so the scene had never used a design token at all. Nothing caught
+> it: `scan:palette` passes (there is no literal hex), `check:contrast` passes
+> (the tokens were fine, they just were not reaching the scene), and it is
+> valid TypeScript. It surfaced in R2 only because two students with different
+> seeded palettes rendered identically in a screenshot.
+>
+> `SolarSystemCanvas.tsx` now converts by painting one pixel to a 1×1 canvas
+> and reading it back, so the browser does the colour maths — which also avoids
+> a second copy of OKLCH→sRGB drifting from the one in
+> `scripts/check-contrast.mjs`.
+
+The shape of the read:
 
 ```ts
 // Colours live in packages/tokens. The scene reads them; it does not define them.
@@ -220,7 +247,7 @@ what ships if the galaxy runs long.
 | Phase | Deliverable |
 |---|---|
 | **P2** | `layout.ts` + the **2D DOM map**. No WebGL at all yet. This is what "skill tree complete" is measured against. |
-| **P5** | `GalaxyCanvas` shell + **Tier 1 ambient** on the student surfaces. Degradation ladder complete and tested with WebGL disabled. |
+| **P5** | `SolarSystemCanvas` shell (was `GalaxyCanvas`, deleted in R2) + **Tier 1 ambient** on the student surfaces. Degradation ladder complete and tested with WebGL disabled. |
 | **P6** | **Tier 3** for Stage 12 and 16, where geometry is the concept. Stage 13 stays 2D until the stepper itself is correct. |
 | **P9** | **Tier 2** — the full galaxy map, the Stage 11 stratum reveal, the accent-driven sky. |
 

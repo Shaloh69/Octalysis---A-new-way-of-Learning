@@ -129,8 +129,24 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
+/**
+ * The student's cosmetic look. Cosmetic ONLY -- it decides what they see, never
+ * what they can do. Derived server-side from `student_id` alone; the client is
+ * a thin consumer and never computes it (docs/redesign/SOLAR-SYSTEM-SPEC.md §3,
+ * and `services/api/test/cosmetics.spec.ts` asserts both halves of that).
+ */
+export interface Cosmetics {
+  rotationOffset: number;
+  paletteVariant: number;
+  callsign: string;
+  biomeIndex: number;
+  version: string;
+  biomes: string[];
+}
+
 export const api = {
   stages: () => request<StageMapData>("/api/v1/stages"),
+  cosmetics: () => request<Cosmetics>("/api/v1/cosmetics"),
   stage: (id: string) => request<StageDetail>(`/api/v1/stages/${id}`),
   progress: () => request<ProgressGrid>("/api/v1/progress"),
   startAttempt: (assessmentId: string) =>

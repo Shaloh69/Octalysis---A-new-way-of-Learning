@@ -6,6 +6,7 @@ import { registerErrorHandler } from "./errors.js";
 import { registerAttemptRoutes } from "./routes/attempts.js";
 import { registerAuthRoutes, makeSupabaseAdmin } from "./routes/auth.js";
 import { registerStageRoutes } from "./routes/stages.js";
+import { registerCosmeticRoutes } from "./routes/cosmetics.js";
 import { registerConsoleRoutes } from "./routes/console.js";
 import { registerFeedbackRoutes } from "./routes/feedback.js";
 import { registerItemRoutes } from "./routes/items.js";
@@ -94,6 +95,7 @@ export async function buildServer(env: Env): Promise<FastifyInstance> {
 
   registerAttemptRoutes(app, env);
   registerStageRoutes(app, env);
+  registerCosmeticRoutes(app, env);
   registerConsoleRoutes(app, env);
   registerFeedbackRoutes(app, env);
   registerItemRoutes(app, env);

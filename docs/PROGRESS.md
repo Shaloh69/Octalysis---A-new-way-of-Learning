@@ -4,11 +4,92 @@
 > this redesign — after root `CLAUDE.md` and `docs/redesign/REDESIGN-CLAUDE.md`.
 > Update it before ending any session, or before `/clear`, whichever comes first.
 
-**Last updated:** 1 September 2026, end of the R1 session.
+**Last updated:** 1 September 2026, end of the R2 session.
 **Branch:** `main`. Not a `redesign/*` branch — root `CLAUDE.md` is explicit
 about why (`shaloh-build` cost an hour when Vercel and Render both built `main`).
 
 ## Current phase
+
+**R2 — COMPLETE. R3 (the page-template pass) is next.**
+
+Two students now get visibly different systems over an identical curriculum,
+and the boundary between the two is enforced by tests rather than by prose.
+
+## R2 checklist status
+
+### R2.1 — The cosmetic endpoint ✅
+- [x] `GET /api/v1/cosmetics` in `services/api/src/routes/cosmetics.ts`,
+      derived from `student_id` alone, returning
+      `{ rotationOffset, paletteVariant, callsign, biomeIndex }`
+- [x] **Never** imports `engine/seed.ts`, never sees `EXAM_SALT_SECRET`
+- [x] `cosmetic-seed.ts` on the client is a thin consumer — it hashes nothing
+- [x] **The avatar question has an answer, and it is "there isn't one."**
+      R2.1 says to confirm how the avatar seeds today and match it.
+      `DESIGN-MANDATE.md` §4 specifies DiceBear identicon seeded from
+      `student_id`, but **nothing implements it** — no dicebear dependency, no
+      avatar component, nothing. So this is the FIRST consumer of that seed,
+      not a second one, and `DESIGN-MANDATE-V2.md` §4's "the same seed **now
+      also** drives the solar system" describes extending something that does
+      not exist. When the avatar is built it should read this endpoint rather
+      than growing a second derivation
+
+### R2.2 — What gets seeded ✅
+- [x] One whole-system rotation offset, applied as a single `<group>` rotation
+      at the renderer — never per-ring, never per-planet, never in `layout.ts`
+- [x] Four planet palette variants, pre-computed and contrast-checked
+- [x] A callsign (`HARBOUR-59`), shown as a name and shaped so it cannot
+      collide with a nine-digit student number
+- [x] A landing biome index, one of seven
+
+### R2.2b — The seven biomes ✅
+- [x] All seven procedural, as token blocks — no asset packs, same reasoning
+      `GAME-DESIGN.md` §9 applied to the encounter themes
+- [x] Each contrast-checked individually, not one representative example
+- [ ] **Biomes are DEFINED but not yet RENDERED anywhere.** They are seeded,
+      tokenised and checked; nothing paints them, because a biome wraps a
+      stage's *landing*, and `/app/stage/:id` gets its pass in R3. Deferred
+      deliberately, not forgotten
+
+### R2.3 — The boundary, as a test ✅
+`services/api/test/cosmetics.spec.ts`, 12 tests. The phase file says this test
+*is* the enforcement, so it asserts the things that must never be true:
+- [x] The cosmetic derivation does not move when `exam_salt` changes — the
+      decisive property, since rotating the salt between terms must not repaint
+      anyone's system
+- [x] `layout.ts` contains no `studentId`, `seed`, `cosmetic` or
+      `rotationOffset` — read from the real file, so it fails if anyone threads
+      a seed in later
+- [x] No file under `apps/web/src` calls `createHash`, `sha256` or
+      `subtle.digest`
+- [x] The signature cannot accept a salt — **asserted against the source, not
+      `Function.length`.** A mutation check caught the first version being
+      useless: `Function.length` ignores defaulted parameters, so
+      `deriveCosmetics(key, examSalt = "")` still reported 1, and a defaulted
+      parameter is exactly how a salt would get added
+- [x] Mutation-verified: threading a seed into `layout.ts` fails 1, a defaulted
+      salt parameter fails 1, adding client-side hashing fails 1
+
+### R2.4 — Contrast ✅
+- [x] Extended `scripts/check-contrast.mjs` rather than adding a second
+      pipeline. **1174 checks now (1080 palette, 42 encounter, 52 cosmetic)**
+- [x] It caught five real failures on first run, which is the point of it
+- [x] Added a **mutual-distinguishability** check between palette variants,
+      mirroring the one already applied to the twelve accents. The first draft
+      of the variants all rendered as the same white planet — every one passed
+      its own contrast check while the feature did nothing
+
+### Definition of done ✅
+- [x] Two students screenshotted side by side: `design/r2-cosmetics/`
+- [x] Same 19 stages, same titles, same order, asserted
+
+## Next phase
+
+**R3 — Page template pass**, `docs/redesign/phases/R3-page-templates-and-redesign.md`.
+44 routes. Expect to split it across sessions. Two carried-over items land
+there: rendering the biomes (R2.2b), and projecting DOM controls onto their
+planets (R1.2).
+
+## Superseded — R1's status, kept for the record
 
 **R1 — COMPLETE. R2 (per-student cosmetics) is next.**
 
@@ -360,6 +441,52 @@ no visible edges. The act list beneath it carries all the actual information, an
 carries it well. Same class as `DESIGN-REVIEW-01` D-1, and invisible to every
 green gate. R1/R3 input, not a blocker.
 
+### F-10 · The 3D layer had never used a design token
+**NEW in R2, and the most consequential finding so far.**
+
+`tokenColor()` in the canvas did `new THREE.Color(raw)` on a token's value.
+**Every token in this project is authored in OKLCH**, which three.js's colour
+parser does not understand — it handles hex, `rgb()`, `hsl()` and named
+colours. So every read threw, hit its catch, and returned a hardcoded HSL
+fallback. The galaxy had been running that way since it was written.
+
+`VISUAL-SYSTEM-3D.md` §6 opens "Never write a literal hex in a 3D scene… Read
+the resolved CSS custom properties once at scene setup and convert." The read
+was there. The convert never happened.
+
+Why nothing caught it: `scan:palette` passes because there is no literal hex;
+`check:contrast` passes because the tokens were fine — they simply never
+reached the scene; TypeScript sees a valid constructor call. It surfaced only
+because two students with deliberately different palette variants rendered
+identically in a screenshot, and the screenshot was looked at.
+
+**Fixed:** the canvas now paints one pixel to a 1×1 2D canvas and reads it
+back, so the browser does the colour maths. That also avoids a second copy of
+OKLCH→sRGB drifting from the one `scripts/check-contrast.mjs` already owns.
+`docs/VISUAL-SYSTEM-3D.md` §6 records the whole thing.
+
+**Related and now removed:** `apps/web/src/components/GalaxyCanvas.tsx` was
+dead after R1 and carried the same broken conversion. Deleted rather than left
+as a second, wrong copy of the map renderer.
+
+### F-11 · The visual harness was flaky, and it was my fault
+**NEW in R2. Fixed in the same session.**
+
+`design/specs/*.spec.ts` used `waitForTimeout(1800)` as a synchronisation
+primitive. That passes at one worker and fails at eight against a single Vite
+dev server — four tests failed, all of them assertions about `.act-list`, which
+reads exactly like a product bug and is not one.
+
+Fixed properly rather than by raising the number: the specs now wait on real
+conditions (`html[data-planet]` for "the cosmetics fetch has landed",
+`.act-list` for "the DOM layer rendered", `canvas` only where the ladder says
+one should exist), and `playwright.config.ts` caps workers at 4 locally and 2
+in CI because one dev server and one API process are a real bottleneck.
+
+Worth knowing for R3, which adds a lot more specs: a fixed sleep in a visual
+test is a latent false failure, and the tell is passing serially while failing
+in parallel.
+
 ### F-8 · 47 CSS declarations reference custom properties that do not exist
 **NEW in R1. Not caused by this work — it predates it.**
 
@@ -433,6 +560,26 @@ more prominently, not less. Still the instructor's call.
   moon-aggregation and cosmetic-independence tests added, and gated on F-1..F-4.
 
 ## Next concrete step
+
+**Start R3 — the page-template pass.** It is the largest phase by page count;
+split it across sessions and update this file after each batch of routes.
+
+1. Read `docs/redesign/TEMPLATE-LINKS.md` for the per-route template, and
+   `CONSOLE-DATA-AND-TEMPLATES.md` for the console's real merges — the console
+   section of TEMPLATE-LINKS is only the baseline.
+2. Two items carried in from earlier phases, both named and neither forgotten:
+   **render the biomes** (R2.2b — defined, checked, unpainted; they belong on
+   `/app/stage/:id`), and **project DOM controls onto their planets** (R1.2 —
+   `SKILL-TREE-3D.md` §4's overlay).
+3. **F-8 belongs here**: 47 declarations referencing `--ink-dim` and `--rule`,
+   which do not exist. It is a decision (alias vs. rewrite), not a cleanup.
+4. Still outstanding from R0's rulings: `GAME-DESIGN.md` §11's mini-game table
+   (rewrite for the 18-chapter curriculum, add the five approved games) and
+   §12's Track D.
+5. **F-7/D-3 is still the instructor's**, and R3 will render act names on more
+   surfaces, not fewer.
+
+## Superseded — R2's plan, kept for the record
 
 **Start R2 — per-student seeded cosmetics.**
 
@@ -520,6 +667,31 @@ table; a standalone Chromium probe for the redirect matrix.
 
 **Verified by reading real files, not documentation:** every claim in the
 durable-facts and boundary-baseline sections.
+
+**R2 — ran, and watched succeed or fail:** `pnpm verify` end to end (**333
+tests** across web/console/api, 1174 contrast checks, 23 invariants, 0
+failures); `pnpm qa` **22/22**; three mutation checks on the boundary tests,
+one of which exposed my own assertion being useless; the contrast extension
+caught five real failures before passing; two students captured side by side
+and compared by eye.
+
+**Looked at, not merely asserted — and this is where R2's real finding came
+from:** the seeding rendered identically for both students THREE times while
+every test stayed green. Wrong element for the attribute, then a memo caching
+the colour before the fetch landed, then the actual cause — three.js cannot
+parse OKLCH, so the 3D layer had never read a token at all. Only the screenshot
+showed it, each time.
+
+**Assumed, not verified — R2:**
+- **The biomes are defined, checked, and rendered nowhere.** Seven token sets
+  pass contrast; nothing paints them yet. Deferred to R3 on purpose, but it
+  means "all seven biomes screenshotted individually" — a `REDESIGN-CLAUDE.md`
+  §2 requirement — is **not** done, and cannot be until they render.
+- **Only the default theme was looked at**, again. The contrast maths covers
+  all three; the rendered canvas has only ever been seen on one.
+- **The callsign is generated but displayed nowhere.** `SOLAR-SYSTEM-SPEC.md`
+  §3 puts it on `/app/settings`, which R3 owns.
+- Frame rate still not measured, carried from R1 and still the biggest gap.
 
 **Assumed, not verified — R1:**
 - **Frame rate was never measured.** R1.4's 30fps-floor check on a throttled or

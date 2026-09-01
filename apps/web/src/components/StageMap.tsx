@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, Suspense, lazy, useEffect } from "react";
 import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../lib/layout";
 import { computeSolarLayout } from "../solar-system/layout";
+import { useCosmetics } from "../solar-system/cosmetic-seed";
 import type { StageNode, StageMapData } from "../lib/api";
 
 /**
@@ -108,6 +109,10 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
     [data.nodes],
   );
 
+  // The student's seeded look. Cosmetic only: it changes what this map looks
+  // like and nothing about what it says or what can be done with it.
+  const { cosmetics } = useCosmetics();
+
   // Stage 11 names the rings. Server-derived, like every other state on this
   // page -- the client renders the reveal, it does not decide it.
   const ringsNamed =
@@ -152,6 +157,9 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
         )}
       </div>
 
+      {/* The seeded attributes live on <html>, set by useCosmetics -- the canvas
+          resolves its tokens from documentElement, so scoping them to this div
+          made every student's planets fall back to the same white. */}
       {showGalaxy && (
         <div className="map-solar" aria-hidden="true">
           <Suspense fallback={null}>
@@ -160,6 +168,8 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
               layout={solar}
               ringsNamed={ringsNamed}
               frozen={reduced}
+              rotationOffset={cosmetics.rotationOffset}
+              paletteVariant={cosmetics.paletteVariant}
             />
           </Suspense>
         </div>
