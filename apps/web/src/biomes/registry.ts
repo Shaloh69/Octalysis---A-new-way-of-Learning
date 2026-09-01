@@ -37,6 +37,16 @@ export interface BiomeLayer {
    * it carries no information, so `prefers-reduced-motion` freezes it flat.
    */
   readonly depth: number;
+  /**
+   * Height of this layer's sprite as a fraction of the band, 0–1.
+   *
+   * These packs ship individual elements — a tree, a cloud, a tuft of grass —
+   * rather than full-height strips, so stretching every layer to the band's
+   * height would distort all of them. Each says how big it actually is.
+   */
+  readonly scale: number;
+  /** Where the sprite sits vertically: `bottom` for ground, `top` for sky. */
+  readonly align: "top" | "bottom";
 }
 
 export interface BiomeManifest {

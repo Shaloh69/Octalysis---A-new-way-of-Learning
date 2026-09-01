@@ -1238,12 +1238,17 @@ button {
   position: absolute;
   inset: 0;
   background-repeat: repeat-x;
-  background-position: center bottom;
-  background-size: auto 100%;
-  image-rendering: pixelated;
+  /* `contain` rather than `auto 100%`: these packs are individual elements
+     (a tree, a cloud) rather than full-height strips, so stretching one to the
+     band's height would distort it. Each layer sizes itself from its own
+     --biome-scale instead. */
+  background-size: auto calc(var(--biome-scale, 0.7) * 100%);
   /* Parallax offset is driven by --biome-depth per layer, so the whole effect
      is one media query away from being frozen. */
   transform: translateX(calc(var(--biome-depth, 0) * -2%));
+  /* Further layers sit back. Aerial perspective is what stops five tiled
+     sprites reading as five stickers on one plane. */
+  opacity: calc(0.45 + var(--biome-depth, 0) * 0.55);
 }
 
 /* Volcanic only. The one biome with no cleanly-licensed pack yet, so it draws

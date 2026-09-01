@@ -25,6 +25,16 @@ export function StageReader({
   const [stage, setStage] = useState<StageDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // The seeded landing biome. Read from the <html> attribute rather than
+  // re-fetching: AppShell already applied it for every authenticated route.
+  //
+  // AT THE TOP, before the error and loading returns below. It was originally
+  // placed just above the main `return`, which is after two conditional
+  // returns -- so the hook ran on some renders and not others and React threw
+  // "Rendered more hooks than during the previous render". The stage page was
+  // blank, and no test covered it.
+  const biome = useSeededBiome();
+
   useEffect(() => {
     let cancelled = false;
     setStage(null);
@@ -65,10 +75,6 @@ export function StageReader({
       </div>
     );
   }
-
-  // The seeded landing biome. Read from the <html> attribute rather than
-  // re-fetching: AppShell already applied it for every authenticated route.
-  const biome = useSeededBiome();
 
   return (
     <article className="reader">

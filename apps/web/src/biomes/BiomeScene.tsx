@@ -74,9 +74,11 @@ export function BiomeScene({ name }: Props): JSX.Element | null {
           className="biome-layer"
           style={{
             backgroundImage: `url("${layer.src}")`,
+            backgroundPosition: `center ${layer.align}`,
             // Parallax depth is a CSS variable so the whole effect can be
             // frozen by one media query rather than by JavaScript.
             ["--biome-depth" as string]: String(layer.depth),
+            ["--biome-scale" as string]: String(layer.scale),
           }}
         />
       ))}

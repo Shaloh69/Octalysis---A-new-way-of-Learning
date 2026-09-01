@@ -71,12 +71,27 @@ and the boundary between the two is enforced by tests rather than by prose.
       "no layers means draw the tokens", so an un-sourced biome renders
       **nothing** instead of a stand-in that looks finished
 - [x] All seven still pass the contrast pipeline (`--biome-ink` at 4.5:1)
-- [ ] **BLOCKED ON ASSETS — six of seven biomes render nothing today.** The
+- [x] **`neutral` is vendored and rendering.** Kenney Background Elements, CC0,
+      verified against the pack's own `License.txt` and credited in
+      `public/CREDITS.md`. Proves the whole pipeline end to end: CC0 source ->
+      vendored under `public/biomes/<name>/` -> per-biome lazy chunk ->
+      composed parallax band. Weight recorded in the table above.
+- [ ] **Composition is crude, and worth knowing before sourcing the rest.**
+      These packs ship individual ELEMENTS, not pre-cut strips, so a layer is
+      one sprite tiled with `repeat-x` — which at a single size read as
+      wallpaper. Fixed enough by using two tree sprites at two depths with
+      aerial perspective, and it now reads as a forest rather than a green
+      rectangle, which is the bar §2 sets. But the tiling is still regular.
+      Doing it properly means generating a wide strip per layer with
+      randomised placement, which is real image work and a reasonable future
+      improvement rather than a blocker.
+- [ ] **BLOCKED ON ASSETS — five of seven biomes render nothing today.** The
       packs are named and licence-checked in §2's table, but nothing is
       vendored: `apps/web/public/CREDITS.md` still says "Not yet vendored" for
       every asset category in the project. `REDESIGN-CLAUDE.md` §1b routes
       non-Kenney itch.io through a human glance for licence verification, and
-      five of the six are non-Kenney. **Needs a human to fetch and verify.**
+      all five remaining are non-Kenney. **Needs a human to fetch and verify.**
+      Kenney was fetchable unattended precisely because §1b says so.
 - [ ] Per-biome weight not measured, because there is nothing to weigh yet.
       §2 asks for it in this file next to the 3D chunk budget; the row is
       reserved below
@@ -85,7 +100,7 @@ and the boundary between the two is enforced by tests rather than by prose.
 
 | Biome | Source | Vendored | Weight (gz) |
 |---|---|---|---|
-| neutral | Kenney Background Elements (CC0) | no | — |
+| neutral | Kenney Background Elements (CC0) | **yes** | **10.2 KB** of PNG (5 sprites referenced; 27 KB vendored incl. licence) + 0.27 KB gz chunk |
 | jungle | itch.io CC0 parallax, per-file check | no | — |
 | desert | styloo Desert Parallax (CC0 1.0, explicit) | no | — |
 | arctic | Admurin Snowy Mountains, verify page | no | — |
