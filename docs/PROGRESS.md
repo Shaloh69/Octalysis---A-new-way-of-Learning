@@ -1098,6 +1098,62 @@ clicking while looking elsewhere and then never seen again, where this one stays
 possible, which makes the sun worth touching twice. One `pulse` ref carries both
 intensities, so there is no second piece of state.
 
+### F-23 · Every minigame was pinned to the wrong chapter
+
+Chapter 18 is confirmed in the Finals (instructor, 2 Sep 2026), closing F-7's
+last open edge. The rest of this finding is about the games.
+
+**`GAME-DESIGN.md` §11's table named chapters from the superseded course** — all
+eleven rows. "02 Machine Language" when chapter 2 is Computer Evolution and
+Performance. "10 Digital Logic" when this syllabus contains no digital-logic
+chapter at all. "13 Fetch–Decode–Execute" when chapter 13 is Reduced Instruction
+Set Computers. Building from it would have put a half-adder sandbox inside a
+chapter about instruction sets.
+
+**§10.3's Phaser assignment was derived from that same table**, so the three
+canvas stages — 10, 12, 13 — were themselves wrong, and that number had been
+copied into root `CLAUDE.md` as a dependency rule. So had `codemirror (stage 15)`,
+where chapter 15 is Control Unit Operation and the x86 listings are chapters 10
+and 11.
+
+**Three of the five approved proposals were mis-pinned too**, which matters more
+because they are approved work:
+
+| Proposal | Was | Chapter actually is | Now |
+|---|---|---|---|
+| 1 · Hazard Interceptor | 14 · ILP | ✅ correct | unchanged |
+| 2 · The Descent | 16 · "Memory Hierarchy" | ❌ Microprogrammed Control | **04 → 06** |
+| 3 · Fault Line | 18 · Distributed Systems | ✅ correct | unchanged |
+| 4 · The Amdahl 500 | 17 · "Performance & Future" | ⚠ Multicore Computers | 17, renamed |
+| 5 · Mnemonic Sprint | 15 · "Writing Assembly" | ❌ Control Unit Operation | **10 → 11** |
+
+A memory-hierarchy platformer inside Microprogrammed Control, and an assembly
+typing drill inside Control Unit Operation, would each have assessed a verb the
+chapter does not teach — precisely what §8.3's verb test exists to prevent.
+
+**The rewrite is driven by archetype, not taste.** `stages.archetype` already
+fixes each chapter's beat sequence, so A→sort, B→drill, C→remix, D→simulator.
+The minigame is the stage's signature beat rather than an arcade game bolted on,
+which also means only **D** stages are canvas candidates at all. Eighteen games
+now, one per chapter, plus two spanning encounters.
+
+**Phaser goes from three scenes to five, stated rather than hidden.** Three of
+the approved proposals are canvas-native by construction (shooter, platformer,
+tower-defense). The marginal cost is not another megabyte each — Phaser is one
+lazily-loaded chunk shared across scenes — but each new scene owes build effort
+and its own accessibility work, so each now owes a documented DOM path to the
+same objective. **Reversible if that trade is unwanted:** Fault Line and The
+Descent are the two that could be argued back to DOM.
+
+Reference implementations are named per game in §11.1 so nobody starts from a
+blank file, and they are marked **references, not vendored code**: only Phaser
+itself and the official React+TS template are licence-verified, because nothing
+is being copied from the tutorials. The same discipline `BIOME-AND-LOADING-SPEC.md`
+§2 applies to art, learned when a biome pack turned out to be do-not-use.
+
+**Not yet done:** none of these are built. The table is now safe to build from,
+which it was not before.
+
 ## Performance and QA numbers — measured, not assumed
 
 | Measurement | Value | How |

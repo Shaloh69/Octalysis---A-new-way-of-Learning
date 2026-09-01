@@ -1,4 +1,35 @@
 # MINIGAME-PROPOSALS.md — Five More Mini-Games, None of Them Decoration
+### ⚠ Stage attachments CORRECTED 2 September 2026 — the designs are unchanged
+
+**Three of the five were pinned to chapters that do not contain their subject.**
+Caught by cross-referencing these proposals against the stage table in the
+database rather than against `GAME-DESIGN.md` §11, which was itself keyed to the
+superseded course.
+
+| Proposal | Was | Chapter actually is | Now |
+|---|---|---|---|
+| 1 · Hazard Interceptor | Stage 14 · Instruction-Level Parallelism | ✅ Instruction Level Parallelism | **unchanged** |
+| 2 · The Descent | Stage 16 · "Memory Hierarchy" | ❌ Microprogrammed Control | **04 → 06**, the real hierarchy |
+| 3 · Fault Line | Stage 18 · Distributed Systems Architecture | ✅ Distributed Systems Architecture | **unchanged** |
+| 4 · The Amdahl 500 | Stage 17 · "Performance & Future" | ⚠ Multicore Computers | **17**, renamed |
+| 5 · Mnemonic Sprint | Stage 15 · "Writing Assembly" | ❌ Control Unit Operation | **10 → 11**, where x86 listings live |
+
+Two were already right. Proposal 4 keeps its stage — Amdahl's Law is taught with
+multicore speedup — and only its chapter name was wrong. Proposals 2 and 5 moved
+chapters entirely: a memory-hierarchy platformer inside Microprogrammed Control,
+and an assembly typing drill inside Control Unit Operation, would each have
+assessed a verb the chapter does not teach, which is exactly what §8.3's verb
+test exists to prevent.
+
+**Proposal 2 is now a span, not a stage.** The memory hierarchy is chapters 4, 5
+and 6 — cache, internal, external. That is what a descent through registers →
+cache → main memory → disk actually crosses, and pinning it to one chapter was
+part of what made the original attachment wrong.
+
+Nothing about the game designs changed. See `GAME-DESIGN.md` §11.
+
+---
+
 ### Status: **ALL FIVE APPROVED, 1 September 2026.** Superseded header below kept for the reasoning, not the status.
 > The instructor's ruling came in at R0.1b: all five are approved and scheduled into
 > `docs/redesign/phases/R3-page-templates-and-redesign.md` §R3.2b. Two things that ruling does
@@ -83,12 +114,12 @@ actual visuals should stay procedural/CSS-adjacent per this project's existing
 
 ---
 
-## Proposal 2 — "The Descent" (platformer), unlocked after Stage 11, paid off at Stage 16 · Memory Hierarchy
+## Proposal 2 — "The Descent" (platformer), unlocked after Stage 04, paid off at Stage 06 · the memory hierarchy
 
 **Why not just drop a platformer wherever:** `GAME-DESIGN.md` §11 marks Stage
 11 explicitly: *"the Depth Gauge gets named here. Nothing may distract."*
 That's a deliberate restraint rule, and a platformer at the reveal moment
-would break it. So this doesn't go at Stage 11 — it goes **after** it, as a
+would break it. So this doesn't go at Stage 04 — it goes **after** it, as a
 bonus that pays off the metaphor once it's actually been earned.
 
 **The verb match, and it's a strong one:** the entire app's spatial language
@@ -96,13 +127,13 @@ bonus that pays off the metaphor once it's actually been earned.
 the hardware" — is already a *descent* metaphor (`SKILL-TREE-3D.md` §2,
 `SOLAR-SYSTEM-SPEC.md` §1). A side-scrolling descent through the seven
 Computer Level Hierarchy tiers (L6 User down to L0 Digital Logic), where each
-floor is a real memory tier by the time you reach Stage 16's content
+floor is a real memory tier by the time you reach Stage 06's content
 (registers → L1 → L2 → L3 → RAM → disk) with real latency numbers attached to
 how "heavy" that floor feels to move through, isn't a skin — **it's the same
 data the whole app already encodes, walked through on foot instead of viewed
 from orbit.** That's about as honest as a game mechanic gets in this project.
 
-**How it plays:** unlocked once Stage 11 is complete (so the reveal has
+**How it plays:** unlocked once Stage 04 is complete (so the reveal has
 already happened and nothing is being spoiled). A side-scrolling descent,
 Phaser's own official "Making Your First Phaser Game" tutorial structure
 (running/jumping platforms, collecting, avoiding) —
@@ -110,13 +141,13 @@ https://docs.phaser.io/phaser/getting-started/making-your-first-phaser-game
 — reskinned so platforms are memory tiers and "collectibles" are successful
 accesses. Falling further = going deeper = slower, real latency numbers shown
 plainly in mono type as you pass each floor (same "every number stays
-JetBrains Mono" rule as everywhere else). Framed explicitly at Stage 16 as
+JetBrains Mono" rule as everywhere else). Framed explicitly at Stage 06 as
 *"revisit the descent, now with real numbers attached"* — a callback, same
 pattern this project already uses deliberately for Stages 08/17 sharing a
 theme "so the student notices they can decode what they couldn't in week six."
 
 **What it explicitly is not:**
-- **Does not replace Stage 16's existing Cache Tuner (DOM sliders).** That
+- **Does not replace Stage 04's existing Cache Tuner (DOM sliders).** That
   interaction is DOM specifically *because* `GAME-DESIGN.md` §10.3 already
   decided canvas has no accessibility semantics for a tuning interaction —
   this proposal doesn't reopen that decision, the DOM version stays required
@@ -168,7 +199,7 @@ it matches this project's TS-strict discipline.
 
 ---
 
-## Proposal 4 — "The Amdahl 500" (prediction race), Stage 17 bonus · Performance & Future
+## Proposal 4 — "The Amdahl 500" (prediction race), Stage 17 bonus · Multicore Computers
 
 **Why alongside, not instead of, the existing Budget mini-game:** Stage 17
 already has "The Budget" (`GAME-DESIGN.md` §11 — allocate under a constraint,
@@ -208,9 +239,9 @@ building it — the honest answer may be "no."
 
 ---
 
-## Proposal 5 — "Mnemonic Sprint" (typing drill), Stage 15 bonus · Writing Assembly
+## Proposal 5 — "Mnemonic Sprint" (typing drill), Stages 10→11 bonus · Instruction Sets
 
-**Why alongside The Terminal:** Stage 15 already has a real editor + 8086
+**Why alongside The Terminal:** Stages 10-11 already carry the x86 listings
 subset VM ("The Terminal," `GAME-DESIGN.md` §11). This is a much smaller
 addition — a fluency drill, not a second full encounter.
 

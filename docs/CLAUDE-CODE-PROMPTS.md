@@ -283,7 +283,7 @@ Build the psychometrics. This is what makes 70 unique papers defensible.
 Three interactive components in octa-web. Build them one at a time; do not start the
 second until I've reviewed the first.
 
-1. FDE stepper (stage 13)
+1. FDE stepper (stage 12 — Processor Structure and Function)
    Register Bar (PC, IR, MAR, MBR, ACC) as live mono hex. Step / play / reset.
    Students can also author a short instruction sequence and watch it execute.
    Mirrors the ALU1-ALU4 progression in the source deck exactly.

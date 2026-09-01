@@ -655,11 +655,10 @@ revoke all on all tables in schema public from anon;
 -- `by_act`, that drift was not cosmetic: every one of the four examinations
 -- sampled one chapter beyond its own grading period. `DESIGN-REVIEW-01` D-3.
 --
--- STAGE 18 IS THE OPEN EDGE. The ruling's ranges stop at chapter 17, but
--- chapter 18 exists, is published and is gradeable. It sits in Act 4 here
--- because every stage must belong to a period for `by_act` to reach it, and
--- leaving it out would silently exclude it from the only cumulative exam.
--- Flagged rather than decided -- see PROGRESS.md F-7.
+-- CHAPTER 18 IS IN THE FINALS. Confirmed by the instructor 2 Sep 2026, closing
+-- the one edge the ranges left open: "Finals 13-17" reads as 13-18 in practice,
+-- because chapter 18 is published, gradeable, and has no other period to sit in.
+-- The Final Examination is cumulative, so it is examined there either way.
 insert into stages (id, act, ordinal, title, est_minutes, prereq, published, gradeable, archetype, levels) values
  ('00',1, 0,'Orientation',                                         20, '{}',      true, false, 'A', '{6}'),
  ('01',1, 1,'Introduction',                                40, '{00}',    true, true,  'A', '{0,1,2,3,4,5,6}'),

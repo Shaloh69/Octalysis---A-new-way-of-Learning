@@ -186,7 +186,7 @@ better answer than either of my previous two, and it costs one dependency.
 
 Opens on click or Enter. Contains, in this order:
 
-1. **Stage number and title** — `Stage 09 · Number Systems & Data Representation`
+1. **Stage number and title** — `Stage 09 · Computer Arithmetic`
 2. **State**, in words — Locked / Available / In progress 42% / Mastered
 3. **The lock reason and the distance**, when locked — the design mandate's
    legibility test applies here more than anywhere
@@ -550,51 +550,129 @@ Non-negotiable consequences:
 - The **initial bundle stays at 51.9 KB gzipped.** If a change moves that number,
   the change is wrong
 
-### 10.3 Not everything should be a Phaser game
+### 10.3 Not everything should be a Phaser game — re-derived for the real curriculum
 
 A canvas game is the wrong tool when the interaction is fundamentally form-like,
 because canvas has no accessibility semantics — the same argument as the galaxy.
 
+**The previous version of this table was keyed to the SUPERSEDED course.** It
+assigned Phaser to "Gate sandbox (10)" for digital logic — a subject this
+syllabus does not contain — and to "FDE stepper (13)", where chapter 13 is
+Reduced Instruction Set Computers. Building from it would have put a half-adder
+sandbox inside a chapter about instruction sets. Re-derived below against the
+19 stages that actually exist.
+
+**The archetype decides the interaction, not taste.** `stages.archetype` already
+fixes each chapter's beat sequence (`LESSON-PLAN-AND-LEVELS.md` §1), so the
+minigame is the stage's signature beat rather than an arcade game bolted onto
+it:
+
+| Archetype | Signature beat | So its minigame is |
+|---|---|---|
+| **A** concept | SORT | a classification — sort, group, decide |
+| **B** computation | DRILL | a parameterised drill with a computed answer |
+| **C** artifact | REMIX | modify a given artifact and see what changes |
+| **D** simulator | LAB · BUILD · BREAK | a running model you can perturb |
+
+Only **D** stages are candidates for canvas at all, and only where free-form
+spatial arrangement or continuous motion IS the content.
+
 | Encounter | Build with | Why |
 |---|---|---|
-| Card sort (01, 06) | **DOM** | It is a list reorder. Native drag + tap fallback, fully accessible |
-| Bit toggles (09) | **DOM** | Buttons with `aria-pressed`. Pixel art via CSS, not canvas |
-| Switch bank (02) | **DOM** | Same |
-| Ordering (11) | **DOM** | A reorderable list |
-| Sliders (04, 16, 17) | **DOM** | Native `<input type=range>` is keyboard-accessible for free |
-| **Gate sandbox (10)** | **Phaser** | Free-form spatial wiring on a canvas |
-| **Data path (12)** | **Phaser** | Same |
-| **FDE stepper (13)** | **Phaser** | Continuous animation is the content |
-| **Code editor + VM (15)** | **CodeMirror 6 + custom VM** | Not a game engine problem |
+| Sorts (01, 13) | **DOM** | List reorder and classification. Native drag + tap fallback, fully accessible |
+| Drills (02, 04, 09, 17) | **DOM** | Native `<input type=range>` and buttons with `aria-pressed` are keyboard-accessible for free |
+| Remixes (05, 06, 10) | **DOM** | Editing an artifact is form-like. Pixel art via CSS, not canvas |
+| DOM simulators (07, 08, 11, 15, 16) | **DOM** | State machines with discrete steps. A table that updates is clearer than a canvas that animates |
+| **Interconnection (03)** | **Phaser** | Free-form spatial wiring; the shared bus visibly constricting is the lesson |
+| **Processor structure (12)** | **Phaser** | Continuous animation of the fetch–decode–execute cycle *is* the content |
+| **Parallelism (14)** | **Phaser** | Hazards arrive in time; a stall has to be felt, not tabulated |
+| **Memory hierarchy (04→06)** | **Phaser** | "The Descent" is a platformer. Descending the hierarchy is literal movement |
+| **Distributed systems (18)** | **Phaser** | "Fault Line" routes traffic around failures in continuous time |
+| **Assembly listings (10, 11)** | **CodeMirror 6 + custom VM** | Not a game-engine problem |
 
-**Three Phaser scenes, not eighteen** — stages 10, 12 and 13. Stage 15 is
-CodeMirror plus a VM, which is not a game-engine problem.** Everything else is themed DOM — which is
-cheaper, faster, and accessible without extra work.
+**This is five Phaser scenes, revised up from three, and the reason is worth
+stating rather than hiding.** The old count predated the five approved
+proposals, three of which are canvas-native by construction (a shooter, a
+platformer, a tower-defense). The marginal cost is **not** another megabyte
+each: Phaser is one lazily-loaded chunk shared by every scene that uses it, so
+after the first such route it is browser-cached. What each new scene really
+costs is build effort and its own accessibility work.
+
+**So each Phaser scene owes a documented DOM path to the same objective.** The
+accessibility floor is not negotiable and a canvas cannot meet it alone. Where a
+scene cannot offer one, it is a bonus encounter and never the assessment —
+which is already true of every game marked *bonus* below.
 
 ---
 
 ## 11. Mini-game designs, per stage
 
-Each passes the §8.3 verb test. Each names its theme.
+Rewritten 2 September 2026 against the real 19-stage curriculum. **Every stage
+number in the previous table was wrong** — it named chapters from the superseded
+course ("02 Machine Language" when chapter 2 is Computer Evolution and
+Performance; "16 Memory Hierarchy" when chapter 16 is Microprogrammed Control).
+Only the designs survived; every attachment has been re-derived.
 
-| Stage | Mini-game | Core verb = objective's verb |
+Each passes the §8.3 verb test: **the core verb of the game is the core verb of
+the objective.** A game whose verb does not match is decoration, however good it
+is.
+
+| Stage | Arch | Mini-game | Core verb = objective's verb |
+|---|---|---|---|
+| **01** Introduction | A | **Two Columns.** Each design decision — instruction set, cache size, signal timing — dropped into *architecture* or *organization*. The boundary is the whole chapter | classify a decision ↔ distinguish architecture from organization |
+| **02** Computer Evolution and Performance | B | **The Clock Bench.** A frequency dial; cycle time, MIPS and speedup read out live. Then rapid-fire drill with infinite re-roll | turn frequency into period ↔ compute performance |
+| **03** Top Level View and Interconnection | D · **Phaser** | **Bus Contention.** Drag CPU, memory and I/O into place and wire the bus. When it is right a value flows — and the single shared bus visibly constricts under load | assemble the interconnection ↔ explain the bottleneck |
+| **04** Cache Memory | B | **Cache Tuner.** Size, block size and associativity as sliders against a live hit-rate meter. **Target: beat 90%** | tune parameters to hit a target ↔ reason about locality |
+| **05** Internal Memory | C | **Cell Bench.** Build a DRAM cell and an SRAM cell side by side; refresh cost, area and speed update as you change them | modify a cell ↔ differentiate DRAM and SRAM |
+| **06** External Memory | C | **RAID Builder.** Arrange disks into RAID 0/1/5, then pull one out. What survives is the answer | arrange redundancy ↔ evaluate RAID levels |
+| **07** Input/Output | D | **The I/O Desk.** Service devices by polling, interrupt or DMA against a CPU-time meter. The meter is the argument | choose a transfer method ↔ compare I/O techniques |
+| **08** Operating System Support | D | **Page Fault.** A page table, a replacement policy, and a working set that will not fit. Watch the fault rate move | apply a replacement policy ↔ explain virtual memory |
+| **09** Computer Arithmetic | B | **Bit Forge.** Chunky bit toggles at 8 and 16 bits. Flip the sign bit and watch the value invert; overflow flashes once, neutrally | flip bits to represent a value ↔ two's complement |
+| **10** Instruction Sets: Characteristics | C | **Opcode Anatomy.** Dissect a real x86 instruction into opcode and operands, byte by byte, in mono | take an instruction apart ↔ describe instruction elements |
+| **11** Instruction Sets: Addressing and Formats | D | **Where Is The Operand.** Pick an addressing mode and trace where the value actually comes from. Immediate, direct, indirect, indexed — each traced, not recited | trace an operand ↔ compare addressing modes |
+| **12** Processor Structure and Function | D · **Phaser** | **The Stepper.** Play / pause / step with live registers. **Before each step you commit a prediction of the next register value.** The prediction is the assessment | predict then verify ↔ trace the cycle |
+| **13** Reduced Instruction Set Computers | A | **RISC or CISC.** Classify design decisions, then a register-window visualiser showing what a call actually costs on each | classify a design ↔ contrast RISC and CISC |
+| **14** Instruction Level Parallelism | D · **Phaser** | **Hazard Interceptor** *(approved proposal 1)*. Data and control hazards arrive down the pipeline; you resolve each by forwarding, stalling or reordering | resolve a hazard ↔ identify pipeline hazards |
+| **15** Control Unit Operation | D | **Micro-op Sequencer.** Order the micro-operations for one instruction. A wrong order does not buzz — the machine simply does the wrong thing, visibly | sequence micro-operations ↔ describe control unit operation |
+| **16** Microprogrammed Control | D | **Microcode Editor.** Write control words and watch the signals they fire. The horizontal/vertical trade-off is a width slider you can feel | write a control word ↔ explain microprogrammed control |
+| **17** Multicore Computers | B | **The Amdahl 500** *(approved proposal 4)*. One budget, several cores. Amdahl's Law decides which purchase actually wins | allocate under a constraint ↔ apply Amdahl's Law |
+| **18** Distributed Systems Architecture | A · **Phaser** | **Fault Line** *(approved proposal 3)*. Route traffic across a cluster while links fail. The routing decision is the objective | route around failure ↔ evaluate cluster architectures |
+
+**Spanning encounters**, which belong to no single stage:
+
+| Span | Mini-game | Why it spans |
 |---|---|---|
-| **02** Machine Language | **Switch Bank.** Eight physical toggles. Set them to assemble Figure 1.1's instruction byte by byte; the assembled instruction reads out in mono above. Get it wrong and the instruction is simply wrong — no buzzer | set switches ↔ read machine code as switch states |
-| **04** High-Level | **Payroll Remix.** Drag `hours` and `rate` sliders; BASIC, assembly and machine code panes update live and in lockstep | change inputs, trace consequences ↔ trace a procedural program |
-| **07** Units & Cycle Time | **The Bench.** A knurled frequency dial; cycle time reads out on an illuminated panel. Then rapid-fire drill with infinite re-roll | turn frequency into period ↔ compute cycle time |
-| **09** Number Systems | **Bit Forge.** Chunky pixel-art bit toggles at 8 and 16 bits. Flip the sign bit and watch the value invert; overflow makes the panel flash once, neutrally | flip bits to represent a value ↔ two's complement |
-| **10** Digital Logic | **Gate Sandbox.** Drag AND/OR/NOT/XOR onto a board, wire them, and the truth table fills itself in row by row as you go. Goal: a half adder | wire gates into an adder ↔ build a half adder |
-| **12** von Neumann | **Data Path.** Drag CPU, memory and I/O into their slots and connect the bus. When it is right, a value flows — and the single shared bus visibly constricts | assemble the architecture ↔ explain the bottleneck |
-| **13** Fetch–Decode–Execute | **The Stepper.** Play / pause / step with live registers. **Before each step you commit a prediction of the next register value.** The prediction is the assessment | predict then verify ↔ trace the cycle |
-| **14** Instruction Set | **Encoder.** Pick MOD, REG and R/M fields from dropdowns; the byte assembles in a hex grid as you choose | build an instruction byte ↔ instruction formats |
-| **15** Writing Assembly | **The Terminal.** Real editor, real 8086 subset, real registers. Then: here is a program that crashes — fix it | write and run assembly ↔ write and run assembly |
-| **16** Memory Hierarchy | **Cache Tuner.** Size, block size and associativity as sliders against a live hit-rate meter. **Target: beat 90%** | tune parameters to hit a target ↔ reason about locality |
-| **17** Performance | **The Budget.** One budget, several components. Amdahl's Law decides which purchase actually wins | allocate under a constraint ↔ apply Amdahl's Law |
+| **04 → 06** · **Phaser** | **The Descent** *(approved proposal 2)*. A platformer descending registers → cache → main memory → disk, each level slower and larger than the last. Unlocked after **04**, paid off at **06** | The memory hierarchy is not one chapter. Descending it is literal movement, which is why this is a platformer and not a table |
+| **10 → 11** bonus | **Mnemonic Sprint** *(approved proposal 5)*. A typing drill on x86 mnemonics, against the clock | Mnemonics are introduced in 10 and used throughout 11. Root `CLAUDE.md`: the listings this course shows are Intel x86, chapters 10 and 11 |
 
-**Stage 13's predict-before-step is the single best mechanic in the list.**
+**Stage 12's predict-before-step is still the single best mechanic in the list.**
 Commit-then-reveal is a real game mechanic, it makes the student's mental model
 explicit, and it converts a passive animation into an assessment. It is also
-already in `DESIGN-MANDATE.md` §1 as a demanded interaction.
+already demanded by `DESIGN-MANDATE.md` §1. It moved from chapter 13 to chapter
+12 in this rewrite because chapter 12 is where the fetch–decode–execute cycle is
+actually taught.
+
+### 11.1 Reference implementations to read before building
+
+Named so nobody starts from a blank file. These are **references, not vendored
+code** — read the approach, then build it against our own tokens, our own
+accessibility floor, and the React↔Phaser bridge in §10.1's official template.
+
+| For | Source |
+|---|---|
+| Every Phaser scene | **Official Phaser 3 + React + TS template** — https://github.com/phaserjs/template-react-ts · already chosen in §10.1, MIT, our exact stack |
+| **Fault Line** (18) | Phaser's own tower-defense tutorial — https://phaser.io/news/2018/12/tower-defense-tutorial · and https://gamedevacademy.org/how-to-make-tower-defense-game-with-phaser-3/ for the wave and upgrade loop |
+| **The Descent** (04→06) | Phaser 3 bootstrap platformer — https://phaser.io/news/2018/02/phaser-3-bootstrap-platformer · a full platform project built on the Phaser 3 API |
+| **Hazard Interceptor** (14) | Top-down shooter patterns in https://github.com/jojoee/phaser-examples and https://github.com/noowxela/phaser-examples · community collections covering waves and collision |
+| **Bus Contention** (03) · **The Stepper** (12) | No template fits: both are bespoke diagrams that happen to animate. Build on the official template directly |
+| **Mnemonic Sprint** (10→11) | No engine. A DOM input, a timer, and `aria-live` — deliberately not a canvas |
+
+**Check each licence before taking more than an idea.** Phaser itself is MIT and
+the official template is MIT; the tutorials and community collections above have
+**not** each been licence-verified, because nothing is being copied from them. If
+that changes, verify first — the same discipline `BIOME-AND-LOADING-SPEC.md` §2
+applies to art, learned the hard way when a biome pack turned out to be
+do-not-use.
 
 ---
 

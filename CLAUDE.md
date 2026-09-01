@@ -53,8 +53,9 @@ Read `START-HERE.md` before your first task. Read `VERIFICATION.md` before touch
 - Do not add: `htm`, an ORM over Supabase, a second UI component library, `localStorage` for
   anything gradeable, client-side scoring.
 - **Explicitly allowed, and only these:** `three` + `@react-three/fiber` (the star map),
-  `react-force-graph-3d` (picking and camera easing, nodes pinned), `phaser` (three canvas
-  encounters only — stages 10, 12, 13), `codemirror` (stage 15). Each is **lazy-loaded per
+  `react-force-graph-3d` (picking and camera easing, nodes pinned), `phaser` (five canvas
+  encounters only — stages 03, 12, 14, 18 and the 04→06 span; re-derived from the
+  real curriculum, `GAME-DESIGN.md` §10.3), `codemirror` (stages 10-11, the x86 listings). Each is **lazy-loaded per
   route** and none may enter the initial bundle. See `GAME-DESIGN.md` §10.
 
 ## Local stack — production runs here until cloud projects exist

@@ -176,25 +176,42 @@ test.describe("the solar system renders", () => {
     await page.goto("/app/map", { waitUntil: "networkidle" });
     await settle(page);
 
+    /*
+     * Measured RELATIVE to the map's own box, not in page coordinates.
+     *
+     * The first version compared absolute rects and was flaky under parallel
+     * load: any page-level reflow -- a late font, a scrollbar appearing --
+     * moved the whole map and read as "the galaxy animated". That is the wrong
+     * question. What must hold still is the galaxy's CONTENTS relative to the
+     * galaxy, which a reflow cannot disturb and an animation cannot avoid.
+     */
     const moving = await page.evaluate(
       () =>
         new Promise<number>((res) => {
-          const el = document.querySelector(".galaxy-svg")!;
-          const before = el.getBoundingClientRect();
-          const sun = document.querySelector(".galaxy-sun")!.getBoundingClientRect();
+          const box = () => document.querySelector(".galaxy-svg")!.getBoundingClientRect();
+          const offsets = () => {
+            const b = box();
+            return [...document.querySelectorAll(".galaxy-sun, .galaxy-planet, .galaxy-moon")].map(
+              (el) => {
+                const r = el.getBoundingClientRect();
+                return [r.x - b.x, r.y - b.y] as const;
+              },
+            );
+          };
+          const before = offsets();
           setTimeout(() => {
-            const after = el.getBoundingClientRect();
-            const sunAfter = document.querySelector(".galaxy-sun")!.getBoundingClientRect();
+            const after = offsets();
             res(
-              Math.abs(after.x - before.x) +
-                Math.abs(after.y - before.y) +
-                Math.abs(sunAfter.x - sun.x) +
-                Math.abs(sunAfter.y - sun.y),
+              before.reduce(
+                (total, [x, y], i) =>
+                  total + Math.abs(after[i]![0] - x) + Math.abs(after[i]![1] - y),
+                0,
+              ),
             );
           }, 1200);
         }),
     );
-    expect(moving, "nothing on the flat map may move").toBe(0);
+    expect(moving, "no body on the flat map may move within it").toBe(0);
 
     // And no animation is declared on any of it, which a static frame alone
     // would not prove -- a slow enough animation looks still for 1.2s.

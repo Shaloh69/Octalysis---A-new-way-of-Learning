@@ -139,11 +139,10 @@ describe("the seed graph", () => {
     expect(byAct.get(3)).toEqual(["09", "10", "11", "12"]);       // Semi-finals, ch 9-12
 
     /*
-     * Chapter 18 is the open edge. The ruling's ranges stop at 17, but chapter
-     * 18 exists and is gradeable, so it sits with the Finals — every stage must
-     * belong to a period for `by_act` to reach it, and omitting it would
-     * silently drop it from the only cumulative examination. Flagged in
-     * `PROGRESS.md` F-7, not decided here.
+     * Chapter 18 sits with the Finals — confirmed by the instructor 2 Sep 2026.
+     * The ruled ranges say "Finals 13-17"; chapter 18 is published, gradeable,
+     * and has no other period to belong to, and the Finals is cumulative in any
+     * case. So the Finals carries six stages, not five.
      */
     expect(byAct.get(4)).toEqual(["13", "14", "15", "16", "17", "18"]); // Finals
   });
