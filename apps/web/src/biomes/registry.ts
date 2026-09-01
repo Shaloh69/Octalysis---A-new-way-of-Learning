@@ -53,12 +53,24 @@ export interface BiomeManifest {
   readonly name: string;
   /** Back-to-front. Empty means this biome is procedural (see `volcanic`). */
   readonly layers: readonly BiomeLayer[];
-  /** Exactly what goes in `public/CREDITS.md`. Never ship art without this. */
+  /**
+   * Exactly what goes in `public/CREDITS.md`. Never ship art without this.
+   *
+   * `license` is the pack's ACTUAL terms, not a shorthand. Four of the six
+   * sourced packs are **not** CC0 and each carries different obligations —
+   * edermunizz's forest requires credit, Admurin's forbids AI training and
+   * standalone redistribution — so filing them all as "CC0" would be wrong in
+   * a way that matters. `obligations` exists to make the non-obvious ones
+   * impossible to miss when someone reads only this file.
+   */
   readonly credit: {
     readonly pack: string;
     readonly author: string;
     readonly url: string;
+    /** Verbatim terms, or the SPDX id where one genuinely applies. */
     readonly license: string;
+    /** Anything OCTA must actively DO or NOT do. Empty for true CC0. */
+    readonly obligations: readonly string[];
   } | null;
 }
 

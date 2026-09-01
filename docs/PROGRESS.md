@@ -101,12 +101,18 @@ and the boundary between the two is enforced by tests rather than by prose.
 | Biome | Source | Vendored | Weight (gz) |
 |---|---|---|---|
 | neutral | Kenney Background Elements (CC0) | **yes** | **10.2 KB** of PNG (5 sprites referenced; 27 KB vendored incl. licence) + 0.27 KB gz chunk |
-| jungle | itch.io CC0 parallax, per-file check | no | — |
-| desert | styloo Desert Parallax (CC0 1.0, explicit) | no | — |
-| arctic | Admurin Snowy Mountains, verify page | no | — |
-| volcanic | **procedural, by exception** | n/a | 0 |
-| cave | itch.io — **licence disputed by its own author** | no | — |
-| ocean | itch.io free ocean packs, per-file check | no | — |
+| jungle | edermunizz *Free Pixel Art Forest* — **NOT CC0, credit REQUIRED**, no NFT/crypto. 9 layers | no | — |
+| desert | styloo *Desert Parallax* — spec says CC0 1.0 explicit, **not yet opened and verified** | no | — |
+| arctic | Admurin *Snowy Mountains* — **NOT CC0.** Any project; no standalone redistribution; no NFT; **no AI training**; credit appreciated. 5 layers, 384×216 | no | — |
+| volcanic | **procedural, by exception** — no third-party art | n/a | 0 |
+| cave | **candidate REJECTED.** Admurin's *Caves* has the same art on DeviantArt under CC 3.0; author asked directly, never reconciled it. Needs a different pack | no | — |
+| ocean | ansimuz *Underwater Fantasy* — personal/commercial, modify, credit appreciated. Cleanest of the four checked, still not CC0. 3 layers | no | — |
+
+**Four of the six sourced packs are not CC0**, and each carries different
+obligations — edermunizz's requires credit, Admurin's forbids AI training and
+standalone redistribution. `BiomeManifest.credit.obligations` exists so those
+are impossible to miss from the code, and `public/CREDITS.md` carries them in
+prose. Do not collapse any of this to "CC0".
 
 ### R2.2b — the superseded procedural plan
 - [x] All seven procedural, as token blocks — no asset packs, same reasoning

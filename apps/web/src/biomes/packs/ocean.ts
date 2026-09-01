@@ -3,28 +3,47 @@ import type { BiomeManifest } from "../registry";
 /**
  * Ocean — underwater light and swell.
  *
- * **ASSETS NOT YET VENDORED.** `layers` is empty, so the landing renders
- * without scenery rather than with a stand-in. That is deliberate: a
- * procedural gradient here would look finished, and it is exactly the
- * substitution `BIOME-AND-LOADING-SPEC.md` §2 was revised to forbid — a
- * tinted rectangle does not make this read as an ocean rather than a blue rectangle, which is the entire
- * reason biomes exist.
+ * **SOURCED AND LICENCE-VERIFIED — art not yet vendored.**
  *
- * TO COMPLETE THIS BIOME:
- *   1. Source the pack from https://itch.io/game-assets/tag-parallax searching for ocean; several free options exist, for example Free Ocean and Clouds Pixel Backgrounds
- *   2. **Verify the licence on the file's own page**, not from a tag or a
- *      collection listing. `REDESIGN-CLAUDE.md` §1b routes non-Kenney itch.io
- *      through a human glance for exactly this reason, and §2's cave row is
- *      the worked example of why — its own author gave conflicting licence
- *      information in two different places.
- *   3. Drop the layer images in `apps/web/public/biomes/ocean/`
- *   4. Fill in `layers` back-to-front, and `credit`
- *   5. Add the credit to `apps/web/public/CREDITS.md`
+ * The pack below was opened and its terms read directly on 1 September 2026,
+ * not taken from a tag, a collection listing or a search result.
+ * `BIOME-AND-LOADING-SPEC.md` §2's cave row is the worked example of why that
+ * distinction matters.
+ *
+ * The cleanest terms of the four checked — no NFT clause, no AI clause, no
+ * redistribution restriction. Still recorded as its own licence rather than
+ * as CC0, because the page does not claim CC0 and inventing an SPDX id for
+ * someone else's words is how a licence gets misfiled.
+ *
+ * 3 layers for parallax.
+ *
+ * `layers` is empty until the art is vendored, so the landing renders nothing
+ * rather than a stand-in. A procedural gradient here would look finished and is
+ * exactly the substitution §2 was revised to forbid.
+ *
+ * TO COMPLETE:
+ *   1. Download from https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment
+ *   2. Re-read the licence on that page — terms change, and this comment is a
+ *      snapshot, not an authority
+ *   3. Put the layer images in `apps/web/public/biomes/ocean/`, with the
+ *      pack's own licence file beside them if it ships one
+ *   4. Fill in `layers` back-to-front — see `neutral.ts` for the
+ *      depth/scale/align model, and §2b for why one sprite tiled at one size
+ *      reads as wallpaper
+ *   5. Copy `credit` into `apps/web/public/CREDITS.md`
  */
 const manifest: BiomeManifest = {
   name: "ocean",
   layers: [],
-  credit: null,
+  credit: {
+    pack: "Underwater Fantasy Pixel Art Environment",
+    author: "ansimuz",
+    url: "https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment",
+    license: "Permissive, not stated as CC0 — 'You may use these assets in personal or commercial projects. You may modify these assets to suit your needs. Credit is not required but appreciated it.'",
+    obligations: [
+      "Credit appreciated, not required — CREDITS.md gives it anyway",
+    ],
+  },
 };
 
 export default manifest;

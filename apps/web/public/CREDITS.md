@@ -15,12 +15,38 @@ lazy-loaded one at a time.
   `License.txt`, kept beside the art at `public/biomes/neutral/`. CC0 requires
   no attribution; it is credited here anyway, per this file's own rule.
 
-Six of the seven are not yet vendored. `jungle`, `desert`, `arctic`, `cave` and
-`ocean` need packs sourced and their licences verified **on each file's own
-page** — §2's cave row is the worked example of why a tag listing is not
-enough, its author having given conflicting licence information in two places.
-`volcanic` is procedural by design, the one named exception, because no
-cleanly-licensed pack exists for it yet.
+### Sourced and licence-verified, art not yet vendored
+
+Each of these was opened and its terms read on its own page, 1 September 2026.
+**Four of the six are not CC0 and carry different obligations** — filing them
+all as "CC0" would be wrong in a way that matters, so the actual terms are
+recorded here and in each pack's manifest under `apps/web/src/biomes/packs/`.
+
+- **Free Pixel Art Forest** — edermunizz,
+  https://edermunizz.itch.io/free-pixel-art-forest — for `jungle`.
+  Commercial use permitted, **credit REQUIRED** (the only pack here that
+  requires it rather than merely appreciating it). No NFT or crypto-game use.
+- **Parallax Backgrounds: Snowy Mountains** — Admurin,
+  https://admurin.itch.io/parallax-backgrounds-snowy-mountains — for `arctic`.
+  Any project personal or commercial; **must remain part of a project and never
+  be redistributed as a standalone game asset**; no NFT use; **no use for AI
+  training**; modification permitted; credit appreciated, not required.
+- **Underwater Fantasy Pixel Art Environment** — ansimuz,
+  https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment — for
+  `ocean`. Personal or commercial use, modification permitted, credit
+  appreciated but not required.
+
+### Not sourced
+
+- `cave` — **one candidate was checked and rejected.** Admurin's "Parallax
+  Backgrounds: Caves" has the same artwork on DeviantArt under CC 3.0; asked
+  directly in the pack's comments which licence governs, the author restated
+  the itch terms without reconciling the two. An unresolved licence is not one
+  to ship on. A different pack is needed.
+- `desert` — styloo's Desert Parallax Background is named in the spec as CC0
+  1.0 explicit, but has not yet been opened and verified the same way.
+- `volcanic` — **procedural by design**, the one named exception, because no
+  cleanly-licensed pack exists for it. No third-party art involved.
 
 ## Interface art
 Not yet vendored. Planned: Kenney Pixel UI Pack and UI Pack (CC0, kenney.nl) for

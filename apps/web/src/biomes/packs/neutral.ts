@@ -42,7 +42,10 @@ const manifest: BiomeManifest = {
     pack: "Background Elements",
     author: "Kenney Vleugels (kenney.nl)",
     url: "https://kenney.nl/assets/background-elements",
-    license: "CC0 1.0",
+    license: "CC0 1.0 (Creative Commons Zero) — verified in the pack's own License.txt",
+    // Genuinely none. CC0 requires no attribution; CREDITS.md credits it
+    // anyway, which is that file's own rule.
+    obligations: [],
   },
 };
 
