@@ -56,10 +56,24 @@ export function useCosmetics(): { cosmetics: Cosmetics; loaded: boolean } {
     api
       .cosmetics()
       .then((c) => {
-        if (alive) {
-          setCosmetics(c);
-          setLoaded(true);
-        }
+        if (!alive) return;
+        /*
+         * Set the attributes BEFORE the state update, not in an effect after
+         * it.
+         *
+         * The canvas resolves `--planet-lit` and `--biome-planet` with
+         * `getComputedStyle(documentElement)` during render. An effect runs
+         * AFTER render, so on the first render carrying the new values the
+         * attributes were not on the element yet and every token read fell back
+         * — planets rendered untinted and it looked like the biome was being
+         * ignored. Same shape as the two earlier misses, one layer up.
+         *
+         * Doing it here means the DOM is correct before React re-renders with
+         * the values that depend on it.
+         */
+        applyCosmeticAttributes(c);
+        setCosmetics(c);
+        setLoaded(true);
       })
       .catch(() => {
         // Stay on DEFAULT. Nothing to report: nothing is missing.
@@ -71,6 +85,10 @@ export function useCosmetics(): { cosmetics: Cosmetics; loaded: boolean } {
   }, []);
 
   /*
+   * Kept as a belt-and-braces re-apply: something else could reset the
+   * attributes (a theme switch rewriting them, a future route guard), and this
+   * costs nothing. The load-bearing call is in the fetch above, before setState.
+   *
    * Apply the look to <html>, not to the map's own container.
    *
    * This is where `data-theme` and `--accent-hue` already live
@@ -93,6 +111,14 @@ export function useCosmetics(): { cosmetics: Cosmetics; loaded: boolean } {
   }, [cosmetics]);
 
   return { cosmetics, loaded };
+}
+
+/** Put the seeded look on <html>. Callable outside React, so it can run before a render. */
+function applyCosmeticAttributes(c: Cosmetics): void {
+  if (typeof document === "undefined") return;
+  const el = document.documentElement;
+  el.setAttribute("data-planet", planetVariantAttr(c.paletteVariant));
+  el.setAttribute("data-biome", biomeAttr(c.biomeIndex, c.biomes));
 }
 
 /** The `data-planet` attribute value for a variant index. */

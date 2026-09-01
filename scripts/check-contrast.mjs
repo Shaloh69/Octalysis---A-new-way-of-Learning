@@ -723,6 +723,27 @@ async function main() {
         }
       }
     }
+    /*
+     * The biome's PLANET TINT, against the map's own ground.
+     *
+     * SOLAR-SYSTEM-SPEC.md §4.1: a planet's surface takes the student's biome
+     * tint. It is a graphical object, so WCAG 1.4.11 non-text contrast at 3:1 --
+     * a planet a student cannot pick out of the field is a broken map, not a
+     * style choice, and the tints are pre-computed precisely so this check can
+     * be mechanical.
+     */
+    const planetTint = tok["--biome-planet"];
+    if (planetTint && solarGroundRgb) {
+      const ratio = contrast(oklchToSrgb(planetTint.L, planetTint.C, planetTint.H), solarGroundRgb);
+      cosChecks++;
+      if (ratio < 3.0) {
+        cosFailures.push({
+          theme: `biome ${name}`, label: "--biome-planet on the map ground",
+          ratio, min: 3.0, against: "the map ground",
+        });
+      }
+    }
+
     // And the biome must be distinguishable from the page it replaces, or the
     // seeding is invisible and the whole feature is a no-op.
     for (const [themeName, groundRgb] of grounds) {

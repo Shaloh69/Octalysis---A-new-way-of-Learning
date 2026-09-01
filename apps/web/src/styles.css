@@ -1480,3 +1480,61 @@ button {
      the panel must not be a 21rem box on a 380px screen. */
   .hud { position: static; transform: none; max-height: none; width: 100%; margin-top: var(--space-4); }
 }
+
+/* --------------------------------------------------------------
+ * Formation notice — a planet has formed
+ * ------------------------------------------------------------ */
+
+/*
+ * SOLAR-SYSTEM-SPEC.md §1.4b. Calm on purpose: this is a MAP EVENT, not a
+ * second Bring-Up. GAME-DESIGN.md §1B rule 3 caps spectacle at one moment per
+ * stage and the Bring-Up owns that budget. No jingle, no confetti, no bounce —
+ * it announces, it can be dismissed, and it gets out of the way.
+ *
+ * `role="status"` + `aria-live="polite"` so a screen-reader user is told too,
+ * without interrupting whatever they were reading.
+ */
+.formation {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  font-size: 0.9rem;
+}
+
+.formation-mark {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  animation: formation-settle var(--dur-bringup) var(--ease-out);
+}
+
+/* One settle, once, then still. Not a loop -- a pulsing dot in the corner is
+   noise by the third stage. */
+@keyframes formation-settle {
+  from { transform: scale(2.4); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.formation-dismiss {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  min-height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  font: inherit;
+  cursor: pointer;
+}
+.formation-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .formation-mark { animation: none; }
+}

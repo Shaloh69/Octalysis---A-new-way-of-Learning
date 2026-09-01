@@ -61,6 +61,16 @@ export interface Body {
   /** Moons only: the stage this objective belongs to. */
   readonly parentId?: string;
   /**
+   * Moons only. True for roughly one moon in five — the seeded subset that
+   * stays visible at overview scale as a preview (§5).
+   *
+   * Which moons are chosen varies per student and is purely cosmetic. The
+   * COUNT is real data and is unaffected, and `/app/map` lists every moon
+   * regardless of what the scene draws. This is a rendering hint, not a fact
+   * about the curriculum.
+   */
+  readonly previewAtOverview?: boolean;
+  /**
    * Planets only, and true for exactly one stage today. A stage declaring all
    * seven levels is not AT a level -- it is ABOUT the hierarchy, and renders as
    * a spoke crossing every ring rather than a point on one. See F-4.
@@ -100,12 +110,27 @@ const MIN_STEP = 0.8;
 /**
  * How much extra radius the busiest ring earns over an empty one (F-2).
  *
- * Tuned, not arbitrary: at 3.2 the tightest ring's arc-length-per-body improves
- * ~26% against even spacing, which `layout-solar.spec.ts` asserts as a property
- * rather than pinning these numbers. Raise it and crowded rings spread further;
- * the monotonicity and student-independence tests must both still pass.
+ * Tuned, not arbitrary: the tightest ring's arc-length-per-body improves
+ * measurably against even spacing, which `layout-solar.spec.ts` asserts as a
+ * property rather than pinning these numbers. Raise it and crowded rings spread
+ * further; the monotonicity and student-independence tests must both still pass.
  */
 const STEP_SPREAD = 3.2;
+
+/**
+ * How much more room each ring gets than the one inside it.
+ *
+ * Ring spacing GROWS outward rather than stepping uniformly (§1.1). The gap
+ * between L5 and L6 is visibly larger than the gap between L0 and L1, which is
+ * what gives the system a sense of scale — a uniform widening just makes a
+ * bigger flat disc, and real orbital systems do not step evenly either.
+ *
+ * Still a fixed, deterministic function of LEVEL. It is not a function of time,
+ * completion order, or progress, and §1.1 explicitly forbids making it one:
+ * radius carries the Computer Level Hierarchy, and a time-varying value inside
+ * that axis would replace a fact with an effect that merely resembles it.
+ */
+const STEP_GROWTH = 1.32;
 
 /**
  * The sweep, in radians. ~300°, deliberately NOT a full turn (F-3).
@@ -179,7 +204,11 @@ function computeRingRadii(occupancy: readonly number[]): number[] {
   const radii: number[] = [];
   let r = INNER_RADIUS;
   for (const level of LEVELS) {
-    r += MIN_STEP + STEP_SPREAD * ((occupancy[level] ?? 0) / busiest);
+    // Two independent contributions, both positive, so the result is strictly
+    // increasing by construction: occupancy (F-2) widens crowded rings, and
+    // growth widens every ring relative to the one inside it.
+    const load = MIN_STEP + STEP_SPREAD * ((occupancy[level] ?? 0) / busiest);
+    r += load * Math.pow(STEP_GROWTH, level);
     radii[level] = r;
   }
   return radii;
@@ -210,9 +239,35 @@ export function angleForOrdinal(ordinal: number, stageCount: number): number {
 
 /* ------------------------------------------------------------------- main */
 
+/**
+ * Which moons stay visible when nothing is focused.
+ *
+ * Deterministic from the moon's own id plus the student's cosmetic seed, so it
+ * is stable across sessions rather than reshuffling on every render — a preview
+ * set that changes each visit would be worse than no preview at all.
+ *
+ * Note the seed is a plain number handed in by the caller, and this is the ONLY
+ * place in this file that sees it. It cannot reach any radius or angle: those
+ * are computed before this runs and never consult it. `cosmetics.spec.ts`
+ * asserts that separation directly.
+ */
+function isPreviewMoon(objectiveId: string, seed: number): boolean {
+  let h = seed >>> 0;
+  for (let i = 0; i < objectiveId.length; i += 1) {
+    h = (Math.imul(h ^ objectiveId.charCodeAt(i), 0x01000193) >>> 0);
+  }
+  return h % 5 === 0;
+}
+
 export function computeSolarLayout(
   stages: readonly StageInput[],
   objectives: readonly ObjectiveInput[],
+  /**
+   * Cosmetic seed, used for ONE thing: which moons preview at overview scale.
+   * Defaults to 0 so every existing caller and test is unaffected, and so the
+   * function stays pure and reproducible.
+   */
+  previewSeed = 0,
 ): SolarLayout {
   const ordered = [...stages].sort((a, b) => a.ordinal - b.ordinal);
 
@@ -295,6 +350,7 @@ export function computeSolarLayout(
         y: 0,
         z: Math.sin(angle) * radius + Math.sin(localAngle) * localRadius,
         parentId: s.id,
+        previewAtOverview: isPreviewMoon(m.id, previewSeed),
       });
     });
   }

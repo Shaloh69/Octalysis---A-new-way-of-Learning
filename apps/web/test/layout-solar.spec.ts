@@ -225,6 +225,17 @@ describe("F-2 — ring radii are spaced by occupancy", () => {
     );
   });
 
+  it("spaces rings on a GROWING curve, not uniform steps", () => {
+    // §1.1: each ring out gets proportionally more room than the one inside
+    // it, which is what gives the system a sense of scale. Compare the
+    // outermost gap against the innermost.
+    const r = LAYOUT.ringRadii;
+    const innerGap = r[1]! - r[0]!;
+    const outerGap = r[6]! - r[5]!;
+    expect(outerGap, "outer rings must be further apart than inner ones")
+      .toBeGreaterThan(innerGap);
+  });
+
   it("gives the tightest ring more room than even spacing would", () => {
     // The property, not the constants. Even spacing across the SAME total span
     // is the thing being beaten, so the comparison is fair -- this is not just
@@ -253,6 +264,51 @@ describe("F-2 — ring radii are spaced by occupancy", () => {
     const a = computeSolarLayout(STAGES, OBJECTIVES);
     const b = computeSolarLayout(STAGES, OBJECTIVES);
     expect(a.ringRadii).toEqual(b.ringRadii);
+  });
+});
+
+describe("§5 — the seeded moon preview subset", () => {
+  it("marks roughly one moon in five", () => {
+    const preview = moons().filter((m) => m.previewAtOverview);
+    // Not exactly a fifth -- it is a hash, not a quota. Wide bounds on
+    // purpose: this asserts "a sparse subset", which is the design intent,
+    // rather than pinning a hash's exact output.
+    expect(preview.length).toBeGreaterThan(OBJECTIVES.length * 0.08);
+    expect(preview.length).toBeLessThan(OBJECTIVES.length * 0.4);
+  });
+
+  it("is stable for a given seed — a preview set that reshuffles is worse than none", () => {
+    const a = computeSolarLayout(STAGES, OBJECTIVES, 12345);
+    const b = computeSolarLayout(STAGES, OBJECTIVES, 12345);
+    const ids = (l: typeof a) =>
+      [...l.bodies.values()].filter((x) => x.previewAtOverview).map((x) => x.id).sort();
+    expect(ids(a)).toEqual(ids(b));
+  });
+
+  it("actually differs between students", () => {
+    const ids = (seed: number) =>
+      [...computeSolarLayout(STAGES, OBJECTIVES, seed).bodies.values()]
+        .filter((x) => x.previewAtOverview).map((x) => x.id).sort().join(",");
+    expect(ids(1)).not.toBe(ids(999));
+  });
+
+  it("CANNOT move a single radius or angle — the whole boundary in one test", () => {
+    // The cosmetic seed reaches exactly one rendering hint and nothing else.
+    // If it ever leaks into geometry, two students get different maps, and the
+    // line between "unique game" and "unique exam paper" has been crossed in
+    // the direction that matters.
+    const a = computeSolarLayout(STAGES, OBJECTIVES, 1);
+    const b = computeSolarLayout(STAGES, OBJECTIVES, 999);
+
+    expect(a.ringRadii).toEqual(b.ringRadii);
+    expect(a.ringOccupancy).toEqual(b.ringOccupancy);
+    for (const [id, body] of a.bodies) {
+      const other = b.bodies.get(id)!;
+      expect(other.ring, `${id} ring moved`).toBe(body.ring);
+      expect(other.radius, `${id} radius moved`).toBe(body.radius);
+      expect(other.angle, `${id} angle moved`).toBe(body.angle);
+      expect([other.x, other.y, other.z], `${id} position moved`).toEqual([body.x, body.y, body.z]);
+    }
   });
 });
 

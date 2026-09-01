@@ -572,13 +572,13 @@ code, kbd, samp, pre, .mono, .register-value, .hex, .listing,
    redesign where "no accessible equivalent needed" is the right call, and it
    is right precisely because the biome carries zero pedagogical weight. */
 
-[data-biome="neutral"]  { --biome-far: oklch(0.24 0.012 250); --biome-near: oklch(0.19 0.014 250); --biome-ink: oklch(0.93 0.010 250); }
-[data-biome="jungle"]   { --biome-far: oklch(0.28 0.045 150); --biome-near: oklch(0.20 0.050 155); --biome-ink: oklch(0.94 0.020 140); }
-[data-biome="desert"]   { --biome-far: oklch(0.33 0.045 70);  --biome-near: oklch(0.24 0.050 55);  --biome-ink: oklch(0.95 0.020 75); }
-[data-biome="arctic"]   { --biome-far: oklch(0.32 0.025 220); --biome-near: oklch(0.23 0.028 230); --biome-ink: oklch(0.95 0.012 220); }
-[data-biome="volcanic"] { --biome-far: oklch(0.26 0.055 35);  --biome-near: oklch(0.18 0.048 25);  --biome-ink: oklch(0.94 0.022 45); }
-[data-biome="cave"]     { --biome-far: oklch(0.27 0.028 285); --biome-near: oklch(0.19 0.026 290); --biome-ink: oklch(0.93 0.014 285); }
-[data-biome="ocean"]    { --biome-far: oklch(0.27 0.040 235); --biome-near: oklch(0.19 0.045 245); --biome-ink: oklch(0.94 0.018 230); }
+[data-biome="neutral"]  { --biome-far: oklch(0.24 0.012 250); --biome-near: oklch(0.19 0.014 250); --biome-ink: oklch(0.93 0.010 250);  --biome-planet: oklch(0.80 0.020 250);}
+[data-biome="jungle"]   { --biome-far: oklch(0.28 0.045 150); --biome-near: oklch(0.20 0.050 155); --biome-ink: oklch(0.94 0.020 140);  --biome-planet: oklch(0.74 0.115 150);}
+[data-biome="desert"]   { --biome-far: oklch(0.33 0.045 70);  --biome-near: oklch(0.24 0.050 55);  --biome-ink: oklch(0.95 0.020 75);  --biome-planet: oklch(0.82 0.115 75);}
+[data-biome="arctic"]   { --biome-far: oklch(0.32 0.025 220); --biome-near: oklch(0.23 0.028 230); --biome-ink: oklch(0.95 0.012 220);  --biome-planet: oklch(0.88 0.045 220);}
+[data-biome="volcanic"] { --biome-far: oklch(0.26 0.055 35);  --biome-near: oklch(0.18 0.048 25);  --biome-ink: oklch(0.94 0.022 45);  --biome-planet: oklch(0.70 0.150 35);}
+[data-biome="cave"]     { --biome-far: oklch(0.27 0.028 285); --biome-near: oklch(0.19 0.026 290); --biome-ink: oklch(0.93 0.014 285);  --biome-planet: oklch(0.72 0.055 290);}
+[data-biome="ocean"]    { --biome-far: oklch(0.27 0.040 235); --biome-near: oklch(0.19 0.045 245); --biome-ink: oklch(0.94 0.018 230);  --biome-planet: oklch(0.76 0.100 235);}
 
 /* Reduced motion freezes a biome to a single static frame, same rule as
    everywhere else in this project. Nothing here depends on movement to read. */

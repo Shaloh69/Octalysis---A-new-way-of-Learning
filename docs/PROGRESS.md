@@ -333,10 +333,16 @@ after R4 (110 moons) and after any dependency change.
 | 3D chunk, gzipped | ≤ 250 KB | **220.6 KB** | `pnpm --filter @octa/web build` |
 | 3D in the initial load | never | **absent** | no `modulepreload` in `dist/index.html` |
 | Initial JS, gzipped | — | **71.8 KB** (+7.9 KB CSS) | same build |
-| Draw calls per frame | ≤ 50 | **32** | GL context wrapped, counted live |
+| Draw calls per frame | ≤ 50 | **21** (was 32) | GL context wrapped, counted live |
 | Frame rate, desktop | 60 target | **60.1 fps** | Playwright + rAF, 5s |
-| Frame rate, 4× CPU throttle | — | **59.4 fps** | CDP `Emulation.setCPUThrottlingRate` |
-| Frame rate, 6× CPU throttle | **30 floor** | **47.4 fps** | same, low-end mobile proxy |
+| Frame rate, 6× CPU throttle | **30 floor** | **57.7 fps** (was 47.4) | CDP `Emulation.setCPUThrottlingRate` |
+
+**Both improved after progressive reveal**, which was not the goal but is the
+obvious consequence: a locked planet has no body, so a fresh student draws 3
+planets instead of 19. The additions since the last measurement — preview
+moons, comets, the sun's corona and ray sweep, mastery flags — are all one
+instanced or buffered draw each, and together they cost less than the 16 planet
+meshes reveal removed.
 | Biome art — `neutral` | — | **10.2 KB** PNG referenced (27 KB vendored) + 0.27 KB gz chunk | `du` + build |
 | Biome art — other six | — | not vendered | — |
 
@@ -554,6 +560,32 @@ tiny dark discs; at 380px it is a scatter of near-black specks with no labels an
 no visible edges. The act list beneath it carries all the actual information, and
 carries it well. Same class as `DESIGN-REVIEW-01` D-1, and invisible to every
 green gate. R1/R3 input, not a blocker.
+
+### F-15 · Three visual defects only a screenshot could find
+**NEW. All three shipped green through typecheck, 52 unit tests and 32 specs.**
+
+1. **Every biome rendered the same pale planet.** The tint lerped 55% from the
+   palette variant toward the biome tint — and a saturated cyan mixed halfway
+   with a saturated warm lands on near-neutral white. **The two chromas cancel.**
+   It looked exactly like the tint was not being applied. Now 88%, so the biome
+   dominates and the palette variant survives as a trace, which is the intended
+   relationship. §4.1 says the surface *derives from* the biome; a 50/50 blend
+   does not do that.
+2. **Comets rendered as grey squares the size of a planet.** A `<points>`
+   sprite is a quad, and `sizeAttenuation` made near ones huge. They read as
+   debris. Now `lineSegments` with a head and a tail — a streak, which is both
+   cheaper to read and closer to what a comet looks like.
+3. **The star field had the same problem, and had had it since R1.** Stars were
+   scattered from radius 60 while the camera sits at ~30, so a handful were
+   closer than the system itself and drew as large grey squares. Visible in
+   every solar-system screenshot in this repo and never noticed. Minimum radius
+   is now well beyond the camera.
+
+And a fourth, caught by the probe rather than the eye: **progressive reveal
+left 19 hit targets over 3 visible planets** — invisible clickable controls in
+empty space. A student tabbing the map would land on something with no visual
+referent. The hit layer now matches the drawn scene; the act list still carries
+all 19, which is where completeness belongs.
 
 ### F-13 · The planet HUD was never built — the click went straight to the stage
 **NEW. Diagnosed on request, and it was the second of the two possibilities.**

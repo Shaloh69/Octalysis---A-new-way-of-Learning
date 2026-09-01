@@ -3,6 +3,7 @@ import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../lib/layout"
 import { computeSolarLayout } from "../solar-system/layout";
 import type { ScreenPoint } from "../solar-system/SolarSystemCanvas";
 import { PlanetHud } from "../solar-system/PlanetHud";
+import { useFormation } from "../solar-system/useFormation";
 import { useCosmetics } from "../solar-system/cosmetic-seed";
 import type { StageNode, StageMapData } from "../lib/api";
 
@@ -149,6 +150,9 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
    *
    * The stage route is still exactly one click further on, from the HUD.
    */
+  // A planet that has formed since the last visit (§1.4b).
+  const { formed, dismiss } = useFormation(data.nodes);
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = selectedId ? data.nodes.find((n) => n.id === selectedId) ?? null : null;
 
@@ -221,6 +225,7 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
               paletteVariant={cosmetics.paletteVariant}
               projection={projection}
               focusId={selectedId}
+              biome={cosmetics.biomes[cosmetics.biomeIndex] ?? null}
               onTooSlow={() => {
                 // Ladder rung 4. Drop to flat, in place, and remember it for
                 // this device -- "without asking and without an error state",
@@ -263,6 +268,27 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
         The screen-reader equivalent. Same graph, expressed as text, because the
         SVG's spatial arrangement carries information a screen reader cannot get.
       */}
+      {/*
+        A planet has formed. Calm, brief, and dismissible.
+
+        NOT a second Bring-Up: GAME-DESIGN.md 1B rule 3 caps spectacle at one
+        moment per stage, and the Bring-Up owns that budget with its 2000ms and
+        its jingle. This is a map event. If the two ever compete for attention,
+        this is the one that gets trimmed.
+      */}
+      {formed && (
+        <div className="formation" role="status" aria-live="polite">
+          <span className="formation-mark" aria-hidden="true" />
+          <span>
+            A new celestial body has formed —{" "}
+            <span className="mono">{formed.id}</span> {formed.title}
+          </span>
+          <button type="button" className="formation-dismiss" onClick={dismiss}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* The map's response to a click, on either layer. The act list is the
           DOM representation of the same map, so selecting from it opens the
           same panel rather than a second, different behaviour. */}
@@ -331,9 +357,25 @@ function PlanetHits({
     return () => cancelAnimationFrame(frame);
   }, [projection]);
 
+  /*
+   * Only revealed planets get a hit target.
+   *
+   * Progressive reveal (§1.4b) means a locked planet has no body in the scene.
+   * Leaving its button behind put 19 clickable targets over 3 visible planets —
+   * invisible controls floating in empty space, which is worse than no control:
+   * a student tabbing the map would land on something with no visual referent,
+   * and a pointer user would click nothing and get a dialog.
+   *
+   * The ACCESSIBILITY contract does not weaken here. `ActList` below still
+   * renders all 19 stages as real focusable buttons with state and lock reason
+   * in full text, and `/app/map` is unchanged. This layer is the spatial
+   * overlay for what is actually drawn; the list is the complete map.
+   */
+  const revealed = data.nodes.filter((n) => n.state !== "locked");
+
   return (
     <div className="map-hits">
-      {data.nodes.map((n) => (
+      {revealed.map((n) => (
         <button
           key={n.id}
           type="button"

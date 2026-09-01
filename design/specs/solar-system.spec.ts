@@ -262,15 +262,66 @@ test.describe("the DOM layer stays the accessibility contract", () => {
       };
     });
 
-    expect(state.total, "19 stages, 19 controls").toBe(19);
-    expect(state.placed, "every planet projected on screen").toBe(19);
-    expect(state.distinct, "buttons stacked -- projection failed").toBeGreaterThan(15);
+    /*
+     * Not 19 any more, and that is deliberate: progressive reveal (§1.4b) means
+     * only reached planets have a body, and a planet with no body must have no
+     * hit target either — an invisible clickable control is worse than none.
+     * The COMPLETE list is the act list, asserted separately.
+     */
+    expect(state.total, "at least the reached planets have controls").toBeGreaterThan(0);
+    expect(state.total, "and never more than the whole syllabus").toBeLessThanOrEqual(19);
+    expect(state.placed, "every drawn planet is projected on screen").toBe(state.total);
+    expect(new Set(state.order).size, "buttons stacked -- projection failed")
+      .toBe(state.total);
 
     // Focus order is CURRICULUM order, never screen position. A student
-    // tabbing through the map walks the syllabus.
-    expect(state.order).toEqual(
-      Array.from({ length: 19 }, (_, i) => String(i).padStart(2, "0")),
-    );
+    // tabbing the map walks the syllabus, over whatever subset is revealed.
+    expect(state.order).toEqual([...state.order].sort());
+  });
+
+  test("progressive reveal draws only reached planets, and the flat map still shows all 19", async ({ page }, testInfo) => {
+    /*
+     * SOLAR-SYSTEM-SPEC.md §1.4b, both halves — and the second half is the one
+     * that matters most. The 3D layer may withhold for effect; the accessible
+     * layer never does, because a student planning a semester needs the whole
+     * syllabus shape.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
+
+    await signIn(page, "progressing");
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+
+    const hits = await page.locator(".map-hit").count();
+    const listed = await page.locator(".act-list .act-item").count();
+
+    // Fewer planets drawn than stages exist -- that IS the reveal.
+    expect(hits, "3D layer should draw only reached planets").toBeLessThan(19);
+    expect(hits, "but it must draw the ones the student has reached").toBeGreaterThan(0);
+
+    // No invisible clickable targets: every hit target has a body behind it.
+    expect(
+      await page.locator('.map-hit[aria-disabled="true"]').count(),
+      "a locked planet has no body, so it must have no hit target either",
+    ).toBe(0);
+
+    // The DOM layer is complete regardless.
+    expect(listed, "the act list must still carry all 19").toBe(19);
+    await expect(page.locator(".act-list")).toContainText(/Unlocks when Stage \d+/);
+  });
+
+  test("/app/map shows every stage, locked included, whatever the scene withholds", async ({ page }) => {
+    await signIn(page, "progressing");
+    await page.goto("/app/map", { waitUntil: "networkidle" });
+    await page.locator(".act-list").waitFor();
+
+    expect(await page.locator(".act-list .act-item").count()).toBe(19);
+    expect(
+      await page.locator(".act-item-locked").count(),
+      "locked stages must be visible here, in text",
+    ).toBeGreaterThan(0);
+    await expect(page.locator(".act-list")).toContainText(/Unlocks when Stage \d+/);
+    await expect(page.locator(".act-list")).toContainText(/You're at \d+%/);
   });
 
   test("a locked planet's control still announces why", async ({ page }, testInfo) => {
@@ -280,12 +331,19 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await page.goto("/app", { waitUntil: "networkidle" });
     await settle(page, true);
 
-    // The canvas carries none of this -- it is aria-hidden and has no
-    // accessibility semantics at all. The buttons over it do.
-    const locked = page.locator('.map-hit[aria-disabled="true"]').first();
-    await expect(locked).toHaveCount(1);
-    await expect(locked).toContainText(/Locked\./);
-    await expect(locked).toContainText(/Unlocks when Stage \d+/);
+    /*
+     * Locked planets no longer have hit targets — they have no body to sit on
+     * under progressive reveal. So the "why is this locked" announcement is the
+     * ACT LIST's job, which is where it always had to work anyway: the canvas
+     * is aria-hidden and carries no semantics at all.
+     */
+    const lockedItem = page.locator(".act-item-locked").first();
+    await expect(lockedItem).toContainText(/Unlocks when Stage \d+/);
+    await expect(lockedItem).toContainText(/You're at \d+%/);
+    expect(
+      await page.locator('.map-hit[aria-disabled="true"]').count(),
+      "an unreachable planet must not leave a clickable ghost behind",
+    ).toBe(0);
   });
 
   test("clicking a planet opens the HUD and does NOT navigate", async ({ page }, testInfo) => {
@@ -301,11 +359,24 @@ test.describe("the DOM layer stays the accessibility contract", () => {
      */
     test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
 
-    await signIn(page);
+    /*
+     * The PROGRESSING student, necessarily. A fresh account has exactly one
+     * revealed planet — stage 00 — because progressive reveal draws only what
+     * has been reached. That is the feature working, and it means a fresh
+     * account cannot exercise a planet with subtopics.
+     */
+    await signIn(page, "progressing");
     await page.goto("/app", { waitUntil: "networkidle" });
     await settle(page, true);
 
-    await page.locator('.map-hit[aria-disabled="true"]').first().click({ force: true });
+    /*
+     * Any drawn planet EXCEPT 00. Locked ones have no hit target under
+     * progressive reveal, and stage 00 genuinely has zero objectives — it is
+     * the one stage with no subtopic dots, which is real data, not a bug. The
+     * first version of this test clicked it and then asserted dots > 0.
+     */
+    await page.locator('.map-hit:not(:has(.map-hit-id:text-is("00")))').first()
+      .click({ force: true });
     const hud = page.locator(".hud");
     await hud.waitFor();
 
@@ -318,18 +389,15 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     // Every §2 element that has real data behind it.
     await expect(hud.locator(".hud-act")).toBeVisible();          // Act chip
     await expect(hud.locator(".hud-glyph")).toBeVisible();        // state icon
-    await expect(hud.locator(".hud-state")).toContainText(/Locked/);
-    await expect(hud.locator(".hud-prereq")).toContainText(/Needs/);
+    await expect(hud.locator(".hud-state")).toContainText(
+      /Available|In progress|Mastered/,
+    );
+    // One dot per objective. Real data: the count comes from the map payload.
     expect(await hud.locator(".hud-dot").count()).toBeGreaterThan(0);
 
-    // The lock reason is PRINTED, never a tooltip. Three documents require it
-    // and R0 caught a draft moving it to hover.
-    await expect(hud.locator(".hud-lock-reason")).toContainText(/Unlocks when Stage \d+/);
-    await expect(hud.locator(".hud-lock-reason")).toContainText(/You're at \d+%/);
-
-    // Locked means there is nothing to enter, so no Enter button at all --
-    // a disabled button that does nothing would fail the consequence test.
-    expect(await hud.locator(".hud-enter").count()).toBe(0);
+    // A reachable planet offers the one action. `Enter` is what navigates --
+    // the click on the planet is not, which was the whole bug.
+    await expect(hud.locator(".hud-enter")).toBeVisible();
 
     await capture(page, "hud-locked", testInfo);
   });
