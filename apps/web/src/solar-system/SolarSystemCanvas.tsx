@@ -119,6 +119,8 @@ interface Props {
   biome: string | null;
   /** Whether the prerequisite traces between planets are drawn. */
   showPath: boolean;
+  /** The selected moon's objective id, highlighted in the focused tier. */
+  selectedMoon: string | null;
 }
 
 export interface ScreenPoint {
@@ -540,6 +542,74 @@ function Planets({
 }
 
 /**
+ * The focused planet's moons, rendered individually.
+ *
+ * `SOLAR-SYSTEM-SPEC.md` §5's focused tier: at overview scale most moons are
+ * absent and a seeded one-in-five previews, but once a planet is selected **all
+ * of its own moons** appear as real bodies — at most 11, per Stage 03's count,
+ * so this is bounded by "moons on one stage" and never "moons in the course".
+ *
+ * Individual meshes rather than one instanced buffer, deliberately: this tier
+ * needs per-moon colour for the selection highlight, and 11 draws inside a
+ * budget measured at 21 is affordable where 110 would not be. The unfocused
+ * tier stays instanced for exactly that reason.
+ */
+function FocusedMoons({
+  layout,
+  focusId,
+  selectedMoon,
+  paletteVariant,
+}: {
+  layout: SolarLayout;
+  focusId: string | null;
+  selectedMoon: string | null;
+  paletteVariant: number;
+}): JSX.Element | null {
+  const lit = useMemo(() => tokenColor("--planet-lit", [0.6, 0.05, 0.85]), [paletteVariant]);
+  const dim = useMemo(() => tokenColor("--planet-dim", [0.6, 0.05, 0.4]), [paletteVariant]);
+  const accent = useMemo(() => tokenColor("--accent", [0.08, 0.55, 0.5]), [paletteVariant]);
+
+  const moons = useMemo(
+    () =>
+      focusId
+        ? [...layout.bodies.values()].filter((b) => b.kind === "moon" && b.parentId === focusId)
+        : [],
+    [layout, focusId],
+  );
+
+  if (moons.length === 0) return null;
+
+  return (
+    <group>
+      {moons.map((m) => {
+        const on = selectedMoon === m.id;
+        return (
+          <mesh key={m.id} position={[m.x, m.y, m.z]}>
+            {/* The selected moon is larger AND accent-coloured: size carries
+                the state as well as colour, so the highlight survives a
+                colour-blind reading and the phosphor theme. */}
+            <sphereGeometry args={[on ? 0.3 : 0.19, 12, 12]} />
+            <meshBasicMaterial color={on ? accent : lit} transparent opacity={on ? 1 : 0.85} />
+          </mesh>
+        );
+      })}
+      {/* A faint ring marking the moons' shared orbit, so they read as
+          belonging to the planet rather than floating near it. */}
+      <lineLoop
+        geometry={circleGeometry(0.55, 48)}
+        position={[
+          layout.bodies.get(focusId ?? "")?.x ?? 0,
+          0,
+          layout.bodies.get(focusId ?? "")?.z ?? 0,
+        ]}
+      >
+        <lineBasicMaterial color={dim} transparent opacity={0.35} />
+      </lineLoop>
+    </group>
+  );
+}
+
+/**
  * Prerequisite traces — the lines connecting each planet to the one it needs.
  *
  * Off by default and toggled from the map's own control. `stages.prereq` is the
@@ -848,11 +918,16 @@ function Drift({
        * animating while the dialog is open, and a camera still sweeping past
        * the planet you just selected is the opposite of focus.
        */
+      /*
+       * Closer than the old framing, because the moons have to be resolvable.
+       * At the previous 5.5-unit standoff a moon at 0.19 units across was a
+       * couple of pixels -- present, and useless as a selection target.
+       */
       const out = Math.hypot(focus.x, focus.z) || 1;
       target.current.set(
-        focus.x + (focus.x / out) * 5.5,
-        distance * 0.30,
-        focus.z + (focus.z / out) * 5.5,
+        focus.x + (focus.x / out) * 3.2,
+        distance * 0.16,
+        focus.z + (focus.z / out) * 3.2,
       );
       look.current.set(focus.x, focus.y, focus.z);
       // Frame-rate independent easing. Under reduced motion it jumps straight
@@ -948,6 +1023,7 @@ export default function SolarSystemCanvas({
   onTooSlow,
   biome,
   showPath,
+  selectedMoon,
 }: Props): JSX.Element | null {
   const [failed, setFailed] = useState(false);
   /** Drives the sun's click flash. A ref, so a pulse costs no re-render. */
@@ -1025,6 +1101,12 @@ export default function SolarSystemCanvas({
         />
         <PreviewMoons nodes={nodes} layout={layout} paletteVariant={paletteVariant} />
         {showPath && <PrereqTraces nodes={nodes} layout={layout} frozen={frozen} />}
+        <FocusedMoons
+          layout={layout}
+          focusId={focusId}
+          selectedMoon={selectedMoon}
+          paletteVariant={paletteVariant}
+        />
       </group>
 
       <Projector

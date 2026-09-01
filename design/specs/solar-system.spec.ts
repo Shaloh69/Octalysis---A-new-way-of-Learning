@@ -518,8 +518,20 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     // The click must NOT have navigated. That is the whole bug this catches.
     expect(new URL(page.url()).pathname).toBe("/app");
 
-    await expect(hud).toHaveAttribute("role", "dialog");
-    await expect(hud).toHaveAttribute("aria-modal", "true");
+    /*
+     * A SIDEBAR, not a modal. It docks right, the map stays live behind it, and
+     * it deliberately does NOT trap focus or claim `aria-modal` -- the panel
+     * does not own the screen, and saying it does would misreport what is
+     * reachable to a screen reader.
+     */
+    await expect(hud).toHaveAttribute("role", "complementary");
+    expect(await hud.getAttribute("aria-modal"), "a sidebar must not claim modality").toBeNull();
+
+    // Docked to the right edge, full height.
+    const box = await hud.boundingBox();
+    const vp = page.viewportSize();
+    expect(box, "the panel must be on screen").not.toBeNull();
+    expect(Math.round(box!.x + box!.width), "docked to the right edge").toBe(vp!.width);
 
     // Every §2 element that has real data behind it.
     await expect(hud.locator(".hud-act")).toBeVisible();          // Act chip
@@ -527,8 +539,17 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await expect(hud.locator(".hud-state")).toContainText(
       /Available|In progress|Mastered/,
     );
-    // One dot per objective. Real data: the count comes from the map payload.
-    expect(await hud.locator(".hud-dot").count()).toBeGreaterThan(0);
+    // One selectable moon per objective. Real data: the count comes from the
+    // map payload, and §5's focused tier makes them individually pickable.
+    const moons = hud.locator(".hud-moon");
+    expect(await moons.count()).toBeGreaterThan(0);
+
+    // Selecting highlights it, and selecting again clears -- the control is its
+    // own undo, which is the mandate's reversibility test satisfied in place.
+    await moons.first().click();
+    await expect(hud.locator(".hud-moon.is-on")).toHaveCount(1);
+    await moons.first().click();
+    await expect(hud.locator(".hud-moon.is-on")).toHaveCount(0);
 
     // A reachable planet offers the one action. `Enter` is what navigates --
     // the click on the planet is not, which was the whole bug.

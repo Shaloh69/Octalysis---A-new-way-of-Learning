@@ -40,6 +40,9 @@ interface SolarContextValue {
   /** Which planet the camera is flying to, or null to drift. */
   readonly focusId: string | null;
   readonly setFocusId: (id: string | null) => void;
+  /** Selected moon within the focused planet, highlighted in the scene. */
+  readonly selectedMoon: string | null;
+  readonly setSelectedMoon: (objectiveId: string | null) => void;
   /** Whether the prerequisite traces between planets are drawn. */
   readonly showPath: boolean;
   readonly togglePath: () => void;
@@ -130,7 +133,15 @@ export function SolarProvider({
   children: ReactNode;
 }): JSX.Element {
   const projection = useRef<Map<string, ScreenPoint>>(new Map());
-  const [focusId, setFocusId] = useState<string | null>(null);
+  const [focusId, setFocusIdRaw] = useState<string | null>(null);
+  const [selectedMoon, setSelectedMoon] = useState<string | null>(null);
+
+  // Changing planet clears the moon selection: a highlight left pointing at a
+  // body that is no longer on screen is worse than none.
+  const setFocusId = (id: string | null): void => {
+    setFocusIdRaw(id);
+    setSelectedMoon(null);
+  };
 
   /*
    * The prerequisite traces are OFF by default.
@@ -185,6 +196,8 @@ export function SolarProvider({
       layout,
       focusId,
       setFocusId,
+      selectedMoon,
+      setSelectedMoon,
       showPath,
       togglePath: () => setShowPath((v) => !v),
       active,
@@ -198,7 +211,7 @@ export function SolarProvider({
         setAllowed(mode === "3d" ? ladderAllows() : false);
       },
     }),
-    [layout, focusId, showPath, active, allowed],
+    [layout, focusId, selectedMoon, showPath, active, allowed],
   );
 
   // Stage 11 names the rings. Server-derived, like every other state here --
@@ -223,6 +236,7 @@ export function SolarProvider({
               paletteVariant={cosmetics.paletteVariant}
               projection={projection}
               focusId={focusId}
+              selectedMoon={selectedMoon}
               showPath={showPath}
               biome={cosmetics.biomes[cosmetics.biomeIndex] ?? null}
               onTooSlow={() => {

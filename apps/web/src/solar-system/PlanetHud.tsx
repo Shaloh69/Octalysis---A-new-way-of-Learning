@@ -19,8 +19,27 @@ import { encounterFor } from "../lib/encounters";
  * between 641px and 1024px, which stay on `/app` and have no hover at all.
  * Icons are additive here. They never gate the words.
  *
- * Focus-trapped, Escape closes, and the scene stops drifting while it is open —
- * the same requirements the star dialog carried.
+ * A SIDEBAR, NOT A MODAL, and that distinction is the whole design.
+ *
+ * It slides in from the right and the map stays live behind it: the camera has
+ * just flown to the planet, its moons are rendered around it, and the point is
+ * to look at both at once. A modal would dim the thing it is describing.
+ *
+ * That changes three behaviours from the modal it replaces:
+ *   - **No `aria-modal`, no focus trap.** The map behind stays operable, and
+ *     trapping focus in a panel that does not own the screen is a lie to a
+ *     screen reader about what is reachable.
+ *   - Escape still closes it, because a panel that opened on a click should
+ *     close on the key everyone tries.
+ *   - The scene keeps drifting; only the camera holds on the planet.
+ *
+ * `SOLAR-SYSTEM-SPEC.md` §2's substance is unchanged — the Act chip, the state
+ * icon beside printed words, the lock reason printed in full, prerequisites
+ * named, one Enter button. What moved is the container.
+ *
+ * MOONS ARE SELECTABLE HERE. §5's focused tier says a planet's own moons become
+ * individually pickable once its HUD is open; this is where they are picked.
+ * The scene highlights whichever is selected.
  */
 
 /** Roman numerals, deliberately — see the Act chip note below. */
@@ -51,11 +70,21 @@ interface Props {
   readonly node: StageNode;
   /** Named prerequisites, resolved to titles by the caller. */
   readonly prereqs: readonly StageNode[];
+  /** The selected moon's objective id, or null. Highlighted in the scene. */
+  readonly selectedMoon: string | null;
+  readonly onSelectMoon: (objectiveId: string | null) => void;
   readonly onEnter: (stageId: string) => void;
   readonly onClose: () => void;
 }
 
-export function PlanetHud({ node, prereqs, onEnter, onClose }: Props): JSX.Element {
+export function PlanetHud({
+  node,
+  prereqs,
+  selectedMoon,
+  onSelectMoon,
+  onEnter,
+  onClose,
+}: Props): JSX.Element {
   const panel = useRef<HTMLDivElement>(null);
 
   // Focus moves into the HUD on open and Escape closes it. Focus returning to
@@ -66,24 +95,18 @@ export function PlanetHud({ node, prereqs, onEnter, onClose }: Props): JSX.Eleme
     const focusable = el.querySelector<HTMLElement>("button, [href], [tabindex]");
     focusable?.focus();
 
+    /*
+     * Escape closes. Tab is NOT trapped.
+     *
+     * The modal version trapped focus, which was right for a modal and is wrong
+     * here: this panel does not own the screen, the map behind it stays
+     * operable, and trapping focus would tell a screen-reader user that nothing
+     * else is reachable when everything still is.
+     */
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      // Trap. A dialog you can tab out of is a dialog that has lost the user.
-      const all = [...el.querySelectorAll<HTMLElement>("button, [href], [tabindex]:not([tabindex='-1'])")];
-      if (all.length === 0) return;
-      const first = all[0]!;
-      const last = all[all.length - 1]!;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
       }
     };
     el.addEventListener("keydown", onKey);
@@ -94,10 +117,9 @@ export function PlanetHud({ node, prereqs, onEnter, onClose }: Props): JSX.Eleme
   const objectives = node.objectives.length;
 
   return (
-    <div
+    <aside
       className="hud"
-      role="dialog"
-      aria-modal="true"
+      role="complementary"
       aria-labelledby="hud-title"
       ref={panel}
       // Themed with the stage's own encounter theme -- GAME-DESIGN.md §9,
@@ -156,14 +178,34 @@ export function PlanetHud({ node, prereqs, onEnter, onClose }: Props): JSX.Eleme
         state out of an average.
       */}
       {objectives > 0 && (
-        <p className="hud-moons">
-          <span className="hud-dots" aria-hidden="true">
-            {Array.from({ length: objectives }, (_, i) => (
-              <span key={i} className="hud-dot" />
-            ))}
-          </span>
-          <span className="mono">{objectives}</span> subtopics
-        </p>
+        <div className="hud-moons">
+          <p className="hud-moons-head">
+            <span className="mono">{objectives}</span> subtopics — the moons
+            around this planet
+          </p>
+          <ul className="hud-moon-list">
+            {node.objectives.map((o) => {
+              const on = selectedMoon === o.id;
+              return (
+                <li key={o.id}>
+                  <button
+                    type="button"
+                    className={`hud-moon${on ? " is-on" : ""}`}
+                    aria-pressed={on}
+                    // Selecting highlights that moon in the scene. Selecting it
+                    // again clears, so the control is its own undo -- the
+                    // mandate's reversibility test, satisfied by the same press.
+                    onClick={() => onSelectMoon(on ? null : o.id)}
+                  >
+                    <span className="hud-dot" aria-hidden="true" />
+                    <span className="mono hud-moon-id">{o.id}</span>
+                    <span className="hud-moon-level">L{o.level}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
 
       {/* Prerequisites, NAMED in text. The traced line in the scene is
@@ -194,6 +236,6 @@ export function PlanetHud({ node, prereqs, onEnter, onClose }: Props): JSX.Eleme
           Close
         </button>
       </div>
-    </div>
+    </aside>
   );
 }

@@ -145,8 +145,15 @@ const SWEEP = (300 * Math.PI) / 180;
 /** Where stage 00 sits. -90° puts it at the top, where a reader starts. */
 const ANGLE_START = -Math.PI / 2;
 
-/** How far a moon orbits from its planet's centre. */
-const MOON_ORBIT = 0.55;
+/**
+ * How far a moon orbits from its planet's centre.
+ *
+ * Must clear the planet itself. At 0.55 the moons sat INSIDE a mastered
+ * planet's 0.62 radius — they rendered as bumps on its edge rather than as
+ * bodies orbiting it, which only showed up once the focused tier drew them
+ * individually and someone looked at the result.
+ */
+const MOON_ORBIT = 1.15;
 
 /** Moons past this many per ring start a second, slightly wider ring. */
 const MOONS_PER_LOCAL_RING = 8;

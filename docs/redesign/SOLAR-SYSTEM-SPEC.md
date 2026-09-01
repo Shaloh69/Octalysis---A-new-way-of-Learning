@@ -505,9 +505,49 @@ have no hover at all — those students would have gotten a padlock and
 nothing else. **Fixed: the lock reason is always printed, in text, next to
 the icon. The icon adds a fast visual read; it never gates the words.**
 
-**The interaction:** click a planet → camera flies to it, easing per
-`GAME-DESIGN.md` §3.2's already-decided `cameraPosition(..., duration)` →
-a compact **HUD ring** appears around the planet, not a modal wall of text.
+**The interaction, as built:** click a planet → the camera flies to it, easing
+per `GAME-DESIGN.md` §3.2 → a **sidebar slides in from the right**, and the
+planet's own moons appear around it as selectable bodies.
+
+### A sidebar, not a modal — and why that is the whole design
+
+The earlier draft of this section called for "a compact HUD ring around the
+planet, not a modal wall of text". It was built as a modal, and that was wrong
+for a reason worth writing down: **a modal dims the thing it is describing.**
+The camera has just flown to this planet and its moons have just appeared
+around it. Covering that to talk about it defeats the fly-in entirely.
+
+So it docks to the right edge, full height, and the map stays live behind it.
+Three behaviours follow from that and none of them are incidental:
+
+- **No `aria-modal`, no focus trap.** The panel does not own the screen. The
+  map behind it stays operable, and trapping focus would tell a screen-reader
+  user that nothing else is reachable when everything still is. It is
+  `role="complementary"`.
+- **Escape still closes it**, because a panel that opened on a click should
+  close on the key everyone tries.
+- **The scene keeps drifting.** Only the camera holds, on the planet.
+
+**Every aspect ratio, checked rather than assumed.** A full-height right rail
+is right at 1440×900 and wrong on a phone in landscape, where 844×380 would
+leave the map a narrow slot. Below **520px of height** the panel becomes a
+bottom sheet and the map keeps the upper half. The breakpoint is on HEIGHT, not
+width, because height is the dimension that actually runs out when a phone is
+rotated — and rotating is now the supported way onto the map (§5's ladder note).
+
+### Moons are selected here
+
+§5's focused tier — a planet's own moons becoming individually pickable once it
+is selected — is realised in this panel. The sidebar lists them; the scene
+renders them; selecting one enlarges and accent-colours it in both places, so
+the highlight survives a colour-blind reading. Selecting it again clears, which
+makes the control its own undo.
+
+Two geometry facts learned by looking at it rather than reasoning about it:
+**a moon's orbit has to clear its planet** (at 0.55 units they sat inside a
+mastered planet's 0.62 radius and rendered as bumps on its edge), and **the
+focus camera has to come closer than the overview framing** or a 0.19-unit moon
+is a couple of pixels — present, and useless as a target.
 
 | Old star dialog (text, 7 items) | New planet HUD (signs), corrected |
 |---|---|
@@ -527,8 +567,7 @@ reading a glow's brightness, but it must not become the only carrier. Mastery
 is still in the glow, still in the HUD's state line, and still in `/app/map`'s
 text.
 
-**What doesn't change:** focus-trap, Escape closes, background stops
-animating while open, themed per the stage's encounter theme (`GAME-DESIGN.md`
+**What doesn't change:** Escape closes, themed per the stage's encounter theme (`GAME-DESIGN.md`
 §9, untouched) — same requirements as the old star dialog. What changed from
 the original redo: icons and dots now sit **alongside** printed text as a
 faster visual read, not **instead of** it. That's the actual fix for the

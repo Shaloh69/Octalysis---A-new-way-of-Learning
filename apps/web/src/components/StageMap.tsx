@@ -57,8 +57,10 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
    * longer owns a canvas -- it reads the shared projection so its controls can
    * sit over whatever the backdrop is drawing.
    */
-  const { projection, focusId, setFocusId, showPath, togglePath, enabled, setPreference } =
-    useSolar();
+  const {
+    projection, focusId, setFocusId, selectedMoon, setSelectedMoon,
+    showPath, togglePath, enabled, setPreference,
+  } = useSolar();
 
   // A planet that has formed since the last visit (§1.4b).
   const { formed, dismiss } = useFormation(data.nodes);
@@ -189,6 +191,8 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
           prereqs={selected.prereq
             .map((id) => data.nodes.find((n) => n.id === id))
             .filter((n): n is StageNode => n !== undefined)}
+          selectedMoon={selectedMoon}
+          onSelectMoon={setSelectedMoon}
           onEnter={(id) => {
             setSelectedId(null);
             onOpen(id);
