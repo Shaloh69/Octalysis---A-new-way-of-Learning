@@ -1270,3 +1270,13 @@ button {
     transition: none;
   }
 }
+
+/* The seeded system callsign on /app/settings. A name, never an identifier. */
+.settings-callsign {
+  margin: 0 0 var(--space-4);
+}
+.settings-callsign .mono {
+  font-size: 1.05rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}

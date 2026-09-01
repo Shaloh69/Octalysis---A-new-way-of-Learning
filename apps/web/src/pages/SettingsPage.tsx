@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ACCENTS } from "@octa/tokens/accents";
 import { setAccentHue, setTheme, type Theme } from "../lib/session";
+import { useCosmetics } from "../solar-system/cosmetic-seed";
 
 /**
  * Settings.
@@ -51,10 +52,44 @@ export function SettingsPage(): JSX.Element {
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // Read-only: the callsign is seeded server-side from student_id and is not
+  // something the student can change. Nothing here writes it back.
+  const { cosmetics } = useCosmetics();
+
   return (
     <section className="settings" aria-labelledby="settings-title">
       <p className="reader-eyebrow">Settings</p>
       <h1 id="settings-title">How this looks</h1>
+
+      {/*
+        The system callsign (SOLAR-SYSTEM-SPEC.md §3).
+
+        Shown here and nowhere else, deliberately. It is a NAME, not an
+        identifier: the spec is explicit that it must never be usable anywhere
+        it could collide with a real one, which is why it is a word plus two hex
+        characters and a student number is nine digits — the two namespaces
+        cannot overlap.
+
+        It is on the settings page rather than the map because it answers "what
+        is mine" rather than "where am I", and because it is the one cosmetic a
+        student might reasonably want to look up rather than just see.
+
+        Mono, like every other machine-side value in this app.
+      */}
+      <h2>Your system</h2>
+      {cosmetics.callsign ? (
+        <p className="settings-callsign">
+          <span className="mono">{cosmetics.callsign}</span>
+          <span className="settings-note">
+            {" "}
+            — your system's registry name. Derived from your student ID, so it is
+            yours and it does not change. It is a name only: nothing is graded on
+            it and nothing looks you up by it.
+          </span>
+        </p>
+      ) : (
+        <p className="settings-note">Your system's registry name is still loading.</p>
+      )}
 
       <h2>Theme</h2>
       <div className="settings-themes" role="radiogroup" aria-label="Theme">
