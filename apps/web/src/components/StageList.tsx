@@ -54,6 +54,57 @@ const STATE_WORD: Record<StageNode["state"], string> = {
   mastered: "Mastered",
 };
 
+const ROMAN = ["", "I", "II", "III", "IV"] as const;
+
+/**
+ * The four grading periods, as headings — WITHOUT naming them.
+ *
+ * This is where the act text went when it left the map. The map now draws;
+ * this page reads. But the heading is a Roman numeral and a stage range, never
+ * "Prelim" or "Midterm", and that is a deliberate dodge rather than an
+ * oversight: **three sources give three different groupings.** `stages.act`
+ * groups 00–05 / 06–09 / 10–13 / 14–18, root `CLAUDE.md` says Prelim 1–4 /
+ * Midterm 5–8 / Semis 9–12 / Finals 13–17, and the superseded `StageMap`
+ * rendered narrative act names that match neither.
+ *
+ * See `DESIGN-REVIEW-01.md` D-3 and `PROGRESS.md` F-7 — still the instructor's
+ * call, and unchanged by this page. Printing "Prelim" over a group that
+ * contains chapter 05 would be worse than printing nothing, because a student
+ * would believe it and plan a review week around it. A numeral and the range
+ * are true under all three readings.
+ *
+ * The range is stated in full so the grouping is checkable at a glance: if the
+ * instructor's answer differs, the disagreement is visible rather than buried.
+ */
+function ActHead({ act, stages }: { act: number; stages: StageNode[] }): JSX.Element {
+  const done = stages.filter((n) => n.state === "mastered").length;
+  const first = stages[0]?.id ?? "";
+  const last = stages[stages.length - 1]?.id ?? "";
+  const pct = Math.round((stages.reduce((t, n) => t + n.mastery, 0) / stages.length) * 100);
+
+  return (
+    <div className="act-head">
+      <span className="act-head-numeral" aria-hidden="true">{ROMAN[act] ?? act}</span>
+      <span className="act-head-main">
+        <span className="act-head-line">
+          <span className="act-head-title">
+            Act {ROMAN[act] ?? act}
+            <span className="act-head-range mono"> · Stages {first}–{last}</span>
+          </span>
+          <span className="act-head-count mono">
+            {done}/{stages.length} mastered
+          </span>
+        </span>
+        {/* Mean mastery across the act. The bar is the fast read; the numbers
+            beside it are the exact one, and neither is the only signal. */}
+        <span className="stage-bar" aria-hidden="true">
+          <span className="stage-bar-fill stage-bar-act" style={{ width: `${pct}%` }} />
+        </span>
+      </span>
+    </div>
+  );
+}
+
 export function StageList({
   data,
   onOpen,
@@ -64,9 +115,41 @@ export function StageList({
   // Curriculum order, so tabbing through walks the syllabus.
   const ordered = [...data.nodes].sort((a, b) => a.ordinal - b.ordinal);
 
+  /*
+   * Grouped by act, in curriculum order, WITHOUT reordering anything. The
+   * grouping is presentational; `ordinal` still decides sequence, so focus
+   * order continues to walk the syllabus exactly as it did when this was one
+   * flat list.
+   */
+  const acts: Array<{ act: number; stages: StageNode[] }> = [];
+  for (const n of ordered) {
+    const tail = acts[acts.length - 1];
+    if (tail && tail.act === n.act) tail.stages.push(n);
+    else acts.push({ act: n.act, stages: [n] });
+  }
+
+  return (
+    <div className="stage-acts">
+      {acts.map((group) => (
+        <section key={group.act} className="stage-act" aria-label={`Act ${ROMAN[group.act] ?? group.act}`}>
+          <ActHead act={group.act} stages={group.stages} />
+          <StageRows stages={group.stages} onOpen={onOpen} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function StageRows({
+  stages,
+  onOpen,
+}: {
+  stages: StageNode[];
+  onOpen: (stageId: string) => void;
+}): JSX.Element {
   return (
     <ol className="stage-list">
-      {ordered.map((n) => (
+      {stages.map((n) => (
         <li key={n.id} className={`stage-row stage-row-${n.state}`}>
           <button type="button" className="stage-row-btn" onClick={() => onOpen(n.id)}>
             <PlanetMark node={n} />

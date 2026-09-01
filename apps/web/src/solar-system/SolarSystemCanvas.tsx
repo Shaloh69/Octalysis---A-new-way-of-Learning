@@ -812,15 +812,49 @@ function Comets({ frozen, distance }: { frozen: boolean; distance: number }): JS
  *
  * Fires at most once. The caller remembers the choice for this device.
  */
+/**
+ * Seconds of scene warm-up that are NOT measured.
+ *
+ * The first frames of a WebGL scene are its slowest: shaders compile, geometry
+ * and textures upload, the lazily-loaded chunk is still settling, and React is
+ * still mounting the DOM overlay. Judging the scene during that window judges
+ * it at the one moment it is guaranteed to look worst.
+ */
+const WARMUP_SECONDS = 4;
+
+/**
+ * A single frame longer than this is discarded rather than counted.
+ *
+ * A tab switch, a breakpoint, a garbage collection or the machine sleeping all
+ * produce one enormous delta. Averaged into a one-second window that reads as
+ * catastrophic frame rate, and three of those in a row used to be enough to
+ * demote a student permanently.
+ */
+const STALL_SECONDS = 0.5;
+
 function FrameRateGuard({ onTooSlow }: { onTooSlow: () => void }): null {
   const frames = useRef(0);
   const since = useRef(0);
+  const warmup = useRef(0);
   const badSeconds = useRef(0);
   const fired = useRef(false);
 
   useFrame((_, delta) => {
     if (fired.current) return;
     if (typeof document !== "undefined" && document.hidden) return;
+
+    // Discard stalls outright: they say something about the tab, not the GPU.
+    if (delta > STALL_SECONDS) {
+      frames.current = 0;
+      since.current = 0;
+      return;
+    }
+
+    // Warm-up. Measured but not judged -- see WARMUP_SECONDS.
+    if (warmup.current < WARMUP_SECONDS) {
+      warmup.current += delta;
+      return;
+    }
 
     frames.current += 1;
     since.current += delta;

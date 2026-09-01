@@ -1538,12 +1538,19 @@ button {
 /* The moon selector. */
 .hud-moons { margin: var(--space-4) 0 0; }
 .hud-moons-head { margin: 0 0 var(--space-2); font-size: 0.8rem; color: var(--ink-muted); }
+/*
+ * One moon per row, full width.
+ *
+ * This was a wrapping strip of pills, which suited "05.1 L0" and does not suit
+ * a sentence: pills of wildly different widths wrap into a ragged block that is
+ * hard to scan and harder to hit. A list of sentences is a list.
+ */
 .hud-moon-list {
-  display: flex; flex-wrap: wrap; gap: var(--space-2);
+  display: flex; flex-direction: column; gap: var(--space-2);
   list-style: none; margin: 0; padding: 0;
 }
 .hud-moon {
-  display: inline-flex; align-items: center; gap: var(--space-2);
+  display: flex; width: 100%; align-items: center; gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
   min-height: var(--control-h-sm);
   background: none;
@@ -1619,9 +1626,25 @@ button {
   border-radius: 2px;
 }
 
-.hud-moons { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0 0; font-size: 0.85rem; color: var(--ink-muted); }
-.hud-dots { display: flex; flex-wrap: wrap; gap: 3px; max-width: 9rem; }
-.hud-dot { width: 5px; height: 5px; border-radius: var(--radius-full); background: var(--ink-faint); }
+/*
+ * `.hud-moons` was declared TWICE -- once above as a plain block, and again
+ * here as a flex ROW, which is the one that won. That was correct while the
+ * moons were a strip of 5px dots beside a caption. It is wrong now that they
+ * are a list of named, selectable objectives: the row layout squeezed the
+ * caption into a one-word-per-line column beside the list. The duplicate is
+ * gone; the block rule above stands.
+ *
+ * `.hud-dots` went with it -- no component has rendered that container since
+ * the dots became buttons. `.hud-dot` survives because each moon still carries
+ * one as its selected/unselected mark.
+ */
+.hud-dot {
+  flex: none;
+  width: 5px; height: 5px;
+  margin-top: 0.45rem;
+  border-radius: var(--radius-full);
+  background: var(--ink-faint);
+}
 
 .hud-prereq { margin: var(--space-3) 0 0; font-size: 0.85rem; color: var(--ink-muted); }
 
@@ -2009,3 +2032,50 @@ button {
   text-transform: uppercase;
   color: var(--ink-faint);
 }
+
+/*
+ * A moon row: the objective's sentence first, its code and ring beneath.
+ *
+ * The sentence leads because it is the only part that names anything; the code
+ * stays because a student cross-referencing the stage reader needs it, and it
+ * stays in mono per the type roles in root CLAUDE.md.
+ */
+.hud-moon { align-items: flex-start; text-align: left; border-radius: var(--radius-sm); }
+.hud-moon-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hud-moon-desc { line-height: 1.35; }
+.hud-moon-meta { display: flex; gap: var(--space-2); font-size: 0.72rem; color: var(--ink-faint); }
+
+/*
+ * Act grouping on /app/stages — where the act text went when it left the map.
+ *
+ * A numeral and a stage range, never a name: three sources disagree about the
+ * grouping (DESIGN-REVIEW-01 D-3), and a wrong name is worse than none because
+ * a student would plan around it.
+ */
+.stage-acts { display: flex; flex-direction: column; gap: var(--space-6); }
+.stage-act { display: flex; flex-direction: column; gap: var(--space-3); }
+.act-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+.act-head-numeral {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display, inherit);
+  color: var(--ink-muted);
+}
+.act-head-main { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.act-head-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.act-head-title { font-weight: 600; }
+.act-head-range { color: var(--ink-faint); font-weight: 400; font-size: 0.8rem; }
+.act-head-count { margin-left: auto; font-size: 0.78rem; color: var(--ink-muted); }
+.stage-bar-act { background: var(--accent); }

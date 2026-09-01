@@ -254,13 +254,47 @@ describe("F-2 — ring radii are spaced by occupancy", () => {
     expect(worstOurs).toBeGreaterThan(worstEven);
   });
 
-  it("does not vary per student — there is no seed input at all", () => {
-    // The cosmetic seed rotates the whole system by one angle and touches
-    // nothing else. Radius carries semantics, so it can never depend on it.
-    // computeSolarLayout takes no seed parameter, which is the strongest form
-    // of this guarantee; this test states it so a future signature change has
-    // to argue with a red test.
-    expect(computeSolarLayout.length).toBe(2);
+  it("is identical for two students, and takes only the seed it is allowed", () => {
+    /*
+     * THIS TEST WAS PASSING VACUOUSLY.
+     *
+     * It asserted `computeSolarLayout.length === 2` under the heading "there is
+     * no seed input at all" — and there IS one: `previewSeed = 0`, a third
+     * parameter added in R1. `Function.length` ignores parameters with
+     * defaults, so it reported 2 and the claim went green while being false.
+     *
+     * That is the exact trap `cosmetics.spec.ts` already documented for
+     * `deriveCosmetics(key, examSalt = "")`, and a defaulted parameter is
+     * precisely how an unwanted input actually gets added. Asserted against the
+     * SOURCE now, like that one.
+     *
+     * The seed is permitted, narrowly: it picks which moons preview at overview
+     * zoom and nothing else. That it cannot move geometry is asserted over
+     * every body in "CANNOT move a single radius or angle" below — this test
+     * only pins the SHAPE of the input, so a fourth parameter, or a seed that
+     * stops being a plain number, has to argue with a red test.
+     */
+    const src = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), "..", "src", "solar-system", "layout.ts"),
+      "utf8",
+    );
+    const sig = src.match(/export function computeSolarLayout\(([\s\S]*?)\)\s*:/);
+    expect(sig, "computeSolarLayout signature not found").not.toBeNull();
+    // Strip the doc comment first: it sits BETWEEN parameters and contains
+    // commas of its own, which split the third parameter into three.
+    const params = sig![1]!
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    expect(params, `unexpected parameters: ${params.join(" | ")}`).toHaveLength(3);
+    expect(params[0], "first param is the stages").toMatch(/^stages\s*:/);
+    expect(params[1], "second param is the objectives").toMatch(/^objectives\s*:/);
+    expect(params[2], "third param is a plain, defaulted NUMBER").toMatch(
+      /^previewSeed\s*(:\s*number)?\s*=\s*0$/,
+    );
+
+    // And the same inputs still give the same map, twice.
     const a = computeSolarLayout(STAGES, OBJECTIVES);
     const b = computeSolarLayout(STAGES, OBJECTIVES);
     expect(a.ringRadii).toEqual(b.ringRadii);

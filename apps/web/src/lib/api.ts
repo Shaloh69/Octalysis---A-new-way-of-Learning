@@ -33,7 +33,7 @@ export interface StageNode {
    * moons' levels -- see src/solar-system/layout.ts. No description text: the
    * map needs the shape, the reader supplies the content.
    */
-  objectives: Array<{ id: string; level: number }>;
+  objectives: Array<{ id: string; level: number; description: string }>;
   state: "locked" | "available" | "in_progress" | "mastered";
   mastery: number;
   lockReason: LockReason | null;

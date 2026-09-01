@@ -92,7 +92,7 @@ async function openStageList(page: Page): Promise<void> {
   // four columns of paragraphs; `/app/stages` carries the same 19 stages with
   // progress bars, planet marks and every lock reason still printed.
   await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
-  await page.locator(".stage-list").waitFor();
+  await page.locator(".stage-acts").waitFor();
 }
 
 test.describe("the solar system renders", () => {
@@ -198,7 +198,9 @@ test.describe("the degradation ladder — falls back in place, never redirects",
     test.skip(testInfo.project.name !== "desktop-1440", "already flat at 380px");
 
     await signIn(page);
-    await page.addInitScript(() => localStorage.setItem("octa:map-too-slow", "1"));
+    await page.addInitScript(() =>
+      localStorage.setItem("octa:map-too-slow", JSON.stringify({ at: Date.now() })),
+    );
     await page.goto("/app", { waitUntil: "networkidle" });
     await settle(page);
 
@@ -206,6 +208,60 @@ test.describe("the degradation ladder — falls back in place, never redirects",
     expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
     // Flat mode renders the list open, so no disclosure to expand.
     await expect(page.locator(".map-header")).toBeVisible();
+  });
+
+  test("a STALE too-slow verdict is forgotten, and 3D comes back", async ({ page }, testInfo) => {
+    /*
+     * The verdict used to be permanent, and that is the whole bug behind "why
+     * am I still seeing the 2D map". One bad startup -- a cold shader cache, a
+     * busy machine, another tab pinning the GPU -- wrote the flag and nothing
+     * ever re-measured. The student had no way back and, because the fallback
+     * is deliberately silent, no way to know why.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "already flat at 380px");
+
+    await signIn(page);
+    const EIGHT_DAYS = 8 * 24 * 60 * 60 * 1000;
+    await page.addInitScript((ms) => {
+      localStorage.setItem(
+        "octa:map-too-slow",
+        JSON.stringify({ at: Date.now() - (ms as number) }),
+      );
+    }, EIGHT_DAYS);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+
+    expect(await page.locator("canvas").count(), "an expired verdict must not hold").toBe(1);
+    // And it is cleared, so the device is re-measured rather than re-judged.
+    expect(
+      await page.evaluate(() => localStorage.getItem("octa:map-too-slow")),
+      "a stale verdict must be forgotten, not merely ignored",
+    ).toBeNull();
+  });
+
+  test("a browser stuck by the OLD sticky flag is released", async ({ page }, testInfo) => {
+    /*
+     * The previous format was the bare string "1", with no timestamp, and every
+     * browser that ever tripped the old guard still carries it. Those students
+     * are stuck in 2D with nothing in the UI to explain it, so the new reader
+     * treats the old value as stale rather than migrating it: JSON.parse("1")
+     * is a number, not a {at} record.
+     *
+     * This is the upgrade path, and it is worth a test precisely because it
+     * only ever runs once per browser and would otherwise never be exercised.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "already flat at 380px");
+
+    await signIn(page);
+    await page.addInitScript(() => localStorage.setItem("octa:map-too-slow", "1"));
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+
+    expect(await page.locator("canvas").count(), "the old flag must not strand anyone").toBe(1);
+    expect(
+      await page.evaluate(() => localStorage.getItem("octa:map-too-slow")),
+      "the legacy value must be cleared, not left to be re-read",
+    ).toBeNull();
   });
 
   test("the guard does NOT fire on a machine that can hold 30fps", async ({ page }, testInfo) => {
@@ -366,7 +422,7 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await expect(page.getByRole("link", { name: /All 19 stages/ })).toBeVisible();
 
     await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
-    await page.locator(".stage-list").waitFor();
+    await page.locator(".stage-acts").waitFor();
     expect(
       await page.locator(".stage-row-btn").count(),
       "all 19 are real focusable controls",
@@ -405,7 +461,15 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     expect(state.total, "at least the reached planets have controls").toBeGreaterThan(0);
     expect(state.total, "and never more than the whole syllabus").toBeLessThanOrEqual(19);
     expect(state.placed, "every drawn planet is projected on screen").toBe(state.total);
-    expect(new Set(state.order).size, "buttons stacked -- projection failed")
+    expect(new Set(state.order).size, "two controls claim the same stage id")
+      .toBe(state.total);
+    /*
+     * The stacking check, which the message above USED to claim while actually
+     * comparing ids. `distinct` was computed for exactly this and then never
+     * asserted, so a projection collapsing every button onto one point would
+     * have passed: the ids stay unique no matter where the elements land.
+     */
+    expect(state.distinct, "every control sits at its own point -- else the projection collapsed")
       .toBe(state.total);
 
     // Focus order is CURRICULUM order, never screen position. A student
@@ -432,6 +496,29 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     expect(hits, "3D layer should draw only reached planets").toBeLessThan(19);
     expect(hits, "but it must draw the ones the student has reached").toBeGreaterThan(0);
 
+    /*
+     * The exact number, taken from the server rather than hard-coded.
+     *
+     * "fewer than 19 and more than 0" passes with 1 planet or 18, so it would
+     * not notice the reveal predicate drifting away from `state !== "locked"`.
+     * Hard rule 4 says the client never decides a lock; this asserts it never
+     * decides a REVEAL either -- the count must equal the number of non-locked
+     * nodes in the payload, whatever the fixture happens to contain.
+     */
+    const flat = await page.context().newPage();
+    await flat.addInitScript(
+      ([token]) => window.localStorage.setItem("octa:dev-token", token as string),
+      [mintDevToken(STUDENTS.progressing)],
+    );
+    await flat.goto("/app/stages", { waitUntil: "domcontentloaded" });
+    await flat.locator(".stage-acts").waitFor();
+    const unlocked =
+      (await flat.locator(".stage-row").count()) -
+      (await flat.locator(".stage-row-locked").count());
+    await flat.close();
+
+    expect(hits, "one control per non-locked stage, exactly").toBe(unlocked);
+
     // No invisible clickable targets: every hit target has a body behind it.
     expect(
       await page.locator('.map-hit[aria-disabled="true"]').count(),
@@ -441,21 +528,21 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     // The DOM layer is complete regardless -- on its own route now.
     await openStageList(page);
     expect(await page.locator(".stage-row").count(), "the list must carry all 19").toBe(19);
-    await expect(page.locator(".stage-list")).toContainText(/Unlocks when Stage \d+/);
+    await expect(page.locator(".stage-acts")).toContainText(/Unlocks when Stage \d+/);
   });
 
   test("the stage list shows every stage, locked included, whatever the scene withholds", async ({ page }) => {
     await signIn(page, "progressing");
     await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
-    await page.locator(".stage-list").waitFor();
+    await page.locator(".stage-acts").waitFor();
 
     expect(await page.locator(".stage-row").count()).toBe(19);
     expect(
       await page.locator(".stage-row-locked").count(),
       "locked stages must be visible here, in text",
     ).toBeGreaterThan(0);
-    await expect(page.locator(".stage-list")).toContainText(/Unlocks when Stage \d+/);
-    await expect(page.locator(".stage-list")).toContainText(/You're at \d+%/);
+    await expect(page.locator(".stage-acts")).toContainText(/Unlocks when Stage \d+/);
+    await expect(page.locator(".stage-acts")).toContainText(/You're at \d+%/);
   });
 
   test("a locked planet's control still announces why", async ({ page }, testInfo) => {
@@ -544,6 +631,16 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     const moons = hud.locator(".hud-moon");
     expect(await moons.count()).toBeGreaterThan(0);
 
+    /*
+     * Each moon is NAMED. This list rendered "05.1 L0" six times over before
+     * the map payload carried `description` -- ids and ring numbers name
+     * nothing, and an unreadable selection control fails the mandate's
+     * legibility test however well it behaves.
+     */
+    const first = (await moons.first().innerText()).trim();
+    expect(first.length, "a moon must carry its objective's sentence").toBeGreaterThan(12);
+    expect(first, "not just an id and a level").not.toMatch(/^\d{2}\.\d+\s*L\d$/);
+
     // Selecting highlights it, and selecting again clears -- the control is its
     // own undo, which is the mandate's reversibility test satisfied in place.
     await moons.first().click();
@@ -558,7 +655,7 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await capture(page, "hud-locked", testInfo);
   });
 
-  test("the HUD traps focus and Escape closes it", async ({ page }, testInfo) => {
+  test("focus moves into the sidebar but is NOT trapped, and Escape closes it", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
 
     await signIn(page);
@@ -568,10 +665,32 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await page.locator(".map-hit").first().click({ force: true });
     await page.locator(".hud").waitFor();
 
+    /*
+     * This test was called "the HUD traps focus" and never tested trapping --
+     * it asserted focus PLACEMENT and stopped. The title outlived the design:
+     * the panel is a sidebar now, and it deliberately does not trap. Both
+     * halves are asserted below so the name and the behaviour cannot drift
+     * apart again.
+     */
     expect(
       await page.evaluate(() => document.querySelector(".hud")?.contains(document.activeElement)),
-      "focus must move into the dialog on open",
+      "focus must move into the panel on open, so a keyboard user lands in it",
     ).toBe(true);
+
+    // Tabbing to the end must LEAVE. A panel that does not own the screen must
+    // not tell a screen-reader user that nothing else is reachable.
+    const escaped = await page.evaluate(async () => {
+      const hud = document.querySelector(".hud")!;
+      const focusables = [...hud.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")];
+      focusables[focusables.length - 1]?.focus();
+      return hud.contains(document.activeElement);
+    });
+    expect(escaped, "sanity: focus is on the panel's last control").toBe(true);
+    await page.keyboard.press("Tab");
+    expect(
+      await page.evaluate(() => document.querySelector(".hud")?.contains(document.activeElement)),
+      "Tab past the last control must leave the panel -- no focus trap",
+    ).toBe(false);
 
     await page.keyboard.press("Escape");
     await expect(page.locator(".hud")).toHaveCount(0);
@@ -604,8 +723,37 @@ test.describe("the DOM layer stays the accessibility contract", () => {
 
     // The design mandate calls a lock with no visible reason "the single most
     // demotivating UI element in ed-tech". It is printed text, never a tooltip.
-    await expect(page.locator(".stage-list")).toContainText(/Unlocks when Stage \d+/);
-    await expect(page.locator(".stage-list")).toContainText(/You're at \d+%/);
+    await expect(page.locator(".stage-acts")).toContainText(/Unlocks when Stage \d+/);
+    await expect(page.locator(".stage-acts")).toContainText(/You're at \d+%/);
+  });
+});
+
+test.describe("the stages page carries the act grouping", () => {
+  test("groups all 19 by act, with a numeral and a range, and never a name", async ({ page }) => {
+    await signIn(page, "progressing");
+    await openStageList(page);
+
+    // Four grading periods. The map draws; this page reads.
+    const acts = page.locator(".stage-act");
+    expect(await acts.count(), "four acts").toBe(4);
+    expect(await page.locator(".stage-row").count(), "all 19 still present").toBe(19);
+
+    /*
+     * NEVER a name. Three sources give three different groupings
+     * (DESIGN-REVIEW-01 D-3 / PROGRESS F-7) and it is still the instructor's
+     * call, so a numeral and a stage range are printed instead. "Prelim" over
+     * a group containing chapter 05 would be worse than nothing, because a
+     * student would believe it and plan a review week around it.
+     */
+    const text = await page.locator(".stage-acts").innerText();
+    expect(text, "act names are still unresolved -- do not print one")
+      .not.toMatch(/Prelim|Midterm|Semi-?final|Finals/i);
+    await expect(page.locator(".act-head").first()).toContainText(/Act I/);
+    await expect(page.locator(".act-head").first()).toContainText(/Stages \d{2}–\d{2}/);
+
+    // Grouping is presentational: focus order still walks the syllabus.
+    const ids = await page.locator(".stage-row-id").allInnerTexts();
+    expect(ids, "curriculum order, never screen position").toEqual([...ids].sort());
   });
 });
 

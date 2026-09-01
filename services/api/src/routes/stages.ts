@@ -45,7 +45,7 @@ interface StageRow {
    * per-stage route did not already. No description text is selected: the map
    * needs the shape, not the content.
    */
-  objectives: Array<{ id: string; level: number | null }> | null;
+  objectives: Array<{ id: string; level: number | null; description: string }> | null;
 }
 
 export function registerStageRoutes(app: FastifyInstance, env: Env): void {
@@ -63,7 +63,8 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
               is_stage_unlocked($1, s.id) as unlocked,
               (select count(*)::int from content_blocks cb where cb.stage_id = s.id) as block_count,
               (select coalesce(
-                        jsonb_agg(jsonb_build_object('id', o.id, 'level', o.level)
+                        jsonb_agg(jsonb_build_object('id', o.id, 'level', o.level,
+                                                     'description', o.description)
                                   order by o.id),
                         '[]'::jsonb)
                  from objectives o where o.stage_id = s.id) as objectives
@@ -136,10 +137,26 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         published: r.published,
         prereq: r.prereq ?? [],
         blockCount: r.block_count,
-        // Levels only, no descriptions. A moon needs an identity and a ring;
-        // the objective's text arrives with the stage itself.
+        /*
+         * Id, ring AND the objective's own sentence.
+         *
+         * This used to be levels only, on the reasoning that "a moon needs an
+         * identity and a ring; the objective's text arrives with the stage
+         * itself". That was true while moons were decoration. §5's focused tier
+         * made them SELECTION TARGETS, and a selection target with no name is
+         * a row reading "05.1 L0" -- which is what the sidebar rendered six
+         * times over before this.
+         *
+         * Not invented content: `objectives.description` is authored data
+         * already in the database, which is exactly where hard rule 5 says
+         * stage prose must come from. Nor is it newly exposed -- the per-stage
+         * route already returns descriptions for a LOCKED stage on purpose
+         * (the read-only preview of what is next), so the map payload showing
+         * the same sentences reveals nothing that was being withheld.
+         */
         objectives: (r.objectives ?? [])
-          .filter((o): o is { id: string; level: number } => o.level !== null),
+          .filter((o): o is { id: string; level: number; description: string } =>
+            o.level !== null),
         state,
         mastery: Number(mastery.toFixed(3)),
         lockReason,

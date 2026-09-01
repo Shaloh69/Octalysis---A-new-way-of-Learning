@@ -88,6 +88,63 @@ export function isSmallPortrait(): boolean {
   return small && window.innerHeight >= window.innerWidth;
 }
 
+/**
+ * How long a "this device is too slow" verdict is trusted.
+ *
+ * IT USED TO BE FOREVER, and that was the bug behind "why am I still in 2D".
+ * The guard wrote `octa:map-too-slow` once and nothing ever re-measured, so a
+ * single bad startup -- a cold shader cache, a busy machine, a laptop on
+ * battery, another tab pinning the GPU -- demoted that browser permanently.
+ * The student had no way back and no way to know why: the fallback is silent by
+ * design, which is right when it is correct and cruel when it is wrong.
+ *
+ * A week is long enough that a genuinely slow device is not re-testing
+ * constantly, and short enough that a bad afternoon is not a life sentence.
+ */
+const TOO_SLOW_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Ladder rung 4: has this device recently been measured below 30fps?
+ *
+ * Stored as `{"at": <epoch ms>}`. The old format was the bare string `"1"`,
+ * which parses to a number rather than an object and is therefore read as
+ * stale -- so every browser currently stuck in 2D by the old sticky flag is
+ * released the first time this runs, without needing to clear anything.
+ */
+function recentlyTooSlow(): boolean {
+  try {
+    const raw = localStorage.getItem("octa:map-too-slow");
+    if (!raw) return false;
+    const parsed: unknown = JSON.parse(raw);
+    const at =
+      typeof parsed === "object" && parsed !== null && "at" in parsed
+        ? (parsed as { at: unknown }).at
+        : null;
+    if (typeof at !== "number" || Date.now() - at > TOO_SLOW_TTL_MS) {
+      // Stale, or written by the old format. Forget it and re-measure.
+      localStorage.removeItem("octa:map-too-slow");
+      return false;
+    }
+    return true;
+  } catch {
+    // Unparseable (the old "1" included) or storage unavailable: re-measure.
+    try {
+      localStorage.removeItem("octa:map-too-slow");
+    } catch {
+      /* nothing to clean up */
+    }
+    return false;
+  }
+}
+
+export function rememberTooSlow(): void {
+  try {
+    localStorage.setItem("octa:map-too-slow", JSON.stringify({ at: Date.now() }));
+  } catch {
+    /* private window; it re-measures next time */
+  }
+}
+
 function ladderAllows(): boolean {
   if (typeof window === "undefined") return false;
   // 1 - reduced motion
@@ -98,9 +155,9 @@ function ladderAllows(): boolean {
   // in effect, asked it to do less work.
   const conn = (navigator as { connection?: { saveData?: boolean } }).connection;
   if (conn?.saveData) return false;
+  // 4 - a device measured below 30fps RECENTLY. Expires; see recentlyTooSlow.
+  if (recentlyTooSlow()) return false;
   try {
-    // 4 - a device already measured below 30fps
-    if (localStorage.getItem("octa:map-too-slow") === "1") return false;
     // The student's own preference is the last word, in both directions.
     return localStorage.getItem("octa:map-mode") !== "2d";
   } catch {
@@ -241,12 +298,10 @@ export function SolarProvider({
               biome={cosmetics.biomes[cosmetics.biomeIndex] ?? null}
               onTooSlow={() => {
                 // Ladder rung 4. Drop to flat, in place, remember it for this
-                // device -- "without asking and without an error state".
-                try {
-                  localStorage.setItem("octa:map-too-slow", "1");
-                } catch {
-                  /* private window; it re-measures next time */
-                }
+                // device -- "without asking and without an error state". The
+                // verdict now carries a timestamp and expires; it is not the
+                // permanent demotion it used to be.
+                rememberTooSlow();
                 setAllowed(false);
               }}
             />

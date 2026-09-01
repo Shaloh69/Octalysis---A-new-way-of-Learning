@@ -89,6 +89,24 @@ export const StageNode = z.object({
   prereq: z.array(StageId),
   state: StageNodeState,
   mastery: Mastery,
+  /**
+   * The stage's objectives — the moons around its planet.
+   *
+   * These were being sent by `/api/v1/stages` and consumed by the web app
+   * while this schema did not declare them at all, which is precisely the
+   * drift "Zod at every API boundary" exists to prevent. Declared now.
+   *
+   * `description` is the objective's authored sentence, and it is what the
+   * planet sidebar labels each moon with. Without it a selection list reads
+   * "05.1 L0" and names nothing.
+   */
+  objectives: z.array(
+    z.object({
+      id: z.string(),
+      level: Level,
+      description: z.string(),
+    }),
+  ),
   /** Non-null if and only if `state === 'locked'`. */
   lockReason: LockReason.nullable(),
 });

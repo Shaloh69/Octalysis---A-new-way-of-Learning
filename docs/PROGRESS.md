@@ -866,6 +866,123 @@ student asked to see it once more, not to be greeted again next visit.
 Both paths are now covered by spec — the first-run panel had **no test at all**
 before this, despite being the first thing every student sees.
 
+### F-17 · The 2D map kept coming back, and the frame-rate guard was why
+
+Reported from a real session: the student was landing on the flat map instead of
+the solar system. Not a rendering failure — the degradation ladder demoting them,
+correctly by its own rules, wrongly in fact.
+
+`FrameRateGuard` dropped to flat after 3 seconds under 30fps and wrote
+`octa:map-too-slow`. Three things were wrong with that, and they compounded:
+
+1. **It measured during warm-up.** Shader compilation, geometry upload, the lazy
+   chunk settling, React mounting the overlay — the first seconds of a WebGL
+   scene are its slowest by construction. The guard judged the scene at the one
+   moment it was guaranteed to look worst.
+2. **A single stall counted as a second of bad frame rate.** A tab switch, a GC
+   pause, a laptop sleeping — one enormous delta, averaged into a one-second
+   window, reads as catastrophic.
+3. **The verdict was permanent.** Nothing ever re-measured. One bad startup
+   demoted that browser forever, and because this ladder is deliberately silent
+   the student got no explanation and no way back.
+
+Confirmed independently by the suite, not just by report: "the guard does NOT
+fire on a machine that can hold 30fps" was **failing** — `guard fired when it
+should not`.
+
+Fixed: 4 seconds of unmeasured warm-up, frames over 0.5s discarded rather than
+counted, and the verdict stored as `{"at": <epoch ms>}` with a seven-day TTL. The
+legacy `"1"` parses to a number rather than a record and is therefore read as
+stale, which **releases every browser the old flag stranded** with no migration
+step. Two new specs cover the expiry and that release, the second precisely
+because it runs once per browser and would otherwise never be exercised.
+
+**Ruling (2 Sep 2026): the flat map stays.** Asked whether "remove 2D completely"
+meant deleting the flat presentation, the answer was to stop it *appearing*
+spuriously and keep it as the accessibility fallback. A `<canvas>` has no
+accessibility semantics, so the DOM layer is the only path for a screen reader,
+reduced motion, a portrait phone, or a machine without WebGL. Rung 4 protects a
+student on a weak device; it must not take the map from one on a capable device,
+so when it is wrong it must be wrong temporarily.
+
+### F-18 · Two invariant tests had outlived the design — one failing, one vacuous
+
+`pnpm verify` was **red on `main`**, and had been. I had been running `pnpm qa`,
+typecheck and the contrast gate and calling that verified. It is not: `verify`
+runs the unit suites, and one was failing.
+
+**The loud one.** `services/api/test/cosmetics.spec.ts` forbade the bare word
+"seed" in `layout.ts`. True when written; false since R1, when §5's moon preview
+deliberately threaded a numeric seed into `computeSolarLayout`. The invariant
+worth protecting was never "the string is absent" — it is that cosmetics cannot
+reach curriculum **structure**. Rewritten to forbid student identity and
+cosmetic appearance, case-insensitively and on stems.
+
+**The silent one, which is worse.** `apps/web/test/layout-solar.spec.ts` asserted
+`computeSolarLayout.length === 2` under the heading *"there is no seed input at
+all"* — while a third parameter, `previewSeed = 0`, existed. **`Function.length`
+ignores defaulted parameters**, so the claim was green and false. That is the
+identical trap this repo already documented for `deriveCosmetics(key, examSalt =
+"")` in the very same suite; it was fixed there and never swept for elsewhere.
+Now asserted against the source signature.
+
+Both were **mutation-tested** rather than assumed: adding a `studentAccentHue`
+parameter to `layout.ts` makes each go red. The first attempt at the tightened
+word list did *not* catch it — "studentAccentHue" contains neither "studentId"
+nor "accentHue" as a case-sensitive substring — which is exactly why the
+mutation check was run.
+
+### F-19 · Two environment traps that cost real time
+
+**`pnpm verify` truncates the demo data.** The API suite calls `resetAll()`.
+Restoring it takes TWO steps, not one: `db/demo-seed.sql` brings back the
+profiles and progress, but only 4 objectives — the other 110 come from
+`node scripts/sync-content.mjs`, because `content/stages/*.md` front matter is
+the authoring source of truth. A map with every stage locked and no moons is
+that, not a regression. `DESIGN-REVIEW-01.md` documents the first half; the
+content sync is the half that was missing.
+
+**A cold Vite server fails four baseline tests.** `before-baseline.spec.ts` sorts
+first alphabetically and absorbs the dependency-optimize pass: `networkidle`
+never settles and the stage list has not mounted. Warm, it passes 8/8 in 5.6s.
+**Warm the server before believing a red run.**
+
+Also corrected in the launch sequence: the API health route is **`/healthz`**,
+not `/health` (which 404s and will hang a naive wait loop forever), and
+`playwright.config.ts` sets `webServer: undefined` **deliberately**, so a dead
+stack reports as `ERR_CONNECTION_REFUSED` on every route rather than one clear
+error. Restarting the API needs the old process killed first — a second instance
+silently loses the port to `EADDRINUSE` and keeps serving the OLD build, which
+is how a payload change can appear to have no effect.
+
+### F-20 · The moons were selectable but unnamed, and the act text went nowhere
+
+Both found by cross-referencing the specs against a live browser rather than
+re-reading them, and both are defects in work committed the same session.
+
+**The moon list read `05.1 L0`, six times.** `/api/v1/stages` sent `{id, level}`
+under an explicit comment — "levels only, no descriptions… the objective's text
+arrives with the stage itself" — which was right while moons were decoration and
+wrong the moment §5 made them selection targets. `objectives.description` is
+authored data sitting in the database ("Differentiate DRAM and SRAM"), so
+surfacing it is what hard rule 5 *requires*, not a violation of it. Nor is it
+newly exposed: the per-stage route already returns descriptions for a **locked**
+stage on purpose.
+
+Two things fell out of it. `StageNode` in `packages/contracts` never declared
+`objectives` at all, though the API sent them and the web app consumed them —
+the exact drift "Zod at every API boundary" exists to prevent. And `.hud-moons`
+was declared **twice** in `styles.css`, the later rule a leftover from the dots
+era, which laid the caption out as a one-word-per-line column beside the list.
+
+**The act text was deleted from the map and never re-homed.** `/app/stages` had
+no acts at all — one H1 over a flat 19-row list. Now grouped into the four
+periods with per-act progress. Still no NAMES: `stages.act` groups 00–05,
+`CLAUDE.md` says Prelim 1–4, the superseded map said a third thing. D-3 is still
+the instructor's call, so the heading is a numeral and a stage range, both true
+under all three readings. Printing "Prelim" over a group containing chapter 05
+would be worse than printing nothing, because a student would believe it.
+
 ## Performance and QA numbers — measured, not assumed
 
 | Measurement | Value | How |

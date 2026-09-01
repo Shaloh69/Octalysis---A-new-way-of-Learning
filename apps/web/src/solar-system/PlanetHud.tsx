@@ -198,8 +198,21 @@ export function PlanetHud({
                     onClick={() => onSelectMoon(on ? null : o.id)}
                   >
                     <span className="hud-dot" aria-hidden="true" />
-                    <span className="mono hud-moon-id">{o.id}</span>
-                    <span className="hud-moon-level">L{o.level}</span>
+                    <span className="hud-moon-text">
+                      {/*
+                        The objective's own sentence, authored in the database.
+                        This list used to read "05.1  L0" six times over: an id
+                        and a ring number name nothing, and a selection control
+                        nobody can read fails the mandate's legibility test
+                        outright. The code stays, in mono, because a student
+                        comparing this against the stage reader needs it.
+                      */}
+                      <span className="hud-moon-desc">{o.description}</span>
+                      <span className="hud-moon-meta">
+                        <span className="mono hud-moon-id">{o.id}</span>
+                        <span className="hud-moon-level">L{o.level}</span>
+                      </span>
+                    </span>
                   </button>
                 </li>
               );

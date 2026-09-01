@@ -176,11 +176,30 @@ A budget nobody measures is a wish.
 Applied in order, without asking and without an error state:
 
 1. `prefers-reduced-motion` → **static**, all tiers
-2. Viewport ≤ 640px → **Tier 1 off**, Tier 2 falls back to the 2D map
+2. Small viewport **held in portrait** → **Tier 1 off**, Tier 2 falls back to the 2D map.
+   Corrected: this was "≤ 640px, full stop", which locked every phone out permanently. The reason
+   was never the device, it was the ASPECT — a solar system in a 380×844 column is a thin strip
+   with no room for orbits. Landscape gets the map; portrait is invited to turn.
 3. WebGL unavailable, or context lost → **all tiers off**, DOM only, silently
-4. Measured frame rate below 30fps for 3 consecutive seconds → **drop a tier**, once, and remember
-   the choice for that device
+4. Measured frame rate below 30fps for 3 consecutive seconds → **drop a tier** and remember the
+   verdict for that device **for seven days**. Three corrections, all of them from one bug:
+   - **The first 4 seconds are not measured.** Shaders compile, geometry uploads, the lazy chunk
+     settles and React mounts the overlay. Judging the scene then judges it at the one moment it
+     is guaranteed to look worst.
+   - **A frame longer than 0.5s is discarded, not counted.** A tab switch, a GC pause or a laptop
+     sleeping produces one enormous delta that reads as catastrophic frame rate.
+   - **The verdict expires.** It used to be permanent, and that was the whole of the "why am I
+     still on the 2D map" bug: one bad startup demoted a browser forever, nothing re-measured, and
+     because this ladder is deliberately silent the student got no explanation and no way back.
+     Stored as `{"at": <epoch ms>}`; the legacy `"1"` reads as stale, which releases every browser
+     the old flag stranded.
 5. Battery Saver / `navigator.connection.saveData` → **Tier 1 off**
+
+**The flat presentation is not a punishment and is never deleted.** A `<canvas>` carries no
+accessibility semantics at all, so the DOM layer is the only path for a screen reader, for reduced
+motion, for a portrait phone and for a machine without WebGL. Rung 4 exists to protect a student on
+a weak device, not to take the map away from one on a capable device — so when it is wrong, it must
+be wrong *temporarily*.
 
 And a manual override in `/app/settings`: **Full / Reduced / Off**. It passes all four mandate
 tests — it changes what you see, its label is legible, it is instantly reversible, and it is a real

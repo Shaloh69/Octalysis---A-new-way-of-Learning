@@ -135,13 +135,56 @@ describe("R2.3 — cosmetics cannot reach curriculum structure", () => {
    */
   const LAYOUT = resolve(ROOT, "apps", "web", "src", "solar-system", "layout.ts");
 
-  it("layout.ts has no notion of a student at all", () => {
+  /*
+   * THIS TEST WAS WRONG, AND IT WAS FAILING.
+   *
+   * It forbade the bare word "seed" in layout.ts. That was true when written
+   * and stopped being true in R1: §5's moon preview threads a NUMERIC seed into
+   * `computeSolarLayout` to pick which moons are drawn at overview zoom, which
+   * is a deliberate, documented decision, not a leak.
+   *
+   * The invariant worth protecting was never "the string 'seed' is absent" — it
+   * is that **cosmetics cannot reach curriculum structure**. A number that
+   * selects a subset of moons to render is not structure. A radius, an angle, a
+   * ring assignment or an ordering is.
+   *
+   * So this now forbids the things that would actually cross the line — student
+   * identity and the cosmetic APPEARANCE fields — and the geometric half of the
+   * boundary is asserted exhaustively, over every body, by
+   * `apps/web/test/layout-solar.spec.ts` §5 "CANNOT move a single radius or
+   * angle". Neither test is sufficient alone; both are cheap.
+   */
+  it("layout.ts has no notion of a student, and no cosmetic appearance", () => {
     const code = readFileSync(LAYOUT, "utf8")
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/^\s*\/\/.*$/gm, "");
-    for (const forbidden of ["studentId", "student_id", "seed", "cosmetic", "rotationOffset"]) {
-      expect(code, `layout.ts references ${forbidden}`).not.toContain(forbidden);
+
+    /*
+     * Matched case-INSENSITIVELY, and on stems rather than whole identifiers.
+     * A mutation check earned this: adding a `studentAccentHue` parameter slid
+     * past a list containing "studentId" and "accentHue", because neither is a
+     * case-sensitive substring of it. The leak this test exists to catch would
+     * look exactly like that.
+     */
+    for (const forbidden of [
+      "student",
+      "cosmetic",
+      "rotationOffset",
+      "palette",
+      "accent",
+      "biome",
+      "theme",
+    ]) {
+      expect(code, `layout.ts references ${forbidden}`).not.toMatch(
+        new RegExp(forbidden, "i"),
+      );
     }
+
+    // It may not reach the cosmetics module for itself, whatever it calls the
+    // import. The seed arrives as a plain number from the caller or not at all.
+    expect(code, "layout.ts imports a cosmetics module").not.toMatch(
+      /from\s+["'][^"']*cosmetic/i,
+    );
   });
 
   it("no client file derives cosmetics locally instead of reading the endpoint", () => {

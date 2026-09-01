@@ -70,7 +70,7 @@ async function structure(page: Page): Promise<string[]> {
   // is about what the curriculum CONTAINS for each student, which must be
   // identical -- only the dressing is allowed to differ.
   await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
-  await page.locator(".stage-list").waitFor();
+  await page.locator(".stage-acts").waitFor();
   return page.locator(".stage-row-title").allTextContents();
 }
 
