@@ -34,8 +34,23 @@ student, 14 console. What has landed under R3 so far:
   line, and the last rung of its ladder to be built. Rungs 1–5 all decide *for*
   the student; this is the student deciding, which is why §5 requires it
 
-Not yet started in R3: the actual per-route template pass against
-`TEMPLATE-LINKS.md`, which is what §R3.1–R3.3 enumerate.
+**R3's route pass has started.** `design/specs/r3-inventory.spec.ts` captures
+all **42** built route × width combinations, asserts every route throws no page
+error, and asserts **no route scrolls sideways at 380px** — which none does.
+Captures live in `design/r3-inventory/`.
+
+Two findings from that first pass:
+
+- **`DESIGN-REVIEW-01` D-4 is FIXED** — the submissions queue went from 3,436px
+  to **1,219px**, so all 21 items fit on one screen instead of three. Against
+  the named reference, not by taste.
+- **`/live` cannot be captured with `networkidle`** — Lecture Mode holds an open
+  request to `/api/v1/console/live` for as long as it is on screen, so that wait
+  never fires. The page is fine; the harness was wrong. All routes now use
+  `domcontentloaded` plus an element wait.
+
+Still to do in R3: the per-route template application itself against
+`TEMPLATE-LINKS.md` and `CONSOLE-DATA-AND-TEMPLATES.md`, route by route.
 
 ## R2 checklist status
 

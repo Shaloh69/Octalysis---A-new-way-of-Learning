@@ -5,7 +5,6 @@ import { useAsync } from "@/lib/useAsync";
 import { shortDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Empty, ErrorNote, Loading } from "@/components/ui/empty";
@@ -92,44 +91,59 @@ export function SubmissionsPage() {
           hint="Submissions appear as students hand them in. Drafts stay private until then."
         />
       ) : (
-        <ul className="space-y-2">
+        /*
+         * DENSE ROWS, not cards. `DESIGN-REVIEW-01` D-4, finally fixed.
+         *
+         * The queue was ~155px per item for four stacked lines, so 21 items to
+         * mark ran to a 3,400px page — "too sparse to mark from" was the
+         * finding, and it was left deliberately unfixed pending a pass against
+         * a reference rather than by taste. The reference is the one
+         * `CONSOLE-DATA-AND-TEMPLATES.md` §2 names: shadcn-admin's own Tasks
+         * page, the densest table in the template this console already uses.
+         *
+         * WHAT CAME OUT: the two-line body preview. A teacher triaging 21
+         * submissions needs who, which lab, whether it was late, and the way
+         * in. The prose is what they read AFTER opening one, and it is right
+         * there in the detail panel. Removing it is most of the height.
+         *
+         * WHAT STAYED: everything that changes what a teacher does first.
+         * `is_late` especially — it is a generated column and D-4's other half
+         * was that it did not appear at all.
+         */
+        <ul className="divide-y divide-line rounded-md border border-line">
           {data.submissions.map((sub) => (
             <li key={sub.id}>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                    <Badge tone={STATUS_TONE[sub.status]}>{sub.status}</Badge>
-                    <span className="num text-xs text-ink-faint">{sub.slug}</span>
-                    <span className="text-sm text-ink">{sub.studentName}</span>
-                    <span className="num text-xs text-ink-faint">{sub.studentId}</span>
-                    {sub.isLate && (
-                      <Badge tone="warning" title="Recorded, not penalised. That is your call.">
-                        <Clock className="mr-1 h-3 w-3" aria-hidden="true" /> late
-                      </Badge>
-                    )}
-                    {sub.score !== null && (
-                      <span className="num ml-auto text-sm">
-                        {sub.score}/{sub.maxScore}
-                      </span>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className={sub.score !== null ? "" : "ml-auto"}
-                      onClick={() => setOpen(sub)}
-                    >
-                      {sub.status === "graded" ? "Review" : "Mark"}
-                    </Button>
-                  </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 hover:bg-surface-2">
+                <Badge tone={STATUS_TONE[sub.status]}>{sub.status}</Badge>
+                <span className="num text-xs text-ink-faint">{sub.slug}</span>
 
-                  <p className="mb-1 text-sm font-medium text-ink">{sub.title}</p>
-                  <p className="line-clamp-2 text-xs text-ink-muted">{sub.bodyMd}</p>
-                  <p className="mt-1.5 text-xs text-ink-faint">
-                    Handed in {shortDate(sub.submittedAt)}
-                    {sub.graderName ? ` · marked by ${sub.graderName}` : ""}
-                  </p>
-                </CardContent>
-              </Card>
+                <span className="min-w-0 flex-1 truncate text-sm text-ink">
+                  <span className="font-medium">{sub.studentName}</span>
+                  <span className="num ml-2 text-xs text-ink-faint">{sub.studentId}</span>
+                  <span className="mx-2 text-ink-faint">·</span>
+                  <span className="text-ink-muted">{sub.title}</span>
+                </span>
+
+                {sub.isLate && (
+                  <Badge tone="warning" title="Recorded, not penalised. That is your call.">
+                    <Clock className="mr-1 h-3 w-3" aria-hidden="true" /> late
+                  </Badge>
+                )}
+
+                <span className="num whitespace-nowrap text-xs text-ink-faint">
+                  {shortDate(sub.submittedAt)}
+                </span>
+
+                {sub.score !== null && (
+                  <span className="num w-16 text-right text-sm">
+                    {sub.score}/{sub.maxScore}
+                  </span>
+                )}
+
+                <Button size="sm" variant="outline" onClick={() => setOpen(sub)}>
+                  {sub.status === "graded" ? "Review" : "Mark"}
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

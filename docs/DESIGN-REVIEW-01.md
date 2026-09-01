@@ -87,7 +87,7 @@ constraints sample, so it moves assessment scope.
 
 Needs a decision, then one change across all three.
 
-## D-4 · The submissions queue is too sparse to mark from · **NOT YET FIXED**
+## D-4 · The submissions queue is too sparse to mark from · **FIXED (R3, 2 Sep 2026)**
 
 Each card is ~145px tall for four short lines, so 21 items to mark is a lot of
 scrolling. `is_late` is computed in the database and **not shown at all**,
@@ -96,6 +96,21 @@ which is the one fact that changes what a teacher does first.
 Deliberately left. The fix is a density pass over the card, and it should be
 made against a reference rather than by taste — the whole point of having a
 browser now.
+
+**Fixed in R3**, against the reference `CONSOLE-DATA-AND-TEMPLATES.md` §2
+already named: shadcn-admin's own Tasks page, the densest table in the template
+this console is built from.
+
+Cards became rows in a divided list. **The page went from 3,436px to 1,219px**
+— all 21 items now fit on one screen instead of three. What came out is the
+two-line body preview: a teacher triaging 21 submissions needs who, which lab,
+whether it was late, and the way in; the prose is what they read *after*
+opening one, and it is already in the detail panel. What stayed is everything
+that changes what a teacher does first.
+
+The other half of this finding — `is_late` "not shown at all" — had been fixed
+separately at some point between the review and R3. It is a `Badge` beside the
+student's name, with the tooltip *"Recorded, not penalised. That is your call."*
 
 ---
 
