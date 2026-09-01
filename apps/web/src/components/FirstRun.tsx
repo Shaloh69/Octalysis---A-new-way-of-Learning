@@ -14,35 +14,77 @@ import { useState } from "react";
  * first visit only, saying what the three things on screen mean — and it is
  * dismissible from the first frame.
  *
- * The content is the map's own spatial grammar, which is the one thing a
- * student cannot infer by looking: that distance from the sun is depth into the
- * machine. Everything else on the page explains itself.
+ * ══ THE COPY BELOW IS A PLACEHOLDER. IT IS NOT FINAL CONTENT. ══
  *
- * WHAT IT DOES NOT SAY: what the rings are called. `SKILL-TREE-3D.md` §2 keeps
- * the level hierarchy unlabelled until Stage 11 — ten weeks of unexplained
- * descent is the setup for that reveal, and a tutorial that names them in week
- * one would spend it. The same withholding already applies to the Register Bar
- * and the Depth Gauge.
+ * The structure, timing, dismissal and accessibility behaviour are real and
+ * built. The WORDS are scaffolding, and they are labelled as such on screen so
+ * nobody — a student in a pilot, a reviewer, the instructor — mistakes
+ * unreviewed prose for the real thing.
+ *
+ * Root `CLAUDE.md` hard rule 5: **never invent course content.** Stage prose,
+ * figures and definitions come from `docs/source/*.md` or the database, and if
+ * content is missing the honest move is to say so rather than write something
+ * plausible. A first-run tour is closer to UI chrome than to course material,
+ * but it is still the first paragraphs a student reads in this app, and it was
+ * written by nobody who teaches the course.
+ *
+ * TO REPLACE THIS: write the real copy, delete the `PLACEHOLDER` flag below and
+ * the disclaimer it renders, and drop the steps in. Nothing else changes.
+ *
+ * One constraint the real copy inherits: **it must not name the rings.**
+ * `SKILL-TREE-3D.md` §2 keeps the level hierarchy unlabelled until Stage 11 —
+ * ten weeks of unexplained descent is the setup for that reveal, and a
+ * tutorial that names them in week one would spend it. The same withholding
+ * already applies to the Register Bar and the Depth Gauge.
  *
  * Dismissal is remembered per device. Nothing here is gradeable, so
  * `localStorage` is the right home for it (`apps/web/CLAUDE.md` bans it only
  * for anything that affects a grade).
+ *
+ * IT CAN BE REPLAYED. Once dismissed the panel is replaced, in the same slot,
+ * by a `?` button that plays it again from step one. This is what makes "Skip"
+ * honest: a student can leave immediately, on the first frame, without the
+ * quiet cost of never being able to get the explanation back. Without a way
+ * back, the only safe move is to read a tutorial you do not want, which is how
+ * a courtesy turns into an obstacle.
+ *
+ * The button sits in the panel's own slot rather than floating over a corner,
+ * so replaying does not shift the page and the control keeps a sane position in
+ * the tab order.
+ *
+ * Replaying does NOT clear the seen flag: the student asked to see it once
+ * more, not to be greeted by it again on their next visit.
  */
 
 const SEEN = "octa:first-run-map";
 
+/**
+ * Flip to `false` when real copy lands, and delete the disclaimer it renders.
+ * Kept as an explicit flag rather than inferred from the text, so removing the
+ * placeholder is a deliberate act rather than something that happens by
+ * accident when someone edits a string.
+ */
+const PLACEHOLDER = true;
+
+/**
+ * Placeholder steps.
+ *
+ * Each names the SUBJECT the real step should cover, so whoever writes it knows
+ * what slot they are filling — but none of them assert anything about the
+ * course. Three steps is the shape, not a requirement.
+ */
 const STEPS = [
   {
-    title: "The sun is the machine",
-    body: "Everything on this map orbits it. The whole course is a descent toward the hardware, and the sun is where you are heading.",
+    title: "Placeholder — what the sun is",
+    body: "Copy not written yet. This step will explain what sits at the centre of the map and why the whole course points at it.",
   },
   {
-    title: "Closer in means deeper down",
-    body: "A planet's distance from the sun is how far into the machine that chapter goes. Nothing here is decoration — every position comes from the syllabus.",
+    title: "Placeholder — what distance means",
+    body: "Copy not written yet. This step will explain what a planet's distance from the centre encodes. It must not name the levels: that reveal belongs to Stage 11.",
   },
   {
-    title: "Planets form as you reach them",
-    body: "Only the stages you have reached have a body yet. Click one to see what it covers, and what it needs first. The full list is always on the Stages page.",
+    title: "Placeholder — how the map fills in",
+    body: "Copy not written yet. This step will explain that stages appear as they are reached, and where to find the full list of all nineteen.",
   },
 ] as const;
 
@@ -66,7 +108,29 @@ export function FirstRun(): JSX.Element | null {
     }
   };
 
-  if (done) return null;
+  if (done) {
+    return (
+      <button
+        type="button"
+        className="first-run-replay"
+        /*
+         * A `?` alone is a glyph, not a name. The accessible name says what
+         * pressing it does, and `title` gives sighted users the same sentence
+         * on hover -- an icon-only control that only reads as "?" to a screen
+         * reader is a control nobody can decide about.
+         */
+        aria-label="Show the map explanation again"
+        title="Show the map explanation again"
+        onClick={() => {
+          setStep(0); // always from the beginning, never mid-sequence
+          setDone(false);
+        }}
+      >
+        <span aria-hidden="true">?</span>
+      </button>
+    );
+  }
+
   const current = STEPS[step];
   if (!current) return null;
 
@@ -76,6 +140,15 @@ export function FirstRun(): JSX.Element | null {
     // `role="note"`, not `dialog`: it is not modal and must not trap focus. A
     // student who ignores it entirely can use the whole page around it.
     <aside className="first-run" role="note" aria-label="About this map">
+      {PLACEHOLDER && (
+        // Said plainly, on screen, not only in a comment. A student in a pilot
+        // should be able to tell scaffolding from the real thing without
+        // reading the source.
+        <p className="first-run-placeholder">
+          Placeholder text — not real course content yet
+        </p>
+      )}
+
       <p className="first-run-step mono">
         {step + 1} / {STEPS.length}
       </p>

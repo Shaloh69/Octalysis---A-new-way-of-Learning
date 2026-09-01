@@ -16,6 +16,8 @@ Regenerate the per-route set with `pnpm qa design/specs/r3-inventory.spec.ts`.
 | `r3rev-phone-landscape` | The same phone turned: **the 3D map renders.** Ladder rung 2 is portrait-only now. |
 | `r3rev-sidebar-desktop` | Planet selected: camera flown in, six moons orbiting it, sidebar docked right with one moon selected. |
 | `r3rev-sidebar-landscape` | The same interaction at 844×380 — the panel becomes a bottom sheet so the map keeps the upper half. |
+| `r3rev-replay-button` | The map after the tour is dismissed: the `?` in the panel's own slot, 44×44, that replays it. |
+| `r3rev-firstrun-replayed` | The panel back at step 1/3 after pressing `?`, with the placeholder disclaimer visible. |
 
 ## What these captures caught
 

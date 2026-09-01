@@ -828,6 +828,69 @@ more prominently, not less. Still the instructor's call.
 
 ---
 
+### F-16 · The first-run copy was mine, and nothing on screen said so
+
+The first-run panel was built with three steps of real-sounding prose about
+what the sun is and what distance encodes. Correct-sounding, plausible, and
+**written by nobody who teaches CPE 412** — hard rule 5's exact failure mode,
+in the first paragraphs a student reads in this app.
+
+Ruled by the user: keep the panel, replace the copy with obvious placeholders,
+and **say on screen that it is not real content.** Built that way — a visible
+"placeholder text — not real course content yet" label, a `PLACEHOLDER` flag to
+delete when real copy lands, and step bodies that name the SUBJECT each real
+step should cover without asserting anything about the course.
+
+The flag is explicit rather than inferred from the text, so removing the
+scaffolding is a deliberate act rather than something that happens by accident
+when somebody edits a string.
+
+The real copy inherits one constraint, recorded in `SOLAR-SYSTEM-SPEC.md` §2b:
+**it must not name the rings.** Stage 11's reveal is ten weeks of unexplained
+descent, and a week-one tutorial that labels the hierarchy spends it.
+
+### The `?` replay button — what made "Skip" honest
+
+Dismissing the tour used to be permanent, and the panel simply vanished. That
+quietly inverts the cost of Skip: leaving early means losing the only
+explanation the map has, so the safe move becomes reading a tutorial you do not
+want. A 44px `?` now sits in the dismissed panel's own slot and replays it from
+step one.
+
+It sits in the slot rather than floating in a corner so that replaying shifts
+nothing and the control keeps a sane tab position; its accessible name is a
+sentence, because a `?` is a glyph and "question mark" is not a thing anyone can
+make a decision about; and replaying does **not** clear the seen flag, since the
+student asked to see it once more, not to be greeted again next visit.
+
+Both paths are now covered by spec — the first-run panel had **no test at all**
+before this, despite being the first thing every student sees.
+
+## Performance and QA numbers — measured, not assumed
+
+| Measurement | Value | How |
+|---|---|---|
+| Playwright suite | **83 passed**, 0 failed | `pnpm qa`, warm dev server |
+| Typecheck | clean, 4 workspaces | `pnpm typecheck` |
+| Contrast gate | 1181 checks, all ≥ AA | `pnpm check:contrast` |
+| Replay button hit area | 44 × 44 px | asserted in `solar-system.spec.ts` |
+| Sidebar, desktop 1440×900 | `1072,0 368×900` (right rail) | measured in-browser |
+| Sidebar, landscape 844×380 | `0,182 844×198` (bottom sheet) | measured in-browser |
+
+**A cold Vite server fails four baseline tests, and it is not a regression.**
+`before-baseline.spec.ts` sorts first alphabetically, so it absorbs the
+dependency-optimize pass on a freshly started dev server: `networkidle` never
+settles and the stage list is not mounted yet. Warm, the same file passes 8/8 in
+5.6s. **Warm the server before believing a red run** — this cost a diagnosis
+cycle, and it will do it again to whoever hits it next.
+
+The launch sequence lives in `DESIGN-REVIEW-01.md` "How to reproduce this
+setup". Two corrections to it, both found the hard way: the API health route is
+**`/healthz`**, not `/health` (which 404s and will hang a naive wait loop
+forever), and `playwright.config.ts` sets `webServer: undefined` **on purpose**
+— the harness never starts the stack, so a dead dev server reports as
+`ERR_CONNECTION_REFUSED` across every route rather than as one clear error.
+
 ## Decisions made this session worth remembering
 
 - Package lives at `docs/redesign/`, phase files at `docs/redesign/phases/`.

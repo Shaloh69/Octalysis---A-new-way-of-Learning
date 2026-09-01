@@ -585,6 +585,64 @@ HUD does too for the facts that matter most, just more compactly laid out.
 
 ---
 
+### 2b. The first-run explanation, and the `?` that brings it back
+
+The map is the one surface in OCTA whose meaning is spatial rather than
+written: distance from the sun encodes something, and nothing on screen says
+what. A student who never works that out reads the whole thing as decoration.
+So there is a short first-run panel, and `DESIGN-MANDATE.md` §2 is strict about
+its shape:
+
+> Every new interaction gets a **30-second first-run**, once, at the moment of
+> first use. **Never a tour, never a modal carousel at signup.**
+
+Built accordingly: `role="note"`, not `dialog`. It does not dim the page, does
+not trap focus, does not appear at registration, and does not step anyone
+through five screens before letting them in. A student who ignores it entirely
+can use the whole map around it, and **Skip is live on the first frame**, before
+they have read a word.
+
+**A `?` button brings it back.** Once dismissed, the panel is replaced *in its
+own slot* by a 44px `?` that replays it from step one. This is the part that
+makes Skip honest: without a way back, leaving early costs a student the
+explanation permanently, so the only safe move is to read a tutorial they do not
+want — which is exactly how a courtesy turns into an obstacle. Three details,
+each deliberate:
+
+- **It sits in the panel's slot**, not floating over a corner. Replaying shifts
+  nothing, and the control keeps a sane position in the tab order.
+- **The accessible name is a sentence** ("Show the map explanation again"). A
+  `?` is a glyph; a control that reads as "question mark" to a screen reader is
+  a control nobody can make a decision about.
+- **Replaying does not clear the seen flag.** The student asked to see it once
+  more, not to be greeted by it again on their next visit.
+
+Dismissal is remembered per device in `localStorage`, which is allowed here
+precisely because nothing about it is gradeable (`apps/web/CLAUDE.md` bans that
+storage only for anything that affects a grade).
+
+#### The copy is a PLACEHOLDER, and says so on screen
+
+The three steps currently in `FirstRun.tsx` are scaffolding. The structure,
+timing, dismissal and accessibility behaviour are real and built; **the words are
+not final content**, and the panel carries a visible "placeholder text — not real
+course content yet" label so that a student in a pilot, a reviewer, or the
+instructor can tell the difference without reading the source.
+
+This is hard rule 5 (`CLAUDE.md`): *never invent course content.* A first-run
+panel is closer to UI chrome than to course material, but it is still the first
+paragraphs a student reads in this app, and it was written by nobody who teaches
+CPE 412. Labelling it is the honest position until real copy is authored.
+
+To replace it: write the copy, flip the `PLACEHOLDER` flag, delete the
+disclaimer it renders, drop the steps in. Nothing else changes.
+
+**One constraint the real copy inherits: it must not name the rings.**
+`SKILL-TREE-3D.md` §2 keeps the level hierarchy unlabelled until Stage 11 — ten
+weeks of unexplained descent is the setup for that reveal, and a tutorial that
+names them in week one spends it for nothing. The same withholding already
+governs the Register Bar and the Depth Gauge.
+
 ## 3. Per-student cosmetic seeding — corrected after R0's security check
 
 `DESIGN-MANDATE.md` §4 seeds the avatar from `student_id` directly. The

@@ -1913,7 +1913,39 @@ button {
   padding: 0 var(--space-3); font: inherit; cursor: pointer;
 }
 .first-run-next:focus-visible, .first-run-skip:focus-visible,
+.first-run-replay:focus-visible,
 .rotate-prompt-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/*
+ * The replay button, in the dismissed panel's own slot.
+ *
+ * Square and at least a 44px touch target, because it is the smallest control
+ * on the map and it is one a student reaches for on a phone held in landscape.
+ * Quiet by default and accented on hover: it is an offer, not a call to action,
+ * and a permanently bright `?` beside a map is visual noise every single visit.
+ */
+.first-run-replay {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: 0 0 var(--space-4);
+  background: color-mix(in oklab, var(--surface-1) 92%, transparent);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.first-run-replay:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 
 /*
  * The rotate invitation. It ASKS: the web cannot force orientation
@@ -1958,4 +1990,22 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
   .rotate-prompt-phone { animation: none; transform: rotate(-90deg); }
+}
+
+/*
+ * The first-run placeholder disclaimer.
+ *
+ * Deliberately plain and slightly uncomfortable to look at: it is meant to read
+ * as scaffolding, not as a designed element, so nobody grows fond of it and
+ * leaves it in. It goes when the real copy lands.
+ */
+.first-run-placeholder {
+  margin: 0 0 var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
 }

@@ -608,3 +608,75 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await expect(page.locator(".stage-list")).toContainText(/You're at \d+%/);
   });
 });
+
+test.describe("the first-run explanation, and getting it back", () => {
+  test("shows once, says it is a placeholder, and stays gone once dismissed", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    const panel = page.locator(".first-run");
+    await expect(panel).toBeVisible();
+
+    /*
+     * `DESIGN-MANDATE.md` §2: a 30-second first-run, "never a tour, never a
+     * modal carousel". So it must NOT be a dialog and must not trap focus —
+     * asserted here because "make it a modal" is the change that would feel
+     * natural to anyone touching this later.
+     */
+    await expect(panel).toHaveAttribute("role", "note");
+    expect(await panel.getAttribute("aria-modal")).toBeNull();
+
+    // The copy is scaffolding and says so on screen, not only in a comment.
+    // Hard rule 5 — this text was written by nobody who teaches the course.
+    await expect(panel.locator(".first-run-placeholder")).toContainText(/not real course content/i);
+
+    // Leaving is available on the first frame, before reading anything.
+    await panel.locator(".first-run-skip").click();
+    await expect(panel).toBeHidden();
+
+    await page.reload({ waitUntil: "networkidle" });
+    await settle(page);
+    await expect(page.locator(".first-run")).toBeHidden();
+  });
+
+  test("the ? button replays it, from the beginning, without un-dismissing it", async ({ page }) => {
+    await signIn(page);
+    await page.addInitScript(() => window.localStorage.setItem("octa:first-run-map", "1"));
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    await expect(page.locator(".first-run")).toBeHidden();
+
+    /*
+     * This is what makes "Skip" honest. Without a way back, a student who does
+     * not want the tutorial now has to read it anyway, because leaving costs
+     * them the explanation permanently.
+     */
+    const replay = page.locator(".first-run-replay");
+    await expect(replay).toBeVisible();
+
+    // A `?` is a glyph, not a name. The accessible name has to be a sentence.
+    await expect(replay).toHaveAttribute("aria-label", /again/i);
+
+    // It is the smallest control on the map and gets reached for on a phone.
+    const box = await replay.boundingBox();
+    expect(Math.min(box!.width, box!.height), "44px touch target").toBeGreaterThanOrEqual(44);
+
+    await replay.click();
+    const panel = page.locator(".first-run");
+    await expect(panel).toBeVisible();
+    // From step one, never wherever the student happened to stop.
+    await expect(panel.locator(".first-run-step")).toContainText("1 /");
+
+    // Dismissing returns the button rather than nothing.
+    await panel.locator(".first-run-skip").click();
+    await expect(replay).toBeVisible();
+
+    // Replaying is "show me once more", not "greet me again next visit".
+    await page.reload({ waitUntil: "networkidle" });
+    await settle(page);
+    await expect(page.locator(".first-run")).toBeHidden();
+    await expect(page.locator(".first-run-replay")).toBeVisible();
+  });
+});
