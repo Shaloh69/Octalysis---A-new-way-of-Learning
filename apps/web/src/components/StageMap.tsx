@@ -1,4 +1,7 @@
 import { useMemo, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FirstRun } from "./FirstRun";
+import { RotatePrompt } from "../solar-system/RotatePrompt";
 import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../lib/layout";
 import type { ScreenPoint } from "../solar-system/SolarSystemCanvas";
 import { useSolar } from "../solar-system/SolarBackdrop";
@@ -30,7 +33,6 @@ import type { StageNode, StageMapData } from "../lib/api";
  * it would have made the whole solar system invisible to most of the class.
  */
 
-
 interface Props {
   data: StageMapData;
   onOpen: (stageId: string) => void;
@@ -44,8 +46,6 @@ interface Props {
    */
   flat?: boolean;
 }
-
-
 
 export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
 
@@ -77,7 +77,6 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedId]);
 
-
   // `flat` is the FOURTH reason the canvas can be absent, alongside reduced
   // motion, a small viewport, and WebGL failing. All four are equal; none of
   // them makes this a fallback view.
@@ -93,8 +92,6 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
    */
   const canUse3d = enabled && !flat;
   const showGalaxy = canUse3d;
-
-
 
   return (
     <div className="map-root">
@@ -200,31 +197,28 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
         />
       )}
 
+      {/* First visit only, and dismissible from the first frame. */}
+      <FirstRun />
+
+      {/* Small screen in portrait: an invitation onto the map, not a wall. */}
+      <RotatePrompt />
+
       {/*
-        The full text list.
+        The stage list moved to its own route.
 
-        When the solar system is the page, the planets ARE the map and this list
-        repeats what `/app/map` exists to provide — so here it collapses into a
-        disclosure rather than covering the scene with 19 stages of prose. That
-        was the actual complaint: the background could not be seen past the
-        words.
+        It used to sit under the map as four columns of paragraphs covering the
+        whole page -- correct, complete, and unreadable: a student scanning for
+        where they are had to read every lock reason to find out. `/app/stages`
+        now carries the same 19 stages with progress bars and planet marks, and
+        every lock reason still printed, which is the part that is contractual
+        rather than stylistic.
 
-        WHAT THIS IS NOT: a weakening of the accessibility contract. The list is
-        still rendered, still complete, still 19 real focusable buttons with
-        state and lock reason in text, and a disclosure is a standard operable
-        pattern that screen-reader and keyboard users reach normally. And
-        `/app/map` — the route whose whole job is the text representation —
-        keeps it open, always. `SOLAR-SYSTEM-SPEC.md` §1.4b's hard requirement
-        is about /app/map never withholding, and it does not.
+        A map is a map. This is the link to the list.
       */}
-      {showGalaxy ? (
-        <details className="act-list-fold">
-          <summary>All 19 stages, with lock reasons</summary>
-          <ActList data={data} onOpen={setSelectedId} />
-        </details>
-      ) : (
-        <ActList data={data} onOpen={setSelectedId} />
-      )}
+      <p className="map-alt-link">
+        <Link to="/app/stages">All 19 stages, with progress and lock reasons</Link>
+      </p>
+
     </div>
   );
 }
@@ -284,10 +278,10 @@ function PlanetHits({
    * a student tabbing the map would land on something with no visual referent,
    * and a pointer user would click nothing and get a dialog.
    *
-   * The ACCESSIBILITY contract does not weaken here. `ActList` below still
-   * renders all 19 stages as real focusable buttons with state and lock reason
-   * in full text, and `/app/map` is unchanged. This layer is the spatial
-   * overlay for what is actually drawn; the list is the complete map.
+   * The ACCESSIBILITY contract does not weaken here. `/app/stages` renders all
+   * 19 as real focusable buttons with state and lock reason in full text, and
+   * is linked from this page. This layer is the spatial overlay for what is
+   * actually drawn; that list is the complete map.
    */
   const revealed = data.nodes.filter((n) => n.state !== "locked");
 
@@ -485,49 +479,5 @@ function NodeButton({
     >
       <span className="sr-only">{label}</span>
     </button>
-  );
-}
-
-/** Text equivalent of the whole graph, grouped by act. */
-function ActList({ data, onOpen }: { data: StageMapData; onOpen: (id: string) => void }): JSX.Element {
-  const acts = [1, 2, 3, 4];
-  const ACT_NAMES: Record<number, string> = {
-    1: "Act I — Languages & Abstraction",
-    2: "Act II — The Machine",
-    3: "Act III — Execution",
-    4: "Act IV — Performance & Beyond",
-  };
-
-  return (
-    <section className="act-list" aria-label="All stages, as a list">
-      {acts.map((act) => (
-        <div key={act} className="act-group">
-          <h2>{ACT_NAMES[act]}</h2>
-          <ol>
-            {data.nodes
-              .filter((n) => n.act === act)
-              .map((n) => (
-                <li key={n.id} className={`act-item act-item-${n.state}`}>
-                  <button type="button" onClick={() => onOpen(n.id)}>
-                    <span className="act-item-id">{n.id}</span>
-                    <span className="act-item-title">{n.title}</span>
-                    <span className="act-item-state">
-                      {n.state === "locked" ? "Locked" : n.state === "mastered" ? "Mastered" : null}
-                    </span>
-                  </button>
-                  {n.prereq.length > 0 && (
-                    <p className="act-item-prereq">
-                      Needs {n.prereq.map((p) => `Stage ${p}`).join(" and ")}
-                    </p>
-                  )}
-                  {n.state === "locked" && n.lockReason && (
-                    <p className="act-item-lock">{n.lockReason.message}</p>
-                  )}
-                </li>
-              ))}
-          </ol>
-        </div>
-      ))}
-    </section>
   );
 }

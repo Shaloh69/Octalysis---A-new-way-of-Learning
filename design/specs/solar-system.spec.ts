@@ -88,9 +88,11 @@ async function settle(page: Page, expectCanvas = false): Promise<void> {
  * about rendered text can run.
  */
 async function openStageList(page: Page): Promise<void> {
-  const fold = page.locator(".act-list-fold");
-  if ((await fold.count()) > 0) await fold.locator("summary").click();
-  await page.locator(".act-list").waitFor();
+  // The complete list is its own route now. It used to sit under the map as
+  // four columns of paragraphs; `/app/stages` carries the same 19 stages with
+  // progress bars, planet marks and every lock reason still printed.
+  await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
+  await page.locator(".stage-list").waitFor();
 }
 
 test.describe("the solar system renders", () => {
@@ -180,10 +182,11 @@ test.describe("the degradation ladder — falls back in place, never redirects",
     await settle(page);
 
     expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
-    // No error state, no "your browser is unsupported": nothing is missing,
-    // because the DOM layer was always the one carrying the meaning.
-    await openStageList(page);
-    await expect(page.locator(".act-list")).toBeVisible();
+    // No error state, no "your browser is unsupported": nothing is missing.
+    // The page renders its map chrome with no canvas behind it, and the
+    // complete stage list is one link away on its own route.
+    await expect(page.locator(".map-header")).toBeVisible();
+    await expect(page.getByRole("link", { name: /All 19 stages/ })).toBeVisible();
     await capture(page, "solar-no-webgl", testInfo);
   });
 
@@ -202,7 +205,7 @@ test.describe("the degradation ladder — falls back in place, never redirects",
     expect(await page.locator("canvas").count(), "must fall back to flat").toBe(0);
     expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
     // Flat mode renders the list open, so no disclosure to expand.
-    await expect(page.locator(".act-list")).toBeVisible();
+    await expect(page.locator(".map-header")).toBeVisible();
   });
 
   test("the guard does NOT fire on a machine that can hold 30fps", async ({ page }, testInfo) => {
@@ -286,7 +289,7 @@ test.describe("loading states — the backdrop moving through them", () => {
     expect(await page.locator(".solar-backdrop.is-warping").count(), "no warp on arrival")
       .toBe(0);
 
-    await page.getByRole("link", { name: "Progress" }).click();
+    await page.getByRole("link", { name: "Progress", exact: true }).click();
     await expect(page.locator(".solar-backdrop.is-warping")).toHaveCount(1);
 
     // And it ends. A loading state that never clears is a stuck page.
@@ -304,7 +307,7 @@ test.describe("loading states — the backdrop moving through them", () => {
     // Under reduced motion the backdrop does not render at all (ladder rung 1),
     // so there is nothing to warp -- which is the strongest form of "skipped".
     expect(await page.locator(".solar-backdrop").count()).toBe(0);
-    await page.getByRole("link", { name: "Progress" }).click();
+    await page.getByRole("link", { name: "Progress", exact: true }).click();
     await page.waitForTimeout(300);
     expect(await page.locator(".solar-backdrop.is-warping").count()).toBe(0);
   });
@@ -351,18 +354,23 @@ test.describe("the map override in settings", () => {
 test.describe("the DOM layer stays the accessibility contract", () => {
   test("every stage is a real control, whatever the canvas is doing", async ({ page }) => {
     await signIn(page);
-    await page.goto("/app", { waitUntil: "networkidle" });
+    await page.goto("/app", { waitUntil: "domcontentloaded" });
     await settle(page);
 
-    // 19 stages from the seed. The canvas is aria-hidden and carries none of
-    // this -- a <canvas> has no accessibility semantics at all.
-    const controls = page.locator(".act-list button");
-    expect(await controls.count(), "all 19 stay in the DOM, folded or not")
-      .toBeGreaterThanOrEqual(19);
-    await expect(page.locator("canvas")).toHaveAttribute("aria-hidden", /true/).catch(() => {
-      // No canvas on this project's ladder rung; the assertion above already
-      // proved the DOM layer stands on its own, which is the actual contract.
-    });
+    /*
+     * The canvas is aria-hidden and carries no semantics at all, so the map
+     * page must reach the complete list rather than contain it. That link IS
+     * the contract from this page: it is a real control, in text, always
+     * present, and it goes somewhere that names all 19.
+     */
+    await expect(page.getByRole("link", { name: /All 19 stages/ })).toBeVisible();
+
+    await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
+    await page.locator(".stage-list").waitFor();
+    expect(
+      await page.locator(".stage-row-btn").count(),
+      "all 19 are real focusable controls",
+    ).toBeGreaterThanOrEqual(19);
   });
 
   test("every planet has a real control positioned over it", async ({ page }, testInfo) => {
@@ -419,7 +427,6 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await settle(page, true);
 
     const hits = await page.locator(".map-hit").count();
-    const listed = await page.locator(".act-list .act-item").count();
 
     // Fewer planets drawn than stages exist -- that IS the reveal.
     expect(hits, "3D layer should draw only reached planets").toBeLessThan(19);
@@ -431,25 +438,24 @@ test.describe("the DOM layer stays the accessibility contract", () => {
       "a locked planet has no body, so it must have no hit target either",
     ).toBe(0);
 
-    // The DOM layer is complete regardless -- 19 items are in the DOM even
-    // while the disclosure is closed, which is the point.
-    expect(listed, "the act list must still carry all 19").toBe(19);
+    // The DOM layer is complete regardless -- on its own route now.
     await openStageList(page);
-    await expect(page.locator(".act-list")).toContainText(/Unlocks when Stage \d+/);
+    expect(await page.locator(".stage-row").count(), "the list must carry all 19").toBe(19);
+    await expect(page.locator(".stage-list")).toContainText(/Unlocks when Stage \d+/);
   });
 
-  test("/app/map shows every stage, locked included, whatever the scene withholds", async ({ page }) => {
+  test("the stage list shows every stage, locked included, whatever the scene withholds", async ({ page }) => {
     await signIn(page, "progressing");
-    await page.goto("/app/map", { waitUntil: "networkidle" });
-    await page.locator(".act-list").waitFor();
+    await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
+    await page.locator(".stage-list").waitFor();
 
-    expect(await page.locator(".act-list .act-item").count()).toBe(19);
+    expect(await page.locator(".stage-row").count()).toBe(19);
     expect(
-      await page.locator(".act-item-locked").count(),
+      await page.locator(".stage-row-locked").count(),
       "locked stages must be visible here, in text",
     ).toBeGreaterThan(0);
-    await expect(page.locator(".act-list")).toContainText(/Unlocks when Stage \d+/);
-    await expect(page.locator(".act-list")).toContainText(/You're at \d+%/);
+    await expect(page.locator(".stage-list")).toContainText(/Unlocks when Stage \d+/);
+    await expect(page.locator(".stage-list")).toContainText(/You're at \d+%/);
   });
 
   test("a locked planet's control still announces why", async ({ page }, testInfo) => {
@@ -466,7 +472,7 @@ test.describe("the DOM layer stays the accessibility contract", () => {
      * is aria-hidden and carries no semantics at all.
      */
     await openStageList(page);
-    const lockedItem = page.locator(".act-item-locked").first();
+    const lockedItem = page.locator(".stage-row-locked").first();
     await expect(lockedItem).toContainText(/Unlocks when Stage \d+/);
     await expect(lockedItem).toContainText(/You're at \d+%/);
     expect(
@@ -577,7 +583,7 @@ test.describe("the DOM layer stays the accessibility contract", () => {
 
     // The design mandate calls a lock with no visible reason "the single most
     // demotivating UI element in ed-tech". It is printed text, never a tooltip.
-    await expect(page.locator(".act-list")).toContainText(/Unlocks when Stage \d+/);
-    await expect(page.locator(".act-list")).toContainText(/You're at \d+%/);
+    await expect(page.locator(".stage-list")).toContainText(/Unlocks when Stage \d+/);
+    await expect(page.locator(".stage-list")).toContainText(/You're at \d+%/);
   });
 });

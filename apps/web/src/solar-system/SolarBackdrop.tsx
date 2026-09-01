@@ -66,12 +66,31 @@ interface SolarContextValue {
  * capability checks answerable before rendering; 4 is the remembered verdict of
  * the frame-rate guard; 5 is Save-Data.
  */
+/**
+ * Is this a small screen held in portrait?
+ *
+ * Rung 2 used to be "viewport <= 640px -> flat, full stop", which locked every
+ * phone out of the 3D map permanently. The reason for that rule was never the
+ * device — it was the ASPECT: a solar system in a 380x844 column is a thin
+ * strip with no room for orbits.
+ *
+ * Landscape solves that, and the rest of the ladder still protects the device:
+ * the frame-rate guard (rung 4) drops a phone that genuinely cannot hold 30fps,
+ * Save-Data still opts out, and reduced motion still wins outright. So a phone
+ * in landscape gets the map, and a phone in portrait gets asked to turn.
+ */
+export function isSmallPortrait(): boolean {
+  if (typeof window === "undefined") return false;
+  const small = Math.min(window.innerWidth, window.innerHeight) <= 640;
+  return small && window.innerHeight >= window.innerWidth;
+}
+
 function ladderAllows(): boolean {
   if (typeof window === "undefined") return false;
   // 1 - reduced motion
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return false;
-  // 2 - small viewport
-  if (window.innerWidth <= 640) return false;
+  // 2 - small screen IN PORTRAIT. Landscape is allowed: see isSmallPortrait.
+  if (isSmallPortrait()) return false;
   // 5 - Save-Data: a student who asked their phone to use less data has also,
   // in effect, asked it to do less work.
   const conn = (navigator as { connection?: { saveData?: boolean } }).connection;
@@ -131,7 +150,14 @@ export function SolarProvider({
   useEffect(() => {
     const recheck = (): void => setAllowed(ladderAllows());
     window.addEventListener("resize", recheck);
-    return () => window.removeEventListener("resize", recheck);
+    // Rotating a phone fires `orientationchange` before `resize` settles on
+    // some Androids, so both are watched -- otherwise turning the device leaves
+    // the student on the flat map until something else nudges a re-render.
+    window.addEventListener("orientationchange", recheck);
+    return () => {
+      window.removeEventListener("resize", recheck);
+      window.removeEventListener("orientationchange", recheck);
+    };
   }, []);
 
   // §4.1 — the star field accelerating between hub routes, not an overlay.

@@ -66,10 +66,12 @@ async function open(page: Page, who: keyof typeof STUDENTS): Promise<void> {
 
 /** The facts a student can ACT on. These must not vary between students. */
 async function structure(page: Page): Promise<string[]> {
-  // `allTextContents`, not `allInnerTexts`: the items are in the DOM but not
-  // rendered while the disclosure is closed, and the structural comparison is
-  // about what the map CONTAINS, not what is currently painted.
-  return page.locator(".act-list .act-item-title").allTextContents();
+  // Read from `/app/stages`, which owns the complete list now. The comparison
+  // is about what the curriculum CONTAINS for each student, which must be
+  // identical -- only the dressing is allowed to differ.
+  await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
+  await page.locator(".stage-list").waitFor();
+  return page.locator(".stage-row-title").allTextContents();
 }
 
 /** The facts that are only about how it looks. These are supposed to vary. */

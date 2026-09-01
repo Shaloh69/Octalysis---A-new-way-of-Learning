@@ -86,18 +86,18 @@ for (const motion of ["no-preference", "reduce"] as const) {
      * `/app/map` is the accessibility contract and the surface that must
      * survive every redesign, so it is asserted hardest.
      */
-    test("flat map renders every stage as a real control", async ({ page }, testInfo) => {
+    test("every stage is a real control, wherever the list lives", async ({ page }, testInfo) => {
       await signIn(page);
-      await page.goto("/app/map", { waitUntil: "networkidle" });
+      // The complete list moved from under the map to its own route during R3.
+      // This assertion follows it: what matters is that all 19 stages are real
+      // focusable controls somewhere a student can reach, not which page.
+      await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
 
-      // 19 stages from the seed, each a real focusable control. If the map ever
-      // invents or forgets one, INV-32 has regressed and it should fail loudly
-      // here rather than be noticed in a screenshot months later.
-      const stageControls = page.locator(".act-item button, .map-hit button, button.node-hit");
+      const stageControls = page.locator(".stage-row-btn");
       await expect(stageControls.first()).toBeVisible();
       expect(await stageControls.count()).toBeGreaterThanOrEqual(19);
 
-      await capture(page, "app-map", testInfo);
+      await capture(page, "app-stage-list", testInfo);
     });
 
     /**

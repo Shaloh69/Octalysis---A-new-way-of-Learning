@@ -867,7 +867,18 @@ function Drift({
     three.camera.position.x = Math.cos(t.current * 0.035) * distance;
     three.camera.position.z = Math.sin(t.current * 0.035) * distance;
     three.camera.position.y = distance * 0.62;
-    three.camera.lookAt(0, 0, 0);
+    /*
+     * Look BELOW the sun, so the sun sits high in frame and the system fans out
+     * beneath it.
+     *
+     * The scene is the page background now, and page content flows downward
+     * from the top — a sun dead-centre puts the brightest object in the scene
+     * directly behind the densest text. Raising it also matches what the map
+     * means: the sun is the destination the whole course descends toward, so
+     * having it above and the orbits spread below reads as depth rather than as
+     * a diagram centred on nothing in particular.
+     */
+    three.camera.lookAt(0, -distance * 0.34, 0);
   });
 
   return null;

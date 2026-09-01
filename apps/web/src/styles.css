@@ -357,7 +357,7 @@ button {
  * lifts text off the star field without hiding it. `color-mix` keeps this
  * inside the token system -- no literal colour, and it follows the theme.
  */
-.app-over-solar .act-list,
+.app-over-solar .stage-list,
 .app-over-solar .formation,
 .app-over-solar .settings,
 .app-over-solar .progress-page,
@@ -1732,4 +1732,164 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
   .biome-arrive { animation: none; }
+}
+
+/* --------------------------------------------------------------
+ * Stage list — progress and planet marks, not paragraphs
+ * ------------------------------------------------------------ */
+
+.stages-page { max-width: 52rem; }
+
+.stage-list { list-style: none; margin: var(--space-5) 0 0; padding: 0; }
+
+.stage-row + .stage-row { margin-top: var(--space-2); }
+
+.stage-row-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.app-over-solar .stage-row-btn {
+  /* Each row carries its own ground rather than the list carrying one big
+     panel: the list is 19 rows tall and scrolls over a moving star field, and a
+     single block would either clip the scene or stretch past the content. */
+  background: color-mix(in oklab, var(--surface-0) 84%, transparent);
+  backdrop-filter: blur(3px);
+}
+.stage-row-btn:hover { border-color: var(--line-strong); }
+.stage-row-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* The planet mark uses the same visual language as the scene: filled when
+   mastered, outlined when reachable, dashed when its body has not formed. */
+.stage-planet {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--line-strong);
+}
+.stage-planet-mastered { background: var(--accent); border-color: var(--accent); }
+.stage-planet-in_progress { background: var(--ink-muted); }
+.stage-planet-available { background: var(--ink); border-color: var(--ink); }
+.stage-planet-locked { border-style: dashed; opacity: 0.6; }
+
+.stage-row-main { min-width: 0; flex: 1; }
+.stage-row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.stage-row-id { font-size: 0.75rem; color: var(--ink-faint); }
+.stage-row-title { font-weight: 600; }
+.stage-row-state { margin-left: auto; font-size: 0.75rem; color: var(--ink-muted); }
+.stage-row-state-mastered { color: var(--accent); }
+
+.stage-bar {
+  display: block;
+  height: 3px;
+  margin: var(--space-2) 0 0;
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.stage-bar-fill { display: block; height: 100%; background: var(--ink-muted); }
+.stage-bar-mastered { background: var(--accent); }
+.stage-bar-locked { background: var(--locked); }
+
+/* Printed, always. Never a tooltip. */
+.stage-row-lock {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+/* --------------------------------------------------------------
+ * First run, and the rotate invitation
+ * ------------------------------------------------------------ */
+
+/*
+ * DESIGN-MANDATE.md §2: a 30-second first-run at the moment of first use,
+ * never a tour and never a modal carousel. So this is `role="note"`, not a
+ * dialog — it does not dim the page, does not trap focus, and can be ignored
+ * entirely while the rest of the map stays usable.
+ */
+.first-run {
+  position: relative;
+  z-index: 2;
+  max-width: 24rem;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4);
+  background: color-mix(in oklab, var(--surface-1) 92%, transparent);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+.first-run-step { margin: 0 0 var(--space-1); font-size: 0.72rem; color: var(--ink-faint); }
+.first-run-title { margin: 0 0 var(--space-2); font-size: 1rem; }
+.first-run-body { margin: 0; font-size: 0.88rem; color: var(--ink-muted); }
+.first-run-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+.first-run-next {
+  background: var(--accent); color: var(--accent-fg); border: 0;
+  border-radius: var(--radius-sm); min-height: var(--control-h-sm);
+  padding: 0 var(--space-4); font: inherit; cursor: pointer;
+}
+.first-run-skip {
+  background: none; color: var(--ink-muted); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); min-height: var(--control-h-sm);
+  padding: 0 var(--space-3); font: inherit; cursor: pointer;
+}
+.first-run-next:focus-visible, .first-run-skip:focus-visible,
+.rotate-prompt-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/*
+ * The rotate invitation. It ASKS: the web cannot force orientation
+ * (`screen.orientation.lock()` needs fullscreen and does not exist on iOS), so
+ * a component claiming to force landscape would silently do nothing on half the
+ * devices it targets.
+ */
+.rotate-prompt {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  background: color-mix(in oklab, var(--surface-1) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+.rotate-prompt-text { flex: 1; color: var(--ink-muted); }
+.rotate-prompt-text strong { color: var(--ink); }
+.rotate-prompt-dismiss {
+  background: none; color: var(--ink-muted); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); min-height: var(--control-h-sm);
+  padding: 0 var(--space-3); font: inherit; cursor: pointer; white-space: nowrap;
+}
+
+.rotate-prompt-icon { flex: 0 0 auto; display: grid; place-items: center; width: 28px; height: 28px; }
+.rotate-prompt-phone {
+  width: 14px; height: 22px;
+  border: 1.5px solid var(--accent);
+  border-radius: 3px;
+  /* Turns once, then rests. A looping hint in the corner is noise by the
+     second visit -- this is a suggestion, not an alert. */
+  animation: rotate-hint 1.6s var(--ease-inout) 0.4s 2;
+}
+@keyframes rotate-hint {
+  0%, 40% { transform: rotate(0deg); }
+  60%, 100% { transform: rotate(-90deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotate-prompt-phone { animation: none; transform: rotate(-90deg); }
 }

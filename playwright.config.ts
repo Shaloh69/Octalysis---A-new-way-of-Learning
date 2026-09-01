@@ -48,6 +48,18 @@ export default defineConfig({
     toHaveScreenshot: { maxDiffPixelRatio: 0.01, animations: "disabled" },
   },
 
+  /*
+   * 45s, up from Playwright's 30s default.
+   *
+   * These specs drive a Vite DEV server, not a production build, and several
+   * now navigate two or three times within one test. At four workers the
+   * server is the bottleneck -- tests that pass comfortably alone time out in a
+   * full run. Raising the ceiling is the honest fix: the app is not slow, the
+   * harness target is. Reducing coverage to fit a default would be the wrong
+   * trade.
+   */
+  timeout: 45_000,
+
   fullyParallel: true,
   /*
    * Capped. These specs run against ONE Vite dev server and ONE API process,
