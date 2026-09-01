@@ -195,6 +195,14 @@ Applied in order, without asking and without an error state:
      the old flag stranded.
 5. Battery Saver / `navigator.connection.saveData` → **Tier 1 off**
 
+**The flat presentation is the SAME galaxy, drawn still.** It used to be a level-strata DAG with
+its own layout function — a second authoring of the map, which root `CLAUDE.md` forbids, and a
+different picture of the same curriculum, so a student sent here had to rebuild their mental model
+instead of recognising a quieter version of what they knew. It now reads `computeSolarLayout`, the
+same function the canvas uses: same rings, same angles, same moons, projected x/z → x/y in SVG.
+No canvas, no `requestAnimationFrame`, and **no motion at all** — see `BIOME-AND-LOADING-SPEC.md`
+§4.1b for the star-field technique and for why selecting a planet warps rather than zooms.
+
 **The flat presentation is not a punishment and is never deleted.** A `<canvas>` carries no
 accessibility semantics at all, so the DOM layer is the only path for a screen reader, for reduced
 motion, for a portrait phone and for a machine without WebGL. Rung 4 exists to protect a student on

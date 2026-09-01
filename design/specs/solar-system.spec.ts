@@ -135,7 +135,76 @@ test.describe("the solar system renders", () => {
     await settle(page, true);
 
     expect(await page.locator("canvas").count()).toBe(1);
-    expect(await page.locator("svg.map-svg").count()).toBe(0);
+    expect(await page.locator("svg.galaxy-svg").count(), "never both at once").toBe(0);
+  });
+
+  test("/app/map draws the flat galaxy and NO canvas", async ({ page }, testInfo) => {
+    /*
+     * The other direction of the same rule, and it was broken.
+     *
+     * `/app/map` is the flat view asked for BY CHOICE, but the backdrop is
+     * mounted in `App.tsx`, a level above the component whose comment forbids
+     * two maps -- so the route drew the WebGL solar system AND the flat galaxy
+     * on top of it. Survivable while the flat map was a strata DAG that looked
+     * nothing like the scene; unmissable now that both draw the same rings from
+     * the same layout.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "already flat at 380px");
+
+    await signIn(page);
+    await page.goto("/app/map", { waitUntil: "networkidle" });
+    await settle(page);
+
+    expect(await page.locator("svg.galaxy-svg").count(), "the flat galaxy draws").toBe(1);
+    expect(
+      await page.locator("canvas").count(),
+      "no canvas on the route that exists to avoid one",
+    ).toBe(0);
+  });
+
+  test("the flat galaxy holds still", async ({ page }, testInfo) => {
+    /*
+     * Two of the four rungs that send a student here are "this device is
+     * struggling" and "this person asked for less motion". Both are answered by
+     * holding still, so this surface must not animate -- and must not run a
+     * rAF loop even invisibly, which is the cost the slow-device rung exists to
+     * avoid.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
+
+    await signIn(page);
+    await page.goto("/app/map", { waitUntil: "networkidle" });
+    await settle(page);
+
+    const moving = await page.evaluate(
+      () =>
+        new Promise<number>((res) => {
+          const el = document.querySelector(".galaxy-svg")!;
+          const before = el.getBoundingClientRect();
+          const sun = document.querySelector(".galaxy-sun")!.getBoundingClientRect();
+          setTimeout(() => {
+            const after = el.getBoundingClientRect();
+            const sunAfter = document.querySelector(".galaxy-sun")!.getBoundingClientRect();
+            res(
+              Math.abs(after.x - before.x) +
+                Math.abs(after.y - before.y) +
+                Math.abs(sunAfter.x - sun.x) +
+                Math.abs(sunAfter.y - sun.y),
+            );
+          }, 1200);
+        }),
+    );
+    expect(moving, "nothing on the flat map may move").toBe(0);
+
+    // And no animation is declared on any of it, which a static frame alone
+    // would not prove -- a slow enough animation looks still for 1.2s.
+    const animated = await page.evaluate(() =>
+      [...document.querySelectorAll(".galaxy-scroll *")].filter((el) => {
+        const cs = getComputedStyle(el);
+        return cs.animationName !== "none" && cs.animationDuration !== "0s";
+      }).length,
+    );
+    expect(animated, "no CSS animation may be declared on the flat map").toBe(0);
   });
 });
 
@@ -153,8 +222,20 @@ test.describe("the degradation ladder — falls back in place, never redirects",
 
     expect(await page.locator("canvas").count(), "no canvas under reduced motion").toBe(0);
     expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
-    // The flat map takes over in place, so the page is still a map.
-    expect(await page.locator("svg.map-svg").count()).toBe(1);
+    /*
+     * The flat map takes over IN PLACE, so the page is still a map -- and it is
+     * now the same galaxy, drawn still: same rings, same angles, same moons,
+     * from the same `computeSolarLayout` the canvas uses. It used to be a
+     * level-strata DAG (`svg.map-svg`), which meant a student sent here by
+     * reduced motion had to rebuild their mental model rather than recognise a
+     * quieter version of the map they knew.
+     */
+    expect(await page.locator("svg.galaxy-svg").count(), "the flat galaxy draws").toBe(1);
+    expect(await page.locator(".galaxy-ring").count(), "orbits, not strata").toBeGreaterThan(0);
+    expect(await page.locator(".galaxy-moon").count(), "moons are drawn here too")
+      .toBeGreaterThan(0);
+    // Every stage, locked included: this layer never withholds (§1.4b).
+    expect(await page.locator(".node-hit").count(), "all 19 remain real controls").toBe(19);
     await capture(page, "solar-reduced-motion", testInfo);
   });
 

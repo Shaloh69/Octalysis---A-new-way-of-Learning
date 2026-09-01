@@ -983,6 +983,53 @@ the instructor's call, so the heading is a numeral and a stage range, both true
 under all three readings. Printing "Prelim" over a group containing chapter 05
 would be worse than printing nothing, because a student would believe it.
 
+### F-21 · The flat map was a different picture, and two maps drew at once
+
+Ruled 2 Sep 2026: the flat map should still LOOK like the galaxy — orbits, moons,
+planets — but hold completely still, and selecting a planet should go through
+§4.1's warp instead of zooming.
+
+**It was a level-strata DAG with its own `computeLayout`.** That is a second
+authoring of the map, which root `CLAUDE.md` forbids outright, and it had already
+drifted: it drew strata the solar system replaced with rings. A student sent to
+it by reduced motion or a slow device did not get a quieter version of the map,
+they got a different diagram of the same curriculum and had to rebuild their
+mental model to use it. `VISUAL-SYSTEM-3D.md` §5 says the flat route "is never a
+degraded mode"; a layout sharing nothing with the 3D one makes that untrue in the
+way that matters most, which is recognition.
+
+`FlatGalaxy.tsx` now reads `computeSolarLayout` — the actual function the canvas
+uses — projected x/z → x/y in SVG. The old `MapSvg` is deleted.
+
+**`/app/map` was drawing BOTH.** Confirmed in the browser: one canvas and one
+flat galaxy, on the same route, painting the same rings slightly out of register.
+`StageMap` carries a comment forbidding exactly this, but the backdrop is mounted
+in `App.tsx`, a level above it, so the comment governed a component that was
+never the problem. It was survivable while the two pictures looked nothing alike.
+Fixed in `App.tsx`, and now asserted in both directions.
+
+**Nothing on it moves**, and that is tested twice: a 1.2s stillness check, plus
+an assertion that no CSS animation is *declared* anywhere in its subtree — a
+static frame alone would not prove it, because a slow enough animation looks
+still.
+
+**Two measurement findings, neither guessable from the source.** The stage id was
+SVG `<text>`, which renders at **6×4 pixels** on a 1140px map and would be ~4px
+at 380px: font size inside a viewBox scales with the drawing, and this drawing
+holds 19 planets and 110 moons. Labels moved to the DOM hit layer, sized in rem.
+And `stroke-width: 0.04` in layout units is a **0.6px hairline** at ~16px/unit,
+which is why locked planets were fainter than the moons orbiting them — the big
+thing looked less important than the small ones.
+
+Star field: the CSS box-shadow technique, sourced and documented at
+`BIOME-AND-LOADING-SPEC.md` §4.1b, with the loop animation every published
+version has deliberately removed.
+
+**Still open, and deliberately not done here:** `apps/web/src/lib/layout.ts` is
+now dead — nothing imports it but its own test file, `apps/web/test/layout.spec.ts`.
+Deleting a module and its suite is a bigger call than this pass needed, so it is
+flagged rather than taken.
+
 ## Performance and QA numbers — measured, not assumed
 
 | Measurement | Value | How |

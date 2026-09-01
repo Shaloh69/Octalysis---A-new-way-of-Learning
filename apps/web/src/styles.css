@@ -2079,3 +2079,149 @@ button {
 .act-head-range { color: var(--ink-faint); font-weight: 400; font-size: 0.8rem; }
 .act-head-count { margin-left: auto; font-size: 0.78rem; color: var(--ink-muted); }
 .stage-bar-act { background: var(--accent); }
+
+/* ═══ The flat galaxy — orbits and moons, still, in SVG ═══════════════════
+ *
+ * The flat map is what a student gets under reduced motion, on a portrait
+ * phone, without WebGL, or on a device that could not hold 30fps. It now draws
+ * the SAME solar system the canvas draws, from the same layout function, so it
+ * reads as a quieter version of the map rather than a different diagram.
+ *
+ * Nothing here animates. Not the orbits, not the stars, not the planets. Two of
+ * the four rungs that send a student here are "this device is struggling" and
+ * "this person asked for less motion", and both are answered by holding still.
+ */
+.galaxy-scroll {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 78vh;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--surface-0);
+}
+.galaxy-svg { display: block; width: 100%; height: 100%; }
+
+/*
+ * THE STAR FIELD: three elements, no canvas, no script, no motion.
+ *
+ * The technique is the well-worn CSS box-shadow starfield (Saran Sinha's
+ * parallax pen and its many descendants — see BIOME-AND-LOADING-SPEC.md §4.1b):
+ * one small element carries a long comma-separated `box-shadow` list, so N
+ * stars cost N shadows on ONE node rather than N nodes. Three layers at
+ * different sizes give depth.
+ *
+ * Two deliberate departures from every version of it online:
+ *   1. **The animation is removed.** Those pens translate each layer on a loop
+ *      to fake parallax. This surface must not move.
+ *   2. **Colour comes from tokens**, never a literal — a hook enforces that,
+ *      and `currentColor` lets one shadow list serve all three themes.
+ */
+.galaxy-stars { position: absolute; inset: 0; pointer-events: none; }
+.galaxy-stars > span {
+  position: absolute;
+  inset: 0;
+  color: var(--ink-faint);
+  background: transparent;
+}
+.galaxy-stars > span::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+.galaxy-stars-far::after  { width: 1px; height: 1px; opacity: 0.55; box-shadow: var(--stars-far); }
+.galaxy-stars-mid::after  { width: 2px; height: 2px; opacity: 0.4;  box-shadow: var(--stars-mid); }
+.galaxy-stars-near::after { width: 3px; height: 3px; opacity: 0.28; box-shadow: var(--stars-near); }
+
+.galaxy-sun { fill: var(--accent); }
+.galaxy-sun-corona { fill: var(--accent); opacity: 0.14; }
+
+/* Orbits. An empty ring is drawn fainter but still drawn: the gap at L4/L5 is
+   a fact about the syllabus, not a rendering accident. */
+.galaxy-ring {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 0.035;
+}
+.galaxy-ring-empty { stroke-dasharray: 0.3 0.45; opacity: 0.55; }
+.galaxy-ring-label {
+  fill: var(--ink-faint);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.42px;
+  text-anchor: middle;
+}
+
+.galaxy-moon { fill: var(--ink-muted); opacity: 0.75; }
+
+/*
+ * stroke-width is in LAYOUT UNITS, and there are ~16 device pixels to a unit at
+ * desktop width. 0.04 rendered as a 0.6px hairline, which is why a locked
+ * planet was invisible while its own moons were not. 0.09 is a ~1.4px rim that
+ * survives the dimming and still scales down honestly on a phone.
+ */
+.galaxy-planet { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 0.09; }
+.galaxy-halo { fill: none; stroke: var(--accent); stroke-width: 0.05; opacity: 0.5; }
+/*
+ * The stage id sits on the BUTTON, not in the SVG -- see NodeButton. Sized in
+ * rem so it scales with the page rather than with the viewBox.
+ */
+.node-hit-id {
+  font-size: 0.62rem;
+  line-height: 1;
+  color: var(--ink);
+  text-shadow: 0 0 3px var(--surface-0), 0 0 3px var(--surface-0);
+  pointer-events: none;
+}
+.node-hit-locked .node-hit-id { color: var(--ink-faint); }
+
+/* State reads three ways — fill, halo, and the word in the button over it. */
+/*
+ * A locked planet is dimmer, but it must still READ as a planet -- at 0.42
+ * opacity over a near-black ground it was fainter than the moons orbiting it,
+ * which inverts the hierarchy: the big thing looked less important than the
+ * small ones. It keeps a visible rim instead.
+ */
+.galaxy-node-locked { opacity: 0.72; }
+.galaxy-node-locked .galaxy-planet { fill: var(--surface-1); stroke: var(--line-strong); }
+.galaxy-node-available .galaxy-planet { fill: var(--surface-3); stroke: var(--accent); }
+.galaxy-node-in_progress .galaxy-planet { fill: var(--accent); opacity: 0.55; }
+.galaxy-node-mastered .galaxy-planet { fill: var(--accent); }
+.galaxy-node-mastered .galaxy-planet-id { fill: var(--accent-fg); }
+
+/*
+ * The flat map's warp — §4.1's loading moment, in CSS.
+ *
+ * The star layers stretch outward and the map fades; the stage opens on the
+ * other side. It does NOT scale the SVG: faking a zoom would invent a camera
+ * this surface deliberately does not have, on the one surface reduced-motion
+ * students land on.
+ *
+ * The reduced-motion guard is belt AND braces. `useFlatWarp` already skips the
+ * whole thing and navigates immediately, so this block should never render for
+ * those students — but the class is one prop away from being set by something
+ * else later, and a still surface promising no motion should enforce it here
+ * too rather than trusting a caller.
+ */
+.galaxy-scroll.is-warping .galaxy-svg {
+  opacity: 0.15;
+  transition: opacity 620ms ease-in;
+}
+.galaxy-scroll.is-warping .galaxy-stars > span::after {
+  transform: scale(3.2);
+  opacity: 0;
+  transition: transform 620ms cubic-bezier(0.6, 0, 0.9, 0.4), opacity 620ms ease-in;
+}
+.galaxy-scroll.is-warping .map-hit-layer { pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .galaxy-scroll.is-warping .galaxy-svg,
+  .galaxy-scroll.is-warping .galaxy-stars > span::after {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}

@@ -56,3 +56,53 @@ export function useHubWarp(pathname: string, active: boolean): boolean {
 
   return warping;
 }
+
+/**
+ * The flat map's warp — the same loading moment, without a canvas.
+ *
+ * `useHubWarp` above puts a class on the 3D backdrop and lets the WebGL star
+ * field accelerate. The flat map has no backdrop to accelerate, so selecting a
+ * planet there had nothing to carry the transition: the 3D layer flies the
+ * camera in (`GAME-DESIGN.md` §3.2) and the flat layer simply jumped.
+ *
+ * It does NOT fake the zoom. Scaling the SVG up would be inventing a camera
+ * this surface deliberately does not have, and it would put a big scaling
+ * motion on the exact surface that reduced-motion students land on. Instead the
+ * flat map borrows §4.1's warp: its own star layers streak briefly, the map
+ * fades, and the stage opens on the other side.
+ *
+ * REDUCED MOTION SKIPS IT ENTIRELY — not slowed, skipped — and `run` is called
+ * immediately. That is the same rule the hub warp follows, and it matters more
+ * here: reduced motion is one of the reasons a student is on this map at all,
+ * so an unskippable animation would be the rung contradicting itself.
+ */
+export function useFlatWarp(): { warping: boolean; warpThen: (run: () => void) => void } {
+  const [warping, setWarping] = useState(false);
+  const timer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const warpThen = (run: () => void): void => {
+    const reduced =
+      typeof window !== "undefined" &&
+      (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+
+    if (reduced) {
+      run(); // straight to the end state
+      return;
+    }
+
+    setWarping(true);
+    timer.current = window.setTimeout(() => {
+      setWarping(false);
+      run();
+    }, WARP_MS);
+  };
+
+  return { warping, warpThen };
+}

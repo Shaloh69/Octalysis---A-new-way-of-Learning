@@ -131,7 +131,27 @@ function AppShell(): JSX.Element {
    * would be MOTION behind an assessment, which is worse than decoration.
    */
   const onContentSurface = /^\/app\/stage\//.test(location.pathname);
-  const backdrop = !onContentSurface;
+
+  /*
+   * AND OFF ON `/app/map`, which is the flat view asked for BY CHOICE.
+   *
+   * Without this the route drew BOTH: the WebGL backdrop painting the solar
+   * system, and the flat galaxy painting the same solar system on top of it.
+   * Two maps of the same 19 stages, stacked, is not a richer view -- it is two
+   * views arguing, which `StageMap` has a comment forbidding and which was
+   * happening anyway, because that comment only governed the component and the
+   * backdrop is mounted a level above it.
+   *
+   * It was survivable while the flat map was a level-strata DAG that looked
+   * nothing like the scene behind it. Now that both draw the same rings from
+   * the same layout function, two slightly misaligned copies of one picture is
+   * the most confusing thing the map could possibly show.
+   *
+   * A student on `/app/map` has asked for the quiet one. Give them only that,
+   * and spend no GPU on a canvas nobody is looking at.
+   */
+  const wantsFlatMap = location.pathname === "/app/map";
+  const backdrop = !onContentSurface && !wantsFlatMap;
 
   return (
     <SolarProvider data={map} active={backdrop} pathname={location.pathname}>

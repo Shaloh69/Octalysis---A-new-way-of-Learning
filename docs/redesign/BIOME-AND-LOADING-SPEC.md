@@ -178,6 +178,54 @@ reason a page feels slow — cap it under the existing 3D chunk's performance
 budget, and skip it entirely (straight to end state) under
 `prefers-reduced-motion`, same as every other animated moment in this project.
 
+### 4.1b The flat map's star field — the CSS box-shadow technique
+
+The warp above accelerates a WebGL star field. The **flat map has no canvas** —
+it is what a student gets under reduced motion, on a portrait phone, without
+WebGL, or after the frame-rate guard fires — so it needs a star field that costs
+essentially nothing and never runs a frame loop.
+
+**The technique: one element, N box-shadows.** A single small element carries a
+long comma-separated `box-shadow` list, so 160 stars cost 160 shadows on **one
+DOM node** rather than 160 nodes. Three layers at 1px/2px/3px give depth. It is
+a well-worn CSS pattern, usually credited to Saran Sinha's parallax pen and
+reproduced widely since.
+
+| Source | URL | What we took |
+|---|---|---|
+| **Parallax Star background in CSS** (sarazond) | https://codepen.io/sarazond/pen/LYGbwj | The core trick: SCSS loop generating a long `box-shadow` list; three layers at different star sizes |
+| **Resizable Parallax Starfield** (kylehenwood) | https://codepen.io/kylehenwood/pen/XXdrJM | Making the field resize without regenerating the list |
+| **Parallax Starfield HTML+CSS** (Matt Montag) | https://www.mattmontag.com/design/parallax-starfield-htmlcss-effect | The clearest write-up of why one node with N shadows beats N nodes |
+
+**Three deliberate departures from every version of it online:**
+
+1. **The animation is removed.** Those pens translate each layer on a loop
+   (50s/100s/150s) to fake parallax. Our flat map must not move: two of the four
+   rungs that send a student to it are *"this device is struggling"* and *"this
+   person asked for less motion"*, and both are answered by holding still. A spec
+   asserts that no CSS animation is declared anywhere in the flat map's subtree —
+   a static screenshot alone would not prove it, since a slow enough animation
+   looks still.
+2. **No literal colours.** The shadow list omits the colour entirely, so each
+   star uses `currentColor` and the layer takes its colour from a token. One list
+   serves all three themes, and it does not trip the hook that bans hex outside
+   `packages/tokens`.
+3. **Generated in TS, not SCSS.** The list is built once by a seeded PRNG in
+   `FlatGalaxy.tsx` and passed as CSS custom properties, so it stays out of the
+   stylesheet (160 shadows is a lot of bytes to ship to every route) and stays
+   deterministic — the sky is the same every session. **It is not the per-student
+   cosmetic seed**: it must not vary by student, or two students comparing
+   screens would see different skies over the same curriculum.
+
+**Where the warp fits on the flat map.** Selecting a planet in 3D flies the
+camera in (`GAME-DESIGN.md` §3.2). There is no camera here, and scaling the SVG
+to fake a zoom would put a large motion on precisely the surface that
+reduced-motion students land on. So the flat map borrows §4.1's warp instead:
+its own star layers streak outward, the map fades, and the stage opens on the
+other side (`useFlatWarp`). Under `prefers-reduced-motion` it is **skipped
+entirely and navigation happens immediately** — not slowed, skipped, the same
+rule as every other animated moment in this project.
+
 ### 4.2 Stage/moon loading — biome-themed
 
 **Trigger:** entering a specific planet or opening a moon detail — the

@@ -1,8 +1,9 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FirstRun } from "./FirstRun";
+import { FlatGalaxy } from "./FlatGalaxy";
+import { useFlatWarp } from "../solar-system/Warp";
 import { RotatePrompt } from "../solar-system/RotatePrompt";
-import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../lib/layout";
 import type { ScreenPoint } from "../solar-system/SolarSystemCanvas";
 import { useSolar } from "../solar-system/SolarBackdrop";
 import { PlanetHud } from "../solar-system/PlanetHud";
@@ -49,8 +50,6 @@ interface Props {
 
 export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
 
-  const positions = useMemo(() => computeLayout(data.nodes), [data.nodes]);
-  const bounds = useMemo(() => layoutBounds(positions), [positions]);
 
   /*
    * The scene lives in AppShell now, as a full-page backdrop. This component no
@@ -67,6 +66,26 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
 
   const selectedId = focusId;
   const setSelectedId = setFocusId;
+
+  /*
+   * On the flat map, opening a stage goes THROUGH the warp loading screen
+   * instead of flying the camera in.
+   *
+   * The 3D layer eases the camera to the planet (`GAME-DESIGN.md` §3.2). There
+   * is no camera here, and faking the zoom with a CSS scale would be the one
+   * thing this surface must not do -- it is where reduced-motion and slow
+   * devices land. `BIOME-AND-LOADING-SPEC.md` §4.1's warp is the transition
+   * that already exists for moving between hub surfaces, so the flat map
+   * borrows it rather than inventing a second answer.
+   *
+   * Under `prefers-reduced-motion` the warp renders as a held frame with no
+   * streaks -- §4.1's own rule, not a special case added here.
+   */
+  const { warping, warpThen } = useFlatWarp();
+
+  const openWithWarp = (id: string): void => {
+    warpThen(() => onOpen(id));
+  };
   const selected = selectedId ? data.nodes.find((n) => n.id === selectedId) ?? null : null;
 
   // Escape closes from anywhere, not only from inside the panel.
@@ -154,7 +173,36 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
         role="presentation" and aria-hidden).
       */}
       {!showGalaxy && (
-        <MapSvg data={data} positions={positions} bounds={bounds} onOpen={onOpen} />
+        /*
+          The flat map is the SAME galaxy, drawn still.
+          It used to be a level-strata DAG with its own `computeLayout` -- a
+          second authoring of the map, which root CLAUDE.md forbids, and a
+          different picture of the same curriculum, so a student sent here by
+          reduced motion or a slow device had to rebuild their mental model
+          rather than recognise a quieter version of what they knew.
+          `FlatGalaxy` reads `computeSolarLayout`: same rings, same angles, same
+          moons, no canvas and no motion.
+        */
+        <FlatGalaxy data={data} warping={warping}>
+          {(project) => (
+            <div className="map-hit-layer">
+              {[...data.nodes]
+                .sort((a, b) => a.ordinal - b.ordinal)
+                .map((n) => {
+                  const at = project(n.id);
+                  if (!at) return null;
+                  return (
+                    <NodeButton
+                      key={n.id}
+                      node={n}
+                      onOpen={openWithWarp}
+                      style={{ left: at.left, top: at.top }}
+                    />
+                  );
+                })}
+            </div>
+          )}
+        </FlatGalaxy>
       )}
 
       {/*
@@ -326,122 +374,6 @@ function PlanetHits({
   );
 }
 
-function MapSvg({
-  data,
-  positions,
-  bounds,
-  onOpen,
-}: {
-  data: StageMapData;
-  positions: ReturnType<typeof computeLayout>;
-  bounds: ReturnType<typeof layoutBounds>;
-  onOpen: (id: string) => void;
-}): JSX.Element {
-  const PAD = 70;
-  const width = bounds.width + PAD * 2;
-  const height = bounds.height + PAD * 2;
-
-  const nodeById = new Map(data.nodes.map((n) => [n.id, n]));
-
-  return (
-    <div className="map-scroll">
-      <svg
-        className="map-svg"
-        viewBox={`${bounds.minX - PAD} ${bounds.minY - PAD} ${width} ${height}`}
-        role="presentation"
-        aria-hidden="true"
-      >
-        {/* Level strata. Named only from Stage 11 onward -- the ten weeks of
-            unexplained descent is the setup for that reveal. */}
-        {LEVELS.map((level, i) => {
-          const revealed = (nodeById.get("11")?.state ?? "locked") !== "locked";
-          return (
-            <g key={level}>
-              <line
-                x1={bounds.minX - PAD}
-                x2={bounds.minX + bounds.width + PAD}
-                y1={i * 90}
-                y2={i * 90}
-                className="stratum"
-              />
-              {revealed && (
-                <text x={bounds.minX - PAD + 6} y={i * 90 - 6} className="stratum-label">
-                  L{level} {LEVEL_NAMES[level]}
-                </text>
-              )}
-            </g>
-          );
-        })}
-
-        {/* Prerequisite edges, drawn as bus traces. */}
-        {data.edges.map((e) => {
-          const from = positions.get(e.from);
-          const to = positions.get(e.to);
-          if (!from || !to) return null;
-          const target = nodeById.get(e.to);
-          const satisfied = (nodeById.get(e.from)?.state ?? "locked") === "mastered";
-          const midX = (from.x + to.x) / 2;
-          return (
-            <path
-              key={`${e.from}-${e.to}`}
-              d={`M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`}
-              className={`edge ${satisfied ? "edge-live" : ""} ${
-                target?.state === "locked" ? "edge-dim" : ""
-              }`}
-              fill="none"
-            />
-          );
-        })}
-
-        {data.nodes.map((n) => {
-          const p = positions.get(n.id);
-          if (!p) return null;
-          return (
-            <g key={n.id} className={`node node-${n.state}`}>
-              {p.spansAllLevels && (
-                // Stages 06 and 11 are ABOUT the hierarchy, not at a level.
-                <line x1={p.x} x2={p.x} y1={-20} y2={6 * 90 + 20} className="node-column" />
-              )}
-              <circle cx={p.x} cy={p.y} r={n.gradeable ? 17 : 13} className="node-disc" />
-              {n.state === "mastered" && (
-                <circle cx={p.x} cy={p.y} r={23} className="node-halo" />
-              )}
-              <text x={p.x} y={p.y + 5} className="node-id">
-                {n.id}
-              </text>
-              <text x={p.x} y={p.y + 38} className="node-title">
-                {n.title}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-
-      {/*
-        The interactive layer: real buttons positioned over their discs. This is
-        what carries every click, every focus ring, and every announcement. The
-        SVG above is pixels.
-      */}
-      <div className="map-hit-layer">
-        {data.nodes.map((n) => {
-          const p = positions.get(n.id);
-          if (!p) return null;
-          const left = ((p.x - (bounds.minX - PAD)) / width) * 100;
-          const top = ((p.y - (bounds.minY - PAD)) / height) * 100;
-          return (
-            <NodeButton
-              key={n.id}
-              node={n}
-              onOpen={onOpen}
-              style={{ left: `${left}%`, top: `${top}%` }}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function NodeButton({
   node,
   onOpen,
@@ -481,6 +413,17 @@ function NodeButton({
         onOpen(node.id);
       }}
     >
+      {/*
+        The id, VISIBLE, at a real font size.
+
+        It used to be SVG <text> inside the map's viewBox, which measured 6x4
+        pixels on a 1140px-wide map and would have been 4px at 380px: font size
+        in a viewBox scales with the drawing, and this drawing holds 19 planets
+        and 110 moons. Here it scales with the page instead. The full sentence
+        stays screen-reader-only -- printing "Locked. Unlocks when Stage 03
+        reaches 70%..." on nineteen planets would bury the map it describes.
+      */}
+      <span className="node-hit-id mono" aria-hidden="true">{node.id}</span>
       <span className="sr-only">{label}</span>
     </button>
   );
