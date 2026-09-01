@@ -83,6 +83,31 @@ interface Props {
    * overlay reads this ref from its own loop and writes transforms directly.
    */
   projection: React.MutableRefObject<Map<string, ScreenPoint>>;
+  /**
+   * The stage whose planet the camera should fly to, or null to drift.
+   *
+   * `GAME-DESIGN.md` §3.2 settled the interaction: clicking a body eases the
+   * camera to it rather than cutting. It named `cameraPosition(..., duration)`
+   * from react-force-graph — which is not installed, and was not installed
+   * precisely because `VISUAL-SYSTEM-3D.md` §5 dropped dependencies doing one
+   * small job. So the easing lives here in `useFrame`, which is where that file
+   * already says camera moves belong.
+   */
+  focusId: string | null;
+  /**
+   * Called once if the scene cannot hold 30fps for three consecutive seconds.
+   *
+   * `VISUAL-SYSTEM-3D.md` §5's degradation ladder, rung 4 — the one that had
+   * never been built. Rungs 1-3 (reduced motion, small viewport, absent WebGL)
+   * are all capability checks answerable *before* rendering. This one can only
+   * be answered by rendering and watching, which is presumably why it was the
+   * one left out.
+   *
+   * A device that measures fine on paper and stutters in a lecture hall is
+   * exactly the case the ladder exists for: 220 KB loads fine on a phone whose
+   * GPU then cannot fill the frame.
+   */
+  onTooSlow: () => void;
 }
 
 export interface ScreenPoint {
@@ -385,6 +410,44 @@ function Planets({
   );
 }
 
+/**
+ * Rung 4 of the degradation ladder: measured frame rate.
+ *
+ * Below 30fps for three consecutive one-second windows, hand back to the flat
+ * map. Three seconds rather than one because a single bad second is a garbage
+ * collection or a tab regaining focus, not a device that cannot cope — and
+ * dropping someone out of the map for a hiccup would be its own bug.
+ *
+ * Fires at most once. The caller remembers the choice for this device.
+ */
+function FrameRateGuard({ onTooSlow }: { onTooSlow: () => void }): null {
+  const frames = useRef(0);
+  const since = useRef(0);
+  const badSeconds = useRef(0);
+  const fired = useRef(false);
+
+  useFrame((_, delta) => {
+    if (fired.current) return;
+    if (typeof document !== "undefined" && document.hidden) return;
+
+    frames.current += 1;
+    since.current += delta;
+    if (since.current < 1) return;
+
+    const fps = frames.current / since.current;
+    frames.current = 0;
+    since.current = 0;
+
+    badSeconds.current = fps < 30 ? badSeconds.current + 1 : 0;
+    if (badSeconds.current >= 3) {
+      fired.current = true;
+      onTooSlow();
+    }
+  });
+
+  return null;
+}
+
 /** One instanced buffer, not N meshes. VISUAL-SYSTEM-3D.md §5, ≤3,000 points. */
 function StarField({ count = 2200 }: { count?: number }): JSX.Element {
   const geometry = useMemo(() => {
@@ -431,11 +494,48 @@ function StarField({ count = 2200 }: { count?: number }): JSX.Element {
  * on it. Stops entirely when the tab is hidden: a solar system spinning in a
  * student's pocket is a bug, not a feature.
  */
-function Drift({ frozen, distance }: { frozen: boolean; distance: number }): null {
+function Drift({
+  frozen,
+  distance,
+  focus,
+}: {
+  frozen: boolean;
+  distance: number;
+  /** World-space point to fly to, already rotated. Null = drift. */
+  focus: { x: number; y: number; z: number } | null;
+}): null {
   const t = useRef(0);
+  const target = useRef(new Vector3());
+  const look = useRef(new Vector3());
 
   useFrame((three, delta) => {
     if (typeof document !== "undefined" && document.hidden) return;
+
+    if (focus) {
+      /*
+       * Fly to the planet: sit off it along the line running out from the sun,
+       * so the body is framed against open space rather than against the busy
+       * middle of the system.
+       *
+       * The orbit also stops while focused. §2 requires the background to stop
+       * animating while the dialog is open, and a camera still sweeping past
+       * the planet you just selected is the opposite of focus.
+       */
+      const out = Math.hypot(focus.x, focus.z) || 1;
+      target.current.set(
+        focus.x + (focus.x / out) * 5.5,
+        distance * 0.30,
+        focus.z + (focus.z / out) * 5.5,
+      );
+      look.current.set(focus.x, focus.y, focus.z);
+      // Frame-rate independent easing. Under reduced motion it jumps straight
+      // there: the state still changes, it just changes instantly.
+      const k = frozen ? 1 : 1 - Math.pow(0.005, delta);
+      three.camera.position.lerp(target.current, k);
+      three.camera.lookAt(look.current);
+      return;
+    }
+
     if (!frozen) t.current += delta;
     three.camera.position.x = Math.cos(t.current * 0.035) * distance;
     three.camera.position.z = Math.sin(t.current * 0.035) * distance;
@@ -506,6 +606,8 @@ export default function SolarSystemCanvas({
   rotationOffset,
   paletteVariant,
   projection,
+  focusId,
+  onTooSlow,
 }: Props): JSX.Element | null {
   const [failed, setFailed] = useState(false);
 
@@ -521,6 +623,21 @@ export default function SolarSystemCanvas({
       setFailed(true);
     }
   }, []);
+
+  /*
+   * The focused planet's world position, with the seeded rotation applied --
+   * `layout.ts` holds the unrotated truth, the scene is rotated at the <group>,
+   * and the camera has to fly to what is actually drawn. Same correction the
+   * Projector makes, for the same reason.
+   */
+  const focusBody = focusId ? layout.bodies.get(focusId) : undefined;
+  const focus = focusBody
+    ? {
+        x: focusBody.x * Math.cos(rotationOffset) + focusBody.z * Math.sin(rotationOffset),
+        y: focusBody.y,
+        z: -focusBody.x * Math.sin(rotationOffset) + focusBody.z * Math.cos(rotationOffset),
+      }
+    : null;
 
   // Frame the whole system: outermost ring plus a small margin.
   //
@@ -561,7 +678,8 @@ export default function SolarSystemCanvas({
         rotationOffset={rotationOffset}
         projection={projection}
       />
-      <Drift frozen={frozen} distance={distance} />
+      <Drift frozen={frozen} distance={distance} focus={focus} />
+      <FrameRateGuard onTooSlow={onTooSlow} />
     </Canvas>
   );
 }

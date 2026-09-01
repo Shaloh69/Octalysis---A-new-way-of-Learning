@@ -125,9 +125,24 @@ skeleton right and tested before adding variation on top of it.
       draw-progress reflecting actual student advancement
 - [ ] Background starfield, instanced `<Points>`, per existing budget (≤3,000
       points, one draw call)
-- [ ] Camera: `OrbitControls` from drei, focus-on-select animation per
-      `GAME-DESIGN.md` §6.1's requirement, reference behavior from
-      `SOLAR-SYSTEM-SPEC.md` §4's cited builds
+- [ ] Camera: ambient drift. (No `OrbitControls` — drei is not installed, and
+      `VISUAL-SYSTEM-3D.md` §5 records it was dropped deliberately.)
+- [ ] **Planet click → camera flies to it (`GAME-DESIGN.md` §3.2 easing) →
+      full HUD renders per `SOLAR-SYSTEM-SPEC.md` §2: Act chip, state icon +
+      printed text, orbiting mastery dots, pictogram + summary, prerequisite
+      line + text, Enter button. This is NOT covered by "base rendering" being
+      checked off — verify it explicitly, screenshot it explicitly.**
+
+      Its own line because it was silently skipped exactly once already. The
+      hit layer landed — real focusable buttons over each planet — and that
+      made the interaction *look* built, because clicking did something. What
+      it did was call `onOpen` straight through to `nav('/app/stage/:id')`, so
+      the click went to the destination and the dialog in between never
+      existed. `GAME-DESIGN.md` §2 is explicit that clicking a body opens a
+      dialog **which then offers** "Enter stage".
+
+      Click detection is not the interaction. Screenshot the open HUD, or it
+      is not done.
 
 ## R1.4 — Performance check
 - [ ] Bundle size of the whole 3D chunk, gzipped, checked against the ≤250 KB
@@ -147,6 +162,13 @@ skeleton right and tested before adding variation on top of it.
 - [ ] Layout unit tests passing, INV-32-equivalent holds
 - [ ] Performance budget checked and under budget with headroom noted for R2/R4
       — bundle size and draw calls
+- [ ] **Planet click → camera fly-in → the §2 HUD, verified and screenshotted.
+      Its own line, on purpose** — same reasoning as the frame-rate item below.
+      A checklist item that lives inside a broader one ("base rendering",
+      "performance budget") is an item that gets ticked by association. This
+      one was: the hit layer shipped, clicking worked, and the entire dialog
+      step was missing underneath it.
+
 - [ ] **FRAME RATE measured on a throttled / mid-range profile, against the
       30fps floor. Its own line, on purpose.**
 

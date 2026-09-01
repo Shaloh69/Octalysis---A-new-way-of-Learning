@@ -170,6 +170,38 @@ test.describe("the degradation ladder — falls back in place, never redirects",
     await capture(page, "solar-no-webgl", testInfo);
   });
 
+  test("a remembered too-slow verdict falls back to flat", async ({ page }, testInfo) => {
+    // Ladder rung 4's memory. The guard itself only fires on a genuinely slow
+    // device, which this machine is not -- so the REMEMBERED verdict is what is
+    // testable here, and it is the half that decides what a student sees on
+    // their second visit.
+    test.skip(testInfo.project.name !== "desktop-1440", "already flat at 380px");
+
+    await signIn(page);
+    await page.addInitScript(() => localStorage.setItem("octa:map-too-slow", "1"));
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    expect(await page.locator("canvas").count(), "must fall back to flat").toBe(0);
+    expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
+    await expect(page.locator(".act-list")).toBeVisible();
+  });
+
+  test("the guard does NOT fire on a machine that can hold 30fps", async ({ page }, testInfo) => {
+    // The other half: a fallback that triggers spuriously is worse than none,
+    // because it silently removes the default experience. Measured at 47fps
+    // under a 6x CPU throttle, so it must stay quiet here.
+    test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+    await page.waitForTimeout(5000); // longer than the 3-second window
+
+    expect(await page.locator("canvas").count(), "guard fired when it should not").toBe(1);
+    expect(await page.evaluate(() => localStorage.getItem("octa:map-too-slow"))).toBeNull();
+  });
+
   test("a small viewport is flat, and 380px does not scroll sideways", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile-380", "this is the 380px case");
 
@@ -254,6 +286,90 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await expect(locked).toHaveCount(1);
     await expect(locked).toContainText(/Locked\./);
     await expect(locked).toContainText(/Unlocks when Stage \d+/);
+  });
+
+  test("clicking a planet opens the HUD and does NOT navigate", async ({ page }, testInfo) => {
+    /*
+     * SOLAR-SYSTEM-SPEC.md §2. This interaction did not exist until it was
+     * asserted: `onOpen` was wired straight to `nav('/app/stage/:id')`, so a
+     * click went to the destination and skipped the dialog entirely. The hit
+     * layer had landed, which made it look built — clicking did *something*.
+     *
+     * `force: true` because the buttons track a drifting camera and never
+     * satisfy Playwright's stability check. That is the projection working, not
+     * a fault; a real pointer has no such requirement.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+
+    await page.locator('.map-hit[aria-disabled="true"]').first().click({ force: true });
+    const hud = page.locator(".hud");
+    await hud.waitFor();
+
+    // The click must NOT have navigated. That is the whole bug this catches.
+    expect(new URL(page.url()).pathname).toBe("/app");
+
+    await expect(hud).toHaveAttribute("role", "dialog");
+    await expect(hud).toHaveAttribute("aria-modal", "true");
+
+    // Every §2 element that has real data behind it.
+    await expect(hud.locator(".hud-act")).toBeVisible();          // Act chip
+    await expect(hud.locator(".hud-glyph")).toBeVisible();        // state icon
+    await expect(hud.locator(".hud-state")).toContainText(/Locked/);
+    await expect(hud.locator(".hud-prereq")).toContainText(/Needs/);
+    expect(await hud.locator(".hud-dot").count()).toBeGreaterThan(0);
+
+    // The lock reason is PRINTED, never a tooltip. Three documents require it
+    // and R0 caught a draft moving it to hover.
+    await expect(hud.locator(".hud-lock-reason")).toContainText(/Unlocks when Stage \d+/);
+    await expect(hud.locator(".hud-lock-reason")).toContainText(/You're at \d+%/);
+
+    // Locked means there is nothing to enter, so no Enter button at all --
+    // a disabled button that does nothing would fail the consequence test.
+    expect(await hud.locator(".hud-enter").count()).toBe(0);
+
+    await capture(page, "hud-locked", testInfo);
+  });
+
+  test("the HUD traps focus and Escape closes it", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+
+    await page.locator(".map-hit").first().click({ force: true });
+    await page.locator(".hud").waitFor();
+
+    expect(
+      await page.evaluate(() => document.querySelector(".hud")?.contains(document.activeElement)),
+      "focus must move into the dialog on open",
+    ).toBe(true);
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".hud")).toHaveCount(0);
+    expect(new URL(page.url()).pathname, "Escape must not navigate either").toBe("/app");
+  });
+
+  test("an unlocked planet's HUD offers Enter, which is what navigates", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "no canvas at 380px");
+
+    await signIn(page, "progressing");
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page, true);
+
+    await page.locator('.map-hit:not([aria-disabled="true"])').first().click({ force: true });
+    const hud = page.locator(".hud");
+    await hud.waitFor();
+    await expect(hud.locator(".hud-enter")).toBeVisible();
+
+    await hud.locator(".hud-enter").click();
+    // GAME-DESIGN.md §2: the dialog OFFERS "Enter stage". The button is the
+    // step that navigates -- the click on the planet is not.
+    await expect(page).toHaveURL(/\/app\/stage\/\d{2}/);
   });
 
   test("a locked stage still says why, in words, with the distance", async ({ page }) => {

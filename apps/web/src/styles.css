@@ -1344,3 +1344,139 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .map-hit-id { transition: none; }
 }
+
+/* --------------------------------------------------------------
+ * Planet HUD — the response to clicking a planet
+ * ------------------------------------------------------------ */
+
+/*
+ * SOLAR-SYSTEM-SPEC.md §2. Signs and compact labels instead of a modal wall of
+ * text, but the two or three load-bearing facts — state, lock reason,
+ * prerequisites — stay printed in full. Icons sit BESIDE the words, never
+ * instead of them.
+ *
+ * It sits over the map rather than replacing it, because the camera has flown
+ * to the planet behind it and the point is to see both.
+ */
+.hud {
+  /*
+   * Fixed, not absolute.
+   *
+   * Absolute positioned it against `.map-root`, whose box starts at the page
+   * header — so the panel escaped upward and covered the "Flat map" link.
+   * Anchoring it to the scene band instead would work on `/app` and break on
+   * `/app/map`, where there is no scene box to anchor to and the act list can
+   * open the same panel.
+   *
+   * Fixed is predictable on both layers: docked right, vertically centred over
+   * the map, never colliding with the header. At <=640px the media query below
+   * returns it to normal flow.
+   */
+  position: fixed;
+  right: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  max-height: calc(100vh - var(--space-7));
+  overflow-y: auto;
+  z-index: 3;
+  width: min(21rem, calc(100% - var(--space-6)));
+  padding: var(--space-4);
+  background: var(--enc-panel, var(--surface-1));
+  border: 1px solid var(--enc-edge, var(--line));
+  border-radius: var(--enc-radius, var(--radius-sm));
+  color: var(--enc-ink, var(--ink));
+  box-shadow: var(--shadow-2);
+}
+
+.hud-head { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--space-3); align-items: center; }
+
+/* The Act chip. A roman numeral — see PlanetHud.tsx for why it is not a name. */
+.hud-act {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--enc-edge, var(--line));
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--enc-accent, var(--accent));
+}
+
+.hud-eyebrow { margin: 0; font-size: 0.72rem; color: var(--ink-muted); letter-spacing: 0.08em; }
+.hud h2 { margin: 0; font-size: 1.05rem; line-height: 1.25; }
+
+.hud-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  font-weight: 600;
+}
+/* Shape carries state as well as colour — colour is never the only signal. */
+.hud-glyph { color: var(--enc-accent, var(--accent)); }
+.hud-state-locked .hud-glyph { color: var(--ink-faint); }
+.hud-pct { margin-left: auto; color: var(--ink-muted); }
+
+/* Printed, always. Never a tooltip. The mandate calls a lock with no visible
+   reason the single most demotivating element in ed-tech. */
+.hud-lock-reason {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--line);
+  color: var(--ink-muted);
+  font-size: 0.88rem;
+}
+
+.hud-summary {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+}
+/* The pictogram speeds recognition; it does not replace the sentence. */
+.hud-pictogram {
+  flex: 0 0 auto;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: 0.2rem;
+  border: 1px solid var(--enc-accent, var(--accent));
+  border-radius: 2px;
+}
+
+.hud-moons { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0 0; font-size: 0.85rem; color: var(--ink-muted); }
+.hud-dots { display: flex; flex-wrap: wrap; gap: 3px; max-width: 9rem; }
+.hud-dot { width: 5px; height: 5px; border-radius: var(--radius-full); background: var(--ink-faint); }
+
+.hud-prereq { margin: var(--space-3) 0 0; font-size: 0.85rem; color: var(--ink-muted); }
+
+.hud-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
+.hud-enter {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: 0;
+  border-radius: var(--radius-sm);
+  min-height: var(--control-h-md);
+  padding: 0 var(--space-4);
+  font: inherit;
+  cursor: pointer;
+}
+.hud-close {
+  background: none;
+  color: var(--ink-muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  min-height: var(--control-h-md);
+  padding: 0 var(--space-3);
+  font: inherit;
+  cursor: pointer;
+}
+.hud-enter:focus-visible, .hud-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  /* Never reached today — ≤640px is flat by the ladder — but if that changes
+     the panel must not be a 21rem box on a 380px screen. */
+  .hud { position: static; transform: none; max-height: none; width: 100%; margin-top: var(--space-4); }
+}

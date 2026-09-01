@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, Suspense, lazy, useEffect } from "react";
 import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../lib/layout";
 import { computeSolarLayout } from "../solar-system/layout";
 import type { ScreenPoint } from "../solar-system/SolarSystemCanvas";
+import { PlanetHud } from "../solar-system/PlanetHud";
 import { useCosmetics } from "../solar-system/cosmetic-seed";
 import type { StageNode, StageMapData } from "../lib/api";
 
@@ -75,6 +76,18 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
     // flat, in place, without asking. VISUAL-SYSTEM-3D.md 5's ladder.
     if (reduced) return "2d";
     if (typeof window !== "undefined" && window.innerWidth <= 640) return "2d";
+    // Rung 5: Save-Data. A student who has asked their phone to use less data
+    // has also, in effect, asked it to do less work.
+    const conn = (navigator as { connection?: { saveData?: boolean } }).connection;
+    if (conn?.saveData) return "2d";
+    // Rung 4's remembered verdict. Set once, by the guard below, for a device
+    // that could not hold 30fps. Kept separate from the user's own preference
+    // so clearing one does not clear the other.
+    try {
+      if (localStorage.getItem("octa:map-too-slow") === "1") return "2d";
+    } catch {
+      /* private window; nothing remembered, and that is fine */
+    }
     // Otherwise 3D IS THE DEFAULT (F-5). The stored preference is a real
     // override in both directions -- it is not the thing that switches 3D on.
     try {
@@ -123,6 +136,31 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
    * second in order to move some buttons.
    */
   const projection = useRef<Map<string, ScreenPoint>>(new Map());
+
+  /*
+   * The selected planet, and why this exists at all.
+   *
+   * Clicking a planet used to call `onOpen` directly, which navigated straight
+   * to `/app/stage/:id`. So the whole SOLAR-SYSTEM-SPEC.md 2 interaction --
+   * camera fly-in, HUD, the printed lock reason, "Enter" -- had never been
+   * built: the click was wired to the destination and skipped the step in
+   * between. GAME-DESIGN.md 2 is explicit that clicking a body opens a dialog
+   * WHICH THEN OFFERS "Enter stage".
+   *
+   * The stage route is still exactly one click further on, from the HUD.
+   */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = selectedId ? data.nodes.find((n) => n.id === selectedId) ?? null : null;
+
+  // Escape closes from anywhere, not only from inside the panel.
+  useEffect(() => {
+    if (!selectedId) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") setSelectedId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId]);
 
   // Stage 11 names the rings. Server-derived, like every other state on this
   // page -- the client renders the reveal, it does not decide it.
@@ -182,6 +220,19 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
               rotationOffset={cosmetics.rotationOffset}
               paletteVariant={cosmetics.paletteVariant}
               projection={projection}
+              focusId={selectedId}
+              onTooSlow={() => {
+                // Ladder rung 4. Drop to flat, in place, and remember it for
+                // this device -- "without asking and without an error state",
+                // per VISUAL-SYSTEM-3D.md §5. It is not a failure, and telling
+                // a student their phone is too slow mid-lecture helps nobody.
+                try {
+                  localStorage.setItem("octa:map-too-slow", "1");
+                } catch {
+                  /* private window; it will simply re-measure next time */
+                }
+                setMode("2d");
+              }}
             />
           </Suspense>
 
@@ -193,7 +244,7 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
             The container is pointer-events:none and each button re-enables it,
             so the empty space between planets does not swallow clicks.
           */}
-          <PlanetHits data={data} projection={projection} onOpen={onOpen} />
+          <PlanetHits data={data} projection={projection} onOpen={setSelectedId} />
         </div>
       )}
 
@@ -212,7 +263,24 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
         The screen-reader equivalent. Same graph, expressed as text, because the
         SVG's spatial arrangement carries information a screen reader cannot get.
       */}
-      <ActList data={data} onOpen={onOpen} />
+      {/* The map's response to a click, on either layer. The act list is the
+          DOM representation of the same map, so selecting from it opens the
+          same panel rather than a second, different behaviour. */}
+      {selected && (
+        <PlanetHud
+          node={selected}
+          prereqs={selected.prereq
+            .map((id) => data.nodes.find((n) => n.id === id))
+            .filter((n): n is StageNode => n !== undefined)}
+          onEnter={(id) => {
+            setSelectedId(null);
+            onOpen(id);
+          }}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
+
+      <ActList data={data} onOpen={setSelectedId} />
     </div>
   );
 }

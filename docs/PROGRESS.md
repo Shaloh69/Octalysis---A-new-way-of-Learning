@@ -555,6 +555,71 @@ no visible edges. The act list beneath it carries all the actual information, an
 carries it well. Same class as `DESIGN-REVIEW-01` D-1, and invisible to every
 green gate. R1/R3 input, not a blocker.
 
+### F-13 · The planet HUD was never built — the click went straight to the stage
+**NEW. Diagnosed on request, and it was the second of the two possibilities.**
+
+`/app` renders the solar system correctly — checked in a real browser with
+every fallback trigger evaluated individually: `reducedMotion` false,
+`innerWidth` 1440, WebGL available, no stored preference. One canvas, no flat
+SVG, 19 hit buttons. **The map was never the problem.**
+
+The problem was that clicking a planet called `onOpen` → `nav('/app/stage/:id')`
+and went straight to the stage. **No camera fly-in, no HUD, no dialog** —
+measured `dialogs: 0`, `hudLike: 0`, url `/app/stage/00`. The whole of
+`SOLAR-SYSTEM-SPEC.md` §2 had never existed.
+
+**Why it read as built:** R3 landed the hit layer — 19 real focusable buttons
+projected onto their planets — and clicking did *something*. Click detection is
+not the interaction, and a checklist line reading "camera focus animation on
+select" inside a list of rendering bullets got ticked by association. Same
+failure shape as the frame rate inside "performance budget checked". Both are
+now their own lines in R1 with the reason written next to them.
+
+**Built:** camera easing to the selected planet (in `useFrame`, since drei is
+not installed), and the §2 HUD — Act chip, state icon beside the printed state,
+the lock reason **printed in full**, subtopic dots, prerequisites named in
+text, and an Enter button that is what actually navigates. Focus-trapped,
+Escape closes, the orbit stops while it is open.
+
+**Two things it honestly cannot show yet, and does not fake:**
+- **Per-dot mastery.** The count is real (from `objectives`), but no
+  per-objective mastery exists anywhere in the API — `/api/v1/progress`
+  aggregates by (level, competency). Lighting dots from stage mastery would
+  invent per-objective state out of an average. Arrives with R4.
+- **The summary line and pictogram.** `stages.summary` is **NULL for all 19
+  stages**. Rendering nothing is correct; hard rule 5 forbids inventing it.
+
+### F-14 · Two rungs of the degradation ladder had never been built
+**NEW, found while confirming the fallbacks had not been weakened.**
+
+`VISUAL-SYSTEM-3D.md` §5's ladder has five rungs. **Only three existed.**
+
+| Rung | Status before |
+|---|---|
+| 1 · `prefers-reduced-motion` | built |
+| 2 · viewport ≤ 640px | built |
+| 3 · WebGL unavailable | built |
+| 4 · **sub-30fps for 3 seconds → drop a tier, remember it** | **missing** |
+| 5 · **Save-Data → drop a tier** | **missing** |
+
+Rungs 1–3 are capability checks answerable *before* rendering. Rung 4 can only
+be answered by rendering and watching, which is presumably why it was the one
+left out — and it is also the one that matters most for the actual audience: a
+220 KB chunk downloads fine on a phone whose GPU then cannot fill the frame.
+
+Last session measured frame rate; it did not implement a frame-rate *fallback*.
+Those are different things and it is worth not confusing them.
+
+**Both built now.** Rung 4 samples one-second windows and needs three
+consecutive bad ones before acting — a single bad second is a GC pause or a tab
+regaining focus, and dropping someone out of the map for a hiccup is its own
+bug. The verdict is remembered per device under `octa:map-too-slow`, separate
+from the student's own preference so clearing one does not clear the other.
+Asserted both ways: a remembered verdict falls back, and the guard stays quiet
+on a machine that holds 30fps.
+
+Still not built from §5: the `/app/settings` **Full / Reduced / Off** override.
+
 ### F-12 · R3 cannot be completed as written — ~20 of its routes do not exist
 **NEW. The biggest planning fact for the next session.**
 
