@@ -1,10 +1,9 @@
-import { useMemo, useRef, useState, Suspense, lazy, useEffect } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../lib/layout";
-import { computeSolarLayout } from "../solar-system/layout";
 import type { ScreenPoint } from "../solar-system/SolarSystemCanvas";
+import { useSolar } from "../solar-system/SolarBackdrop";
 import { PlanetHud } from "../solar-system/PlanetHud";
 import { useFormation } from "../solar-system/useFormation";
-import { useCosmetics } from "../solar-system/cosmetic-seed";
 import type { StageNode, StageMapData } from "../lib/api";
 
 /**
@@ -31,7 +30,6 @@ import type { StageNode, StageMapData } from "../lib/api";
  * it would have made the whole solar system invisible to most of the class.
  */
 
-const SolarSystemCanvas = lazy(() => import("../solar-system/SolarSystemCanvas"));
 
 interface Props {
   data: StageMapData;
@@ -47,113 +45,26 @@ interface Props {
   flat?: boolean;
 }
 
-type Mode = "2d" | "3d";
 
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function useIsSmallViewport(): boolean {
-  const [small, setSmall] = useState(
-    () => typeof window !== "undefined" && window.innerWidth <= 640,
-  );
-  useEffect(() => {
-    const onResize = () => setSmall(window.innerWidth <= 640);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  return small;
-}
 
 export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
-  const isSmall = useIsSmallViewport();
-  const reduced = prefersReducedMotion();
-
-  // 3D is opt-in on small viewports and never under reduced motion. Defaults
-  // are applied automatically and silently -- see VISUAL-SYSTEM-3D.md §5.
-  const [mode, setMode] = useState<Mode>(() => {
-    // Capability first: reduced motion and a small viewport both fall back to
-    // flat, in place, without asking. VISUAL-SYSTEM-3D.md 5's ladder.
-    if (reduced) return "2d";
-    if (typeof window !== "undefined" && window.innerWidth <= 640) return "2d";
-    // Rung 5: Save-Data. A student who has asked their phone to use less data
-    // has also, in effect, asked it to do less work.
-    const conn = (navigator as { connection?: { saveData?: boolean } }).connection;
-    if (conn?.saveData) return "2d";
-    // Rung 4's remembered verdict. Set once, by the guard below, for a device
-    // that could not hold 30fps. Kept separate from the user's own preference
-    // so clearing one does not clear the other.
-    try {
-      if (localStorage.getItem("octa:map-too-slow") === "1") return "2d";
-    } catch {
-      /* private window; nothing remembered, and that is fine */
-    }
-    // Otherwise 3D IS THE DEFAULT (F-5). The stored preference is a real
-    // override in both directions -- it is not the thing that switches 3D on.
-    try {
-      return localStorage.getItem("octa:map-mode") === "2d" ? "2d" : "3d";
-    } catch {
-      // Private window: the preference just does not persist. The default holds.
-      return "3d";
-    }
-  });
 
   const positions = useMemo(() => computeLayout(data.nodes), [data.nodes]);
   const bounds = useMemo(() => layoutBounds(positions), [positions]);
 
   /*
-   * The solar system's own coordinates. Separate from `computeLayout` above,
-   * which still drives the flat SVG -- the flat map is a genuinely different
-   * presentation, not a projection of this one, and SOLAR-SYSTEM-SPEC.md 5 is
-   * explicit that its MECHANISM does not change with the reskin, only its
-   * ring/planet/moon wording.
-   *
-   * Objectives come from the map endpoint, so a planet lands on the mean of its
-   * own moons' levels. Without them every stage would silently take the
-   * no-objectives fallback and the map would disagree with its own tests.
+   * The scene lives in AppShell now, as a full-page backdrop. This component no
+   * longer owns a canvas -- it reads the shared projection so its controls can
+   * sit over whatever the backdrop is drawing.
    */
-  const solar = useMemo(
-    () =>
-      computeSolarLayout(
-        data.nodes,
-        data.nodes.flatMap((n) =>
-          n.objectives.map((o) => ({ id: o.id, stageId: n.id, level: o.level })),
-        ),
-      ),
-    [data.nodes],
-  );
+  const { projection, focusId, setFocusId, showPath, togglePath, enabled, setPreference } =
+    useSolar();
 
-  // The student's seeded look. Cosmetic only: it changes what this map looks
-  // like and nothing about what it says or what can be done with it.
-  const { cosmetics } = useCosmetics();
-
-  /*
-   * Where each planet is on screen, written every frame by the canvas's
-   * Projector and read by the button overlay below.
-   *
-   * A ref, not state: the camera drifts continuously, and routing 19 positions
-   * through React each frame would re-render the entire map sixty times a
-   * second in order to move some buttons.
-   */
-  const projection = useRef<Map<string, ScreenPoint>>(new Map());
-
-  /*
-   * The selected planet, and why this exists at all.
-   *
-   * Clicking a planet used to call `onOpen` directly, which navigated straight
-   * to `/app/stage/:id`. So the whole SOLAR-SYSTEM-SPEC.md 2 interaction --
-   * camera fly-in, HUD, the printed lock reason, "Enter" -- had never been
-   * built: the click was wired to the destination and skipped the step in
-   * between. GAME-DESIGN.md 2 is explicit that clicking a body opens a dialog
-   * WHICH THEN OFFERS "Enter stage".
-   *
-   * The stage route is still exactly one click further on, from the HUD.
-   */
   // A planet that has formed since the last visit (§1.4b).
   const { formed, dismiss } = useFormation(data.nodes);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedId = focusId;
+  const setSelectedId = setFocusId;
   const selected = selectedId ? data.nodes.find((n) => n.id === selectedId) ?? null : null;
 
   // Escape closes from anywhere, not only from inside the panel.
@@ -166,25 +77,24 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedId]);
 
-  // Stage 11 names the rings. Server-derived, like every other state on this
-  // page -- the client renders the reveal, it does not decide it.
-  const ringsNamed =
-    (data.nodes.find((n) => n.id === "11")?.state ?? "locked") === "mastered";
 
   // `flat` is the FOURTH reason the canvas can be absent, alongside reduced
   // motion, a small viewport, and WebGL failing. All four are equal; none of
   // them makes this a fallback view.
-  const canUse3d = !reduced && !isSmall && !flat;
-  const showGalaxy = mode === "3d" && canUse3d;
+  /*
+   * `enabled` is the BACKDROP's answer, and it is the only one now: it applies
+   * the whole degradation ladder in one place. This component used to compute
+   * its own version, which is how the shell ended up drawing a canvas under
+   * reduced motion after the scene moved there -- two answers, one of which
+   * nothing consulted.
+   *
+   * `flat` is still local: `/app/map` asks for the flat view BY CHOICE, which
+   * is a route decision rather than a capability one.
+   */
+  const canUse3d = enabled && !flat;
+  const showGalaxy = canUse3d;
 
-  const setModePersisted = (m: Mode): void => {
-    setMode(m);
-    try {
-      localStorage.setItem("octa:map-mode", m);
-    } catch {
-      /* private window; the preference just does not persist */
-    }
-  };
+
 
   return (
     <div className="map-root">
@@ -202,53 +112,37 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
           <button
             type="button"
             className="mode-toggle"
-            onClick={() => setModePersisted(mode === "3d" ? "2d" : "3d")}
-            aria-pressed={mode === "3d"}
+            onClick={() => setPreference(showGalaxy ? "2d" : "3d")}
+            aria-pressed={showGalaxy}
           >
-            {mode === "3d" ? "Flat map" : "View the solar system"}
+            {showGalaxy ? "Flat map" : "View the solar system"}
+          </button>
+        )}
+
+        {/*
+          Prerequisite traces. Passes all four mandate tests: it changes what
+          you can SEE, the label says which, it is instantly reversible, and it
+          is a real preference rather than a number.
+        */}
+        {showGalaxy && (
+          <button
+            type="button"
+            className="mode-toggle"
+            onClick={togglePath}
+            aria-pressed={showPath}
+          >
+            {showPath ? "Hide connections" : "Show connections"}
           </button>
         )}
       </div>
 
-      {/* The seeded attributes live on <html>, set by useCosmetics -- the canvas
-          resolves its tokens from documentElement, so scoping them to this div
-          made every student's planets fall back to the same white. */}
+      {/*
+        The scene is behind the whole page now (AppShell's SolarBackdrop). What
+        remains here is the CONTROL layer: real focusable buttons positioned
+        over whatever the backdrop draws.
+      */}
       {showGalaxy && (
-        <div className="map-solar" aria-hidden="true">
-          <Suspense fallback={null}>
-            <SolarSystemCanvas
-              nodes={data.nodes}
-              layout={solar}
-              ringsNamed={ringsNamed}
-              frozen={reduced}
-              rotationOffset={cosmetics.rotationOffset}
-              paletteVariant={cosmetics.paletteVariant}
-              projection={projection}
-              focusId={selectedId}
-              biome={cosmetics.biomes[cosmetics.biomeIndex] ?? null}
-              onTooSlow={() => {
-                // Ladder rung 4. Drop to flat, in place, and remember it for
-                // this device -- "without asking and without an error state",
-                // per VISUAL-SYSTEM-3D.md §5. It is not a failure, and telling
-                // a student their phone is too slow mid-lecture helps nobody.
-                try {
-                  localStorage.setItem("octa:map-too-slow", "1");
-                } catch {
-                  /* private window; it will simply re-measure next time */
-                }
-                setMode("2d");
-              }}
-            />
-          </Suspense>
-
-          {/*
-            SKILL-TREE-3D.md §4's actual architecture, finally built: real
-            <button>s positioned over their 3D counterparts. The canvas is
-            pixels and stays aria-hidden; these are the controls.
-
-            The container is pointer-events:none and each button re-enables it,
-            so the empty space between planets does not swallow clicks.
-          */}
+        <div className="map-overlay">
           <PlanetHits data={data} projection={projection} onOpen={setSelectedId} />
         </div>
       )}
@@ -306,7 +200,31 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
         />
       )}
 
-      <ActList data={data} onOpen={setSelectedId} />
+      {/*
+        The full text list.
+
+        When the solar system is the page, the planets ARE the map and this list
+        repeats what `/app/map` exists to provide — so here it collapses into a
+        disclosure rather than covering the scene with 19 stages of prose. That
+        was the actual complaint: the background could not be seen past the
+        words.
+
+        WHAT THIS IS NOT: a weakening of the accessibility contract. The list is
+        still rendered, still complete, still 19 real focusable buttons with
+        state and lock reason in text, and a disclosure is a standard operable
+        pattern that screen-reader and keyboard users reach normally. And
+        `/app/map` — the route whose whole job is the text representation —
+        keeps it open, always. `SOLAR-SYSTEM-SPEC.md` §1.4b's hard requirement
+        is about /app/map never withholding, and it does not.
+      */}
+      {showGalaxy ? (
+        <details className="act-list-fold">
+          <summary>All 19 stages, with lock reasons</summary>
+          <ActList data={data} onOpen={setSelectedId} />
+        </details>
+      ) : (
+        <ActList data={data} onOpen={setSelectedId} />
+      )}
     </div>
   );
 }

@@ -10,10 +10,26 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## Current phase
 
-**R2 — COMPLETE. R3 (the page-template pass) is next.**
+**R3 — IN PROGRESS.** (This heading said "R2 complete, R3 next" for several
+sessions after R3 work had already started. Corrected.)
 
-Two students now get visibly different systems over an identical curriculum,
-and the boundary between the two is enforced by tests rather than by prose.
+R0, R1 and R2 are complete. R3 is the page-template pass, **scoped down by the
+F-12 ruling to the routes that actually exist** — 3 public + the catch-all, 7
+student, 14 console. What has landed under R3 so far:
+
+- **F-8** — `--ink-dim` and `--rule` aliased, so 47 inert declarations apply
+- The **hit layer** — real focusable buttons projected onto their planets
+- The **planet HUD** and camera fly-in (F-13), which had never been built
+- **Ladder rungs 4 and 5** (F-14), which had never been built either
+- **Biomes** — architecture, the vendored Kenney pack, four licences verified
+- The **callsign** on `/app/settings`
+- **Progressive reveal**, growing ring spacing, biome-tinted planets, preview
+  moons, mastery flags, comets, and the sun's non-anthropomorphic liveliness
+- **The solar system as the app background** (`SOLAR-SYSTEM-SPEC.md` §1.5) with
+  content surfaces opting out, and the prerequisite-trace toggle (§1.6)
+
+Not yet started in R3: the actual per-route template pass against
+`TEMPLATE-LINKS.md`, which is what §R3.1–R3.3 enumerate.
 
 ## R2 checklist status
 

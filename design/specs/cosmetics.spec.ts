@@ -59,12 +59,17 @@ async function open(page: Page, who: keyof typeof STUDENTS): Promise<void> {
   // `data-planet` appears when the cosmetics fetch lands, which is the actual
   // precondition every assertion here depends on.
   await page.locator("html[data-planet]").waitFor({ state: "attached" });
-  await page.locator(".act-list").waitFor();
+  // The header, not the list: on `/app` the list is inside a collapsed
+  // disclosure now, so waiting for it to be visible would hang.
+  await page.locator(".map-header").waitFor();
 }
 
 /** The facts a student can ACT on. These must not vary between students. */
 async function structure(page: Page): Promise<string[]> {
-  return page.locator(".act-list .act-item-title").allInnerTexts();
+  // `allTextContents`, not `allInnerTexts`: the items are in the DOM but not
+  // rendered while the disclosure is closed, and the structural comparison is
+  // about what the map CONTAINS, not what is currently painted.
+  return page.locator(".act-list .act-item-title").allTextContents();
 }
 
 /** The facts that are only about how it looks. These are supposed to vary. */

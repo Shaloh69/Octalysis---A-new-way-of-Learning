@@ -8,6 +8,7 @@ import {
   Route,
   Routes,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 import { RegisterBar } from "./components/RegisterBar";
 import { DepthGauge } from "./components/DepthGauge";
@@ -26,6 +27,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { SubmitPage } from "./pages/SubmitPage";
 import { api, type ProgressGrid as Grid, type StageMapData } from "./lib/api";
 import { useCosmetics } from "./solar-system/cosmetic-seed";
+import { SolarProvider } from "./solar-system/SolarBackdrop";
 import { currentIdentity, onAuthChange, signOut, type Identity } from "./lib/auth";
 
 /**
@@ -74,6 +76,7 @@ function RequireSession(): JSX.Element {
 function AppShell(): JSX.Element {
   const identity = useIdentity();
   const nav = useNavigate();
+  const location = useLocation();
 
   /*
    * The student's seeded look, applied once for the whole authenticated app.
@@ -113,8 +116,25 @@ function AppShell(): JSX.Element {
       });
   }, []);
 
+  /*
+   * Where the solar system is the page background, and where it is not.
+   *
+   * OFF on content surfaces -- the stage reader, the attempt runner, and the
+   * labs and games that live under them. Those carry their own theatre: a LAB
+   * beat wears its encounter theme, a landing wears its biome, and a star field
+   * behind either is a third visual system competing with them.
+   *
+   * The harder reason is the assessment. DESIGN-MANDATE.md 1B rule 1: theatre
+   * dresses the practice, never the assessment. A drifting star field behind a
+   * graded question is exactly what that rule exists to keep out -- and it
+   * would be MOTION behind an assessment, which is worse than decoration.
+   */
+  const onContentSurface = /^\/app\/stage\//.test(location.pathname);
+  const backdrop = !onContentSurface;
+
   return (
-    <div className="app">
+    <SolarProvider data={map} active={backdrop}>
+      <div className={`app${backdrop ? " app-over-solar" : ""}`}>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
@@ -161,7 +181,8 @@ function AppShell(): JSX.Element {
       {/* Both are gated on their own terms and render nothing until earned. */}
       <FeedbackWidget />
       {identity && <SusSurvey />}
-    </div>
+      </div>
+    </SolarProvider>
   );
 }
 

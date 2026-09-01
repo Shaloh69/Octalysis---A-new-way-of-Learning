@@ -415,6 +415,70 @@ distance whether or not its planet exists in the scene. The two layers
 deliberately disagree about what is *visible*; they never disagree about what
 is *true*.
 
+### 1.5 The system is the page background, not a panel on one page
+
+The scene is a **fixed, full-viewport backdrop owned by the app shell**, behind
+every authenticated route that allows it — the map, progress, settings,
+submissions. It is not a box that appears on `/app` and vanishes on the next
+click.
+
+The reason is continuity. A map that exists on one screen is an illustration; a
+place you are still standing in while you check your progress is a location.
+`SKILL-TREE-3D.md` §1.3 already argued that a map's third real service is "a
+place to stand" — this is what that costs to actually deliver.
+
+**The chrome goes transparent over it.** The nav, the Depth Gauge and the
+Register Bar sit on the scene rather than in opaque bars.
+
+#### Where it deliberately does NOT go
+
+> **Content surfaces opt out: the stage reader, the attempt runner, the labs
+> and the games.**
+
+Two reasons, and the second is not negotiable:
+
+1. **Those surfaces carry their own theatre already.** A stage's LAB beat wears
+   its encounter theme (`GAME-DESIGN.md` §9) and a landing wears its biome
+   (`BIOME-AND-LOADING-SPEC.md` §1). A star field behind either is a third
+   visual system competing with two that were each chosen to say something
+   true about the material.
+2. **`DESIGN-MANDATE.md` §1B rule 1: theatre dresses the practice, never the
+   assessment.** A drifting star field behind a graded question is exactly the
+   decoration that rule exists to exclude — and it is *motion* behind an
+   assessment, which is worse than static decoration. The Self-Test is the same
+   calm, flat surface every time, and a background that follows the student
+   into it would quietly break that.
+
+#### Legibility is not automatic, and was not free
+
+Text over a star field is the defect this project already shipped once —
+`DESIGN-REVIEW-01` D-2, a bus trace running through the word "Password". The
+rule that came out of it applies here: **transparent chrome, scrimmed content.**
+Anything carrying real reading — the act list, the settings panel, the map
+header — sits on a translucent ground derived from `--surface-0`, which lifts
+the text without hiding the scene. The two goals are not in tension; they just
+have to be separated deliberately rather than hoped for.
+
+### 1.6 The prerequisite traces, and why they blink
+
+`stages.prereq` is the only edge list in this project, so a line drawn between
+two planets is a real curriculum edge — not a decorative web. They are
+available behind a toggle in the map header, **off by default**.
+
+Off by default because they answer a question a student asks occasionally
+("what leads to what") rather than continuously, and 18 steady lines across a
+field that already carries rings, orbits, a flight path and moons flattens the
+depth everything else establishes. The toggle passes all four mandate tests: it
+changes what you can see, its label says which state you are in, it is
+instantly reversible, and it is a real preference rather than a number.
+
+**They fade in and out rather than holding steady.** A slow pulse keeps them
+readable when you look for them and lets them recede when you are not — the
+same reasoning that dropped ring opacity to a low base. Never fully out: a line
+that vanishes entirely reads as a glitch rather than a rhythm.
+`prefers-reduced-motion` holds them at a steady mid-opacity instead. The
+information is identical either way; only the motion stops.
+
 ---
 
 ## 2. Approach and land — the planet dialog redone as signs, corrected after R0

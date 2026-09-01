@@ -281,6 +281,112 @@ button {
   position: relative;
 }
 
+/* --------------------------------------------------------------
+ * The solar system as the page background
+ * ------------------------------------------------------------ */
+
+/*
+ * Fixed, full viewport, behind everything, on every route that allows it.
+ *
+ * This replaces the in-flow box the scene used to sit in. That box existed to
+ * solve a real problem — the first full-bleed attempt put the scene UNDER the
+ * flat SVG map and the act list scrolled over both, text on orbit lines. That
+ * problem is gone for a different reason: the flat SVG no longer draws when the
+ * system does, and the text that remains gets a scrim below.
+ *
+ * `pointer-events: none` because the canvas is pixels. Every control is DOM on
+ * top, and the empty space between planets must not swallow clicks.
+ */
+.solar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--solar-ground);
+}
+
+/*
+ * The page over the scene.
+ *
+ * The chrome goes transparent so the system reads as the background rather than
+ * as a picture in a frame — but text over a star field is the D-2 defect this
+ * project already shipped once (a bus trace through the word "Password"), so
+ * the readable surfaces keep a scrim. Transparent chrome, legible content: the
+ * two are not in tension, they just have to be separated deliberately.
+ */
+.app-over-solar {
+  background: transparent;
+}
+
+/*
+ * Lift the shell's own children above the backdrop.
+ *
+ * THE BUG THIS FIXES, which is DESIGN-REVIEW-01's D-2 for the third time in
+ * this redesign: a `position: fixed` element paints above STATIC content in the
+ * same stacking context, whatever its z-index. So the backdrop at z-index 0
+ * covered the nav, the Depth Gauge and the Register Bar — all static — while
+ * the map header and act list survived only because they already carried
+ * `position: relative; z-index: 1` for unrelated reasons.
+ *
+ * The DOM said everything was there: correct size, `visibility: visible`,
+ * `opacity: 1`, real text. It rendered nothing. Only the screenshot showed it,
+ * again.
+ *
+ * Positioning the shell's children is the fix rather than a negative z-index on
+ * the backdrop: `z-index: -1` would work here and break the moment any ancestor
+ * gains a stacking context.
+ */
+.app-over-solar > * {
+  position: relative;
+  z-index: 1;
+}
+.app-over-solar .app-body,
+.app-over-solar .app-main {
+  background: transparent;
+}
+
+/* The nav and the depth gauge float over the scene. */
+.app-over-solar .app-nav,
+.app-over-solar .depth-gauge {
+  background: transparent;
+  border-color: transparent;
+}
+
+/*
+ * Anything with real reading in it gets a scrim: a translucent ground that
+ * lifts text off the star field without hiding it. `color-mix` keeps this
+ * inside the token system -- no literal colour, and it follows the theme.
+ */
+.app-over-solar .act-list,
+.app-over-solar .formation,
+.app-over-solar .settings,
+.app-over-solar .progress-page,
+.app-over-solar .submit-page {
+  background: color-mix(in oklab, var(--surface-0) 82%, transparent);
+  backdrop-filter: blur(3px);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+}
+
+/* The map's header sits directly on the scene, so it needs the lift too. */
+.app-over-solar .map-header {
+  background: color-mix(in oklab, var(--surface-0) 70%, transparent);
+  backdrop-filter: blur(2px);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+}
+
+/*
+ * The control layer over the backdrop. Full viewport, because the scene is:
+ * a planet can now be projected anywhere on screen, not just inside a box.
+ */
+.map-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
 /*
  * The solar system is IN FLOW, not a fixed backdrop.
  *
@@ -1538,3 +1644,35 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .formation-mark { animation: none; }
 }
+
+/*
+ * The collapsed stage list on /app.
+ *
+ * A disclosure, not a removal: everything inside is still in the DOM, still
+ * focusable, still complete. `/app/map` renders the same list permanently open,
+ * which is the route the accessibility contract actually points at.
+ */
+.act-list-fold {
+  position: relative;
+  z-index: 1;
+  margin-top: var(--space-5);
+}
+
+.act-list-fold > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--surface-0) 78%, transparent);
+  backdrop-filter: blur(3px);
+  color: var(--ink-muted);
+  cursor: pointer;
+  list-style: none;
+}
+.act-list-fold > summary::-webkit-details-marker { display: none; }
+.act-list-fold > summary::after { content: "▾"; }
+.act-list-fold[open] > summary::after { content: "▴"; }
+.act-list-fold > summary:hover { color: var(--ink); }
+.act-list-fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -73,8 +73,24 @@ async function capture(page: Page, name: string, testInfo: TestInfo): Promise<vo
  * degradation ladder says it should exist.
  */
 async function settle(page: Page, expectCanvas = false): Promise<void> {
-  await page.locator(".act-list").waitFor();
+  // The map HEADER, not the act list. On `/app` the list now lives inside a
+  // collapsed disclosure so the solar system can be the page, so waiting for it
+  // to be VISIBLE would hang forever there while passing on `/app/map`.
+  await page.locator(".map-header").waitFor();
   if (expectCanvas) await page.locator("canvas").waitFor();
+}
+
+/**
+ * Open the stage list if it is folded.
+ *
+ * On `/app` it is a `<details>`; on `/app/map` it is always open. Everything
+ * inside is in the DOM either way — this only makes it visible so assertions
+ * about rendered text can run.
+ */
+async function openStageList(page: Page): Promise<void> {
+  const fold = page.locator(".act-list-fold");
+  if ((await fold.count()) > 0) await fold.locator("summary").click();
+  await page.locator(".act-list").waitFor();
 }
 
 test.describe("the solar system renders", () => {
@@ -166,6 +182,7 @@ test.describe("the degradation ladder — falls back in place, never redirects",
     expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
     // No error state, no "your browser is unsupported": nothing is missing,
     // because the DOM layer was always the one carrying the meaning.
+    await openStageList(page);
     await expect(page.locator(".act-list")).toBeVisible();
     await capture(page, "solar-no-webgl", testInfo);
   });
@@ -184,6 +201,7 @@ test.describe("the degradation ladder — falls back in place, never redirects",
 
     expect(await page.locator("canvas").count(), "must fall back to flat").toBe(0);
     expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
+    // Flat mode renders the list open, so no disclosure to expand.
     await expect(page.locator(".act-list")).toBeVisible();
   });
 
@@ -196,7 +214,35 @@ test.describe("the degradation ladder — falls back in place, never redirects",
     await signIn(page);
     await page.goto("/app", { waitUntil: "networkidle" });
     await settle(page, true);
-    await page.waitForTimeout(5000); // longer than the 3-second window
+
+    /*
+     * Measure what this machine ACTUALLY sustained, rather than assuming it is
+     * fast.
+     *
+     * The first version asserted the guard stays quiet, full stop, and it
+     * failed in the parallel harness -- four Chromium instances each rendering
+     * WebGL can genuinely sit under 30fps, at which point the guard firing is
+     * correct behaviour, not a bug. A test that fails when the feature works is
+     * worse than no test.
+     *
+     * So: only assert the guard stayed quiet if the environment gave it no
+     * reason to fire.
+     */
+    const fps = await page.evaluate(
+      () =>
+        new Promise<number>((res) => {
+          let f = 0;
+          const t0 = performance.now();
+          const tick = (): void => {
+            f++;
+            if (performance.now() - t0 < 4000) requestAnimationFrame(tick);
+            else res(f / ((performance.now() - t0) / 1000));
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
+
+    test.skip(fps < 32, `this run only sustained ${fps.toFixed(1)}fps — the guard is right to fire`);
 
     expect(await page.locator("canvas").count(), "guard fired when it should not").toBe(1);
     expect(await page.evaluate(() => localStorage.getItem("octa:map-too-slow"))).toBeNull();
@@ -232,7 +278,8 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     // 19 stages from the seed. The canvas is aria-hidden and carries none of
     // this -- a <canvas> has no accessibility semantics at all.
     const controls = page.locator(".act-list button");
-    expect(await controls.count()).toBeGreaterThanOrEqual(19);
+    expect(await controls.count(), "all 19 stay in the DOM, folded or not")
+      .toBeGreaterThanOrEqual(19);
     await expect(page.locator("canvas")).toHaveAttribute("aria-hidden", /true/).catch(() => {
       // No canvas on this project's ladder rung; the assertion above already
       // proved the DOM layer stands on its own, which is the actual contract.
@@ -305,8 +352,10 @@ test.describe("the DOM layer stays the accessibility contract", () => {
       "a locked planet has no body, so it must have no hit target either",
     ).toBe(0);
 
-    // The DOM layer is complete regardless.
+    // The DOM layer is complete regardless -- 19 items are in the DOM even
+    // while the disclosure is closed, which is the point.
     expect(listed, "the act list must still carry all 19").toBe(19);
+    await openStageList(page);
     await expect(page.locator(".act-list")).toContainText(/Unlocks when Stage \d+/);
   });
 
@@ -337,6 +386,7 @@ test.describe("the DOM layer stays the accessibility contract", () => {
      * ACT LIST's job, which is where it always had to work anyway: the canvas
      * is aria-hidden and carries no semantics at all.
      */
+    await openStageList(page);
     const lockedItem = page.locator(".act-item-locked").first();
     await expect(lockedItem).toContainText(/Unlocks when Stage \d+/);
     await expect(lockedItem).toContainText(/You're at \d+%/);
@@ -443,6 +493,8 @@ test.describe("the DOM layer stays the accessibility contract", () => {
   test("a locked stage still says why, in words, with the distance", async ({ page }) => {
     await signIn(page);
     await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+    await openStageList(page);
 
     // The design mandate calls a lock with no visible reason "the single most
     // demotivating UI element in ed-tech". It is printed text, never a tooltip.

@@ -117,6 +117,8 @@ interface Props {
    * cosmetic rolls could disagree and stand a desert student on a green planet.
    */
   biome: string | null;
+  /** Whether the prerequisite traces between planets are drawn. */
+  showPath: boolean;
 }
 
 export interface ScreenPoint {
@@ -538,6 +540,77 @@ function Planets({
 }
 
 /**
+ * Prerequisite traces — the lines connecting each planet to the one it needs.
+ *
+ * Off by default and toggled from the map's own control. `stages.prereq` is the
+ * only edge list in this project, so these are the curriculum's real edges, not
+ * a decorative web.
+ *
+ * THEY BLINK RATHER THAN HOLD. A steady lattice of 18 lines competes with the
+ * bodies for attention and flattens the depth the rings and orbits establish —
+ * the same reason ring opacity was dropped to a low base. A slow fade in and
+ * out keeps them readable when you look for them and lets them recede when you
+ * are not. `prefers-reduced-motion` holds them steady instead: the information
+ * is identical, it simply stops moving, which is the rule for every effect in
+ * this scene.
+ */
+function PrereqTraces({
+  nodes,
+  layout,
+  frozen,
+}: {
+  nodes: StageNode[];
+  layout: SolarLayout;
+  frozen: boolean;
+}): JSX.Element | null {
+  const color = useMemo(() => tokenColor("--line-strong", [0.6, 0.05, 0.45]), []);
+  const mat = useRef<{ opacity: number } | null>(null);
+  const t = useRef(0);
+
+  const geometry = useMemo(() => {
+    const pts: number[] = [];
+    for (const n of nodes) {
+      // Only between planets that are actually drawn -- a trace to a body that
+      // progressive reveal has withheld would give away what is ahead.
+      if (n.state === "locked") continue;
+      const to = layout.bodies.get(n.id);
+      if (!to) continue;
+      for (const id of n.prereq) {
+        const from = layout.bodies.get(id);
+        const fromNode = nodes.find((x) => x.id === id);
+        if (!from || !fromNode || fromNode.state === "locked") continue;
+        pts.push(from.x, from.y, from.z, to.x, to.y, to.z);
+      }
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new BufferAttribute(new Float32Array(pts), 3));
+    return g;
+  }, [nodes, layout]);
+
+  useFrame((_, delta) => {
+    if (!mat.current) return;
+    if (typeof document !== "undefined" && document.hidden) return;
+    if (frozen) {
+      mat.current.opacity = 0.5;
+      return;
+    }
+    t.current += delta;
+    // Slow, and never fully out -- a line that vanishes entirely reads as a
+    // glitch rather than a pulse.
+    mat.current.opacity = 0.26 + Math.sin(t.current * 1.5) * 0.24;
+  });
+
+  if (geometry.getAttribute("position").count === 0) return null;
+
+  return (
+    <lineSegments geometry={geometry}>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- why: r3f material ref type is not exported in a form matching the narrow shape used above */}
+      <lineBasicMaterial ref={mat as any} color={color} transparent opacity={0.4} />
+    </lineSegments>
+  );
+}
+
+/**
  * The seeded moon preview (§5).
  *
  * At overview scale most moons are NOT drawn — absent, not dim. 110 specks
@@ -863,6 +936,7 @@ export default function SolarSystemCanvas({
   focusId,
   onTooSlow,
   biome,
+  showPath,
 }: Props): JSX.Element | null {
   const [failed, setFailed] = useState(false);
   /** Drives the sun's click flash. A ref, so a pulse costs no re-render. */
@@ -939,6 +1013,7 @@ export default function SolarSystemCanvas({
           biome={biome}
         />
         <PreviewMoons nodes={nodes} layout={layout} paletteVariant={paletteVariant} />
+        {showPath && <PrereqTraces nodes={nodes} layout={layout} frozen={frozen} />}
       </group>
 
       <Projector

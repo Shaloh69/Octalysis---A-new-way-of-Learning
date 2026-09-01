@@ -135,6 +135,15 @@ Applies at two scales:
 
 ## 4. The two loading screens — different triggers, different content
 
+> **Revised for the full-page backdrop.** Both were written when the solar
+> system was a panel on `/app`. It is now the app's background
+> (`SOLAR-SYSTEM-SPEC.md` §1.5), which changes what a loading screen *is* here:
+> not a thing that covers the page, but **a state the background already on
+> screen moves through.** Neither is built yet; build them this way.
+>
+> **NEITHER IS IMPLEMENTED as of R3.** They are specified, sourced, and absent.
+> Recorded plainly so nobody reads this section as describing the app.
+
 ### 4.1 Hub loading — warp speed
 
 **Trigger:** any loading state that happens *at the hub level* — first
@@ -149,6 +158,20 @@ center as the camera's field of view widens, the classic hyperspace look.
 | **Three.js Starfield Warp** (fwdtools) | https://fwdtools.com/ui-snippets/three-starfield-warp/ | The actual mechanism: perspective-divided star positions (X/Y divided by remaining Z) produce the streak; widening FOV at the same time produces the bowed, stretched look. Recycled particle pool (2,600 stars, never reallocated) — this is the performance-conscious version |
 | **drei `<Stars>`** | Already in the locked stack, `SKILL-TREE-3D.md` §5.1 | Reuse the *same* background star field already planned — animate its camera z-position/FOV between idle and loading states rather than standing up a second star system |
 | **o2bomb/space-warp** — honest post-mortem | https://github.com/o2bomb/space-warp | Read this before building: the author's first version hit ~65% Lighthouse on mobile from stacking bloom + chromatic aberration. Don't repeat that — bloom alone, no chromatic aberration, same discipline `SKILL-TREE-3D.md` §5.1 already applies to the map's own bloom usage |
+
+**It is a camera move on the existing scene, not a second star system.** The
+table above already says this ("animate its camera z-position/FOV between idle
+and loading states rather than standing up a second star field") and the
+backdrop makes it the only sensible reading: the star field is *already there*,
+behind every route. A warp is that field accelerating — pull the camera, widen
+the FOV, let the existing recycled particle pool streak — then settle back into
+the ambient drift. Standing up a second scene on top of the first would cost a
+second WebGL context to show the student something they can already see.
+
+**Where it triggers, given the backdrop:** first arrival at `/app`, and any
+navigation between routes that both show the backdrop. It must NOT fire on the
+way into a content surface — that is §4.2's job, and the two firing together
+would be two loading animations for one navigation.
 
 **Budget:** this is a loading state, so it must never itself become the
 reason a page feels slow — cap it under the existing 3D chunk's performance
@@ -168,8 +191,20 @@ destination itself, arriving early. This is consistent with
 layout, never a centred spinner" — a biome preview is the game-native version
 of that same principle, not an exception to it.
 
+**It is also the hand-off out of the backdrop.** Entering a stage is the one
+navigation where the solar system stops being the background — content surfaces
+opt out (`SOLAR-SYSTEM-SPEC.md` §1.5). So this transition carries a second job
+beyond covering a fetch: it is the seam where one visual world becomes another.
+The biome arriving early is what makes that a departure rather than a
+disappearance.
+
+Sequence, once built: the backdrop dims and recedes → the destination biome
+resolves in → stage content mounts on top of it. Reversed on the way back out.
+
 **Reduced motion:** freezes to a single static frame of the biome, same
-information, same rule as everywhere else in this project.
+information, same rule as everywhere else in this project. No dim, no recede —
+the backdrop is simply not there on the next route, which is what a
+reduced-motion user gets from every other transition in this app.
 
 ## 5. Accessibility note specific to biomes
 
