@@ -4,29 +4,96 @@
 > this redesign — after root `CLAUDE.md` and `docs/redesign/REDESIGN-CLAUDE.md`.
 > Update it before ending any session, or before `/clear`, whichever comes first.
 
-**Last updated:** 1 September 2026, end of the R0 session.
+**Last updated:** 1 September 2026, end of the R1 session.
 **Branch:** `main`. Not a `redesign/*` branch — root `CLAUDE.md` is explicit
 about why (`shaloh-build` cost an hour when Vercel and Render both built `main`).
 
 ## Current phase
 
-**R0 — COMPLETE, including every ruling. R1 is unblocked and is the next
-session.**
+**R1 — COMPLETE. R2 (per-student cosmetics) is next.**
 
-All five decisions came back on 1 September 2026 and are folded into the phase
-files and the spec, not just recorded here. The findings section below is kept
-as the reasoning behind each ruling — it is evidence, not a to-do list.
+The solar system renders, is the default on a capable device, degrades in place
+on every rung of the ladder, and is under its performance budget. R1.2's one
+deferred item is named below rather than quietly skipped.
 
 ## Completed phases
 
 - **R0** — scope, guardrails, Playwright, the package move, and all R0.1b
   decisions.
+- **R1** — the layout function, the two-layer architecture, base rendering, and
+  the performance check.
 
 ## Next phase
 
-**R1 — Solar System Foundation.** Start at
-`docs/redesign/phases/R1-solar-system-foundation.md` §R1.1, which now carries
-the decided formula. Tests first.
+**R2 — Per-student seeded cosmetics**, `docs/redesign/phases/R2-per-student-seeded-cosmetics.md`.
+The cosmetic endpoint's shape was decided in R0.2 and is recorded below; R2
+builds it. **Read F-5 before touching the map:** 3D is now on by default, so a
+cosmetic bug is visible to every student rather than to whoever found the
+toggle.
+
+## R1 checklist status
+
+### R1.1 — Layout function ✅
+- [x] `computeSolarLayout(stages, objectives)` at `apps/web/src/solar-system/layout.ts`
+- [x] F-1 mean-of-moons, with the Stage 00 fallback as a **named branch**
+- [x] F-2 occupancy-proportional ring spacing
+- [x] F-3 ~300° sweep, largest gap between stage 18 and stage 00
+- [x] F-4 stage 01 keeps `spansAllLevels` and renders as a spoke
+- [x] 30 tests in `apps/web/test/layout-solar.spec.ts`. Stages parse from
+      `db/schema.sql`, objectives from `content/stages/*.md` — **neither is
+      copied**, for the reason `layout.spec.ts` already learned
+- [x] **Mutation-verified, not just green:** a 360° sweep fails 2 tests,
+      removing the Stage 00 fallback fails 4, even ring spacing fails 1, moons
+      at solar radius fails 2
+
+### R1.2 — Two-layer architecture ✅ (one item deferred, named)
+- [x] **3D is the default on capable devices** — F-5's substance. Removed the
+      `localStorage` default-of-off; the preference is now a real override in
+      both directions
+- [x] Degrade in place on every rung, nothing redirects — asserted for reduced
+      motion, ≤640px and absent WebGL, each checking the URL is unchanged
+- [x] WebGL-disabled path verified by actually nulling `getContext`. **This
+      check was vacuous before R1** — no canvas rendered by default, so it
+      passed without proving anything
+- [x] `prefers-reduced-motion` freezes to static, via `page.emulateMedia`
+- [x] R0's recorded matrix turned into hard assertions
+- [x] Only one map draws at a time — the flat SVG is suppressed when the system
+      is showing
+- [ ] **DEFERRED, stated rather than quietly skipped:** DOM controls are not yet
+      *positioned over* their planets. `SKILL-TREE-3D.md` §4's overlay wants
+      real buttons projected onto their 3D counterparts. Today the act list
+      carries all 19 stages as real labelled buttons in curriculum order, which
+      satisfies the accessibility contract, but the projection is not built. R1
+      shipped the layer, not the overlay. Do it in R3's `/app` pass; not blocking
+
+### R1.3 — Base rendering ✅
+- [x] Sun at centre, procedural, and **not** the student's accent — the accent
+      marks the student's own progress and may never carry semantic meaning
+- [x] Seven rings, radii from `layout.ts`, weight by occupancy. Empty rings still
+      draw faintly: L4 and L5 carrying nothing is true information
+- [x] 19 planets, state rendered from the server's resolved field, never computed
+- [x] Flight path split travelled/ahead, drawn behind the bodies
+- [x] Instanced star field, ≤3,000 points, deterministic
+- [x] Rings unlabelled until Stage 11, gated on server-derived state
+- [x] **No drei.** `VISUAL-SYSTEM-3D.md` §5 records it was deliberately dropped
+      to get under budget; rings, path and star field are plain BufferGeometry
+
+### R1.4 — Performance ✅ (one item not done, named)
+Measured both ways — the change was stashed and the build re-run, so this is a
+real delta rather than a guess:
+
+| | HEAD (galaxy) | Solar system | Delta |
+|---|---|---|---|
+| Initial JS, gz | 69.62 KB | 70.45 KB | **+0.83 KB** |
+| CSS, gz | 7.49 KB | 7.52 KB | +0.03 KB |
+| 3D chunk, gz | 219.80 KB | **220.37 KB** | +0.57 KB |
+
+- [x] 3D chunk **under the ≤250 KB budget**, ~30 KB of headroom for R2/R4
+- [x] **Not preloaded** — `dist/index.html` has no `modulepreload`, which is the
+      property that actually matters
+- [x] Drift skips work entirely when the tab is hidden
+- [ ] Frame rate on a throttled profile **not measured** — see the honesty
+      section at the end. This is the phase's biggest gap
 
 ## R0 checklist status
 
@@ -293,6 +360,49 @@ no visible edges. The act list beneath it carries all the actual information, an
 carries it well. Same class as `DESIGN-REVIEW-01` D-1, and invisible to every
 green gate. R1/R3 input, not a blocker.
 
+### F-8 · 47 CSS declarations reference custom properties that do not exist
+**NEW in R1. Not caused by this work — it predates it.**
+
+`apps/web/src/styles.css` uses `var(--ink-dim)` **27 times** and `var(--rule)`
+**20 times**. Neither is defined anywhere in `packages/tokens/tokens.css`. With
+no fallback those declarations are invalid at computed-value time: `color`
+inherits instead of dimming, and a border falls back to `currentColor`.
+
+Every gate stayed green, each for a specific reason worth writing down.
+`scan:palette` passes because there is no literal hex. `check:contrast` passes
+because it computes **token pairs**, and these are not tokens at all.
+TypeScript never sees CSS. Same shape as `DESIGN-REVIEW-01`'s
+finding-behind-the-findings: a class of defect no automated check here can see.
+
+The intent looks obvious — `--ink-dim` wanting `--ink-muted`, `--rule` wanting
+`--line`, both of which exist — but "looks obvious" is an inference about
+someone else's intent across 47 sites, so this is a **decision, not a cleanup**:
+alias the two names in `packages/tokens` (lower risk, keeps the call sites), or
+rewrite the call sites (one fewer concept). Recommend aliasing first so the
+visual change lands in one reviewable step, then deciding whether to rename.
+
+`GalaxyCanvas.tsx` reads `--ink-dim` three times too, so the star field and edge
+colours have been hardcoded HSL fallbacks all along — in the one file most
+committed to routing every colour through a token. `SolarSystemCanvas.tsx` uses
+`--ink-faint`, which exists.
+
+### F-9 · The documented bundle baseline is stale, and nothing measures it
+**NEW in R1.**
+
+`VISUAL-SYSTEM-3D.md` §5 records "51.9 KB + 3.8 KB CSS" as the initial bundle.
+Measured at HEAD **before** any R1 change: **69.62 KB JS + 7.49 KB CSS**. The JS
+figure has drifted 34%; the CSS has nearly doubled. Presumably across P4–P9.
+
+That section ends "A budget nobody measures is a wish", which turned out to be
+exactly right: `pnpm scan:bundle` checks for answer-key and secret leaks, not
+size, so nothing in CI has ever compared these numbers to the document.
+
+The ≤250 KB **3D chunk** budget — the one that actually protects the phone
+audience — is intact at 220.37 KB. It is the initial-bundle line that rotted.
+Worth doing: correct §5's numbers, and decide whether `scan:bundle` should gain
+a size assertion so the next drift is caught by CI rather than by someone
+reading a document three phases later.
+
 ### F-7 · Inherited from DESIGN-REVIEW-01, and this redesign makes it worse
 **D-3, act grouping.** Three sources, three answers: `StageMap.tsx:297` renders
 narrative act names, `stages.act` groups 00–05/06–09/10–13/14–18, and `CLAUDE.md`
@@ -324,7 +434,23 @@ more prominently, not less. Still the instructor's call.
 
 ## Next concrete step
 
-**Start R1.** Everything it needs is decided and written down.
+**Start R2 — per-student seeded cosmetics.**
+
+1. Build the cosmetic endpoint per the shape decided in R0.2:
+   `services/api/src/routes/cosmetics.ts` -> `GET /api/v1/cosmetics`, from
+   `profiles.student_id` alone. **Never** import from
+   `services/api/src/engine/seed.ts`; `pnpm check:boundary` enforces it.
+2. The whole-system rotation offset is the only cosmetic touching the map's
+   geometry, and it must rotate **every** body by the same angle. A per-ring or
+   per-planet offset would put a seeded value inside the semantic encoding.
+   `layout-solar.spec.ts` already asserts `computeSolarLayout` takes no seed
+   parameter at all -- keep it that way and apply the rotation at the renderer.
+3. Housekeeping still outstanding from R0's rulings: `GAME-DESIGN.md` 11's
+   mini-game table (rewrite for the 18-chapter curriculum, add the five
+   approved games) and 12's Track D.
+4. F-8 and F-9 are cheap and belong in R3's design pass.
+
+### Superseded — R1's plan, kept for the record
 
 1. `layout.ts` — tests first, per `phases/R1` §R1.1. Six unit tests are named
    there: INV-32 for planets, INV-32 extended to all 110 moons,
@@ -342,7 +468,47 @@ more prominently, not less. Still the instructor's call.
    table (rewrite for the 18-chapter curriculum, add the five minigames) and
    §12's Track D.
 
+## R1 · what changed outside `apps/web`, and why
+
+One change landed in `services/api`, and it is exactly the kind
+`REDESIGN-CLAUDE.md` §1 says to flag rather than make quietly:
+
+**`GET /api/v1/stages` now returns each stage's objectives** as `{id, level}`
+pairs, no description text. The layout needs them — a planet's ring is the mean
+of its own moons' levels, and without them every stage would silently take the
+no-objectives fallback and the rendered map would disagree with its own tests.
+
+Why this sits inside the boundary rather than crossing it:
+- **No schema change.** No new table, column, function or policy.
+- **Read-only and additive**, on an existing student-facing route.
+- **RLS-neutral.** `ob_read` already lets an authenticated user read objectives
+  of any **published** stage — deliberately not requiring *unlocked*, which is
+  why `/api/v1/stages/:id` can already return a locked stage's objectives, and
+  why `PAGE-SPECS.md` §2 can promise a preview of the next locked stage's
+  objectives. The query filters to the same published set the route already
+  filtered to, so it exposes nothing that was not already reachable.
+- **Nothing to do with** grading, the question engine, or the exam seed.
+
+250 API tests still pass and `pnpm check:boundary` is clean.
+
 ## Which parts of this were actually run, and what I am unsure about
+
+**R1 — ran, and watched succeed or fail:** `pnpm verify` end to end (typecheck,
+lint, palette, env, 1122 contrast checks, objectives, book map, **321 tests**
+across web/console/api, 23 invariants, 0 failures); `pnpm qa` (**19/19**); the
+four-way mutation check on `layout.ts`; `pnpm --filter @octa/web build` twice —
+once with the change and once with it stashed — for a real before/after bundle
+delta rather than a guess; a Chromium probe that located the 5px 380px overflow;
+the API restarted and its new payload inspected directly (110 objectives across
+19 stages, Stage 00 with zero, Stage 03 with 11 at level 1 — matching the layout
+tests exactly).
+
+**Looked at, not merely asserted:** five screenshots during R1, and the first
+two were wrong in ways no test would have caught — the solar system drawn as a
+full-viewport backdrop *underneath* the flat SVG map, two maps stacked with the
+act list scrolling over both; then the page title pushed below the map; then the
+camera cropping the outer rings. All three were found by opening the picture.
+
 
 **Ran, and watched succeed or fail:** the package move; `pnpm add -Dw
 @playwright/test` and `npx playwright install chromium`; `pnpm qa` (8/8, four
@@ -355,17 +521,36 @@ table; a standalone Chromium probe for the redirect matrix.
 **Verified by reading real files, not documentation:** every claim in the
 durable-facts and boundary-baseline sections.
 
-**Assumed, not verified:**
-- `pnpm verify` was **not** run this session. Typecheck over the new
-  `playwright.config.ts` and `design/specs/*.ts` is unproven — neither is in a
-  workspace `tsconfig`, so they may not be covered by `pnpm typecheck` at all.
-  Worth settling early in R1.
-- The ≤250 KB 3D-chunk budget was not re-measured. `VISUAL-SYSTEM-3D.md` §5
-  records 219.8 KB, but `@react-three/drei`, `@react-three/postprocessing` and
-  `react-force-graph-3d` are **not installed** and R1 assumes `<Line>`,
-  `<Stars>`, `OrbitControls`, bloom and pinned-node picking. Note that §5 says
-  drei was deliberately *dropped* to get under budget. Re-measure in R1.4 before
-  assuming headroom exists.
+**Assumed, not verified — R1:**
+- **Frame rate was never measured.** R1.4's 30fps-floor check on a throttled or
+  mid-range profile did not happen. Bundle size and draw-call structure are
+  under budget, but that is not the same claim, and the audience is on mid-range
+  Android. This is the biggest unverified item in the phase.
+- **Draw calls were not counted**, only reasoned about: 19 planet meshes + 7
+  ring loops + 2 path segments + 1 starfield + sun ≈ low 30s. Under 50 by
+  argument, not by measurement. R4 adds 110 moons and should count for real.
+- **Only one theme was looked at.** Every capture is the default theme. The
+  contrast gate computes all three, but a canvas reading tokens at scene setup
+  is not what that gate covers.
+- The Stage 11 ring-reveal flag is threaded through and unit-covered at the data
+  level, but **no student in the demo seed has mastered Stage 11**, so the
+  revealed state has never been rendered.
+- `design/specs/*.ts` and `playwright.config.ts` are still **not** in any
+  workspace `tsconfig`, so `pnpm typecheck` does not cover them. I typechecked
+  them by hand again. Worth wiring properly rather than remembering each time.
+- Moons are **not rendered** — deliberate, R1's goal says skeleton first and R4
+  is the moon phase. The layout computes and tests all 110; nothing draws them.
+
+**Assumed, not verified — R0 (carried forward, and two are now settled):**
+- ~~`pnpm verify` was not run.~~ **SETTLED in R1:** run end to end, green.
+  The `tsconfig` coverage gap for `design/specs/*.ts` and
+  `playwright.config.ts` is real and still open — see the R1 list above.
+- ~~The ≤250 KB 3D-chunk budget was not re-measured.~~ **SETTLED in R1:**
+  220.37 KB, measured, with the before/after taken by stashing the change and
+  rebuilding. drei, postprocessing and react-force-graph-3d were **not**
+  installed and were **not** added — R1.3 builds rings, path and star field from
+  plain BufferGeometry, which is why the chunk barely moved. See F-9 for the
+  initial-bundle figure, which had rotted.
 - Nothing was captured on the console app; R0 only needed the student map.
 - The captures came from an API and dev servers already running from a previous
   session. I confirmed they were healthy and serving the reseeded database, but

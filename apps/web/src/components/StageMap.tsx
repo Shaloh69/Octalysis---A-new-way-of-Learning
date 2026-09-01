@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, Suspense, lazy, useEffect } from "react";
 import { computeLayout, layoutBounds, LEVELS, LEVEL_NAMES } from "../lib/layout";
+import { computeSolarLayout } from "../solar-system/layout";
 import type { StageNode, StageMapData } from "../lib/api";
 
 /**
@@ -10,16 +11,23 @@ import type { StageNode, StageMapData } from "../lib/api";
  *   - The DOM layer below is always rendered. Every node is a real <button>
  *     with a label, a state, and -- when locked -- the reason and the distance.
  *     Focus order follows curriculum order, never screen position.
- *   - The WebGL galaxy sits BEHIND it, aria-hidden, pointer-events: none, and
- *     lazily loaded. A <canvas> has no accessibility semantics at all, so a 3D
- *     map that is the only representation of its content is inaccessible by
+ *   - The WebGL solar system sits BEHIND it, aria-hidden, pointer-events: none,
+ *     and lazily loaded. A <canvas> has no accessibility semantics at all, so a
+ *     3D map that is the only representation of its content is inaccessible by
  *     construction.
  *
  * If WebGL fails, is disabled, or the viewport is small, the canvas simply never
- * appears. There is no error state, because nothing is missing.
+ * appears. There is no error state, because nothing is missing, and NOTHING
+ * REDIRECTS -- the DOM layer is already on screen underneath.
+ *
+ * That degrade-in-place behaviour is the F-5 ruling (docs/PROGRESS.md), and
+ * `docs/VISUAL-SYSTEM-3D.md` 5's ladder owns it. What the same ruling changed:
+ * 3D used to default to OFF behind a localStorage preference, so a student saw
+ * a canvas only if they found the toggle. No document ever sanctioned that, and
+ * it would have made the whole solar system invisible to most of the class.
  */
 
-const GalaxyCanvas = lazy(() => import("./GalaxyCanvas"));
+const SolarSystemCanvas = lazy(() => import("../solar-system/SolarSystemCanvas"));
 
 interface Props {
   data: StageMapData;
@@ -61,17 +69,49 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
   // 3D is opt-in on small viewports and never under reduced motion. Defaults
   // are applied automatically and silently -- see VISUAL-SYSTEM-3D.md §5.
   const [mode, setMode] = useState<Mode>(() => {
+    // Capability first: reduced motion and a small viewport both fall back to
+    // flat, in place, without asking. VISUAL-SYSTEM-3D.md 5's ladder.
     if (reduced) return "2d";
     if (typeof window !== "undefined" && window.innerWidth <= 640) return "2d";
+    // Otherwise 3D IS THE DEFAULT (F-5). The stored preference is a real
+    // override in both directions -- it is not the thing that switches 3D on.
     try {
-      return localStorage.getItem("octa:map-mode") === "3d" ? "3d" : "2d";
+      return localStorage.getItem("octa:map-mode") === "2d" ? "2d" : "3d";
     } catch {
-      return "2d";
+      // Private window: the preference just does not persist. The default holds.
+      return "3d";
     }
   });
 
   const positions = useMemo(() => computeLayout(data.nodes), [data.nodes]);
   const bounds = useMemo(() => layoutBounds(positions), [positions]);
+
+  /*
+   * The solar system's own coordinates. Separate from `computeLayout` above,
+   * which still drives the flat SVG -- the flat map is a genuinely different
+   * presentation, not a projection of this one, and SOLAR-SYSTEM-SPEC.md 5 is
+   * explicit that its MECHANISM does not change with the reskin, only its
+   * ring/planet/moon wording.
+   *
+   * Objectives come from the map endpoint, so a planet lands on the mean of its
+   * own moons' levels. Without them every stage would silently take the
+   * no-objectives fallback and the map would disagree with its own tests.
+   */
+  const solar = useMemo(
+    () =>
+      computeSolarLayout(
+        data.nodes,
+        data.nodes.flatMap((n) =>
+          n.objectives.map((o) => ({ id: o.id, stageId: n.id, level: o.level })),
+        ),
+      ),
+    [data.nodes],
+  );
+
+  // Stage 11 names the rings. Server-derived, like every other state on this
+  // page -- the client renders the reveal, it does not decide it.
+  const ringsNamed =
+    (data.nodes.find((n) => n.id === "11")?.state ?? "locked") === "mastered";
 
   // `flat` is the FOURTH reason the canvas can be absent, alongside reduced
   // motion, a small viewport, and WebGL failing. All four are equal; none of
@@ -90,13 +130,6 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
 
   return (
     <div className="map-root">
-      {showGalaxy && (
-        <div className="map-galaxy" aria-hidden="true">
-          <Suspense fallback={null}>
-            <GalaxyCanvas nodes={data.nodes} positions={positions} />
-          </Suspense>
-        </div>
-      )}
 
       <div className="map-header">
         <div>
@@ -114,12 +147,34 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
             onClick={() => setModePersisted(mode === "3d" ? "2d" : "3d")}
             aria-pressed={mode === "3d"}
           >
-            {mode === "3d" ? "Flat map" : "View in 3D"}
+            {mode === "3d" ? "Flat map" : "View the solar system"}
           </button>
         )}
       </div>
 
-      <MapSvg data={data} positions={positions} bounds={bounds} onOpen={onOpen} />
+      {showGalaxy && (
+        <div className="map-solar" aria-hidden="true">
+          <Suspense fallback={null}>
+            <SolarSystemCanvas
+              nodes={data.nodes}
+              layout={solar}
+              ringsNamed={ringsNamed}
+              frozen={reduced}
+            />
+          </Suspense>
+        </div>
+      )}
+
+      {/*
+        The flat SVG map draws only when the solar system is NOT showing.
+        Two maps of the same 19 stages, stacked, is not a richer view -- it is
+        two views arguing. The act list below is the DOM layer either way, and
+        it is the accessibility contract, not this SVG (which is
+        role="presentation" and aria-hidden).
+      */}
+      {!showGalaxy && (
+        <MapSvg data={data} positions={positions} bounds={bounds} onOpen={onOpen} />
+      )}
 
       {/*
         The screen-reader equivalent. Same graph, expressed as text, because the

@@ -32,6 +32,20 @@ interface StageRow {
   mastery: string | null;
   unlocked: boolean;
   block_count: number;
+  /**
+   * Each objective's id and Computer Level Hierarchy level, for the solar
+   * system's layout (docs/redesign/SOLAR-SYSTEM-SPEC.md 1.1: a planet's orbit
+   * ring is the mean of its own moons' levels, and a moon is one objective).
+   *
+   * RLS: `ob_read` lets an authenticated user read objectives of any PUBLISHED
+   * stage -- unlocked is deliberately not required, which is why a locked stage
+   * can already show its objectives on /api/v1/stages/:id and why
+   * PAGE-SPECS 2 can promise a preview of the next locked stage's objectives.
+   * This query filters to the same published set, so it exposes nothing the
+   * per-stage route did not already. No description text is selected: the map
+   * needs the shape, not the content.
+   */
+  objectives: Array<{ id: string; level: number | null }> | null;
 }
 
 export function registerStageRoutes(app: FastifyInstance, env: Env): void {
@@ -47,7 +61,12 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
               s.prereq, s.published, s.gradeable, s.archetype, s.levels,
               sp.mastery,
               is_stage_unlocked($1, s.id) as unlocked,
-              (select count(*)::int from content_blocks cb where cb.stage_id = s.id) as block_count
+              (select count(*)::int from content_blocks cb where cb.stage_id = s.id) as block_count,
+              (select coalesce(
+                        jsonb_agg(jsonb_build_object('id', o.id, 'level', o.level)
+                                  order by o.id),
+                        '[]'::jsonb)
+                 from objectives o where o.stage_id = s.id) as objectives
          from stages s
          left join stage_progress sp on sp.user_id = $1 and sp.stage_id = s.id
         where s.published or $2
@@ -117,6 +136,10 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         published: r.published,
         prereq: r.prereq ?? [],
         blockCount: r.block_count,
+        // Levels only, no descriptions. A moon needs an identity and a ring;
+        // the objective's text arrives with the stage itself.
+        objectives: (r.objectives ?? [])
+          .filter((o): o is { id: string; level: number } => o.level !== null),
         state,
         mastery: Number(mastery.toFixed(3)),
         lockReason,

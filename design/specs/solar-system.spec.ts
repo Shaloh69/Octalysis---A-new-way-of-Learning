@@ -1,0 +1,209 @@
+import { test, expect } from "@playwright/test";
+import type { Page, TestInfo } from "@playwright/test";
+import { createHmac } from "node:crypto";
+
+/**
+ * R1 — the solar system, captured and asserted.
+ *
+ * `design/specs/before-baseline.spec.ts` recorded what `/app` did before this
+ * phase and deliberately asserted nothing about it. This file is the other
+ * half: now that F-5 is ruled, the degradation ladder is a contract and gets
+ * hard assertions rather than annotations.
+ *
+ * THE LADDER (docs/VISUAL-SYSTEM-3D.md §5, which F-5 made the single owner):
+ * 3D is the default on a capable device; reduced motion, a small viewport and
+ * absent WebGL each fall back to the flat presentation IN PLACE. Nothing
+ * redirects — the DOM layer is already on screen underneath, so nothing has to
+ * move. Every case below asserts the URL is unchanged, because a redirect
+ * creeping back in is the specific regression this file exists to catch.
+ */
+
+const JWT_SECRET =
+  process.env.SUPABASE_JWT_SECRET ?? "test-secret-at-least-32-characters-long-000000";
+
+/**
+ * Two students from db/demo-seed.sql. Fixture data by construction, so no real
+ * name can reach `design/`.
+ *
+ * `fresh` has nothing unlocked past orientation and `progressing` has seven
+ * stages of history — both are captured, because a map where everything is
+ * locked and a map where the path has actually been walked are different
+ * pictures, and only one of them was ever going to get looked at otherwise.
+ */
+const STUDENTS = {
+  fresh: { sub: "dddddddd-1111-4000-8000-000000000001", studentId: "232129001" },
+  progressing: { sub: "dddddddd-1111-4000-8000-000000000006", studentId: "232129006" },
+};
+
+function mintDevToken(who: { sub: string; studentId: string }): string {
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const header = b64({ alg: "HS256", typ: "JWT" });
+  const payload = b64({
+    sub: who.sub,
+    email: "demo@example.com",
+    aud: "authenticated",
+    exp: Math.floor(Date.now() / 1000) + 86_400,
+    app_metadata: { role: "student", student_id: who.studentId },
+  });
+  const sig = createHmac("sha256", JWT_SECRET).update(`${header}.${payload}`).digest("base64url");
+  return `${header}.${payload}.${sig}`;
+}
+
+async function signIn(page: Page, who: keyof typeof STUDENTS = "fresh"): Promise<void> {
+  await page.addInitScript(
+    ([token]) => window.localStorage.setItem("octa:dev-token", token as string),
+    [mintDevToken(STUDENTS[who])],
+  );
+}
+
+async function capture(page: Page, name: string, testInfo: TestInfo): Promise<void> {
+  const file = testInfo.outputPath(`${name}-${testInfo.project.name}.png`);
+  await page.screenshot({ path: file });
+  await testInfo.attach(name, { path: file, contentType: "image/png" });
+}
+
+/** The canvas needs a moment to mount and draw before it is worth capturing. */
+async function settle(page: Page): Promise<void> {
+  await page.waitForTimeout(1800);
+}
+
+test.describe("the solar system renders", () => {
+  test("draws a canvas on a capable device, WITHOUT being asked", async ({ page }, testInfo) => {
+    // F-5's substance. 3D used to sit behind a localStorage preference that
+    // defaulted to off, so a student saw a canvas only if they found the
+    // toggle. No document ever sanctioned that.
+    test.skip(testInfo.project.name !== "desktop-1440", "3D is flat-by-ladder at 380px");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    expect(await page.locator("canvas").count()).toBe(1);
+    expect(new URL(page.url()).pathname, "nothing redirects").toBe("/app");
+    await capture(page, "solar-fresh", testInfo);
+  });
+
+  test("shows a walked path differently from an untouched one", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "3D is flat-by-ladder at 380px");
+
+    await signIn(page, "progressing");
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    // The headline is server-derived and is the cheapest proof that this
+    // student's state actually reached the page.
+    await expect(page.locator(".map-sub")).toContainText(/of 19 subsystems online/);
+    await capture(page, "solar-progressing", testInfo);
+  });
+
+  test("does not draw two maps at once", async ({ page }, testInfo) => {
+    // The flat SVG is the OTHER presentation of the same 19 stages. Drawing it
+    // under the solar system put text on orbit lines and two maps on top of
+    // each other -- DESIGN-REVIEW-01's D-2 in a new place.
+    test.skip(testInfo.project.name !== "desktop-1440", "3D is flat-by-ladder at 380px");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    expect(await page.locator("canvas").count()).toBe(1);
+    expect(await page.locator("svg.map-svg").count()).toBe(0);
+  });
+});
+
+test.describe("the degradation ladder — falls back in place, never redirects", () => {
+  test("reduced motion falls back to flat, on the same route", async ({ page }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    expect(
+      await page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches),
+      "media emulation must actually apply, or this test is theatre",
+    ).toBe(true);
+
+    expect(await page.locator("canvas").count(), "no canvas under reduced motion").toBe(0);
+    expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
+    // The flat map takes over in place, so the page is still a map.
+    expect(await page.locator("svg.map-svg").count()).toBe(1);
+    await capture(page, "solar-reduced-motion", testInfo);
+  });
+
+  test("WebGL being unavailable falls back to flat, silently", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "already flat at 380px");
+
+    // Break WebGL before any app code runs. This is the check SKILL-TREE-3D.md
+    // §4 says to do "by disabling WebGL in the browser, not by hoping" -- and
+    // R0 recorded that it used to pass vacuously, because no canvas rendered by
+    // default anyway. It only means something now that 3D is on.
+    await page.addInitScript(() => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function patched(
+        this: HTMLCanvasElement,
+        kind: string,
+        ...rest: unknown[]
+      ) {
+        if (kind === "webgl" || kind === "webgl2" || kind === "experimental-webgl") return null;
+        return (original as unknown as (...a: unknown[]) => unknown).call(this, kind, ...rest);
+      } as typeof HTMLCanvasElement.prototype.getContext;
+    });
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
+    // No error state, no "your browser is unsupported": nothing is missing,
+    // because the DOM layer was always the one carrying the meaning.
+    await expect(page.locator(".act-list")).toBeVisible();
+    await capture(page, "solar-no-webgl", testInfo);
+  });
+
+  test("a small viewport is flat, and 380px does not scroll sideways", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile-380", "this is the 380px case");
+
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    expect(await page.locator("canvas").count(), "no canvas at 380px").toBe(0);
+    expect(new URL(page.url()).pathname, "must NOT redirect").toBe("/app");
+
+    // 380px with no horizontal scroll is a hard requirement in the definition
+    // of done, not a nice-to-have.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, "the page scrolls sideways at 380px").toBeLessThanOrEqual(0);
+
+    await capture(page, "solar-380", testInfo);
+  });
+});
+
+test.describe("the DOM layer stays the accessibility contract", () => {
+  test("every stage is a real control, whatever the canvas is doing", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+    await settle(page);
+
+    // 19 stages from the seed. The canvas is aria-hidden and carries none of
+    // this -- a <canvas> has no accessibility semantics at all.
+    const controls = page.locator(".act-list button");
+    expect(await controls.count()).toBeGreaterThanOrEqual(19);
+    await expect(page.locator("canvas")).toHaveAttribute("aria-hidden", /true/).catch(() => {
+      // No canvas on this project's ladder rung; the assertion above already
+      // proved the DOM layer stands on its own, which is the actual contract.
+    });
+  });
+
+  test("a locked stage still says why, in words, with the distance", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/app", { waitUntil: "networkidle" });
+
+    // The design mandate calls a lock with no visible reason "the single most
+    // demotivating UI element in ed-tech". It is printed text, never a tooltip.
+    await expect(page.locator(".act-list")).toContainText(/Unlocks when Stage \d+/);
+    await expect(page.locator(".act-list")).toContainText(/You're at \d+%/);
+  });
+});

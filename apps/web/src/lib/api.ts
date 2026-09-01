@@ -27,6 +27,13 @@ export interface StageNode {
   published: boolean;
   prereq: string[];
   blockCount: number;
+  /**
+   * This stage's objectives, as ids and Computer Level Hierarchy levels only.
+   * One objective is one moon, and a planet's orbit ring is the mean of its
+   * moons' levels -- see src/solar-system/layout.ts. No description text: the
+   * map needs the shape, the reader supplies the content.
+   */
+  objectives: Array<{ id: string; level: number }>;
   state: "locked" | "available" | "in_progress" | "mastered";
   mastery: number;
   lockReason: LockReason | null;

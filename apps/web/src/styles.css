@@ -152,6 +152,12 @@ button {
 
 .app-nav {
   display: flex;
+  /* The nav is a flex row with `margin-left: auto` on Sign out, and without
+     wrapping it ran 5px past the viewport at 380px -- a horizontal scrollbar on
+     every page of the student app. Nothing caught it: it is valid CSS, a legal
+     token, and no test had ever measured the document width.
+     `design/specs/solar-system.spec.ts` now asserts it. */
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
 }
@@ -275,11 +281,34 @@ button {
   position: relative;
 }
 
-.map-galaxy {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
+/*
+ * The solar system is IN FLOW, not a fixed backdrop.
+ *
+ * The galaxy could be `position: fixed; inset: 0` because it was a diffuse
+ * star field -- atmosphere behind a page. A solar system is the map itself, and
+ * a full-viewport backdrop put two maps on top of each other with the act list
+ * scrolling over both: text sitting on orbit lines, unreadable. That is
+ * DESIGN-REVIEW-01's D-2 again in a new place (a bus trace through the word
+ * "Password"), and the same cause -- something painting where it was assumed to
+ * sit behind.
+ *
+ * So it gets its own box, and the text sits below it rather than on it.
+ */
+.map-solar {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: min(54vh, 540px);
+  margin-bottom: 1.5rem;
   pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  /* Never reached today -- <=640px falls back to flat before this renders --
+     but the box must not be taller than the phone if that ever changes. */
+  .map-solar {
+    height: min(50vh, 380px);
+  }
 }
 
 .map-header {
