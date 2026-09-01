@@ -19,19 +19,38 @@ what's visible in the moment before the exercise loads and behind its edges
 — is jungle-canopy silhouette for Student A, dune/heat-haze for Student B.
 Different mood, same lesson, same difficulty, same grade.
 
-## 2. Build approach — procedural first, real assets as upgrade
+## 2. Build approach — real parallax art is the default, procedural is the fallback
 
-Consistent with `GAME-DESIGN.md` §9's reasoning for the 8 encounter themes
-("NO ASSET PACKS... four tokens plus a gradient"): default to procedural
-CSS/SVG gradients and simple shape layers per biome, not downloaded art. This
-keeps bundle size near zero and makes contrast-checking mechanical, same
-pipeline as the encounter themes.
+**Revised: this section previously said "procedural first, real assets as an
+upgrade." That's backwards for this specific case, and worth being explicit
+about why, since it's easy to over-apply the encounter-theme precedent here.**
+`GAME-DESIGN.md` §9's "no asset packs" rule exists because the *encounter*
+themes need to look content-honest (a switchboard has to look like a
+switchboard) and four tokens plus a gradient genuinely achieves that. A
+biome's entire job is different: it's there specifically so "jungle" and
+"desert" read as unmistakably different environments at a glance, which is
+the reason biomes exist in this redesign at all. A flat procedural gradient
+in two different hues does not deliver that — it delivers a tinted rectangle,
+which is close to indistinguishable from just picking a different accent
+colour, and defeats the actual point.
 
-If richer parallax art is wanted later, real CC0 sources exist, same supplier
-relationship this project already has with Kenney for audio. **Seven biomes**,
-each with a real, checked source — expanded from the original two on request,
-and each one specifically verified to have a genuinely free-to-use option,
-not just "itch.io has some":
+**So: for the seven biomes below, use the real sourced CC0 parallax art as
+the default landing scene. Fall back to a procedural treatment only where —
+like volcanic below — no clean, verifiably-licensed pack exists yet, not as
+a blanket default everywhere.**
+
+Bundle-weight discipline still applies, just differently than a pure-CSS
+approach would need: **lazy-load only the one biome a given student is
+actually seeded into, per stage, on demand — never bundle all seven.** A
+parallax pack is a handful of PNGs, not a texture-heavy 3D asset; loaded one
+biome at a time, this stays well inside reasonable page-weight norms. Verify
+the actual per-biome weight once sourced and keep it visible in
+`docs/PROGRESS.md`, the same way `SOLAR-SYSTEM-SPEC.md` §5 tracks the 3D
+chunk's budget — don't let this be the one asset category nobody measures.
+
+**Seven biomes**, each with a real, checked source — expanded from the
+original two on request, and each one specifically verified to have a
+genuinely free-to-use option, not just "itch.io has some":
 
 | Biome | Source | License | Note |
 |---|---|---|---|
@@ -39,17 +58,19 @@ not just "itch.io has some":
 | **Jungle** | itch.io CC0 jungle/forest parallax packs — browse https://itch.io/c/6211077/parallax-bg, filter to CC0 per file | Varies per file — check individually | |
 | **Desert** | **Desert Parallax Background** (styloo) — https://styloo.itch.io/desert-parallax-background | CC0 1.0, explicit | Multiple resolutions provided, 4 layers |
 | **Arctic / snow** | **Parallax Backgrounds: Snowy Mountains** (Admurin, via the curated Free CC0 Assets collection) — https://itch.io/e/12578572/jco-added-to-free-cc0-assets, or search https://itch.io/game-assets/tag-backgrounds/tag-snow | Check per file | Several options in this tag; pick one, verify its license page directly rather than trusting a collection listing |
-| **Volcanic** | Browse https://itch.io/game-assets/tag-backgrounds/tag-volcano | Check per file | No single standout free pack found — this is the one biome where a procedural gradient (lava-glow palette, §2's default approach) is the more reliable near-term choice over hunting for a licensed asset |
+| **Volcanic** | Browse https://itch.io/game-assets/tag-backgrounds/tag-volcano | Check per file | No single standout free pack found — this is the one biome that stays procedural for now (lava-glow gradient, warm high-contrast palette) until a properly-licensed pack turns up, per the fallback rule in §2 above |
 | **Cave / underground** | Browse https://itch.io/game-assets/new-and-popular/free/tag-parallax (search "cave" within results) | **Verify carefully** — one popular-looking cave pack (Admurin's) was flagged by its own author, in the comments, as ambiguously licensed (claimed CC0 in one place, CC 3.0 on DeviantArt) — this is exactly the "check per file, don't trust a tag" discipline this project already applies everywhere else, now with a concrete example of why it matters | |
 | **Ocean / underwater** | Browse https://itch.io/game-assets/tag-parallax (search "ocean") — several free options surfaced, e.g. "Free Ocean and Clouds Pixel Backgrounds" | Check per file | |
 
 **The volcanic and cave rows above are the honest ones, not the polished
 ones on purpose.** Not every biome has a clean, obviously-CC0 pack waiting —
-sometimes the right answer is "use the procedural default from §2 for this
-one, keep looking for a real asset later," and sometimes it's "the first
-result everyone finds isn't actually clearly licensed, don't ship it anyway."
-That's the same rigor `GAME-DESIGN.md` §9 already applies before vendoring
-anything.
+sometimes the right answer is "this one stays procedural for now, keep
+looking for a real asset later" (volcanic), and sometimes it's "the first
+result everyone finds isn't actually clearly licensed, don't ship it anyway"
+(cave). That's the same rigor `GAME-DESIGN.md` §9 already applies before
+vendoring anything — it's just being applied in the *opposite* default
+direction here, real art first, procedural as the named exception, not the
+starting position.
 
 Whichever path is chosen, every biome variant goes through the same contrast
 pipeline as the base themes and encounter themes — a biome that fails WCAG AA

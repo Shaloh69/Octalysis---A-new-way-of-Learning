@@ -107,6 +107,30 @@
   --surface-2:  oklch(0.26 0.014 250);  /* raised / hover */
   --surface-3:  oklch(0.31 0.016 250);  /* active */
 
+  /* ---- F-8 · aliases for two names that were used but never defined ----
+     `apps/web/src/styles.css` referenced `--ink-dim` 27 times and `--rule` 20
+     times. Neither existed anywhere in this file. With no fallback those
+     declarations were invalid at computed-value time, so `color` inherited
+     instead of dimming and every border fell back to `currentColor`.
+
+     Nothing could catch it: `scan:palette` passes because there is no literal
+     hex, `check:contrast` passes because it compares TOKEN PAIRS and these were
+     not tokens at all, and CSS is invisible to TypeScript.
+
+     Aliased rather than rewritten at 47 call sites, because the alias is one
+     reviewable change that can be reverted in a line, and because the usage is
+     unambiguous about the intent: `--ink-dim` appears only as `color:` on
+     secondary text, `--rule` only as a `border:`.
+
+     These resolve lazily, so a single declaration here follows whichever theme
+     is active -- no per-theme copy needed. They are aliases of already-checked
+     tokens, which is why `check-contrast.mjs` does not (and should not) pick
+     them up as new pairs to verify.
+
+     If these names are ever retired, retire the call sites first. */
+  --ink-dim:    var(--ink-muted);
+  --rule:       var(--line);
+
   --ink:        oklch(0.92 0.008 250);  /* primary text */
   --ink-muted:  oklch(0.72 0.010 250);  /* secondary */
   --ink-faint:  oklch(0.61 0.010 250);  /* tertiary, disabled */
@@ -516,10 +540,21 @@ code, kbd, samp, pre, .mono, .register-value, .hex, .listing,
    LANDING BIOMES — per-student, cosmetic only
    ============================================================
 
-   docs/redesign/BIOME-AND-LOADING-SPEC.md. Seven, procedural, no asset packs
-   — the same reasoning GAME-DESIGN.md §9 already applied to the eight
-   encounter themes: four tokens and a gradient beat 750 sprites, a licence
-   file and an attribution page for something CSS does in six lines.
+   docs/redesign/BIOME-AND-LOADING-SPEC.md §2, AS REVISED: real sourced CC0
+   parallax art is the default for six of the seven, and procedural is the
+   named exception (volcanic only, where no cleanly-licensed pack exists yet).
+
+   These tokens therefore do LESS than an earlier draft assumed. They are not
+   the biome — the art is. They carry:
+     --biome-ink   text over the scene, held to 4.5:1 by check-contrast.mjs
+     --biome-far   the ground behind the layers, and volcanic's own gradient
+     --biome-near  volcanic's foreground, and the loading ground
+
+   Do NOT reinstate a gradient-only biome here. GAME-DESIGN.md §9's
+   no-asset-packs rule is about ENCOUNTER themes, which have to look
+   content-honest and can with four tokens. A biome's job is that jungle and
+   desert read as unmistakably different environments at a glance, and two
+   hues of the same rectangle cannot do that.
 
    A biome is scenery around a stage's landing, seeded per student. Student A
    lands on Stage 09 in a jungle and Student B in a desert; both get the Pixel

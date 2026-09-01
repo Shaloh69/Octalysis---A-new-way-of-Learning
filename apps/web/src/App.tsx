@@ -25,6 +25,7 @@ import {
 import { SettingsPage } from "./pages/SettingsPage";
 import { SubmitPage } from "./pages/SubmitPage";
 import { api, type ProgressGrid as Grid, type StageMapData } from "./lib/api";
+import { useCosmetics } from "./solar-system/cosmetic-seed";
 import { currentIdentity, onAuthChange, signOut, type Identity } from "./lib/auth";
 
 /**
@@ -73,6 +74,17 @@ function RequireSession(): JSX.Element {
 function AppShell(): JSX.Element {
   const identity = useIdentity();
   const nav = useNavigate();
+
+  /*
+   * The student's seeded look, applied once for the whole authenticated app.
+   *
+   * It lives here rather than on the map because a landing biome dresses a
+   * STAGE (BIOME-AND-LOADING-SPEC.md §1), and the stage reader is a different
+   * route -- called from the map alone, `data-biome` would never be set on the
+   * page that actually uses it. Cosmetic only: it changes what a student looks
+   * at and nothing about what they can do.
+   */
+  useCosmetics();
   const [map, setMap] = useState<StageMapData | null>(null);
   const [grid, setGrid] = useState<Grid | null>(null);
   const [offline, setOffline] = useState(!navigator.onLine);

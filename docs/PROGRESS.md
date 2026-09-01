@@ -41,7 +41,59 @@ and the boundary between the two is enforced by tests rather than by prose.
       collide with a nine-digit student number
 - [x] A landing biome index, one of seven
 
-### R2.2b — The seven biomes ✅
+### R2.2b — The seven biomes — CORRECTED MID-PHASE, then rebuilt
+
+> **`BIOME-AND-LOADING-SPEC.md` §2 was revised by the instructor on
+> 1 September 2026, and the revision REVERSES the default.** Real sourced CC0
+> parallax art is now the default for six of seven biomes; procedural is the
+> named exception, used only where no cleanly-licensed pack exists.
+>
+> **Why, recorded here so a later session does not quietly revert to
+> procedural because an earlier draft said so:** `GAME-DESIGN.md` §9's "no
+> asset packs" rule exists because an ENCOUNTER theme has to look
+> content-honest, and four tokens plus a gradient genuinely achieves that — a
+> switchboard looks like a switchboard. A biome's job is different. It exists
+> so "jungle" and "desert" read as unmistakably different environments at a
+> glance, which is the whole reason biomes are in this redesign. A flat
+> gradient in two hues delivers a tinted rectangle, barely distinguishable
+> from picking a different accent colour, and defeats the point.
+>
+> I had already built the procedural version before the correction landed. It
+> was reverted, not adapted.
+
+- [x] Seven pack manifests at `apps/web/src/biomes/packs/`, each carrying its
+      own source URL, licence caveat and vendoring instructions
+- [x] **Lazy-loaded, one biome per student, never all seven** — verified in the
+      build output: Vite emits a separate chunk per biome, and the layer images
+      will live in `public/` so the browser fetches only the referenced ones
+- [x] **Volcanic is procedural, by exception**, from its two already-checked
+      tokens. `BiomeScene` uses an explicit one-name allow-list rather than
+      "no layers means draw the tokens", so an un-sourced biome renders
+      **nothing** instead of a stand-in that looks finished
+- [x] All seven still pass the contrast pipeline (`--biome-ink` at 4.5:1)
+- [ ] **BLOCKED ON ASSETS — six of seven biomes render nothing today.** The
+      packs are named and licence-checked in §2's table, but nothing is
+      vendored: `apps/web/public/CREDITS.md` still says "Not yet vendored" for
+      every asset category in the project. `REDESIGN-CLAUDE.md` §1b routes
+      non-Kenney itch.io through a human glance for licence verification, and
+      five of the six are non-Kenney. **Needs a human to fetch and verify.**
+- [ ] Per-biome weight not measured, because there is nothing to weigh yet.
+      §2 asks for it in this file next to the 3D chunk budget; the row is
+      reserved below
+
+### Biome weights — reserved, per BIOME-AND-LOADING-SPEC.md §2
+
+| Biome | Source | Vendored | Weight (gz) |
+|---|---|---|---|
+| neutral | Kenney Background Elements (CC0) | no | — |
+| jungle | itch.io CC0 parallax, per-file check | no | — |
+| desert | styloo Desert Parallax (CC0 1.0, explicit) | no | — |
+| arctic | Admurin Snowy Mountains, verify page | no | — |
+| volcanic | **procedural, by exception** | n/a | 0 |
+| cave | itch.io — **licence disputed by its own author** | no | — |
+| ocean | itch.io free ocean packs, per-file check | no | — |
+
+### R2.2b — the superseded procedural plan
 - [x] All seven procedural, as token blocks — no asset packs, same reasoning
       `GAME-DESIGN.md` §9 applied to the encounter themes
 - [x] Each contrast-checked individually, not one representative example

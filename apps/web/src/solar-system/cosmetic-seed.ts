@@ -39,6 +39,14 @@ const DEFAULT: Cosmetics = {
  * that failed to load would make a cosmetic feel like a fault, which is exactly
  * the wrong weight to give it.
  */
+/**
+ * Called in two places on purpose: `AppShell`, so `data-biome` is set on every
+ * authenticated route including the stage reader, and `StageMap`, which needs
+ * the rotation and palette VALUES rather than just the attributes. The
+ * attribute effect is idempotent, so both callers setting the same values is
+ * harmless -- and one fetch each is cheaper than threading the result through
+ * a context for two consumers.
+ */
 export function useCosmetics(): { cosmetics: Cosmetics; loaded: boolean } {
   const [cosmetics, setCosmetics] = useState<Cosmetics>(DEFAULT);
   const [loaded, setLoaded] = useState(false);

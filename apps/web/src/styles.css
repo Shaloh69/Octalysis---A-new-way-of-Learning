@@ -1207,3 +1207,66 @@ button {
 /* The boot panel stacks above the fixed backdrop (z-index 0). Without this the
  * backdrop's own stacking context would paint the grid over the form. */
 .boot { position: relative; z-index: 1; }
+
+/* --------------------------------------------------------------
+ * Landing biome — real parallax art, per BIOME-AND-LOADING-SPEC.md §2
+ * ------------------------------------------------------------ */
+
+/*
+ * §2 was REVISED: real sourced CC0 parallax art is the default and procedural
+ * is the named exception, not the other way round. The reasoning is worth
+ * keeping next to the CSS, because the instinct to "just use a gradient" is
+ * exactly what it corrects: `GAME-DESIGN.md` §9's no-asset-packs rule is about
+ * ENCOUNTER themes, which need to look content-honest and can. A biome's job is
+ * that jungle and desert read as unmistakably different environments at a
+ * glance, and two hues of the same rectangle cannot do that.
+ *
+ * So this block styles LAYERED IMAGES. `data-biome-render="procedural"` is the
+ * volcanic-only fallback, and un-sourced biomes render nothing at all rather
+ * than a stand-in that looks finished.
+ */
+.biome {
+  position: relative;
+  height: 148px;
+  margin: 0 0 var(--space-5);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--biome-far, var(--surface-1));
+}
+
+.biome-layer {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat-x;
+  background-position: center bottom;
+  background-size: auto 100%;
+  image-rendering: pixelated;
+  /* Parallax offset is driven by --biome-depth per layer, so the whole effect
+     is one media query away from being frozen. */
+  transform: translateX(calc(var(--biome-depth, 0) * -2%));
+}
+
+/* Volcanic only. The one biome with no cleanly-licensed pack yet, so it draws
+   from its two tokens -- both already contrast-checked. */
+.biome[data-biome-render="procedural"] {
+  background:
+    radial-gradient(140% 100% at 50% 128%, var(--biome-near) 42%, transparent 43%),
+    radial-gradient(80% 80% at 20% 135%, var(--biome-near) 46%, transparent 47%),
+    linear-gradient(180deg, var(--biome-far), var(--biome-near));
+}
+
+@media (max-width: 640px) {
+  .biome { height: 96px; }
+}
+
+/*
+ * Frozen, not slowed. The parallax carries no information the static frame does
+ * not also carry, which is why it is allowed to stop dead rather than ease.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .biome-layer {
+    transform: none;
+    animation: none;
+    transition: none;
+  }
+}

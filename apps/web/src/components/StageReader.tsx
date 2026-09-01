@@ -1,3 +1,5 @@
+import { BiomeScene } from "../biomes/BiomeScene";
+import { useSeededBiome } from "../biomes/useSeededBiome";
 import { useEffect, useState } from "react";
 import { api, ApiError, type StageDetail } from "../lib/api";
 import { encounterFor } from "../lib/encounters";
@@ -64,11 +66,17 @@ export function StageReader({
     );
   }
 
+  // The seeded landing biome. Read from the <html> attribute rather than
+  // re-fetching: AppShell already applied it for every authenticated route.
+  const biome = useSeededBiome();
+
   return (
     <article className="reader">
       <button type="button" className="reader-back" onClick={onBack}>
         &larr; Map
       </button>
+
+      <BiomeScene name={biome} />
 
       <header className="reader-head">
         <p className="reader-eyebrow mono">Stage {stage.id}</p>
