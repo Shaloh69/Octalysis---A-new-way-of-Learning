@@ -81,6 +81,33 @@ looked at.** Not "the important ones," not "a representative sample" — every
 single page/state this redesign touches, every time it's meaningfully
 changed, not just once at the end of building it.
 
+**Why this is a hard requirement and not a nice habit — a worked example.**
+
+`useSeededBiome()` was added to `StageReader` just above its main `return`,
+which sits **after two conditional returns** (an error branch and a loading
+branch). So the hook ran on some renders and not others, React threw *"Rendered
+more hooks than during the previous render"*, and **the entire stage page
+rendered blank**.
+
+What was green at that moment: `tsc --noEmit` across all four workspaces, 333
+unit tests, 1174 contrast checks, the palette scanner, the bundle scanner, and
+24 Playwright specs. Every gate. The page was blank anyway.
+
+**Hooks-order bugs are structurally invisible to the checks this project
+runs.** They are valid TypeScript — the type system has no concept of call
+order. And they pass isolated component tests, because those mount a component
+in one state and assert on it; they rarely drive the exact sequence of
+conditional returns that a real page's full render tree hits with real data,
+real loading states and real errors. The bug only exists in the transition.
+
+That is what the screenshot step is for. **It is not documentation of work
+already verified — it is the only check in this repo that can catch a page
+that compiles, passes, and does not render.** Three separate defects this
+redesign found came from opening the page and no other way: this one, the 3D
+layer never reading a design token (three.js cannot parse OKLCH, so every
+colour was a silent fallback), and two students' seeded palettes rendering
+identically. All three passed every automated gate.
+
 - [ ] Confirm Playwright is already set up in this repo (`STATUS.md` implies
       it may not be — check for `@playwright/test` before assuming; if it
       isn't there, install and configure it as the very first task of R0,

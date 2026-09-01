@@ -5,6 +5,30 @@
 phase by page count — expect to split it across several sessions, tracked
 through `docs/PROGRESS.md`, not rushed into one.
 
+> ## SCOPE RULING — R3 covers built routes only
+>
+> **This phase originally said "all 44 routes". It has been ruled down to the
+> routes that actually exist**, verified against `apps/web/src/pages/` and
+> `apps/console/src/App.tsx` rather than copied from `PAGE-SPECS.md`'s
+> aspirational list.
+>
+> | | Routes in `TEMPLATE-LINKS.md` | Confirmed built |
+> |---|---|---|
+> | Public | 13 | **3** + the 404 catch-all |
+> | Student | 16 | **7** |
+> | Console | 15 | **14** |
+>
+> The reasoning is simple: **a template pass cannot be applied to a page that
+> does not exist**, and building the missing ones is not a template pass.
+> `/app/lab/fde` means building the FDE stepper — that is P6, and
+> `GAME-DESIGN.md` §6.4 calls it "the part that actually makes it a game".
+> Several others cannot exist until chapters 08–18 are authored.
+>
+> **Everything not covered here moves to the backlog in §R3.6**, scoped as
+> P-phase work with a named P-number, not folded into this pass. The console is
+> where this phase actually pays off — 14 of 15 built, and
+> `CONSOLE-DATA-AND-TEMPLATES.md`'s merges are real work waiting to be done.
+
 ## R3.0 — Process per route (repeat for every row in `TEMPLATE-LINKS.md`)
 1. Open the route's row in `TEMPLATE-LINKS.md`
 2. Save a reference screenshot of the linked template to
@@ -19,25 +43,37 @@ through `docs/PROGRESS.md`, not rushed into one.
    nine, plus solar-system-specific items if the route is `/app` or `/app/map`)
 7. Check the route off below
 
-## R3.1 — Public site (13 routes)
-- [ ] `/` (custom hero — see `TEMPLATE-LINKS.md`, don't template this one)
-- [ ] `/course` · `/how-it-works` · `/for-teachers` · `/accessibility` ·
-      `/about`
-- [ ] `/login` · `/register` · `/forgot-password` · `/reset-password`
-      (per `DESIGN-REFERENCES.md` §7 in full — the boot-sequence spec, not a
-      generic auth template)
-- [ ] `/404` · `/500` · `/maintenance`
+## R3.1 — Public site (3 built + the catch-all)
 
-## R3.2 — Student app (16 routes)
-- [ ] `/app` — done in R1/R2, confirm it also clears the full per-page gate,
-      not just the technical checks those phases covered
-- [ ] `/app/map`
-- [ ] `/app/stage/:id` · `/app/stage/:id/check` ·
-      `/app/stage/:id/results/:attemptId`
-- [ ] `/app/final`
-- [ ] `/app/lab` · `/app/lab/fde` · `/app/lab/asm` · `/app/lab/cache`
-- [ ] `/app/notebook` · `/app/mistakes` · `/app/progress`
-- [ ] `/app/live` · `/app/settings` · `/app/help`
+Verified against `apps/web/src/App.tsx`. Everything else in this group is in
+§R3.6.
+
+- [ ] `/login` — `AuthPages.tsx`. Per `DESIGN-REFERENCES.md` §7 in full, the
+      boot-sequence spec, **not** a generic auth template
+- [ ] `/register` — `AuthPages.tsx`, same spec
+- [ ] `/maintenance` — `AuthPages.tsx`. Keep it boring on purpose
+- [ ] `*` → `NotFoundPage` — this is the 404. There is no separate `/404`
+      route and no `/500` page at all
+
+**Note:** `/` is **not** a landing page. It is a `<Navigate to="/app">`
+redirect, so the public marketing site does not exist at all — see §R3.6.
+
+## R3.2 — Student app (7 built)
+
+Verified against `apps/web/src/App.tsx` and `apps/web/src/pages/`, which holds
+**four files** (`AuthPages`, `SettingsPage`, `StudentPages`, `SubmitPage`)
+covering all of these. Everything else is in §R3.6.
+
+- [ ] `/app` — the solar system. Built in R1/R2; confirm it clears the **full**
+      per-page gate, not just the technical checks those phases covered
+- [ ] `/app/map` — the flat map, same component with `flat`
+- [ ] `/app/stage/:id` — the reader, now carrying the landing biome
+- [ ] `/app/stage/:id/check` — the attempt runner
+- [ ] `/app/progress` — the 7×3 competency grid
+- [ ] `/app/settings` — now also showing the seeded callsign
+- [ ] `/app/work` — **not in `TEMPLATE-LINKS.md` at all.** It exists
+      (`SubmitPage.tsx`, labs/project/participation, 40% of the grade) and has
+      no named template. Give it one, or record why it does not need one
 
 ## R3.2b — Minigames: ALL FIVE APPROVED in R0.1b
 
@@ -123,16 +159,31 @@ it is testable against an authored chapter.
 - [ ] `MINIGAME-PROPOSALS.md`'s header still says PROPOSED. Change it to record
       the ruling and its date, so the file stops contradicting this one
 
-## R3.3 — Teacher console (15 routes)
-Use `CONSOLE-DATA-AND-TEMPLATES.md` for these, not just `TEMPLATE-LINKS.md`'s
-baseline row — that file has the actual per-page template merges and the
-additional data each page should surface.
-- [ ] `/console` (overview)
-- [ ] `/console/roster` · `/console/students/:id` · `/console/locks`
-- [ ] `/console/content` · `/console/items` · `/console/items/:id/edit`
-- [ ] `/console/assessments` · `/console/analytics` · `/console/gradebook`
-- [ ] `/console/live` · `/console/live/present`
-- [ ] `/console/feedback` · `/console/audit` · `/console/settings`
+## R3.3 — Teacher console (14 built)
+
+**This is where R3 actually pays off.** Use `CONSOLE-DATA-AND-TEMPLATES.md`, not
+just `TEMPLATE-LINKS.md`'s baseline row — that file carries the real per-page
+template merges and the extra data each page should surface.
+
+Routes are verified against `apps/console/src/App.tsx`. **The console app is
+deployed at its own origin, so its paths have no `/console` prefix** — the docs
+write `/console/locks`, the app routes `/locks`.
+
+- [ ] `/signin` — the gate. Nothing past it renders without a staff account
+- [ ] `/locks` — students × stages, reason prompt on every toggle
+- [ ] `/students` · `/students/:userId` — "the page you'll use most"
+- [ ] `/attempts/:attemptId` — **not in `TEMPLATE-LINKS.md`.** Give it a
+      template row or record why not
+- [ ] `/items` — bank, stats inline, re-roll preview
+- [ ] `/assessments` · `/content` · `/gradebook`
+- [ ] `/submissions` — **not in `TEMPLATE-LINKS.md`.** `DESIGN-REVIEW-01` D-4
+      records it as too sparse to mark from; the density pass belongs here
+- [ ] `/audit` · `/feedback` · `/live`
+- [ ] `/system` — **not in `TEMPLATE-LINKS.md`.** The invariant results page
+
+**Missing from the console:** `/console` overview (`/` is a redirect),
+`/console/roster`, `/console/items/:id/edit`, `/console/live/present`,
+`/console/settings`, `/console/analytics`. All in §R3.6.
 
 ## R3.4 — Loading screens (cross-cutting, not one route)
 Per `BIOME-AND-LOADING-SPEC.md` §4 — build once, verify it shows up correctly
@@ -151,9 +202,88 @@ wherever it's triggered, not as a per-route task:
       restated as a phase checklist item so it's not silently skipped under
       the volume of routes in this phase
 
+## R3.6 — The backlog: routes this phase does NOT cover
+
+Every `PAGE-SPECS.md` route that is not built, what is actually missing, and
+which `PHASES.md` phase owns it. **None of these are R3 work.** R3 applies
+templates to pages; these need pages.
+
+### Needs a simulator first — P6
+
+`PHASES.md` P6 is "FDE stepper → 8086 subset interpreter → cache simulator,
+**one at a time, reviewed before the next starts**". No template pass can
+precede them.
+
+| Route | What is missing |
+|---|---|
+| `/app/lab` | The hub page, and it has nothing to hub until the three below exist |
+| `/app/lab/fde` | The **FDE stepper**: steppable fetch–decode–execute with a live Register Bar and predict-before-step |
+| `/app/lab/asm` | The **x86-16 interpreter + VM**: memory view, breakpoints, plain-language errors naming the offending line. Must be deterministic — Stage 15 questions are graded by running it server-side |
+| `/app/lab/cache` | The **cache simulator**: size/block/associativity sliders, live hit ratio and AMAT against a sample trace |
+
+### Needs chapters 08–18 authored first — P5
+
+Chapters **01–07 are authored; 08–18 are scaffolds** carrying syllabus
+objectives and a topic outline only (`services/api/src/routes/console.ts:341`,
+and every scaffold file says so in a `kind="planned"` callout).
+
+| Route | What is missing |
+|---|---|
+| `/app/final` | The whole page — 70-item palette, review-before-submit, one confirmation. The blueprint samples across all four periods, so it cannot be exercised honestly while most chapters are outlines |
+| `/app/mistakes` | The whole page. A weak-spot queue built from wrong `responses` needs a bank spanning authored content to be worth opening |
+| `/app/notebook` | The whole page, plus PDF export. Auto-curated from annotated diagrams and pinned glossary entries that mostly do not exist yet |
+
+### Whole page, no dependency beyond itself — P9 for the student ones
+
+These need building but block on nothing. P9 is "themes, audio, accessibility,
+mobile" and is the closest existing home for student-app surface work.
+
+| Route | What is missing |
+|---|---|
+| `/app/stage/:id/results/:attemptId` | The whole page. **The most valuable one here** — per-objective breakdown, every item with the student's answer and the correct one, "review this" links. The API already returns this shape |
+| `/app/live` | The whole page. Lecture Mode student view, locked to the pushed question. `/live` exists on the console side already |
+| `/app/help` | The whole page. Plain content |
+| `/forgot-password` · `/reset-password` | Whole pages. `DESIGN-REFERENCES.md` §7's boot sequence covers them |
+| `/500` | A whole page. Only the `*` catch-all 404 exists |
+
+### Console gaps — P4 extended
+
+P4 is marked **DONE** in `PHASES.md`, so these are a genuine gap in a phase
+that claims completion, not scheduled work. Worth raising on its own.
+
+| Route | What is missing |
+|---|---|
+| `/console` overview | The whole page. `/` is a `<Navigate>`, so there is no dashboard at all |
+| `/console/roster` | The whole page. CSV import with a **dry-run preview modal** — `PAGE-SPECS.md` §3 calls this out specifically |
+| `/console/analytics` | The whole page. The cohort mastery heatmap, which `CONSOLE-DATA-AND-TEMPLATES.md` §1 calls "the single highest-value chart on the whole console" |
+| `/console/items/:id/edit` | The whole page, including the mandatory confirm dialog whose copy is specified word-for-word |
+| `/console/live/present` | The projector view. **No names, ever** |
+| `/console/settings` | The whole page |
+
+### No phase owns these at all — needs a P-number
+
+**`PHASES.md` has no phase covering the public marketing site.** P0–P10 go
+foundation → auth → content → engine → console → stages → simulators →
+analytics → feedback → themes → pilot. Nothing owns `/`, and these five routes
+have no home in the plan:
+
+| Route | What is missing |
+|---|---|
+| `/` | The landing page. **It does not exist** — `/` is `<Navigate to="/app">`. `PAGE-SPECS.md` §1 specifies a live map hero plus the re-rollable item demo, and calls that demo "the one interaction that sells the product" |
+| `/course` | All 19 stages with objectives, act, prereqs, minutes |
+| `/how-it-works` | The fairness argument in plain language |
+| `/for-teachers` | Needs real console screenshots, so it cannot precede R3.3 |
+| `/accessibility` · `/about` | Plain content pages. `/about` carries the Octalysis credit to Yu-kai Chou and the full third-party licence list, which `CREDITS.md` now partly feeds |
+
+**This gap is worth a ruling of its own.** A public site is not optional for a
+thesis deliverable, and right now no phase is accountable for it.
+
 ## Definition of done
-- [ ] All 44 routes checked, each with a template screenshot and an
-      implementation screenshot on file
+- [ ] **Every BUILT route checked** — 3 public + the catch-all, 7 student, 14
+      console — each with a template screenshot and an implementation
+      screenshot on file. **Not 44**; see the scope ruling at the top
+- [ ] §R3.6's backlog is current: anything built during R3 moves out of it,
+      anything newly discovered as missing moves into it
 - [ ] Both loading screens (R3.4) built and verified
 - [ ] Console pages built per `CONSOLE-DATA-AND-TEMPLATES.md`'s merges, not
       just the shadcn-admin default

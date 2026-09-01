@@ -55,12 +55,12 @@ genuinely free-to-use option, not just "itch.io has some":
 | Biome | Source | License | Note |
 |---|---|---|---|
 | General nature/background elements (base layer for several biomes) | Kenney **Background Elements** (110 assets) — https://kenney.nl/assets/background-elements | CC0 | Same supplier already credited on `/about` for audio — zero new attribution burden |
-| **Jungle** | itch.io CC0 jungle/forest parallax packs — browse https://itch.io/c/6211077/parallax-bg, filter to CC0 per file | Varies per file — check individually | |
+| **Jungle** | **Free Pixel Art Forest** (edermunizz) — https://edermunizz.itch.io/free-pixel-art-forest | **NOT CC0. Verified on the page, 1 Sep 2026:** *"You can use this asset even commercially, just give proper credit. You CANNOT use in NFT or crypto games, on any kind of crypto thing."* **Credit is REQUIRED**, unlike every other pack here | 1 background, **9 layers**, PSD + PNG. A licence `.txt` ships in the download; read it too |
 | **Desert** | **Desert Parallax Background** (styloo) — https://styloo.itch.io/desert-parallax-background | CC0 1.0, explicit | Multiple resolutions provided, 4 layers |
-| **Arctic / snow** | **Parallax Backgrounds: Snowy Mountains** (Admurin, via the curated Free CC0 Assets collection) — https://itch.io/e/12578572/jco-added-to-free-cc0-assets, or search https://itch.io/game-assets/tag-backgrounds/tag-snow | Check per file | Several options in this tag; pick one, verify its license page directly rather than trusting a collection listing |
+| **Arctic / snow** | **Parallax Backgrounds: Snowy Mountains** (Admurin) — https://admurin.itch.io/parallax-backgrounds-snowy-mountains | **NOT CC0 — do not file it as such.** Verified on the page itself, 1 Sep 2026, verbatim: *"You can use this asset in any game project, personal or commercial"* · *"DO NOT resell or redistribute AS A GAME ASSET, it has to be part of a project"* · *"Credit not necessary but appreciated, if you do you can link to my ITCH profile"* · *"Modify to suit your needs"* · *"You are NOT allowed to turn any of my assets to an NFT."* · *"You are NOT allowed to use these assets to train AI."* | Embedding it in OCTA is "part of a project" and is fine. **5 transparent PNG layers, 384×216.** This licence text must be tracked in the pack's own manifest and in `CREDITS.md` — it is not interchangeable with CC0 |
 | **Volcanic** | Browse https://itch.io/game-assets/tag-backgrounds/tag-volcano | Check per file | No single standout free pack found — this is the one biome that stays procedural for now (lava-glow gradient, warm high-contrast palette) until a properly-licensed pack turns up, per the fallback rule in §2 above |
-| **Cave / underground** | Browse https://itch.io/game-assets/new-and-popular/free/tag-parallax (search "cave" within results) | **Verify carefully** — one popular-looking cave pack (Admurin's) was flagged by its own author, in the comments, as ambiguously licensed (claimed CC0 in one place, CC 3.0 on DeviantArt) — this is exactly the "check per file, don't trust a tag" discipline this project already applies everywhere else, now with a concrete example of why it matters | |
-| **Ocean / underwater** | Browse https://itch.io/game-assets/tag-parallax (search "ocean") — several free options surfaced, e.g. "Free Ocean and Clouds Pixel Backgrounds" | Check per file | |
+| **Cave / underground** | **Find a different pack. Not Admurin's.** Browse https://itch.io/game-assets/new-and-popular/free/tag-parallax and search "cave", then verify whatever you land on the same direct way | **DO NOT USE Admurin's "Parallax Backgrounds: Caves"** (https://admurin.itch.io/parallax-backgrounds-caves). Read its comment thread, 1 Sep 2026: a user pointed at the **same art on DeviantArt** (https://www.deviantart.com/admurin/art/Parallax-Backgrounds-Caves-943909344) *"mentioned as licensed under CC 3.0"*, asked directly which licence governs and whether they could keep using it, and the author replied only *"the license is indicated in the respective section. You don't have to credit me unless you want to. Only thing that cannot be done is sell the asset."* **That does not resolve the conflict** — it restates the itch terms without addressing the CC 3.0 upload of the same work. Asked directly, never answered | This is the worked example of why a tag listing is not a licence. Two sources, two licences, author declined to reconcile them |
+| **Ocean / underwater** | **Underwater Fantasy Pixel Art Environment** (ansimuz) — https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment | **Not stated as CC0; permissive.** Verified on the page, 1 Sep 2026, verbatim: *"You may use these assets in personal or commercial projects. You may modify these assets to suit your needs. Credit is not required but appreciated it."* No NFT or AI clause on this one | **3 layers** for parallax. The cleanest terms of the four checked, but still record it as its own licence rather than as CC0 |
 
 **The volcanic and cave rows above are the honest ones, not the polished
 ones on purpose.** Not every biome has a clean, obviously-CC0 pack waiting —
@@ -76,6 +76,40 @@ Whichever path is chosen, every biome variant goes through the same contrast
 pipeline as the base themes and encounter themes — a biome that fails WCAG AA
 against its own foreground text does not ship, same rule, same CI check,
 extended rather than duplicated.
+
+## 2b. The tiling problem — real, partly solved, and not solved by this pass
+
+Found while vendoring the first pack, and it applies to every pack in the table
+above, so it belongs here rather than in a commit message.
+
+**These packs ship individual ELEMENTS, not pre-cut full-width strips.** Kenney
+Background Elements is 65 separate PNGs — one tree, one cloud, one tuft of
+grass. Admurin's and ansimuz's are closer to layer strips (5 and 3 layers
+respectively) and will behave better, but edermunizz's 9-layer forest is again
+composed pieces.
+
+**Naive tiling reads as wallpaper.** The first `neutral` composition set one
+tree as a `repeat-x` background at one size. The result was an identical trunk
+every 100px — unmistakably a repeating pattern rather than a treeline. It
+passed every check: the art was real, CC0, correctly licensed, correctly
+lazy-loaded, and contrast-clean. It just did not look like a place.
+
+**The interim fix, which is what ships today:** more layers, at different
+depths, with different sprites and sizes — `neutral` uses two different trees
+at 0.42 and 0.6 scale plus two cloud layers — with opacity scaled by depth for
+aerial perspective. Because the layers tile at different intervals they drift
+in and out of phase across the band, which breaks the obvious repeat. It now
+reads as a forest with depth, which clears §2's bar: jungle and desert will be
+unmistakably different environments.
+
+**What would actually solve it, and is deferred:** generating one wide strip
+PNG per layer at build time, placing sprites at randomised (but seeded, so it
+is reproducible) intervals and sizes. That is real image-processing work — it
+needs a compositing dependency this repo does not have, and a build step, and
+its own weight budget. **It is not solved by this pass and should not be
+described as solved.** Anyone picking this up should read the `neutral`
+manifest first: the layer/depth/scale/align model already there is the input
+such a generator would consume.
 
 ## 3. Seeding — via the cosmetic endpoint, not the exam engine
 

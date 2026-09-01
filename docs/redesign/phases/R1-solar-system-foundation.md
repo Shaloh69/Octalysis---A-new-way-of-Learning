@@ -146,5 +146,20 @@ skeleton right and tested before adding variation on top of it.
       verified by actually toggling them
 - [ ] Layout unit tests passing, INV-32-equivalent holds
 - [ ] Performance budget checked and under budget with headroom noted for R2/R4
+      — bundle size and draw calls
+- [ ] **FRAME RATE measured on a throttled / mid-range profile, against the
+      30fps floor. Its own line, on purpose.**
+
+      This is separated from the budget item above because bundling the two is
+      exactly how it kept getting skipped: "performance budget checked" was
+      ticked twice — R1 and again after R2 — on the strength of bundle size and
+      draw-call reasoning alone, while the frame rate was never measured once.
+      Bundle size is not frame rate. They are different claims with different
+      failure modes, and the audience is on mid-range Android
+      (`GAME-LAYER.md` §2, `MASTER-PLAN.md` §13), which is precisely where
+      a 220 KB chunk can load fine and still render at 12fps.
+
+      Record the number in `docs/PROGRESS.md`'s "Performance numbers" section.
+      A range or a caveat is fine; leaving it blank is not.
 - [ ] Screenshot captured and compared against the "before" galaxy screenshot
       from R0 — structurally sound before moving to per-student variation

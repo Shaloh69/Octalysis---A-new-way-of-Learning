@@ -317,6 +317,39 @@ curriculum decision.
 
 ---
 
+## Performance numbers
+
+Measured 1 September 2026, at `/app`, 1440×900, five-second samples. Re-measure
+after R4 (110 moons) and after any dependency change.
+
+| Metric | Budget | Measured | Source |
+|---|---|---|---|
+| 3D chunk, gzipped | ≤ 250 KB | **220.6 KB** | `pnpm --filter @octa/web build` |
+| 3D in the initial load | never | **absent** | no `modulepreload` in `dist/index.html` |
+| Initial JS, gzipped | — | **71.8 KB** (+7.9 KB CSS) | same build |
+| Draw calls per frame | ≤ 50 | **32** | GL context wrapped, counted live |
+| Frame rate, desktop | 60 target | **60.1 fps** | Playwright + rAF, 5s |
+| Frame rate, 4× CPU throttle | — | **59.4 fps** | CDP `Emulation.setCPUThrottlingRate` |
+| Frame rate, 6× CPU throttle | **30 floor** | **47.4 fps** | same, low-end mobile proxy |
+| Biome art — `neutral` | — | **10.2 KB** PNG referenced (27 KB vendored) + 0.27 KB gz chunk | `du` + build |
+| Biome art — other six | — | not vendered | — |
+
+**What this does and does not prove.** The 30fps floor holds with real headroom
+— 47.4fps at a 6× CPU slowdown, which is Chrome's low-end-mobile profile. Draw
+calls came in at 32, which happens to match the "low 30s" R1 reasoned to
+without measuring, so that estimate was sound.
+
+**The honest caveat: CPU throttling is not GPU throttling.** A real mid-range
+Android has a far weaker GPU than this machine's, and nothing here exercises
+that. Fill rate, not CPU, is the likely limit on a phone. So this is a genuine
+measurement of the thing that was never measured, and it is still not the same
+as running it on a phone — which `SKILL-TREE-3D.md` §6 asks for and remains
+undone.
+
+Also unmeasured: **the 380px path never renders a canvas at all** (the
+degradation ladder falls back to flat below 640px), so there is no 3D frame
+rate to measure on a small viewport. That is the ladder working, not a gap.
+
 ## Durable facts, measured — do not rebuild this reasoning from a diagram
 
 Verified twice: from `content/stages/*.md` front matter, and independently from
@@ -800,13 +833,14 @@ showed it, each time.
 - Frame rate still not measured, carried from R1 and still the biggest gap.
 
 **Assumed, not verified — R1:**
-- **Frame rate was never measured.** R1.4's 30fps-floor check on a throttled or
-  mid-range profile did not happen. Bundle size and draw-call structure are
-  under budget, but that is not the same claim, and the audience is on mid-range
-  Android. This is the biggest unverified item in the phase.
-- **Draw calls were not counted**, only reasoned about: 19 planet meshes + 7
-  ring loops + 2 path segments + 1 starfield + sun ≈ low 30s. Under 50 by
-  argument, not by measurement. R4 adds 110 moons and should count for real.
+- ~~**Frame rate was never measured.**~~ **MEASURED** — see "Performance
+  numbers" above. 60.1 / 59.4 / 47.4 fps at 1× / 4× / 6× CPU throttling, so the
+  30fps floor holds with headroom. The remaining caveat is real though: CPU
+  throttling is not GPU throttling, and a phone's fill rate is the likelier
+  limit. Running it on an actual device is still undone.
+- ~~**Draw calls were not counted**, only reasoned about.~~ **COUNTED: 32**, by
+  wrapping the GL context. R1's unmeasured "low 30s" estimate was right. R4
+  adds 110 moons and must re-measure.
 - **Only one theme was looked at.** Every capture is the default theme. The
   contrast gate computes all three, but a canvas reading tokens at scene setup
   is not what that gate covers.
