@@ -230,6 +230,75 @@ export function FlatGalaxy({
       </svg>
 
       {children?.(project)}
+
+      {/*
+        THE TEXT KEY. `DESIGN-MANDATE-V2.md` §5's solar-system gate, verbatim:
+
+          > The flat map names every ring, planet, and moon in text,
+          > INDEPENDENT of whether Stage 11 has been reached yet by that
+          > student. [...] the withholding is allowed to be cosmetic, it is not
+          > allowed to be an accessibility gap.
+
+        It was an accessibility gap. A screen-reader user on this route got 19
+        stage buttons and nothing else: the rings were unnamed, and the 115
+        moons were not mentioned at all, because both lived only in an
+        `aria-hidden` SVG.
+
+        So the ring names are here from day one, for everyone using this key —
+        while the SVG above still withholds them until Stage 11. That is not an
+        inconsistency, it is the gate's own resolution: the reveal is a framing
+        device for a sighted user watching a picture, and nobody should wait ten
+        weeks for information the layout has always had.
+
+        `sr-only` rather than visible, because making it visible would spend
+        Stage 11's reveal for the sighted user the reveal is FOR. If that trade
+        is ever judged wrong, the fix is to show this to everyone — not to take
+        it away from anyone.
+      */}
+      <section className="sr-only" aria-label="Map key">
+        <h3>Orbits, innermost to outermost</h3>
+        <dl>
+          {LEVELS.map((level) => {
+            const on = planets.filter((p) => Math.round(p.body.ring) === level);
+            return (
+              <div key={level}>
+                <dt>
+                  Level {level}, {LEVEL_NAMES[level]}
+                </dt>
+                <dd>
+                  {on.length === 0
+                    ? "No stages sit on this orbit."
+                    : `${on.length} stage${on.length === 1 ? "" : "s"}: ${on
+                        .map((p) => `${p.node.id} ${p.node.title}`)
+                        .join(", ")}.`}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+
+        <h3>Subtopics, by stage</h3>
+        <p>
+          Each stage&rsquo;s subtopics are drawn as moons orbiting its planet.
+          Every one is listed here, including those the picture leaves out.
+        </p>
+        <dl>
+          {planets.map(({ node }) => (
+            <div key={node.id}>
+              <dt>
+                Stage {node.id}, {node.title}
+              </dt>
+              <dd>
+                {node.objectives.length === 0
+                  ? "No subtopics recorded for this stage."
+                  : `${node.objectives.length} moon${
+                      node.objectives.length === 1 ? "" : "s"
+                    }: ${node.objectives.map((o) => o.description).join("; ")}.`}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
     </div>
   );
 }

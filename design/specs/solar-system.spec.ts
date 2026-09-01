@@ -886,6 +886,74 @@ test.describe("the stages page carries the act grouping", () => {
   });
 });
 
+test.describe("R3 gate — the flat map's text key", () => {
+  test("names every ring and every moon, whatever Stage 11 says", async ({ page }) => {
+    /*
+     * `DESIGN-MANDATE-V2.md` §5's solar-system gate, verbatim:
+     *
+     *   > The flat map names every ring, planet, and moon in text, INDEPENDENT
+     *   > of whether Stage 11 has been reached [...] the withholding is allowed
+     *   > to be cosmetic, it is not allowed to be an accessibility gap.
+     *
+     * It WAS a gap. A screen-reader user on this route got 19 stage buttons and
+     * nothing else: rings unnamed, and the moons not mentioned at all, because
+     * both lived only inside an aria-hidden SVG.
+     */
+    await signIn(page, "fresh"); // Stage 11 nowhere near reached
+    await page.goto("/app/map", { waitUntil: "domcontentloaded" });
+    await page.locator(".galaxy-svg").waitFor();
+
+    const key = page.locator('[aria-label="Map key"]');
+    await expect(key).toBeAttached();
+    const text = await key.innerText();
+
+    // All seven rings, named, for a student ten weeks from the reveal.
+    for (const name of [
+      "Digital Logic",
+      "Control",
+      "Machine / ISA",
+      "System Software",
+      "Assembly Language",
+      "High-Level Language",
+      "User",
+    ]) {
+      expect(text, `ring "${name}" must be named in text`).toContain(name);
+    }
+
+    // Every stage's moons, by their real authored descriptions -- not a count.
+    expect(text, "each stage's subtopics are listed").toContain("Differentiate DRAM and SRAM");
+    expect(
+      (text.match(/moons?:/g) ?? []).length,
+      "every one of the 19 stages carries its moon list",
+    ).toBe(19);
+
+    // An empty orbit is stated rather than omitted: the L4/L5 gap is a fact
+    // about the syllabus, and silence would read as a rendering failure.
+    expect(text, "an empty orbit says so").toMatch(/No stages sit on this orbit/);
+  });
+
+  test("but the picture still withholds the ring names — the reveal survives", async ({ page }) => {
+    /*
+     * The other half, and the reason this is `sr-only` rather than visible.
+     * Stage 11 names the rings for a sighted user watching the map; printing
+     * them on screen in week one would spend that reveal on the very person it
+     * is for. Giving them to assistive tech costs the reveal nothing.
+     */
+    await signIn(page, "fresh");
+    await page.goto("/app/map", { waitUntil: "domcontentloaded" });
+    await page.locator(".galaxy-svg").waitFor();
+
+    expect(
+      await page.locator(".galaxy-ring-label").count(),
+      "the drawing must not name rings before Stage 11",
+    ).toBe(0);
+
+    // And the key is genuinely off-screen rather than merely small.
+    const box = await page.locator('[aria-label="Map key"]').boundingBox();
+    expect(box === null || box.height <= 2, "the key must not be visible").toBe(true);
+  });
+});
+
 test.describe("the first-run explanation, and getting it back", () => {
   test("shows once, says it is a placeholder, and stays gone once dismissed", async ({ page }) => {
     await signIn(page);

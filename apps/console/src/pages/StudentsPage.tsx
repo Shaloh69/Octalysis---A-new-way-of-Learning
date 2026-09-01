@@ -4,7 +4,7 @@ import {
   flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel,
   useReactTable, type ColumnDef, type SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Upload } from "lucide-react";
 import { api, type RosterRow } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
 import { parseRoster } from "@/lib/csv";
@@ -147,18 +147,77 @@ export function StudentsPage() {
               <THead>
                 {table.getHeaderGroups().map((hg) => (
                   <tr key={hg.id}>
-                    {hg.headers.map((h) => (
-                      <TH key={h.id}>
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 hover:text-ink"
-                          onClick={h.column.getToggleSortingHandler()}
+                    {hg.headers.map((h) => {
+                      const sorted = h.column.getIsSorted(); // false | "asc" | "desc"
+                      return (
+                        /*
+                         * `aria-sort` on the TH, not on the button. It is the
+                         * COLUMN that is sorted, and this is the attribute a
+                         * screen reader reads when it lands on the cell.
+                         * Nothing carried sort state before: the icon was one
+                         * fixed glyph, `aria-hidden`, identical in all three
+                         * states. Pressing it reordered the table and told you
+                         * nothing -- which fails the design mandate's
+                         * legibility test outright, since you cannot see what
+                         * the control did.
+                         */
+                        <TH
+                          key={h.id}
+                          aria-sort={
+                            sorted === "asc"
+                              ? "ascending"
+                              : sorted === "desc"
+                                ? "descending"
+                                : "none"
+                          }
                         >
-                          {flexRender(h.column.columnDef.header, h.getContext())}
-                          <ArrowUpDown className="h-3 w-3" aria-hidden="true" />
-                        </button>
-                      </TH>
-                    ))}
+                          <button
+                            type="button"
+                            /*
+                             * `--control-h-sm` (2rem / 32px) is the design
+                             * system's own floor, described in tokens.css as
+                             * "dense table actions" -- which is exactly what
+                             * this is. These rendered at 18px because the
+                             * button had no height at all and simply hugged its
+                             * text. Negative margin keeps the header row from
+                             * growing now that the target does.
+                             *
+                             * NOT `w-full`: that was tried, and it pushed the
+                             * roster table wider than 380px. Height is what the
+                             * target-size finding was about; width was me
+                             * gold-plating and breaking a gate to do it.
+                             */
+                            className="-my-1 inline-flex h-8 items-center gap-1 hover:text-ink"
+                            onClick={h.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(h.column.columnDef.header, h.getContext())}
+                            {/*
+                              The glyph reflects DIRECTION rather than being
+                              decoration. Sort state reaches assistive tech via
+                              `aria-sort` on the TH above, which is the standard
+                              mechanism for exactly this.
+
+                              A redundant `sr-only` span was tried here and is
+                              deliberately gone: Tailwind's `sr-only` is
+                              `position: absolute`, `.table-scroll` is not
+                              `position: relative`, so the spans escaped the
+                              scroller's clipping, took their static position out
+                              near the right edge of a 554px-wide table, and
+                              pushed the DOCUMENT to 497px at a 380px viewport.
+                              An invisible element broke a layout gate, which is
+                              a good reason not to add one you do not need.
+                            */}
+                            {sorted === "asc" ? (
+                              <ArrowUp className="h-3 w-3" aria-hidden="true" />
+                            ) : sorted === "desc" ? (
+                              <ArrowDown className="h-3 w-3" aria-hidden="true" />
+                            ) : (
+                              <ArrowUpDown className="h-3 w-3 opacity-50" aria-hidden="true" />
+                            )}
+                          </button>
+                        </TH>
+                      );
+                    })}
                   </tr>
                 ))}
               </THead>

@@ -1154,6 +1154,68 @@ is being copied from the tutorials. The same discipline `BIOME-AND-LOADING-SPEC.
 **Not yet done:** none of these are built. The table is now safe to build from,
 which it was not before.
 
+### F-24 · R3 begins: the universal gate is mechanical now, and it found things
+
+R3.0 asks for the nine-item gate to be confirmed per route — twenty-odd routes,
+by hand, by eye. That is precisely the checking `DESIGN-REVIEW-01` proved does
+not survive a deadline: 291 tests and three static gates were green while the
+console shipped 96-pixel text inputs, because nobody loaded the page.
+
+`design/specs/r3-gate.spec.ts` runs the mechanical five on every built route,
+both widths, every time: 380px without sideways scroll · visible focus · reduced
+motion honoured · every control named · one `main` and exactly one `h1`. The
+other four (six states, AA on three themes, zero literal hex, error copy) stay
+where they already are — two static gates and human judgement — and the file
+says so rather than pretending.
+
+**What it found on its first run:**
+
+**The flat map failed its own written gate.** §5 says the flat map "names every
+ring, planet, and moon in text, INDEPENDENT of whether Stage 11 has been
+reached… the withholding is allowed to be cosmetic, it is not allowed to be an
+accessibility gap." It was a gap: a screen-reader user got 19 stage buttons and
+nothing else, because the rings and all 115 moons lived only inside an
+`aria-hidden` SVG. There is now an `sr-only` map key naming all seven orbits and
+every stage's subtopics by their authored descriptions — while the drawing still
+withholds the ring names until Stage 11. That is the gate's own resolution, not
+an inconsistency: the reveal is a framing device for a sighted user, and nobody
+should wait ten weeks for information the layout has always had.
+
+**`/students`' sortable column headers were 18px tall and did not say what they
+did.** `--control-h-sm` is `2rem` and `tokens.css` calls it "dense table
+actions", so 18px is barely half the system's own floor for exactly this
+control. Worse than the size: the sort glyph was one fixed `aria-hidden` icon,
+identical in all three states, and nothing carried `aria-sort`. Pressing it
+reordered the table and told you nothing — the design mandate's legibility test,
+failed outright. Now 32px, with `aria-sort` on the `<th>` and a glyph that
+reflects direction.
+
+**`/locks`' lock matrix was 28px.** 19 stages × 25 students of `h-7` cells,
+below the same floor. Raised to `h-8`.
+
+**Two false starts worth keeping, because both would have wasted someone's day:**
+
+1. **The focus test reported `/register` as having no focus indicator. It was
+   wrong.** `:focus-visible` — which every focus style in this project correctly
+   uses — deliberately does not match a programmatic `.focus()`. The global rule
+   was right there giving a 2px accent outline. The helper now presses **Tab**,
+   like a student would. A test that fails working code is worse than no test.
+2. **My own fix broke a gate.** Adding a redundant `sr-only` span for sort state
+   pushed `/students` to 497px at a 380px viewport. Tailwind's `sr-only` is
+   `position: absolute`, `.table-scroll` is not `position: relative`, so the
+   spans escaped the scroller's clipping, took their static position near the
+   right edge of a 554px table, and dragged the document with them. Bisected in
+   the browser rather than guessed: removing the six spans dropped scrollWidth
+   497 → 361. `aria-sort` already carried the state, so the span was redundant
+   as well as harmful. **An invisible element broke a layout gate** — a good
+   reason not to add one you do not need.
+
+`/login` and `/register` were checked against `DESIGN-REFERENCES.md` §7 and
+**already implement it**: the POST panel with CPU/MEM/BUS/AUTH readout, the
+notched frame, the staged assembly, and reduced motion going straight to the end
+state. No rebuild needed, which is what R3.0 step 6 is for — confirming, not
+redoing.
+
 ## Performance and QA numbers — measured, not assumed
 
 | Measurement | Value | How |

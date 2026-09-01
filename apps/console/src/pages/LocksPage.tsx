@@ -175,7 +175,7 @@ export function LocksPage() {
                             : `Automatic · mastery ${pct(c?.mastery ?? 0)}`
                         }
                         className={cn(
-                          "h-7 w-8 rounded-sm border text-xs transition-colors duration-fast",
+                          "h-8 w-8 rounded-sm border text-xs transition-colors duration-fast",
                           c?.unlocked
                             ? "border-success bg-success-bg text-success"
                             : "border-locked bg-locked-bg text-locked",
