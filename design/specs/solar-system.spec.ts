@@ -712,11 +712,24 @@ test.describe("the DOM layer stays the accessibility contract", () => {
     await expect(hud).toHaveAttribute("role", "complementary");
     expect(await hud.getAttribute("aria-modal"), "a sidebar must not claim modality").toBeNull();
 
-    // Docked to the right edge, full height.
+    /*
+     * Docked to the right edge, full height — measured AFTER the slide-in.
+     *
+     * This raced the animation and intermittently read 1442 against a 1440
+     * viewport: the panel enters by translating in from the right, so measuring
+     * mid-flight catches it still outside. The page was never wrong; the
+     * measurement was early. Waiting on the element's own animations is exact,
+     * where a tolerance would have hidden a genuine 2px overflow if one ever
+     * appeared.
+     */
+    await hud.evaluate((el) =>
+      Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => undefined))),
+    );
+
     const box = await hud.boundingBox();
-    const vp = page.viewportSize();
     expect(box, "the panel must be on screen").not.toBeNull();
-    expect(Math.round(box!.x + box!.width), "docked to the right edge").toBe(vp!.width);
+    const layoutWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(Math.round(box!.x + box!.width), "docked to the right edge").toBe(layoutWidth);
 
     // Every §2 element that has real data behind it.
     await expect(hud.locator(".hud-act")).toBeVisible();          // Act chip

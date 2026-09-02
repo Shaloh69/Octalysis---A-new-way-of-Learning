@@ -1254,6 +1254,52 @@ fixing properly later by seeding a submitted attempt, and worth knowing now.
 header recorded it fixed. D-4 is fixed — the submissions queue went from 3,436px
 to 1,219px in R3.
 
+### F-26 · The audit log repeated D-4, and it was worse than D-4
+
+`/audit` rendered one bordered card per entry. Measured with 24 real entries:
+**109px each**. The page asks the API for 300, so at full load that is roughly
+**32,600px — about 33 screens** — to find one lock change, on a page whose only
+purpose is being scanned. D-4's submissions queue was 3,436px.
+
+`CONSOLE-DATA-AND-TEMPLATES.md` §2 had already called it: "most admins will want
+the table by default and the timeline as an alternate view, not the reverse —
+dense-first, same lesson as the submissions-queue fix." The page was built the
+reverse way round.
+
+**Now 41px per entry — 2.7× denser**, and 12,300px projected at 300 rows instead
+of 32,600. The timeline is kept, not deleted: reading a sequence of events in
+order is genuinely better for reconstructing one incident. It is the wrong
+default for finding it.
+
+**The reason is never truncated, in either view**, and that is asserted. It is
+the field a grade dispute turns on; making the page scannable was meant to make
+it findable, so clipping it would trade away the thing being looked for.
+
+The toggle uses `aria-pressed` rather than a tab set: these are two renderings of
+the same rows, and calling them tabs would tell a screen-reader user that
+switching moves them somewhere else.
+
+**The density is now a number in a test, not a screenshot.** `console-audit.spec.ts`
+asserts under 60px per row — loose enough that ordinary padding changes are not a
+failure, tight enough that the 109px card list, or any drift back toward it,
+is.
+
+### F-27 · Two test defects of my own, both caught by running the suite
+
+**My audit spec broke nine solar-system tests.** To generate audit entries it
+set **global** locks, which changes `is_stage_unlocked()` for every student —
+while the map specs were reading the map in parallel. They failed correctly: the
+map really had changed underneath them. Fixed by scoping the locks to one seeded
+student (`21-0001`) that no other spec observes. **A test that writes shared
+state has a blast radius, and mine was the whole curriculum.**
+
+**The sidebar docking assertion raced an animation.** It intermittently read
+1442 against a 1440 viewport, because the panel enters by translating in from
+the right and the measurement caught it mid-flight. The page was never wrong;
+the measurement was early. It now awaits the element's own `getAnimations()`
+before measuring — exact, where a 2px tolerance would have hidden a real
+overflow if one ever appeared.
+
 ## Performance and QA numbers — measured, not assumed
 
 | Measurement | Value | How |
