@@ -1300,6 +1300,73 @@ the measurement was early. It now awaits the element's own `getAnimations()`
 before measuring — exact, where a 2px tolerance would have hidden a real
 overflow if one ever appeared.
 
+### F-28 · The item bank was the third card list, and `.table-scroll` was the real bug
+
+`/items` was a card list at **122px per item** — ~4,000px for 33 items, and the
+bank targets roughly 40 live items per gradeable chapter, so about 700 items and
+85,000px at full size. `CONSOLE-DATA-AND-TEMPLATES.md` §2 had already paired it
+with the submissions queue: "the same shape… should be solved together against
+the same reference rather than separately by taste."
+
+Now a table at **72px per row**, with every field the cards carried given a
+column, and both psychometric warnings intact in words — "at guessing", and "the
+key is probably wrong" for a negative point-biserial. Those sentences are why a
+teacher opens this page; compressing them into a colour would have been the
+density pass eating the thing it was meant to surface.
+
+**Two mistakes of mine on the way, both worth keeping:**
+
+**I calibrated the density bound against an empty column.** The first
+measurement said 67px — taken while the database was missing its objectives, so
+that column rendered nothing. With real data the rows were **98px**, which
+against 122px is a rounding error, not a density pass. Clamping the objective
+sentence to two lines (full text on hover) and giving the stem room is what
+bought the real improvement. **A bound calibrated on absent data passes and
+means nothing.**
+
+**The 30-exposure explanation was printed on every row.** On a fresh bank that
+is every row — 22 copies of one sentence, and the single biggest contributor to
+height. It is stated once above the table now. Repeating an explanation per row
+is how a density pass quietly gives back what it won.
+
+### F-29 · `.table-scroll` was not a containing block, and it cost two bisections
+
+An `sr-only` label inside a table header broke the 380px gate on `/students`,
+and then again on `/items`, and the second time made the pattern obvious.
+
+Tailwind's `sr-only` is `position: absolute`. `.table-scroll` had `overflow-x:
+auto` but no `position`, so such a child resolved against the initial containing
+block instead of the scroller: it escaped the clipping, took its static position
+out at the right-hand edge of a table far wider than the viewport, and dragged
+the **document's** `scrollWidth` with it. **An invisible element broke a layout
+gate** — twice.
+
+Fixed at the root: `.table-scroll` is `position: relative`, which closes the
+whole class. The sticky first column on `/locks` was checked through a 200px
+horizontal scroll afterwards and still pins. The two headers that triggered it
+now use `aria-label` on the `<th>` rather than a positioned child — a column
+header needs a NAME, not an element.
+
+`StudentDetailPage` had carried the same `sr-only` header since before this
+pass, so the bug was already in the codebase waiting for a wide enough table.
+
+### F-30 · The fixture gap, partly closed
+
+`db/demo-seed.sql` now seeds **one item with real psychometrics** — 120
+exposures, p-value 0.18, discrimination −0.12, flagged. Before it, every item in
+the bank had zero exposures, so the branch that matters most on `/items` could
+not be seen, screenshotted, reviewed or tested by anyone. Deliberately one item:
+this is a fixture for reviewing a rare state, not a claim that the bank is in
+trouble.
+
+Attempts and audit entries are still unseeded; those two specs build their own
+through the real API (F-25, F-27).
+
+**Also relearned:** `db/demo-seed.sql` alone leaves the database with 4
+objectives. `scripts/sync-content.mjs` is the other half, and forgetting it
+broke the map specs mid-session — the second time this session. It is written
+down in F-19; writing it down was evidently not enough.
+
 ## Performance and QA numbers — measured, not assumed
 
 | Measurement | Value | How |

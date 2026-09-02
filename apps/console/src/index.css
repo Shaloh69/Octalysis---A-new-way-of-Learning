@@ -67,6 +67,19 @@
    * lock matrix is 19; neither may make the PAGE scroll sideways.
    */
   .table-scroll {
+    /*
+     * `position: relative` is load-bearing, not decoration.
+     *
+     * Tailwind's `sr-only` is `position: absolute`. Without a positioned
+     * ancestor here, such a child resolves against the initial containing block
+     * instead of this scroller: it escapes the clipping, takes its static
+     * position out at the right-hand edge of a table far wider than the
+     * viewport, and drags the DOCUMENT's scrollWidth with it. That is a 380px
+     * gate failure caused by an INVISIBLE element, which is as hard to find as
+     * it sounds -- it cost two separate bisections, on /students and /items,
+     * before the pattern was obvious.
+     */
+    position: relative;
     overflow-x: auto;
     overscroll-behavior-x: contain;
   }

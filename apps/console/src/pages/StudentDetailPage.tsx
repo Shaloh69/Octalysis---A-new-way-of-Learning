@@ -186,7 +186,7 @@ export function StudentDetailPage() {
                       <TH>Score</TH>
                       <TH>Status</TH>
                       <TH>Submitted</TH>
-                      <TH><span className="sr-only">Open</span></TH>
+                      <TH aria-label="Open" />
                     </TR>
                   </THead>
                   <TBody>

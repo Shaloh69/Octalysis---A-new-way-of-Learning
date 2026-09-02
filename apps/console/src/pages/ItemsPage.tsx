@@ -4,8 +4,8 @@ import { api, type BankItem, type ResolvedPreview } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Empty, ErrorNote, Loading } from "@/components/ui/empty";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -118,53 +118,108 @@ export function ItemsPage() {
           }
         />
       ) : (
-        <ul className="space-y-2">
-          {data.items.map((i) => (
-            <li key={i.id}>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                    <Badge tone={STATUS_TONE[i.status]}>{i.status}</Badge>
-                    <span className="num text-xs text-ink-faint">{i.slug}</span>
-                    <span className="num text-xs text-ink-faint">v{i.version}</span>
-                    <Badge tone="neutral">Stage {i.stageId}</Badge>
-                    <Badge tone="neutral">{i.bloom}</Badge>
-                    <Badge tone="neutral">
-                      {i.type === "S" ? "static" : i.type === "P" ? "parameterized" : "generated"}
-                    </Badge>
-                    {i.stats.flagged ? (
-                      <Badge tone="danger" title={i.stats.flagReason ?? ""}>
-                        <Flag className="mr-1 h-3 w-3" aria-hidden="true" /> flagged
-                      </Badge>
-                    ) : null}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="ml-auto"
-                      onClick={() => setPreview(i)}
-                    >
+        /*
+          A TABLE, not a card list. Measured at 122px per card across 33 items,
+          this page cost about 4,000px to scan a bank that is meant to reach
+          ~40 live items per gradeable chapter -- roughly 700 items, or 85,000
+          pixels, at target.
+
+          `CONSOLE-DATA-AND-TEMPLATES.md` §2 named this exactly: an item bank
+          with p-value / discrimination / exposure columns "is the same shape"
+          as the submissions queue D-4 fixed, and the two "should be solved
+          together against the same reference rather than separately by taste".
+          The reference is shadcn-admin's Tasks page, the densest table in the
+          template this console already uses.
+
+          Nothing is dropped in the move. Every field the card carried has a
+          column, and the two psychometric WARNINGS -- a p-value at guessing,
+          and a negative discrimination meaning the key is probably wrong --
+          still say so in words, because those sentences are the entire reason
+          a teacher opens this page.
+        */
+        <div className="table-scroll rounded-lg border border-line bg-surface-1">
+          {/*
+            The 30-exposure rule, once. Every row would otherwise repeat it, and
+            on a new bank that is every row in the table.
+          */}
+          <p className="border-b border-line px-3 py-2 text-xs text-ink-faint">
+            p-value and discrimination stay blank until an item has been seen{" "}
+            <span className="num">30</span> times — below that the numbers do not mean anything
+            yet.
+          </p>
+          <Table>
+            <THead>
+              <TR>
+                <TH>Item</TH>
+                <TH>Stem</TH>
+                <TH>Objective</TH>
+                <TH className="text-right">Exposures</TH>
+                <TH className="text-right">p</TH>
+                <TH>Discrimination</TH>
+                <TH aria-label="Preview" />
+              </TR>
+            </THead>
+            <TBody>
+              {data.items.map((i) => (
+                <TR key={i.id}>
+                  <TD className="whitespace-nowrap align-top">
+                    <div className="flex items-center gap-1.5">
+                      <Badge tone={STATUS_TONE[i.status]}>{i.status}</Badge>
+                      {i.stats.flagged ? (
+                        <Badge tone="danger" title={i.stats.flagReason ?? ""}>
+                          <Flag className="mr-1 h-3 w-3" aria-hidden="true" /> flagged
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="num mt-0.5 text-xs text-ink-faint">
+                      {i.slug} · v{i.version} · stage {i.stageId} ·{" "}
+                      {i.type === "S" ? "static" : i.type === "P" ? "parameterized" : "generated"} ·{" "}
+                      {i.bloom}
+                    </div>
+                  </TD>
+
+                  <TD className="min-w-[18rem] max-w-lg align-top text-sm">{i.stemTemplate}</TD>
+
+                  {/*
+                    Clamped to two lines, with the full text on hover.
+                    Objective descriptions are whole sentences ("Illustrate the
+                    cell structures of DRAM and SRAM"), and left unbounded they
+                    were the biggest single contributor to row height -- 98px per
+                    row against the 122px card list is not a density pass, it is
+                    a rounding error. The ID above it is the identifier; the
+                    sentence is context, and context can be two lines.
+                  */}
+                  <TD className="max-w-[16rem] align-top text-xs">
+                    {i.objectiveText ? (
+                      <span title={i.objectiveText}>
+                        <span className="num">{i.objectiveId}</span>{" "}
+                        <span className="line-clamp-2 text-ink-muted">{i.objectiveText}</span>
+                      </span>
+                    ) : (
+                      /* Kept in full: an unlinked item is invisible to objective
+                         coverage, which is a bank-integrity problem, not a note. */
+                      <span className="text-warning">
+                        Not linked to an objective — it cannot be sampled by objective coverage.
+                      </span>
+                    )}
+                  </TD>
+
+                  <TD className="num align-top text-right text-xs text-ink-muted">
+                    {i.stats.exposures}
+                  </TD>
+
+                  <PsychometricCells stats={i.stats} />
+
+                  <TD className="align-top">
+                    <Button size="sm" variant="outline" onClick={() => setPreview(i)}>
                       Preview
                     </Button>
-                  </div>
-
-                  <p className="mb-2 text-sm text-ink">{i.stemTemplate}</p>
-
-                  {i.objectiveText ? (
-                    <p className="mb-2 text-xs text-ink-muted">
-                      <span className="num">{i.objectiveId}</span> · {i.objectiveText}
-                    </p>
-                  ) : (
-                    <p className="mb-2 text-xs text-warning">
-                      Not linked to an objective — it cannot be sampled by objective coverage.
-                    </p>
-                  )}
-
-                  <Psychometrics stats={i.stats} />
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-        </ul>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </div>
       )}
 
       <PreviewDialog item={preview} onClose={() => setPreview(null)} onChanged={reload} />
@@ -172,15 +227,39 @@ export function ItemsPage() {
   );
 }
 
-function Psychometrics({ stats }: { stats: BankItem["stats"] }) {
+/**
+ * The p-value and discrimination cells.
+ *
+ * Two cells rather than a block, so the numbers line up down the column and can
+ * be compared at a glance — which is the entire reason for having them.
+ *
+ * THE WARNINGS SURVIVE THE DENSITY PASS. A negative point-biserial means the
+ * students who did best on the paper did worst on this item, which almost
+ * always means the key is wrong; that sentence is why a teacher opens this page
+ * at all, and compressing it into a colour would have been the density pass
+ * eating the thing it was meant to surface.
+ */
+function PsychometricCells({ stats }: { stats: BankItem["stats"] }) {
   const { exposures, pValue, discrimination } = stats;
 
   if (exposures < 30) {
+    /*
+     * Said ONCE, above the table, not on every row.
+     *
+     * The first version printed "Not enough exposures to say anything yet --
+     * statistics start meaning something around 30" in every row, which on a
+     * fresh bank is every row: 22 copies of one sentence, and the single
+     * biggest contributor to row height. Repeating an explanation per row is
+     * how a density pass quietly gives back what it won.
+     *
+     * The em dash carries it instead, and the exposure count beside it is the
+     * evidence. The rule itself lives in the note above the table.
+     */
     return (
-      <p className="border-t border-line pt-2 text-xs text-ink-faint">
-        <span className="num">{exposures}</span> exposure{exposures === 1 ? "" : "s"} — not enough
-        to say anything yet. Statistics start meaning something around 30.
-      </p>
+      <>
+        <TD className="align-top text-right text-xs text-ink-faint">—</TD>
+        <TD className="align-top text-xs text-ink-faint">—</TD>
+      </>
     );
   }
 
@@ -190,27 +269,34 @@ function Psychometrics({ stats }: { stats: BankItem["stats"] }) {
   const negative = discrimination !== null && discrimination < 0;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-line pt-2 text-xs">
-      <span className="text-ink-muted">
-        <span className="num">{exposures}</span> exposures
-      </span>
-      <span className={cn(pValue !== null && pValue < 0.25 ? "text-warning" : "text-ink-muted")}>
-        p-value <span className="num">{pValue?.toFixed(2) ?? "—"}</span>
+    <>
+      <TD
+        className={cn(
+          "num align-top text-right text-xs",
+          pValue !== null && pValue < 0.25 ? "text-warning" : "text-ink-muted",
+        )}
+      >
+        {pValue?.toFixed(2) ?? "—"}
         {pValue !== null ? (
-          <span className="ml-1 text-ink-faint">
-            ({pValue > 0.85 ? "very easy" : pValue < 0.25 ? "at guessing" : "reasonable"})
+          <span className="ml-1 block text-ink-faint">
+            {pValue > 0.85 ? "very easy" : pValue < 0.25 ? "at guessing" : "reasonable"}
           </span>
         ) : null}
-      </span>
-      <span className={cn(negative ? "text-danger" : badDiscrimination ? "text-warning" : "text-ink-muted")}>
-        discrimination <span className="num">{discrimination?.toFixed(2) ?? "—"}</span>
+      </TD>
+      <TD
+        className={cn(
+          "align-top text-xs",
+          negative ? "text-danger" : badDiscrimination ? "text-warning" : "text-ink-muted",
+        )}
+      >
+        <span className="num">{discrimination?.toFixed(2) ?? "—"}</span>
         {negative ? (
           <span className="ml-1">— the key is probably wrong</span>
         ) : badDiscrimination ? (
           <span className="ml-1 text-ink-faint">— not separating students</span>
         ) : null}
-      </span>
-    </div>
+      </TD>
+    </>
   );
 }
 
