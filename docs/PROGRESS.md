@@ -852,8 +852,10 @@ present in the R0 captures. **This redesign promotes Act to a HUD chip *and*
 four-colour banding on the flight path**, so an unresolved grouping gets rendered
 more prominently, not less. Still the instructor's call.
 
-**D-4, submissions-queue density**, also still open. `CONSOLE-DATA-AND-TEMPLATES.md`
-§2 now points at it correctly rather than at a plan file that does not exist.
+**D-4, submissions-queue density** — *superseded: FIXED in R3, 2 Sep 2026, the
+queue going from 3,436px to 1,219px. Kept here only because this block records
+what was true when F-7 was written.* `CONSOLE-DATA-AND-TEMPLATES.md` §2 points
+at it correctly rather than at a plan file that does not exist.
 
 ---
 
@@ -1215,6 +1217,42 @@ below the same floor. Raised to `h-8`.
 notched frame, the staged assembly, and reduced motion going straight to the end
 state. No rebuild needed, which is what R3.0 step 6 is for — confirming, not
 redoing.
+
+### F-25 · R3.3 begins — the page you'll use most, and a fixture that does not exist
+
+`/students/:id` is what `STATUS.md` calls "the page you'll use most", and
+`CONSOLE-DATA-AND-TEMPLATES.md` §2 asks for TanStack's expanding-rows pattern on
+its attempt history, "where expanding a row reveals the regenerated exact
+variant". Built.
+
+**The point is not the widget.** A teacher marking a class scans the list,
+checks one paper, and carries on. Navigating to `/attempts/:id` answers the same
+question and costs them their place in the list — the wrong trade on the page
+they live in. So expanding reveals a *summary* — per item: ordinal, stem, what
+the student answered, the key, the stage — and `Open paper` still goes to the
+full page, because a disputed mark deserves the whole thing.
+
+It is not a second copy of `AttemptPage`, and it must never become one:
+`scripts/scan-bundle.mjs` searches the STUDENT bundle for exactly these field
+names with a live database value, so the check cannot pass vacuously. Showing
+the key is allowed here for the same reason it is allowed there — staff,
+console, submitted attempt, `ai_after_submit` at the database level.
+
+**`db/demo-seed.sql` seeds ZERO attempts.** The console's most-used page had
+nothing to show, and could not be reviewed, screenshotted or tested end-to-end.
+That is a real fixture gap, not a test inconvenience: every judgement anyone has
+made about this page was made against an empty state.
+
+The spec therefore **builds its own data** — starts and submits an attempt
+through the real API exactly as a student would, rather than depending on one
+somebody created by hand, which is not reproducible and would rot on the next
+`pnpm db:reset`. Assessment ids are generated UUIDs from `schema.sql` and are
+**not stable across a reset**, so it looks the assessment up by title. Worth
+fixing properly later by seeding a submitted attempt, and worth knowing now.
+
+**Also corrected:** a line in this file still described D-4 as open while the
+header recorded it fixed. D-4 is fixed — the submissions queue went from 3,436px
+to 1,219px in R3.
 
 ## Performance and QA numbers — measured, not assumed
 
