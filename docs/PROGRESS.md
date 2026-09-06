@@ -1,12 +1,62 @@
 # PROGRESS.md — Solar System Redesign, Live State
 
-> Read this file, in full, before doing anything else in a new session on
-> this redesign — after root `CLAUDE.md` and `docs/redesign/REDESIGN-CLAUDE.md`.
-> Update it before ending any session, or before `/clear`, whichever comes first.
+> **Read STATE NOW below. Do not read this file in full.**
+>
+> It said "read this file, in full, before doing anything else" while growing
+> past **1,600 lines**, which is a rule that guarantees the thing it was trying
+> to prevent: a session that starts by filling its context with history. The
+> findings log beneath is **reference — consult it when a finding is cited**, not
+> required reading. `REDESIGN-CLAUDE.md` §2c, rule 6.
+>
+> Still update it before ending a session or before `/clear`. Append new
+> findings; do not rewrite old ones.
 
-**Last updated:** 1 September 2026, end of the R2 session.
+**Last updated:** 2 September 2026.
 **Branch:** `main`. Not a `redesign/*` branch — root `CLAUDE.md` is explicit
 about why (`shaloh-build` cost an hour when Vercel and Render both built `main`).
+
+---
+
+## STATE NOW
+
+**Phase: R3 — page templates and redesign.**
+
+| Phase | State |
+|---|---|
+| R0 scope and guardrails | ✅ 28 / 28 |
+| R1 solar system foundation | ✅ 36 / 36 |
+| R2 per-student cosmetics | ⚠️ **18 / 21** — the three open items are biomes (see below) |
+| **R3 page templates** | **13 / 44** ← live |
+| R4 moons and subtopics | ▫️ 0 / 13 |
+| R5 testing and sign-off | ▫️ 0 / 24 |
+
+**Gates, last run:** `pnpm verify` green (339 unit tests) · `pnpm qa` **150
+passed** · 1181 contrast checks · invariants 23 clean, **1 warning** (INV-25, 5
+seeded `content_report` rows missing `item_id` / `resolved_variant`), 0 failures.
+
+**The three things blocking most:**
+
+1. **Biomes are built but never rendered.** `apps/web/src/biomes/` has
+   `BiomeScene.tsx`, `registry.ts`, `useSeededBiome.ts`, `packs/`; contrast
+   covers them (59 cosmetic checks); **no biome has ever been drawn or
+   screenshotted.** This is R2's open remainder AND it blocks R3's
+   `/app/stage/:id`.
+2. **`INV-32` and `INV-33` do not exist.** `DELIVERY.md` §3.1 lists them as
+   alpha exit criteria and the invariant set stops at **INV-31**. An exit gate
+   that cites missing checks can be neither passed nor failed.
+3. **No phase owns the public marketing site.** Five routes, including the
+   landing page whose re-rollable demo `PAGE-SPECS.md` calls "the one
+   interaction that sells the product". `/` is currently `<Navigate to="/app">`.
+
+**Local stack:** web `:5183` (5173 was taken by another project), console `:5174`,
+API `:8090` started with `CORS_ALLOWED_ORIGINS` including 5183. After
+`pnpm verify`, run **`pnpm db:demo`** — it truncates the fixtures and restoring
+them is two steps.
+
+**Open for the instructor:** whether chapter 18 belongs in the Finals (assumed
+yes, and seeded that way), and nothing else outstanding.
+
+---
 
 ## Current phase
 

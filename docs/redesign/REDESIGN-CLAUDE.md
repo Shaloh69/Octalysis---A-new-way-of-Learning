@@ -176,6 +176,121 @@ extends it to the phase files, which is the half that was being skipped.
 
 ---
 
+## 2c. Context degradation — what actually goes wrong, and the rules against it
+
+Long sessions degrade. Not dramatically — the model keeps answering confidently
+while its picture of the repository quietly goes stale. **Every failure below is
+one this project has actually had**, which is why they are rules and not advice.
+
+### What went wrong here, in order of cost
+
+| Failure | What it looked like |
+|---|---|
+| **The plan stopped matching the repo** | R3's checklist read 0 of 44 while eight routes were reworked and committed. R0/R1/R2 read 0 of 85 while `PROGRESS.md` called them complete |
+| **A claim was repeated instead of checked** | "R0/R1/R2 are complete" came from prose, not from the plans. `DELIVERY.md` cites `INV-32` and `INV-33` as alpha exit criteria; **neither exists** — the set stops at INV-31 |
+| **A measurement was taken against the wrong state** | "0 warnings" was measured on a database `pnpm verify` had just truncated. Seeded, INV-25 warns on 5 rows. A density bound was calibrated at 67px against a column that was empty; with real data it was 98px |
+| **The environment was mistaken for the code** | 21 failures from a Windows fork exhaustion that had killed Docker, the API and the console. Then port 5173 was serving a **different project entirely** and the gate cheerfully tested it — `curl` returned 200, so the port looked healthy |
+| **The document outgrew its readers** | `docs/PROGRESS.md` reached **1,681 lines**. It is read at the start of every session, and the current state is buried under 34 findings |
+
+### The rules
+
+1. **Say the phase, every session and every report.** §2b. This is first because
+   every other failure here was caught by someone asking "what phase are we in".
+
+2. **Tick the plan in the same commit as the work.** §2b. A checklist reconciled
+   in a separate pass drifts again — this one drifted twice.
+
+3. **Verify a claim before repeating it.** If a document says a thing is done,
+   that is a claim about the repository, and the repository is what settles it.
+   `grep` the invariant, count the rows, read the checkbox. **A fact restated
+   from memory is a fact that has stopped being checked.**
+
+4. **Check the world before believing a red run.** `pnpm qa` cannot tell "the
+   code is broken" from "the stack is gone" or "the port belongs to something
+   else". On a surprising failure the first question is whether the thing under
+   test is running, and whether it is the right thing. Check the page title.
+
+5. **Measure on real data, and say what state you measured in.** A number taken
+   against an empty table, a truncated database or a cold server is not wrong so
+   much as meaningless. `pnpm db:demo` exists because restoring that state was
+   two steps and one kept being forgotten.
+
+6. **Keep the session-start documents short.** Anthropic's own guidance is to
+   target **under 200 lines** for a `CLAUDE.md`, keep universal rules in the root
+   file, and push conditional detail into scoped files. `PROGRESS.md` must lead
+   with the current state — phase, what landed, what is next — and archive
+   resolved findings below a fold, so the first screen is the truth and not the
+   history.
+
+7. **`/clear` between unrelated tasks; compact deliberately, not at the wall.**
+   Context that fills with a finished task's file reads makes the next task
+   worse. Compaction is better invoked with headroom than triggered at the
+   threshold.
+
+8. **Trust the code over the docs when they disagree, and then fix the doc.**
+   Every drift above was a document that had stopped being true. Finding one is
+   not a nuisance; it is the audit working.
+
+### Where these come from
+
+- **Claude Code best practices** — https://code.claude.com/docs/en/best-practices
+- **Context management for long-running sessions** —
+  https://www.sitepoint.com/claude-code-context-management/ ·
+  https://www.itechguides.com/claude-code-context-management-guide-for-long-running-sessions/
+- **What the official docs don't cover** — https://chudi.dev/blog/claude-code-complete-guide
+  (the "<200 lines, hooks enforce at 100% where CLAUDE.md is followed ~70%"
+  point, which is why this project puts the hex ban in a hook and not in prose)
+- **Community practice collection** — https://rosmur.github.io/claudecode-best-practices/
+
+### The in-house reference: EngiRent
+
+`C:\Projects\Thesis\2026\EngiRent` is the sibling thesis project and the local
+model for how this should look. Three things it does that OCTA should copy:
+
+1. **Its `CLAUDE.md` is 101 lines** and opens with *"Read these, in this order,
+   at the start of every session"*. OCTA's root file is 173 and climbing.
+2. **`Implemented.md` is a periodic audit written from a full read of the
+   codebase** — and it says so explicitly: *"not from prior audit docs — those
+   are cross-checked, not trusted"*. That single sentence is rule 3 and rule 8
+   as a working practice. It is the strongest antidote to drift in either repo.
+3. **`docs/superseded/` and `docs/predated/`** retire documents instead of
+   deleting or silently editing them, so a stale claim stops being loaded
+   without losing the reasoning that produced it.
+
+**OCTA has no `Implemented.md` equivalent and no `superseded/` directory.** Both
+are worth adding; the audit matters more.
+
+---
+
+## 2d. When to stop and ask, and when not to
+
+**Default: keep going.** Name the phase, do the work, record it, continue. A
+question that could have been answered by reading the repository is a question
+that should not have been asked.
+
+**Do not stop for:** which of two reasonable layouts to use, whether to write a
+test, what to name something, whether to fix a defect found on the way, or
+permission to run the suite again.
+
+**Stop and ask only when:**
+
+- **The work would be wrong under one reading and right under another**, and the
+  readings lead somewhere materially different. "Remove 2D" meant two things;
+  one of them would have deleted the accessibility layer.
+- **It is the instructor's call, not an engineering one** — act names, whether a
+  chapter is examinable, whether orientation carries objectives. Guessing here
+  invents course content, which hard rule 5 forbids.
+- **It is irreversible or outward-facing** — deleting data, force-pushing,
+  publishing, anything touching a real class.
+- **A documented rule would have to be broken to proceed.** Say which rule, and
+  why, and let the human decide.
+
+Everything else: proceed, state the assumption plainly in the report, and flag
+it. **A blocked question with nothing delivered is more expensive than a stated
+assumption that turns out wrong.**
+
+---
+
 ## 3. Context management — `docs/PROGRESS.md`, same mechanism as UniThrift
 
 This redesign is genuinely large (solar system rebuild + ~44 page templates +

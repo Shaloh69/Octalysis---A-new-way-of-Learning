@@ -161,10 +161,20 @@ has landed in it. Name the phase and the sub-item when you start, tick the phase
 file's box **in the same commit as the work**, and name what the phase still owes
 when you finish.
 
-This is a rule because the project has drifted twice: `PROGRESS.md` claimed "R2
-complete, R3 next" for several sessions after R3 had started, and R3's own
-checklist sat at 0 of 44 ticked while eight of its routes were already reworked
-and committed. Full rule and reasoning: `docs/redesign/REDESIGN-CLAUDE.md` §2b.
+This is a rule because the project has drifted repeatedly: `PROGRESS.md` claimed
+"R2 complete, R3 next" for sessions after R3 had started; R3's checklist sat at 0
+of 44 while eight of its routes were reworked and committed; R0/R1/R2 sat at 0 of
+85 while all three were called complete. Full rule: `REDESIGN-CLAUDE.md` §2b.
+
+**Against context degradation** — §2c, with the rules that matter most here:
+verify a claim before repeating it, check the stack is alive (and is the right
+app) before believing a red run, measure on real data and say which state you
+measured in, and trust the code over the docs when they disagree.
+
+**On stopping** — §2d. Default is to keep going: name the phase, do the work,
+record it, continue. Stop only for a genuinely ambiguous reading, an
+instructor's call, something irreversible, or a rule that would have to be
+broken.
 
 ## Definition of done
 
