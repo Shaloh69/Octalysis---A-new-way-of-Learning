@@ -36,11 +36,11 @@ seeded `content_report` rows missing `item_id` / `resolved_variant`), 0 failures
 
 **The three things blocking most:**
 
-1. **Five of seven biomes have no art yet.** `neutral` renders (5 vendored
-   Kenney layers) and `volcanic` renders procedurally; **jungle, arctic, ocean,
-   desert and cave draw nothing**, by design, until their packs are vendored.
-   All seven are now captured in `design/biomes/`. Sourcing the five needs a
-   scoped download permission — `REDESIGN-CLAUDE.md` §1b.
+1. **Three of seven biomes have no art yet.** `neutral`, `desert` and `jungle`
+   render from vendored Kenney CC0 art; `volcanic` renders procedurally;
+   **arctic, ocean and cave draw nothing**, by design. All seven are captured in
+   `design/biomes/`. Arctic and ocean need a browser-session download from
+   itch.io; **cave still has no approved source at all**.
 2. **`INV-32` and `INV-33` do not exist.** `DELIVERY.md` §3.1 lists them as
    alpha exit criteria and the invariant set stops at **INV-31**. An exit gate
    that cites missing checks can be neither passed nor failed.
@@ -1549,6 +1549,47 @@ closed — `design/biomes/` has all seven. What remains is vendoring the art for
 five, which needs a scoped download permission per §1b: the packs are
 licence-checked (`BIOME-AND-LOADING-SPEC.md` §2) but **cave's chosen pack is
 marked do-not-use and needs replacing**, and desert's is CC0-verified.
+
+### F-36 · Three biomes vendored, and two packs the spec named could not be used
+
+Authorised to source the biome art. Two of the packs `BIOME-AND-LOADING-SPEC.md`
+§2 names did not survive contact:
+
+- **Desert's pack is gone.** *Desert Parallax Background* by styloo — recorded as
+  "CC0 1.0, explicit" and "the cleanest-licensed of the six" — **now returns
+  404**. A licence verified against a page that no longer exists cannot be
+  re-verified by anyone, which is a stronger objection than the art being
+  unavailable.
+- **Jungle's pack requires credit.** edermunizz's terms are clear and perfectly
+  usable, but it is the only pack of the six creating a **standing obligation**
+  that has to survive every future edit of `CREDITS.md`.
+
+Both are now composed from **Kenney Background Elements** — CC0, the same pack
+`neutral` uses, and the one §2's own table already calls the "base layer for
+several biomes". **Neither substitution lowered the standard:** CC0 is at least
+as permissive as what either replaced, and the `License.txt` travels with the art
+in every biome directory. Three biomes, **23 KB of art total**.
+
+`arctic` and `ocean` remain unvendored: their approved packs need a browser
+session rather than a fetch, which §1b predicted and a bare `curl` confirmed.
+**`cave` still has no approved source** — Admurin's pack is do-not-use over the
+unresolved CC-3.0-versus-itch conflict, and finding a replacement is its own
+piece of work.
+
+**The jungle had to be rebuilt, and the reason is arithmetic.** The first
+composition used three sprites that are all ~130px wide and similarly round
+(aspects 1.78–2.15), so at similar scales they tiled at nearly the same interval
+and the band read as **wallpaper** — one identical tree stamped across it. That is
+the exact failure `neutral.ts` already warned about, reproduced by picking
+sprites without measuring them. Fixed by making the **rendered tile widths**
+differ — 39 / 74 / 129px, no two close, so the layers drift in and out of phase.
+Recorded in §2a as a rule: measure the sprites before choosing scales.
+
+**The spec caught its own staleness.** Adding jungle art made
+`design/specs/biomes.spec.ts` fail — it still listed jungle as "must draw
+nothing". That is the test doing its job, and the reason the vendored-biomes
+assertion now checks **each** vendored biome rather than one representative: a
+manifest with a typo'd path fails there and nowhere else.
 
 ## Performance and QA numbers — measured, not assumed
 

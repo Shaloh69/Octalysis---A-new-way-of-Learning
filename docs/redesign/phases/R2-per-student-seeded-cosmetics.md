@@ -8,7 +8,7 @@
 > requires the box to be ticked **in the same commit as the work**, and this
 > backfill is that rule applied backwards.
 >
-> **R2 is 19 of 21.** All seven biomes are now captured in `design/biomes/`; what remains is vendoring art for five of them, and one superseded item. The three left open are real gaps, not bookkeeping, and are named below.
+> **R2 is 19 of 21.** All seven biomes are captured in `design/biomes/`, and **three now render from vendored CC0 art** (`neutral`, `desert`, `jungle`) with `volcanic` procedural. What remains: art for `arctic` and `ocean` (itch.io needs a browser session), a replacement source for `cave` (no approved pack exists), and one superseded item. The three left open are real gaps, not bookkeeping, and are named below.
 >
 > Ticked means *evidence exists in this repository*, not *remembered as done*.
 > The evidence for each group is named below.

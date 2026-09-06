@@ -77,6 +77,47 @@ pipeline as the base themes and encounter themes — a biome that fails WCAG AA
 against its own foreground text does not ship, same rule, same CI check,
 extended rather than duplicated.
 
+## 2a. What was actually vendored, 2 September 2026
+
+The table above is the sourcing research. This is the outcome, and it differs
+from it in two places — both recorded rather than quietly substituted.
+
+| Biome | Vendored | Why not the pack above |
+|---|---|---|
+| `neutral` | Kenney Background Elements, CC0 | — it is the pack above |
+| `desert` | Kenney Background Elements, CC0 | **styloo's pack now 404s.** Checked 2 Sep 2026. A licence verified against a page that no longer exists cannot be re-verified by anyone |
+| `jungle` | Kenney Background Elements, CC0 | edermunizz's terms are fine but **require credit** — a standing obligation on every future edit of `CREDITS.md`. CC0 carries none. That pack is still the better art if someone wants the denser look |
+| `volcanic` | procedural | as specified — no cleanly-licensed pack found |
+| `arctic`, `ocean` | **not vendored** | approved packs, but itch.io downloads need a browser session rather than a fetch — `REDESIGN-CLAUDE.md` §1b predicted this and a bare `curl` confirmed it |
+| `cave` | **not vendored** | still no approved source. Admurin's pack remains do-not-use over the unresolved CC-3.0-versus-itch conflict |
+
+**Neither substitution lowered the standard.** CC0 is at least as permissive as
+what either replaced pack offered, and the pack's own `License.txt` travels with
+the art in every biome directory.
+
+**These are elements, not pre-cut strips**, so each biome is composed in its own
+manifest — which is exactly what the table above means by calling Kenney the
+"base layer for several biomes". Three biomes cost **23 KB of art in total**.
+
+### A composition note that cost a rebuild
+
+The first jungle used three sprites that are all ~130px wide and similarly round
+(aspects 1.78–2.15). At similar scales they tiled at nearly the same interval, so
+the band read as **wallpaper** — one identical egg-shaped tree stamped across it.
+That is the exact failure `neutral.ts` already warned about, reproduced by
+choosing sprites without looking at their dimensions.
+
+What breaks a repeat is the **rendered tile width differing between layers**,
+because layers whose intervals share no common rhythm drift in and out of phase:
+
+    tree05  129px x 0.30 ~=  39px   far, reads as texture
+    tree01  128px x 0.58 ~=  74px   mid
+    tree03  136px x 0.95 ~= 129px   near, and the tallest silhouette
+
+39 / 74 / 129 — no two close. **Measure the sprites before choosing scales.**
+
+---
+
 ## 2b. The tiling problem — real, partly solved, and not solved by this pass
 
 Found while vendoring the first pack, and it applies to every pack in the table

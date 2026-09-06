@@ -7,14 +7,14 @@ to hand out.
 
 | Capture | State |
 |---|---|
-| `neutral.png` | **Renders.** Five vendored Kenney layers — clouds, trees, grass — with `LICENSE-kenney.txt` beside them in `public/biomes/neutral/` |
+| `neutral.png` `desert.png` `jungle.png` | **Render.** All three composed from Kenney Background Elements (CC0), with `LICENSE-kenney.txt` beside the art in each directory. 23 KB total |
 | `volcanic.png` | **Renders procedurally**, from tokens. The one named exception in `BIOME-AND-LOADING-SPEC.md` §2, where no cleanly-licensed pack exists yet |
-| `jungle.png` `arctic.png` `ocean.png` `desert.png` `cave.png` | **Draw nothing.** Their packs are chosen and licence-checked but not vendored |
+| `arctic.png` `ocean.png` `cave.png` | **Draw nothing.** Arctic and ocean have approved packs needing a browser-session download; cave has no approved source at all |
 
 ## The five blanks are the point
 
-They are byte-identical at 63,584 bytes, and that is the design working rather
-than failing.
+The three blanks are byte-identical, and that is the design working rather than
+failing.
 
 §2 was revised to forbid a gradient stand-in for an un-sourced biome, because
 **a gradient looks finished**. A tinted rectangle where the art should be is
@@ -28,6 +28,10 @@ reason that the scene is broken everywhere.
 
 ## What is left
 
-Vendoring art for the five. That needs a scoped download permission
-(`REDESIGN-CLAUDE.md` §1b) and one licence problem resolved first: **cave's
-chosen pack is marked do-not-use** and needs replacing.
+Art for `arctic` and `ocean` — their packs are approved but itch.io downloads
+need a browser session rather than a fetch. And a **replacement source for
+`cave`**, which has none: the pack §2 named is do-not-use over an unresolved
+licence conflict.
+
+Two packs the spec named could not be used at all — see
+`BIOME-AND-LOADING-SPEC.md` §2a.

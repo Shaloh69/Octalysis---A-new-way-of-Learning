@@ -8,13 +8,14 @@ import { createHmac } from "node:crypto";
  *
  * R2 asked for "each biome variant screenshotted individually (not one
  * representative)" and it was never done. That mattered more than a missing
- * screenshot usually does, because **five of the seven render nothing**, and
- * nobody could see that without looking.
+ * screenshot usually does, because most of them rendered nothing and nobody
+ * could see that without looking.
  *
  * THE THREE STATES (`BIOME-AND-LOADING-SPEC.md` §2, as revised):
  *
- *   art         vendored parallax layers. The default for six of seven —
- *               currently only `neutral` is vendored.
+ *   art         vendored parallax layers. `neutral`, `desert`, `jungle` — all
+ *               three composed from Kenney Background Elements (CC0), which §2's
+ *               own table calls the "base layer for several biomes".
  *   procedural  no layers, and that is intentional. `volcanic` only: the named
  *               exception where no cleanly-licensed pack exists.
  *   nothing     no layers because the art is not vendored yet. Renders NOTHING.
@@ -34,12 +35,18 @@ import { createHmac } from "node:crypto";
 const JWT_SECRET =
   process.env.SUPABASE_JWT_SECRET ?? "test-secret-at-least-32-characters-long-000000";
 
-/** Vendored art. */
-const ART = ["neutral"] as const;
+/** Vendored art. All three compose Kenney Background Elements (CC0). */
+const ART = ["neutral", "desert", "jungle"] as const;
 /** Allowed to draw from tokens — the one named exception. */
 const PROCEDURAL = ["volcanic"] as const;
-/** Sourced and licence-checked, but not vendored. Must render NOTHING. */
-const NOT_VENDORED = ["jungle", "arctic", "ocean", "desert", "cave"] as const;
+/**
+ * Not vendored. Must render NOTHING.
+ *
+ * `arctic` and `ocean` have approved packs whose downloads need a browser
+ * session (itch.io), and `cave` has no approved source at all — the pack §2
+ * named is marked do-not-use over an unresolved licence conflict.
+ */
+const NOT_VENDORED = ["arctic", "ocean", "cave"] as const;
 
 function studentToken(): string {
   const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
@@ -110,18 +117,23 @@ test.describe("the seven biomes, one capture each", () => {
     }
   });
 
-  test("the vendored biome actually draws, and the procedural one is allowed to", async ({
-    page,
-  }, testInfo) => {
+  test("every vendored biome actually draws", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
 
-    // Otherwise the test above passes for the boring reason: nothing renders at
-    // all, anywhere, and the assertion is vacuous.
-    await landing(page, "neutral");
-    expect(
-      await layersDrawn(page),
-      "neutral has 5 vendored Kenney layers and must paint them",
-    ).toBeGreaterThan(0);
+    /*
+     * This is what stops the test above passing for the boring reason: if the
+     * scene component were broken everywhere, "the un-vendored ones draw
+     * nothing" would be trivially true and the whole feature would be recorded
+     * as working. Checked for EACH vendored biome, not one representative —
+     * a manifest with a typo'd path fails here and nowhere else.
+     */
+    for (const biome of ART) {
+      await landing(page, biome);
+      expect(
+        await layersDrawn(page),
+        `${biome} has vendored layers and must paint them`,
+      ).toBeGreaterThan(0);
+    }
   });
 
   test("the biome carries no meaning, so it needs no text equivalent", async ({ page }, testInfo) => {
