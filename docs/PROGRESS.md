@@ -10,7 +10,7 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## Current phase
 
-**R3 — IN PROGRESS.** (This heading said "R2 complete, R3 next" for several
+**R3 — IN PROGRESS. Checklist reconciled 2 Sep 2026: 13 of 44 ticked.** (This heading said "R2 complete, R3 next" for several
 sessions after R3 work had already started. Corrected.)
 
 R0, R1 and R2 are complete. R3 is the page-template pass, **scoped down by the
@@ -1366,6 +1366,107 @@ through the real API (F-25, F-27).
 objectives. `scripts/sync-content.mjs` is the other half, and forgetting it
 broke the map specs mid-session — the second time this session. It is written
 down in F-19; writing it down was evidently not enough.
+
+### F-31 · The plan disagreed with the repository, and now says so out loud
+
+`R3-page-templates-and-redesign.md` sat at **0 of 44 boxes ticked** while eight
+of its routes had been reworked, measured and committed. The work was going into
+`PROGRESS.md` findings; nobody ticked the plan. This file's own heading had
+already done the same thing once — it read *"R2 complete, R3 next"* for several
+sessions after R3 started.
+
+**A plan that disagrees with the repository is worse than no plan**, because
+someone will act on it. Reconciled: **13 ticked, 31 remaining**, and every tick
+means *verified in this repository*, not *believed done*. Combined items that
+are partly finished now say which part — `/audit · /feedback · /live` records
+that only `/audit` is done rather than staying a silent blank.
+
+**Made a rule, not a resolution.** `REDESIGN-CLAUDE.md` §2b and root `CLAUDE.md`
+now require: name the phase and sub-item when starting, **tick the phase file's
+box in the same commit as the work**, write the reason beside any item that will
+never be ticked, and close by naming what the phase still owes. A checklist
+reconciled in a separate pass drifts again — this one already did.
+
+### F-32 · The four untemplated routes, searched rather than guessed
+
+R3 named four built routes with no template row and asked for "a template row or
+a record of why not". All four have one now, and one of them is a *why not*.
+
+| Route | Answer |
+|---|---|
+| `/app/work` | shadcn.io **File Manager Table View** + **File Upload Bulk**. The page reads as "assignments" but behaves as "files with deadlines", which was not obvious in advance — and it carries **40% of the grade** |
+| `/console/submissions` | The **same dense-table reference** as `/items` and `/audit` (shadcn-admin Tasks). `is_late` must be a visible column — D-4's original defect was that it was not shown at all |
+| `/console/system` | The **status/health-page pattern** from DevOps shadcn templates. Take the list-of-checks structure only: no aggregate "all good" badge that can hide a failing invariant |
+| `/console/attempts/:attemptId` | **No template, deliberately.** It is a document, not a dashboard; the reference is a printed exam paper |
+
+**The failed searches were as useful as the successful ones.** There is no
+"grading queue" template in the shadcn ecosystem worth citing — the nearest
+neighbours are content-moderation queues, which are the same page under a
+different noun. Citing a weak match would have been worse than pointing at the
+dense-table reference §2 already mandated. And `/console/attempts/:attemptId`
+gets an explicit *we looked and decided not to*, so nobody re-opens it in three
+weeks.
+
+Same licence caution as everywhere: these are references to read, not code to
+vendor. `BIOME-AND-LOADING-SPEC.md` §2 is the standing reminder of what happens
+when that check is skipped.
+
+### F-33 · `pnpm db:demo` — the two-step restore is one command now
+
+`pnpm verify` truncates the demo data (the API suite calls `resetAll()`), and
+restoring it is **two** steps: `db/demo-seed.sql`, then `scripts/sync-content.mjs`.
+Running only the first leaves the database with **4 objectives instead of 115**,
+which does not read as an error — it reads as a map with almost no moons and a
+handful of map specs failing for reasons that look like the map.
+
+That cost **three separate diagnosis detours in one session**. `DESIGN-REVIEW-01`
+documented step one and not step two, and F-19 wrote the lesson down; writing it
+down was not enough, so it is a command:
+
+    pnpm db:demo    # both halves, in order, with the counts printed
+
+It prints profiles / stages / objectives / progress / flagged items, and exits
+non-zero if the objective count comes back short. **That guard is unexercised** —
+the happy path is verified, but making `sync-content.mjs` fail silently enough to
+trip it is not worth simulating. It is a smoke alarm, not tested code.
+
+Deliberately **not** part of `pnpm verify`: the truncation is the API suite's own
+setup doing its job, and re-seeding inside verify would hide it.
+
+### F-34 · Three environment failures that looked exactly like product bugs
+
+A long session degraded the machine, and each failure mimicked a real defect
+convincingly enough to be worth recording.
+
+**1. The gate reported "must have exactly one h1, found 0" — on different routes
+each run.** `/app`, then `/app/stage/00`, then `/gradebook`. All three have an
+`h1` in source; the pages render a skeleton first and the heading only after
+their data arrives, and the helper waited a fixed 700ms. **The intermittency was
+the tell.** It waits for the heading now, so a page that genuinely never renders
+one fails on the thing that is actually missing. A flaky gate is worse than no
+gate: it teaches people to re-run until green.
+
+**2. Twenty-one failures from a Windows fork exhaustion.** `bash: fork: retry:
+Resource temporarily unavailable` — Docker, the API and the console had all been
+killed. Nothing was wrong with the code. **Check the stack is alive before
+believing a red run**, the same way a cold Vite server has to be warmed first
+(F-19).
+
+**3. Port 5173 was serving a DIFFERENT PROJECT.** After the crash, another dev
+server (`EngiRent Hub`) had taken the port, and the gate was cheerfully testing
+someone else's application — `curl` returned 200, so the port looked healthy.
+Caught by the page title, not by any assertion.
+
+Rather than kill another project's server, OCTA's web was started on **5183** and
+the harness pointed at it with `OCTA_WEB_URL`. That then failed with **CORS**,
+because the API's `CORS_ALLOWED_ORIGINS` is pinned to 5173/5174 — correct
+behaviour, and worth knowing: **moving the web port needs the API restarted with
+that origin allowed.**
+
+**The lesson under all three:** a red suite is a claim about the world, and the
+world includes the machine. `pnpm qa` cannot tell "your code is broken" from
+"your stack is gone", so the first question on a surprising failure is whether
+the thing under test is actually running — and actually the right thing.
 
 ## Performance and QA numbers — measured, not assumed
 

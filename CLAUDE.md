@@ -153,6 +153,19 @@ values, hex, machine code, and assembly listings render in mono.
 Motion: one orchestrated moment per stage. Respect `prefers-reduced-motion`. Incorrect answers get
 a neutral response — never red, never a buzzer, never a shake.
 
+## Where we are
+
+**Say the phase out loud, every session.** The redesign runs R0–R5 in
+`docs/redesign/phases/`; `docs/PROGRESS.md` records which one is live and what
+has landed in it. Name the phase and the sub-item when you start, tick the phase
+file's box **in the same commit as the work**, and name what the phase still owes
+when you finish.
+
+This is a rule because the project has drifted twice: `PROGRESS.md` claimed "R2
+complete, R3 next" for several sessions after R3 had started, and R3's own
+checklist sat at 0 of 44 ticked while eight of its routes were already reworked
+and committed. Full rule and reasoning: `docs/redesign/REDESIGN-CLAUDE.md` §2b.
+
 ## Definition of done
 
 Compiles under strict TS · tests pass including at least one denial test if it touches data · RLS

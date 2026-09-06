@@ -142,6 +142,40 @@ identically. All three passed every automated gate.
       drift and biome ambient motion to the deterministic base position for
       reproducible screenshots
 
+## 2b. Always say where we are — the phase, and what it still owes
+
+**Every session, and every report of finished work, states the phase by name and
+what remains in it.** Not "R3 is in progress" — which phase, what has landed in
+it, and what it still owes.
+
+**This exists because the project lost track twice, in writing.**
+`PROGRESS.md`'s own heading read *"R2 complete, R3 next"* for several sessions
+after R3 work had already started, and it had to be corrected in the file. Then
+`R3-page-templates-and-redesign.md` sat at **0 of 44 boxes ticked** while eight
+of its routes had been reworked, measured and committed — because the work was
+being recorded in `PROGRESS.md` findings and nobody ticked the phase file. A
+plan that disagrees with the repository is worse than no plan: it is a plan
+someone will act on.
+
+The rule, concretely:
+
+1. **Open by naming the phase**, and what part of it the work belongs to
+   (`R3.3`, not "the console bit").
+2. **Tick the phase file's checkbox in the same commit as the work.** Not later.
+   A checklist reconciled in a separate pass is a checklist that will drift
+   again — this one already did.
+3. **When a phase's item is deliberately not done, record the reason next to it**
+   rather than leaving it unticked and unexplained. An unticked box means "not
+   done yet"; a box that will never be ticked needs a sentence, or the next
+   person re-opens it.
+4. **Close by naming what the phase still owes**, so the next session starts from
+   the plan rather than from the last thing that happened to be interesting.
+
+`START-HERE.md` §7 already required a session-end `PROGRESS.md` update; this
+extends it to the phase files, which is the half that was being skipped.
+
+---
+
 ## 3. Context management — `docs/PROGRESS.md`, same mechanism as UniThrift
 
 This redesign is genuinely large (solar system rebuild + ~44 page templates +

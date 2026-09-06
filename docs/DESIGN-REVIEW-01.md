@@ -150,6 +150,15 @@ With no `VITE_SUPABASE_URL` set, both apps fall back to a JWT in
 `localStorage` under `octa:dev-token` — mint one with the same secret and set
 it from the console to browse as staff or as a student.
 
-**Re-run `demo-seed.sql` after `pnpm verify`.** The API suite calls
-`resetAll()`, which truncates the tables and leaves its own two fixtures
-behind. A console showing a class of two students is that, not a bug.
+**Run `pnpm db:demo` after `pnpm verify`.** The API suite calls `resetAll()`,
+which truncates the tables and leaves its own two fixtures behind. A console
+showing a class of two students is that, not a bug.
+
+**It is TWO steps, which is why it is now one command.** `demo-seed.sql` alone
+restores the profiles and progress but leaves the database with **4 objectives
+instead of 115** — the other 111 come from `scripts/sync-content.mjs`, because
+`content/stages/*.md` front matter is the authoring source of truth. Running
+only the first does not look like an error: it looks like a map with almost no
+moons. This paragraph used to name only the first step, and that omission cost
+three separate diagnosis detours in one session. `pnpm db:demo` runs both and
+fails loudly if the objective count comes back short.

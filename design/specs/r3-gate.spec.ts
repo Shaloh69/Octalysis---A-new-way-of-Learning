@@ -87,7 +87,22 @@ async function land(page: Page, url: string, dev: string): Promise<void> {
   // long as it is on screen, and lazy chunks are waited for explicitly below.
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.locator("main, .boot, body").first().waitFor();
-  await page.waitForTimeout(700);
+
+  /*
+   * WAIT FOR THE HEADING, not for a guess at how long rendering takes.
+   *
+   * This was `waitForTimeout(700)`, and it lost the race intermittently: these
+   * pages render a skeleton first and the `h1` only after their data arrives,
+   * so the gate reported "must have exactly one h1, found 0" for `/app`,
+   * `/app/stage/00` and `/gradebook` -- on different runs, which is the tell.
+   * All three have an `h1` in source. The pages were fine; the harness was
+   * early, and a flaky gate is worse than no gate because it teaches people to
+   * re-run until green.
+   *
+   * If a page genuinely never renders one, this fails here with a clear timeout
+   * on the thing that is actually missing.
+   */
+  await page.locator("h1").first().waitFor({ timeout: 15_000 });
 }
 
 /**

@@ -40,6 +40,7 @@ same as every existing template reference in this project.
 | `/app/live` | Custom, tightly scoped | — | Locked-to-one-question view with an anonymous distribution chart (shadcn Charts) — small enough not to need a template |
 | `/app/settings` | shadcn-admin's settings page | `DESIGN-REFERENCES.md` §1 | Direct reuse — settings pages don't need a game-specific design language, they're a utility surface |
 | `/app/help` | shadcn Blocks — FAQ/content | https://ui.shadcn.com/blocks | Plain content |
+| `/app/work` | shadcn.io **File Manager Table View** + **File Upload Bulk** | https://www.shadcn.io/blocks/file-upload-table-view · https://www.shadcn.io/blocks/file-upload-bulk | **Added 2 Sep 2026 — this route was built and had no row.** It carries labs, the project and participation: **40% of the grade**, and the largest single share of it. The table block gives the list its shape (sortable name/type/size/modified, row selection, bulk actions); the bulk-upload block gives per-file progress and status, which matters because a student submitting three lab files needs to know *which* one failed. Take the structure, not the chrome — deadlines and late state are ours, and a late submission must say so in words, never by colour alone |
 
 ---
 
@@ -67,6 +68,9 @@ this section only lists the baseline, that file has the actual depth.**
 | `/console/feedback` | Two-tab layout, standard | shadcn-admin's tabs pattern |
 | `/console/audit` | Standard filterable log table | shadcn-admin data table |
 | `/console/settings` | Standard settings page | shadcn-admin settings demo |
+| `/console/submissions` | **Same dense-table reference as `/items` and `/audit`** — shadcn-admin's Tasks page | https://shadcn-admin.netlify.app/tasks | **Added 2 Sep 2026.** Searched for a purpose-built "grading queue" template and there is not one worth citing; the shapes that come closest are content-moderation queues, which are the same thing under a different name. That is fine, because `CONSOLE-DATA-AND-TEMPLATES.md` §2 already ruled these pages must be "solved together against the same reference rather than separately by taste". D-4 fixed this queue by that route (3,436px → 1,219px); `/audit` and `/items` followed it. **`is_late` must be a visible column, not an inferred one** — D-4's original defect was that it was not shown at all |
+| `/console/attempts/:attemptId` | **No template, deliberately** | — | **Recorded 2 Sep 2026 as a reason, not an omission.** This is a read-only reconstruction of one exam paper, regenerated from `attempts.seed`. It is a DOCUMENT, not a dashboard: the right reference is a printed exam paper, and forcing a card/table admin pattern onto it would make it worse. Its layout requirements come from `PAGE-SPECS.md` and from what a marker needs — item order, the student's answer, the key, the rationale — and it is already built that way. The only borrowed pattern is the summary-card row at the top, shared with `/app/stage/:id/results/:attemptId` |
+| `/console/system` | Status/health-page pattern from a DevOps shadcn admin template | https://shadcnspace.com/admin-dashboard · listings: https://adminlte.io/blog/shadcn-admin-dashboard-templates/ | **Added 2 Sep 2026.** The invariant results page is a status page in every respect that matters: a list of named checks, each pass/fail, with a timestamp and a way to see the detail of a failure. DevOps-oriented shadcn admin templates (Signal Dashboard and similar) ship exactly that, including uptime/incident views and a public status page. **Take the list-of-checks structure and nothing else** — no severity colours as the only signal, no sparklines nobody reads, and never an aggregate "all good" badge that hides one failing invariant. `INV-*` failures are correctness failures, not metrics |
 
 ---
 
@@ -89,6 +93,35 @@ completeness of "every visual thing has a named source":
 |---|---|---|
 | Stage 14 bonus (shooter) | `phaserjs/template-react-ts` + Phaser by Example's shoot-em-up chapter | https://github.com/phaserjs/template-react-ts |
 | Post-Stage-11 bonus (platformer) | `phaserjs/template-react-ts` + Phaser's official "Making Your First Phaser Game" tutorial | https://docs.phaser.io/phaser/getting-started/making-your-first-phaser-game |
+
+---
+
+## The four rows added 2 September 2026, and how they were chosen
+
+`R3-page-templates-and-redesign.md` named four built routes with no template row
+and asked for "a template row or a record of why not". All four now have one,
+and one of them is a *why not*.
+
+**Searched, not guessed.** Every source above was found by searching for the
+page's actual shape, and the searches are as informative where they failed:
+
+- **A "grading queue" template does not exist** in the shadcn ecosystem in any
+  form worth citing. The nearest neighbours are content-moderation queues —
+  review a submission, filter by status, act in bulk — which is the same page
+  wearing a different noun. Rather than cite a weak match, `/console/submissions`
+  points at the dense-table reference the other two console tables already use,
+  which is what §2 asked for in the first place.
+- **`/console/attempts/:attemptId` gets no template on purpose.** It is a
+  document. A template row naming an admin dashboard pattern would be worse than
+  an honest blank, and "we looked and decided not to" is a finding worth keeping
+  so nobody re-opens it in three weeks.
+- **File-manager blocks fit `/app/work` well** and were not obvious in advance —
+  the page reads as "assignments" but behaves as "files with deadlines".
+
+**Licence caution, same as everywhere else.** These are references to read, not
+code to vendor. Only what a licence explicitly permits gets copied, and
+`BIOME-AND-LOADING-SPEC.md` §2 is the standing reminder of what happens when
+that check is skipped — a sourced pack turned out to be do-not-use.
 
 ---
 

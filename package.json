@@ -14,6 +14,7 @@
     "db:reset": "node scripts/db-reset.mjs",
     "db:psql": "docker compose exec -e PGPASSWORD=postgres db psql -U postgres -d octa",
     "db:invariants": "node scripts/db-invariants.mjs",
+    "db:demo": "node scripts/db-demo.mjs",
     "scan:bundle": "node scripts/scan-bundle.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
