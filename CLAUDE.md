@@ -21,7 +21,10 @@ Read `START-HERE.md` before your first task. Read `VERIFICATION.md` before touch
 - `packages/contracts` — Zod schemas shared across all three
 - `packages/tokens` — three themes + accent derivation, as CSS custom properties
 - `db` — Supabase Postgres. Apply in order: `schema.sql` → `addendum-feedback.sql` →
-  `addendum-audit.sql` → `addendum-cron.sql` (local prepends `local-bootstrap.sql`)
+  **`addendum-submissions.sql`** → `addendum-audit.sql` → `addendum-cron.sql` (local
+  prepends `local-bootstrap.sql`). `addendum-submissions.sql` carries labs, project and
+  participation — **40% of the grade** — and was missing from this list while
+  `scripts/db-reset.mjs` had been applying it all along.
 
 ## Hard rules
 
@@ -68,7 +71,11 @@ pnpm verify     # typecheck + tests + invariants
 ```
 
 Apply order is load-bearing: `local-bootstrap.sql` → `schema.sql` → `addendum-feedback.sql` →
-`addendum-audit.sql` → `addendum-cron.sql`. **`local-bootstrap.sql` is LOCAL ONLY** — it supplies the `auth` schema and
+`addendum-submissions.sql` → `addendum-audit.sql` → `addendum-cron.sql`. **Six files, not
+five** — this said five and omitted `addendum-submissions.sql`, which holds labs, project
+and participation. `scripts/db-reset.mjs` is the authority and always applied it; anyone
+applying to Supabase BY HAND from this list would have skipped 40% of the grade.
+**`local-bootstrap.sql` is LOCAL ONLY** — it supplies the `auth` schema and
 the three roles that Supabase provides; running it against a Supabase project would shadow the
 real ones and every RLS test would become a lie.
 

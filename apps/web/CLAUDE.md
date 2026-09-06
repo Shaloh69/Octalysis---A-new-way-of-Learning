@@ -35,7 +35,12 @@ D simulator  BRIEF LEARN LAB   BUILD BREAK CHECK BRING-UP LOG
 Do not add a beat a stage's archetype doesn't declare. See docs/LESSON-PLAN-AND-LEVELS.md §1.
 
 ## Accent
-`profiles.accent_hue` (0-360) is set as `--accent-hue` on `<html>`. All accent colors derive in
+`profiles.accent_hue` (0-360) is **meant to be** set as `--accent-hue` on `<html>`, and as
+of 7 Sep 2026 **it is not** — `lib/session.ts` reads theme and hue from `localStorage`
+only, defaulting to `bare-metal` / 250, and `routes/cosmetics.ts` returns neither. The
+rows are seeded and correct; nothing applies them. See `docs/PROGRESS.md` **F-40**. Fixing
+it changes the base theme every student sees, so it is an instructor's call, not a
+tidy-up. All accent colors derive in
 OKLCH with lightness and chroma fixed per theme, which is what keeps contrast constant across
 hues. Never store or read a hex accent.
 

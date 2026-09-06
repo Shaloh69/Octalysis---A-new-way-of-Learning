@@ -134,6 +134,6 @@ updating `SOLAR-SYSTEM-SPEC.md` §3 or `BIOME-AND-LOADING-SPEC.md` §3 first)
         for the other. `lib/session.ts` reads theme and hue from **localStorage
         only**, defaulting to bare-metal/250; nothing reads `profiles.theme` or
         `profiles.accent_hue`, and the cosmetics endpoint does not return them.
-        Root `CLAUDE.md` states that `profiles.accent_hue` **is** set as
+        `apps/web/CLAUDE.md` states that `profiles.accent_hue` **is** set as
         `--accent-hue` on `<html>`. It is not. Recorded as **F-40**; not fixed
         here, because it changes the base theme every student sees.

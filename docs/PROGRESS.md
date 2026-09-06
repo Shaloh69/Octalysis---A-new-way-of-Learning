@@ -1957,7 +1957,7 @@ falling back to `bare-metal` / `250`. Nothing reads `profiles.theme` or
 returns `biomeIndex` alone, hashed from the seed. So the biome is seeded and
 applied; the theme and hue are seeded, stored, and ignored.
 
-**Root `CLAUDE.md` states the opposite**, in the Accent section: "`profiles.accent_hue`
+**`apps/web/CLAUDE.md` states the opposite**, in its Accent section: "`profiles.accent_hue`
 (0-360) is set as `--accent-hue` on `<html>`." It is not. That sentence has been
 describing an intention as a fact.
 
