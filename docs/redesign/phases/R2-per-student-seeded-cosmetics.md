@@ -79,9 +79,15 @@ updating `SOLAR-SYSTEM-SPEC.md` §3 or `BIOME-AND-LOADING-SPEC.md` §3 first)
       independent one (§3 of that file, restated here so it isn't missed)
 
 ## R2.2b — Build the biomes themselves, per `BIOME-AND-LOADING-SPEC.md`
-- [ ] Procedural default for all seven biomes first (§2's approach) — real
+- [x] Procedural default for all seven biomes first (§2's approach) — real
       asset packs are an optional upgrade, not required for this phase to be
       done
+      · **SUPERSEDED, and by something better.** This asked for a procedural
+        stand-in with real art as an optional upgrade. All seven biomes now ship
+        **real, licence-verified art** — the optional upgrade was taken for every
+        one of them, so the fallback it describes has nothing left to cover.
+        `PROCEDURAL` in `BiomeScene.tsx` is now empty and deliberately kept
+        empty, so a future unsourced biome has to opt in on purpose.
 - [x] Each biome variant screenshotted individually (not one representative
       example) per `REDESIGN-CLAUDE.md` §2's explicit requirement
 - [x] Each biome variant contrast-checked against every base theme it can
@@ -115,6 +121,19 @@ updating `SOLAR-SYSTEM-SPEC.md` §3 or `BIOME-AND-LOADING-SPEC.md` §3 first)
 - [x] R2.3's boundary test exists and passes
 - [x] Palette variants AND all seven biomes pass contrast checking, verified
       in CI not by eye
-- [ ] Visually confirm (screenshot two different seeded students side by
+- [x] Visually confirm (screenshot two different seeded students side by
       side) that the systems look different but the underlying map is
       identical in structure
+      · **DONE 7 Sep 2026.** `232129001` and `232129006` on `/app/map`, captured
+        to `design/biomes/seeded-*.png`. Both render **19 nodes in identical
+        order**; biomes differ (cave vs desert). The map is the curriculum and it
+        did not move.
+      · **AND IT FOUND A DEFECT, which is why the item existed.** Both students
+        rendered `data-theme="bare-metal"` and `--accent-hue: 250`, while the
+        database holds hue 37 / `blueprint` for one and hue 222 / `bare-metal`
+        for the other. `lib/session.ts` reads theme and hue from **localStorage
+        only**, defaulting to bare-metal/250; nothing reads `profiles.theme` or
+        `profiles.accent_hue`, and the cosmetics endpoint does not return them.
+        Root `CLAUDE.md` states that `profiles.accent_hue` **is** set as
+        `--accent-hue` on `<html>`. It is not. Recorded as **F-40**; not fixed
+        here, because it changes the base theme every student sees.

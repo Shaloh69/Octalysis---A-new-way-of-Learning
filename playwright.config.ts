@@ -37,6 +37,13 @@ const WEB_URL = process.env.OCTA_WEB_URL ?? "http://localhost:5173";
 const CONSOLE_URL = process.env.OCTA_CONSOLE_URL ?? "http://localhost:5174";
 
 export default defineConfig({
+  /*
+   * Fails the run if the port is serving a DIFFERENT project. The comment above
+   * about ports being taken was true and useless; this is the same knowledge as
+   * a check. See `design/global-setup.ts` for the two runs it was written after.
+   */
+  globalSetup: "./design/global-setup.ts",
+
   testDir: "./design/specs",
   snapshotDir: "./design/baselines",
   outputDir: "./design/screenshots/test-runs",

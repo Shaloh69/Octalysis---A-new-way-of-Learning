@@ -1,13 +1,48 @@
-Modified background for a cave - added parallax.
+Cave biome art
+==============
 
-Some of the edges are a bit messy.
-The front-most layer has a bit of texturing on it.
+Pack:    Warped: Super Grotto Escape Pack
+Author:  Luis Zuno (@ansimuz)
+Source:  https://opengameart.org/content/warped-super-grotto-escape-pack
+Licence: CC0 (Creative Commons Zero)
 
-License: CC0 - Use it however you want.
-Credit JonathanPalmerGD and let me know if you'd like.
+CONFIRMED TWICE, which is this project's bar for vendored art:
 
-Original: http://opengameart.org/content/seamless-cave-background and credit to PWL.
+  1. The OpenGameArt entry's structured `License(s)` field: CC0.
+     Attribution instructions: "By Ansimuz (optional)".
 
-Contact: github.com/JonathanPalmerGD
-or
-www.JonathanPalmerGD.com 
+  2. The pack's own bundled `public-license.txt`, verbatim:
+     "You may use these assets in personal or commercial projects. You can
+      modify these assets to suit your needs. You can re-distribute the file.
+      Credit no required but appreciated it."
+
+WHY OPENGAMEART AND NOT ITCH.IO
+
+An earlier attempt at this biome used ansimuz's *Warped Caves* from itch.io and
+rejected it: that page carries no licence statement from the author, and the
+CC-BY-3.0 people cite for it is in a seven-year-old USER COMMENT written by
+somebody else. A claim in a comment thread is not a licence.
+
+This is the same artist, and the licence problem is gone, because OpenGameArt
+records the licence as structured metadata ON THE WORK. It can be read, cited
+and re-verified by anyone later. That is the whole reason this project prefers
+OGA as a source.
+
+FILES
+
+  back.png       304x240   the rock wall. 100% opaque, and it is the only
+                           fully-opaque layer -- checked, not assumed.
+  far.png        352x240   crystals and ruins, 31.6% coverage
+  mid.png        368x240   near ruins and foliage, 22.6% coverage
+                           (shipped as `middle.png`, renamed for the manifest)
+  palm.png        63x55    foreground props, scattered rather than tiled
+  plant-big.png   43x45
+  plant.png       37x23
+
+Nothing is resized or recoloured. The layers are 240px tall and are drawn
+scaled up, which is correct for pixel art and is why `smooth` is off for this
+biome.
+
+CREDIT
+
+Not required. `CREDITS.md` credits Luis Zuno anyway, per that file's own rule.

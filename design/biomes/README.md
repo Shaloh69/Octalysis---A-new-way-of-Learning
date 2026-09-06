@@ -8,10 +8,10 @@ to hand out.
 | Capture | State |
 |---|---|
 | `neutral.png` `desert.png` `jungle.png` | **Render.** All three composed from Kenney Background Elements (CC0), with `LICENSE-kenney.txt` beside the art in each directory. 23 KB total |
-| `volcanic.png` | **Renders procedurally**, from tokens. The one named exception in `BIOME-AND-LOADING-SPEC.md` §2, where no cleanly-licensed pack exists yet |
+| `city.png` | **Renders.** FabinhoSC via OpenGameArt — CC0, confirmed twice. Replaced `volcanic`, which was the one procedural exception and is gone |
 | `arctic.png` | **Renders.** Admurin's Snowy Mountains — not CC0, terms verbatim in the pack directory |
 | `ocean.png` | **Renders.** ansimuz's Underwater Fantasy — permissive, terms verbatim in the pack directory |
-| `cave.png` | **Renders.** JonathanPalmerGD / PWL via OpenGameArt — CC0, confirmed twice. Sourced there, not itch, because itch could not prove a licence |
+| `cave.png` | **Renders.** Luis Zuno (@ansimuz) via OpenGameArt — CC0, confirmed twice. Replaced JonathanPalmerGD / PWL on 7 Sep 2026, on looks, not licence |
 
 ## The five blanks are the point
 

@@ -27,6 +27,7 @@ import type { BiomeManifest } from "../registry";
  */
 const manifest: BiomeManifest = {
   name: "ocean",
+  motif: "bubbles",
   kind: "strip",
   layers: [
     /*

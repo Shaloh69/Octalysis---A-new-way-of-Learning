@@ -11,7 +11,7 @@
 > Still update it before ending a session or before `/clear`. Append new
 > findings; do not rewrite old ones.
 
-**Last updated:** 2 September 2026.
+**Last updated:** 7 September 2026.
 **Branch:** `main`. Not a `redesign/*` branch — root `CLAUDE.md` is explicit
 about why (`shaloh-build` cost an hour when Vercel and Render both built `main`).
 
@@ -21,12 +21,17 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 **Phase: R3 — page templates and redesign.**
 
+**Every number below was counted from the phase files on 7 Sep 2026, not
+carried forward.** The previous table said R2 18/21 and R3 13/44; the files
+actually held 19/21 and 17/49. Boxes had been ticked without the table moving,
+and R3's denominator had grown. Count, do not copy.
+
 | Phase | State |
 |---|---|
 | R0 scope and guardrails | ✅ 28 / 28 |
 | R1 solar system foundation | ✅ 36 / 36 |
-| R2 per-student cosmetics | ⚠️ **18 / 21** — the three open items are biomes (see below) |
-| **R3 page templates** | **13 / 44** ← live |
+| R2 per-student cosmetics | ✅ **21 / 21** — closed 7 Sep, and closing it found **F-40** |
+| **R3 page templates** | **17 / 49** ← live |
 | R4 moons and subtopics | ▫️ 0 / 13 |
 | R5 testing and sign-off | ▫️ 0 / 24 |
 
@@ -36,10 +41,13 @@ seeded `content_report` rows missing `item_id` / `resolved_variant`), 0 failures
 
 **The three things blocking most:**
 
-1. ~~Biomes~~ **DONE. All seven render** — `neutral`, `desert`, `jungle`
-   (Kenney CC0), `arctic` (Admurin), `ocean` (ansimuz), `cave` (OpenGameArt,
-   CC0), and `volcanic` procedurally. 324 KB of art, every licence recorded in
-   the pack directory and in `CREDITS.md`.
+1. ~~Biomes~~ **DONE, and revised twice since.** All seven render from real
+   art — `neutral`, `desert`, `jungle` (Kenney CC0), `arctic` (Admurin),
+   `ocean` (ansimuz), `cave` (ansimuz via OpenGameArt, CC0), `city` (FabinhoSC,
+   CC0). **`volcanic` is gone** — it was the one procedural exception and was
+   replaced outright by `city`; **`cave`'s art was replaced** on 7 Sep on looks
+   rather than licence. Every licence recorded in the pack directory and in
+   `CREDITS.md`. `PROCEDURAL` is now empty and kept empty on purpose.
 2. **`INV-32` and `INV-33` do not exist.** `DELIVERY.md` §3.1 lists them as
    alpha exit criteria and the invariant set stops at **INV-31**. An exit gate
    that cites missing checks can be neither passed nor failed.
@@ -1931,3 +1939,37 @@ showed it, each time.
   session. I confirmed they were healthy and serving the reseeded database, but
   I did not start them myself and do not know the exact env they booted with
   beyond the JWT secret, which I verified by minting a token that worked.
+
+### F-40 · The seeded theme and accent hue never reach the browser
+
+R2's last open item asked for two seeded students side by side, to confirm the
+cosmetics differ while the map does not. Doing it confirmed the map — 19 nodes,
+identical order, biomes cave vs desert — and found that **two thirds of the
+cosmetics are not applied at all.**
+
+`232129001` holds `accent_hue 37`, theme `blueprint`. `232129006` holds
+`accent_hue 222`, theme `bare-metal`. Both render as `data-theme="bare-metal"`
+with `--accent-hue: 250`.
+
+`lib/session.ts:applyStoredTheme()` reads both values from **localStorage only**,
+falling back to `bare-metal` / `250`. Nothing reads `profiles.theme` or
+`profiles.accent_hue`, and `routes/cosmetics.ts` does not return them — it
+returns `biomeIndex` alone, hashed from the seed. So the biome is seeded and
+applied; the theme and hue are seeded, stored, and ignored.
+
+**Root `CLAUDE.md` states the opposite**, in the Accent section: "`profiles.accent_hue`
+(0-360) is set as `--accent-hue` on `<html>`." It is not. That sentence has been
+describing an intention as a fact.
+
+**Not fixed here, deliberately.** The fix is small — return both from the
+cosmetics endpoint and apply them on session load, with an explicit Settings
+choice still winning — but it changes the base theme that **every student sees**
+on first load, from "everyone gets bare-metal" to "everyone gets their seeded
+one". That is a visible product change and an instructor's call, not a tidy-up.
+
+The reason this sat undetected is worth keeping: the seeded values were correct
+in the database the whole time, every contrast check passed, and the app looked
+right. Nothing was broken enough to notice. It took rendering two students side
+by side and comparing the DOM against the rows — which is exactly the check R2
+wrote down and left for last.
+

@@ -47,6 +47,45 @@ export interface BiomeLayer {
   readonly scale: number;
   /** Where the sprite sits vertically: `bottom` for ground, `top` for sky. */
   readonly align: "top" | "bottom";
+
+  /**
+   * SCATTER, instead of tiling one sprite across the layer.
+   *
+   * `background-repeat: repeat-x` is uniform by construction: the same
+   * silhouette at the same interval, forever. That is why the first seven
+   * biomes read as one picture in seven palettes.
+   *
+   * When `variants` is present the layer instead places `count` INDIVIDUAL
+   * sprites, each picking a variant, an x position, a size and a horizontal
+   * flip from a deterministic hash. That is the DOM form of the standard fix
+   * for texture repetition — per-instance offset and orientation derived from
+   * an index (Inigo Quilez, https://iquilezles.org/articles/texturerepetition/)
+   * combined with multiple tile variants.
+   *
+   * Deterministic on purpose: the same student sees the same scene every visit,
+   * and a test can assert placement. The seed is the biome name plus the layer
+   * index, NOT the per-student cosmetic seed — two students in a jungle see the
+   * same jungle, exactly as they see the same curriculum.
+   */
+  readonly variants?: readonly string[];
+  /** How many sprites this layer scatters. Ignored unless `variants` is set. */
+  readonly count?: number;
+  /** Size spread, 0-1. 0.4 means instances range 80%-120% of `scale`. */
+  readonly jitter?: number;
+  /*
+   * `aspect` USED TO BE HERE, and its removal is the point.
+   *
+   * A scattered sprite is sized by height, so its width had to come from
+   * somewhere, and this field supplied one ratio for a whole layer. But a layer
+   * holds VARIANTS — different pictures with different shapes. Jungle's three
+   * trees are 0.44, 0.46 and 0.46; its cloud is 1.59; desert's mountain is 0.62
+   * against a declared 0.93. Measuring across all seven biomes found fourteen
+   * sprites distorted, the worst by 51%.
+   *
+   * Sprites are now `<img>` with `width: auto`, so the ratio comes from the FILE
+   * and cannot disagree with the art. Do not reintroduce this field: a number
+   * describing a picture is a number that will eventually stop describing it.
+   */
 }
 
 export interface BiomeManifest {
@@ -77,7 +116,30 @@ export interface BiomeManifest {
    * produces exactly the jagged mess the flag exists to avoid elsewhere.
    */
   readonly smooth?: boolean;
-  /** Back-to-front. Empty means this biome is procedural (see `volcanic`). */
+  /**
+   * Ambient motif for the loading transition and the resting scene — §4.2b.
+   * One per biome, never several: `DESIGN-MANDATE.md` §1B rule 3 gives one
+   * spectacle moment per stage and the Bring-Up already owns it.
+   */
+  readonly motif?: "leaves" | "sand" | "snow" | "bubbles" | "dust" | "embers";
+  /**
+   * Height of the ground plane, as a percentage of the scene.
+   *
+   * **The slot every biome was missing.** Sprites were positioned against the
+   * bottom of the viewport with nothing under them, so trees and pyramids stood
+   * on empty sky — they read as floating because they WERE floating. Real
+   * parallax packs all carry this layer; it is the "ground with small crystals"
+   * at the bottom of every published layer list.
+   *
+   * The ground is drawn from the biome's own `--biome-near` token rather than
+   * from art, because it is a flat plane meeting a horizon — the one part of
+   * these scenes that genuinely is a colour rather than a picture.
+   *
+   * Omit for a biome with no ground plane: `ocean` is suspended water and
+   * `city` ships its own ground inside the art.
+   */
+  readonly ground?: number;
+  /** Back-to-front. Empty means this biome is procedural — none are, now. */
   readonly layers: readonly BiomeLayer[];
   /**
    * Exactly what goes in `public/CREDITS.md`. Never ship art without this.
@@ -113,7 +175,7 @@ export const BIOME_NAMES = [
   "jungle",
   "desert",
   "arctic",
-  "volcanic",
+  "city",
   "cave",
   "ocean",
 ] as const;
@@ -129,7 +191,7 @@ const LOADERS: Record<BiomeName, () => Promise<{ default: BiomeManifest }>> = {
   jungle: () => import("./packs/jungle"),
   desert: () => import("./packs/desert"),
   arctic: () => import("./packs/arctic"),
-  volcanic: () => import("./packs/volcanic"),
+  city: () => import("./packs/city"),
   cave: () => import("./packs/cave"),
   ocean: () => import("./packs/ocean"),
 };

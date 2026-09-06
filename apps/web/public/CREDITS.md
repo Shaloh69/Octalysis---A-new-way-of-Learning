@@ -36,12 +36,19 @@ lazy-loaded one at a time.
   allowed, credit appreciated but not required. No NFT clause and no AI clause —
   the most permissive of the non-Kenney packs.
 
+- **Warped: Super Grotto Escape Pack** — Luis Zuno (@ansimuz),
+  https://opengameart.org/content/warped-super-grotto-escape-pack — **CC0**.
+  Used for the `cave` biome. Confirmed twice: OpenGameArt's structured
+  `License(s)` field, and the pack's bundled `public-license.txt` ("personal or
+  commercial projects... credit no required but appreciated it"). Nothing
+  resized or recoloured. Credit is optional and given anyway.
+
 - **Seamless Parallax Cave Background** — JonathanPalmerGD, from an original by
   PWL, https://opengameart.org/content/seamless-parallax-cave-background —
-  **CC0**. Used for the `cave` biome. Confirmed twice: OpenGameArt's structured
-  `License(s)` field, and the pack's own bundled readme ("License: CC0 - Use it
-  however you want"). Downscaled 800px → 400px, which CC0 expressly permits.
-  Credit is optional and given anyway, to both authors.
+  **CC0**. **No longer used.** It was the `cave` biome until 7 September 2026,
+  when it was replaced on looks rather than on licence — its licence was and
+  remains impeccable. Listed here because it shipped in earlier builds, and a
+  credits file that quietly drops what it once distributed is not a record.
 
 ### Sourced and licence-verified, art not yet vendored
 
@@ -83,15 +90,25 @@ either pack offered.
 
 ### Not sourced
 
-- `cave` — **one candidate was checked and rejected.** Admurin's "Parallax
-  Backgrounds: Caves" has the same artwork on DeviantArt under CC 3.0; asked
-  directly in the pack's comments which licence governs, the author restated
-  the itch terms without reconciling the two. An unresolved licence is not one
-  to ship on. A different pack is needed.
+- `cave` — **two candidates were checked and rejected**, and both rejections
+  still stand. Admurin's "Parallax Backgrounds: Caves" has the same artwork on
+  DeviantArt under CC 3.0, and asked directly in the pack's comments which
+  licence governs, the author restated the itch terms without reconciling them.
+  ansimuz's *Warped Caves* on itch.io carries no licence statement from the
+  author at all — the CC-BY-3.0 people cite for it sits in a seven-year-old
+  **user comment written by somebody else**.
+
+  The biome now ships ansimuz art anyway, and that is not a reversal. It is a
+  **different pack on OpenGameArt**, where the licence is structured metadata on
+  the work rather than a claim in a comment thread. The rule was never "not this
+  artist"; it was "the licence must be stated by the author, where it can be
+  re-verified."
 - `desert` — styloo's Desert Parallax Background is named in the spec as CC0
   1.0 explicit, but has not yet been opened and verified the same way.
-- `volcanic` — **procedural by design**, the one named exception, because no
-  cleanly-licensed pack exists for it. No third-party art involved.
+- `volcanic` — **the biome no longer exists.** It was the one procedural
+  exception, because no cleanly-licensed volcanic pack could be found, and it
+  has been replaced outright by `city` (FabinhoSC, CC0). No third-party art was
+  ever involved in it.
 
 ## Interface art
 Not yet vendored. Planned: Kenney Pixel UI Pack and UI Pack (CC0, kenney.nl) for

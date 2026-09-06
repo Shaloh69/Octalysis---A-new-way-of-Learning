@@ -220,14 +220,41 @@ wherever it's triggered, not as a per-route task:
       navigation
 - [ ] Stage/moon loading (biome preview) — triggers entering any specific
       planet or moon
-- [ ] **The biome is the PAGE background, not a banner strip** (§1b, ruled
+- [x] **The biome is the PAGE background, not a banner strip** (§1b, ruled
       2 Sep 2026). Full page on `/app/stage/:id` and moon detail; never on hub
       routes, **never behind an assessment**
-- [ ] **Composition variety** (§2c) — each biome declares its own structure, no
+      · **DONE 2 Sep 2026**, in commit `76641e9` — and the box was left unticked
+        for five days while the work sat committed. That is the drift
+        `REDESIGN-CLAUDE.md` §2b exists to stop, caught on 7 Sep and recorded
+        here rather than quietly ticked.
+- [x] **The six-slot TEMPLATE, followed to the letter** (§2e) — sky, far, mid,
+      near, ground, motif. Every biome fills all six or carries a recorded
+      exemption
+      · **DONE 7 Sep 2026.** The first seven biomes each skipped THREE slots —
+        no sky, no ground, no atmospheric perspective — and still looked
+        plausible enough to ship; every one was found by eye, late, one at a
+        time. So the template is asserted per biome in `biomes.spec.ts`, not
+        just written down: a manifest that skips a slot fails in CI.
+      · **Two biomes were replaced outright rather than tuned.** `volcanic` →
+        `city` (FabinhoSC, CC0) and `cave` → *Warped: Super Grotto Escape*
+        (ansimuz, CC0). Both had been re-tuned twice each; a composition with no
+        detail density does not acquire any by being resized.
+      · **`design/global-setup.ts` was added in the same pass**, after a full
+        spec run passed against **a different project on port 5173**. Seven
+        EngiRent screenshots came within one commit of being recorded as OCTA's
+        biomes. The specs now refuse to run against an app that is not this one.
+- [x] **Composition variety** (§2c) — each biome declares its own structure, no
       two the same. **The greyscale test:** desaturate all seven; if two are
       hard to tell apart, the palette is doing work the composition should
-- [ ] **One ambient motif per biome** (§4.2b) — leaves, sand, snow, bubbles,
+      · **DONE 2 Sep 2026**, and the mechanism had to change too: `repeat-x` is
+        uniform by construction, so layers now SCATTER with per-instance variant,
+        size, position and flip (§2d). Composition alone could not have fixed it.
+      · **DONE 2 Sep 2026.** Each biome declares its structure, and the mechanism changed too: scatter with per-instance variant, size and flip (§2d) instead of , which was uniform by construction.
+- [x] **One ambient motif per biome** (§4.2b) — leaves, sand, snow, bubbles,
       dust, embers. One each, never several, frozen under reduced motion
+      · **DONE.** leaves / sand / snow / bubbles / dust / embers — twelve deterministic
+        motes each, and none for `neutral`, which stays quiet because it is the
+        default. Frozen under reduced motion.
 - [ ] **The travel transition reads as arrival** — backdrop recedes → warp →
       biome resolves → content mounts. Captured as a frame sequence, not a still
 - [ ] Both captured as short frame sequences per `REDESIGN-CLAUDE.md` §2, not

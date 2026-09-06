@@ -1351,7 +1351,17 @@ button {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: var(--biome-far, var(--surface-0));
+  /*
+     THE SKY. Two stops, deep overhead and lighter at the horizon, because a
+     flat fill reads as paper rather than air. Falls back to the page surface
+     when a biome defines no sky, which keeps an un-themed biome from turning
+     the page a surprising colour.
+  */
+  background: linear-gradient(
+    180deg,
+    var(--biome-sky-top, var(--surface-0)) 0%,
+    var(--biome-sky-low, var(--surface-0)) 100%
+  );
 }
 
 /*
@@ -2358,4 +2368,200 @@ button {
   background: color-mix(in oklab, var(--surface-0) 82%, transparent);
   backdrop-filter: blur(4px);
   border-radius: var(--radius-sm);
+}
+
+/* ═══ Scattered biome sprites — breaking the tile ════════════════════════════
+ *
+ * `background-repeat: repeat-x` is uniform by construction: one silhouette at
+ * one interval, forever. That is why the first seven biomes read as one picture
+ * in seven palettes.
+ *
+ * A scattered layer places individual sprites instead, each with its own
+ * variant, position, size and flip from a deterministic hash — the DOM form of
+ * the standard fix for texture repetition (Inigo Quilez,
+ * https://iquilezles.org/articles/texturerepetition/): per-instance offset and
+ * orientation derived from an index, combined with multiple variants.
+ */
+.biome-scatter {
+  position: absolute;
+  inset: 0;
+  /* The layer drifts as a whole; the sprites inside it do not move relative to
+     each other. That is what makes it parallax rather than a swarm. */
+  animation: biome-drift var(--biome-drift, 40s) linear infinite alternate;
+}
+/*
+ * A sprite is an <img>, and `width: auto` is load-bearing.
+ *
+ * Height is set per instance so depth reads consistently; the width then comes
+ * from the FILE's own dimensions. That is what makes squashing impossible
+ * rather than merely corrected — the old form was a <span> with a
+ * background-image and a declared `aspect-ratio` per LAYER, which fourteen
+ * sprites across the seven biomes disagreed with, the worst by 51%.
+ */
+.biome-sprite {
+  position: absolute;
+  width: auto;
+  /* An explicit `max-width: none` because the app-wide `img { max-width: 100% }`
+     reset would otherwise clamp a wide near-layer sprite and squash it right
+     back — the exact bug this element type was chosen to prevent. */
+  max-width: none;
+  object-fit: contain;
+  /* Aerial perspective, same rule the tiled layers use: further is fainter, so
+     five scattered sprites do not read as five stickers on one plane. */
+  opacity: calc(0.5 + var(--biome-depth, 0) * 0.5);
+  /*
+     ATMOSPHERIC PERSPECTIVE, and it does three things at once, because distance
+     does three things at once. It drains colour (there is air in the way), it
+     lowers contrast, and it lightens toward the sky.
+
+     Saturation and brightness both ramp with depth, so the back of a scene sits
+     closer to the sky it is seen through and the front keeps its full colour.
+     Far layers land near a flat silhouette, which is what the technique
+     literature actually recommends: distant trees are "just silhouettes", a
+     single dark shape that reads as a tree from any distance, and only
+     foreground trees carry leaf detail.
+
+     (SLYNYRD, Pixelblog 23: far layers are "low detail, low saturation, mostly
+     shapes and atmosphere".)
+  */
+  filter:
+    saturate(calc(0.42 + var(--biome-depth, 0) * 0.58))
+    brightness(calc(0.80 + var(--biome-depth, 0) * 0.20))
+    contrast(calc(0.90 + var(--biome-depth, 0) * 0.10));
+}
+
+/*
+ * FOG SHEETS — one thin veil of sky colour drawn in FRONT of each scattered
+ * layer, so every plane is seen through slightly more air than the one ahead of
+ * it.
+ *
+ * This is the cheap half of aerial perspective and the half that was missing.
+ * Filtering a sprite changes the sprite; it cannot put anything BETWEEN two
+ * layers, so a far tree and a mid tree stayed crisply separated no matter how
+ * desaturated the far one got. A veil is what makes them feel far apart rather
+ * than merely differently coloured.
+ *
+ * Opacity falls as depth rises: the back of the scene gets the most air, the
+ * foreground gets none. Drawn from the sky token so the fog is always the
+ * colour of the light in that biome, which is why it needs no per-biome tuning.
+ */
+.biome-fog {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    var(--biome-sky-low, transparent) 0%,
+    var(--biome-sky-top, transparent) 100%
+  );
+  /*
+     0.10, not 0.22, and the difference is that fog COMPOUNDS.
+     Each scattered layer draws its own veil, so a seven-layer biome stacks
+     seven of them: at 0.22 the desert went milky grey and lost the warm dusk
+     that was the whole point of its palette. Per-layer opacity has to be read
+     as a total, not as a single sheet.
+  */
+  opacity: calc((1 - var(--biome-depth, 0)) * 0.10);
+}
+
+@keyframes biome-drift {
+  from { transform: translateX(calc(var(--biome-depth, 0) * -1.5%)); }
+  to   { transform: translateX(calc(var(--biome-depth, 0) * 1.5%)); }
+}
+
+/* ═══ Ambient motifs — one per biome, §4.2b ═════════════════════════════════
+ *
+ * The direction carries more than the particle: falling, rising and drifting are
+ * three readings of gravity, and gravity is what tells a student whether they
+ * are underwater, underground or outside before any sprite resolves.
+ *
+ * One motif each, never several — `DESIGN-MANDATE.md` §1B rule 3 gives one
+ * spectacle moment per stage and the Bring-Up owns it. These are ambient, not
+ * spectacle: slow, low-contrast, and easy to stop noticing.
+ */
+.biome-motif {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.biome-mote {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  opacity: 0.35;
+}
+.biome-motif-leaves .biome-mote { border-radius: 40% 0 40% 0; background: var(--accent); opacity: 0.3; }
+.biome-motif-snow   .biome-mote { background: var(--ink); opacity: 0.5; }
+.biome-motif-sand   .biome-mote { width: 10px; height: 2px; border-radius: 1px; }
+.biome-motif-bubbles .biome-mote { background: none; border: 1px solid var(--ink); opacity: 0.4; }
+.biome-motif-dust   .biome-mote { width: 3px; height: 3px; opacity: 0.28; }
+.biome-motif-embers .biome-mote { background: var(--accent); opacity: 0.55; }
+
+/* Down: leaves, snow. Up: bubbles, embers. Across: sand. Drift: dust. */
+@keyframes mote-fall  { from { transform: translateY(-10%) translateX(0); }
+                        to   { transform: translateY(110vh) translateX(6vw); } }
+@keyframes mote-rise  { from { transform: translateY(110%); }
+                        to   { transform: translateY(-10vh); } }
+@keyframes mote-blow  { from { transform: translateX(-10%); }
+                        to   { transform: translateX(110vw); } }
+@keyframes mote-drift { from { transform: translate(0, 0); }
+                        to   { transform: translate(4vw, -3vh); } }
+
+.biome-motif-leaves  .biome-mote { animation: mote-fall  var(--mote-dur) linear infinite; }
+.biome-motif-snow    .biome-mote { animation: mote-fall  var(--mote-dur) linear infinite; }
+.biome-motif-sand    .biome-mote { animation: mote-blow  var(--mote-dur) linear infinite; }
+.biome-motif-bubbles .biome-mote { animation: mote-rise  var(--mote-dur) linear infinite; }
+.biome-motif-embers  .biome-mote { animation: mote-rise  var(--mote-dur) linear infinite; }
+.biome-motif-dust    .biome-mote { animation: mote-drift var(--mote-dur) ease-in-out infinite alternate; }
+
+/*
+ * Reduced motion stops ALL of it — the drift and the motif. Not slowed: stopped,
+ * with the scene left as a single static frame, which is the same rule every
+ * other animated moment in this project follows.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .biome-scatter { animation: none; }
+  .biome-mote { animation: none; }
+  .biome-motif { display: none; }
+}
+
+/*
+ * Cave gets NO colour correction, and the rule that used to be here is worth
+ * recording rather than just deleting.
+ *
+ * It was `brightness(0.5) saturate(0.55) hue-rotate(-12deg)`, correcting the old
+ * pack's warm sandstone gold into something that read as underground. It worked,
+ * and it was still a symptom: the art said "desert canyon" and a filter was
+ * arguing with it. The pack has since been replaced with one that is already a
+ * dark blue-purple grotto, so there is nothing left to correct.
+ *
+ * A filter that fights the art is a sign the art is wrong, not a fix.
+ */
+
+/*
+ * The ground plane — the slot every biome was missing.
+ *
+ * Sprites were positioned against the bottom of the VIEWPORT with nothing
+ * beneath them: trees and pyramids stood on sky. Every published parallax layer
+ * list ends with a ground layer, and its absence is why these scenes read as
+ * cut-outs pasted on a gradient rather than as places.
+ *
+ * A soft edge at the top rather than a hard line, because a hard line reads as
+ * a table edge; a real horizon has haze sitting on it. The plane takes the
+ * biome's near colour, so it belongs to the scene without needing its own art.
+ */
+.biome-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--biome-near, var(--surface-1)) 70%, transparent) 0%,
+    var(--biome-near, var(--surface-1)) 18%,
+    var(--biome-near, var(--surface-1)) 100%
+  );
 }

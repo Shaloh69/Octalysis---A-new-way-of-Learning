@@ -59,7 +59,7 @@ export const BIOMES = [
   "jungle",
   "desert",
   "arctic",
-  "volcanic",
+  "city",
   "cave",
   "ocean",
 ] as const;

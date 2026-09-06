@@ -28,6 +28,7 @@ import type { BiomeManifest } from "../registry";
  */
 const manifest: BiomeManifest = {
   name: "arctic",
+  motif: "snow",
   kind: "strip",
   layers: [
     /*

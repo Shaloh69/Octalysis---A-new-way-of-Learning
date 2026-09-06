@@ -303,6 +303,253 @@ described as solved.** Anyone picking this up should read the `neutral`
 manifest first: the layer/depth/scale/align model already there is the input
 such a generator would consume.
 
+## 2d. Scatter, not tile — the mechanism that made them repetitive
+
+§2c said the seven biomes read as one picture in seven palettes and blamed
+composition. That was half the answer. The other half is the **rendering
+mechanism**: every layer used `background-repeat: repeat-x` with one sprite.
+
+**That is uniform by construction.** One silhouette, one interval, forever. No
+choice of prettier tree fixes a mechanism whose whole job is to repeat exactly —
+and it is why the first fix (choosing sprites whose rendered widths differed)
+helped a little and did not solve it.
+
+### The standard fix, and where it comes from
+
+Breaking texture repetition is a solved problem in game rendering. The canonical
+treatment is **Inigo Quilez's article on texture repetition**
+(https://iquilezles.org/articles/texturerepetition/): derive a pseudo-random
+**offset and orientation per tile** from the tile's own index, so that neighbours
+differ without any runtime randomness. The other standard techniques are
+**multiple variants selected per instance**, and **deliberate scatter placement**
+rather than a grid.
+
+| Technique | How it lands here |
+|---|---|
+| Per-instance offset from a hash | Each sprite's x comes from a hash of biome + layer + index |
+| Per-instance orientation | Horizontal flip, 50/50 — **doubles apparent variety for free** |
+| Multiple variants | Each layer carries a POOL, not one sprite. Pools mix silhouettes, not sizes of one shape |
+| Size variation | `jitter` spreads instances ±35% around the layer's scale |
+| Scatter placement | Slot-based, see below |
+
+**Sources:** Quilez as above · [Unreal forum thread on breaking tiling
+repetition](https://forums.unrealengine.com/t/how-to-break-the-repetition-of-tiling-texture-in-unreal/1643221)
+· [GameDev.net on preventing repeating terrain
+textures](https://gamedev.net/forums/topic/652603-preventing-repeating-terrain-textures/).
+
+### Slot-based, not free-random
+
+Instances are NOT placed at uniform random. The width is divided into `count`
+slots and each instance jitters **inside its own slot**.
+
+Pure randomness clumps — that is what randomness does — and a clump reads as a
+mistake rather than as nature. Slots keep the spread even while the jitter
+removes the rhythm, which is the combination that actually looks unplanned.
+
+### Deterministic, and not the student's seed
+
+The hash is seeded from the **biome name and layer index**, never from the
+per-student cosmetic seed. Two students in a jungle see the *same* jungle, the
+same way they see the same curriculum — the biome is already the per-student
+variable, and varying it twice would make a screenshot impossible to compare and
+a bug impossible to reproduce.
+
+It also means captures are stable: `design/biomes/` can be diffed between runs.
+
+### Animation covers what is left
+
+Two layers of motion, both cheap:
+
+- **Layer drift** — each layer translates a fraction of a percent, at a speed set
+  by its depth. Parallax between layers is what stops a still scene reading as a
+  flat backdrop.
+- **The ambient motif** (§4.2b) — twelve motes, deterministic, one motif per
+  biome.
+
+Both stop dead under `prefers-reduced-motion`. Neither is a particle library:
+this is weather, and root `CLAUDE.md`'s initial-bundle rule is not relaxed for
+weather.
+
+### Two mistakes worth keeping
+
+**A layer with no `variants` still tiles.** The desert's sun had none, fell
+through to the old path, and `repeat-x` put a **row of suns across the sky** —
+the exact uniformity this rebuild exists to remove, reintroduced by an omission.
+A single-instance layer must say so explicitly: `count: 1`.
+
+**Sprites are sized by height, so width needs an aspect.** Defaulting every
+sprite to a tall 1:2 squashed the clouds into ovals; Kenney's are about 1.6:1.
+Every scattered layer now carries an `aspect` **measured from the PNG header**,
+not guessed.
+
+---
+
+## 2e. THE BIOME TEMPLATE — six slots, filled to the letter
+
+Every biome fills the same six slots, back to front. This is not a style guide;
+it is a **conformance list**, and `design/specs/biomes.spec.ts` asserts it.
+
+The template exists because the first seven biomes were built by taste and came
+out flat: sprites on a gradient, standing on nothing. Published parallax packs
+all carry the same structure, and the slots this project kept skipping — sky,
+ground, atmosphere — are the ones that make a scene a *place* instead of a
+collage.
+
+| # | Slot | What it is | Required? |
+|---|---|---|---|
+| 1 | **Sky** | Two-stop gradient from `--biome-sky-top` / `--biome-sky-low`. Static | **Always** |
+| 2 | **Far** | Horizon silhouettes. Low saturation, small, many | **Always** |
+| 3 | **Mid** | The subject mass. Where most of the depth reads | **Always** |
+| 4 | **Near** | Large forms, full saturation, may leave the frame | **Always** |
+| 5 | **Ground** | The plane everything stands on | Unless the biome has none (see below) |
+| 6 | **Motif** | One ambient particle, §4.2b | Unless deliberately none |
+
+### The rules, in order of how often they were broken
+
+1. **A sky is a layer, not a background colour.** Without it, sprites float on
+   the app's page surface and every biome reads as murky regardless of the art.
+   Two stops, because a flat fill reads as paper.
+2. **Things stand on the ground, and the ground is a slot.** Sprites were
+   positioned against the bottom of the *viewport* with nothing beneath them.
+   Vertical jitter may only **sink** a sprite, never lift it — a tree can stand
+   behind the horizon, it cannot hover above it.
+3. **Distance drains colour.** Atmospheric perspective is not optional decoration:
+   a far ridge at full saturation reads as a small near ridge. Saturation ramps
+   with depth so the back of the scene sits closer to the sky it is seen through.
+4. **At least three depth layers**, or there is no parallax to speak of — two
+   layers is a backdrop and a sprite.
+5. **Every layer scatters** (§2d) unless it is genuinely a single object. A layer
+   without `variants` falls through to `repeat-x` and tiles, which is the
+   uniformity this whole section exists to remove.
+6. **Every sprite declares a measured `aspect`.** Sizing is by height, so width
+   comes from the ratio; guessing squashes wide sprites into ovals.
+
+### How each biome fills the template
+
+Structure per §2c, and **no two share one** — that is what the greyscale test
+checks:
+
+| Biome | Structure | Far | Mid | Near | Ground | Motif |
+|---|---|---|---|---|---|---|
+| `neutral` | balanced, mid horizon | clouds | small trees | large trees | 16% | *none, on purpose* |
+| `jungle` | enclosed, no horizon | canopy | trees | trunks leaving frame | 14% | leaves |
+| `desert` | wide, low horizon | mountains | pyramids | scrub | 12% | sand |
+| `arctic` | high horizon, ridges | ridges | peaks | near slope | *in art* | snow |
+| `ocean` | submerged, no sky | kelp | rock | coral | *in art* (seabed) | bubbles |
+| `cave` | interior, no sky | crystals | ruins | **scattered props** | *in art* | dust |
+| `city` | vertical, built, lit | skyline | back towers | front towers | *in art* | dust |
+
+**Strip packs fill slots 2-5 inside their own art** — they are pre-cut scenes
+drawn as a set, and re-cutting them would undo the composition. They still owe
+slots 1 and 6, and the template still applies: what changes is who fills them.
+
+**A strip pack can still scatter.** The renderer branches per LAYER on whether it
+declares `variants`, not on the pack's `kind`, so a pre-cut pack that also ships
+loose props can use both. `cave` is the first to do it, and the difference is
+large: three strips all move together and leave nothing between the viewer and
+the wall, where seven scattered plants at varying sizes give it a foreground.
+
+**Every ground exemption is "the art already has one"** — arctic's snow, ocean's
+seabed, cave's rubble, city's street. Not one biome is exempt because it has no
+floor; they are exempt because drawing a second floor over a painted one puts a
+coloured band across it. `neutral` is the one real exemption, and it is from the
+MOTIF: it is the default, and a default that demands attention is one a student
+has to get rid of.
+
+### The sprite rules — measured, never eyeballed
+
+Four rules, all written after the same mistake: looking at a biome, thinking it
+was fine, and being wrong. Every one was found by **measuring**, and every one is
+now asserted per biome in `biomes.spec.ts`.
+
+**1. Nothing is squashed. A sprite's ratio comes from its file.**
+Sprites are `<img>` with `height` set and `width: auto`, so the browser takes the
+ratio from the PNG. They used to be `<span>`s with a `background-image` and one
+declared `aspect` per *layer* — but a layer holds **variants**, and variants are
+different pictures with different shapes. Jungle's trees are 0.44, 0.46 and 0.46;
+its cloud is 1.59. Measuring across all seven found **fourteen distorted sprites,
+the worst by 51%**, and not one was visible as distortion — a tree squashed 27%
+just looks like a tree, if you have never seen it undistorted.
+**Never reintroduce a declared aspect ratio.** A number describing a picture is a
+number that will stop describing it.
+
+**2. Nothing floats. Vertical jitter may only sink.**
+Every sprite's base must reach the ground line. Jitter is allowed to push a
+sprite *down* — standing behind the horizon, partly hidden — and never to lift
+one. It was `(rand() - 0.5) * 3`, symmetric around zero, which lifted **half of
+every layer** off the ground: the floating was caused by the jitter added to make
+placement look natural.
+
+**3. Density falls toward the viewer.**
+A forest is dense at the back, because you are seeing through many trees at once,
+and sparse at the front, because you are standing between them. Jungle runs 26 →
+18 → 12 → 6. Reversing it produces a hedge with a view behind it. The far layers
+can carry those counts only because instances **overlap**: placement spreads
+±1.8 slots, not ±0.9, so neighbours cross. Confining each sprite to its own slot
+produced a perfectly even rank however random the jitter looked, and an even rank
+reads as a fence.
+
+**4. Depth is three effects, not one, and one of them goes *between* layers.**
+Distance drains colour, lowers contrast, and lightens toward the sky — so
+saturation, brightness and contrast all ramp with depth, landing the far layers
+near flat silhouettes. That is what the technique literature recommends: distant
+trees are *"just silhouettes"*, a single dark shape that reads as a tree from any
+distance, while only foreground trees carry leaf detail.
+
+But a filter changes a *sprite*; it cannot put anything **between** two planes, so
+far and mid stayed crisply separated however desaturated the far one got. Each
+scattered layer therefore also draws a **fog sheet** — one thin veil of sky colour
+in front of it. Fog **compounds**: at 0.22 per sheet a seven-layer desert went
+milky grey and lost the warm dusk that was the point of its palette. Per-layer
+opacity has to be read as a total. It is 0.10.
+
+### Clouds
+
+The sky is the largest empty area in the frame, so uniformity shows there first
+and worst. **At least four cloud variants, and a size spread of ±65% or wider** —
+three variants at ±45% read as one cloud stamped along the top. Desert runs two
+cloud bands at different depths rather than one, so they do not all sit on one
+plane.
+
+### Before you call a biome done
+
+Run `node scripts/capture-biomes.mjs` and read the layer shape it prints, then
+`pnpm qa design/specs/biomes.spec.ts`. The captures go in `design/biomes/`, one
+per biome.
+
+**A dev server on port 5173 may not be this project.** A full spec run once passed
+entirely against a different app: it returned 200, rendered an `<h1>` and
+screenshotted happily, and seven of its pages came within one commit of being
+committed as OCTA's biomes. `design/global-setup.ts` now refuses to run against an
+app whose title is not OCTA — but the same trap catches manual checks, so confirm
+the port before believing what you see.
+
+### Following it to the letter
+
+`biomes.spec.ts` asserts the template per biome: a sky that is not the page
+surface, at least three depth layers, a ground plane or a recorded exemption,
+and every scattered layer carrying `variants` and `aspect`. A biome that skips a
+slot fails there rather than in review — which is the point, because the first
+seven skipped three slots each and looked plausible enough to ship.
+
+### Reference material
+
+Read the layer structure, not the assets:
+
+| Source | What it gives |
+|---|---|
+| **SLYNYRD — Pixelblog 23, Parallax Scrolling** — https://www.slynyrd.com/blog/2019/11/12/pixelblog-23-parallax-scrolling | The authoritative artist treatment. "Layer 1 — Sky … this is your atmospheric base", and far layers as "low detail, low saturation, mostly shapes and atmosphere" |
+| **Inigo Quilez — texture repetition** — https://iquilezles.org/articles/texturerepetition/ | Per-instance offset and orientation from a hash; the basis of §2d's scatter |
+| **OpenGameArt — 3 Parallax Backgrounds** — https://opengameart.org/content/3-parallax-backgrounds | Complete packs to compare slot-for-slot |
+| **Crystal Moon sci-fi parallax** — https://gleolite.itch.io/crystal-moon-simple-sci-fi-parallax-background | A published layer list that names every slot: "sky & moon, far mountains, mid mountains, near mountains, big crystal clusters, **ground with small crystals**" — the ground layer this project kept omitting |
+| **Sky Island parallax-ready** — https://chixell.itch.io/sky-island-pixel-art-parallax-ready-background | Foreground-detail slot done well |
+
+**Cross-reference with Playwright, not with opinion.** `design/biomes/` holds one
+capture per biome; changing a composition means re-capturing and comparing, and
+the greyscale test is the one that settles "do these look different".
+
+---
+
 ## 3. Seeding — via the cosmetic endpoint, not the exam engine
 
 Per `SOLAR-SYSTEM-SPEC.md` §3 (corrected after R0's security check — read
