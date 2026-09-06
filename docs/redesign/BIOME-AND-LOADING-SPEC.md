@@ -88,7 +88,8 @@ from it in two places — both recorded rather than quietly substituted.
 | `desert` | Kenney Background Elements, CC0 | **styloo's pack now 404s.** Checked 2 Sep 2026. A licence verified against a page that no longer exists cannot be re-verified by anyone |
 | `jungle` | Kenney Background Elements, CC0 | edermunizz's terms are fine but **require credit** — a standing obligation on every future edit of `CREDITS.md`. CC0 carries none. That pack is still the better art if someone wants the denser look |
 | `volcanic` | procedural | as specified — no cleanly-licensed pack found |
-| `arctic`, `ocean` | **not vendored** | approved packs, but itch.io downloads need a browser session rather than a fetch — `REDESIGN-CLAUDE.md` §1b predicted this and a bare `curl` confirmed it |
+| `arctic` | **Admurin Snowy Mountains** — not CC0, terms verbatim in the pack dir | vendored 2 Sep 2026 via a driven browser session, exactly as §1b predicted would be needed |
+| `ocean` | **ansimuz Underwater Fantasy** — permissive, terms verbatim in the pack dir | same |
 | `cave` | **not vendored** | still no approved source. Admurin's pack remains do-not-use over the unresolved CC-3.0-versus-itch conflict |
 
 **Neither substitution lowered the standard.** CC0 is at least as permissive as
@@ -98,6 +99,30 @@ the art in every biome directory.
 **These are elements, not pre-cut strips**, so each biome is composed in its own
 manifest — which is exactly what the table above means by calling Kenney the
 "base layer for several biomes". Three biomes cost **23 KB of art in total**.
+
+### A second composition note: measure the alpha, not the filename
+
+Arctic's six numbered layers rendered as grey mush when stacked. The alpha
+channel explained it in one measurement:
+
+    0.png  100.0% opaque   the complete background — sky, mountains, pines
+    1.png    5.1%          sparse overlay
+    2.png   16.8%          "
+    3.png   26.4%          "
+    4.png   52.1%          "
+    5.png  100.0% opaque   ANOTHER complete background
+
+`5.png` drawn last covered everything. It is an alternative background, not a
+foreground, and it is not vendored at all rather than shipped unused.
+
+**"Parallax" in a pack title does not promise transparency.** Measure the alpha
+coverage before assuming a numbered set is a compositable stack — one command,
+and it turns an inexplicable render into an obvious one.
+
+This is also why `kind: "strip"` exists. Pre-cut scene layers must not get the
+renderer's aerial perspective: the depth is painted in, and fading the back
+layer washes out a sky the artist balanced. Loose elements (Kenney) need exactly
+the opposite.
 
 ### A composition note that cost a rebuild
 

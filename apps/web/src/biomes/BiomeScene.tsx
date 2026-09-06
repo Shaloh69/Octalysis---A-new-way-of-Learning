@@ -76,7 +76,7 @@ export function BiomeScene({ name }: Props): JSX.Element | null {
 
   return (
     <div
-      className="biome biome-arrive"
+      className={`biome biome-arrive${manifest.kind === "strip" ? " biome-strip" : ""}`}
       data-biome-render={hasArt ? "art" : "procedural"}
       aria-hidden="true"
     >

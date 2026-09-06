@@ -9,12 +9,13 @@ to hand out.
 |---|---|
 | `neutral.png` `desert.png` `jungle.png` | **Render.** All three composed from Kenney Background Elements (CC0), with `LICENSE-kenney.txt` beside the art in each directory. 23 KB total |
 | `volcanic.png` | **Renders procedurally**, from tokens. The one named exception in `BIOME-AND-LOADING-SPEC.md` §2, where no cleanly-licensed pack exists yet |
-| `arctic.png` `ocean.png` `cave.png` | **Draw nothing.** Arctic and ocean have approved packs needing a browser-session download; cave has no approved source at all |
+| `arctic.png` | **Renders.** Admurin's Snowy Mountains — not CC0, terms verbatim in the pack directory |
+| `ocean.png` | **Renders.** ansimuz's Underwater Fantasy — permissive, terms verbatim in the pack directory |
+| `cave.png` | **Draws nothing.** No approved source: the pack §2 named is do-not-use over an unresolved licence conflict |
 
 ## The five blanks are the point
 
-The three blanks are byte-identical, and that is the design working rather than
-failing.
+The one blank is `cave`, and that is the design working rather than failing.
 
 §2 was revised to forbid a gradient stand-in for an un-sourced biome, because
 **a gradient looks finished**. A tinted rectangle where the art should be is

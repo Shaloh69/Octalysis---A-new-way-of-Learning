@@ -36,11 +36,11 @@ seeded `content_report` rows missing `item_id` / `resolved_variant`), 0 failures
 
 **The three things blocking most:**
 
-1. **Three of seven biomes have no art yet.** `neutral`, `desert` and `jungle`
-   render from vendored Kenney CC0 art; `volcanic` renders procedurally;
-   **arctic, ocean and cave draw nothing**, by design. All seven are captured in
-   `design/biomes/`. Arctic and ocean need a browser-session download from
-   itch.io; **cave still has no approved source at all**.
+1. **Six of seven biomes render.** `neutral`, `desert`, `jungle` (Kenney CC0),
+   `arctic` (Admurin) and `ocean` (ansimuz) all draw real art; `volcanic` is
+   procedural. **Only `cave` is blank, and it has no approved source** — the pack
+   §2 named is do-not-use over an unresolved licence conflict, so finding a
+   replacement is its own piece of work. 168 KB of art in total.
 2. **`INV-32` and `INV-33` do not exist.** `DELIVERY.md` §3.1 lists them as
    alpha exit criteria and the invariant set stops at **INV-31**. An exit gate
    that cites missing checks can be neither passed nor failed.
@@ -1590,6 +1590,42 @@ Recorded in §2a as a rule: measure the sprites before choosing scales.
 nothing". That is the test doing its job, and the reason the vendored-biomes
 assertion now checks **each** vendored biome rather than one representative: a
 manifest with a typo'd path fails there and nowhere else.
+
+### F-37 · Arctic and ocean vendored, and a pack that lied about being layers
+
+Downloaded through a driven browser session — itch.io needs one, which §1b
+predicted and a bare `curl` confirmed. Both licences were re-read on the live
+page the day they were vendored rather than trusted from the earlier note, and
+**neither pack ships a licence file**, so the terms are copied verbatim into
+`public/biomes/<name>/LICENSE.txt` beside the art.
+
+`arctic` is Admurin's and is **not CC0**: it must stay part of a project, never
+be redistributed as a standalone asset, never be minted, never be training data.
+Those are recorded in the manifest's `obligations` and in `CREDITS.md`. `ocean`
+is ansimuz's and is the most permissive of the non-Kenney packs — no NFT clause,
+no AI clause.
+
+**ARCTIC RENDERED AS GREY MUSH, AND THE ALPHA CHANNEL EXPLAINED IT.** Six
+numbered layers, stacked as a parallax set. Measured:
+
+    0.png  100.0% opaque   the complete background — sky, mountains, pines
+    1..4     5–52%         sparse overlays, as expected
+    5.png  100.0% opaque   ANOTHER complete background
+
+`5.png` drawn last covered the entire scene, so the band showed only layer 5.
+It is an alternative background, not a foreground; it is not vendored at all
+rather than shipped unused. **"Parallax" in a pack title does not promise
+transparency** — measure the alpha before assuming a numbered set composites.
+
+**`kind: "strip"` was added for this class of pack.** Pre-cut scene layers must
+not receive the renderer's aerial perspective: the depth is painted in already,
+and fading the back layer washes out a sky the artist balanced. Loose elements
+(Kenney) need exactly the opposite, and now say which they are. `image-rendering:
+pixelated` came with it — smoothing a 384×216 strip up to the band turns crisp
+pixel art to mush, which is the one thing these packs are chosen for.
+
+R2 moves to **20 of 21**. The remaining item is `cave`, which is a sourcing
+problem rather than a build one.
 
 ## Performance and QA numbers — measured, not assumed
 

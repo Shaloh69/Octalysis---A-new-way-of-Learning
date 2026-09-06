@@ -36,7 +36,7 @@ const JWT_SECRET =
   process.env.SUPABASE_JWT_SECRET ?? "test-secret-at-least-32-characters-long-000000";
 
 /** Vendored art. All three compose Kenney Background Elements (CC0). */
-const ART = ["neutral", "desert", "jungle"] as const;
+const ART = ["neutral", "desert", "jungle", "arctic", "ocean"] as const;
 /** Allowed to draw from tokens — the one named exception. */
 const PROCEDURAL = ["volcanic"] as const;
 /**
@@ -46,7 +46,7 @@ const PROCEDURAL = ["volcanic"] as const;
  * session (itch.io), and `cave` has no approved source at all — the pack §2
  * named is marked do-not-use over an unresolved licence conflict.
  */
-const NOT_VENDORED = ["arctic", "ocean", "cave"] as const;
+const NOT_VENDORED = ["cave"] as const;
 
 function studentToken(): string {
   const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");

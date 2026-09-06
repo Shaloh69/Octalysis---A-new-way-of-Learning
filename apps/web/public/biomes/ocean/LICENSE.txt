@@ -1,0 +1,13 @@
+Underwater Fantasy Pixel Art Environment
+by ansimuz — https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment
+
+NOT stated as CC0, but permissive. The pack ships no licence file of its own, so
+these are the terms as published on the asset's own page, copied verbatim and
+verified 1 September 2026, re-checked 2 September 2026:
+
+  "You may use these assets in personal or commercial projects."
+  "You may modify these assets to suit your needs."
+  "Credit is not required but appreciated it."
+
+No NFT clause and no AI clause on this one, unlike the Admurin pack. Credit is
+given in apps/web/public/CREDITS.md although it is not required.

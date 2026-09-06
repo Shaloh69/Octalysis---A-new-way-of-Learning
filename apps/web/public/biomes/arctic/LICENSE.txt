@@ -1,0 +1,17 @@
+Parallax Backgrounds: Snowy Mountains
+by Admurin — https://admurin.itch.io/parallax-backgrounds-snowy-mountains
+
+NOT CC0. The pack ships no licence file of its own, so these are the terms as
+published on the asset's own page, copied verbatim and re-verified 2 September
+2026:
+
+  "You can use this asset in any game project, personal or commercial"
+  "DO NOT resell or redistribute AS A GAME ASSET, it has to be part of a project"
+  "Credit not necessary but appreciated, if you do you can link to my ITCH profile"
+  "Modify to suit your needs"
+  "You are NOT allowed to turn any of my assets to an NFT."
+  "You are NOT allowed to use these assets to train AI."
+
+Embedding these layers in OCTA is "part of a project" and is permitted. OCTA
+does not resell them, does not mint them, and does not train models on them.
+Credit is given in apps/web/public/CREDITS.md although it is not required.

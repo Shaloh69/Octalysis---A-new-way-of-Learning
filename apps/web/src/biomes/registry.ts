@@ -51,6 +51,23 @@ export interface BiomeLayer {
 
 export interface BiomeManifest {
   readonly name: string;
+  /**
+   * How the art is shaped, which decides how it is painted.
+   *
+   *   elements  loose sprites — a tree, a cloud, a pyramid. Each layer tiles
+   *             one sprite at its own size, and the scene is COMPOSED in the
+   *             manifest. Kenney's packs are this. Aerial perspective has to be
+   *             applied by the renderer, because the sprites have none.
+   *   strip     pre-cut full-scene layers, already drawn as a set by their
+   *             artist. Each fills the band. The renderer must NOT fade them:
+   *             the depth is painted into the art, and dimming the back layer
+   *             washes out a sky the artist already balanced.
+   *
+   * Defaults to `elements`, because that is what the first three packs were and
+   * because it is the safer assumption — over-applying perspective to a strip
+   * looks wrong, but it does not lose information.
+   */
+  readonly kind?: "elements" | "strip";
   /** Back-to-front. Empty means this biome is procedural (see `volcanic`). */
   readonly layers: readonly BiomeLayer[];
   /**

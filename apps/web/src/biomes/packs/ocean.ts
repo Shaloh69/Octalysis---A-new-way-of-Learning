@@ -1,48 +1,56 @@
 import type { BiomeManifest } from "../registry";
 
 /**
- * Ocean — underwater light and swell.
+ * Ocean — vendored 2 September 2026, and this is the pack §2 named.
  *
- * **SOURCED AND LICENCE-VERIFIED — art not yet vendored.**
+ * *Underwater Fantasy Pixel Art Environment* by ansimuz. **Not stated as CC0,
+ * but the most permissive terms of the four non-Kenney packs checked** — and
+ * the only one with neither an NFT clause nor an AI clause. The pack ships no
+ * licence file, so the terms are copied verbatim into
+ * `public/biomes/ocean/LICENSE.txt`:
  *
- * The pack below was opened and its terms read directly on 1 September 2026,
- * not taken from a tag, a collection listing or a search result.
- * `BIOME-AND-LOADING-SPEC.md` §2's cave row is the worked example of why that
- * distinction matters.
+ *   "You may use these assets in personal or commercial projects."
+ *   "You may modify these assets to suit your needs."
+ *   "Credit is not required but appreciated it."
  *
- * The cleanest terms of the four checked — no NFT clause, no AI clause, no
- * redistribution restriction. Still recorded as its own licence rather than
- * as CC0, because the page does not claim CC0 and inventing an SPDX id for
- * someone else's words is how a licence gets misfiled.
+ * Credit is given in `CREDITS.md` anyway.
  *
- * 3 layers for parallax.
+ * **A STRIP PACK** — pre-cut scene layers drawn as a set, so `kind: "strip"`.
+ * The renderer's aerial perspective is skipped: underwater depth cueing is the
+ * whole subject of this art and it is already in there.
  *
- * `layers` is empty until the art is vendored, so the landing renders nothing
- * rather than a stand-in. A procedural gradient here would look finished and is
- * exactly the substitution §2 was revised to forbid.
+ * `foregound-merged.png` in the download is deliberately not vendored — it is
+ * the two foreground layers pre-flattened, which is the opposite of what a
+ * parallax scene wants.
  *
- * TO COMPLETE:
- *   1. Download from https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment
- *   2. Re-read the licence on that page — terms change, and this comment is a
- *      snapshot, not an authority
- *   3. Put the layer images in `apps/web/public/biomes/ocean/`, with the
- *      pack's own licence file beside them if it ships one
- *   4. Fill in `layers` back-to-front — see `neutral.ts` for the
- *      depth/scale/align model, and §2b for why one sprite tiled at one size
- *      reads as wallpaper
- *   5. Copy `credit` into `apps/web/public/CREDITS.md`
+ * Total vendored weight: **30 KB** for four layers.
  */
 const manifest: BiomeManifest = {
   name: "ocean",
-  layers: [],
+  kind: "strip",
+  layers: [
+    /*
+     * Back to front: open water, then two rock/weed foregrounds, then the sand
+     * floor nearest. The pack's own naming is the ordering, and the two
+     * separate foregrounds are why the merged file is skipped — they are the
+     * parallax.
+     */
+    { src: "/biomes/ocean/far.png", depth: 0, scale: 1, align: "bottom" },
+    { src: "/biomes/ocean/foreground-2.png", depth: 0.45, scale: 1, align: "bottom" },
+    { src: "/biomes/ocean/foreground-1.png", depth: 0.75, scale: 1, align: "bottom" },
+    { src: "/biomes/ocean/sand.png", depth: 1, scale: 1, align: "bottom" },
+  ],
   credit: {
     pack: "Underwater Fantasy Pixel Art Environment",
     author: "ansimuz",
     url: "https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment",
-    license: "Permissive, not stated as CC0 — 'You may use these assets in personal or commercial projects. You may modify these assets to suit your needs. Credit is not required but appreciated it.'",
-    obligations: [
-      "Credit appreciated, not required — CREDITS.md gives it anyway",
-    ],
+    license:
+      'Not stated as CC0; permissive. Verbatim: "You may use these assets in personal or ' +
+      'commercial projects." · "You may modify these assets to suit your needs." · ' +
+      '"Credit is not required but appreciated it."',
+    // Genuinely none. Credit is appreciated, not required, and CREDITS.md gives
+    // it regardless.
+    obligations: [],
   },
 };
 

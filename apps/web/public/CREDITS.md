@@ -20,6 +20,22 @@ lazy-loaded one at a time.
   is composed from them — which is what §2's table means by calling this pack the
   "base layer for several biomes". Three biomes, **23 KB of art in total**.
 
+- **Parallax Backgrounds: Snowy Mountains** — Admurin,
+  https://admurin.itch.io/parallax-backgrounds-snowy-mountains — **NOT CC0**.
+  Used for the `arctic` biome. The pack ships no licence file, so its terms are
+  copied verbatim into `public/biomes/arctic/LICENSE.txt` and re-verified on the
+  live page the day it was vendored. **Obligations:** it must remain part of a
+  project and never be redistributed as a standalone game asset, never minted as
+  an NFT, and never used as training data. Credit is not required; it is given
+  here per this file's rule.
+
+- **Underwater Fantasy Pixel Art Environment** — ansimuz,
+  https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment — **not
+  stated as CC0, permissive**. Used for the `ocean` biome. Terms verbatim in
+  `public/biomes/ocean/LICENSE.txt`: personal or commercial use, modification
+  allowed, credit appreciated but not required. No NFT clause and no AI clause —
+  the most permissive of the non-Kenney packs.
+
 ### Sourced and licence-verified, art not yet vendored
 
 Each of these was opened and its terms read on its own page, 1 September 2026.

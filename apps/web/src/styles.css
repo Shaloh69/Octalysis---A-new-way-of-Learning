@@ -1374,6 +1374,28 @@ button {
  * Frozen, not slowed. The parallax carries no information the static frame does
  * not also carry, which is why it is allowed to stop dead rather than ease.
  */
+/*
+ * Pre-cut strip packs, painted as their artist drew them.
+ *
+ * The rules above are for LOOSE ELEMENTS -- a tree, a cloud -- which arrive with
+ * no depth of their own, so the renderer supplies it: each sprite sized from its
+ * own scale, and further layers faded so five tiled sprites do not read as five
+ * stickers on one plane.
+ *
+ * A strip pack has all of that painted in already. Applying the element rules to
+ * one is actively wrong: `background-size: auto <scale>%` leaves a full-scene
+ * layer floating at the wrong height, and the opacity ramp washes out a sky the
+ * artist balanced deliberately. So strips fill the band and keep their own
+ * values, and only the parallax offset still comes from the renderer.
+ */
+.biome-strip .biome-layer {
+  background-size: auto 100%;
+  opacity: 1;
+  /* Pixel art. Smoothing a 384x216 strip up to the band height turns crisp
+     edges to mush, which is the one thing these packs are chosen for. */
+  image-rendering: pixelated;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .biome-layer {
     transform: none;
