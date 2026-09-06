@@ -207,6 +207,7 @@ write `/console/locks`, the app routes `/locks`.
       · **Template row added** (same dense reference as `/items` and `/audit`), and **D-4 itself is FIXED** — 3,436px → 1,219px.
 - [ ] `/audit` · `/feedback` · `/live` — **`/audit` DONE** (card list → table, 109px → 41px per entry, timeline kept as the alternate view, F-26). `/feedback` and `/live` untouched.
 - [x] `/system` — **not in `TEMPLATE-LINKS.md`.** The invariant results page
+      · **Template row added 2 Sep 2026** — the status/health-page pattern from DevOps shadcn templates. The page itself is not yet reworked to it.
 
 **Missing from the console:** `/console` overview (`/` is a redirect),
 `/console/roster`, `/console/items/:id/edit`, `/console/live/present`,
@@ -215,11 +216,20 @@ write `/console/locks`, the app routes `/locks`.
 ## R3.4 — Loading screens (cross-cutting, not one route)
 Per `BIOME-AND-LOADING-SPEC.md` §4 — build once, verify it shows up correctly
 wherever it's triggered, not as a per-route task:
-      · **Template row added 2 Sep 2026** — the status/health-page pattern from DevOps shadcn templates. The page itself is not yet reworked to it.
 - [ ] Hub loading (warp-speed) — triggers at `/app` first arrival and hub-level
       navigation
 - [ ] Stage/moon loading (biome preview) — triggers entering any specific
       planet or moon
+- [ ] **The biome is the PAGE background, not a banner strip** (§1b, ruled
+      2 Sep 2026). Full page on `/app/stage/:id` and moon detail; never on hub
+      routes, **never behind an assessment**
+- [ ] **Composition variety** (§2c) — each biome declares its own structure, no
+      two the same. **The greyscale test:** desaturate all seven; if two are
+      hard to tell apart, the palette is doing work the composition should
+- [ ] **One ambient motif per biome** (§4.2b) — leaves, sand, snow, bubbles,
+      dust, embers. One each, never several, frozen under reduced motion
+- [ ] **The travel transition reads as arrival** — backdrop recedes → warp →
+      biome resolves → content mounts. Captured as a frame sequence, not a still
 - [ ] Both captured as short frame sequences per `REDESIGN-CLAUDE.md` §2, not
       single stills
 - [ ] Both verified frozen-to-static under `prefers-reduced-motion`

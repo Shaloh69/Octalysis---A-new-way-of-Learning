@@ -1331,13 +1331,65 @@ button {
  * volcanic-only fallback, and un-sourced biomes render nothing at all rather
  * than a stand-in that looks finished.
  */
+/*
+ * THE BIOME IS THE PAGE BACKGROUND (§1b, ruled 2 Sep 2026).
+ *
+ * It was a 148px banner strip above the stage title. §1 always described a
+ * background — "the scenery around it", "behind its edges" — and §4.2 says
+ * content "mounts on top of it". The strip was a weaker reading of the same
+ * words, and it is why arriving in a stage felt like seeing a postcard of the
+ * destination rather than being in it.
+ *
+ * Fixed, not absolute: the scenery should not scroll away while a student reads
+ * a long chapter. That is the same decision `SOLAR-SYSTEM-SPEC.md` §1.5 made for
+ * the star field, and for the same reason — a background that scrolls is a
+ * picture, a background that stays is a place.
+ */
 .biome {
-  position: relative;
-  height: 148px;
-  margin: 0 0 var(--space-5);
-  border-radius: var(--radius-sm);
+  position: fixed;
+  inset: 0;
+  z-index: 0;
   overflow: hidden;
-  background: var(--biome-far, var(--surface-1));
+  pointer-events: none;
+  background: var(--biome-far, var(--surface-0));
+}
+
+/*
+ * Content sits above it and keeps its own surface.
+ *
+ * §1b: the biome is BEHIND the reading column, never UNDER the words. Body text
+ * over parallax art cannot hold AA at any opacity worth having, so the column
+ * carries a solid surface and the biome frames it. If a biome ever fails
+ * contrast behind text, the answer is more opacity here — never less art there.
+ */
+/*
+ * D-2, FOR THE FOURTH TIME: a fixed backdrop paints over static chrome.
+ *
+ * The solar backdrop hit this three times, and `.app-over-solar > *` is the
+ * fix each time -- give every sibling a stacking context so the fixed layer
+ * cannot cover the nav, the Register Bar or the Depth Gauge. Making the biome
+ * a page background reintroduced it immediately: the whole app frame vanished
+ * behind a jungle.
+ *
+ * The lesson that keeps not sticking: ANY new `position: fixed` full-viewport
+ * layer needs this at the same time it is added, not after someone notices the
+ * navigation is gone.
+ */
+.app-has-backdrop > * {
+  position: relative;
+  z-index: 1;
+}
+.app-over-biome .reader {
+  position: relative;
+  z-index: 1;
+}
+.app-over-biome .reader-head,
+.app-over-biome .reader-body,
+.app-over-biome .reader-objectives {
+  background: color-mix(in oklab, var(--surface-0) 88%, transparent);
+  backdrop-filter: blur(3px);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
 }
 
 .biome-layer {
@@ -2263,3 +2315,47 @@ button {
  * painted art, where the same rule produces the jagged mess it exists to avoid.
  */
 .biome-smooth .biome-layer { image-rendering: auto; }
+
+/*
+ * The app frame sits above any fixed backdrop — D-2's fourth appearance.
+ *
+ * `.app-has-backdrop > *` gives the shell's direct children a stacking context,
+ * but the biome is fixed INSIDE `main`, alongside the nav. Equal z-index means
+ * DOM order decides, and the route content comes after the nav — so a jungle
+ * painted straight over the navigation.
+ *
+ * The chrome is therefore explicitly above the content region rather than
+ * merely positioned. These three are the app's permanent furniture: a student
+ * must be able to leave a stage, read the Register Bar and see the Depth Gauge
+ * no matter what scenery is behind them.
+ */
+.app-nav,
+.register-bar,
+.depth-gauge {
+  position: relative;
+  z-index: 2;
+}
+
+/*
+ * ...and the frame stays READABLE over it.
+ *
+ * Putting the chrome above the biome fixed the stacking and immediately exposed
+ * the next problem: the Register Bar's mono values sat over pale clouds at
+ * whatever contrast the art happened to give. §1b is explicit that a full-page
+ * background is held to the same computed AA as everything else, and that the
+ * fix is more opacity on the content, never less art behind it.
+ *
+ * So the permanent furniture carries its own ground. Scoped to routes that
+ * actually have a biome — on the hub the solar backdrop is dark and quiet by
+ * construction, and this would be a second panel for no reason.
+ */
+.app-over-biome-page .register-bar,
+.app-over-biome-page .app-nav {
+  background: color-mix(in oklab, var(--surface-0) 90%, transparent);
+  backdrop-filter: blur(4px);
+}
+.app-over-biome-page .depth-gauge {
+  background: color-mix(in oklab, var(--surface-0) 82%, transparent);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-sm);
+}

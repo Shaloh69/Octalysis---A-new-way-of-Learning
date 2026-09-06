@@ -34,11 +34,11 @@ const manifest: BiomeManifest = {
      * at different intervals so the repeat drifts out of phase across the band
      * instead of stamping.
      */
-    { src: "/biomes/desert/sun.png", depth: 0.04, scale: 0.16, align: "top" },
-    { src: "/biomes/desert/cloud3.png", depth: 0.14, scale: 0.22, align: "top" },
-    { src: "/biomes/desert/hills1.png", depth: 0.34, scale: 0.5, align: "bottom" },
-    { src: "/biomes/desert/piramid.png", depth: 0.72, scale: 0.55, align: "bottom" },
-    { src: "/biomes/desert/grass3.png", depth: 1, scale: 0.11, align: "bottom" },
+    { src: "/biomes/desert/sun.png", depth: 0.04, scale: 0.07, align: "top" },
+    { src: "/biomes/desert/cloud3.png", depth: 0.14, scale: 0.08, align: "top" },
+    { src: "/biomes/desert/hills1.png", depth: 0.34, scale: 0.16, align: "bottom" },
+    { src: "/biomes/desert/piramid.png", depth: 0.72, scale: 0.3, align: "bottom" },
+    { src: "/biomes/desert/grass3.png", depth: 1, scale: 0.04, align: "bottom" },
   ],
   credit: {
     pack: "Background Elements",

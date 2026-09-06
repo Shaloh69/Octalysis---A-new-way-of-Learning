@@ -19,6 +19,97 @@ what's visible in the moment before the exercise loads and behind its edges
 — is jungle-canopy silhouette for Student A, dune/heat-haze for Student B.
 Different mood, same lesson, same difficulty, same grade.
 
+## 1b. The biome is the PAGE background, not a band — ruled 2 September 2026
+
+§1 says a biome is "the scenery around it… behind its edges", and §4.2 says
+stage content "mounts **on top of it**". Both describe a background. It was built
+as a **banner strip** at the top of the stage reader, which is a weaker reading
+of the same words, and the instructor's ruling settles it: **the biome is the
+background of the whole page when one is selected.**
+
+### Where it goes, and where it must not
+
+| Surface | Biome | Why |
+|---|---|---|
+| `/app/stage/:id` and its beats | **Yes — full page** | This is the landing. It is what §4.2's hand-off delivers you into |
+| A moon's detail | **Yes** | Same landing, smaller scope |
+| `/app`, `/app/map`, hub routes | **No** | The solar system is the background there (`SOLAR-SYSTEM-SPEC.md` §1.5). Two backgrounds is two visual systems arguing |
+| **The Self-Test / any assessment** | **NEVER** | `DESIGN-MANDATE.md` §1B rule 1: theatre dresses the practice, never the assessment |
+
+### What it must not do — the fairness line
+
+**A biome must never change an assessment's appearance.** §1's worked example is
+the rule: Student A lands in a jungle and Student B in a desert, and **both get
+the Pixel encounter theme** for the bit-toggle exercise, because pixel art is
+honestly what a grid of bits looks like. Encounter themes are per-STAGE and
+identical for everyone (`GAME-DESIGN.md` §9).
+
+So when this spec says the biome changes "the colours", it means **the page's
+ambient scenery** — the backdrop behind and around content. It does **not** mean
+the encounter theme, the answer controls, the feedback colours, or anything a
+student is graded through. Two students must be able to compare screens during a
+Self-Test and see the same exercise.
+
+This is the same boundary `SOLAR-SYSTEM-SPEC.md` §3 draws for every other
+cosmetic: **unique system, identical curriculum.**
+
+### Legibility is not negotiable
+
+A full-page background sits behind body text, so it is held to the same computed
+AA contrast as everything else. Content keeps its own surface — the biome is
+*behind* the reading column, never *under* the words. If a biome cannot clear
+contrast behind text, the content surface gets more opacity, not the biome less
+art.
+
+---
+
+## 2c. Why the first seven looked bland, and the composition grammar that fixes it
+
+**The honest diagnosis: every biome was built the same way.** Tile a sprite
+along the bottom, put a cloud strip on top, vary the sprite. Seven biomes, one
+composition, so they read as one picture in seven palettes.
+
+Reference parallax art does not work that way. What distinguishes a jungle from
+a desert is not the foliage — it is **structure**: where the horizon sits, how
+much sky is visible, whether the frame encloses you or opens out, whether the
+repeated forms are vertical or horizontal.
+
+**Each biome declares a structure, and no two share one:**
+
+| Biome | Structure | What that means concretely |
+|---|---|---|
+| `jungle` | **Enclosed, no horizon** | Canopy from the top edge, trunks crossing the full height. Sky barely visible. Dense verticals at three depths |
+| `desert` | **Wide, low horizon** | Most of the frame is sky. Sparse verticals, long horizontals, a single dominant form (the pyramid) rather than a repeat |
+| `arctic` | **High horizon, layered ridges** | Mountains stacked back to front; the drama is the silhouette line, not objects |
+| `ocean` | **Suspended, no ground line** | Forms enter from top AND bottom. The subject is the water column, so nothing sits on a floor |
+| `cave` | **Framing, looking through** | Ceiling and floor both intrude; the eye reads an opening between them. The one biome that encloses on two edges |
+| `neutral` | **Balanced, mid horizon** | Deliberately the plainest — it is the default and must not compete |
+| `volcanic` | **Glow from below** | Procedural. Light source under the horizon, not above it — the only biome lit from beneath |
+
+**The test:** desaturate all seven to greyscale. If two are hard to tell apart,
+the composition is doing no work and the palette is carrying it. Palette is the
+weakest possible differentiator — it is also the one that breaks first for a
+colour-blind student.
+
+### Reference material
+
+Read the composition, not the assets — these are references, and only the CC0
+and explicitly-licensed ones are candidates for vendoring:
+
+| Source | Use |
+|---|---|
+| **OpenGameArt — Underwater World Parallax Backgrounds** — https://opengameart.org/content/underwater-world-parallax-backgrounds | Suspended composition: forms entering from both edges, no ground line |
+| **OpenGameArt — Background Scenes** — https://opengameart.org/content/background-scenes | A set built as a set — how horizon height alone separates environments |
+| **CraftPix — Pixel Cave Parallax** — https://craftpix.net/product/pixel-cave-game-parallax-backgrounds/ | The framing structure: ceiling and floor both intruding. **Licence is not CC0 — reference only, do not vendor** |
+| **itch.io parallax tag** — https://itch.io/game-assets/tag-parallax | Breadth. Remember §2a: itch is good at finding art, bad at proving you may use it |
+
+**Cross-reference every change with Playwright.** `design/specs/biomes.spec.ts`
+captures all seven; the greyscale test above is the one to run when a
+composition is changed, because "these look different" is exactly the judgement
+a screenshot settles and an opinion does not.
+
+---
+
 ## 2. Build approach — real parallax art is the default, procedural is the fallback
 
 **Revised: this section previously said "procedural first, real assets as an
@@ -354,6 +445,45 @@ resolves in → stage content mounts on top of it. Reversed on the way back out.
 information, same rule as everywhere else in this project. No dim, no recede —
 the backdrop is simply not there on the next route, which is what a
 reduced-motion user gets from every other transition in this app.
+
+### 4.2b One ambient motif per biome — added 2 September 2026
+
+§4.2 says the loading screen shows "the destination biome's backdrop, already in
+motion if it has any ambient parallax". **Each biome now declares what that
+motion is** — one motif, and only one.
+
+| Biome | Motif | Direction |
+|---|---|---|
+| `jungle` | Leaves falling | down, drifting sideways |
+| `desert` | Sand blowing | across, low |
+| `arctic` | Snow falling | down, slow, straight |
+| `ocean` | Bubbles rising | up |
+| `cave` | Dust motes | drifting, no dominant direction |
+| `neutral` | None | it is the plain one, and stays plain |
+| `volcanic` | Embers rising | up, faster than bubbles |
+
+**Why one and not several.** `DESIGN-MANDATE.md` §1B rule 3 allows one spectacle
+moment per stage, and the Bring-Up already owns it. A loading transition that
+layers three effects spends a budget that belongs to the moment a subsystem
+comes online.
+
+**Why the direction matters more than the particle.** Falling, rising and
+drifting are three different readings of gravity, and gravity is what tells a
+student whether they are underwater, underground or outside — before any sprite
+resolves. Two biomes sharing a direction should differ in speed and density, and
+`neutral` deliberately has none so the default reads as calm rather than busy.
+
+**Constraints, all inherited rather than new:**
+
+- **Reduced motion freezes it to a static frame.** Same rule as everywhere.
+- **It never runs behind an assessment.** §1b's fairness line: theatre dresses
+  the practice, never the assessment.
+- **CSS or a single canvas, not a particle library.** The initial-bundle rule in
+  root `CLAUDE.md` is not relaxed for weather.
+- **It stops when the stage mounts.** A motif that keeps running behind content
+  is decoration competing with reading, which the mandate's first test rejects.
+
+---
 
 ## 5. Accessibility note specific to biomes
 

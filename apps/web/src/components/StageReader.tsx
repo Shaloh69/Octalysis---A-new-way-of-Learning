@@ -77,11 +77,16 @@ export function StageReader({
   }
 
   return (
-    <article className="reader">
+    <article className={`reader${biome ? " app-over-biome" : ""}`}>
       <button type="button" className="reader-back" onClick={onBack}>
         &larr; Map
       </button>
 
+      {/*
+        First child and out of the flow — it is the page's background now, not a
+        banner above the title (§1b). The reader's own content carries a surface
+        so the words never sit directly on the art.
+      */}
       <BiomeScene name={biome} />
 
       <header className="reader-head">

@@ -1665,6 +1665,61 @@ pixel-art packs crisp is exactly what ruins this one.
 **R2's biome work is complete.** The only remaining unticked box is the
 superseded procedural-first item, which will never be ticked by design.
 
+### F-39 · The biome becomes the page background, and D-2 returns for a fourth time
+
+Ruled 2 Sep 2026: **the biome is the background of the whole page**, not a banner
+strip. §1 always described a background — "the scenery around it", "behind its
+edges" — and §4.2 says content "mounts **on top of it**". The 148px strip was a
+weaker reading of the same words, and it is why arriving in a stage felt like
+seeing a postcard of the destination rather than being in it.
+
+**Checked before building, and most of what was asked is already specified:**
+
+| Asked for | Status |
+|---|---|
+| Hyperdrive loading screen | **Already §4.1**, in detail, with three sources. Phase item exists |
+| Loading screen changes per biome | **Already §4.2** — "the destination biome's backdrop, already in motion" |
+| Travelling to the planet | **Already §4.2** — "backdrop dims and recedes → biome resolves in → content mounts" |
+| Biome as page background | **Not documented.** Now §1b |
+| Per-biome motif (falling leaves) | **Not documented.** Now §4.2b |
+| Composition variety | **Not documented.** Now §2c |
+
+**One conflict raised rather than silently implemented.** "The themes will change,
+the colours will change" runs into §1's fairness line: the encounter theme is
+per-STAGE and identical for everyone — both students get Pixel for the bit-toggle
+exercise. §1b now states the boundary explicitly: the biome changes the page's
+**ambient scenery**, never the encounter theme, the answer controls, the feedback
+colours, or anything a student is graded through. Two students must be able to
+compare screens during a Self-Test and see the same exercise.
+
+**D-2 FOR THE FOURTH TIME.** A fixed full-viewport layer painted straight over
+the nav, the Register Bar and the Depth Gauge. The solar backdrop hit this three
+times and `.app-over-solar > *` was the fix each time — but that class is only
+applied on hub routes, and content surfaces turn the solar backdrop *off*. So
+the guard is now unconditional (`app-has-backdrop`), because the problem is
+*there being a fixed layer at all*, not which one.
+
+Then a second layer of the same bug: the shell guard was not enough, because the
+biome is fixed **inside `main`, alongside the nav**. Equal z-index means DOM
+order decides, and route content comes after the nav. The chrome is now
+explicitly `z-index: 2` — it is the app's permanent furniture, and a student must
+be able to leave a stage whatever is behind them.
+
+**Fixing the stacking exposed the next thing:** the Register Bar's mono values
+sat over pale clouds at whatever contrast the art happened to give. §1b's rule is
+that a full-page background is held to the same computed AA as everything else,
+and that the fix is **more opacity on the chrome, never less art behind it**. The
+frame now carries its own ground on biome pages only.
+
+**Element scales were retuned.** They were tuned for a 148px band and were ~6×
+oversized against a 900px viewport — trees taller than the screen. Retuned per
+§2c's structure rather than by dividing everything uniformly.
+
+**Still to do from this ruling:** the composition variety itself (§2c — each
+biome declaring its own structure, verified by the greyscale test), the per-biome
+motifs (§4.2b), and wiring the warp into the stage transition so arriving reads
+as travel. All four are now phase items in R3.4.
+
 ## Performance and QA numbers — measured, not assumed
 
 | Measurement | Value | How |

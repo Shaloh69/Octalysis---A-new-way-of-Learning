@@ -47,11 +47,11 @@ const manifest: BiomeManifest = {
      * 39 / 74 / 129 — no two are close, and the tallest sprite is nearest, so
      * the near layer also breaks the skyline the far ones make.
      */
-    { src: "/biomes/jungle/cloud2.png", depth: 0.1, scale: 0.24, align: "top" },
-    { src: "/biomes/jungle/tree05.png", depth: 0.3, scale: 0.3, align: "bottom" },
-    { src: "/biomes/jungle/tree01.png", depth: 0.55, scale: 0.58, align: "bottom" },
-    { src: "/biomes/jungle/tree03.png", depth: 0.85, scale: 0.95, align: "bottom" },
-    { src: "/biomes/jungle/grass2.png", depth: 1, scale: 0.12, align: "bottom" },
+    { src: "/biomes/jungle/cloud2.png", depth: 0.1, scale: 0.1, align: "top" },
+    { src: "/biomes/jungle/tree05.png", depth: 0.3, scale: 0.22, align: "bottom" },
+    { src: "/biomes/jungle/tree01.png", depth: 0.55, scale: 0.34, align: "bottom" },
+    { src: "/biomes/jungle/tree03.png", depth: 0.85, scale: 0.52, align: "bottom" },
+    { src: "/biomes/jungle/grass2.png", depth: 1, scale: 0.05, align: "bottom" },
   ],
   credit: {
     pack: "Background Elements",

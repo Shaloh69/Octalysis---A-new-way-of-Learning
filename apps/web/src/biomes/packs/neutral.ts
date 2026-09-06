@@ -32,11 +32,11 @@ const manifest: BiomeManifest = {
      * breaks the repeat, because the two tile at different intervals and drift
      * in and out of phase across the band.
      */
-    { src: "/biomes/neutral/cloud1.png", depth: 0.08, scale: 0.20, align: "top" },
-    { src: "/biomes/neutral/cloud5.png", depth: 0.18, scale: 0.26, align: "top" },
-    { src: "/biomes/neutral/tree20.png", depth: 0.42, scale: 0.42, align: "bottom" },
-    { src: "/biomes/neutral/tree12.png", depth: 0.7, scale: 0.6, align: "bottom" },
-    { src: "/biomes/neutral/grass4.png", depth: 1, scale: 0.13, align: "bottom" },
+    { src: "/biomes/neutral/cloud1.png", depth: 0.08, scale: 0.06, align: "top" },
+    { src: "/biomes/neutral/cloud5.png", depth: 0.18, scale: 0.08, align: "top" },
+    { src: "/biomes/neutral/tree20.png", depth: 0.42, scale: 0.16, align: "bottom" },
+    { src: "/biomes/neutral/tree12.png", depth: 0.7, scale: 0.24, align: "bottom" },
+    { src: "/biomes/neutral/grass4.png", depth: 1, scale: 0.05, align: "bottom" },
   ],
   credit: {
     pack: "Background Elements",

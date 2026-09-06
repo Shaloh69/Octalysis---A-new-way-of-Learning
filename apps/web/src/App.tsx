@@ -151,11 +151,24 @@ function AppShell(): JSX.Element {
    * and spend no GPU on a canvas nobody is looking at.
    */
   const wantsFlatMap = location.pathname === "/app/map";
+  // A stage landing carries a biome behind the whole page, so the app frame
+  // needs its own ground to stay readable over it (1b: legibility is not
+  // negotiable, and the fix is opacity on the chrome, never less art).
+  const biomePage = onContentSurface;
   const backdrop = !onContentSurface && !wantsFlatMap;
 
   return (
     <SolarProvider data={map} active={backdrop} pathname={location.pathname}>
-      <div className={`app${backdrop ? " app-over-solar" : ""}`}>
+      {/*
+        `app-has-backdrop` on EVERY route, not only the ones with the solar
+        system. D-2 has bitten this project four times: a fixed full-viewport
+        layer paints over the nav, the Register Bar and the Depth Gauge unless
+        the chrome has its own stacking context. Content surfaces turn the solar
+        backdrop off but now carry a BIOME background instead, so the guard has
+        to be unconditional -- it is about there being a fixed layer at all, not
+        about which one.
+      */}
+      <div className={`app app-has-backdrop${backdrop ? " app-over-solar" : ""}${biomePage ? " app-over-biome-page" : ""}`}>
       <a className="skip-link" href="#main">
         Skip to content
       </a>
