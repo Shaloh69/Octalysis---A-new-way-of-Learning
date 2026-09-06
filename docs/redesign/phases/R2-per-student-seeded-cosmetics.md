@@ -8,7 +8,7 @@
 > requires the box to be ticked **in the same commit as the work**, and this
 > backfill is that rule applied backwards.
 >
-> **R2 is complete EXCEPT its biome items — 18 of 21.** The three left open are real gaps, not bookkeeping, and are named below.
+> **R2 is 19 of 21.** All seven biomes are now captured in `design/biomes/`; what remains is vendoring art for five of them, and one superseded item. The three left open are real gaps, not bookkeeping, and are named below.
 >
 > Ticked means *evidence exists in this repository*, not *remembered as done*.
 > The evidence for each group is named below.
@@ -82,7 +82,7 @@ updating `SOLAR-SYSTEM-SPEC.md` §3 or `BIOME-AND-LOADING-SPEC.md` §3 first)
 - [ ] Procedural default for all seven biomes first (§2's approach) — real
       asset packs are an optional upgrade, not required for this phase to be
       done
-- [ ] Each biome variant screenshotted individually (not one representative
+- [x] Each biome variant screenshotted individually (not one representative
       example) per `REDESIGN-CLAUDE.md` §2's explicit requirement
 - [x] Each biome variant contrast-checked against every base theme it can
       appear alongside (R2.4 below extends to cover this, not a separate check)

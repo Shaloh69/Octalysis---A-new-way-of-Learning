@@ -36,11 +36,11 @@ seeded `content_report` rows missing `item_id` / `resolved_variant`), 0 failures
 
 **The three things blocking most:**
 
-1. **Biomes are built but never rendered.** `apps/web/src/biomes/` has
-   `BiomeScene.tsx`, `registry.ts`, `useSeededBiome.ts`, `packs/`; contrast
-   covers them (59 cosmetic checks); **no biome has ever been drawn or
-   screenshotted.** This is R2's open remainder AND it blocks R3's
-   `/app/stage/:id`.
+1. **Five of seven biomes have no art yet.** `neutral` renders (5 vendored
+   Kenney layers) and `volcanic` renders procedurally; **jungle, arctic, ocean,
+   desert and cave draw nothing**, by design, until their packs are vendored.
+   All seven are now captured in `design/biomes/`. Sourcing the five needs a
+   scoped download permission — `REDESIGN-CLAUDE.md` §1b.
 2. **`INV-32` and `INV-33` do not exist.** `DELIVERY.md` §3.1 lists them as
    alpha exit criteria and the invariant set stops at **INV-31**. An exit gate
    that cites missing checks can be neither passed nor failed.
@@ -1517,6 +1517,38 @@ that origin allowed.**
 world includes the machine. `pnpm qa` cannot tell "your code is broken" from
 "your stack is gone", so the first question on a surprising failure is whether
 the thing under test is actually running — and actually the right thing.
+
+### F-35 · "Nothing renders a biome" was wrong, and the captures prove what does
+
+I reported that the biomes were built but nothing rendered one. **That was
+wrong**, and it is exactly the failure §2c rule 3 names: a claim repeated from
+the shape of the code rather than checked against it. `StageReader.tsx` imports
+`BiomeScene` and renders `<BiomeScene name={biome} />` on every stage landing,
+and has done throughout.
+
+**What is actually true**, verified by capturing all seven:
+
+| Biome | State | Evidence |
+|---|---|---|
+| `neutral` | **Renders.** 5 vendored Kenney layers, `LICENSE-kenney.txt` alongside | capture is **120 KB** |
+| `volcanic` | **Renders procedurally** — the one named exception in §2 | **60 KB** |
+| `jungle` `arctic` `ocean` `desert` `cave` | **Draw nothing**, correctly | five captures, **byte-identical at 63,584** |
+
+Those five being byte-identical is the whole point rather than a defect. §2 was
+revised to forbid a gradient stand-in **because a gradient looks finished**: an
+un-sourced biome rendering as a tinted rectangle is indistinguishable from a
+done one, and would be signed off as such. `design/specs/biomes.spec.ts` now
+asserts they draw nothing — a strange thing to want, and the right thing.
+
+It also asserts `neutral` *does* draw, which is what stops the first assertion
+passing vacuously. Without it, "nothing renders" would be satisfied by a scene
+component that was broken everywhere.
+
+R2's "each biome variant screenshotted individually (not one representative)" is
+closed — `design/biomes/` has all seven. What remains is vendoring the art for
+five, which needs a scoped download permission per §1b: the packs are
+licence-checked (`BIOME-AND-LOADING-SPEC.md` §2) but **cave's chosen pack is
+marked do-not-use and needs replacing**, and desert's is CC0-verified.
 
 ## Performance and QA numbers — measured, not assumed
 
