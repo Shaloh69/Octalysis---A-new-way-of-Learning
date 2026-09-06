@@ -8,7 +8,7 @@
 > requires the box to be ticked **in the same commit as the work**, and this
 > backfill is that rule applied backwards.
 >
-> **R2 is 20 of 21.** **Six of seven biomes render** — `neutral`, `desert`, `jungle` (Kenney CC0), `arctic` (Admurin), `ocean` (ansimuz), and `volcanic` procedurally. All seven are captured in `design/biomes/`. The only open item is `cave`, which has **no approved source**: the pack §2 named is do-not-use over an unresolved licence conflict. The one remaining unticked box is the superseded procedural-first item. The three left open are real gaps, not bookkeeping, and are named below.
+> **R2 is 20 of 21, and that is finished.** **All seven biomes render** — `neutral`, `desert`, `jungle` (Kenney CC0), `arctic` (Admurin), `ocean` (ansimuz), `cave` (OpenGameArt CC0), and `volcanic` procedurally. All seven are captured in `design/biomes/`. The one unticked box is the **superseded** procedural-first item, which will never be ticked: §2 was revised so real art is the default, and ticking it would record agreement with an overruled plan.
 >
 > Ticked means *evidence exists in this repository*, not *remembered as done*.
 > The evidence for each group is named below.

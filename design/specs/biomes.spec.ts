@@ -36,7 +36,7 @@ const JWT_SECRET =
   process.env.SUPABASE_JWT_SECRET ?? "test-secret-at-least-32-characters-long-000000";
 
 /** Vendored art. All three compose Kenney Background Elements (CC0). */
-const ART = ["neutral", "desert", "jungle", "arctic", "ocean"] as const;
+const ART = ["neutral", "desert", "jungle", "arctic", "ocean", "cave"] as const;
 /** Allowed to draw from tokens — the one named exception. */
 const PROCEDURAL = ["volcanic"] as const;
 /**
@@ -46,7 +46,17 @@ const PROCEDURAL = ["volcanic"] as const;
  * session (itch.io), and `cave` has no approved source at all — the pack §2
  * named is marked do-not-use over an unresolved licence conflict.
  */
-const NOT_VENDORED = ["cave"] as const;
+/**
+ * Nothing is un-vendored any more — all six art biomes are in, and volcanic is
+ * procedural by design.
+ *
+ * The list is KEPT, empty, rather than deleted along with the test below. §2's
+ * rule that an un-sourced biome must render NOTHING rather than a gradient
+ * stand-in is the reason five of them were visibly outstanding instead of
+ * looking finished, and the next biome added should inherit that guarantee
+ * rather than rediscover it.
+ */
+const NOT_VENDORED: readonly string[] = [];
 
 function studentToken(): string {
   const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");

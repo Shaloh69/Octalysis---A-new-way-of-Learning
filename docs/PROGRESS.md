@@ -36,11 +36,10 @@ seeded `content_report` rows missing `item_id` / `resolved_variant`), 0 failures
 
 **The three things blocking most:**
 
-1. **Six of seven biomes render.** `neutral`, `desert`, `jungle` (Kenney CC0),
-   `arctic` (Admurin) and `ocean` (ansimuz) all draw real art; `volcanic` is
-   procedural. **Only `cave` is blank, and it has no approved source** — the pack
-   §2 named is do-not-use over an unresolved licence conflict, so finding a
-   replacement is its own piece of work. 168 KB of art in total.
+1. ~~Biomes~~ **DONE. All seven render** — `neutral`, `desert`, `jungle`
+   (Kenney CC0), `arctic` (Admurin), `ocean` (ansimuz), `cave` (OpenGameArt,
+   CC0), and `volcanic` procedurally. 324 KB of art, every licence recorded in
+   the pack directory and in `CREDITS.md`.
 2. **`INV-32` and `INV-33` do not exist.** `DELIVERY.md` §3.1 lists them as
    alpha exit criteria and the invariant set stops at **INV-31**. An exit gate
    that cites missing checks can be neither passed nor failed.
@@ -1626,6 +1625,45 @@ pixel art to mush, which is the one thing these packs are chosen for.
 
 R2 moves to **20 of 21**. The remaining item is `cave`, which is a sourcing
 problem rather than a build one.
+
+### F-38 · Cave sourced from OpenGameArt, because itch could not prove a licence
+
+The biome §2 could not source. Its instruction was *"Find a different pack. Not
+Admurin's"* — that pack has the same art on DeviantArt under CC 3.0 while itch
+states different terms, and the author declined to reconcile them.
+
+**The obvious replacement failed identically.** ansimuz's *Warped Caves* is a
+good pack by an author already vendored here, but its page has **no licence
+statement from the author at all**. The CC-BY-3.0 that turns up in a search sits
+in a **user comment**, by someone who is not the author, in a seven-year-old
+thread. Same shape as the pack §2 rejected, so it was rejected too — and finding
+that took reading the comment thread rather than trusting the search result.
+
+**OpenGameArt records licence as structured metadata on the work.** That is the
+difference that matters: it can be read, cited and re-verified later without
+interpreting a conversation. *Seamless Parallax Cave Background* by
+JonathanPalmerGD (from an original by PWL) is **CC0, confirmed twice** — the
+entry's `License(s)` field and the pack's own bundled readme.
+
+**Prefer OpenGameArt for anything licence-critical.** itch.io is better at
+finding art and worse at proving you may use it.
+
+A **CC-BY-SA 4.0** candidate with arguably better art was rejected on licence
+rather than looks: ShareAlike adds a copyleft obligation chain, CC0 adds none,
+and for a thesis deliverable the safer licence wins a close call.
+
+**Downscaled 800 → 400px, 377 KB → 156 KB (59% smaller)**, which CC0 expressly
+permits. The band draws at ~148px, so the source was five times oversized.
+
+**Two rendering rules came out of it.** A square seamless source in a 4:1 band
+tiles four times at `auto 100%` and loses every detail — it read as abstract
+blobs until `scale` was raised to 2.2, so `.biome-strip` now honours
+`--biome-scale` instead of hard-coding the height. And `smooth: true` was added
+because this pack is **painted, not pixel art**: the pixelation that keeps the
+pixel-art packs crisp is exactly what ruins this one.
+
+**R2's biome work is complete.** The only remaining unticked box is the
+superseded procedural-first item, which will never be ticked by design.
 
 ## Performance and QA numbers — measured, not assumed
 

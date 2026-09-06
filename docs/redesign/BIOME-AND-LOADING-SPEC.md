@@ -90,7 +90,7 @@ from it in two places — both recorded rather than quietly substituted.
 | `volcanic` | procedural | as specified — no cleanly-licensed pack found |
 | `arctic` | **Admurin Snowy Mountains** — not CC0, terms verbatim in the pack dir | vendored 2 Sep 2026 via a driven browser session, exactly as §1b predicted would be needed |
 | `ocean` | **ansimuz Underwater Fantasy** — permissive, terms verbatim in the pack dir | same |
-| `cave` | **not vendored** | still no approved source. Admurin's pack remains do-not-use over the unresolved CC-3.0-versus-itch conflict |
+| `cave` | **JonathanPalmerGD / PWL, CC0** — from **OpenGameArt, not itch.io** | see below: the obvious itch replacement failed the same test Admurin's did |
 
 **Neither substitution lowered the standard.** CC0 is at least as permissive as
 what either replaced pack offered, and the pack's own `License.txt` travels with
@@ -99,6 +99,41 @@ the art in every biome directory.
 **These are elements, not pre-cut strips**, so each biome is composed in its own
 manifest — which is exactly what the table above means by calling Kenney the
 "base layer for several biomes". Three biomes cost **23 KB of art in total**.
+
+### Cave: why it came from OpenGameArt, and what that fixes
+
+§2's instruction was *"Find a different pack. Not Admurin's"* — because the same
+art sits on DeviantArt under CC 3.0 while itch states different terms, and the
+author declined to reconcile them when asked directly.
+
+**The obvious replacement failed identically.** ansimuz's *Warped Caves* is a
+good pack by an author already vendored here, but its page carries **no licence
+statement from the author at all**. The CC-BY-3.0 that surfaces in a search is
+in a **user comment**, by someone who is not the author, in a seven-year-old
+thread. Same shape, same rejection.
+
+**OpenGameArt records the licence as structured metadata on the work**, not as
+prose in a description or a claim in a comment. That is the whole difference: it
+can be read, cited and re-verified by anyone, later, without interpreting a
+conversation. Two independent confirmations for this pack — the entry's
+`License(s)` field, and the pack's own bundled readme.
+
+**A CC-BY-SA candidate was rejected on licence, not looks.** *2d Backgrounds for
+platformer game. Dungeons and Cave* is arguably better art, but ShareAlike adds
+a copyleft obligation chain; CC0 adds none, and for a thesis deliverable the
+safer licence wins a close call.
+
+**Prefer OpenGameArt for anything licence-critical.** itch.io is better for
+finding art and worse for proving you may use it.
+
+**Downscaled 800px → 400px** (377 KB → 156 KB, 59% smaller), which CC0 expressly
+permits. The band draws at ~148px, so 800 was five times oversized.
+
+**A square source in a 4:1 band needs `scale` above 1.** At `auto 100%` an
+800×800 seamless tile repeats four times across the band and every detail
+disappears — it read as abstract blobs. At 2.2 it shows fewer, larger repeats
+and reads as stalactites over a floor. `.biome-strip` therefore honours
+`--biome-scale` rather than hard-coding `100%`.
 
 ### A second composition note: measure the alpha, not the filename
 

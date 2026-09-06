@@ -36,6 +36,13 @@ lazy-loaded one at a time.
   allowed, credit appreciated but not required. No NFT clause and no AI clause —
   the most permissive of the non-Kenney packs.
 
+- **Seamless Parallax Cave Background** — JonathanPalmerGD, from an original by
+  PWL, https://opengameart.org/content/seamless-parallax-cave-background —
+  **CC0**. Used for the `cave` biome. Confirmed twice: OpenGameArt's structured
+  `License(s)` field, and the pack's own bundled readme ("License: CC0 - Use it
+  however you want"). Downscaled 800px → 400px, which CC0 expressly permits.
+  Credit is optional and given anyway, to both authors.
+
 ### Sourced and licence-verified, art not yet vendored
 
 Each of these was opened and its terms read on its own page, 1 September 2026.

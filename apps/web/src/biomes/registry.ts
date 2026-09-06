@@ -68,6 +68,15 @@ export interface BiomeManifest {
    * looks wrong, but it does not lose information.
    */
   readonly kind?: "elements" | "strip";
+  /**
+   * Painted art rather than pixel art.
+   *
+   * Strip packs default to `image-rendering: pixelated`, because the pixel-art
+   * packs are chosen precisely for their crisp edges and smoothing one up to the
+   * band turns it to mush. `cave` is painted, not pixel art, and pixelating it
+   * produces exactly the jagged mess the flag exists to avoid elsewhere.
+   */
+  readonly smooth?: boolean;
   /** Back-to-front. Empty means this biome is procedural (see `volcanic`). */
   readonly layers: readonly BiomeLayer[];
   /**

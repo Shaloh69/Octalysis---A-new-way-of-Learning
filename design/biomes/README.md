@@ -11,11 +11,11 @@ to hand out.
 | `volcanic.png` | **Renders procedurally**, from tokens. The one named exception in `BIOME-AND-LOADING-SPEC.md` §2, where no cleanly-licensed pack exists yet |
 | `arctic.png` | **Renders.** Admurin's Snowy Mountains — not CC0, terms verbatim in the pack directory |
 | `ocean.png` | **Renders.** ansimuz's Underwater Fantasy — permissive, terms verbatim in the pack directory |
-| `cave.png` | **Draws nothing.** No approved source: the pack §2 named is do-not-use over an unresolved licence conflict |
+| `cave.png` | **Renders.** JonathanPalmerGD / PWL via OpenGameArt — CC0, confirmed twice. Sourced there, not itch, because itch could not prove a licence |
 
 ## The five blanks are the point
 
-The one blank is `cave`, and that is the design working rather than failing.
+**Nothing is blank any more.** All seven render, and the rule below is why five of them were visibly outstanding rather than looking finished while they waited.
 
 §2 was revised to forbid a gradient stand-in for an un-sourced biome, because
 **a gradient looks finished**. A tinted rectangle where the art should be is

@@ -1389,7 +1389,11 @@ button {
  * values, and only the parallax offset still comes from the renderer.
  */
 .biome-strip .biome-layer {
-  background-size: auto 100%;
+  /* Height-fit by default, but scale is still honoured: a SQUARE seamless
+     source (cave is 800x800) dropped into a 4:1 band tiles four times and loses
+     every detail. Scaling past 1 zooms in so fewer, larger repeats show, which
+     is the difference between a cave wall and abstract blobs. */
+  background-size: auto calc(var(--biome-scale, 1) * 100%);
   opacity: 1;
   /* Pixel art. Smoothing a 384x216 strip up to the band height turns crisp
      edges to mush, which is the one thing these packs are chosen for. */
@@ -2250,3 +2254,12 @@ button {
 
 /* The Finals' scope note. Quieter than the name, louder than nothing. */
 .act-head-note { color: var(--ink-faint); font-weight: 400; font-size: 0.78rem; }
+
+/*
+ * Painted strip packs opt out of pixelation.
+ *
+ * `.biome-strip` pixelates by default because the pixel-art packs are chosen
+ * for crisp edges, and smoothing one up to the band destroys them. `cave` is
+ * painted art, where the same rule produces the jagged mess it exists to avoid.
+ */
+.biome-smooth .biome-layer { image-rendering: auto; }
