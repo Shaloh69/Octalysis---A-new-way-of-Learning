@@ -257,7 +257,29 @@ Routes are verified against `apps/console/src/App.tsx`. **The console app is
 deployed at its own origin, so its paths have no `/console` prefix** — the docs
 write `/console/locks`, the app routes `/locks`.
       · **Done**, and the stage attachments were corrected on 2 Sep 2026 — three of five pointed at chapters that do not contain their subject.
-- [ ] `/signin` — the gate. Nothing past it renders without a staff account
+- [x] `/signin` — the gate. Nothing past it renders without a staff account
+      · **`design/specs/console-gate.spec.ts`**, and most of it does not open a
+        page. `AppShell`'s guard says of itself: *"It decides what to RENDER,
+        and nothing more."* A redirect is presentation; a student who deletes
+        that component in devtools must still get nothing, and what makes that
+        true is `requireStaff()` plus RLS. If only one half could be tested it
+        would be the server half.
+      · **Three identities.** Nobody; a **student with a valid, correctly-signed
+        token** — the interesting one, because authenticated is not authorised
+        and confusing the two hands every student the gradebook; and a teacher
+        as the **control**, without which every denial would pass just as
+        happily if the console API were broken for everyone.
+      · **Mutation-tested**: commenting out one `requireStaff(id)` makes it fail
+        with "/api/v1/console/roster served a student — authenticated was
+        mistaken for authorised".
+      · **The client half checks the screen a person gets**: anonymous lands on
+        `/signin` from all eleven guarded routes; a student gets a distinct
+        screen — not a retry, because there is nothing to retry — that names why
+        and offers **both** exits, the student app and a way OUT of the session
+        so a teacher sharing the machine can sign in.
+      · **Fixed while here:** the student-app link fell back to `:5173`, which
+        on this machine is another project entirely. Third instance of that trap
+        — both `.env.example` files pointed at `:8080`, an Adminer.
 - [x] `/locks` — students × stages, reason prompt on every toggle
       · **Gate-cleared.** Matrix cells raised 28px → 32px, the design system's own floor (F-24).
 - [x] `/students` · `/students/:userId` — "the page you'll use most"

@@ -71,7 +71,14 @@ export function AppShell() {
         </p>
         <div className="flex flex-wrap gap-2">
           <Button asChild>
-            <a href={import.meta.env.VITE_WEB_URL ?? "http://localhost:5173"}>
+            {/*
+              5183, not 5173. Vite's default port belongs to another project on
+              this machine, so the fallback sent a student who landed here to a
+              stranger's app -- the third place this exact trap has been found
+              (both `.env.example` files pointed at :8080, which is an Adminer).
+              A deployment always sets VITE_WEB_URL; this is the local default.
+            */}
+            <a href={import.meta.env.VITE_WEB_URL ?? "http://localhost:5183"}>
               Go to the student app
             </a>
           </Button>
