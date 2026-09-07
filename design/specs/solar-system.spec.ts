@@ -466,6 +466,63 @@ test.describe("loading states — the backdrop moving through them", () => {
     expect(await page.locator(".solar-backdrop.is-warping").count()).toBe(0);
   });
 
+  test("entering a stage TRAVELS — it does not jump", async ({ page }, testInfo) => {
+    /*
+     * §4.2: "backdrop recedes -> warp -> biome resolves -> content mounts."
+     *
+     * This exists because the 3D HUD called `onOpen` directly and jumped, while
+     * the flat map went through `warpThen`. The result was backwards -- the
+     * accessibility fallback travelled to a planet and every student's DEFAULT
+     * surface cut straight from the galaxy to a biome. Both paths compiled,
+     * both navigated, both landed on the right stage; the only difference was a
+     * feeling, on the one navigation in the app that is meant to feel like
+     * going somewhere.
+     *
+     * IT IS DRIVEN FROM `/app/map`, not from the 3D HUD, and that is a real
+     * limit worth stating rather than hiding. The canvas is `aria-hidden` and
+     * exposes no per-planet DOM controls -- `.map-hits` is empty there by
+     * design, because the accessibility contract from that page is the "All 19
+     * stages" link, not 19 invisible buttons. So the HUD's enter button cannot
+     * be reached headlessly.
+     *
+     * What this does cover is `openWithWarp` itself, which is now the single
+     * handler BOTH surfaces call. The fix was making the 3D path use it; this
+     * asserts the thing it was pointed at actually warps.
+     */
+    test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
+
+    await signIn(page);
+    await page.goto("/app/map", { waitUntil: "networkidle" });
+
+    /*
+     * An UNLOCKED stage. `.first()` is Stage 00, which the demo fixtures leave
+     * closed by the instructor, so clicking it waits forever on a disabled
+     * button -- a locked planet correctly refusing to be entered.
+     */
+    const hit = page.locator('.node-hit:not([aria-disabled="true"]), .map-hit:not([aria-disabled="true"])').first();
+    await hit.waitFor({ timeout: 15_000 });
+
+    /*
+     * Watch for the streaks rather than sampling after the fact: the warp runs
+     * ~620ms and then deliberately clears, so a check that runs late sees a
+     * settled page and passes for the wrong reason.
+     */
+    const sawWarp = page
+      .locator(".is-warping")
+      .waitFor({ state: "attached", timeout: 3_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    await hit.click();
+    const enter = page.getByRole("button", { name: /enter|open|begin|start/i }).first();
+    if (await enter.isVisible().catch(() => false)) await enter.click();
+
+    expect(await sawWarp, "selecting a stage jumped instead of travelling").toBe(true);
+
+    // And it arrives on the other side rather than hanging in the warp.
+    await expect(page.locator(".biome")).toHaveCount(1, { timeout: 10_000 });
+  });
+
   test("a content surface has no backdrop, so the warp cannot follow a student in", async ({ page }) => {
     // §4.2's transition owns the way into a stage, not §4.1's. Two loading
     // animations for one navigation would be a bug.

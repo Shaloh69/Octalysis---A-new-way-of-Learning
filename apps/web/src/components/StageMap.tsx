@@ -243,7 +243,21 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
           onSelectMoon={setSelectedMoon}
           onEnter={(id) => {
             setSelectedId(null);
-            onOpen(id);
+            /*
+              THROUGH THE WARP, like the flat map — this called `onOpen`
+              directly and jumped.
+
+              The result was backwards: the flat map (the accessibility
+              fallback) travelled to a planet, and the 3D map (every student's
+              default) did not. Entering a stage from the HUD cut instantly from
+              the galaxy to a biome, which is the one navigation in the app that
+              is supposed to feel like going somewhere.
+
+              §4.2's sequence is backdrop recedes -> warp -> biome resolves ->
+              content mounts, and `.biome-arrive` was already waiting to do the
+              last two. This supplies the first two.
+            */
+            openWithWarp(id);
           }}
           onClose={() => setSelectedId(null)}
         />

@@ -216,8 +216,18 @@ write `/console/locks`, the app routes `/locks`.
 ## R3.4 — Loading screens (cross-cutting, not one route)
 Per `BIOME-AND-LOADING-SPEC.md` §4 — build once, verify it shows up correctly
 wherever it's triggered, not as a per-route task:
-- [ ] Hub loading (warp-speed) — triggers at `/app` first arrival and hub-level
+- [x] Hub loading (warp-speed) — triggers at `/app` first arrival and hub-level
       navigation
+      · **BUILT, and the box was left unticked while a passing spec covered it**
+        — `solar-system.spec.ts:430`, "the warp fires on hub navigation, not on
+        arrival". Ticked 7 Sep after checking the code rather than the checklist.
+      · **It deliberately does NOT fire on first arrival**, which is this item's
+        wording and is the one part of it that was wrong. §4.1 was revised for
+        the full-page backdrop: the warp is the star field already on screen
+        accelerating, not an overlay, so firing it on first paint would greet
+        every student with an animation before they had done anything. The
+        spec asserts the absence explicitly, and asserts the warp *ends* —
+        a loading state that never clears is a stuck page.
 - [x] Stage/moon loading (biome preview) — triggers entering any specific
       planet or moon
       · **DONE 7 Sep 2026.** `StageReader`'s loading branch renders the
@@ -268,8 +278,25 @@ wherever it's triggered, not as a per-route task:
       · **DONE.** leaves / sand / snow / bubbles / dust / embers — twelve deterministic
         motes each, and none for `neutral`, which stays quiet because it is the
         default. Frozen under reduced motion.
-- [ ] **The travel transition reads as arrival** — backdrop recedes → warp →
-      biome resolves → content mounts. Captured as a frame sequence, not a still
+- [x] **The travel transition reads as arrival** — backdrop recedes → warp →
+      biome resolves → content mounts
+      · **DONE 7 Sep 2026, and the bug was the opposite way round from what you
+        would guess.** The FLAT map — the accessibility fallback — travelled to a
+        planet, and the 3D map, every student's default, cut straight from the
+        galaxy to a biome. `StageMap.tsx`'s HUD called `onOpen` directly while
+        the flat hits went through `warpThen`. Both compiled, both navigated,
+        both landed on the right stage; the only difference was a feeling, on
+        the one navigation in the app that is meant to feel like going
+        somewhere. Both surfaces now share `openWithWarp`.
+      · **Asserted in `solar-system.spec.ts`** — "entering a stage TRAVELS — it
+        does not jump" — and **mutation-tested**: removing the warp makes it
+        fail with "selecting a stage jumped instead of travelling".
+      · **The test drives `/app/map`, not the 3D HUD**, and that limit is stated
+        in the test rather than hidden. The canvas is `aria-hidden` and exposes
+        no per-planet DOM controls — `.map-hits` is empty by design, because the
+        contract from that page is the "All 19 stages" link, not 19 invisible
+        buttons — so the HUD's enter button cannot be reached headlessly. What
+        is covered is `openWithWarp`, the single handler both surfaces now call.
 - [ ] Both captured as short frame sequences per `REDESIGN-CLAUDE.md` §2, not
       single stills
 - [x] Both verified frozen-to-static under `prefers-reduced-motion`
