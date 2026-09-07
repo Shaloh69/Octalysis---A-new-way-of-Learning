@@ -65,10 +65,28 @@ Read `START-HERE.md` before your first task. Read `VERIFICATION.md` before touch
 
 ```bash
 pnpm db:up      # Postgres 16 in Docker on :54329
-pnpm db:reset   # drop, recreate, apply all five SQL files, run invariants
+pnpm db:reset   # drop, recreate, apply all SIX SQL files, run invariants
+pnpm dev:api    # the API on :8090, configured for LOCAL auth  <- not `pnpm dev`
 pnpm test:rls   # the 38-test denial suite
 pnpm verify     # typecheck + tests + invariants
 ```
+
+**Use `pnpm dev:api`, not the raw dev script.** Root `.env` describes the
+*deployed* service, and starting the API from it fails three ways that all look
+like application bugs: it has no `SUPABASE_JWT_SECRET` (so every dev token is
+rejected), it *does* have `SUPABASE_URL` (which switches `identityFrom()` to
+asymmetric JWKS and rejects HS256 dev tokens with `unacceptable alg: HS256`),
+and its `CORS_ALLOWED_ORIGINS` is pinned to 5173/5174 while Vite may be on 5183.
+`scripts/dev-api.mjs` fixes all three and refuses to run under
+`NODE_ENV=production`. **Port 8080 is another project's Adminer on this machine**
+— it answers 200 with an HTML login page, so `apps/web/.env.example`'s
+`VITE_API_URL=http://localhost:8080` is wrong locally.
+
+**Reseed with `node scripts/db-demo.mjs`.** It refuses to run over attempt
+history from another user and tells you to `pnpm db:reset` first — because
+`responses` is append-only (hard rule 7), so a seed cannot purge it. It used to
+try, get blocked by the trigger, and abort *halfway*, leaving a database that
+presented as "stage 00 is locked".
 
 Apply order is load-bearing: `local-bootstrap.sql` → `schema.sql` → `addendum-feedback.sql` →
 `addendum-submissions.sql` → `addendum-audit.sql` → `addendum-cron.sql`. **Six files, not

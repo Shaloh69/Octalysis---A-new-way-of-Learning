@@ -308,6 +308,12 @@ not done:
 - [ ] **380px**, three themes at AA, `prefers-reduced-motion` honoured
 - [ ] **Works with WebGL disabled** — the DOM layer is the source of truth (`SKILL-TREE-3D.md` §4)
 - [ ] **INV-32 and INV-33 pass** — no invented nodes, no invented or missing edges
+      · **They exist now.** This gate cited them by name for days while the
+        invariant set stopped at INV-31, so it could be neither passed nor
+        failed. `INV-32` fails on a published stage unreachable from any root
+        (a planet floating outside the system); `INV-33` fails on a prereq
+        pointing at an *unpublished* stage — which INV-19 passes, because the
+        row exists — or on a stage listing itself. Both `fail` severity.
 
 ### 3.2 Alpha scope
 

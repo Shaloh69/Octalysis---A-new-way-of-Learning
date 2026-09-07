@@ -48,9 +48,14 @@ seeded `content_report` rows missing `item_id` / `resolved_variant`), 0 failures
    replaced outright by `city`; **`cave`'s art was replaced** on 7 Sep on looks
    rather than licence. Every licence recorded in the pack directory and in
    `CREDITS.md`. `PROCEDURAL` is now empty and kept empty on purpose.
-2. **`INV-32` and `INV-33` do not exist.** `DELIVERY.md` §3.1 lists them as
-   alpha exit criteria and the invariant set stops at **INV-31**. An exit gate
-   that cites missing checks can be neither passed nor failed.
+2. ~~**`INV-32` and `INV-33` do not exist.**~~ **WRITTEN 7 Sep 2026.**
+   `DELIVERY.md` §3.1 listed them as alpha exit criteria while the invariant set
+   stopped at INV-31, so the gate could be neither passed nor failed.
+   `inv_32_no_orphan_nodes` fails on a published stage unreachable from any root;
+   `inv_33_edges_resolve` fails on a prereq pointing at an unpublished stage — a
+   case INV-19 *passes*, because the row does exist — or on a self-edge. Both are
+   `fail` severity, because a map with an orphan node or an arrow into empty
+   space is a broken curriculum, not a warning.
 3. **No phase owns the public marketing site.** Five routes, including the
    landing page whose re-rollable demo `PAGE-SPECS.md` calls "the one
    interaction that sells the product". `/` is currently `<Navigate to="/app">`.

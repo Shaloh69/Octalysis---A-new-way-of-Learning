@@ -191,6 +191,72 @@ returns table(stage_id text) language sql stable as $$
   select distinct root from walk where node = root
 $$;
 
+-- ---------------------------------------------------------------
+-- INV-32 / INV-33 -- the map is the curriculum, checked as a graph.
+--
+-- `DELIVERY.md` 3.1 has listed these as ALPHA EXIT CRITERIA since the plan was
+-- written: "INV-32 and INV-33 pass -- no invented nodes, no invented or missing
+-- edges". They did not exist. The invariant set stopped at INV-31, so the gate
+-- could be neither passed nor failed, and PROGRESS.md carried it as an open
+-- finding for days.
+--
+-- They matter more than most: root CLAUDE.md's central rule is that the skill
+-- tree IS the curriculum, `stages.prereq` is the ONLY edge list, and nothing
+-- about the map may be authored twice. These are that rule, enforced.
+--
+-- INV-19 already checks a prereq points at a row that exists, and INV-20 that
+-- the graph is acyclic. Neither catches the two failures that would actually
+-- corrupt a student's map.
+-- ---------------------------------------------------------------
+
+-- INV-32: no invented and no orphaned NODES.
+--
+-- Every published, gradeable stage must be reachable by walking prereq edges
+-- from a root (a stage with no prereqs). A stage that is published but
+-- unreachable is a node the map will draw and no student can ever arrive at --
+-- it appears as a planet floating outside the system.
+create or replace function inv_32_no_orphan_nodes()
+returns table(stage_id text, reason text) language sql stable as $$
+  with recursive roots as (
+    select id from stages
+    where published and (prereq is null or cardinality(prereq) = 0)
+  ),
+  reachable(id) as (
+    select id from roots
+    union
+    select s.id
+    from stages s
+    join reachable r on r.id = any(s.prereq)
+    where s.published
+  )
+  select s.id, 'published but unreachable from any root'
+  from stages s
+  where s.published and s.id not in (select id from reachable)
+$$;
+
+-- INV-33: no invented and no missing EDGES.
+--
+-- An edge is legal only if it points at a stage that is itself published, and a
+-- stage may not depend on itself. INV-19 checks the target row exists; it does
+-- NOT check the target is published, so a prereq pointing at an unpublished
+-- stage passes INV-19 and produces a map edge to a node that is never drawn --
+-- an arrow into empty space, and a lock no student can ever satisfy.
+--
+-- The self-edge case is separate from INV-20's cycle walk, which starts at
+-- depth 1 and so reports a self-reference as a cycle without saying that is
+-- what it is.
+create or replace function inv_33_edges_resolve()
+returns table(stage_id text, prereq_id text, reason text) language sql stable as $$
+  select s.id, p, 'prereq points at an unpublished stage'
+  from stages s, lateral unnest(s.prereq) p
+  join stages t on t.id = p
+  where s.published and not t.published
+  union all
+  select s.id, p, 'stage lists itself as its own prereq'
+  from stages s, lateral unnest(s.prereq) p
+  where p = s.id
+$$;
+
 create or replace function inv_22_overrides_have_reason()
 returns table(lock_id uuid, stage_id text) language sql stable as $$
   select id, stage_id from stage_locks
@@ -315,7 +381,12 @@ declare
     -- Defined in addendum-submissions.sql, which is why that file applies
     -- BEFORE this one. A graded row with no score looks finished in every
     -- list and contributes nothing to the total.
-    ['INV-31','inv_31_graded_submissions_complete','fail']
+    ['INV-31','inv_31_graded_submissions_complete','fail'],
+    -- The alpha exit gate in DELIVERY.md 3.1, which cited these two by name for
+    -- days before either existed. 'fail' on purpose: a map with an orphan node
+    -- or an edge into an unpublished stage is a broken curriculum, not a warning.
+    ['INV-32','inv_32_no_orphan_nodes','fail'],
+    ['INV-33','inv_33_edges_resolve','fail']
   ];
   c    text[];
   cnt  bigint;

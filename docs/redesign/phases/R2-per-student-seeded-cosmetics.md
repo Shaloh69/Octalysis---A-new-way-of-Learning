@@ -8,7 +8,15 @@
 > requires the box to be ticked **in the same commit as the work**, and this
 > backfill is that rule applied backwards.
 >
-> **R2 is 20 of 21, and that is finished.** **All seven biomes render** — `neutral`, `desert`, `jungle` (Kenney CC0), `arctic` (Admurin), `ocean` (ansimuz), `cave` (OpenGameArt CC0), and `volcanic` procedurally. All seven are captured in `design/biomes/`. The one unticked box is the **superseded** procedural-first item, which will never be ticked: §2 was revised so real art is the default, and ticking it would record agreement with an overruled plan.
+> **R2 is 21 of 21 — CLOSED 7 September 2026.** All seven biomes render from
+> real, pre-cut parallax art: `neutral` (MatiasVME), `jungle` and `cave` and
+> `ocean` (ansimuz), `desert` (Emcee Flesher), `arctic` (Admurin), `city`
+> (FabinhoSC). Five CC0; the two that are not carry their terms verbatim beside
+> the art. All seven captured in `design/biomes/`.
+>
+> **Closing it found F-40**: theme and accent hue were seeded, stored and
+> ignored — every student rendered `bare-metal` at hue 250. Fixed the same day,
+> on the instruction that students get their seeded look on first load.
 >
 > Ticked means *evidence exists in this repository*, not *remembered as done*.
 > The evidence for each group is named below.
@@ -29,10 +37,11 @@
 > contrast-checked, but **nothing renders one**. There is no `design/` directory
 > of biome captures, so no biome has ever been looked at.
 >
-> The "procedural default for all seven biomes first" item is **superseded**, not
-> pending: `BIOME-AND-LOADING-SPEC.md` §2 was revised so that real sourced CC0
-> parallax art is the default for six biomes, with volcanic the one procedural
-> exception. Ticking it would record agreement with a plan that was overruled.
+> The "procedural default for all seven biomes first" item was **superseded, and
+> is now ticked as such**: §2 was revised so real art is the default, and every
+> one of the seven has it. The fallback that item describes covers nothing —
+> `PROCEDURAL` in `BiomeScene.tsx` is empty and kept empty on purpose, so the
+> next unsourceable biome must opt in by name.
 ---
 
 

@@ -50,8 +50,9 @@ visual redesign by implication.
    verbatim, because those aren't stylistic opinions, they're the accessibility
    floor.
 4. **`BIOME-AND-LOADING-SPEC.md`** — per-student "landing biomes" — now
-   **seven**, each with a real, individually-checked source (jungle, desert,
-   arctic, volcanic, cave, ocean, plus a neutral Kenney-sourced default) —
+   **seven**, each a pre-cut parallax pack with an individually-checked source
+   (neutral, jungle, desert, arctic, ocean, cave, city) — five CC0, two with
+   their terms recorded verbatim beside the art —
    plus two distinct loading screens: a warp-speed starfield for the hub, a
    biome-themed preview when heading toward a specific stage.
 5. **`MINIGAME-PROPOSALS.md`** — **five** proposals now: a shooter, a

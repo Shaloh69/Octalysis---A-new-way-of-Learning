@@ -83,8 +83,12 @@ repeated forms are vertical or horizontal.
 | `arctic` | **High horizon, layered ridges** | Mountains stacked back to front; the drama is the silhouette line, not objects |
 | `ocean` | **Suspended, no ground line** | Forms enter from top AND bottom. The subject is the water column, so nothing sits on a floor |
 | `cave` | **Framing, looking through** | Ceiling and floor both intrude; the eye reads an opening between them. The one biome that encloses on two edges |
-| `neutral` | **Balanced, mid horizon** | Deliberately the plainest — it is the default and must not compete |
-| `volcanic` | **Glow from below** | Procedural. Light source under the horizon, not above it — the only biome lit from beneath |
+| `neutral` | **Open, mid horizon** | Deliberately the calmest — it is the default and must not compete. Nothing sits close to the viewer, and it owns the only snow-capped range |
+| `city` | **Vertical, built, lit** | The one landscape that is made rather than grown: straight edges, a hard skyline, and points of window-light nothing else in the set has |
+
+`volcanic` was the seventh row here — *"glow from below, procedural, the only
+biome lit from beneath"*. It was **replaced outright by `city` on 2 Sep 2026**,
+having been the one biome with no art at all. See §2a.
 
 **The test:** desaturate all seven to greyscale. If two are hard to tell apart,
 the composition is doing no work and the palette is carrying it. Palette is the
@@ -126,9 +130,19 @@ which is close to indistinguishable from just picking a different accent
 colour, and defeats the actual point.
 
 **So: for the seven biomes below, use the real sourced CC0 parallax art as
-the default landing scene. Fall back to a procedural treatment only where —
-like volcanic below — no clean, verifiably-licensed pack exists yet, not as
-a blanket default everywhere.**
+the default landing scene. Fall back to a procedural treatment only where no
+clean, verifiably-licensed pack exists yet, not as a blanket default
+everywhere.**
+
+> **All seven have real art as of 7 September 2026, so the fallback covers
+> nothing.** `PROCEDURAL` in `BiomeScene.tsx` is empty and deliberately kept
+> empty, so the next unsourceable biome has to opt in by name.
+>
+> **The candidate table below is DATED RESEARCH from 1–2 September and is
+> deliberately not rewritten.** It is the licence audit trail — what was
+> checked, on what date, in whose words — and two of its rejections still bind
+> (Admurin's cave, and any pack whose licence lives in a comment). What it is
+> *not* is a description of what ships. That is the table in §2a, above.
 
 Bundle-weight discipline still applies, just differently than a pure-CSS
 approach would need: **lazy-load only the one biome a given student is
@@ -154,7 +168,9 @@ genuinely free-to-use option, not just "itch.io has some":
 | **Ocean / underwater** | **Underwater Fantasy Pixel Art Environment** (ansimuz) — https://ansimuz.itch.io/underwater-fantasy-pixel-art-environment | **Not stated as CC0; permissive.** Verified on the page, 1 Sep 2026, verbatim: *"You may use these assets in personal or commercial projects. You may modify these assets to suit your needs. Credit is not required but appreciated it."* No NFT or AI clause on this one | **3 layers** for parallax. The cleanest terms of the four checked, but still record it as its own licence rather than as CC0 |
 
 **The volcanic and cave rows above are the honest ones, not the polished
-ones on purpose.** Not every biome has a clean, obviously-CC0 pack waiting —
+ones on purpose.** *(Both have since been resolved: `volcanic` was replaced by
+`city`, and `cave` was sourced from OpenGameArt — the same artist the itch
+listing could not licence. Kept because the reasoning is the point.)* Not every biome has a clean, obviously-CC0 pack waiting —
 sometimes the right answer is "this one stays procedural for now, keep
 looking for a real asset later" (volcanic), and sometimes it's "the first
 result everyone finds isn't actually clearly licensed, don't ship it anyway"
@@ -173,23 +189,44 @@ extended rather than duplicated.
 The table above is the sourcing research. This is the outcome, and it differs
 from it in two places — both recorded rather than quietly substituted.
 
-| Biome | Vendored | Why not the pack above |
+**Current as of 7 September 2026. Four of these rows changed twice in two days**,
+so treat the table as a record of what is vendored *now* and read the pack
+docblocks for why.
+
+| Biome | Vendored | Licence, and how it was confirmed |
 |---|---|---|
-| `neutral` | Kenney Background Elements, CC0 | — it is the pack above |
-| `desert` | Kenney Background Elements, CC0 | **styloo's pack now 404s.** Checked 2 Sep 2026. A licence verified against a page that no longer exists cannot be re-verified by anyone |
-| `jungle` | Kenney Background Elements, CC0 | edermunizz's terms are fine but **require credit** — a standing obligation on every future edit of `CREDITS.md`. CC0 carries none. That pack is still the better art if someone wants the denser look |
-| `volcanic` | procedural | as specified — no cleanly-licensed pack found |
-| `arctic` | **Admurin Snowy Mountains** — not CC0, terms verbatim in the pack dir | vendored 2 Sep 2026 via a driven browser session, exactly as §1b predicted would be needed |
-| `ocean` | **ansimuz Underwater Fantasy** — permissive, terms verbatim in the pack dir | same |
-| `cave` | **JonathanPalmerGD / PWL, CC0** — from **OpenGameArt, not itch.io** | see below: the obvious itch replacement failed the same test Admurin's did |
+| `neutral` | **MatiasVME**, Parallax background forest, 8 layers | CC0 — OGA structured `License(s)` field, "No attribution required" |
+| `jungle` | **ansimuz**, Forest Background, 4 layers | CC0 — confirmed twice: OGA field + the pack's own `license.txt` |
+| `desert` | **Emcee Flesher**, Rocky desert landscape, 4 layers | CC0 — OGA field, and the **derivation chain walked**: it derives from Quantiset's Mars background, also CC0 on its own page |
+| `arctic` | **Admurin** Snowy Mountains, 5 layers | **Not CC0.** Terms verbatim in the pack dir; vendored via a driven browser session, exactly as §1b predicted |
+| `ocean` | **ansimuz** Underwater Fantasy, 4 layers | Permissive, not stated as CC0. Terms verbatim in the pack dir |
+| `cave` | **ansimuz**, Warped: Super Grotto Escape, 3 layers | CC0 — confirmed twice: OGA field + the pack's `public-license.txt` |
+| `city` | **FabinhoSC**, Skyline Background, 5 layers | CC0 — confirmed twice: OGA field + the pack's `Read.txt` |
 
-**Neither substitution lowered the standard.** CC0 is at least as permissive as
-what either replaced pack offered, and the pack's own `License.txt` travels with
-the art in every biome directory.
+**What this table used to say, and why it changed** — the history matters
+because two of the changes were licence decisions and two were not:
 
-**These are elements, not pre-cut strips**, so each biome is composed in its own
-manifest — which is exactly what the table above means by calling Kenney the
-"base layer for several biomes". Three biomes cost **23 KB of art in total**.
+- `neutral`, `jungle`, `desert` were **Kenney Background Elements** (CC0), loose
+  vector elements composed by the renderer. Replaced 7 Sep on **looks, not
+  licence**: flat two-tone shapes have no internal detail, so the biomes read as
+  bland at any density. See §2e.
+- `volcanic` was **procedural** — the one biome with no cleanly-licensed pack.
+  Replaced outright by `city`, which has real CC0 art.
+- `cave` was **JonathanPalmerGD / PWL** (CC0, impeccable). Replaced 7 Sep on
+  looks: three flat silhouettes on tan that were re-scaled twice chasing a cave
+  they could not become.
+
+**No substitution lowered the standard.** Five of seven are CC0; the two that
+are not carry their terms verbatim in their own pack directory, and every biome
+directory ships a `LICENSE.txt` that travels with the art.
+
+**Kenney's pack is no longer used by any biome.** It supplied `neutral`,
+`jungle` and `desert` as loose *elements* composed in their own manifests —
+23 KB for three biomes — until 7 September 2026, when all three were rebuilt
+from pre-cut packs on looks rather than licence (§2e). The row above survives
+because the pack is still the right answer for a biome that genuinely needs
+loose elements, and because `CREDITS.md` records what shipped in earlier
+builds.
 
 ### Cave: why it came from OpenGameArt, and what that fixes
 
@@ -587,9 +624,11 @@ rotation offset, palette variant, and callsign — derived from `student_id`
 via a lightweight, non-secret hash, **never** from
 `services/api/src/engine/seed.ts`'s exam-attempt seed, which embeds
 `EXAM_SALT_SECRET` and must never be reimplemented or exposed client-side.
-Pick a biome index from the set in §2 above — **7 to start** (jungle,
-desert, arctic, volcanic, cave, ocean, plus the general Kenney nature layer
-as a neutral default/fallback biome for the rotation). Expand further only
+Pick a biome index from the set in §2 above — **7** (neutral, jungle, desert,
+arctic, ocean, cave, city). The server's `BIOMES` array in
+`routes/cosmetics.ts` is the authority on the order, and the client reads the
+list back from the response rather than hardcoding it, so adding one is a
+one-line change on the server. Expand further only
 if a biome earns its place the way `GAME-DESIGN.md` §9 already required of
 the encounter themes — don't ship a dozen for the sake of variety alone.
 
@@ -735,7 +774,13 @@ motion is** — one motif, and only one.
 | `ocean` | Bubbles rising | up |
 | `cave` | Dust motes | drifting, no dominant direction |
 | `neutral` | None | it is the plain one, and stays plain |
-| `volcanic` | Embers rising | up, faster than bubbles |
+| `city` | Dust motes | drifting — the same motif as `cave`, and the only pair that shares one |
+
+`volcanic`'s row was **embers rising, up, faster than bubbles**. The biome was
+replaced by `city` (§2a) and `embers` is now a motif nothing uses. It is kept in
+the `motif` union in `registry.ts` rather than deleted, because a rising-ember
+effect is the obvious thing a future forge or foundry biome would want, and the
+CSS for it is already written and reduced-motion-safe.
 
 **Why one and not several.** `DESIGN-MANDATE.md` §1B rule 3 allows one spectacle
 moment per stage, and the Bring-Up already owns it. A loading transition that
