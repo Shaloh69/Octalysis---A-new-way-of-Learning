@@ -85,7 +85,7 @@ completeness of "every visual thing has a named source":
 | Surface | Template | Source |
 |---|---|---|
 | Hub loading (warp speed) | Three.js Starfield Warp technique | https://fwdtools.com/ui-snippets/three-starfield-warp/ |
-| Stage/moon loading (biome preview) | Kenney Background Elements + CC0 itch.io biome packs | `BIOME-AND-LOADING-SPEC.md` §2 |
+| Stage/moon loading (biome preview) | Seven pre-cut parallax packs, five CC0, sourced from OpenGameArt — **no Kenney, no itch.io** | `BIOME-AND-LOADING-SPEC.md` §2a |
 
 **Proposed, not yet decided** — see `MINIGAME-PROPOSALS.md`:
 

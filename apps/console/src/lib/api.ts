@@ -15,7 +15,20 @@ import { getAccessToken } from "./session";
  * these names.
  */
 
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+/*
+ * 8090, not 8080 — the same fix `apps/web/src/lib/api.ts` carries, and it was
+ * missed here on the first pass.
+ *
+ * 8080 is frequently another project's Adminer on a developer machine. It
+ * answers preflight without CORS headers, so every request fails with
+ * `net::ERR_FAILED` and the page renders an error that names no port, while the
+ * API runs perfectly on 8090.
+ *
+ * Fixing one app and not the other is worse than fixing neither: the student
+ * app worked, the console did not, and the difference looked like a console bug.
+ * A deployment always sets `VITE_API_URL`.
+ */
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8090";
 
 export class ApiError extends Error {
   readonly code: string;

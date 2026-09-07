@@ -248,7 +248,7 @@ one this project has actually had**, which is why they are rules and not advice.
 model for how this should look. Three things it does that OCTA should copy:
 
 1. **Its `CLAUDE.md` is 101 lines** and opens with *"Read these, in this order,
-   at the start of every session"*. OCTA's root file is 173 and climbing.
+   at the start of every session"*.
 2. **`Implemented.md` is a periodic audit written from a full read of the
    codebase** — and it says so explicitly: *"not from prior audit docs — those
    are cross-checked, not trusted"*. That single sentence is rule 3 and rule 8
@@ -257,8 +257,35 @@ model for how this should look. Three things it does that OCTA should copy:
    deleting or silently editing them, so a stale claim stops being loaded
    without losing the reasoning that produced it.
 
-**OCTA has no `Implemented.md` equivalent and no `superseded/` directory.** Both
-are worth adding; the audit matters more.
+### All three are adopted, as of 7 September 2026
+
+They were written down here on 2 September, described as "worth adding", and
+**none of them was added for five days** — while this section sat in the file
+naming them. Asked directly whether the practices had been applied, the answer
+was no, and two of the four measurements had gone the wrong way in the meantime:
+
+| | When written | On 7 Sep, before the fix |
+|---|---|---|
+| Root `CLAUDE.md` | "173 and climbing" | **208** — the same sessions that wrote this rule added to it |
+| `PROGRESS.md` | complained at 1,681 lines | **2,003**, live state buried above 40 findings |
+| `Implemented.md` | absent | absent |
+| `superseded/` | absent | absent |
+
+Now:
+
+- **`docs/IMPLEMENTED.md`** — audited from the code and a live database, every
+  number naming the state it was measured in. It caught its own content count
+  being taken against a truncated database, which is rule 5 failing inside the
+  audit written to enforce it.
+- **`docs/superseded/`** — created, holding the per-phase checklist copies
+  `PROGRESS.md` used to duplicate.
+- **`PROGRESS.md` is 310 lines**, findings split to `docs/PROGRESS-FINDINGS.md`.
+- **Root `CLAUDE.md` is 183**, with the local-stack detail moved to
+  `docs/LOCAL-STACK.md`.
+
+**The lesson is not that the practices are good.** It is that writing a rule
+down does nothing on its own — this section is five days of evidence for that,
+in a file about preventing exactly this.
 
 ---
 

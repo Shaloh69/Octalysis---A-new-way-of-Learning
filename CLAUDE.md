@@ -10,6 +10,8 @@ ed. **Prerequisite:** Microprocessors. Syllabus archived at `docs/source/CPE 412
 full analysis in `docs/CPE412-CURRICULUM.md`.
 
 Read `START-HERE.md` before your first task. Read `VERIFICATION.md` before touching the schema.
+**`docs/IMPLEMENTED.md` says what actually exists**, audited from the code rather than from
+other documents — check it before believing any claim that something is built.
 
 ## Repos
 
@@ -60,7 +62,6 @@ Read `START-HERE.md` before your first task. Read `VERIFICATION.md` before touch
   encounters only — stages 03, 12, 14, 18 and the 04→06 span; re-derived from the
   real curriculum, `GAME-DESIGN.md` §10.3), `codemirror` (stages 10-11, the x86 listings). Each is **lazy-loaded per
   route** and none may enter the initial bundle. See `GAME-DESIGN.md` §10.
-
 ## Local stack — production runs here until cloud projects exist
 
 ```bash
@@ -71,40 +72,16 @@ pnpm test:rls   # the 38-test denial suite
 pnpm verify     # typecheck + tests + invariants
 ```
 
-**Use `pnpm dev:api`, not the raw dev script.** Root `.env` describes the
-*deployed* service, and starting the API from it fails three ways that all look
-like application bugs: it has no `SUPABASE_JWT_SECRET` (so every dev token is
-rejected), it *does* have `SUPABASE_URL` (which switches `identityFrom()` to
-asymmetric JWKS and rejects HS256 dev tokens with `unacceptable alg: HS256`),
-and its `CORS_ALLOWED_ORIGINS` is pinned to 5173/5174 while Vite may be on 5183.
-`scripts/dev-api.mjs` fixes all three and refuses to run under
-`NODE_ENV=production`. **Port 8080 is another project's Adminer on this machine**
-— it answers 200 with an HTML login page, so `apps/web/.env.example`'s
-`VITE_API_URL=http://localhost:8080` is wrong locally.
+**`docs/LOCAL-STACK.md` has the detail, and you will need it.** Three things
+that cost hours each and are not guessable: the raw API dev script boots from
+`.env` and fails three ways that all look like app bugs (use `pnpm dev:api`);
+**ports 8080 and 5173 belong to other projects on this machine** and both answer
+200, so "the port is up" proves nothing; and the SQL apply order is **six files**
+— omitting `addendum-submissions.sql` silently drops 40% of the grade.
 
-**Reseed with `node scripts/db-demo.mjs`.** It refuses to run over attempt
-history from another user and tells you to `pnpm db:reset` first — because
-`responses` is append-only (hard rule 7), so a seed cannot purge it. It used to
-try, get blocked by the trigger, and abort *halfway*, leaving a database that
-presented as "stage 00 is locked".
-
-Apply order is load-bearing: `local-bootstrap.sql` → `schema.sql` → `addendum-feedback.sql` →
-`addendum-submissions.sql` → `addendum-audit.sql` → `addendum-cron.sql`. **Six files, not
-five** — this said five and omitted `addendum-submissions.sql`, which holds labs, project
-and participation. `scripts/db-reset.mjs` is the authority and always applied it; anyone
-applying to Supabase BY HAND from this list would have skipped 40% of the grade.
-**`local-bootstrap.sql` is LOCAL ONLY** — it supplies the `auth` schema and
-the three roles that Supabase provides; running it against a Supabase project would shadow the
-real ones and every RLS test would become a lie.
-
-Three Postgres semantics this project has already been bitten by — see `VERIFICATION.md` fourth pass:
-
-1. **Always `nullif(current_setting('x', true), '')` before casting.** A rolled-back custom GUC
-   reverts to `''`, not `NULL`, and `''::jsonb` raises inside every policy.
-2. **Column privileges are additive.** `revoke select (col)` does nothing while table-level
-   `SELECT` is granted. Revoke the table, grant the columns back by name.
-3. **A policy's subqueries are subject to RLS.** If a `USING` clause reads a staff-only table, use
-   a `security definer` helper or it will silently deny everything.
+**`local-bootstrap.sql` is LOCAL ONLY** — it supplies the `auth` schema and the
+three roles Supabase provides. Against a real project it would shadow them and
+every RLS test would become a lie.
 
 ## Delivery — read `docs/DELIVERY.md` before deploying or committing
 
