@@ -5,7 +5,7 @@ import { useAsync } from "@/lib/useAsync";
 import { shortDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Empty, ErrorNote, Loading } from "@/components/ui/empty";
@@ -56,15 +56,42 @@ export function AssessmentsPage() {
           action={<Button onClick={() => setCreating(true)}>Create the first one</Button>}
         />
       ) : (
-        <ul className="space-y-2">
-          {data.assessments.map((a) => {
-            const closed = a.closesAt ? new Date(a.closesAt) < new Date() : false;
-            const pending = a.opensAt ? new Date(a.opensAt) > new Date() : false;
-            return (
-              <li key={a.id}>
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
+        /*
+          A TABLE, not a card list — the fourth of these to be converted and the
+          last one in the console.
+
+          `/audit` went 109px -> 41px per entry, `/items` 122px -> 72px, and
+          `/submissions` 3,436px -> 1,219px (DESIGN-REVIEW-01 D-4). This page had
+          the same shape for the same reason: two fixture rows look fine as
+          cards, and the real page is one assessment per gradeable chapter plus
+          finals, which is a scroll.
+
+          Every field the cards carried is still here. The one thing dropped is
+          the REPEATED TITLE: each card printed `a.title` in the heading and
+          `a.blueprintName` underneath, and for every fixture row those are the
+          same string, so the second line said nothing twice.
+        */
+        <div className="table-scroll rounded-lg border border-line bg-surface-1">
+          <Table>
+            <THead>
+              <TR>
+                <TH>Status</TH>
+                <TH>Assessment</TH>
+                <TH>Scope</TH>
+                <TH className="text-right">Items</TH>
+                <TH className="text-right">Attempts</TH>
+                <TH>Section</TH>
+                <TH>Window</TH>
+                <TH className="text-right">Submitted</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {data.assessments.map((a) => {
+                const closed = a.closesAt ? new Date(a.closesAt) < new Date() : false;
+                const pending = a.opensAt ? new Date(a.opensAt) > new Date() : false;
+                return (
+                  <TR key={a.id}>
+                    <TD className="whitespace-nowrap">
                       {closed ? (
                         <Badge tone="locked">closed</Badge>
                       ) : pending ? (
@@ -72,33 +99,48 @@ export function AssessmentsPage() {
                       ) : (
                         <Badge tone="success">open</Badge>
                       )}
-                      <span className="text-sm font-medium text-ink">{a.title}</span>
+                    </TD>
+                    <TD className="font-medium text-ink">
+                      {a.title}
+                      {/*
+                        Only when it differs. On the fixtures it never does, and
+                        printing it anyway is what made the card's second line
+                        redundant.
+                      */}
+                      {a.blueprintName && a.blueprintName !== a.title ? (
+                        <div className="text-xs font-normal text-ink-faint">{a.blueprintName}</div>
+                      ) : null}
+                    </TD>
+                    <TD className="whitespace-nowrap">
                       <Badge tone="neutral">
                         {a.scope === "stage" ? `stage ${a.stageId}` : "final"}
                       </Badge>
-                      <span className="num text-xs text-ink-faint">{a.totalItems} items</span>
-                      <span className="num ml-auto text-xs text-ink-muted">
-                        {a.submitted}/{a.attempts} submitted
-                      </span>
-                    </div>
-                    <p className="text-xs text-ink-muted">
-                      {a.blueprintName} ·{" "}
-                      {a.attemptsAllowed === 1 ? "one attempt" : `${a.attemptsAllowed} attempts`}
-                      {a.sectionCode ? ` · ${a.sectionCode}` : " · every section"}
-                    </p>
-                    {(a.opensAt || a.closesAt) && (
-                      <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-faint">
-                        <CalendarClock className="h-3 w-3" aria-hidden="true" />
-                        {a.opensAt ? `opens ${shortDate(a.opensAt)}` : "open now"}
-                        {a.closesAt ? ` · closes ${shortDate(a.closesAt)}` : ""}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
+                    </TD>
+                    <TD className="num text-right">{a.totalItems}</TD>
+                    <TD className="num whitespace-nowrap text-right">{a.attemptsAllowed}</TD>
+                    <TD className="whitespace-nowrap text-xs text-ink-muted">
+                      {a.sectionCode ?? "every section"}
+                    </TD>
+                    <TD className="whitespace-nowrap text-xs text-ink-muted">
+                      {a.opensAt || a.closesAt ? (
+                        <span className="flex items-center gap-1.5">
+                          <CalendarClock className="h-3 w-3 shrink-0" aria-hidden="true" />
+                          {a.opensAt ? `opens ${shortDate(a.opensAt)}` : "open now"}
+                          {a.closesAt ? ` · closes ${shortDate(a.closesAt)}` : ""}
+                        </span>
+                      ) : (
+                        <span className="text-ink-faint">no window</span>
+                      )}
+                    </TD>
+                    <TD className="num whitespace-nowrap text-right">
+                      {a.submitted}/{a.attempts}
+                    </TD>
+                  </TR>
+                );
+              })}
+            </TBody>
+          </Table>
+        </div>
       )}
 
       {creating && (

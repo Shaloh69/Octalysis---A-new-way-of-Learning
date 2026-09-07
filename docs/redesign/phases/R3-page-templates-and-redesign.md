@@ -289,7 +289,32 @@ write `/console/locks`, the app routes `/locks`.
       · **Recorded as a deliberate NO-TEMPLATE, 2 Sep 2026.** It is a document, not a dashboard; the reference is a printed exam paper. Reason written into `TEMPLATE-LINKS.md`.
 - [x] `/items` — bank, stats inline, re-roll preview
       · **Reworked.** Card list → table, 122px → 72px per item, both psychometric warnings kept in words (F-28).
-- [ ] `/assessments` · `/content` · `/gradebook`
+- [x] `/assessments` · `/content` · `/gradebook`
+      · **`/assessments` was the FOURTH card list**, and the last one in the
+        console. Converted to the same dense table as `/audit`, `/items` and
+        `/submissions`: **~98px → 41px per row**, measured before and after on
+        seeded data, which is the same figure `/audit` landed on. Every field
+        the cards carried is still there and asserted column by column — a
+        density number alone is easy to win by deleting columns, which is how
+        the `/items` bound once got calibrated at 67px against an empty one.
+      · **Dropped exactly one thing:** the repeated title. Each card printed
+        `title` in the heading and `blueprintName` underneath, and on every
+        fixture row those are the same string, so the second line said nothing
+        twice. It now renders only when it differs.
+      · **`/content` and `/gradebook` needed no rework, and that is recorded
+        rather than glossed.** `/content` already carries stat tiles, the
+        "item bank is the schedule" callout and a 19-row chapter table;
+        `/gradebook` already carries the class-average chart, CSV export and
+        41px rows. A template pass that changes a good page to look busy is not
+        a pass. Both are now covered by `design/specs/console-teaching.spec.ts`
+        so they stay that way.
+      · **Two assertions protect copy, not layout.** `/content` must keep saying
+        how many chapters are actually authored (8/19) — hard rule 5's dashboard,
+        and rounding it up would hide the gap from the one person who can close
+        it. `/gradebook` must keep the line "a stage where the whole class sits
+        low is a signal about the teaching, not about the students", which is
+        the difference between a chart and a judgement about a teacher, and is
+        exactly the kind of sentence deleted as decoration.
 - [x] `/submissions` — **not in `TEMPLATE-LINKS.md`.** `DESIGN-REVIEW-01` D-4
       records it as too sparse to mark from; the density pass belongs here
       · **Template row added** (same dense reference as `/items` and `/audit`), and **D-4 itself is FIXED** — 3,436px → 1,219px.
