@@ -31,18 +31,22 @@ and R3's denominator had grown. Count, do not copy.
 | R0 scope and guardrails | ✅ 28 / 28 |
 | R1 solar system foundation | ✅ 36 / 36 |
 | R2 per-student cosmetics | ✅ **21 / 21** — closed 7 Sep, and closing it found **F-40** |
-| **R3 page templates** | **19 / 49** ← live |
+| **R3 page templates** | **28 / 49** ← live |
 | R4 moons and subtopics | ▫️ 0 / 13 |
 | R5 testing and sign-off | ▫️ 0 / 24 |
 
-**Gates, last run — 7 Sep 2026, and `pnpm qa` is NOT green:**
+**Gates, last run — 8 Sep 2026. All green.**
 
 | Gate | Result | Measured in |
 |---|---|---|
 | `pnpm verify` | **green** — 343 unit tests (266 API, 53 web, 24 console) | after `db:reset` |
 | `pnpm test:rls` | **green** — 38 denial tests | seeded |
 | `check-contrast.mjs` | **green** — 1181 checks | n/a |
-| `pnpm qa` | **green** — 172 passed, 68 skipped, 0 failed | seeded, all three servers up |
+| `pnpm qa` | **green** — 204 passed, 110 skipped, 0 failed | clean-reset fixture, all three servers up |
+
+**The 110 skips are the honest part.** Ten name **F-41**: nothing in this repo
+seeds `items` or `assessments`, so on a clean fixture those pages are correctly
+empty and the specs say so rather than passing silently.
 | invariants | **25 clean, 1 warning** (INV-25, 5 seeded `content_report` rows), 0 failures | seeded |
 
 **It took three runs to get that number, and the first two were lies.** 50
@@ -55,35 +59,28 @@ never been re-measured.
 session, and `pnpm qa`, `pnpm verify` and the invariants all fail meaninglessly
 when it is down. `docker ps` first (§2c rule 4).
 
-**The three things blocking most:**
+**What is actually blocking, as of 8 September 2026.** This section used to
+list three things, two of which had been struck through as DONE — a heading that
+no longer described anything. The resolved ones are in
+`PROGRESS-FINDINGS.md`; these two are live.
 
-1. ~~Biomes~~ **DONE, and rebuilt twice since.** All seven are pre-cut parallax
-   packs — `neutral` (MatiasVME), `jungle` · `ocean` · `cave` (ansimuz),
-   `desert` (Emcee Flesher), `arctic` (Admurin), `city` (FabinhoSC). **No biome
-   uses Kenney any more**: `neutral`, `jungle` and `desert` were composed from
-   Kenney elements until 7 Sep, when all three were replaced on looks, not
-   licence — flat vector shapes have no internal detail, so they read as bland
-   at any density. **`volcanic` is gone** — it was the one procedural exception and was
-   replaced outright by `city`; **`cave`'s art was replaced** on 7 Sep on looks
-   rather than licence. Every licence recorded in the pack directory and in
-   `CREDITS.md`. `PROCEDURAL` is now empty and kept empty on purpose.
-2. ~~**`INV-32` and `INV-33` do not exist.**~~ **WRITTEN AND VERIFIED 7 Sep 2026.**
-   `DELIVERY.md` §3.1 listed them as alpha exit criteria while the invariant set
-   stopped at INV-31, so the gate could be neither passed nor failed.
-   `inv_32_no_orphan_nodes` fails on a published stage unreachable from any root;
-   `inv_33_edges_resolve` fails on a prereq pointing at an unpublished stage — a
-   case INV-19 *passes*, because the row does exist — or on a self-edge. Both are
-   `fail` severity, because a map with an orphan node or an arrow into empty
-   space is a broken curriculum, not a warning.
+1. **F-41 — nothing seeds `items` or `assessments`.** A clean `pnpm db:reset`
+   leaves both at zero, so no student can sit a check and the attempt runner is
+   unreachable; ten spec cases skip naming this. The only current way to get an
+   item bank locally is **to run `pnpm verify`**, whose API suite creates 22
+   items and 2 assessments as artefacts — a dependency nobody would guess.
+   **Needs an instructor's call:** which blueprint should the demo data ship,
+   and against which stage? Guessing the cells would produce papers that fail
+   feasibility at the moment forty students press Start.
 
-   **Mutation-tested in a rolled-back transaction**, because a new check that
-   has never failed is not yet a check. Self-edge → INV-33 reports 1.
-   Unpublishing stage `04` → INV-33 reports 1 **while INV-19 reports 0**, which
-   proves the gap rather than asserting it, and INV-32 reports 14 orphans.
-   Clean baseline: both 0.
-3. **No phase owns the public marketing site.** Five routes, including the
+2. **No phase owns the public marketing site.** Five routes, including the
    landing page whose re-rollable demo `PAGE-SPECS.md` calls "the one
    interaction that sells the product". `/` is currently `<Navigate to="/app">`.
+
+**Recently resolved** — biomes (all seven, pre-cut packs, licences recorded),
+`INV-32`/`INV-33` (written and mutation-tested), **F-40** (the seeded look now
+reaches the browser), and the multiple-choice answer bug in F-41's first half.
+
 
 **Local stack:** web `:5183` (5173 belongs to another project), console `:5174`,
 API `:8090` via **`pnpm dev:api`** — not the raw dev script, which boots from
@@ -110,7 +107,7 @@ yes, and seeded that way), and nothing else outstanding.
 
 ## Current phase
 
-**R3 — IN PROGRESS. 19 of 49, counted from the phase file on 7 Sep 2026.**
+**R3 — IN PROGRESS. 28 of 49, counted from the phase file on 8 Sep 2026.**
 (This heading said "R2 complete, R3 next" for several sessions after R3 work had
 already started, and later said "13 of 44" after the file had moved on. **Count
 the boxes in `docs/redesign/phases/R3-page-templates-and-redesign.md`; do not

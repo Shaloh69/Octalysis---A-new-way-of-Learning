@@ -1484,6 +1484,25 @@ The rows this work was done against were session artefacts that the reset
 removed. The suite now skips those tests with that reason rather than failing,
 because the runner is not broken — there is nothing to run it on.
 
+**CORRECTED 8 Sep 2026 — the three tools do different things, and this finding
+first blamed the wrong one.** Measured:
+
+| | `items` | `assessments` | `objectives` |
+|---|---|---|---|
+| after `pnpm db:reset` | **0** | **0** | 115 |
+| after `pnpm verify` | 22 | 2 | **4** (truncated) |
+| after `node scripts/db-demo.mjs` | 22 | 2 | 115 |
+
+`db-demo` does **not** wipe items or assessments; `db:reset` does, because it
+drops the database. And the 22 items and 2 assessments are **created by the API
+test suite** — they are `pnpm verify`'s artefacts, not seed data.
+
+That is the whole explanation for a session's worth of confusing state: `verify`
+gives you a bank and empties the objectives, `db-demo` gives you objectives back
+and leaves the bank alone, and `db:reset` takes everything. It also means the
+only current way to get an item bank locally is **to run the test suite**, which
+is a dependency nobody would guess and nothing documents.
+
 **Not fixed here, and deliberately.** Seeding an assessment needs a blueprint
 matched to the item bank, and the bank holds live items for **stage 07 only**
 while the four seeded blueprints are all `final` scope covering chapters that

@@ -1,6 +1,6 @@
 # IMPLEMENTED.md — what is actually built, audited from the code
 
-**Audit date: 7 September 2026.** Written from a **full read of the codebase and
+**Audit date: 7 September 2026, re-measured 8 September.** Written from a **full read of the codebase and
 a live database**, not from prior audit documents — those are cross-checked, not
 trusted. That sentence is borrowed verbatim in spirit from EngiRent's
 `Implemented.md`, which is the sibling thesis project this practice comes from
@@ -89,21 +89,33 @@ exist**, and no phase owns it — `PROGRESS.md` carries this as a blocker.
 documented five and omitted `addendum-submissions.sql` — which carries 40% of
 the grade — until 7 Sep.
 
-**Invariants: 25 registered**, IDs up to INV-33 with gaps. `INV-32` and `INV-33`
+**Invariants: 28 registered**, IDs up to INV-33 with gaps. (This said 25, which
+was the *clean* count from one run's output rather than the number registered —
+`select count(*) from run_invariants()` returns 28.) `INV-32` and `INV-33`
 were written on 7 Sep because `DELIVERY.md` §3.1 had cited them as alpha exit
 criteria while the set stopped at INV-31.
 
-### Content — **measured on a TRUNCATED database, and therefore not a real count**
+### Content — **it depends entirely on which tool ran last**
 
-At the moment of this audit the database held **19 stages, 4 objectives, 22
-items, 2 assessments**. The objective count is wrong for the project, not for the
-database: `pnpm verify` runs the API test suite, which truncates fixtures, and
-this audit ran immediately after it. Seeded, `scripts/db-demo.mjs` reports
-**115 objectives** and exits non-zero below 100.
+Measured 8 Sep, and this is the single most confusing thing about working on
+this project locally:
 
-This is recorded rather than quietly re-measured because it is the exact failure
-§2c rule 5 names, it happened while writing the rule's own audit, and the number
-looks plausible enough to have been believed.
+| | `items` | `assessments` | `objectives` |
+|---|---|---|---|
+| after `pnpm db:reset` | **0** | **0** | 115 |
+| after `pnpm verify` | 22 | 2 | **4** |
+| after `node scripts/db-demo.mjs` | 22 | 2 | 115 |
+
+`pnpm verify` runs the API suite, which **truncates objectives** and **creates
+the 22 items and 2 assessments** as its own artefacts. `db-demo` restores
+objectives and leaves the bank alone. `db:reset` drops everything, and nothing
+in the repo seeds items or assessments (**F-41**) — so the only current way to
+get an item bank locally is to run the test suite, which nothing documents.
+
+The original version of this section reported "19 stages, 4 objectives, 22
+items" as a truncated-database artefact and left it at that. Half right: the 4
+was truncation, the 22 was never seed data at all. **Always say which tool ran
+last** — §2c rule 5, and the numbers here are why.
 
 ---
 
@@ -126,8 +138,10 @@ where they live; the next biome sourced as loose elements needs them.
 
 ## Tests
 
-- **`design/specs/` — 10 Playwright spec files.**
-- **19 unit spec files** across `services/api/test` and `apps/web`.
+- **`design/specs/` — 15 Playwright spec files** (10 on 7 Sep; five added 7–8 Sep:
+  student states, the attempt runner, the console gate, the console teaching
+  pages, and `/live` + `/feedback`).
+- **20 unit spec files** across `services/api/test`, `apps/web` and `apps/console`.
 - **`pnpm test:rls` — 38 denial tests**, verified by running it 7 Sep.
 - **`scripts/check-contrast.mjs` — 1181 checks** (1080 palette, 42 encounter,
   59 cosmetic).
@@ -147,7 +161,8 @@ absences are what the next session needs.
 - **The public marketing site.** `/` redirects to `/app`. Five routes, no owner.
 - **The reverse travel transition** — leaving a stage back to the map. §4.2 says
   the arrival is "reversed on the way back out"; only the inbound half exists.
-- **Most of R3's template pass** — 19 of 49 at the time of writing.
+- **Most of R3's template pass** — **28 of 49** on 8 Sep. R3.2 (student app) and
+  R3.3 (teacher console) are closed; R3.5's six-states sweep is not.
 - **R4 (moons and subtopics) and R5 (testing and sign-off)** — 0 of 13 and 0 of
   24. Nothing has started.
 - **`docs/superseded/`** — named in §2c as an EngiRent practice worth copying,
