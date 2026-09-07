@@ -87,10 +87,50 @@ covering all of these. Everything else is in §R3.6.
       · **Full gate cleared.** `r3-gate.spec.ts` runs the mechanical five on it every run; the solar-system additions are in `solar-system.spec.ts`.
 - [x] `/app/map` — the flat map, same component with `flat`
       · **Rebuilt.** Now the same galaxy drawn still, from `computeSolarLayout` — plus the `sr-only` map key that closed §5's naming gap (F-24).
-- [ ] `/app/stage/:id` — the reader, now carrying the landing biome. **Blocked on the biomes, which are licence-verified and manifested but still unrendered.**
+- [x] `/app/stage/:id` — the reader, now carrying the landing biome
+      · **The blocker is gone.** This said "blocked on the biomes, which are
+        licence-verified and manifested but still unrendered" — all seven have
+        rendered since 2 Sep and were rebuilt as pre-cut packs on 7 Sep.
+      · **Six states asserted** in `design/specs/student-states.spec.ts`, which
+        is new: `r3-gate.spec.ts` runs the mechanical five on every route and
+        says plainly that the rest are judgement, and "judgement" was doing a
+        lot of work — a state nobody has looked at is a state nobody has built.
+        The spec asserts what each state SAYS, not that it exists.
+      · **locked** names the reason *and* the distance ("opens once the stages it
+        depends on reach 70%") and keeps the objectives visible above it —
+        scarcity with autonomy, not a blank door. **error** offers a control,
+        and is asserted to carry no stack trace or SQL. **loading** is a
+        skeleton with a text equivalent ("Arriving at"), observed by holding the
+        request open rather than by racing it. **offline** is app-wide in
+        `App.tsx` and had never been checked from a route until now. **380px**
+        does not scroll sideways.
+      · **`empty` is not reachable here, and that is recorded rather than
+        faked**: every published stage has content blocks, and the unauthored
+        chapters 08–18 carry four each including a callout saying in as many
+        words that the lesson text is not written yet. That is a scaffold
+        notice, which is content. Forcing zero blocks would test a database
+        that cannot occur.
 - [ ] `/app/stage/:id/check` — the attempt runner
-- [ ] `/app/progress` — the 7×3 competency grid
-- [ ] `/app/settings` — now also showing the seeded callsign
+- [x] `/app/progress` — the 7×3 competency grid
+      · **All 21 cells render, including untouched ones.** Asserted in
+        `student-states.spec.ts`: every level L0–L6 and every competency
+        READ/TRACE/BUILD is named. A cell that vanished when a student had not
+        reached it would hide the shape of the course — this is the axis that
+        replaced XP, so absence is not an acceptable rendering of zero. They
+        show a dash: visible, and honestly empty.
+      · **Error and 380px asserted.** No locked state, and that is correct
+        rather than missing — a student's own progress is never withheld from
+        them, so asserting a lock would be inventing a requirement.
+- [x] `/app/settings` — now also showing the seeded callsign
+      · **Callsign asserted** in `student-states.spec.ts` — cosmetic, never an
+        identifier (`routes/cosmetics.ts` holds that boundary), but it is the
+        one visible proof that a student's system is seeded to them.
+      · **Error and 380px asserted.** The error case legitimately SKIPS: settings
+        is mostly local — theme, accent, map mode — so it renders fine with the
+        API down, and that is the right behaviour rather than a missing state.
+        A student who has lost connection can still turn reduced motion on. The
+        spec records the skip reason instead of asserting an error that should
+        not exist.
 - [x] `/app/work` — **not in `TEMPLATE-LINKS.md` at all.** It exists
       (`SubmitPage.tsx`, labs/project/participation, 40% of the grade) and has
       no named template. Give it one, or record why it does not need one
