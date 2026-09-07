@@ -110,7 +110,33 @@ covering all of these. Everything else is in §R3.6.
         words that the lesson text is not written yet. That is a scaffold
         notice, which is content. Forcing zero blocks would test a database
         that cannot occur.
-- [ ] `/app/stage/:id/check` — the attempt runner
+- [x] `/app/stage/:id/check` — the attempt runner
+      · **Covered by `design/specs/attempt-runner.spec.ts`**, which leads with a
+        DENIAL test because hard rule 1 is the specific defect this project
+        exists to fix: the repo OCTA replaces shipped every answer to the
+        browser in `src/data/lessonData.js`. Every API response the page
+        receives during a live attempt is captured and searched for
+        `correct_value` and the five shapes a refactor tends to add beside it,
+        and the question markup is searched for a class or `data-` hint.
+        **Mutation-tested**: adding `correct_value` to the attempts payload
+        makes it fail, naming the rule.
+      · **A reload resumes rather than burning an attempt** — `attempts_allowed`
+        caps them, so a refresh that consumed one would cost a student a try
+        they never used. Asserted on attempt id, not on a message.
+      · **Answering fetches nothing about correctness**, and the page does not
+        grade client-side. Grading happens once, on submit, in `services/api`.
+      · **Nothing here submits, and that is forced rather than chosen.**
+        `responses_attempt_id_fkey` is `ON DELETE CASCADE` and `demo-seed.sql:51`
+        deletes fixture attempts, so one submitted response makes the seed
+        cascade into `responses`, hit the append-only trigger and abort halfway
+        — the "stage 00 is locked" failure that has already cost this project
+        two rounds of debugging. Grading feedback belongs in an API-level test
+        with a disposable database.
+      · **The suite is serial and enters the check only four times.** `POST
+        /v1/attempts` is rate-limited to 10/minute; an earlier draft with one
+        entry per test tripped it and rendered "That did not start — Too many
+        attempts", which failed as "element(s) not found" and read as a bad
+        selector while being the server defending itself correctly.
 - [x] `/app/progress` — the 7×3 competency grid
       · **All 21 cells render, including untouched ones.** Asserted in
         `student-states.spec.ts`: every level L0–L6 and every competency
