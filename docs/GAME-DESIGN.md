@@ -547,8 +547,26 @@ Non-negotiable consequences:
 - **Lazy-loaded per stage**, never in the initial bundle — same discipline as the
   galaxy chunk, and verified the same way (grep `dist/index.html` for a preload)
 - **Only stages that need a canvas game load it.** Most do not
-- The **initial bundle stays at 51.9 KB gzipped.** If a change moves that number,
-  the change is wrong
+- The **initial bundle** must not carry a canvas library. **Measured 8 September
+  2026 on a fresh `pnpm --filter @octa/web build`: 74.9 KB gzipped.**
+
+  This line said **51.9 KB** and "if a change moves that number, the change is
+  wrong" — which had been quietly false for some time. The number moved during
+  the redesign and nobody re-measured, so the rule was guarding a figure that no
+  longer described the build.
+
+  **The discipline it protects is intact, and that is the part that matters.**
+  Measured in the same build:
+
+  | chunk | gzipped | |
+  |---|---|---|
+  | `index` (initial) | **74.9 KB** | no `three`, no R3F, no Phaser, no CodeMirror |
+  | `SolarSystemCanvas` | 215.9 KB | `three` + R3F, **lazy**, loaded only by the map |
+  | each biome pack | 0.4–0.5 KB | one chunk per biome, loaded one at a time |
+
+  So the split is doing exactly what §10 asks. **Re-baselined to 74.9 KB**: if a
+  change moves *that*, or puts a canvas library into the entry chunk, the change
+  is wrong. Re-measure rather than trusting this line — it has been stale once.
 
 ### 10.3 Not everything should be a Phaser game — re-derived for the real curriculum
 
@@ -726,6 +744,24 @@ what, not by what is most fun to build.
 | D5 | **Data Path** (12) |
 | D6 | **The Terminal** (15) — CodeMirror + 8086 subset VM |
 | D7 | **Cache Tuner** (16) + **The Budget** (17) |
+| D8 | **Hazard Interceptor** (14) — Phaser · ILP hazard classification |
+| D9 | **Mnemonic Sprint** (15) — DOM · x86 mnemonic-syntax fluency, **not TASM** |
+| D10 | **The Descent** (unlocked after 11, pays off at 16) — Phaser |
+| D11 | **The Amdahl 500** (17) — prediction race, `motion.dev`, probably **no Phaser at all** |
+| D12 | **Fault Line** (18) — Phaser · distributed-systems network view |
+
+**D8–D12 are the five approved in `MINIGAME-PROPOSALS.md`** (ruling, 1 Sep
+2026), added to this track on 8 September. Every one is bound by the constraints
+its own proposal states: **no lives, no game-over, no timer feeding a grade,
+never the only path through its stage, ungraded and opt-in.**
+
+**All five are DEFERRED, and the reason is a rule rather than a schedule.** Each
+targets a chapter whose lesson text does not exist — 14, 15, 16, 17 and 18 are
+scaffolds carrying four content blocks each (measured 8 Sep on a seeded
+database; authored chapters carry 18–39). Stage 11, which gates The Descent, is
+a scaffold too. A minigame is practice for a lesson, and root `CLAUDE.md` hard
+rule 5 forbids inventing the lesson to have something to practise. **Build each
+one when its chapter is authored** — Track E, above.
 
 ### Track E — Content
 

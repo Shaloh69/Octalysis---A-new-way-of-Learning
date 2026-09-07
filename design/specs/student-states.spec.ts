@@ -198,7 +198,21 @@ test.describe("progress and settings — the states they can actually have", () 
        * reduced motion on. Only assert the copy where an error is actually
        * shown.
        */
+      /*
+       * WAIT for one of the two outcomes; do not COUNT for one.
+       *
+       * `count()` is instantaneous, so on a slower render this fell through to
+       * the "no error state" branch before the error had painted, then failed
+       * asserting an `h1` that was about to be replaced anyway. It passed at
+       * 1440 and failed at 380 for no reason but timing — the signature of a
+       * race dressed as a viewport bug.
+       */
       const err = page.locator(".state-error");
+      await Promise.race([
+        err.waitFor({ timeout: 15_000 }).catch(() => undefined),
+        page.locator("h1").waitFor({ timeout: 15_000 }).catch(() => undefined),
+      ]);
+
       if ((await err.count()) === 0) {
         await expect(page.locator("h1")).toBeVisible();
         test.skip(true, `${name} renders without the API; no error state to check`);
@@ -206,6 +220,12 @@ test.describe("progress and settings — the states they can actually have", () 
       }
 
       await expect(err).toBeVisible({ timeout: 15_000 });
+      /*
+       * An error that REPLACES the page is the page, so it owes a level-one
+       * heading and a landmark. This rendered an `h2` in a `div` until 8 Sep —
+       * the same defect as `NotFoundPage`, found the same day.
+       */
+      expect(await page.locator("h1").count(), "the error state has no h1").toBe(1);
       expect(await err.getByRole("button").count(), "an error with no control is a dead end")
         .toBeGreaterThan(0);
       const text = (await err.innerText()).toLowerCase();
@@ -292,4 +312,42 @@ test.describe("empty states — where they genuinely occur", () => {
       );
     });
   }
+});
+
+test.describe("never the only path — the constraint every minigame is bound by", () => {
+  test("a stage is readable as text, with no canvas anywhere in the reader", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
+
+    /*
+     * `MINIGAME-PROPOSALS.md` binds all five approved games to the same
+     * constraints: no lives, no game-over, no timer feeding a grade, **never the
+     * only path through its stage**, ungraded and opt-in.
+     *
+     * Four of those five cannot be tested until a game exists. The fifth can be
+     * tested NOW, and it is the one that matters most, because it is the
+     * property a future game could quietly break: the stage must be completable
+     * by reading. So this records the baseline while it is still trivially
+     * true — no canvas in the reader at all — and it fails the day a minigame
+     * lands on the required path rather than beside it.
+     *
+     * Written 8 Sep 2026, with all five games DEFERRED because every target
+     * chapter is a scaffold. A test that guards a constraint is worth having
+     * before the thing it constrains.
+     */
+    await signIn(page);
+    await page.goto("/app/stage/05", { waitUntil: "networkidle" });
+    await expect(page.locator("h1")).toBeVisible();
+
+    expect(
+      await page.locator("main canvas").count(),
+      "the stage reader has a canvas — a minigame must sit BESIDE the primary " +
+        "encounter, never replace it",
+    ).toBe(0);
+
+    // The lesson is text, and it is there.
+    const body = await page.locator("main").innerText();
+    expect(body.length, "the reader rendered no readable content").toBeGreaterThan(200);
+  });
 });

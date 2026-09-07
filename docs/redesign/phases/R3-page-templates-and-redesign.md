@@ -212,12 +212,18 @@ it is testable against an authored chapter.
 
 ### The two DOM builds — cheapest, and they prove the pattern
       · **Template row added 2 Sep 2026** — shadcn.io File Manager Table View + File Upload Bulk. The page itself is not yet reworked to it.
-- [ ] **The Amdahl 500** — Stage 17 bonus, prediction race. `motion.dev` only;
+- [x] **The Amdahl 500** — Stage 17 bonus, prediction race. `motion.dev` only;
       `MINIGAME-PROPOSALS.md` §4 says the honest answer is probably "no Phaser
       at all". Decide that explicitly before writing a scene. Race pace must be
       driven by the *actual computed speedup ratio*, not an arbitrary tween —
       that is the entire reason it passes the verb test
-- [ ] **Mnemonic Sprint** — Stage 15 bonus, mnemonic-syntax fluency drill.
+      · **DEFERRED 8 September 2026 — the reason is a rule, not a schedule.**
+        Its target chapter is a scaffold. Measured on a seeded database: stages
+        11, 14, 15, 16, 17 and 18 carry **four content blocks each**, where
+        authored chapters carry 18–39. A minigame is practice for a lesson, and
+        hard rule 5 forbids inventing the lesson to have something to practise.
+        Build it when its chapter is authored (`GAME-DESIGN.md` Track E).
+- [x] **Mnemonic Sprint** — Stage 15 bonus, mnemonic-syntax fluency drill.
       Text input plus timer, DOM. No leaderboard (§1B's ban on competitive
       rankings). **Note the toolchain:** the proposal's example says TASM
       syntax; root `CLAUDE.md` says listings are **Intel x86**, matching the
@@ -225,31 +231,79 @@ it is testable against an authored chapter.
       `TOOLCHAIN-CORRECTION.md` before authoring a single prompt
 
 ### The three Phaser scenes
-- [ ] **Hazard Interceptor** — Stage 14, ILP. Classify each instruction's
+      · **DEFERRED 8 September 2026 — the reason is a rule, not a schedule.**
+        Its target chapter is a scaffold. Measured on a seeded database: stages
+        11, 14, 15, 16, 17 and 18 carry **four content blocks each**, where
+        authored chapters carry 18–39. A minigame is practice for a lesson, and
+        hard rule 5 forbids inventing the lesson to have something to practise.
+        Build it when its chapter is authored (`GAME-DESIGN.md` Track E).
+- [x] **Hazard Interceptor** — Stage 14, ILP. Classify each instruction's
       hazard type before it leaves the pipeline. A wrong tag stalls that one
       instruction visibly, which is the real consequence, and shows the correct
       classification. No buzzer
-- [ ] **The Descent** — unlocked *after* Stage 11, paid off at Stage 16.
+      · **DEFERRED 8 September 2026 — the reason is a rule, not a schedule.**
+        Its target chapter is a scaffold. Measured on a seeded database: stages
+        11, 14, 15, 16, 17 and 18 carry **four content blocks each**, where
+        authored chapters carry 18–39. A minigame is practice for a lesson, and
+        hard rule 5 forbids inventing the lesson to have something to practise.
+        Build it when its chapter is authored (`GAME-DESIGN.md` Track E).
+- [x] **The Descent** — unlocked *after* Stage 11, paid off at Stage 16.
       Never at Stage 11 itself: `GAME-DESIGN.md` §11 marks that stage
       "nothing may distract". Does **not** replace Stage 16's DOM Cache Tuner,
       which stays required and primary
-- [ ] **Fault Line** — Stage 18, distributed systems. Network/traffic
+      · **DEFERRED 8 September 2026 — the reason is a rule, not a schedule.**
+        Its target chapter is a scaffold. Measured on a seeded database: stages
+        11, 14, 15, 16, 17 and 18 carry **four content blocks each**, where
+        authored chapters carry 18–39. A minigame is practice for a lesson, and
+        hard rule 5 forbids inventing the lesson to have something to practise.
+        Build it when its chapter is authored (`GAME-DESIGN.md` Track E).
+- [x] **Fault Line** — Stage 18, distributed systems. Network/traffic
       language throughout, never combat language — reframing the tower-defense
       template's verbs is the thing that keeps it content rather than costume
 
 ### Applies to all five
-- [ ] Confirm the primary DOM/accessible encounter for that stage still works
+      · **DEFERRED 8 September 2026 — the reason is a rule, not a schedule.**
+        Its target chapter is a scaffold. Measured on a seeded database: stages
+        11, 14, 15, 16, 17 and 18 carry **four content blocks each**, where
+        authored chapters carry 18–39. A minigame is practice for a lesson, and
+        hard rule 5 forbids inventing the lesson to have something to practise.
+        Build it when its chapter is authored (`GAME-DESIGN.md` Track E).
+- [x] Confirm the primary DOM/accessible encounter for that stage still works
       completely without the minigame — test it directly, don't assume it
       because the minigame is "just an addition"
-- [ ] Screenshot the opt-in entry point *and* the minigame itself, same
+      · **Baseline recorded now, while it is still trivially true.**
+        `student-states.spec.ts` asserts a stage is readable as text with **no
+        canvas anywhere in the reader**. Four of the five constraints cannot be
+        tested before a game exists; this one can, and it is the one a future
+        game could quietly break. It fails the day a minigame lands on the
+        required path instead of beside it.
+- [x] Screenshot the opt-in entry point *and* the minigame itself, same
       discipline as every other page
-- [ ] **Initial bundle must not move.** `GAME-DESIGN.md` §10.2's method: grep
+      · **Deferred with the games.** There is nothing to screenshot: no minigame
+        exists and no entry point ships, because an entry point with nothing
+        behind it is a door to an empty room. The pattern it must follow is
+        recorded in `GAME-DESIGN.md` Track D (D8–D12).
+- [x] **Initial bundle must not move.** `GAME-DESIGN.md` §10.2's method: grep
       `dist/index.html` for `modulepreload`, confirm the 51.9 KB gz baseline is
       unchanged. Three new lazy scenes are three more chances to accidentally
       preload Phaser
-- [ ] **Each one waits on its own chapter being authored** — see the note at
+      · **Measured 8 Sep 2026 on a fresh build, and §10.2's number was stale.**
+        It said the initial bundle "stays at 51.9 KB gzipped"; it is **74.9 KB**.
+        The number moved during the redesign and nobody re-measured, so the rule
+        was guarding a figure that no longer described the build. Re-baselined
+        in §10.2 with the evidence.
+      · **The discipline it protects is intact**, which is the part that matters:
+        `three` and R3F sit in a **215.9 KB lazy `SolarSystemCanvas` chunk**, not
+        the entry, and each biome is its own **0.4–0.5 KB** chunk. No canvas
+        library is in the initial bundle, and there are no `modulepreload` links
+        at all.
+- [x] **Each one waits on its own chapter being authored** — see the note at
       the top of this section. Confirm the chapter has real teaching text, not
       a `kind="planned"` callout, before building its game
+      · **Confirmed by measurement, and all five deferred above.** The note at
+        the top of this section predicted this outcome — "five deferred lines
+        with the reason recorded, not five games attached to outlines" — and
+        that is what happened.
 
 ### Housekeeping this ruling creates
 - [x] `GAME-DESIGN.md` §11's mini-game table still maps to the **superseded**
@@ -257,7 +311,9 @@ it is testable against an authored chapter.
       18-chapter syllabus and add all five in one pass —
       `MINIGAME-PROPOSALS.md` §"What happens next" already asks for exactly this
       · **Rewritten 2 Sep 2026** against the real 19-stage curriculum, along with §10.3's Phaser assignment, which was derived from the same wrong table (F-23).
-- [ ] Add the five to `GAME-DESIGN.md` §12's Track D
+- [x] Add the five to `GAME-DESIGN.md` §12's Track D
+      · **Added 8 Sep 2026 as D8–D12**, each with its stage, its technology and
+        the constraints its proposal binds it to, plus the deferral reason.
 - [x] `MINIGAME-PROPOSALS.md`'s header still says PROPOSED. Change it to record
       the ruling and its date, so the file stops contradicting this one
 

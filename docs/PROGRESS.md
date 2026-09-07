@@ -31,7 +31,7 @@ and R3's denominator had grown. Count, do not copy.
 | R0 scope and guardrails | ✅ 28 / 28 |
 | R1 solar system foundation | ✅ 36 / 36 |
 | R2 per-student cosmetics | ✅ **21 / 21** — closed 7 Sep, and closing it found **F-40** |
-| **R3 page templates** | **31 / 49** ← live |
+| **R3 page templates** | **41 / 49** ← live |
 | R4 moons and subtopics | ▫️ 0 / 13 |
 | R5 testing and sign-off | ▫️ 0 / 24 |
 
@@ -42,7 +42,7 @@ and R3's denominator had grown. Count, do not copy.
 | `pnpm verify` | **green** — 343 unit tests (266 API, 53 web, 24 console) | after `db:reset` |
 | `pnpm test:rls` | **green** — 38 denial tests | seeded |
 | `check-contrast.mjs` | **green** — 1181 checks | n/a |
-| `pnpm qa` | **green** — 212 passed, 105 skipped, 0 failed | seeded, all three servers up |
+| `pnpm qa` | **green** — 214 passed, 108 skipped, 0 failed | seeded, all three servers up |
 
 **The 110 skips are the honest part.** Ten name **F-41**: nothing in this repo
 seeds `items` or `assessments`, so on a clean fixture those pages are correctly
@@ -107,7 +107,7 @@ yes, and seeded that way), and nothing else outstanding.
 
 ## Current phase
 
-**R3 — IN PROGRESS. 31 of 49, counted from the phase file on 8 Sep 2026.**
+**R3 — IN PROGRESS. 41 of 49, counted from the phase file on 8 Sep 2026.**
 (This heading said "R2 complete, R3 next" for several sessions after R3 work had
 already started, and later said "13 of 44" after the file had moved on. **Count
 the boxes in `docs/redesign/phases/R3-page-templates-and-redesign.md`; do not

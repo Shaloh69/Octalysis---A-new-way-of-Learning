@@ -144,13 +144,27 @@ export function ErrorState({
   retryLabel?: string;
 }): JSX.Element {
   return (
-    <div className="state state-error" role="alert">
-      <h2>That did not load</h2>
+    /*
+      `main` and `h1`, because when this renders it IS the page — every caller
+      returns it INSTEAD of the route's content, not beside it.
+      `if (error) return <ErrorState .../>` is the pattern in all three places.
+
+      It was a `div` with an `h2`, so a student whose connection dropped got a
+      document with no title at any level and no landmark to jump to. Exactly
+      the defect found in `NotFoundPage` the same day, from the same cause: an
+      element written as though something else on the page would supply the
+      heading, when nothing else is on the page at all.
+
+      `role="alert"` stays. The heading names the situation; the alert makes a
+      screen reader announce it without the student hunting for it.
+    */
+    <main className="state state-error" role="alert">
+      <h1>That did not load</h1>
       <p>{message}</p>
       <button type="button" onClick={onRetry}>
         {retryLabel}
       </button>
-    </div>
+    </main>
   );
 }
 
