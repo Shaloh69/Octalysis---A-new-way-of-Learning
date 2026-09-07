@@ -99,14 +99,33 @@ export function AttemptRunner({ assessmentId, title, onFinished, onLeave }: Prop
 
   const item = items[at];
 
+  /**
+   * Send an answer.
+   *
+   * `raw` is the SHAPE the engine grades, not the text on screen. `AnswerBody`
+   * in `routes/attempts.ts` accepts `{index}`, `{value}` or `{order}` and
+   * nothing else, and this used to send the bare option string — so every
+   * multiple-choice answer came back **400 "That answer could not be read."**
+   * and never reached `responses`.
+   *
+   * It failed silently in the worst way: the answer is written to local state
+   * first, so the option stayed selected and the paper looked answered. Only
+   * the network tab said otherwise.
+   *
+   * `display` is what the student sees selected, kept separate because for an
+   * option the wire value is its INDEX. Index rather than text on purpose:
+   * `gradeResponse` will match text against the options as a fallback, but two
+   * options that render the same string would be ambiguous, and a paper with a
+   * repeated distractor is a real thing.
+   */
   const answer = useCallback(
-    async (value: string) => {
+    async (raw: { index: number } | { value: string }, display: string) => {
       if (!attemptId || !item) return;
-      setAnswers((a) => ({ ...a, [item.ordinal]: value }));
+      setAnswers((a) => ({ ...a, [item.ordinal]: display }));
       setSaving(true);
       setError(null);
       try {
-        const v = await api.answer(attemptId, item.ordinal, value, Date.now() - shownAt.current);
+        const v = await api.answer(attemptId, item.ordinal, raw, Date.now() - shownAt.current);
         setVerdicts((prev) => ({ ...prev, [item.ordinal]: v }));
       } catch (err) {
         // The answer is in local state either way, so the student is not
@@ -247,7 +266,7 @@ export function AttemptRunner({ assessmentId, title, onFinished, onLeave }: Prop
                   name={`q-${item.ordinal}`}
                   value={opt}
                   checked={chosen === opt}
-                  onChange={() => void answer(opt)}
+                  onChange={() => void answer({ index: k }, opt)}
                 />
                 <span className="mono runner-letter">{String.fromCharCode(65 + k)}</span>
                 <span className="runner-option-text">{opt}</span>
@@ -258,7 +277,7 @@ export function AttemptRunner({ assessmentId, title, onFinished, onLeave }: Prop
           <FreeEntry
             unit={item.unit}
             value={chosen ?? ""}
-            onCommit={(v) => void answer(v)}
+            onCommit={(v) => void answer({ value: v }, v)}
           />
         )}
 

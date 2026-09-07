@@ -96,7 +96,14 @@ After `pnpm verify`, reseed with **`node scripts/db-demo.mjs`** — the API suit
 truncates fixtures. It refuses to run over another user's attempt history and
 tells you to `pnpm db:reset` first, because `responses` is append-only.
 
-**Open for the instructor:** whether chapter 18 belongs in the Finals (assumed
+**Open for the instructor:** **F-41** — the demo fixture ships **no
+assessments**, because `demo-seed.sql` never inserts one. A clean reset leaves
+no student able to sit a check and the attempt runner untestable. Seeding one
+needs a blueprint matched to the item bank, and the bank has live items for
+stage 07 only while every seeded blueprint is `final` scope. Which blueprint
+should the demo data ship, against which stage?
+
+**Also open:** whether chapter 18 belongs in the Finals (assumed
 yes, and seeded that way), and nothing else outstanding.
 
 ---

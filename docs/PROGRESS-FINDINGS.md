@@ -1434,3 +1434,63 @@ right. Nothing was broken enough to notice. It took rendering two students side
 by side and comparing the DOM against the rows — which is exactly the check R2
 wrote down and left for last.
 
+### F-41 · Every multiple-choice answer was rejected, and the fixture cannot exercise the fix
+
+**Two defects, found together, because the first one hid the second.**
+
+#### The client sent a shape the server does not accept
+
+`AnswerBody` in `routes/attempts.ts` accepts `{index}`, `{value}` or `{order}`.
+`AttemptRunner` sent the bare option string. So **every multiple-choice answer
+came back `400 "That answer could not be read."`** and nothing reached
+`responses`.
+
+It failed in the worst possible way: the answer is written to local state
+*before* the request, so the option stayed selected, the paper looked answered,
+and only the network tab disagreed. A student would have sat a whole check and
+submitted eight unanswered questions.
+
+Fixed: options send `{ index: k }`, free entry sends `{ value }`. Index rather
+than text on purpose — `gradeResponse` will fall back to matching text against
+the options, but two options rendering the same string would be ambiguous, and a
+repeated distractor is a real thing.
+
+Verified end to end: `200 {"recorded":true,...}`, the counter moves to
+`1 / 8 answered`, and a row appears in `responses`.
+
+#### And the test that should have caught it passed
+
+`attempt-runner.spec.ts` asserted "answering does not fetch the key either" and
+was green — **because the answer never saved**. Nothing about correctness came
+back because nothing came back at all.
+
+That test also stated the rule wrongly. Hard rule 1 is that the key is denied
+*until submitted*, and `engine-repo.ts` sets
+`revealVerdict = blueprintScope !== "final"` — so on a formative stage check the
+student IS told the answer and rationale immediately, which is the pedagogy. The
+test would have failed on any assessment where reveal is on, flagging intended
+behaviour as a security breach. Rewritten to assert what actually matters: the
+answer records, and the key never travels with the QUESTIONS.
+
+#### The fixture cannot exercise any of it
+
+`db/demo-seed.sql` has **no `insert into assessments` anywhere** — it deletes
+them and re-points their section, nothing more. So a clean
+`pnpm db:reset` + `node scripts/db-demo.mjs` leaves the database with **zero
+assessments**: no student can sit anything, `/assessments` shows its empty
+state, and the attempt runner is unreachable.
+
+The rows this work was done against were session artefacts that the reset
+removed. The suite now skips those tests with that reason rather than failing,
+because the runner is not broken — there is nothing to run it on.
+
+**Not fixed here, and deliberately.** Seeding an assessment needs a blueprint
+matched to the item bank, and the bank holds live items for **stage 07 only**
+while the four seeded blueprints are all `final` scope covering chapters that
+have none. Authoring a stage-scoped blueprint is question-engine data, and
+guessing its cells would produce papers that fail feasibility at the moment
+forty students press Start — the exact failure `/assessments` exists to prevent.
+
+**This needs an instructor's call**, or a deliberate fixture task: which
+blueprint should the demo data ship, and against which stage.
+

@@ -57,7 +57,15 @@ Mode aggregates.
 ## Every component needs six states
 loading (skeleton, not a spinner) · empty (an invitation, not an apology) · locked (name the
 reason and the distance to unlocking) · error (what happened + how to fix) · offline (banner +
-queued autosave) · 380px. See docs/PAGE-SPECS.md §5.
+queued autosave) · **saving**.
+
+**The sixth is `saving`, not `380px`** — corrected 8 Sep 2026 against
+`DESIGN-MANDATE.md` §201, which is the authority. This line said `380px` and
+conflated two different checklists: 380px is one of the **mechanical five** that
+`r3-gate.spec.ts` runs on every route, not one of the six states. The confusion
+had a cost — a spec written from this line tested 380px as a state and never
+tested saving at all, on a graded surface where saving is the whole promise
+("answers save as you give them"). See `docs/PAGE-SPECS.md` §5.
 
 ## Feedback tone
 Incorrect answers: neutral low tick, calm rationale card, offer a re-roll. Never red, never a

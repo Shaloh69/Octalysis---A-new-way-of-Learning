@@ -153,6 +153,14 @@ absences are what the next session needs.
 - **`docs/superseded/`** — named in §2c as an EngiRent practice worth copying,
   created 7 Sep alongside this file. Before that, stale documents were edited in
   place or left to rot.
+- **A seed for the item bank or for assessments.** `db/demo-seed.sql` inserts
+  neither, `sync-content.mjs` does not touch them, and the content files carry
+  no items — so a clean `pnpm db:reset` + `node scripts/db-demo.mjs` leaves
+  **`items = 0` and `assessments = 0`**. The whole assessment pipeline (bank →
+  blueprint → assessment → attempt → grading) cannot be exercised from a clean
+  checkout, and ten spec cases now skip naming **F-41** rather than fail. The
+  rows this work was developed against were live-database artefacts that a reset
+  destroyed. Needs an instructor's call: which blueprint, against which stage.
 - **An avatar system.** `DESIGN-MANDATE.md` §4 specifies DiceBear seeded from
   `student_id`; nothing implements it. `routes/cosmetics.ts` is the first
   consumer of that seed and says so.

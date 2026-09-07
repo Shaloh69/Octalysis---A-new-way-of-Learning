@@ -153,12 +153,31 @@ test.describe("/live — anonymity is a property of the payload", () => {
      * the tool and filing a bug.
      */
     await open(page, "/live");
-
     const main = page.locator("main");
-    await expect(main).toContainText(/fewer than \d+ people/i);
-    await expect(main, "the page should say the SERVER withholds it").toContainText(
-      /server withholds/i,
-    );
+
+    /*
+     * SUPPRESSION IS A STATE, NOT A CONSTANT, and this test first assumed
+     * otherwise. It asserted the "fewer than 5 people" copy unconditionally and
+     * broke the moment the fixture changed: with nobody working the page
+     * correctly reads "safe to show" and renders the per-stage breakdown.
+     *
+     * So the branch is asserted, not one side of it. Both readings must
+     * explain themselves — a dashboard that silently shows nothing and a
+     * dashboard that silently shows everything are equally hard to trust.
+     */
+    const text = await main.innerText();
+    if (/suppress/i.test(text)) {
+      await expect(main).toContainText(/fewer than \d+ people/i);
+      await expect(main, "the page should say the SERVER withholds it").toContainText(
+        /server withholds/i,
+      );
+    } else {
+      await expect(main, "showing a breakdown without saying it is safe to").toContainText(
+        /safe to show/i,
+      );
+    }
+
+    // Unconditional in both states: the claim that makes the page trustworthy.
     await expect(main).toContainText(/not loaded cannot leak/i);
   });
 });
