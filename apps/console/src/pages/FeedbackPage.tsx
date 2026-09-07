@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { api, type FeedbackEntry } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
 import { shortDate } from "@/lib/utils";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Empty, ErrorNote, Loading } from "@/components/ui/empty";
+import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 
 /**
  * Feedback — reports from students, and the SUS score.
@@ -39,6 +40,12 @@ export function FeedbackPage() {
     [filter],
   );
   const [busy, setBusy] = useState<string | null>(null);
+  /*
+   * One open at a time, the same rule `/students` applies to attempt history: a
+   * teacher triages a queue by working down it, not by comparing two reports
+   * side by side, and several open rows turn a scan back into a scroll.
+   */
+  const [openReport, setOpenReport] = useState<string | null>(null);
 
   async function setStatus(id: string, status: (typeof STATUSES)[number]) {
     setBusy(id);
@@ -126,50 +133,128 @@ export function FeedbackPage() {
           }
         />
       ) : (
-        <ul className="space-y-3">
-          {reports.map((e) => (
-            <li key={e.id}>
-              <Card>
-                <CardContent className="pt-5">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <Badge tone={STATUS_TONE[e.status]}>{e.status.replace("_", " ")}</Badge>
-                    <Badge tone="neutral">{e.channel.replace("_", " ")}</Badge>
-                    {e.category ? <Badge tone="neutral">{e.category}</Badge> : null}
-                    {e.itemSlug ? (
-                      <span className="num text-xs text-ink-faint">{e.itemSlug}</span>
-                    ) : null}
-                    <time className="num ml-auto text-xs text-ink-faint" dateTime={e.createdAt}>
-                      {shortDate(e.createdAt)}
-                    </time>
-                  </div>
+        /*
+          A TABLE with an expanding row — the FIFTH card list in this console to
+          be converted, and the same pattern `/students` already uses for
+          attempt history (`CONSOLE-DATA-AND-TEMPLATES.md` §2, TanStack
+          expanding rows).
 
-                  {e.body ? (
-                    <p className="mb-3 whitespace-pre-wrap text-sm text-ink">{e.body}</p>
-                  ) : null}
+          ~172px per report as cards, and a triage queue is read by scanning:
+          which are new, which are flags rather than content reports, which
+          question. None of that needs the full body text on screen at once.
 
-                  <Variant entry={e} />
+          THE VARIANT IS WHY THIS EXPANDS RATHER THAN LINKING AWAY. A content
+          report is only actionable with the exact numbers that student saw, so
+          the instance has to be one click from the queue, not a page away.
+        */
+        <div className="table-scroll rounded-lg border border-line bg-surface-1">
+          <Table>
+            <THead>
+              <TR>
+                <TH>Status</TH>
+                <TH>Kind</TH>
+                <TH>Report</TH>
+                <TH>Item</TH>
+                <TH>Reporter</TH>
+                <TH className="text-right">Received</TH>
+                <TH aria-label="Triage" />
+              </TR>
+            </THead>
+            <TBody>
+              {reports.map((e) => {
+                const open = openReport === e.id;
+                return (
+                  <Fragment key={e.id}>
+                    <TR>
+                      <TD className="whitespace-nowrap align-top">
+                        <Badge tone={STATUS_TONE[e.status]}>{e.status.replace("_", " ")}</Badge>
+                      </TD>
+                      <TD className="whitespace-nowrap align-top">
+                        <Badge tone="neutral">{e.channel.replace("_", " ")}</Badge>
+                        {e.category ? (
+                          <div className="mt-0.5 text-xs text-ink-faint">{e.category}</div>
+                        ) : null}
+                      </TD>
+                      <TD className="align-top">
+                        {/*
+                          Clamped to two lines with the full text on hover. The
+                          same treatment the `/items` objective column needed —
+                          an untruncated paragraph per row is what made these
+                          card-height in the first place.
+                        */}
+                        <p className="line-clamp-2 max-w-md text-sm text-ink" title={e.body ?? ""}>
+                          {e.body ?? <span className="text-ink-faint">no message</span>}
+                        </p>
+                      </TD>
+                      <TD className="num whitespace-nowrap align-top text-xs text-ink-faint">
+                        {e.itemSlug ?? "—"}
+                      </TD>
+                      <TD className="whitespace-nowrap align-top text-xs text-ink-muted">
+                        {e.reporterName ?? "Anonymous"}
+                        <div className="text-ink-faint">{e.role}</div>
+                      </TD>
+                      <TD className="num whitespace-nowrap align-top text-right text-xs text-ink-faint">
+                        <time dateTime={e.createdAt}>{shortDate(e.createdAt)}</time>
+                      </TD>
+                      <TD className="whitespace-nowrap align-top text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-expanded={open}
+                          onClick={() => setOpenReport(open ? null : e.id)}
+                        >
+                          {open ? "Close" : "Triage"}
+                        </Button>
+                      </TD>
+                    </TR>
 
-                  <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
-                    <span className="mr-1 text-xs text-ink-muted">
-                      {e.reporterName ?? "Anonymous"} · {e.role}
-                    </span>
-                    {STATUSES.filter((s) => s !== e.status).map((s) => (
-                      <Button
-                        key={s}
-                        size="sm"
-                        variant="ghost"
-                        disabled={busy === e.id}
-                        onClick={() => void setStatus(e.id, s)}
-                      >
-                        {s.replace("_", " ")}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-        </ul>
+                    {open && (
+                      <TR>
+                        {/*
+                          `colSpan` spans the whole table: this is one report's
+                          detail, not another row of the same shape, and a
+                          screen reader reading it as six empty cells plus one
+                          full one would be a lie about the structure.
+                        */}
+                        <TD colSpan={7} className="bg-surface-1 p-3">
+                          {/*
+                            Only when the row CLAMPED it. The Report column
+                            already shows the first two lines, so repeating a
+                            short message here says the same thing twice — the
+                            redundancy just removed from `/assessments`.
+                            140 characters is roughly two lines at this column
+                            width; the exact figure matters less than not
+                            echoing a one-line report back at the reader.
+                          */}
+                          {e.body && e.body.length > 140 ? (
+                            <p className="mb-3 whitespace-pre-wrap text-sm text-ink">{e.body}</p>
+                          ) : null}
+
+                          <Variant entry={e} />
+
+                          <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
+                            <span className="mr-1 text-xs text-ink-muted">Move to</span>
+                            {STATUSES.filter((s) => s !== e.status).map((s) => (
+                              <Button
+                                key={s}
+                                size="sm"
+                                variant="ghost"
+                                disabled={busy === e.id}
+                                onClick={() => void setStatus(e.id, s)}
+                              >
+                                {s.replace("_", " ")}
+                              </Button>
+                            ))}
+                          </div>
+                        </TD>
+                      </TR>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </TBody>
+          </Table>
+        </div>
       )}
     </>
   );

@@ -318,7 +318,33 @@ write `/console/locks`, the app routes `/locks`.
 - [x] `/submissions` — **not in `TEMPLATE-LINKS.md`.** `DESIGN-REVIEW-01` D-4
       records it as too sparse to mark from; the density pass belongs here
       · **Template row added** (same dense reference as `/items` and `/audit`), and **D-4 itself is FIXED** — 3,436px → 1,219px.
-- [ ] `/audit` · `/feedback` · `/live` — **`/audit` DONE** (card list → table, 109px → 41px per entry, timeline kept as the alternate view, F-26). `/feedback` and `/live` untouched.
+- [x] `/audit` · `/feedback` · `/live` — **`/audit` DONE** (card list → table, 109px → 41px per entry, timeline kept as the alternate view, F-26).
+      · **`/feedback` was the FIFTH card list**, and the last one anywhere in
+        this console. Converted to a table with an expanding row — the same
+        TanStack pattern `/students` uses for attempt history
+        (`CONSOLE-DATA-AND-TEMPLATES.md` §2). **~172px → 54px per report; the
+        page went 2,240px → 991px**, so all eleven fit where about five did.
+      · **It expands rather than linking away for a specific reason.** Every
+        student gets different numbers, so "question 7 is wrong" is
+        unactionable; a content report only becomes work when the teacher can
+        see the exact instance that student saw. One click from the queue, not a
+        page away. One open at a time — a triage queue is worked down, not
+        compared.
+      · **`/live` needed no rework and is now covered.** Both of its claims are
+        architecture, not copy, so both are asserted against the PAYLOAD:
+        *"no name, student ID, or user ID is ever loaded — a field that is not
+        loaded cannot leak"*, and *"the server withholds the numbers rather than
+        this page hiding them"*. Checking the rendering would only have proved
+        the fields are not displayed, which is much weaker — the DOM can hide
+        what the network already delivered.
+      · **`/live` cannot use `networkidle`** — it holds an open request for as
+        long as it is on screen, which is why earlier passes skipped it. Every
+        wait in its spec is `domcontentloaded` plus an explicit locator.
+      · **One correction worth keeping:** the suppression test first searched the
+        payload for `/student|user|name|email/` and failed on
+        `{ stageId: "01", students: 21 }` — an AGGREGATE COUNT, which is the
+        anonymisation rather than a breach of it. It now inspects KEYS for
+        identifiers. The test was wrong, not the payload.
 - [x] `/system` — **not in `TEMPLATE-LINKS.md`.** The invariant results page
       · **Template row added 2 Sep 2026** — the status/health-page pattern from DevOps shadcn templates. The page itself is not yet reworked to it.
 
