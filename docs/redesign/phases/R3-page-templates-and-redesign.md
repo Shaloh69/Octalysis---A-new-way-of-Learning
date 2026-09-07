@@ -218,8 +218,21 @@ Per `BIOME-AND-LOADING-SPEC.md` §4 — build once, verify it shows up correctly
 wherever it's triggered, not as a per-route task:
 - [ ] Hub loading (warp-speed) — triggers at `/app` first arrival and hub-level
       navigation
-- [ ] Stage/moon loading (biome preview) — triggers entering any specific
+- [x] Stage/moon loading (biome preview) — triggers entering any specific
       planet or moon
+      · **DONE 7 Sep 2026.** `StageReader`'s loading branch renders the
+        destination biome behind layout-shaped skeletons, so the student arrives
+        somewhere while the stage fetch is in flight. It previously rendered bare
+        skeletons on the page surface, and the biome appeared only once the fetch
+        landed — the map warped, the route changed, and the transition was spent
+        on nothing.
+      · **No artificial dwell.** §4.1's budget line is that a loading animation
+        must never be why a page feels slow, and the warp leaving the map has
+        already spent 620ms. A fast fetch means an instant arrival, which is
+        correct.
+      · Held by `design/specs/arrival.spec.ts`, five tests, which hold the stage
+        request open because the state is normally invisible — nobody would see
+        it degrade. Mutation-tested: removing the biome fails it by name.
 - [x] **The biome is the PAGE background, not a banner strip** (§1b, ruled
       2 Sep 2026). Full page on `/app/stage/:id` and moon detail; never on hub
       routes, **never behind an assessment**
@@ -259,7 +272,14 @@ wherever it's triggered, not as a per-route task:
       biome resolves → content mounts. Captured as a frame sequence, not a still
 - [ ] Both captured as short frame sequences per `REDESIGN-CLAUDE.md` §2, not
       single stills
-- [ ] Both verified frozen-to-static under `prefers-reduced-motion`
+- [x] Both verified frozen-to-static under `prefers-reduced-motion`
+      · **Arrival: DONE**, asserted through `getAnimations()` rather than by
+        screenshotting twice — a slow animation and a stopped one look identical
+        in two stills taken close together. The biome still renders; it is frozen,
+        not withheld.
+      · The hub warp already skipped entirely under reduced motion
+        (`useHubWarp` / `useFlatWarp`); that half was built earlier and is
+        unchanged.
 
 ## R3.5 — Cross-cutting, same rule as `DESIGN-MANDATE.md`'s shared states table
 - [ ] Every route gets its six states (loading, empty, locked, error,

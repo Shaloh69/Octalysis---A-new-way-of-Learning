@@ -23,7 +23,9 @@ import { supabase } from "./session";
  * non-enumerating.
  */
 
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+// 8090, not 8080 — see the note in `api.ts`. 8080 is often another
+// project's Adminer, and its preflight failure names no port.
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8090";
 
 /** The ONLY message the sign-in path returns, whatever actually went wrong. */
 const SIGNIN_FAILED = "Check your ID and password.";

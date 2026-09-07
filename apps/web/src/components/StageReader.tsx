@@ -66,13 +66,67 @@ export function StageReader({
   }
 
   if (!stage) {
+    /*
+     * ARRIVAL, not a spinner. `BIOME-AND-LOADING-SPEC.md` §4.2: entering a stage
+     * is the one navigation where the student already knows their destination,
+     * so the loading state previews it — "the destination itself, arriving
+     * early".
+     *
+     * This branch used to render bare skeletons on the page surface, which made
+     * the whole sequence read as a jump: the map warped, the route changed, and
+     * the biome only appeared once the fetch landed. The biome is the thing that
+     * says *where you now are*, so withholding it until the content arrives
+     * spends the transition on nothing.
+     *
+     * The skeletons stay. §4.2 is explicit that a biome preview is the
+     * game-native form of `PAGE-SPECS.md` §5's "skeletons matching final layout,
+     * never a centred spinner" — not an exception to it. So: biome behind,
+     * layout-shaped skeletons on top, and when the stage lands the content
+     * mounts onto a world that is already there.
+     *
+     * No artificial dwell. §4.1's budget line is that a loading animation must
+     * never itself become the reason a page feels slow, and the warp leaving the
+     * map has already spent 620ms. If the fetch is instant the student simply
+     * arrives instantly, which is the correct outcome.
+     */
     return (
-      <div className="state state-loading" aria-busy="true">
-        <span className="sr-only">Loading stage {stageId}</span>
-        <div className="skel skel-title" />
-        <div className="skel skel-para" />
-        <div className="skel skel-para" />
-      </div>
+      <>
+        <BiomeScene name={biome} />
+        <div
+          className={`state state-loading state-arriving${biome ? " app-over-biome" : ""}`}
+          aria-busy="true"
+        >
+          {/*
+            "Arriving at", not "Loading". A screen-reader user gets the same
+            information the biome carries visually — that this is travel to a
+            known destination — rather than a status word that could describe
+            any fetch on any page.
+          */}
+          <span className="sr-only">Arriving at stage {stageId}</span>
+
+          {/*
+            THREE BLOCKS, because the reader has three: the stage header, the
+            objectives list, and the brief. `PAGE-SPECS.md` §5's rule is
+            "skeletons matching final layout" and the previous three bars did
+            not — the content mounted at a different height and the page jumped,
+            which is precisely what a skeleton exists to prevent.
+          */}
+          <div className="skel skel-title" />
+          <div className="skel skel-para" style={{ width: "40%" }} />
+
+          <div className="arriving-block">
+            <div className="skel skel-para" style={{ width: "35%" }} />
+            <div className="skel skel-para" />
+            <div className="skel skel-para" style={{ width: "88%" }} />
+            <div className="skel skel-para" style={{ width: "94%" }} />
+          </div>
+
+          <div className="arriving-block">
+            <div className="skel skel-para" style={{ width: "70%" }} />
+            <div className="skel skel-para" style={{ width: "80%" }} />
+          </div>
+        </div>
+      </>
     );
   }
 

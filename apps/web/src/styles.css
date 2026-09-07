@@ -821,6 +821,58 @@ button {
   background: var(--surface);
 }
 
+/*
+ * ARRIVING — the stage-loading state, sitting on the destination biome.
+ * `BIOME-AND-LOADING-SPEC.md` §4.2.
+ *
+ * It needs its own surface because the plain `.state` box is a bordered card on
+ * the page background, and here the page background is a landscape. Skeletons
+ * drawn straight onto a forest read as debris; the same panel treatment the
+ * loaded reader uses is what makes them read as content about to arrive.
+ *
+ * Deliberately the SAME geometry as the loaded state — same max-width, same
+ * padding, same rhythm — because the whole point of a skeleton is that nothing
+ * jumps when the real thing replaces it.
+ */
+.state-arriving {
+  background: color-mix(in oklab, var(--surface-1) 88%, transparent);
+  border-color: color-mix(in oklab, var(--line) 70%, transparent);
+  backdrop-filter: blur(2px);
+  max-width: 60ch;
+}
+
+/*
+ * The skeletons fade rather than pulse while arriving.
+ *
+ * A pulsing skeleton says "something is happening here". Over a biome that is
+ * already visibly resolving, the biome says it better, and two attention-seeking
+ * animations for one navigation is exactly the budget §4.2b spends on the motif.
+ */
+/*
+ * Skeletons need their OWN fill over a biome.
+ *
+ * `.skel` is `var(--surface)` and `.state-arriving` is `--surface-1` — the same
+ * value in two of the three themes, so the bars were invisible: the panel looked
+ * empty and the arrival read as a broken page rather than a loading one. On the
+ * page background those two do differ, which is why nobody had noticed.
+ *
+ * No pulse. Over a biome that is visibly resolving, the biome already says
+ * "something is happening"; a second animation for one navigation spends the
+ * budget §4.2b reserves for the motif.
+ */
+.state-arriving .skel {
+  animation: none;
+  background: color-mix(in oklab, var(--ink) 14%, transparent);
+}
+
+/* The objectives list and the brief, as blocks rather than loose bars — the
+   reader has three surfaces and so does this. */
+.arriving-block {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in oklab, var(--line) 60%, transparent);
+}
+
 .state-error button {
   margin-top: 0.75rem;
   background: var(--accent);

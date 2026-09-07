@@ -92,7 +92,25 @@ export class ApiError extends Error {
   }
 }
 
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
+/*
+ * 8090, not 8080.
+ *
+ * The fallback was `http://localhost:8080`, which on a developer machine is
+ * frequently another project's Adminer — it answers preflight with no CORS
+ * headers, so every request fails with `net::ERR_FAILED` and the app renders
+ * "That did not load". Nothing in the failure names the port, and the API is
+ * usually running perfectly on 8090 at the time.
+ *
+ * That cost a full debugging round twice: once chasing a rendering bug, once
+ * chasing a spec suite that had started timing out. `playwright.config.ts` and
+ * `DESIGN-REVIEW-01.md`'s reproduce block both already said 8090; only the
+ * fallback in the client disagreed, so the fix is to make the code agree with
+ * the docs rather than to remember an env var.
+ *
+ * A deployment always sets `VITE_API_URL`, so this value is only ever the local
+ * default.
+ */
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8090";
 
 let tokenProvider: () => Promise<string | null> = async () => null;
 

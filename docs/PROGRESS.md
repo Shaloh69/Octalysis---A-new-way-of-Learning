@@ -31,7 +31,7 @@ and R3's denominator had grown. Count, do not copy.
 | R0 scope and guardrails | ✅ 28 / 28 |
 | R1 solar system foundation | ✅ 36 / 36 |
 | R2 per-student cosmetics | ✅ **21 / 21** — closed 7 Sep, and closing it found **F-40** |
-| **R3 page templates** | **17 / 49** ← live |
+| **R3 page templates** | **19 / 49** ← live |
 | R4 moons and subtopics | ▫️ 0 / 13 |
 | R5 testing and sign-off | ▫️ 0 / 24 |
 
