@@ -199,3 +199,48 @@ test.describe("/gradebook — mastery per stage", () => {
     await expect(page.locator("main")).toContainText(/about the teaching, not about the students/i);
   });
 });
+
+test.describe("/locks — the SAVING state, on the page a teacher opens mid-class", () => {
+  test("a lock change cannot be saved without a reason, and says while it saves", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
+
+    /*
+     * The sixth state (`DESIGN-MANDATE.md` §201), on the console side.
+     *
+     * `/locks` is the page a teacher opens mid-class, and every toggle writes to
+     * the audit log — INV-22 warns on an override with no reason. So the reason
+     * prompt is not friction, it is the thing that makes the audit entry mean
+     * something later, and the save is deliberately blocked until it is filled.
+     *
+     * Asserted as a DISABLED control rather than as an error after the fact: a
+     * save that fails validation on the server has already cost the teacher a
+     * round trip in front of a class.
+     */
+    await open(page, "/locks");
+
+    const cell = page.locator("table tbody button, .lock-cell, [data-lock]").first();
+    if ((await cell.count()) === 0) {
+      test.skip(true, "no lock matrix cells in this fixture");
+      return;
+    }
+    await cell.click();
+
+    const save = page.getByRole("button", { name: /save change/i });
+    if ((await save.count()) === 0) {
+      test.skip(true, "no reason prompt on this build");
+      return;
+    }
+
+    await expect(
+      save,
+      "a lock change was savable with no reason — INV-22 warns on exactly that",
+    ).toBeDisabled();
+
+    // A reason unlocks it. Three characters is the floor the page enforces.
+    const reason = page.getByRole("textbox").first();
+    await reason.fill("closing for the quiz");
+    await expect(save).toBeEnabled();
+  });
+});

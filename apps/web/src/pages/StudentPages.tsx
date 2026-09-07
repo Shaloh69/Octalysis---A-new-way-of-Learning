@@ -176,11 +176,21 @@ export function MapSkeleton(): JSX.Element {
 
 export function NotFoundPage(): JSX.Element {
   return (
-    <div className="state state-error">
-      <h2>There is nothing at this address</h2>
+    <main className="state state-error">
+      {/*
+        An `h1`, not an `h2`. `DESIGN-MANDATE-V2.md` §5 requires exactly one h1
+        and a `main` on every page, and this had neither — a 404 is a page in
+        its own right, not a fragment of one, so a screen reader arriving here
+        was given a document with no title at any level.
+
+        It went unnoticed because `r3-gate.spec.ts` ran the mechanical five on
+        ten routes and the catch-all was not among them. The gate has been
+        checking every route it knew about, which is not the same thing.
+      */}
+      <h1>There is nothing at this address</h1>
       <p>The link may be old, or mistyped.</p>
       <Link to="/app">Back to the map</Link>
-    </div>
+    </main>
   );
 }
 

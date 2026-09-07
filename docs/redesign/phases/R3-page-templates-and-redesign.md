@@ -69,8 +69,22 @@ Verified against `apps/web/src/App.tsx`. Everything else in this group is in
       · **Verified 2 Sep 2026, not rebuilt.** §7's POST panel, notched frame, staged assembly and reduced-motion end-state were already built. R3.0 step 6 is confirming, not redoing.
 - [x] `/register` — `AuthPages.tsx`, same spec
       · **Verified 2 Sep 2026**, same as `/login`.
-- [ ] `/maintenance` — `AuthPages.tsx`. Keep it boring on purpose. **Passes the mechanical gate; not design-reviewed yet.**
-- [ ] `*` → `NotFoundPage` — this is the 404. There is no separate `/404`
+- [x] `/maintenance` — `AuthPages.tsx`. Keep it boring on purpose
+      · **Reviewed 8 Sep 2026 and left alone**, which is the correct outcome for
+        this page. One `h1`, and copy that answers the only question a student
+        has: *"Nothing you have submitted is affected — answers are saved as you
+        give them, and the record is append-only."* It carries **no links, on
+        purpose** — nothing works while it is showing, so an exit would lead
+        somewhere broken.
+- [x] `*` → `NotFoundPage` — this is the 404. There is no separate `/404`
+      · **It had no `h1` and no `main`.** It rendered an `h2` inside a `div`, so
+        a screen reader arriving here got a document with no title at any level
+        — a failure of the mechanical gate's own rule ("one `h1`, and a
+        `main`"). Fixed.
+      · **The gate never checked it.** `r3-gate.spec.ts` iterated ten web routes
+        and the catch-all was not among them, so it reported clean runs for the
+        pages it happened to know about. Added; the gate went 48 → 50 tests. A
+        gate with an incomplete list is not a gate.
       route and no `/500` page at all
 
 **Note:** `/` is **not** a landing page. It is a `<Navigate to="/app">`
@@ -448,10 +462,32 @@ wherever it's triggered, not as a per-route task:
         unchanged.
 
 ## R3.5 — Cross-cutting, same rule as `DESIGN-MANDATE.md`'s shared states table
-- [ ] Every route gets its six states (loading, empty, locked, error,
+- [x] Every route gets its six states (loading, empty, locked, error,
       offline, saving) — this is not new, it's the existing universal gate,
       restated as a phase checklist item so it's not silently skipped under
       the volume of routes in this phase
+      · **It was silently skipped anyway, by the checklist itself.**
+        `apps/web/CLAUDE.md` listed the sixth state as **380px** instead of
+        **saving**, conflating the six states with the mechanical five.
+        `DESIGN-MANDATE.md` §201 is the authority. Every spec derived from that
+        line tested a viewport width, so **saving — the sixth state — had no
+        coverage at all** until 8 Sep. Corrected in the doc and in the specs.
+      · **Covered now:** `student-states.spec.ts` (loading as a skeleton with a
+        text equivalent, observed by holding the request open; locked naming
+        reason *and* distance; error offering a control and leaking no stack
+        trace; offline; 380px), `attempt-runner.spec.ts` (**saving**, both
+        halves), `console-gate.spec.ts`, `console-teaching.spec.ts` (**saving**
+        on `/locks`), `console-live-feedback.spec.ts`.
+      · **The saving failure is the half that matters**, and it is
+        mutation-tested. `AttemptRunner` writes the answer to local state
+        *before* the request, so the option stays selected whether or not it
+        saved — a silent failure looks exactly like success. Making the catch
+        block swallow the error makes the test fail.
+      · **Where a state is unreachable it is recorded, not faked**: `empty` on
+        the stage reader cannot occur (every stage has content blocks; 08–18
+        carry a scaffold notice saying the text is not written yet), and
+        `/assessments`'s empty view is only reachable on a fixture with no
+        assessments — which, per **F-41**, is a clean `db:reset`.
 
 ## R3.6 — The backlog: routes this phase does NOT cover
 

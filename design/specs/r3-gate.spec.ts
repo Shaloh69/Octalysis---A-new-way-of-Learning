@@ -65,6 +65,16 @@ const WEB: string[] = [
   "/login",
   "/register",
   "/maintenance",
+  /*
+    THE CATCH-ALL. Absent from this list until 8 Sep 2026, and its absence was
+    not theoretical: the 404 rendered an `h2` with no `h1` and no `main`, and
+    nothing noticed because the gate only ever checked the routes it had been
+    told about. A gate whose own list is incomplete reports a clean run for the
+    pages it happens to know.
+
+    Any path that matches nothing will do; this one is obviously not a route.
+  */
+  "/definitely-not-a-route",
 ];
 
 /** Built console routes (§R3.3). Own origin, so no /console prefix. */

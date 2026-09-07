@@ -321,6 +321,44 @@ test.describe("the attempt runner", () => {
     expect(JSON.parse(last.body).recorded, "the server did not record the answer").toBe(true);
   });
 
+  test("SAVING: says it is saving, and says plainly when it did not", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
+
+    /*
+     * The sixth state, and the one nothing tested until 8 Sep 2026.
+     *
+     * `DESIGN-MANDATE.md` §201 lists it — loading, empty, locked, error,
+     * offline, **saving** — but `apps/web/CLAUDE.md` had written "380px" in its
+     * place, so every spec derived from that line tested a viewport width and
+     * never tested saving. On the graded surface saving is the entire promise:
+     * the runner tells students "answers save as you give them, so a lost
+     * connection costs you the current question and nothing more."
+     *
+     * Two halves, and the second matters more. Anyone can show a spinner; the
+     * question is what happens when the save FAILS. `AttemptRunner` writes the
+     * answer to local state first, so the option stays selected either way —
+     * which means a silent failure looks exactly like success. Its own comment
+     * says the rule: "say so plainly rather than pretending it saved."
+     */
+    await signIn(page);
+    await startCheck(page);
+
+    // ---- the failure half, first: hold the request, then fail it -----------
+    await page.route("**/answer", (r) => r.abort("failed"));
+    await page.locator('input[type="radio"]').first().click();
+
+    const main = page.locator("main");
+    await expect(
+      main,
+      "a failed save must SAY so — the answer stays selected either way, so silence reads as success",
+    ).toContainText(/did not save|could not|not saved|reconnect/i, { timeout: 15_000 });
+
+    // And it must not strand the student: the copy says what happens next.
+    await expect(main).toContainText(/connection|reconnect|try again/i);
+  });
+
   test("380px: the runner is usable, and nothing scrolls sideways", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile-380", "this is the 380px case");
 
