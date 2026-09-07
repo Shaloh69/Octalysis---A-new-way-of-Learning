@@ -140,8 +140,13 @@ export interface Cosmetics {
   paletteVariant: number;
   callsign: string;
   biomeIndex: number;
+  /** Index into `themes`. Closes F-40 — see the server's `Cosmetics`. */
+  themeIndex: number;
+  /** 0-359. A hue, never a hex: contrast is fixed per theme in the tokens. */
+  accentHue: number;
   version: string;
   biomes: string[];
+  themes: string[];
 }
 
 export const api = {

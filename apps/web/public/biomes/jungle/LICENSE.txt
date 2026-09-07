@@ -1,0 +1,32 @@
+Jungle biome art
+================
+
+Pack:    Forest Background
+Author:  Luis Zuno (@ansimuz)
+Source:  https://opengameart.org/content/forest-background
+Licence: CC0 (Creative Commons Zero)
+
+CONFIRMED TWICE, which is this project's bar for vendored art:
+
+  1. The OpenGameArt entry's structured `License(s)` field: CC0.
+  2. The pack's own bundled license.txt, verbatim:
+     "License (CC0) You can copy, modify, distribute and perform the work,
+      even for commercial purposes, all without asking permission."
+
+FILES  (all 272x160, renamed from the pack's own names)
+
+  back.png     parallax-forest-back-trees    100% opaque -- the only one
+  mid.png      parallax-forest-middle-trees  51.7% coverage
+  lights.png   parallax-forest-lights        16.1% -- dithered god-rays
+  front.png    parallax-forest-front-trees   39.2% coverage
+
+`lights` is drawn BETWEEN mid and front: shafts fall in front of the middle
+distance and behind the nearest trunks, which is what makes them read as light
+in the air rather than as a glow pasted on top.
+
+Nothing is resized or recoloured.
+
+CREDIT
+
+Not required under CC0. CREDITS.md credits Luis Zuno anyway, per that file's
+own rule.

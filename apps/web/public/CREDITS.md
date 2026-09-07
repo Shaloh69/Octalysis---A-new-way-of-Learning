@@ -10,15 +10,33 @@ Not yet vendored. Planned: Kenney UI Audio / Interface Sounds (CC0, kenney.nl).
 `docs/redesign/BIOME-AND-LOADING-SPEC.md` §2. Seven biomes, seeded per student,
 lazy-loaded one at a time.
 
-- **Background Elements** — Kenney Vleugels, https://kenney.nl/assets/background-elements
-  — **CC0 1.0**. Used for the `neutral`, `desert` and `jungle` biomes. The pack
-  ships its own `License.txt`, kept beside the art in each of
-  `public/biomes/{neutral,desert,jungle}/`. CC0 requires no attribution; it is
-  credited here anyway, per this file's own rule.
+- **Parallax background forest pixel art** — MatiasVME,
+  https://opengameart.org/content/parallax-background-forest-pixel-art — **CC0**,
+  the OpenGameArt entry's structured `License(s)` field, attribution
+  instructions "No attribution required". Used for the `neutral` biome. Eight
+  layers, **45 KB**. Credited anyway, per this file's own rule.
 
-  These are individual **elements**, not pre-cut parallax strips, so each biome
-  is composed from them — which is what §2's table means by calling this pack the
-  "base layer for several biomes". Three biomes, **23 KB of art in total**.
+- **Forest Background** — Luis Zuno (@ansimuz),
+  https://opengameart.org/content/forest-background — **CC0**, confirmed twice:
+  the OpenGameArt entry's `License(s)` field and the pack's own `license.txt`.
+  Used for the `jungle` biome. Four layers, **10 KB**.
+
+- **Rocky desert landscape (layered, looping)** — Emcee Flesher, from an original
+  by Quantiset,
+  https://opengameart.org/content/rocky-desert-landscape-layered-looping —
+  **CC0**. Used for the `desert` biome. A derivative, and **both links of the
+  chain were checked**: the entry names "Original by Quantiset (CC0)" and that
+  original is CC0 on its own OGA page. A CC0 derivative of a non-CC0 original is
+  a problem the derivative's own licence field cannot fix. Four layers, 116 KB.
+
+- **Background Elements** — Kenney Vleugels, https://kenney.nl/assets/background-elements
+  — **CC0 1.0**. **No longer used.** It supplied the `neutral`, `desert` and
+  `jungle` biomes until 7 September 2026, when all three were rebuilt from
+  pre-cut parallax packs. Nothing was wrong with the licence: these are
+  individual *elements* rather than drawn scenes, and flat vector shapes have no
+  internal detail, so the composed biomes read as bland however densely they were
+  scattered. Listed here because it shipped in earlier builds, and a credits file
+  that quietly drops what it once distributed is not a record.
 
 - **Parallax Backgrounds: Snowy Mountains** — Admurin,
   https://admurin.itch.io/parallax-backgrounds-snowy-mountains — **NOT CC0**.

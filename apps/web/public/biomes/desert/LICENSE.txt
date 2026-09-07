@@ -1,0 +1,39 @@
+Desert biome art
+================
+
+Pack:    Rocky desert landscape (layered, looping)
+Author:  Emcee Flesher
+Source:  https://opengameart.org/content/rocky-desert-landscape-layered-looping
+Licence: CC0 (Creative Commons Zero)
+
+A TWO-LINK CHAIN, AND BOTH LINKS WERE CHECKED
+
+  1. This pack: OpenGameArt's structured `License(s)` field reads CC0. Its
+     attribution instructions name the source it derives from --
+     "Original by Quantiset (CC0):
+      https://opengameart.org/content/mars-background-pixel-art"
+  2. That original: CC0 on its own OpenGameArt page, by Quantiset.
+
+A CC0 derivative of a non-CC0 original is a problem the derivative's own licence
+field cannot fix, so the chain is walked rather than assumed. The same check
+cleared the previous cave pack's PWL original.
+
+FILES  (all 1280x1280, square and horizontally looping)
+
+  far-mountains.png  75.8% coverage -- the serrated ridge
+  far.png            67.6%
+  mid.png            59.9%
+  close.png          40.9%
+
+NO LAYER IS FULLY OPAQUE, which is unusual and is why this biome genuinely needs
+the sky gradient from `--biome-sky-*` (BIOME-AND-LOADING-SPEC.md 2e, slot 1).
+
+The pack also ships `water` variants with a river through the mid ground. Not
+vendored: this biome sits behind reading content, and a bright water band across
+the middle of the frame competes with the panels for the attention they need.
+
+Nothing is resized or recoloured.
+
+CREDIT
+
+Not required. CREDITS.md credits both authors anyway, per that file's own rule.

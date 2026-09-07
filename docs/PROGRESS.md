@@ -1961,11 +1961,34 @@ applied; the theme and hue are seeded, stored, and ignored.
 (0-360) is set as `--accent-hue` on `<html>`." It is not. That sentence has been
 describing an intention as a fact.
 
-**Not fixed here, deliberately.** The fix is small — return both from the
-cosmetics endpoint and apply them on session load, with an explicit Settings
-choice still winning — but it changes the base theme that **every student sees**
-on first load, from "everyone gets bare-metal" to "everyone gets their seeded
-one". That is a visible product change and an instructor's call, not a tidy-up.
+**RESOLVED 7 Sep 2026**, on the instruction "yes they get them on first load".
+
+`deriveCosmetics()` now returns `themeIndex` and `accentHue` from the same digest
+that seeds the biome, and `applySeededLook()` applies each only where the student
+has not chosen that part. Verified in the browser across four students: four
+distinct looks, all three themes represented, **19 map nodes in identical order**
+— the curriculum did not move.
+
+**`profiles.accent_hue` was not the answer**, and finding that out mattered. Its
+column default is **250** — the exact value the bug was producing — so it is a
+preference column with a default, not a seeded field. Reading it would have
+"fixed" F-40 by giving every real student 250 again. Only the demo fixtures set
+it to varied values, which is what made it look seeded.
+
+**Two follow-on bugs, both caught by testing rather than by looking:**
+
+1. `applyStoredTheme()` **wrote** its defaults to `localStorage` on first load,
+   so nothing downstream could tell "chose the default" from "never chose". The
+   seed correctly declined to overwrite a choice that this function had invented
+   microseconds earlier, and the fix looked broken. It now applies in memory and
+   stores nothing; only Settings writes.
+2. A single "has chosen anything" flag meant picking a theme also froze the
+   accent at 250 — the same everyone-identical bug, in miniature. Theme and hue
+   are now asked separately.
+
+**And a vacuous test.** The first check that "an explicit choice beats the seed"
+used a student whose seed was *already* blueprint and chose blueprint. It passed
+and proved nothing. Re-run with `phosphor` against a `blueprint` seed.
 
 The reason this sat undetected is worth keeping: the seeded values were correct
 in the database the whole time, every contrast check passed, and the app looked

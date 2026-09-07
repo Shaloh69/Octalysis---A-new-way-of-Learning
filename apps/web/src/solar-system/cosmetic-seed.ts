@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type Cosmetics } from "../lib/api";
+import { hasChosen } from "../lib/session";
 
 /**
  * The client half of per-student cosmetic seeding.
@@ -26,8 +27,18 @@ const DEFAULT: Cosmetics = {
   paletteVariant: 0,
   callsign: "",
   biomeIndex: 0,
+  /*
+   * The DEFAULTS, and they are the pre-F-40 behaviour on purpose: bare-metal at
+   * hue 250 is what every student saw when the seeded look was never applied.
+   * Keeping it as the pre-fetch state means a slow or failed cosmetics call
+   * degrades to a readable, contrast-checked interface rather than to nothing —
+   * and it is the one case where "everyone looks the same" is correct.
+   */
+  themeIndex: 0,
+  accentHue: 250,
   version: "default",
   biomes: ["neutral"],
+  themes: ["bare-metal"],
 };
 
 /**
@@ -108,6 +119,7 @@ export function useCosmetics(): { cosmetics: Cosmetics; loaded: boolean } {
     const el = document.documentElement;
     el.setAttribute("data-planet", planetVariantAttr(cosmetics.paletteVariant));
     el.setAttribute("data-biome", biomeAttr(cosmetics.biomeIndex, cosmetics.biomes));
+    applySeededLook(cosmetics);
   }, [cosmetics]);
 
   return { cosmetics, loaded };
@@ -119,6 +131,38 @@ function applyCosmeticAttributes(c: Cosmetics): void {
   const el = document.documentElement;
   el.setAttribute("data-planet", planetVariantAttr(c.paletteVariant));
   el.setAttribute("data-biome", biomeAttr(c.biomeIndex, c.biomes));
+  applySeededLook(c);
+}
+
+/**
+ * Apply the seeded theme and accent — **only if the student has never chosen**.
+ *
+ * F-40: R2 shipped "per-student seeded cosmetics" and seeded only the biome.
+ * Theme and hue came from `localStorage` alone, defaulting to `bare-metal` /
+ * 250, so every student looked identical and `apps/web/CLAUDE.md` described a
+ * behaviour that did not exist.
+ *
+ * **First load only, and that is the whole rule.** An explicit choice in
+ * Settings writes `localStorage`, and from then on this function does nothing:
+ * a seeded look is a starting point, not something that reasserts itself over a
+ * decision the student made. Silently re-theming someone who picked `phosphor`
+ * would be worse than the bug this fixes.
+ *
+ * `localStorage` is the right store for it here despite the project's rule
+ * against it, because that rule is about anything GRADEABLE. This is which
+ * colours a page is drawn in — no grade, no lock, no attempt depends on it, and
+ * the seed on the server remains the source of truth if the key is ever lost.
+ */
+export function applySeededLook(c: Cosmetics): void {
+  const el = document.documentElement;
+
+  if (!hasChosen("theme")) {
+    const theme = c.themes[c.themeIndex] ?? c.themes[0];
+    if (theme) el.setAttribute("data-theme", theme);
+  }
+  if (!hasChosen("accent-hue")) {
+    el.style.setProperty("--accent-hue", String(c.accentHue));
+  }
 }
 
 /** The `data-planet` attribute value for a variant index. */

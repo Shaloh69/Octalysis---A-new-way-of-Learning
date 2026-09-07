@@ -229,11 +229,36 @@ delete from feedback       where user_id in (select id from profiles where id::t
 delete from submissions    where user_id in (select id from profiles where id::text not like 'dddddddd-%');
 delete from stage_progress where user_id in (select id from profiles where id::text not like 'dddddddd-%');
 delete from level_progress where user_id in (select id from profiles where id::text not like 'dddddddd-%');
-delete from attempt_items  where attempt_id in (select a.id from attempts a join profiles p on p.id = a.user_id
-                                                 where p.id::text not like 'dddddddd-%');
-delete from responses      where attempt_id in (select a.id from attempts a join profiles p on p.id = a.user_id
-                                                 where p.id::text not like 'dddddddd-%');
-delete from attempts       where user_id in (select id from profiles where id::text not like 'dddddddd-%');
+-- ---------------------------------------------------------------
+-- ATTEMPT HISTORY IS NOT PURGED HERE, AND CANNOT BE.
+--
+-- This block used to read:
+--
+--     delete from attempt_items  where attempt_id in (...);
+--     delete from responses      where attempt_id in (...);
+--     delete from attempts       where user_id in (...);
+--
+-- `responses` is APPEND-ONLY (root CLAUDE.md hard rule 7). A trigger blocks
+-- UPDATE and DELETE on it, for `service_role` too, and it did its job: the
+-- moment any test run left a response behind, this statement raised
+--
+--     ERROR:  responses are append-only
+--     HINT:   void the attempt instead
+--
+-- and psql aborted the seed HALFWAY THROUGH. The database was then left
+-- half-fixtured -- profiles present, stage_locks and progress not -- which
+-- surfaces as "stage 00 is locked" in the browser and looks like an app bug.
+-- It cost two rounds of biome captures before anyone read the seed's own
+-- output instead of the page.
+--
+-- The invariant is right and the seed was wrong. A seed script cannot purge
+-- append-only history, by design; the only legal way to a clean database is
+-- `pnpm db:reset`, which drops and recreates it. `scripts/db-demo.mjs` now
+-- refuses to run when foreign attempt history exists and says so.
+--
+-- Attempts and attempt_items are left alone too: an attempt whose responses
+-- survive but whose items were deleted is worse residue than the attempt.
+-- ---------------------------------------------------------------
 update student_directory set claimed_by = null, status = 'unclaimed'
   where claimed_by in (select id from profiles where id::text not like 'dddddddd-%');
 delete from profiles       where id::text not like 'dddddddd-%';

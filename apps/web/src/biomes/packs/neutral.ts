@@ -1,98 +1,74 @@
 import type { BiomeManifest } from "../registry";
 
 /**
- * Neutral — **balanced, mid horizon** (§2c), and deliberately the plainest.
+ * Neutral — **rebuilt as a strip pack, 7 September 2026**, for the reason
+ * `jungle` records at length: flat vector shapes have no internal detail, so
+ * scattering more of them makes a denser flat picture.
  *
- * **Vendored.** Kenney Background Elements, CC0, from
- * https://kenney.nl/assets/background-elements — the pack ships its own
- * `License.txt`, kept beside the art at `public/biomes/neutral/`. CC0 requires
- * no attribution; `public/CREDITS.md` credits it anyway, which is this
- * project's stated rule.
+ * ## Licence
  *
- * ## It is the default, so it must not compete
+ * *Parallax background forest pixel art* by **MatiasVME**, from OpenGameArt —
+ * https://opengameart.org/content/parallax-background-forest-pixel-art. **CC0**,
+ * the entry's structured `License(s)` field, attribution instructions "No
+ * attribution required". Sourced from OGA rather than itch for the reason §2a
+ * records: OGA states the licence as metadata on the work, so it can be
+ * re-verified later.
  *
- * Every other biome gets a distinctive structure: the jungle encloses, the
- * desert opens out, the ocean suspends, the cave frames. This one sits in the
- * middle on purpose — a mid horizon, moderate density, and **no ambient
- * motif**. It is what a student sees when nothing in particular has been
- * chosen for them, and a default that demands attention is a default that has
- * to be got rid of.
+ * ## Structure — **open, mid horizon, the only snow-capped range** (§2c)
  *
- * That is a composition decision, not an absence of one. "Plain" here means
- * balanced, not unfinished.
+ * The default biome, and the one a student who never opens Settings will spend
+ * the semester in — so it is deliberately the calmest composition: a wide green
+ * valley, a horizon across the MIDDLE of the frame, and a distant treeline
+ * rather than trees in the foreground. Nothing in it is close to the viewer.
  *
- * ## Scattered, like the others
+ * It carries the only **snow-capped peaks** in the set, which is what separates
+ * it from `arctic` (all snow, high horizon) and from `jungle` (no horizon at
+ * all) in the greyscale test.
  *
- * The original tiled two tree sprites with `repeat-x` and read as wallpaper —
- * an identical trunk every hundred pixels. Each layer now scatters individual
- * sprites from a variant pool, with per-instance size and flip. The variant
- * pools mix silhouettes rather than sizes of one shape: tree15 is narrow,
- * tree22 and tree20 are tall, tree05 and tree12 are round.
+ * **A separate sun layer**, at 0.7% coverage — one small disc, not a gradient.
+ * Its own layer means it barely parallaxes, and a sun that moves with the
+ * foreground reads as a lamp.
  *
- * Total vendored weight: **23 KB** for twelve sprites.
+ * **The floor is loose rock**, drawn as its own layer at 2.7% coverage. That is
+ * the flooring variety the token-drawn ground band could not produce: individual
+ * stones with highlights, breaking the line where the trees meet the ground.
+ *
+ * Total vendored weight: **45 KB** for eight layers.
  */
 const manifest: BiomeManifest = {
   name: "neutral",
-  ground: 16,
-  // No motif. See above — the default stays quiet.
+  kind: "strip",
+  // No motif, on purpose. This is the default biome, and a default that demands
+  // attention is one a student has to get rid of. §2e records the exemption.
   layers: [
     /*
-     * Clouds: five variants, five instances, ±65% size spread. It was three
-     * variants at ±45%, which at this scale read as one cloud stamped along the
-     * top — the sky is the largest empty area in the frame, so uniformity shows
-     * there first and worst.
+     * Back to front, and the alpha says which is which rather than the naming:
+     * sky 100% opaque (and the only one), sun 0.7%, clouds 5.2%, then the three
+     * mountain bands at 31.2% / 40.6% / 55.7% — rising coverage, which is what
+     * confirms 1 is farthest and 3 nearest. Then trees 4.6% and rocks 2.7%.
+     *
+     * Eight layers is the deepest stack in the set, and it is why this biome
+     * reads as open country rather than as a backdrop: the three mountain bands
+     * alone give the horizon more recession than any other pack has.
      */
-    { src: "/biomes/neutral/cloud1.png", depth: 0.07, scale: 0.075, align: "top",
-      variants: [
-        "/biomes/neutral/cloud1.png", "/biomes/neutral/cloud4.png",
-        "/biomes/neutral/cloud5.png", "/biomes/neutral/cloud2.png",
-        "/biomes/neutral/cloud8.png",
-      ],
-      count: 5, jitter: 0.65 },
-
-    /*
-     * Rolling hills as the horizon — a wide sprite at a single instance, which
-     * is what puts the horizon at the MIDDLE of the frame rather than low
-     * (desert) or absent (jungle).
-     */
-    { src: "/biomes/neutral/hills2.png", depth: 0.22, scale: 0.14, align: "bottom" },
-
-    /*
-     * Far treeline, 20 instances from six shapes. Small and overlapping, so the
-     * hills carry a wood along their crest rather than seven separate trees on
-     * a ridge. Density falls with every layer forward from here.
-     */
-    { src: "/biomes/neutral/tree26.png", depth: 0.36, scale: 0.11, align: "bottom",
-      variants: [
-        "/biomes/neutral/tree26.png", "/biomes/neutral/tree31.png",
-        "/biomes/neutral/tree34.png", "/biomes/neutral/tree20.png",
-        "/biomes/neutral/tree22.png", "/biomes/neutral/tree15.png",
-      ],
-      count: 20, jitter: 0.5 },
-
-    { src: "/biomes/neutral/tree20.png", depth: 0.58, scale: 0.17, align: "bottom",
-      variants: [
-        "/biomes/neutral/tree20.png", "/biomes/neutral/tree15.png",
-        "/biomes/neutral/tree22.png", "/biomes/neutral/tree31.png",
-      ],
-      count: 11, jitter: 0.42 },
-
-    { src: "/biomes/neutral/tree12.png", depth: 0.82, scale: 0.26, align: "bottom",
-      variants: [
-        "/biomes/neutral/tree12.png", "/biomes/neutral/tree30.png",
-        "/biomes/neutral/tree05.png", "/biomes/neutral/tree34.png",
-      ],
-      count: 6, jitter: 0.38 },
-
-    { src: "/biomes/neutral/grass4.png", depth: 1, scale: 0.045, align: "bottom",
-      variants: ["/biomes/neutral/grass4.png", "/biomes/neutral/grass1.png"],
-      count: 15, jitter: 0.55 },
+    { src: "/biomes/neutral/sky.png", depth: 0, scale: 1, align: "bottom" },
+    { src: "/biomes/neutral/sun.png", depth: 0.05, scale: 1, align: "bottom" },
+    { src: "/biomes/neutral/clouds.png", depth: 0.15, scale: 1, align: "bottom" },
+    { src: "/biomes/neutral/mountains_1.png", depth: 0.35, scale: 1, align: "bottom" },
+    { src: "/biomes/neutral/mountains_2.png", depth: 0.5, scale: 1, align: "bottom" },
+    { src: "/biomes/neutral/mountains_3.png", depth: 0.65, scale: 1, align: "bottom" },
+    { src: "/biomes/neutral/trees.png", depth: 0.85, scale: 1, align: "bottom" },
+    { src: "/biomes/neutral/rocks.png", depth: 1, scale: 1, align: "bottom" },
   ],
   credit: {
-    pack: "Background Elements",
-    author: "Kenney Vleugels (kenney.nl)",
-    url: "https://kenney.nl/assets/background-elements",
-    license: "CC0 1.0 (Creative Commons Zero) — verified in the pack's own License.txt",
+    pack: "Parallax background forest pixel art",
+    author: "MatiasVME",
+    url: "https://opengameart.org/content/parallax-background-forest-pixel-art",
+    license:
+      "CC0 — the OpenGameArt entry's License(s) field, with attribution instructions " +
+      '"No attribution required".',
+    // None. CC0, and the author says explicitly that no attribution is required.
+    // CREDITS.md credits them anyway, per that file's own rule.
     obligations: [],
   },
 };

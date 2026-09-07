@@ -1413,7 +1413,11 @@ button {
   background-size: auto calc(var(--biome-scale, 0.7) * 100%);
   /* Parallax offset is driven by --biome-depth per layer, so the whole effect
      is one media query away from being frozen. */
-  transform: translateX(calc(var(--biome-depth, 0) * -2%));
+  transform:
+    translateX(calc(var(--biome-depth, 0) * -2%))
+    /* Pushes a pack's transparent bottom margin off-frame -- see
+       `BiomeLayer.sink`. Zero for every layer that does not need it. */
+    translateY(var(--biome-sink, 0%));
   /* Further layers sit back. Aerial perspective is what stops five tiled
      sprites reading as five stickers on one plane. */
   opacity: calc(0.45 + var(--biome-depth, 0) * 0.55);
@@ -1428,9 +1432,7 @@ button {
     linear-gradient(180deg, var(--biome-far), var(--biome-near));
 }
 
-@media (max-width: 640px) {
-  .biome { height: 96px; }
-}
+
 
 /*
  * Frozen, not slowed. The parallax carries no information the static frame does
@@ -1461,6 +1463,30 @@ button {
      edges to mush, which is the one thing these packs are chosen for. */
   image-rendering: pixelated;
 }
+
+/*
+ * NARROW VIEWPORTS: fit the WIDTH, sit on the bottom, let the sky fill above.
+ *
+ * This was `.biome { height: 96px }` -- a leftover from when the biome was a
+ * banner strip above the content. §1b made it the whole-page background on
+ * 2 Sep and this rule survived, so on a phone the scene was still crushed into
+ * a 96px band. A 384x216 strip height-fitted to 96px is 171px wide and TILES,
+ * which is why arctic looked like a column of squashed slivers.
+ *
+ * Height-fitting is right on a wide screen and wrong on a tall one: a 1.78-ratio
+ * strip in a 380x844 portrait viewport would be 1500px wide, so you would see a
+ * quarter of the scene. Fitting the width instead shows all of it, anchored to
+ * the bottom edge where a landscape belongs, with §2e's sky gradient filling the
+ * space above. That is why every pack's sky token is matched to its own art --
+ * on a phone, most of the sky IS the token.
+ */
+@media (max-width: 640px) {
+  .biome-strip .biome-layer {
+    background-size: 100% auto;
+    background-position: center bottom;
+  }
+}
+
 
 @media (prefers-reduced-motion: reduce) {
   .biome-layer {

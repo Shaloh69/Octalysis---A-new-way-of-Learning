@@ -66,35 +66,19 @@ const manifest: BiomeManifest = {
     { src: "/biomes/cave/mid.png", depth: 0.75, scale: 1, align: "bottom" },
 
     /*
-     * FOREGROUND DETAIL — §2e slot 6, and the pack ships it as loose props
-     * rather than as a fourth strip. Two layers rather than one because `aspect`
-     * is per-layer and these do not share one: palm and plant-big are near
-     * square (1.15, 0.96), plant is wide (1.61). Putting all three in one layer
-     * would squash whichever lost.
+     * FOUR LAYERS, AND NO FOREGROUND PROPS.
      *
-     * A strip pack CAN scatter — the renderer branches per layer on `variants`,
-     * not on `kind` — and this is the first pack to use both. Without it the
-     * cave has three layers that all move together and nothing between the
-     * viewer and the wall.
+     * The pack ships loose plants (palm, plant-big, plant) and they were
+     * scattered here as a foreground band — seven at one size, nine at another,
+     * standing along the bottom of the frame. Removed on instruction, and it was
+     * the right call: they are BUSHES, drawn for a platformer's playable floor
+     * where a character walks past them, and at page scale behind reading
+     * content they read as a hedge across the bottom of the screen.
+     *
+     * The strips already carry a floor. Adding a row of plants to it was
+     * decoration on top of a finished composition, which is the thing §2e's
+     * whole point is to avoid.
      */
-    {
-      src: "/biomes/cave/palm.png",
-      variants: ["/biomes/cave/palm.png", "/biomes/cave/plant-big.png"],
-      count: 7,
-      jitter: 0.5,
-      depth: 0.9,
-      scale: 0.13,
-      align: "bottom",
-    },
-    {
-      src: "/biomes/cave/plant.png",
-      variants: ["/biomes/cave/plant.png"],
-      count: 9,
-      jitter: 0.6,
-      depth: 1,
-      scale: 0.07,
-      align: "bottom",
-    },
   ],
   credit: {
     pack: "Warped: Super Grotto Escape Pack",

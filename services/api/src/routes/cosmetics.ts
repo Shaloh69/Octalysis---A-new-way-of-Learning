@@ -51,9 +51,42 @@ export interface Cosmetics {
   readonly callsign: string;
   /** Which landing biome, 0-6. See BIOME-AND-LOADING-SPEC.md §2. */
   readonly biomeIndex: number;
+  /**
+   * Which base theme this student starts in, 0-2 into `THEMES`.
+   *
+   * Added 7 Sep 2026, closing **F-40**. R2 shipped "per-student seeded
+   * cosmetics" and seeded only the biome: every student rendered
+   * `bare-metal` with `--accent-hue: 250`, because the client read both from
+   * `localStorage` and nothing had ever written it.
+   *
+   * `profiles.accent_hue` was NOT the answer, despite existing and despite
+   * `apps/web/CLAUDE.md` claiming it was applied. Its column default is 250 —
+   * so it is a PREFERENCE column with a default, not a seeded value, and
+   * reading it would have given every real student the same 250 the bug was
+   * already producing. The demo fixtures set it to varied values, which is
+   * what made it look like a seeded field.
+   */
+  readonly themeIndex: number;
+  /**
+   * Starting accent hue, 0-359. Derived, for the reason `themeIndex` records.
+   *
+   * A HUE and never a hex: lightness and chroma are fixed per theme in
+   * `packages/tokens`, which is what holds contrast constant across every hue a
+   * student can land on or pick. `check-contrast.mjs` proves it for all of them,
+   * so no derived hue can produce an unreadable interface.
+   */
+  readonly accentHue: number;
 }
 
 export const PALETTE_VARIANTS = 4;
+/**
+ * The three base themes, in the order `themeIndex` selects from.
+ *
+ * Duplicated from `packages/tokens` deliberately: the API must not import from
+ * the token package, and three strings that have not changed since the first
+ * commit are a smaller liability than that dependency would be.
+ */
+export const THEMES = ["bare-metal", "blueprint", "phosphor"] as const;
 export const BIOMES = [
   "neutral",
   "jungle",
@@ -109,6 +142,15 @@ export function deriveCosmetics(key: string): Cosmetics {
     paletteVariant: w1 % PALETTE_VARIANTS,
     callsign: `${word}-${tag}`,
     biomeIndex: (w1 >>> 8) % BIOMES.length,
+    /*
+     * Independent slices of the digest, so two students who share a biome do
+     * not thereby share a theme. `w2` and `w3` already carry the callsign, and
+     * reusing their LOW bits after the callsign consumed the high ones keeps
+     * each cosmetic decorrelated from the others -- the same reason
+     * `biomeIndex` shifts `w1` rather than sharing `paletteVariant`'s bits.
+     */
+    themeIndex: (w2 >>> 16) % THEMES.length,
+    accentHue: (w3 >>> 8) % 360,
   };
 }
 
@@ -130,6 +172,7 @@ export function registerCosmeticRoutes(app: FastifyInstance, env: Env): void {
       // without guessing, and so a stale cached look is diagnosable.
       version: COSMETIC_VERSION,
       biomes: BIOMES,
+      themes: THEMES,
     };
   });
 }

@@ -1,107 +1,78 @@
 import type { BiomeManifest } from "../registry";
 
 /**
- * Desert — **wide, low horizon** (§2c).
+ * Desert — **rebuilt as a strip pack, 7 September 2026**, for the reason
+ * `jungle` records at length: flat vector shapes have no internal detail, so
+ * scattering more of them makes a denser flat picture.
  *
- * Composed from Kenney Background Elements (CC0). The pack §2's table names,
- * *Desert Parallax Background* by styloo, **now returns 404** — a licence
- * verified against a page that no longer exists cannot be re-verified by anyone.
- * See §2a.
+ * ## Licence, and a two-link chain
  *
- * ## Structure, and why it is the jungle's opposite
+ * *Rocky desert landscape (layered, looping)* by **Emcee Flesher**, from
+ * OpenGameArt —
+ * https://opengameart.org/content/rocky-desert-landscape-layered-looping.
+ * **CC0**, the entry's structured `License(s)` field.
  *
- * A desert is **space**. Most of the frame is empty sky, the horizon sits low,
- * and the eye travels a long way before it meets anything. Where the jungle
- * encloses with many near forms, this one has **few forms, far apart, small
- * against the sky** — and one dominant silhouette rather than a repeat.
+ * It is a derivative, and the chain was checked rather than trusted: the entry's
+ * attribution instructions name *"Original by Quantiset (CC0):
+ * https://opengameart.org/content/mars-background-pixel-art"*. **Both links are
+ * CC0 on their own OGA pages.** A CC0 derivative of a non-CC0 original would be
+ * a problem the derivative's own licence field cannot fix, which is why the
+ * chain gets walked and not assumed — the same check that cleared the previous
+ * cave pack's PWL original.
  *
- * That is deliberate contrast, not decoration: §2c's greyscale test asks
- * whether two biomes are still distinguishable with all colour removed, and
- * "dense and enclosing" versus "sparse and open" survives desaturation where
- * "green trees" versus "yellow trees" does not.
+ * ## Structure — **receding ground planes, and the only red world** (§2c)
  *
- * ## The pyramids are scattered but few
+ * Every other biome puts its subject against a sky. This one is almost entirely
+ * **ground**: a thin band of sky at the top, a serrated ridge, then three
+ * terraces stepping toward the viewer, each darker than the one behind it.
+ * Depth here is read from the *floor* rather than from the horizon, which is a
+ * composition nothing else in the set uses.
  *
- * Three, not nine. A desert with nine evenly-spaced pyramids is a pattern; a
- * desert with three at different sizes is a place. The mountains behind them
- * come from a two-variant pool so the skyline is not one shape repeated.
+ * Being a Mars landscape, it is also the only **red** biome — and the greyscale
+ * test does not care about that, which is the point: what distinguishes it with
+ * the colour removed is the terracing.
  *
- * Total vendored weight: **17 KB** for nine sprites.
+ * **The flooring variety is the whole pack.** Rock formations are drawn into
+ * every terrace at their own scale, so the ground has detail at three distances
+ * instead of being one flat band.
+ *
+ * **No fully-opaque layer**, unusually — the far mountains are 75.8% and the sky
+ * shows through above them. So slot 1 comes from `--biome-sky-*` as §2e
+ * requires, and this is the only vendored pack that genuinely needs it.
+ *
+ * Total vendored weight: **116 KB** for four layers, the heaviest in the set —
+ * these are 1280×1280 sources, and they are worth it for a scene that is mostly
+ * ground seen up close.
  */
 const manifest: BiomeManifest = {
   name: "desert",
-  ground: 12,
+  kind: "strip",
   motif: "sand",
   layers: [
     /*
-     * The sun sits highest and barely parallaxes — a sun that moves with the
-     * foreground reads as a lamp. It is also the only single-instance layer
-     * here: there is exactly one sun, and scattering it would be absurd.
-     */
-    { src: "/biomes/desert/sun.png", depth: 0.03, scale: 0.08, align: "top",
-      // ONE sun. Without `variants` a layer falls through to the tiled path
-      // and `repeat-x` put a ROW of suns across the sky -- which is exactly
-      // the uniformity this rebuild exists to remove, reintroduced by an
-      // omission rather than a decision.
-      variants: ["/biomes/desert/sun.png"], count: 1, jitter: 0 },
-
-    /*
-     * Clouds: four shapes, six instances, ±70% spread — the widest in any biome,
-     * because a desert sky is mostly empty and every repetition shows. Two
-     * bands at different depths rather than one, so they do not all sit on one
-     * plane.
-     */
-    { src: "/biomes/desert/cloud7.png", depth: 0.1, scale: 0.055, align: "top",
-      variants: [
-        "/biomes/desert/cloud7.png", "/biomes/desert/cloud3.png",
-        "/biomes/desert/cloud1.png", "/biomes/desert/cloud9.png",
-      ],
-      count: 6, jitter: 0.7 },
-    { src: "/biomes/desert/cloud3.png", depth: 0.18, scale: 0.085, align: "top",
-      variants: ["/biomes/desert/cloud3.png", "/biomes/desert/cloud1.png"],
-      count: 3, jitter: 0.6 },
-
-    /*
-     * FAR RANGE — pointy_mountains and mountain2, 9 instances, small.
+     * Back to front, in the pack's own naming, and the alpha is the check that
+     * matters here for a different reason than usual: NOTHING is 100% opaque
+     * (75.8% / 67.6% / 59.9% / 40.9%). A stack with no opaque base is only
+     * correct if something else paints the sky, and §2e's slot 1 does.
      *
-     * This layer did not exist. The range started at mountain1/3 and there was
-     * nothing behind it, so the horizon was a single row of peaks with sky
-     * straight above. A distant range is many overlapping ridges; that is what
-     * makes the desert read as deep rather than wide.
+     * The `nowater` variants are vendored; the pack also ships `water` ones with
+     * a river through the mid ground. Not used: this biome sits behind reading
+     * content, and a bright water band across the middle of the frame competes
+     * with the panels for exactly the attention they need.
      */
-    { src: "/biomes/desert/pointy_mountains.png", depth: 0.2, scale: 0.1, align: "bottom",
-      variants: [
-        "/biomes/desert/pointy_mountains.png", "/biomes/desert/mountain2.png",
-        "/biomes/desert/mountain1.png",
-      ],
-      count: 9, jitter: 0.5 },
-
-    /*
-     * Distant mountains, LOW in the frame. This is the horizon line, and
-     * keeping it low is what leaves the sky dominant — raise this and the
-     * composition stops being a desert.
-     */
-    { src: "/biomes/desert/mountain1.png", depth: 0.36, scale: 0.15, align: "bottom",
-      variants: [
-        "/biomes/desert/mountain1.png", "/biomes/desert/mountain3.png",
-        "/biomes/desert/mountain2.png",
-      ],
-      count: 7, jitter: 0.5 },
-
-    // The dominant form. Three, at genuinely different sizes.
-    { src: "/biomes/desert/piramid.png", depth: 0.7, scale: 0.24, align: "bottom",
-      variants: ["/biomes/desert/piramid.png"], count: 3, jitter: 0.6 },
-
-    // Sparse scrub. Wide gaps are the point — this is not a lawn, and a desert
-    // is the one biome whose FOREGROUND should be emptier than its distance.
-    { src: "/biomes/desert/grass3.png", depth: 1, scale: 0.035, align: "bottom",
-      variants: ["/biomes/desert/grass3.png"], count: 9, jitter: 0.65 },
+    { src: "/biomes/desert/far-mountains.png", depth: 0, scale: 1, align: "bottom" },
+    { src: "/biomes/desert/far.png", depth: 0.4, scale: 1, align: "bottom" },
+    { src: "/biomes/desert/mid.png", depth: 0.7, scale: 1, align: "bottom" },
+    { src: "/biomes/desert/close.png", depth: 1, scale: 1, align: "bottom" },
   ],
   credit: {
-    pack: "Background Elements",
-    author: "Kenney Vleugels (kenney.nl)",
-    url: "https://kenney.nl/assets/background-elements",
-    license: "CC0 1.0 (Creative Commons Zero) — verified in the pack's own License.txt",
+    pack: "Rocky desert landscape (layered, looping)",
+    author: "Emcee Flesher, from an original by Quantiset",
+    url: "https://opengameart.org/content/rocky-desert-landscape-layered-looping",
+    license:
+      "CC0 — the OpenGameArt entry's License(s) field. Derived from Quantiset's " +
+      "Mars background pixel art, also CC0 and verified on its own OGA page.",
+    // None. CC0 on both links of the chain.
     obligations: [],
   },
 };

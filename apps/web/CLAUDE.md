@@ -35,12 +35,18 @@ D simulator  BRIEF LEARN LAB   BUILD BREAK CHECK BRING-UP LOG
 Do not add a beat a stage's archetype doesn't declare. See docs/LESSON-PLAN-AND-LEVELS.md §1.
 
 ## Accent
-`profiles.accent_hue` (0-360) is **meant to be** set as `--accent-hue` on `<html>`, and as
-of 7 Sep 2026 **it is not** — `lib/session.ts` reads theme and hue from `localStorage`
-only, defaulting to `bare-metal` / 250, and `routes/cosmetics.ts` returns neither. The
-rows are seeded and correct; nothing applies them. See `docs/PROGRESS.md` **F-40**. Fixing
-it changes the base theme every student sees, so it is an instructor's call, not a
-tidy-up. All accent colors derive in
+The accent is a **hue** (0-359) set as `--accent-hue` on `<html>`, and it is **derived**,
+not read from `profiles`. `GET /api/v1/cosmetics` returns `themeIndex` and `accentHue`
+from the same digest that already seeds the biome, and `applySeededLook()` applies each
+**only if the student has not chosen that part** — an explicit Settings pick wins for
+ever, and theme and hue are tracked separately so changing one keeps the seed for the
+other.
+
+`profiles.accent_hue` is NOT the source, despite existing. Its column default is 250, so
+it is a preference column awaiting a persistence path, not a seeded value — reading it
+would have given every real student the same 250 that **F-40** was about. Fixed 7 Sep
+2026; this section previously described the applying as already happening, for weeks
+during which it was not. All accent colors derive in
 OKLCH with lightness and chroma fixed per theme, which is what keeps contrast constant across
 hues. Never store or read a hex accent.
 

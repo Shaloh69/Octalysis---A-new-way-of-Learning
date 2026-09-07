@@ -183,18 +183,26 @@ test.describe("the seven biomes, one capture each", () => {
    * missing from a manifest should fail in CI on the commit that omits it.
    */
   /*
-   * Exempt from the ground slot, and all four for the SAME reason: their packs
-   * are pre-cut scenes that already paint a floor — arctic's snow, ocean's
-   * seabed, cave's rubble, city's street. Drawing a second ground over a painted
-   * one puts a flat coloured band across it.
+   * ALL SEVEN are exempt from the ground slot as of 7 Sep 2026, and all for the
+   * same reason: every biome is now a pre-cut pack that paints its own floor —
+   * jungle's forest litter, neutral's loose rock, desert's terraces, arctic's
+   * snow, ocean's seabed, cave's rubble, city's street. Drawing a second ground
+   * over a painted one puts a flat coloured band across it.
    *
-   * Not one of these is exempt for having no floor. That distinction matters,
-   * because "this biome has no ground" is a claim about the WORLD and would
-   * survive an art change, while "its art already draws one" is a claim about
-   * the PACK and stops being true the moment the pack is replaced. Cave's was
-   * replaced during this very session.
+   * Not one is exempt for having no floor. That distinction matters, because
+   * "this biome has no ground" is a claim about the WORLD and would survive an
+   * art change, while "its art already draws one" is a claim about the PACK and
+   * stops being true the moment the pack is replaced. Four packs were replaced
+   * in two days.
+   *
+   * The `.biome-ground` renderer is kept, unused, for the same reason
+   * `PROCEDURAL` is kept empty: the next biome sourced as loose elements rather
+   * than as a pre-cut scene will need it, and it should be opted into on purpose
+   * rather than rebuilt from scratch.
    */
-  const NO_GROUND: readonly string[] = ["arctic", "ocean", "cave", "city"];
+  const NO_GROUND: readonly string[] = [
+    "neutral", "jungle", "desert", "arctic", "ocean", "cave", "city",
+  ];
 
   for (const biome of ART) {
     test(`template: ${biome} fills every slot §2e requires`, async ({ page }, testInfo) => {

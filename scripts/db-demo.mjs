@@ -86,8 +86,55 @@ async function count(what, sql) {
   return { what, n: Number(stdout.trim()) };
 }
 
+/*
+ * Refuse to seed over foreign attempt history, and say why.
+ *
+ * `responses` is append-only (root CLAUDE.md hard rule 7) and a trigger enforces
+ * it against `service_role` too. The seed used to try to purge other users'
+ * attempt history, which that trigger correctly refused -- aborting psql
+ * PARTWAY THROUGH and leaving a half-fixtured database: profiles present,
+ * stage_locks and progress missing.
+ *
+ * The visible symptom was "stage 00 is locked", which reads as an app bug and
+ * sent two rounds of biome captures chasing a rendering problem. The seed's own
+ * output had said FAILED both times, and nobody read it.
+ *
+ * So the check runs up front and the message names the fix. This is not a
+ * limitation to work around: history surviving a re-seed is the entire point of
+ * an append-only table.
+ */
+async function foreignHistory() {
+  const { n } = await count(
+    "foreign responses",
+    "select count(*) from responses r join attempts a on a.id = r.attempt_id " +
+      "join profiles p on p.id = a.user_id where p.id::text not like 'dddddddd-%'",
+  );
+  return n;
+}
+
 async function main() {
   console.log("\n  " + c.bold("OCTA — demo fixtures"));
+
+  const stale = await foreignHistory();
+  if (stale > 0) {
+    console.log(
+      c.red(`
+  ${stale} response(s) belong to non-demo users.`) +
+        `
+  Nothing here can remove them: \`responses\` is append-only and a` +
+        `
+  trigger blocks DELETE for every role, which is correct and deliberate.` +
+        `
+
+  Run ` + c.bold("pnpm db:reset") + ` first -- it drops and recreates` +
+        `
+  the database -- then run this again. Seeding on top would half-apply,` +
+        `
+  and show up as a locked stage rather than as an error.
+`,
+    );
+    process.exit(1);
+  }
 
   process.stdout.write("  demo-seed.sql       ... ");
   try {

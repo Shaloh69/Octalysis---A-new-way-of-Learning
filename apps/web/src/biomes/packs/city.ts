@@ -51,7 +51,17 @@ const manifest: BiomeManifest = {
     { src: "/biomes/city/stars.png", depth: 0.1, scale: 1, align: "bottom" },
     { src: "/biomes/city/cloud.png", depth: 0.3, scale: 1, align: "bottom" },
     { src: "/biomes/city/back.png", depth: 0.6, scale: 1, align: "bottom" },
-    { src: "/biomes/city/front.png", depth: 1, scale: 1, align: "bottom" },
+    /*
+     * SINK 16.5%. `front.png` is 250x170 with its artwork ending at y=142 --
+     * a 28px transparent strip below the skyline, which `align: "bottom"`
+     * faithfully aligned to the frame, leaving the nearest buildings hovering
+     * with `back.png`'s silhouette visible underneath them.
+     *
+     * The pack is not wrong: a platformer covers that strip with ground tiles.
+     * A full-page background has none, so the margin is pushed off-frame.
+     * Measured from the alpha bounding box -- (170 - 142) / 170 -- not guessed.
+     */
+    { src: "/biomes/city/front.png", depth: 1, scale: 1, align: "bottom", sink: 16.5 },
   ],
   credit: {
     pack: "Skyline Background",

@@ -38,14 +38,56 @@ export async function getAccessToken(): Promise<string | null> {
  */
 export type Theme = "bare-metal" | "blueprint" | "phosphor";
 
+/**
+ * Paint whatever the student last chose, before first render.
+ *
+ * **It must not WRITE anything**, and that is not a detail. It used to call
+ * `setTheme`/`setAccentHue`, both of which persist — so on a student's very
+ * first load it stored `bare-metal` and `250` and every later reader could no
+ * longer tell "they chose the default" from "they have never chosen".
+ *
+ * That is what defeated the first attempt at F-40: the seeded look correctly
+ * declined to overwrite a stored choice, and the stored choice was one this
+ * function had invented microseconds earlier. Three students still rendered
+ * identically and the fix looked broken.
+ *
+ * So the defaults are applied in memory and left unstored. Absence of the key
+ * is the signal that the seed is still free to act; only `SettingsPage` writes.
+ */
 export function applyStoredTheme(): void {
   try {
-    const theme = (localStorage.getItem("octa:theme") as Theme | null) ?? "bare-metal";
-    const hue = Number(localStorage.getItem("octa:accent-hue") ?? "250");
-    setTheme(theme);
-    setAccentHue(Number.isFinite(hue) ? hue : 250);
+    const stored = localStorage.getItem("octa:theme") as Theme | null;
+    const rawHue = localStorage.getItem("octa:accent-hue");
+    if (stored) document.documentElement.setAttribute("data-theme", stored);
+    if (rawHue !== null) {
+      const hue = Number(rawHue);
+      if (Number.isFinite(hue)) {
+        document.documentElement.style.setProperty(
+          "--accent-hue",
+          String(Math.max(0, Math.min(359, Math.round(hue)))),
+        );
+      }
+    }
   } catch {
     /* private window: fall through to the defaults already in the stylesheet */
+  }
+}
+
+/**
+ * Has the student chosen this part of their look? Absence lets the seed act.
+ *
+ * Theme and hue are asked SEPARATELY, and that is not pedantry. A single
+ * "have they chosen anything" flag meant picking a theme also froze the accent
+ * at the stylesheet default of 250 — so a student who changed one thing
+ * silently lost the seeded value of the other, which is the same
+ * everyone-looks-identical bug F-40 fixed, reintroduced in miniature.
+ */
+export function hasChosen(part: "theme" | "accent-hue"): boolean {
+  try {
+    return localStorage.getItem(`octa:${part}`) !== null;
+  } catch {
+    // Private window: no choice can have been stored, so the seed applies.
+    return false;
   }
 }
 

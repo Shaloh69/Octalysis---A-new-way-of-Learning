@@ -7,6 +7,7 @@ import {
   deriveCosmetics,
   BIOMES,
   PALETTE_VARIANTS,
+  THEMES,
   type Cosmetics,
 } from "../src/routes/cosmetics.js";
 import { makeAttemptSeed } from "../src/engine/seed.js";
@@ -225,5 +226,65 @@ describe("the callsign is a name, not an identifier", () => {
   it("is stable for a student, because it is shown to them", () => {
     const first: Cosmetics = deriveCosmetics(A);
     expect(deriveCosmetics(A).callsign).toBe(first.callsign);
+  });
+});
+
+describe("the seeded look — F-40", () => {
+  /*
+   * R2 shipped "per-student seeded cosmetics" and seeded only the biome. Theme
+   * and accent came from `localStorage` alone, defaulting to `bare-metal` / 250,
+   * so every student looked identical while `apps/web/CLAUDE.md` documented the
+   * opposite. These assert the derivation half; the client half — that a stored
+   * choice still wins — lives in the app.
+   */
+  it("puts every value in range, for any key", () => {
+    for (let i = 0; i < 500; i += 1) {
+      const c = deriveCosmetics(`2321290${i}`);
+      expect(c.themeIndex, "themeIndex indexes THEMES").toBeGreaterThanOrEqual(0);
+      expect(c.themeIndex).toBeLessThan(THEMES.length);
+      expect(c.accentHue, "hue is an OKLCH angle").toBeGreaterThanOrEqual(0);
+      expect(c.accentHue).toBeLessThan(360);
+      expect(Number.isInteger(c.accentHue)).toBe(true);
+    }
+  });
+
+  it("actually spreads students across all three themes", () => {
+    /*
+     * The failure this catches is the one F-40 WAS: a derivation that runs,
+     * returns a valid index, and hands everybody the same one. "In range" would
+     * have passed throughout the entire bug.
+     */
+    const seen = new Set<number>();
+    for (let i = 0; i < 200; i += 1) seen.add(deriveCosmetics(`2321290${i}`).themeIndex);
+    expect(seen.size, "all three themes should occur across 200 students").toBe(THEMES.length);
+
+    const hues = new Set<number>();
+    for (let i = 0; i < 200; i += 1) hues.add(deriveCosmetics(`2321290${i}`).accentHue);
+    expect(hues.size, "hues should be spread, not clustered on one value").toBeGreaterThan(50);
+  });
+
+  it("decorrelates theme from biome", () => {
+    /*
+     * Both are derived from one digest, so a careless split would make the two
+     * move together and every `desert` student would share a theme. Checked by
+     * counting distinct themes WITHIN one biome rather than overall.
+     */
+    const byBiome = new Map<number, Set<number>>();
+    for (let i = 0; i < 400; i += 1) {
+      const c = deriveCosmetics(`2321290${i}`);
+      const set = byBiome.get(c.biomeIndex) ?? new Set<number>();
+      set.add(c.themeIndex);
+      byBiome.set(c.biomeIndex, set);
+    }
+    for (const [biome, themes] of byBiome) {
+      expect(themes.size, `biome ${biome} sees only one theme — the bits are correlated`)
+        .toBeGreaterThan(1);
+    }
+  });
+
+  it("is stable for a student, because they will get used to it", () => {
+    const first = deriveCosmetics(A);
+    expect(deriveCosmetics(A).themeIndex).toBe(first.themeIndex);
+    expect(deriveCosmetics(A).accentHue).toBe(first.accentHue);
   });
 });

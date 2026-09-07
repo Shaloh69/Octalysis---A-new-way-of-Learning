@@ -429,32 +429,60 @@ collage.
 Structure per §2c, and **no two share one** — that is what the greyscale test
 checks:
 
-| Biome | Structure | Far | Mid | Near | Ground | Motif |
-|---|---|---|---|---|---|---|
-| `neutral` | balanced, mid horizon | clouds | small trees | large trees | 16% | *none, on purpose* |
-| `jungle` | enclosed, no horizon | canopy | trees | trunks leaving frame | 14% | leaves |
-| `desert` | wide, low horizon | mountains | pyramids | scrub | 12% | sand |
-| `arctic` | high horizon, ridges | ridges | peaks | near slope | *in art* | snow |
-| `ocean` | submerged, no sky | kelp | rock | coral | *in art* (seabed) | bubbles |
-| `cave` | interior, no sky | crystals | ruins | **scattered props** | *in art* | dust |
-| `city` | vertical, built, lit | skyline | back towers | front towers | *in art* | dust |
+**All seven are pre-cut packs as of 7 September 2026.** `neutral`, `jungle` and
+`desert` were compositions built from Kenney Background Elements — loose flat
+vector shapes scattered by this renderer. Every technique in this section was
+applied to them (scatter, overlap, density falling with depth, atmospheric ramp,
+fog sheets, a ground plane) and they still read as bland, because **the
+composition was never the problem**: flat two-tone vector shapes have no internal
+detail, so there is nothing for the eye to find at any density. Scattering more
+of them produced a denser flat picture.
+
+| Biome | Structure | Pack | Ground | Motif |
+|---|---|---|---|---|
+| `neutral` | open, mid horizon, snow-capped | MatiasVME, 8 layers | *in art* (loose rock) | *none, on purpose* |
+| `jungle` | enclosed, no horizon, god-rays | ansimuz, 4 layers | *in art* (forest litter) | leaves |
+| `desert` | receding terraces, the only red | Emcee Flesher, 4 layers | *in art* (3 terraces) | sand |
+| `arctic` | high horizon, ridges | Admurin, 5 layers | *in art* (snow) | snow |
+| `ocean` | submerged, no sky | ansimuz, 4 layers | *in art* (seabed) | bubbles |
+| `cave` | interior, no sky, crystals | ansimuz, 3 layers | *in art* (rubble) | dust |
+| `city` | vertical, built, lit | FabinhoSC, 5 layers | *in art* (street) | dust |
 
 **Strip packs fill slots 2-5 inside their own art** — they are pre-cut scenes
 drawn as a set, and re-cutting them would undo the composition. They still owe
 slots 1 and 6, and the template still applies: what changes is who fills them.
 
-**A strip pack can still scatter.** The renderer branches per LAYER on whether it
-declares `variants`, not on the pack's `kind`, so a pre-cut pack that also ships
-loose props can use both. `cave` is the first to do it, and the difference is
-large: three strips all move together and leave nothing between the viewer and
-the wall, where seven scattered plants at varying sizes give it a foreground.
+**Every ground exemption is "the art already has one"** — jungle's litter,
+neutral's loose rock, desert's terraces, arctic's snow, ocean's seabed, cave's
+rubble, city's street. Not one biome is exempt because it has no floor; they are
+exempt because drawing a second floor over a painted one puts a flat coloured
+band across it. `neutral` is the one real exemption, and it is from the MOTIF: it
+is the default, and a default that demands attention is one a student has to get
+rid of.
 
-**Every ground exemption is "the art already has one"** — arctic's snow, ocean's
-seabed, cave's rubble, city's street. Not one biome is exempt because it has no
-floor; they are exempt because drawing a second floor over a painted one puts a
-coloured band across it. `neutral` is the one real exemption, and it is from the
-MOTIF: it is the default, and a default that demands attention is one a student
-has to get rid of.
+**Two things a pre-cut pack still gets wrong, and both are measured, not seen:**
+
+*A pack can leave a transparent margin below its artwork.* `align: "bottom"`
+aligns a layer's CANVAS, not its picture, so city's `front.png` — 250×170 with
+content ending at y=142 — rendered its skyline 16.5% above the frame with
+`back.png`'s silhouette showing underneath. The city hovered over its own
+shadow. `BiomeLayer.sink` pushes that margin off-frame, and the value comes from
+the alpha bounding box: `(canvasHeight - contentBottom) / canvasHeight`. The pack
+is not wrong — a platformer covers that strip with ground tiles. A full-page
+background has none.
+
+*Height-fitting is right on a wide screen and wrong on a tall one.* A 1.78-ratio
+strip in a 380×844 viewport is 1500px wide, so a phone shows a quarter of the
+scene — which is what "the arctic trees are squished to the side" actually was.
+Below 640px the strips fit the WIDTH instead, anchored to the bottom, with the
+sky gradient filling above. That is why **every pack's sky token must be matched
+to its own art**: on a phone, most of the sky IS the token.
+
+**The scatter renderer is kept, unused.** Nothing declares `variants` any more,
+and `.biome-ground` draws for nobody. Both stay for the same reason `PROCEDURAL`
+is kept empty: the next biome sourced as loose elements rather than as a pre-cut
+scene will need them, and that should be opted into deliberately rather than
+rebuilt from scratch. The sprite rules below still bind anything that uses them.
 
 ### The sprite rules — measured, never eyeballed
 

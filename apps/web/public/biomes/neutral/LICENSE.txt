@@ -1,0 +1,30 @@
+Neutral biome art
+=================
+
+Pack:    Parallax background forest pixel art
+Author:  MatiasVME
+Source:  https://opengameart.org/content/parallax-background-forest-pixel-art
+Licence: CC0 (Creative Commons Zero)
+
+The OpenGameArt entry's structured `License(s)` field reads CC0, with
+attribution instructions "No attribution required".
+
+Sourced from OpenGameArt rather than itch.io for the reason
+BIOME-AND-LOADING-SPEC.md 2a records: OGA states the licence as metadata ON THE
+WORK, so it can be read, cited and re-verified by anyone later.
+
+FILES  (all 1280x360)
+
+  sky.png            100% opaque -- the only one
+  sun.png            0.7%  -- one disc, its own layer so it barely parallaxes
+  clouds.png         5.2%
+  mountains_1.png    31.2%   mountains_2.png    40.6%  > rising coverage confirms 1 is farthest
+  mountains_3.png    55.7% /
+  trees.png          4.6%  -- the distant treeline
+  rocks.png          2.7%  -- loose stone, the floor
+
+Nothing is resized or recoloured.
+
+CREDIT
+
+Not required. CREDITS.md credits MatiasVME anyway, per that file's own rule.

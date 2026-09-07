@@ -171,6 +171,9 @@ export function BiomeScene({ name }: Props): JSX.Element | null {
             // frozen by one media query rather than by JavaScript.
             ["--biome-depth" as string]: String(layer.depth),
             ["--biome-scale" as string]: String(layer.scale),
+            // Pushes a pack's transparent bottom margin off-frame. See
+            // `BiomeLayer.sink` -- city's skyline hovered without it.
+            ["--biome-sink" as string]: `${layer.sink ?? 0}%`,
           }}
         />
         ),

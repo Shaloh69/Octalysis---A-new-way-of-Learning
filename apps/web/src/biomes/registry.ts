@@ -72,6 +72,24 @@ export interface BiomeLayer {
   readonly count?: number;
   /** Size spread, 0-1. 0.4 means instances range 80%-120% of `scale`. */
   readonly jitter?: number;
+  /**
+   * Push this layer DOWN by a percentage of the scene height.
+   *
+   * For packs that leave a transparent margin BELOW their content. `align:
+   * "bottom"` aligns the layer's *canvas* to the frame, not its artwork, so a
+   * pack drawn with empty space under the subject renders that subject floating.
+   *
+   * City is the case that found it: `front.png` is 250x170 with content ending
+   * at y=142, so the nearest skyline sat 16.5% above the frame while `back.png`
+   * — whose content does reach its canvas bottom — showed underneath it. The
+   * city appeared to hover over its own silhouette.
+   *
+   * The pack is not wrong. A platformer draws its ground tiles over that strip;
+   * a full-page background has no ground tiles, so the margin has to be pushed
+   * off-frame instead. Measured from the PNG's alpha bounding box, never
+   * guessed: (canvasHeight - contentBottom) / canvasHeight.
+   */
+  readonly sink?: number;
   /*
    * `aspect` USED TO BE HERE, and its removal is the point.
    *
