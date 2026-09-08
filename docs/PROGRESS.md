@@ -64,7 +64,7 @@ list three things, two of which had been struck through as DONE — a heading th
 no longer described anything. The resolved ones are in
 `PROGRESS-FINDINGS.md`; these two are live.
 
-1. **F-41 — the item bank. THE BANK IS BUILT; the assessments are not.**
+1. **F-41 — the item bank and the exams. BUILT; awaiting the instructor's review.**
    `pnpm db:reset && node scripts/db-demo.mjs` now yields **183 items in
    `review`**, authored from Stallings ch 1-8 and covering all 59 gradeable
    objectives in stages 01-08. The instructor's ruling scoped it to **stage 08
@@ -79,10 +79,17 @@ no longer described anything. The resolved ones are in
    together — so the bank looked complete on every per-dimension count and could
    not have produced one valid paper.
 
-   **What still owes.** No `assessments` row exists yet, so a student still
-   cannot press Start — creating one mints the exam salt and is a console
-   action (`/assessments`). And every item is `review`: nothing is `live` until
-   the instructor approves it at `/items`, which is the ruling and not a gap.
+   **Assessments landed the same day.** `sync-assessments.mjs` seeds one per
+   examinable blueprint — Prelim and Midterm, **five attempts**, every section,
+   no dates — and refuses to touch one that already exists, so a re-run cannot
+   reset a window set in the console. Both are therefore OPEN: a NULL bound is
+   no bound, and `engine-repo.ts` enforces exactly that.
+
+   **What still owes.** Every item is `review`: nothing is `live` until the
+   instructor approves it at `/items`, which is the ruling and not a gap. And
+   the console has no CONTROL for the exam window yet — `PATCH
+   /api/v1/console/assessments/:id` exists, is guarded and is denial-tested, but
+   `AssessmentsPage` does not expose it.
 
 2. **No phase owns the public marketing site.** Five routes, including the
    landing page whose re-rollable demo `PAGE-SPECS.md` calls "the one

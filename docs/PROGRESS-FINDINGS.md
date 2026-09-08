@@ -1587,10 +1587,12 @@ Midterm demand of five, which only the type tally exposed.
 web, 24 console, contrast 1181, 25 invariants clean and 0 failures.
 `check:items` is now part of `verify`.
 
-**Still owed on F-41:** no `assessments` row exists, so a student still cannot
-press Start. Creating one mints the exam salt and is a console action at
-`/assessments`. And nothing is `live` until the instructor reviews it -- which
-is the ruling, not a gap.
+**Still owed on F-41 -- corrected later the same day.** This paragraph said "no
+`assessments` row exists" and was true for about an hour. `sync-assessments.mjs`
+now seeds Prelim and Midterm at five attempts, every section, no dates, and the
+missing `PATCH` route was built so a window can be set at all. What remains is
+the console CONTROL for that window, and the instructor's review pass -- nothing
+is `live` until they approve it.
 
 
 

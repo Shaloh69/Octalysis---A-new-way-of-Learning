@@ -106,14 +106,19 @@ this project locally:
 | | `items` | `assessments` | `objectives` |
 |---|---|---|---|
 | after `pnpm db:reset` | **0** | **0** | 115 |
-| after `db:reset` + `db-demo` | **183** (all `review`) | **0** | 115 |
+| after `db:reset` + `db-demo` | **183** (all `review`) | **2** | 115 |
 | after `pnpm verify` | 22 | 2 | **4** |
 | after `node scripts/db-demo.mjs` | 22 | 2 | 115 |
+
+**F-41 is fixed as of 9 Sep**: `sync-items.mjs` and `sync-assessments.mjs` run
+inside `db-demo`, so a clean `db:reset` + `db-demo` yields 183 items and 2
+assessments. The paragraph below describes the state BEFORE that and is kept
+because the `pnpm verify` truncation behaviour it documents is still live.
 
 `pnpm verify` runs the API suite, which **truncates objectives** and **creates
 the 22 items and 2 assessments** as its own artefacts. `db-demo` restores
 objectives and leaves the bank alone. `db:reset` drops everything, and nothing
-in the repo seeds items or assessments (**F-41**) — so the only current way to
+in the repo seeded items or assessments (**F-41**) — so the only way to
 get an item bank locally is to run the test suite, which nothing documents.
 
 The original version of this section reported "19 stages, 4 objectives, 22
