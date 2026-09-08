@@ -174,6 +174,43 @@ describe them as private.
 
 ---
 
+## 3b. The first staff account — nothing else creates one
+
+**This step was missing from this document, and without it a freshly deployed
+console has a working sign-in form and nobody who can use it.**
+
+Nothing in the repo creates a staff user on a real project. `routes/auth.ts`
+registration is roster-gated and only ever mints `{ role: "student" }`.
+`db/demo-seed.sql` inserts into `auth.users` with **no password column at all**,
+so its teacher exists locally and can sign in nowhere. `db-push-supabase.mjs`
+pushes the schema and seeds no users.
+
+```bash
+SUPABASE_URL=https://<ref>.supabase.co SUPABASE_SERVICE_ROLE_KEY=<service role key> DATABASE_URL=<the DIRECT connection string>   node scripts/bootstrap-admin.mjs "you@example.com" "a long password" "Your Name"
+```
+
+Run it **once, from your own machine.** Not from CI, not from the deployed
+service. The service-role key is read from the environment and never printed.
+
+### The one thing that is easy to get wrong
+
+**The JWT is authoritative for role, not `profiles.role`.** `jwt_role()` reads
+`app_metadata -> role` from the token, and `profiles.role` says in its own schema
+comment that it is a mirror. Creating a user in the Supabase dashboard and then
+setting `profiles.role = 'admin'` by hand gives you a row that says admin and a
+token that says student: RLS denies, the console renders empty, and nothing on
+screen explains why. The script writes **both**, `app_metadata` first.
+
+If you would rather do it by hand: create the user in **Auth → Users**, then edit
+its **app_metadata** to `{"role": "admin"}`, then insert the matching `profiles`
+row. All three, or it will not work.
+
+### Locally there is no password at all
+
+The local stack has no Supabase Auth. Use `pnpm dev:token`, which prints a signed
+HS256 session to paste into the browser console. It refuses under
+`NODE_ENV=production`.
+
 ## 4. Scheduling — all of it on Supabase
 
 **Render Free has no cron jobs.** Every scheduled job runs as `pg_cron` +
