@@ -1434,6 +1434,48 @@ right. Nothing was broken enough to notice. It took rendering two students side
 by side and comparing the DOM against the rows — which is exactly the check R2
 wrote down and left for last.
 
+### F-43 · The live Supabase project is a bare, stale schema — and the push script omitted 40% of the grade
+
+**Measured read-only on 9 September 2026** against
+`lqvkqdaqtkhxmnvodmyr.supabase.co` with `db-push-supabase.mjs --check`, which
+applies nothing. The instructor's statement was "Supabase is live, everything is
+live". It is live. It is also empty and behind.
+
+| | Live | Local / schema.sql |
+|---|---|---|
+| public tables | **21** | **22** |
+| stages | **18** | **19** |
+| profiles · objectives · content_blocks | 0 · 0 · 0 | 25 · 115 · 217 |
+| items · assessments | 0 · 0 | 183 · 2 |
+| blueprints | 4 | 4 |
+| auth.users | not counted — the query was blocked by a permission prompt and not worked around | — |
+
+**The missing table is `submissions`.** Labs, the project and participation —
+**40% of the grade**. `scripts/db-push-supabase.mjs`'s `FILES` list never
+included `db/addendum-submissions.sql`.
+
+**This is the same defect root `CLAUDE.md` already records against
+`scripts/db-reset.mjs`.** It was found and fixed there on 7 Sep and **never fixed
+here**, so the local stack has been correct and every deployment silently has
+not. Nothing failed: the schema applied cleanly, the API started, and the gap is
+visible only if you count tables — which is exactly why it survived a push.
+Fixed, with the apply order now matching `db-reset.mjs`.
+
+**18 stages, not 19.** The live schema predates the 18-chapter curriculum
+rebuild (`5b548e8`, "the syllabus has eighteen chapters, not seventeen"). So the
+live project was pushed from an older `schema.sql` and has not been touched
+since.
+
+**Nothing has been lost, because nothing was there.** 0 profiles, 0 attempts,
+0 responses. That makes a `--reset` push safe *today* — but `--reset` runs
+`drop schema public cascade`, it is irreversible and outward-facing, and this
+reading is a snapshot. **It has not been run, and it needs the instructor's
+explicit go-ahead rather than an inference from these counts.**
+
+**What "live" therefore means right now:** the hosts exist and the database
+answers. No student could use it — there are no stages 00–18, no objectives, no
+content, no item bank, no assessments, and no account that can sign in.
+
 ### F-42 · The item bank was blocked by the engine, not by the authoring — and the scope now says so
 
 **Instructor's ruling, 9 September 2026.** F-41 asked which blueprint the demo

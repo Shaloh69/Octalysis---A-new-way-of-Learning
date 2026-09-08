@@ -162,6 +162,35 @@ after a full run once passed against a different project on port 5173.
 
 ---
 
+## Deployment — measured, 9 September 2026
+
+Read-only, with `node scripts/db-push-supabase.mjs --check`, which applies
+nothing. Project `lqvkqdaqtkhxmnvodmyr`, PostgreSQL 17.6.
+
+| | Live Supabase | Local |
+|---|---|---|
+| public tables | **21** | 22 |
+| stages | **18** | 19 |
+| objectives · content_blocks | 0 · 0 | 115 · 217 |
+| items · assessments | 0 · 0 | 183 · 2 |
+| profiles · attempts · responses | 0 · 0 · 0 | 25 · fixtures · fixtures |
+| blueprints | 4 | 4 |
+
+**The missing table is `submissions`** — 40% of the grade.
+`db-push-supabase.mjs` omitted `addendum-submissions.sql`, the same defect root
+already recorded against `db-reset.mjs`. Fixed in `d98ed0d`; **not yet applied
+to the project**, which needs a `--reset` push and the instructor's go-ahead.
+
+**18 stages** means the live schema predates the 18-chapter rebuild (`5b548e8`).
+
+**Vercel and Render: unverified.** `origin/main` is current, but whether the
+hosts are connected and building cannot be checked from here. `DELIVERY.md`
+§3.4's deployment criterion remains unticked.
+
+**So "live" currently means the hosts exist and the database answers.** No
+student could use it: no stages 00–18, no objectives, no content, no bank, no
+assessments, and no account that can sign in.
+
 ## What is NOT built
 
 Recorded because an audit that only lists what exists is half an audit, and the

@@ -19,6 +19,12 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+> **After a `/clear`, read `docs/NEXT-SESSION.md` first.** It carries the
+> measured state with the command beside each figure, so a fresh session does not
+> spend its first hour re-deriving what this one established.
+
+
+
 **Phase: R3 — page templates and redesign.**
 
 **Every number below was counted from the phase files on 7 Sep 2026, not
@@ -91,7 +97,15 @@ no longer described anything. The resolved ones are in
    /api/v1/console/assessments/:id` exists, is guarded and is denial-tested, but
    `AssessmentsPage` does not expose it.
 
-2. **No phase owns the public marketing site.** Five routes, including the
+2. **The live Supabase project is bare and stale — see F-43.** 21 public tables
+   where the schema defines 22 (the missing one is `submissions`, 40% of the
+   grade), 18 stages instead of 19, and zero objectives, content, items,
+   assessments or profiles. `db-push-supabase.mjs` omitted
+   `addendum-submissions.sql`; that is fixed but not yet applied to the project.
+   Re-pushing needs `--reset`, which drops the schema — **not run, and it needs
+   the instructor's explicit go-ahead.**
+
+3. **No phase owns the public marketing site.** Five routes, including the
    landing page whose re-rollable demo `PAGE-SPECS.md` calls "the one
    interaction that sells the product". `/` is currently `<Navigate to="/app">`.
 

@@ -33,6 +33,13 @@ heavy on intrinsic drives, light and always opt-in on pressure mechanics.
 
 ---
 
+## 1b. Resuming after a `/clear`
+
+**`docs/NEXT-SESSION.md` is the fastest correct entry point.** It carries the
+phase, the measured local and live state, what is deferred and why, and the
+session-closing inventory — each figure with the command that produced it. Read
+it before the order below; the documents here are the reference it points into.
+
 ## 2. Read in this order
 
 | # | File | Why |
