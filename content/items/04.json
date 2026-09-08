@@ -1,0 +1,356 @@
+{
+  "stageId": "04",
+  "chapter": "Stallings ch 4 — Cache Memory",
+  "note": "Closes act 1. Five parameterized items, all on the two computational objectives (04.5 cache addresses and size, 04.7 replacement) plus AMAT on 04.4. Table 4.1 and the elements-of-cache-design list are used verbatim rather than paraphrased.",
+  "items": [
+    {
+      "slug": "04-cache-definition",
+      "objective": "04.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.78,
+      "stem": "What is a cache?",
+      "correct": "A relatively small, fast memory interposed between a larger slower memory and the logic that accesses it",
+      "distractors": [
+        "A region of main memory reserved by the operating system for frequently used programs",
+        "A buffer inside an I/O module that holds data until the processor can accept it",
+        "A duplicate copy of main memory kept on disk for recovery"
+      ],
+      "rationale": "The definition has three parts: small, fast, and BETWEEN two things. It holds recently accessed data to speed up subsequent access to the same data. The second distractor is an I/O buffer, which is also small and fast but sits on a different pathway.",
+      "source": "ch-02.md §2.1 footnote 1, and ch-04.md §4.2 — Cache Memory Principles"
+    },
+    {
+      "slug": "04-cache-is-internal",
+      "objective": "04.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.62,
+      "stem": "Under Table 4.1's 'location' characteristic, where does cache sit?",
+      "correct": "Internal memory, alongside processor registers and main memory",
+      "distractors": [
+        "External memory, alongside disks and tapes",
+        "Neither — cache is a technique rather than a memory location",
+        "It depends on whether the cache is on the processor chip"
+      ],
+      "rationale": "Location distinguishes internal, directly accessible by the processor, from external, reached via an I/O module. Cache is internal wherever it physically sits — on-chip or off-chip is a different question from internal versus external.",
+      "source": "ch-04.md §4.1 — 'Cache is another form of internal memory'"
+    },
+    {
+      "slug": "04-locality-justifies-cache",
+      "objective": "04.1",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "A cache holds a small fraction of main memory, yet most references hit in it. What property of programs makes that possible?",
+      "correct": "Locality of reference — programs concentrate their accesses in small regions for long stretches",
+      "distractors": [
+        "Caches are large enough to hold most working programs entirely",
+        "The compiler arranges for every needed address to be preloaded",
+        "Main memory is organised so that popular addresses map to low numbers"
+      ],
+      "rationale": "Without locality a small cache would be useless — a uniformly random access pattern would miss nearly always. Locality is the empirical property that the entire memory hierarchy rests on, and it is why hit ratios in the high nineties are achievable at all.",
+      "source": "ch-04.md Appendix 4A — Locality"
+    },
+
+    {
+      "slug": "04-access-methods",
+      "objective": "04.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Which access method requires moving a shared read-write mechanism through every intervening record to reach the one wanted?",
+      "correct": "Sequential access",
+      "distractors": ["Direct access", "Random access", "Associative access"],
+      "rationale": "Sequential access means a specific linear order, so access time to an arbitrary record is highly variable — tape is the example. Direct access also shares a mechanism, but individual blocks have unique addresses so it can move to the vicinity directly.",
+      "source": "ch-04.md §4.1 — the access methods"
+    },
+    {
+      "slug": "04-address-bits-relation",
+      "objective": "04.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "For an address of length A bits and N addressable units, what relationship holds?",
+      "correct": "2^A = N",
+      "distractors": ["A^2 = N", "A = 2N", "A x N = 2^A"],
+      "rationale": "Each additional address bit doubles the number of reachable units. This one relation underlies every address-field calculation in the course — cache tag widths, page table sizes, memory chip counts.",
+      "source": "ch-04.md §4.1 — 'the relationship between the length in bits A of an address and the number N of addressable units is 2^A = N'"
+    },
+    {
+      "slug": "04-word-vs-unit-of-transfer",
+      "objective": "04.2",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.42,
+      "stem": "Why does Stallings insist that unit of transfer, word, and addressable unit are three separate concepts?",
+      "correct": "They frequently differ — a memory may transfer 128 bits at a time while its word is 32 bits and it is addressed by byte",
+      "distractors": [
+        "They differ only on external memory; on internal memory all three coincide",
+        "They are synonyms retained for historical compatibility",
+        "Word and addressable unit always match; only the unit of transfer varies"
+      ],
+      "rationale": "The unit of transfer is set by the number of electrical lines in and out of the module and is often larger than a word. Many systems address by byte while their word is wider. Collapsing the three is the mistake that makes memory-sizing arithmetic go wrong.",
+      "source": "ch-04.md §4.1 — Word, Addressable units, Unit of transfer"
+    },
+
+    {
+      "slug": "04-hierarchy-order",
+      "objective": "04.3",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.68,
+      "stem": "Put these levels of the memory hierarchy in order, from the fastest and smallest to the slowest and largest.",
+      "order": [
+        "Processor registers",
+        "L1 cache",
+        "L2 cache",
+        "Main memory",
+        "Magnetic disk"
+      ],
+      "rationale": "Going down the hierarchy: access time increases, cost per bit falls, and capacity grows. Level n is smaller and faster than level n+1. The hierarchy exists because no single technology is optimal — the arrangement buys near-register speed at near-disk cost.",
+      "source": "ch-04.md §4.1 — The Memory Hierarchy; ch-01.md §1.2 on cache levels"
+    },
+    {
+      "slug": "04-hierarchy-tradeoff",
+      "objective": "04.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.66,
+      "stem": "As you move DOWN the memory hierarchy, which combination of changes occurs?",
+      "correct": "Cost per bit decreases, capacity increases, and access time increases",
+      "distractors": [
+        "Cost per bit decreases, capacity increases, and access time decreases",
+        "Cost per bit increases, capacity decreases, and access time increases",
+        "Cost per bit increases, capacity increases, and access time decreases"
+      ],
+      "rationale": "The three move together and the trade is the point: if a lower level were also faster, the levels above it would have no reason to exist. The first distractor describes a hierarchy that would make the upper levels pointless.",
+      "source": "ch-04.md §4.1 — The Memory Hierarchy"
+    },
+    {
+      "slug": "04-why-no-single-technology",
+      "objective": "04.3",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.5,
+      "stem": "Why is a computer equipped with a hierarchy of memory subsystems rather than one uniform memory?",
+      "correct": "No single technology is optimal on capacity, speed and cost at once, so the levels combine to approximate one that would be",
+      "distractors": [
+        "Manufacturing yields prevent building a single memory of sufficient size",
+        "The processor can only address a limited amount of memory directly",
+        "Operating systems require separate memories for code and data"
+      ],
+      "rationale": "Faster memory costs more per bit, so an all-fast memory would be unaffordable and an all-cheap one unusably slow. The hierarchy plus locality gives an effective access time near the fastest level at a cost per bit near the cheapest.",
+      "source": "ch-04.md §4.1 — 'No single technology is optimal'"
+    },
+
+    {
+      "slug": "04-amat-p",
+      "objective": "04.4",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "amat",
+      "source": "ch-04.md Appendix 4A — Performance of two-level memories"
+    },
+    {
+      "slug": "04-design-elements",
+      "objective": "04.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "Which of the following is one of the elements of cache design listed in Table 4.2?",
+      "correct": "Write policy",
+      "distractors": [
+        "Refresh interval",
+        "Bus arbitration method",
+        "Interrupt priority"
+      ],
+      "rationale": "The elements are cache addresses, cache size, mapping function, replacement algorithm, write policy, line size, and number of caches. Refresh belongs to DRAM (chapter 5), arbitration to buses (chapter 3), and interrupt priority to I/O (chapter 7).",
+      "source": "ch-04.md §4.3 — Table 4.2, Elements of Cache Design"
+    },
+    {
+      "slug": "04-write-through-vs-back",
+      "objective": "04.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What distinguishes a write-back policy from write-through?",
+      "correct": "Write-back updates main memory only when the line is replaced, rather than on every write",
+      "distractors": [
+        "Write-back writes to memory first and to the cache afterwards",
+        "Write-back applies only to reads that miss in the cache",
+        "Write-back writes to every cache level simultaneously"
+      ],
+      "rationale": "Write-through keeps memory continuously consistent at the cost of traffic on every write. Write-back defers the cost and writes once at replacement, but leaves memory temporarily stale — which is what makes cache coherence hard in a multicore system.",
+      "source": "ch-04.md §4.3 — Write Policy"
+    },
+
+    {
+      "slug": "04-cache-lines-p",
+      "objective": "04.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.68,
+      "solver": "cache-lines",
+      "source": "ch-04.md §4.3 — Cache Size and Line Size"
+    },
+    {
+      "slug": "04-direct-tag-bits-p",
+      "objective": "04.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "cache-direct-tag-bits",
+      "source": "ch-04.md §4.3 — Mapping Function, direct mapping address split"
+    },
+    {
+      "slug": "04-set-bits-p",
+      "objective": "04.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "solver": "cache-set-bits",
+      "source": "ch-04.md §4.3 — Mapping Function, set-associative mapping"
+    },
+
+    {
+      "slug": "04-direct-mapping-conflict",
+      "objective": "04.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "What is the principal disadvantage of direct mapping?",
+      "correct": "Each block has exactly one possible line, so two active blocks competing for it thrash regardless of how empty the rest of the cache is",
+      "distractors": [
+        "Every access must compare the tag against every line, which is slow",
+        "It requires a replacement algorithm, which adds hardware",
+        "It cannot support line sizes larger than one word"
+      ],
+      "rationale": "Direct mapping is simple and cheap precisely BECAUSE there is no choice of line — which is also why it needs no replacement algorithm, making the second distractor backwards. The exhaustive tag comparison in the first distractor describes fully associative mapping.",
+      "source": "ch-04.md §4.3 — Mapping Function, direct mapping"
+    },
+    {
+      "slug": "04-associative-mapping-cost",
+      "objective": "04.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "Fully associative mapping lets a block occupy any line. What does that flexibility cost?",
+      "correct": "The tag of every line must be examined to determine a hit, which is complex circuitry",
+      "distractors": [
+        "The tag field becomes shorter, reducing how much memory can be cached",
+        "Blocks must be moved between lines whenever the cache fills",
+        "The line size must be reduced to keep the comparison affordable"
+      ],
+      "rationale": "Flexibility trades against lookup cost. Direct mapping checks one line, fully associative checks all of them, and set-associative checks only the lines in one set — which is why it is the compromise that real designs use.",
+      "source": "ch-04.md §4.3 — Mapping Function, associative mapping"
+    },
+    {
+      "slug": "04-set-associative-compromise",
+      "objective": "04.6",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Set-associative mapping is described as a compromise. Between what?",
+      "correct": "Direct mapping's cheap lookup and associative mapping's freedom of placement",
+      "distractors": [
+        "Write-through's consistency and write-back's low traffic",
+        "A large line size's prefetching and a small line size's precision",
+        "A unified cache's simplicity and a split cache's parallelism"
+      ],
+      "rationale": "A block may go into any line of ONE set, so only the lines of that set are searched. Raising associativity moves it toward fully associative; a one-way set-associative cache IS direct mapped. The other options are real trade-offs in cache design, but different ones.",
+      "source": "ch-04.md §4.3 — Mapping Function, set-associative mapping"
+    },
+
+    {
+      "slug": "04-line-number-p",
+      "objective": "04.7",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "cache-line-number",
+      "source": "ch-04.md §4.3 — direct mapping, block to line assignment"
+    },
+    {
+      "slug": "04-replacement-algorithms-list",
+      "objective": "04.7",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.62,
+      "stem": "Which four replacement algorithms does Table 4.2 list?",
+      "correct": "Least recently used, first in first out, least frequently used, and random",
+      "distractors": [
+        "Least recently used, most recently used, first in first out, and optimal",
+        "Round robin, priority, shortest job first, and random",
+        "Write through, write back, write allocate, and no-write allocate"
+      ],
+      "rationale": "LRU, FIFO, LFU and random. The last distractor lists write policies, which is a different element of cache design entirely — and the confusion is worth catching, because both are rows of the same table.",
+      "source": "ch-04.md §4.3 — Table 4.2, Replacement Algorithm"
+    },
+    {
+      "slug": "04-no-replacement-direct",
+      "objective": "04.7",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "Why does a direct-mapped cache need no replacement algorithm?",
+      "correct": "A block has only one possible line, so there is never a choice about what to evict",
+      "distractors": [
+        "Direct-mapped caches never fill, so nothing is ever evicted",
+        "The replacement decision is made by the operating system instead",
+        "Direct-mapped caches use write-through, which avoids eviction"
+      ],
+      "rationale": "A replacement algorithm exists to CHOOSE a victim. With one candidate line there is nothing to choose. This is the clearest illustration that mapping function and replacement algorithm are coupled rather than independent design elements.",
+      "source": "ch-04.md §4.3 — Replacement Algorithms, 'For direct mapping, there is only one possible line'"
+    },
+
+    {
+      "slug": "04-unified-versus-split",
+      "objective": "04.8",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What is the main advantage of a SPLIT cache over a unified one?",
+      "correct": "It removes contention between the instruction fetch unit and the execution unit, which matters for pipelining",
+      "distractors": [
+        "It automatically balances how much space instructions and data receive",
+        "It halves the tag storage the cache requires",
+        "It removes the need for a replacement algorithm on the instruction side"
+      ],
+      "rationale": "A split cache dedicates one to instructions and one to data, so a pipelined processor can fetch and access data at the same time. Automatic balancing is the advantage of a UNIFIED cache, which is why it is the tempting wrong answer.",
+      "source": "ch-04.md §4.3 — Number of Caches, unified versus split"
+    },
+    {
+      "slug": "04-multilevel-rationale",
+      "objective": "04.8",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "Why do contemporary designs use multiple levels of cache rather than one larger one?",
+      "correct": "A small L1 can be fast enough to match the processor, while a larger L2 still beats going to main memory on an L1 miss",
+      "distractors": [
+        "Each level uses a different mapping function, and all three are needed",
+        "One level must be volatile and the other non-volatile",
+        "Multiple levels are required for the MMU to translate addresses"
+      ],
+      "rationale": "Size and speed pull against each other, so one cache cannot be both. Levels let each be optimised for its own job — L1 for latency, L2 and L3 for hit rate. Level n is smaller and faster than level n+1.",
+      "source": "ch-04.md §4.3 — Number of Caches, multilevel caches; ch-01.md §1.2"
+    },
+    {
+      "slug": "04-logical-versus-physical-cache",
+      "objective": "04.8",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.38,
+      "stem": "A LOGICAL (virtual) cache stores data using virtual addresses, so it sits between the processor and the MMU. What does that buy, and what does it cost?",
+      "correct": "It avoids address translation on a hit, but the same virtual address in two processes may refer to different data",
+      "distractors": [
+        "It avoids translation on a hit, and has no drawback over a physical cache",
+        "It simplifies coherence between cores, but slows every hit by one translation",
+        "It removes the need for an MMU entirely"
+      ],
+      "rationale": "Speed is the gain: no translation stands between the processor and a hit. The cost is that virtual addresses are per-process, so the cache must usually be flushed on a context switch or carry a process identifier. A physical cache pays translation on every access but has no such ambiguity.",
+      "source": "ch-04.md §4.3 — Cache Addresses, logical and physical caches"
+    }
+  ]
+}

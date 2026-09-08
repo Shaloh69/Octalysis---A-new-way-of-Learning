@@ -1530,6 +1530,68 @@ advance is **mutation-tested** — reverting `advanceFrom` to close-on-decision
 makes it fail. Capture in `design/item-review/`. `r3-gate` and the other console
 specs re-run clean: 57 passed, 17 skipped.
 
+**THE BANK ITSELF — 183 items, and the pipeline that seeds them.**
+
+`content/items/NN.json` + `scripts/sync-items.mjs`, modelled on the existing
+`content/stages/*.md` + `sync-content.mjs` pipeline: content lives in files, git
+owns the history, the database is a projection. Wired into `db-demo.mjs` after
+sync-content, because every item names an objective. **`pnpm db:reset && node
+scripts/db-demo.mjs` now produces a real bank from a clean checkout**, which is
+what F-41 actually asked for.
+
+| Act | Stages | Objectives | Items | S | P | G |
+|---|---|---|---|---|---|---|
+| 1 Prelim | 01-04 | 32 | 96 | 74 | 16 | 6 |
+| 2 Midterm | 05-08 | 27 | 87 | 67 | 14 | 6 |
+
+Every item cites its source section, and the citations were checked against
+`content/book-map.json`: all eight in-scope stages map 1:1 to book chapters
+(stage 02 also drawing ch 2), so no item sends a student to the wrong chapter of
+the 10th edition. Acts 3-4 would have needed the renumbering -- stage 09 is book
+ch 10 -- which is another reason the scope flag sits where it does.
+
+**Three rules `sync-items.mjs` will not break**, each with a reason:
+
+1. **It never touches a `live` or `retired` item.** Hard rule 6, and
+   `routes/items.ts` refuses to edit a live one at all. A re-run after the
+   instructor approves something leaves it alone and reports it as locked.
+   Silently rewriting an approved item would swap a reviewed answer key for an
+   unreviewed one with nothing on screen to say so.
+2. **Items land as `review` with `author_id = NULL`** -- the console ruling's
+   consequence, so the instructor's approval is a genuine first review.
+3. **It refuses anything past the scope flag**, which it READS from `scope.ts`
+   rather than duplicating.
+
+**`bank-feasibility.spec.ts` is the proof F-41 was really asking for.** A bank
+that merely exists is not the fix; the failure being prevented is a student
+meeting `BlueprintUnsatisfiable` instead of a paper. It reads the real files and
+the real blueprints, fills Prelim and Midterm, asserts every constraint cell
+lands EXACTLY across 60 student seeds, and asserts the two deferred exams
+correctly still cannot be filled -- so the flag is checked for honesty in both
+directions.
+
+**It caught the one that counted.** Act 2's only `apply` items were its 14
+parameterized ones. The Midterm demands `apply: 14` and `P: 13` simultaneously,
+so exactly one apply had to come from a non-P item and there were none. Every
+per-dimension count looked healthy and the bank could not have produced one
+valid paper. Four apply-level S items fixed it, and **reverting them makes the
+spec fail with that exact joint-cell error** -- watched failing, per the
+project's own rule.
+
+**Two defects found by running rather than reading:** the UPDATE in
+`sync-items.mjs` never referenced `$1`, so Postgres refused it with "could not
+determine data type of parameter $1"; and act 2 had ZERO `G` items against a
+Midterm demand of five, which only the type tally exposed.
+
+**Measured:** `pnpm verify` green -- **359 API** (was 266 before this work), 53
+web, 24 console, contrast 1181, 25 invariants clean and 0 failures.
+`check:items` is now part of `verify`.
+
+**Still owed on F-41:** no `assessments` row exists, so a student still cannot
+press Start. Creating one mints the exam salt and is a console action at
+`/assessments`. And nothing is `live` until the instructor reviews it -- which
+is the ruling, not a gap.
+
 
 
 ### F-41 · Every multiple-choice answer was rejected, and the fixture cannot exercise the fix

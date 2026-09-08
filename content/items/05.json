@@ -1,0 +1,282 @@
+{
+  "stageId": "05",
+  "chapter": "Stallings ch 5 — Internal Memory",
+  "note": "Opens act 2 (Midterm). Table 5.1's semiconductor memory types and the ECC inequality 2^K - 1 >= M + K are used as the book states them; the hamming-check-bits solver implements that same inequality in its equivalent form 2^K >= M + K + 1.",
+  "items": [
+    {
+      "slug": "05-address-lines-p",
+      "objective": "05.1",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "solver": "memory-address-lines",
+      "source": "ch-05.md §5.1 — semiconductor memory organization"
+    },
+    {
+      "slug": "05-memory-cell-properties",
+      "objective": "05.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "A semiconductor memory cell must have three properties. Which of the following is one of them?",
+      "correct": "It can be in one of two stable states, used to represent binary 1 and 0",
+      "distractors": [
+        "It must retain its value after power is removed",
+        "It must be readable and writable at the same instant",
+        "It must store its value as a voltage rather than a charge"
+      ],
+      "rationale": "A cell exhibits two stable states, can be written to set its state, and can be read to sense its state. Non-volatility is a property of SOME memory types, not of cells in general — DRAM and SRAM are both volatile and both are built from cells.",
+      "source": "ch-05.md §5.1 — the properties of a memory cell"
+    },
+    {
+      "slug": "05-cell-terminals",
+      "objective": "05.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What is the purpose of a memory cell's SELECT terminal?",
+      "correct": "It chooses whether this particular cell participates in the current read or write",
+      "distractors": [
+        "It determines whether the operation is a read or a write",
+        "It carries the data value into or out of the cell",
+        "It supplies the refresh charge for a dynamic cell"
+      ],
+      "rationale": "Three terminals: select picks the cell, control indicates read or write, and a third carries data. Confusing select with control is the natural error, and it matters because the select line is what an address decoder drives.",
+      "source": "ch-05.md §5.1 — memory cell operation"
+    },
+    {
+      "slug": "05-dram-stores-charge",
+      "objective": "05.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.75,
+      "stem": "How does a DRAM cell store a bit?",
+      "correct": "As charge on a capacitor, whose presence or absence is read as 1 or 0",
+      "distractors": [
+        "In a flip-flop built from cross-connected transistors",
+        "As the magnetic polarity of a small ferrite core",
+        "As the threshold voltage of a floating-gate transistor"
+      ],
+      "rationale": "Charge on a capacitor is the defining DRAM mechanism, and the reason DRAM needs refreshing — capacitors discharge naturally. The first distractor is the SRAM cell and the third is flash.",
+      "source": "ch-05.md §5.1 — dynamic RAM"
+    },
+    {
+      "slug": "05-sram-holds-while-powered",
+      "objective": "05.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.7,
+      "stem": "Which statement about SRAM is correct?",
+      "correct": "It holds its data as long as power is supplied, with no refreshing required",
+      "distractors": [
+        "It holds its data indefinitely, even without power",
+        "It requires refreshing, but less often than DRAM",
+        "It stores data as charge, like DRAM, but with a larger capacitor"
+      ],
+      "rationale": "SRAM is a digital device using the same flip-flop logic as the processor, so it needs no refresh — but it is still VOLATILE. Confusing 'no refresh needed' with 'non-volatile' is the commonest error on this pair.",
+      "source": "ch-05.md §5.1 — static RAM"
+    },
+    {
+      "slug": "05-dram-analog-nature",
+      "objective": "05.2",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.42,
+      "stem": "Stallings calls the DRAM cell 'essentially an analog device' even though it stores one bit. Why?",
+      "correct": "The capacitor can hold any charge in a range, and a threshold decides whether it reads as 1 or 0",
+      "distractors": [
+        "It can store fractional values that software interprets as probabilities",
+        "Its output voltage varies continuously with the address applied",
+        "It uses analog amplifiers rather than logic gates to drive the data line"
+      ],
+      "rationale": "The stored quantity is continuous; only the INTERPRETATION is binary. That is precisely why charge leaking away eventually crosses the threshold and corrupts the bit, and therefore why refresh exists.",
+      "source": "ch-05.md §5.1 — 'a threshold value determines whether the charge is interpreted as 1 or 0'"
+    },
+    {
+      "slug": "05-sram-transistor-count",
+      "objective": "05.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Why is SRAM less dense and more expensive per bit than DRAM?",
+      "correct": "An SRAM cell needs several transistors in a flip-flop arrangement, where a DRAM cell needs roughly one transistor and a capacitor",
+      "distractors": [
+        "SRAM cells must be physically larger to hold more charge",
+        "SRAM requires an extra layer of metallisation for its refresh circuitry",
+        "SRAM cells must be spaced further apart to avoid interference"
+      ],
+      "rationale": "Cell complexity drives density, which drives cost. The second distractor is doubly wrong: SRAM needs no refresh circuitry at all — that is DRAM's burden, and it is one of the few places DRAM pays and SRAM does not.",
+      "source": "ch-05.md §5.1 — SRAM structure, four cross-connected transistors"
+    },
+    {
+      "slug": "05-sram-versus-dram-use",
+      "objective": "05.3",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Given their characteristics, why is SRAM used for cache and DRAM for main memory?",
+      "correct": "SRAM is faster but dearer and less dense, so it suits the small fast level; DRAM is cheaper and denser, so it suits the large slow one",
+      "distractors": [
+        "SRAM is non-volatile, so the cache survives a power interruption",
+        "DRAM cannot be manufactured in the small capacities a cache needs",
+        "SRAM's refresh cycles would be too slow for main memory"
+      ],
+      "rationale": "This is the memory hierarchy argument applied to two real technologies. The last distractor inverts the refresh property — SRAM has none — and that inversion is worth catching because it appears whenever the two are first compared.",
+      "source": "ch-05.md §5.1 — the SRAM/DRAM comparison"
+    },
+    {
+      "slug": "05-refresh-overhead-p",
+      "objective": "05.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "solver": "dram-refresh-overhead",
+      "source": "ch-05.md §5.1 — DRAM refresh"
+    },
+    {
+      "slug": "05-rom-erasure-masks",
+      "objective": "05.4",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "In Table 5.1, how is data written into a plain ROM, and can it be erased?",
+      "correct": "Written by masks during fabrication, and erasure is not possible",
+      "distractors": [
+        "Written electrically by the customer, and erased with ultraviolet light",
+        "Written electrically at any time, and erased electrically byte by byte",
+        "Written by masks, and erased electrically at block level"
+      ],
+      "rationale": "ROM contents are fixed at manufacture, which is why it is only attractive for high-volume runs. The distractors describe EPROM, EEPROM and flash respectively — the read-mostly family that exists precisely because ROM cannot be changed.",
+      "source": "ch-05.md §5.2 — Table 5.1, Semiconductor Memory Types"
+    },
+    {
+      "slug": "05-eprom-erasure",
+      "objective": "05.4",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.62,
+      "stem": "How is an EPROM erased?",
+      "correct": "By exposing the whole chip to intense ultraviolet light through a window in the package",
+      "distractors": [
+        "Electrically, one byte at a time",
+        "Electrically, one block at a time",
+        "It cannot be erased once programmed"
+      ],
+      "rationale": "EPROM erasure is optical and CHIP-LEVEL — all cells return to the same initial state, and each erasure can take up to 20 minutes. EEPROM is electrical and byte-level; flash is electrical and block-level. The granularity is what separates the three.",
+      "source": "ch-05.md §5.2 — EPROM"
+    },
+    {
+      "slug": "05-eeprom-tradeoff",
+      "objective": "05.4",
+      "difficulty": 0.5,
+      "source": "ch-05.md §5.2 — EEPROM",
+      "type": "G",
+      "bloom": "understand",
+      "stem": "Put these read-only memory types in order of increasing write flexibility, from the one that can never be changed to the one that can be updated in place a byte at a time.",
+      "order": [
+        "ROM",
+        "PROM",
+        "EPROM",
+        "EEPROM"
+      ],
+      "rationale": "ROM is written by masks at fabrication and cannot be erased. PROM is written electrically, once. EPROM can be erased repeatedly, but only whole-chip and only by ultraviolet light, taking up to 20 minutes. EEPROM is erased electrically at byte level with no removal from the circuit. Each step buys flexibility and pays in cost and density."
+    },
+    {
+      "slug": "05-hamming-bits-p",
+      "objective": "05.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "hamming-check-bits",
+      "source": "ch-05.md §5.2 — Error Correction, the check-bit inequality"
+    },
+    {
+      "slug": "05-syndrome-meaning",
+      "objective": "05.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "In the error-correcting scheme, what does a syndrome word of all zeros indicate?",
+      "correct": "No error was detected",
+      "distractors": [
+        "An error occurred in one of the check bits and needs no correction",
+        "An uncorrectable double-bit error occurred",
+        "The data bit at position zero is in error"
+      ],
+      "rationale": "The syndrome is the bit-by-bit exclusive-OR of the stored and recomputed check bits. All zeros means every position matched. A single 1 bit means a check bit itself was corrupted, and more than one 1 gives the numerical position of the failed DATA bit.",
+      "source": "ch-05.md §5.2 — 'If the syndrome contains all 0s, no error has been detected'"
+    },
+    {
+      "slug": "05-why-check-bits-count-themselves",
+      "objective": "05.5",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.38,
+      "stem": "The check-bit inequality is 2^K - 1 >= M + K, not 2^K - 1 >= M. Why does K appear on both sides?",
+      "correct": "The check bits are stored alongside the data and can themselves be corrupted, so the syndrome must be able to identify them too",
+      "distractors": [
+        "It reserves extra codes for detecting double-bit errors",
+        "It accounts for the syndrome word needing its own parity bit",
+        "It compensates for the exclusive-OR losing one bit of information"
+      ],
+      "rationale": "An error could occur on any of the M data bits OR the K check bits, so the syndrome must distinguish M + K positions plus the no-error case. Dropping the K is the mistake that yields a code one bit too short, and it is silent — the code still works until a check bit fails.",
+      "source": "ch-05.md §5.2 — 'because an error could occur on any of the M data bits or K check bits'"
+    },
+    {
+      "slug": "05-chip-count-p",
+      "objective": "05.6",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "solver": "dram-chip-count",
+      "source": "ch-05.md §5.1 — chip organization and module construction"
+    },
+    {
+      "slug": "05-sdram-synchronous",
+      "objective": "05.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What distinguishes SDRAM from traditional DRAM?",
+      "correct": "It exchanges data synchronised to an external clock, so the processor can do other work while the request is serviced",
+      "distractors": [
+        "It transfers data on both the rising and falling clock edges",
+        "It stores two bits per cell instead of one",
+        "It requires no refresh, unlike traditional DRAM"
+      ],
+      "rationale": "SDRAM latches the address and responds after a known number of clock cycles, so the master need not wait. The first distractor is DDR, which builds ON SDRAM — the two are often conflated, and the distinction is the point of this item.",
+      "source": "ch-05.md §5.3 — Synchronous DRAM"
+    },
+    {
+      "slug": "05-sdram-no-wait-states",
+      "objective": "05.6",
+      "difficulty": 0.4,
+      "source": "ch-05.md §5.3 — 'without imposing wait states'",
+      "type": "G",
+      "bloom": "understand",
+      "stem": "Put these DRAM interfaces in the order they were developed, from earliest to most recent.",
+      "order": [
+        "Asynchronous DRAM",
+        "Synchronous DRAM (SDRAM)",
+        "DDR SDRAM"
+      ],
+      "rationale": "Traditional DRAM is asynchronous: the master must wait an unpredictable time for a response. SDRAM latches the request and responds after a known number of clock cycles, so no wait states are imposed and the master can do other work meanwhile. DDR then transfers on both clock edges. Each step improves the PROTOCOL rather than the array's access time."
+    },
+    {
+      "slug": "05-classify-cell-technology",
+      "objective": "05.2",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "stem": "A memory array is described as needing periodic charge restoration to retain its contents, and as achieving very high density per chip. Which technology is it, and why?",
+      "correct": "DRAM — one transistor and a capacitor per cell gives high density, and the capacitor's leakage forces refresh",
+      "distractors": [
+        "SRAM — its flip-flop cells must be periodically rewritten to stay stable",
+        "EEPROM — it is electrically refreshed a byte at a time",
+        "Flash — block erasure is a form of refresh"
+      ],
+      "rationale": "Two clues point the same way: refresh implies charge storage, and high density implies a small cell. Only DRAM has both. An SRAM flip-flop holds its state indefinitely while powered, so the first distractor invents a requirement SRAM does not have.",
+      "source": "ch-05.md §5.1 — dynamic RAM and static RAM"
+    }
+  ]
+}

@@ -1,0 +1,251 @@
+{
+  "stageId": "01",
+  "chapter": "Stallings ch 1 — Basic Concepts and Computer Evolution",
+  "note": "Every stem, key and rationale here is grounded in docs/source/book/ch-01.md. Where the book gives an example verbatim (the multiply instruction, the System/370 family) the item uses that example rather than inventing a parallel one.",
+  "items": [
+    {
+      "slug": "01-arch-definition",
+      "objective": "01.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.8,
+      "stem": "In Stallings' terms, computer ARCHITECTURE refers to which attributes of a system?",
+      "correct": "Those visible to the programmer, having a direct impact on the logical execution of a program",
+      "distractors": [
+        "The operational units and their interconnections that realise the specification",
+        "The hardware details deliberately kept transparent to the programmer",
+        "The physical layout of components on the motherboard"
+      ],
+      "rationale": "Architecture is what a program can SEE: instruction set, data type widths, I/O mechanisms, addressing. The second option is the definition of organization, and the third is the distractor that mistakes 'architecture' for physical construction.",
+      "source": "ch-01.md §1.1 — 'attributes of a system visible to a programmer'"
+    },
+    {
+      "slug": "01-org-definition",
+      "objective": "01.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.78,
+      "stem": "Computer ORGANIZATION refers to which of the following?",
+      "correct": "The operational units and their interconnections that realise the architectural specification",
+      "distractors": [
+        "The attributes that have a direct impact on the logical execution of a program",
+        "The instruction formats, opcodes and registers available to a programmer",
+        "The set of programming languages a machine is able to compile"
+      ],
+      "rationale": "Organization is HOW the architecture is realised — control signals, peripheral interfaces, memory technology. The first two options are both descriptions of architecture, and the second is specifically the ISA.",
+      "source": "ch-01.md §1.1 — 'operational units and their interconnections'"
+    },
+    {
+      "slug": "01-isa-synonym",
+      "objective": "01.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.72,
+      "stem": "The term 'instruction set architecture' (ISA) is often used interchangeably with which term?",
+      "correct": "Computer architecture",
+      "distractors": [
+        "Computer organization",
+        "Microarchitecture",
+        "System interconnection"
+      ],
+      "rationale": "The ISA defines instruction formats, opcodes, registers, and the effect of instructions on registers and memory — all programmer-visible, which is exactly what architecture means. Microarchitecture describes the organizational realisation, which is the opposite side of the distinction.",
+      "source": "ch-01.md §1.1 — 'often used interchangeably with computer architecture'"
+    },
+
+    {
+      "slug": "01-multiply-instruction",
+      "objective": "01.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.68,
+      "stem": "Deciding WHETHER a computer will have a multiply instruction is which kind of design issue?",
+      "correct": "Architectural — it changes what a program can express",
+      "distractors": [
+        "Organizational — it concerns how the hardware is built",
+        "Neither: instruction selection is a compiler concern",
+        "Both equally, since every instruction needs hardware"
+      ],
+      "rationale": "Stallings uses this exact example. WHETHER the instruction exists is architectural, because a programmer can see it. WHETHER it is implemented by a dedicated multiply unit or by repeated use of the adder is organizational, and that second decision turns on expected frequency of use, relative speed, cost and physical size.",
+      "source": "ch-01.md §1.1 — the multiply instruction example"
+    },
+    {
+      "slug": "01-organizational-attribute",
+      "objective": "01.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "Which of the following is an ORGANIZATIONAL attribute rather than an architectural one?",
+      "correct": "The memory technology used",
+      "distractors": [
+        "The number of bits used to represent a character",
+        "The I/O mechanisms available to a program",
+        "The techniques available for addressing memory"
+      ],
+      "rationale": "Stallings lists memory technology, control signals and peripheral interfaces as organizational — hardware details transparent to the programmer. The three distractors are his examples of ARCHITECTURAL attributes, all of which a program can observe.",
+      "source": "ch-01.md §1.1 — the two lists of example attributes"
+    },
+    {
+      "slug": "01-family-same-architecture",
+      "objective": "01.2",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.55,
+      "stem": "A manufacturer offers several models sharing one architecture but differing in organization, as IBM did with the System/370. What does this arrangement buy the customer?",
+      "correct": "They can move to a faster, dearer model later without abandoning software already written",
+      "distractors": [
+        "Each model can run a different instruction set suited to its price point",
+        "Software written for a faster model runs unchanged only if recompiled for the slower one",
+        "The models share a price and differ only in physical size"
+      ],
+      "rationale": "Software compatibility follows the ARCHITECTURE, and every model in the family shares it. Organization is what varies, which is why the models differ in price and performance. If the instruction sets differed, as the first distractor claims, the compatibility the family exists to provide would be gone.",
+      "source": "ch-01.md §1.1 — the IBM System/370 family"
+    },
+
+    {
+      "slug": "01-four-functions",
+      "objective": "01.3",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.75,
+      "stem": "Stallings reduces everything a computer does to four basic functions. Which set is correct?",
+      "correct": "Data processing, data storage, data movement, and control",
+      "distractors": [
+        "Input, processing, output, and feedback",
+        "Fetch, decode, execute, and write back",
+        "Arithmetic, logic, branching, and interrupt handling"
+      ],
+      "rationale": "The four functions are the top-level view. 'Fetch, decode, execute' is the instruction cycle — a level down, and covered in chapter 3 — and the other two options are plausible-sounding groupings the book never uses.",
+      "source": "ch-01.md §1.2 — 'only four basic functions that a computer can perform'"
+    },
+    {
+      "slug": "01-gates-memory-cells",
+      "objective": "01.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "A digital computer is built from just two fundamental component types. Which basic function does each provide?",
+      "correct": "Gates provide data processing; memory cells provide data storage",
+      "distractors": [
+        "Gates provide data storage; memory cells provide data processing",
+        "Gates provide control; memory cells provide data movement",
+        "Gates provide data movement; memory cells provide control"
+      ],
+      "rationale": "A gate implements a Boolean function, which is processing. A memory cell holds one bit in one of two stable states, which is storage. Movement is provided by the PATHS between components, and control by the signals those paths carry — neither is a component type of its own.",
+      "source": "ch-01.md §1.5 — gates and memory cells mapped to the four functions"
+    },
+    {
+      "slug": "01-general-purpose-shaping",
+      "objective": "01.3",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.5,
+      "stem": "Stallings quotes Siewiorek: 'There is remarkably little shaping of computer structure to fit the function to be performed.' What accounts for this?",
+      "correct": "Computers are general purpose, so functional specialisation happens at programming time rather than design time",
+      "distractors": [
+        "The four basic functions are too simple to require any specialised structure",
+        "Manufacturing constraints make specialised structures too expensive to build",
+        "Specialised structures were abandoned once integrated circuits arrived"
+      ],
+      "rationale": "The quotation's own explanation is the general-purpose nature of computers: the same hardware serves every application because the specialisation is supplied later, by a program. The other options offer economic or historical reasons the passage does not give.",
+      "source": "ch-01.md §1.2 — the [SIEW82] quotation and its gloss"
+    },
+
+    {
+      "slug": "01-io-versus-datacomm",
+      "objective": "01.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.68,
+      "stem": "Data movement to a device directly attached to the computer is called input-output. What is the same function called when the data travels to a REMOTE device instead?",
+      "correct": "Data communications",
+      "distractors": [
+        "Direct memory access",
+        "Peripheral transfer",
+        "Long-term data storage"
+      ],
+      "rationale": "Stallings splits data movement by distance: a directly connected device is a peripheral and the process is I/O; over longer distances the same function is called data communications. Direct memory access is a technique for performing I/O, not a category of movement.",
+      "source": "ch-01.md §1.2 — data movement, I/O versus data communications"
+    },
+    {
+      "slug": "01-keyboard-path-order",
+      "objective": "01.4",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "A keystroke travels from the keyboard into main memory. Put the components it passes through in order, from the outside in.",
+      "order": [
+        "Keyboard (peripheral)",
+        "I/O module",
+        "System bus",
+        "Main memory"
+      ],
+      "rationale": "The peripheral hands data to the I/O module, which is the computer's interface to the external environment. The system bus carries it between the major components, and main memory is where it comes to rest. This is the top-level structure of Figure 1.1 traced along one operation.",
+      "source": "ch-01.md §1.2 — Figure 1.1 top-level structure, and the I/O definition"
+    },
+    {
+      "slug": "01-classify-download",
+      "objective": "01.4",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.62,
+      "stem": "A computer receives a file over the network and writes it to its hard disk. Which pair of basic functions does this operation chiefly exercise?",
+      "correct": "Data movement and data storage",
+      "distractors": [
+        "Data processing and control only",
+        "Data processing and data movement",
+        "Control and data storage only"
+      ],
+      "rationale": "Arriving over a network is data movement — data communications, since the source is remote — and writing to disk is long-term data storage. Nothing about the contents is transformed, so data processing is not the operation's substance even though the processor is involved in carrying it out.",
+      "source": "ch-01.md §1.2 — the four functions and the possible operations they compose"
+    },
+
+    {
+      "slug": "01-four-structural-components",
+      "objective": "01.5",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.72,
+      "stem": "What are the four main structural components of a traditional single-processor computer?",
+      "correct": "CPU, main memory, I/O, and system interconnection",
+      "distractors": [
+        "Control unit, ALU, registers, and CPU interconnection",
+        "CPU, cache, main memory, and secondary storage",
+        "Processor, motherboard, expansion boards, and chips"
+      ],
+      "rationale": "These are the top-level four. The first distractor is the correct answer to a DIFFERENT question — those are the major structural components of the CPU, one level down — and confusing the two levels is the commonest error on this material.",
+      "source": "ch-01.md §1.2 — 'There are four main structural components'"
+    },
+    {
+      "slug": "01-structure-hierarchy-order",
+      "objective": "01.5",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.58,
+      "stem": "Figure 1.1 nests the computer's structure. Put these in order from the outermost enclosing level to the innermost.",
+      "order": [
+        "Computer",
+        "CPU",
+        "Control unit",
+        "Sequencing logic"
+      ],
+      "rationale": "The computer contains the CPU alongside memory, I/O and the interconnection. The CPU contains the control unit alongside the ALU and registers. The control unit, in a microprogrammed implementation, contains sequencing logic together with its registers, decoders and control memory. Each level is a component of the one before it.",
+      "source": "ch-01.md §1.2 — Figure 1.1, The Computer: Top-Level Structure"
+    },
+    {
+      "slug": "01-cpu-core-processor",
+      "objective": "01.5",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.5,
+      "stem": "Under the terminology Stallings adopts, what distinguishes a PROCESSOR from a CORE?",
+      "correct": "A processor is the physical piece of silicon, which may contain one or more cores",
+      "distractors": [
+        "A core is the physical chip; a processor is one execution unit within it",
+        "They are interchangeable terms for the same component",
+        "A processor executes instructions; a core only holds cache"
+      ],
+      "rationale": "The processor is the physical silicon containing one or more cores; a core is an individual processing unit on that chip, functionally equivalent to a CPU on a single-CPU system. The first distractor inverts the two, which is the error the book's terminology note exists to prevent.",
+      "source": "ch-01.md §1.2 — the CPU / core / processor definitions"
+    }
+  ]
+}

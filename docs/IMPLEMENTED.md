@@ -106,6 +106,7 @@ this project locally:
 | | `items` | `assessments` | `objectives` |
 |---|---|---|---|
 | after `pnpm db:reset` | **0** | **0** | 115 |
+| after `db:reset` + `db-demo` | **183** (all `review`) | **0** | 115 |
 | after `pnpm verify` | 22 | 2 | **4** |
 | after `node scripts/db-demo.mjs` | 22 | 2 | 115 |
 
@@ -144,7 +145,7 @@ where they live; the next biome sourced as loose elements needs them.
 - **`design/specs/` — 16 Playwright spec files** (10 on 7 Sep; five added 7–8 Sep:
   student states, the attempt runner, the console gate, the console teaching
   pages, and `/live` + `/feedback`; the item review queue added 9 Sep).
-- **20 unit spec files** across `services/api/test`, `apps/web` and `apps/console`.
+- **25 unit spec files** across `services/api/test`, `apps/web` and `apps/console`.
 - **`pnpm test:rls` — 38 denial tests**, verified by running it 7 Sep.
 - **`scripts/check-contrast.mjs` — 1181 checks** (1080 palette, 42 encounter,
   59 cosmetic).

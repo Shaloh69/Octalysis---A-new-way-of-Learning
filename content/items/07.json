@@ -1,0 +1,313 @@
+{
+  "stageId": "07",
+  "chapter": "Stallings ch 7 — Input/Output",
+  "note": "Table 7.1's three I/O techniques are the spine of this stage. Thunderbolt and InfiniBand are covered only briefly in the chapter itself (the detail is in Appendix J), so items on 07.5 and 07.6 stay within what §7.8 actually states.",
+  "items": [
+    {
+      "slug": "07-io-module-purpose",
+      "objective": "07.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "Why does a peripheral connect through an I/O module rather than directly to the system bus?",
+      "correct": "Peripherals vary widely in speed, data format and operating logic, and the module reconciles those differences with the processor and memory",
+      "distractors": [
+        "The system bus has too few lines to attach a peripheral directly",
+        "Peripherals cannot generate the electrical signals a bus requires",
+        "Operating systems forbid direct device access for security reasons"
+      ],
+      "rationale": "The module is an interface in the real sense: it hides the diversity of devices behind a uniform view for the processor. Signal levels and bus width are engineering details; the substantive reason is heterogeneity of speed and format.",
+      "source": "ch-07.md §7.1–7.2 — external devices and I/O modules"
+    },
+    {
+      "slug": "07-io-module-buffering",
+      "objective": "07.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "An I/O module buffers data between the device and main memory. What problem does that solve?",
+      "correct": "The device's transfer rate differs by orders of magnitude from memory's, so data must be held while the slower side catches up",
+      "distractors": [
+        "It allows the device to be disconnected without losing data",
+        "It converts between the device's character set and the processor's",
+        "It permits several processors to share one device"
+      ],
+      "rationale": "Rate matching is the classic reason for a buffer. A disk moves data far faster than a keyboard and far slower than memory, and without buffering every transfer would run at the pace of the slowest participant.",
+      "source": "ch-07.md §7.2 — I/O module functions"
+    },
+    {
+      "slug": "07-io-module-error-detection",
+      "objective": "07.1",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Error detection is listed among an I/O module's major functions. Why is it placed there rather than in the processor?",
+      "correct": "The module is closest to the device, where mechanical and transmission errors originate, and can report them rather than passing corrupt data on",
+      "distractors": [
+        "The processor has no instructions capable of detecting errors",
+        "Errors can only be detected while data is still in the device's own format",
+        "Placing it in the processor would violate the von Neumann architecture"
+      ],
+      "rationale": "Detecting an error at the point it occurs is what lets the module report a defect rather than silently deliver bad data. The processor could compute a check, but only after the corruption had already crossed the interface.",
+      "source": "ch-07.md §7.2 — I/O module functions, error detection"
+    },
+    {
+      "slug": "07-programmed-io-cost-p",
+      "objective": "07.2",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "programmed-io-cost",
+      "source": "ch-07.md §7.3 — Programmed I/O"
+    },
+    {
+      "slug": "07-programmed-io-polling",
+      "objective": "07.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.68,
+      "stem": "Under programmed I/O, how does the processor learn that an operation has finished?",
+      "correct": "It must periodically check the I/O module's status register itself — the module never alerts it",
+      "distractors": [
+        "The module raises an interrupt when the status bits are set",
+        "The module writes a completion flag into main memory",
+        "The operating system schedules a callback when the device signals"
+      ],
+      "rationale": "With programmed I/O the module sets status bits and takes NO further action. Polling is the processor's responsibility, and it is exactly what makes the technique wasteful when the device is slower than the processor.",
+      "source": "ch-07.md §7.3 — 'it does not interrupt the processor'"
+    },
+    {
+      "slug": "07-interrupt-driven-merit",
+      "objective": "07.2",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.5,
+      "stem": "Interrupt-driven I/O removes the polling loop. What cost does it still share with programmed I/O?",
+      "correct": "The processor is still responsible for moving every word between the I/O module and main memory",
+      "distractors": [
+        "The processor must still wait for the whole transfer to complete",
+        "The device must still be checked before each individual word",
+        "The transfer rate is still limited by the polling frequency"
+      ],
+      "rationale": "Table 7.1's real division is not polling versus interrupts, it is whether the transfer passes THROUGH the processor. Programmed and interrupt-driven I/O both do; only DMA does not. That is why DMA is the answer for high-volume transfers.",
+      "source": "ch-07.md §7.3 — Table 7.1, I/O Techniques"
+    },
+    {
+      "slug": "07-dma-transfer-p",
+      "objective": "07.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "solver": "dma-transfer-time",
+      "source": "ch-07.md §7.5 — Direct Memory Access"
+    },
+    {
+      "slug": "07-dma-definition",
+      "objective": "07.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.7,
+      "stem": "What distinguishes direct memory access from the other two I/O techniques?",
+      "correct": "The I/O module and main memory exchange data directly, without processor involvement in the transfer",
+      "distractors": [
+        "The processor is interrupted after every word rather than at the end",
+        "The transfer is performed without any interrupt at all",
+        "Data is placed in the processor's registers rather than in memory"
+      ],
+      "rationale": "DMA moves the data path off the processor entirely. It still raises a completion interrupt — the processor is freed from the TRANSFER, not from knowing it happened, which is what the second distractor gets wrong.",
+      "source": "ch-07.md §7.3 — 'without processor involvement'"
+    },
+    {
+      "slug": "07-cycle-stealing",
+      "objective": "07.3",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.42,
+      "stem": "DMA is often described as 'cycle stealing'. What is actually being stolen, and from whom?",
+      "correct": "Bus cycles, taken from the processor, which must pause when it needs the bus at the same instant",
+      "distractors": [
+        "Clock cycles, taken from the I/O device to slow it to memory's pace",
+        "Instruction cycles, taken from the running program by an interrupt",
+        "Memory refresh cycles, borrowed from the DRAM controller"
+      ],
+      "rationale": "The DMA module and the processor contend for one bus. When DMA takes a cycle the processor waits — it is not interrupted, and no context is saved. That distinction matters: cycle stealing slows the processor slightly, where an interrupt diverts it entirely.",
+      "source": "ch-07.md §7.5 — DMA and cycle stealing; Key Terms"
+    },
+    {
+      "slug": "07-io-channel-definition",
+      "objective": "07.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What is an I/O channel, in the sense this chapter uses the term?",
+      "correct": "An I/O module with enough capability to execute I/O instructions itself, so it controls transfers with minimal processor involvement",
+      "distractors": [
+        "A dedicated set of bus lines reserved for I/O traffic",
+        "A logical connection between one device and one region of memory",
+        "A queue in the operating system holding pending I/O requests"
+      ],
+      "rationale": "The channel is an evolution of DMA: the module gains its own processing capability and runs an I/O program. That is why the Key Terms list places 'I/O processor' alongside it — the module becomes a specialised processor in its own right.",
+      "source": "ch-07.md §7.6 — I/O Channels and Processors"
+    },
+    {
+      "slug": "07-selector-versus-multiplexor",
+      "objective": "07.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "A selector channel and a multiplexor channel differ in what way?",
+      "correct": "A selector handles one high-speed device at a time; a multiplexor interleaves transfers from several devices",
+      "distractors": [
+        "A selector chooses which processor handles the transfer; a multiplexor chooses which memory bank",
+        "A selector operates under programmed I/O; a multiplexor under DMA",
+        "A selector is used for input and a multiplexor for output"
+      ],
+      "rationale": "The names describe how the channel's capacity is allocated. A selector devotes itself to one device for the duration of a transfer, suiting fast devices; a multiplexor spreads its attention across many slower ones.",
+      "source": "ch-07.md §7.6 — selector and multiplexor channels; Key Terms"
+    },
+    {
+      "slug": "07-channel-evolution",
+      "objective": "07.4",
+      "difficulty": 0.4,
+      "source": "ch-07.md §7.3–7.6 — the evolution of I/O function",
+      "type": "G",
+      "bloom": "analyze",
+      "stem": "Put these I/O techniques in order of how much control has moved away from the processor, from least to most.",
+      "order": [
+        "Programmed I/O",
+        "Interrupt-driven I/O",
+        "Direct memory access",
+        "I/O channel"
+      ],
+      "rationale": "Programmed I/O makes the processor poll and move every word. Interrupts free it from waiting but not from moving the data. DMA takes the data path off the processor entirely. An I/O channel goes further still, executing its own I/O program so the processor need not sequence the operation at all. Seeing these as one progression, rather than four unrelated techniques, is the point."
+    },
+    {
+      "slug": "07-thunderbolt-combines",
+      "objective": "07.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What does Thunderbolt combine into a single connection?",
+      "correct": "Data, video, audio and power",
+      "distractors": [
+        "Data and power only, with video carried separately",
+        "Data and video only, at up to 10 Gbps",
+        "Networking and storage protocols, but not display or power"
+      ],
+      "rationale": "The stated selling point is that one cable does the work previously needing several. It provides up to 10 Gbps in each direction and up to 10 watts of power to connected peripherals.",
+      "source": "ch-07.md §7.8 — Thunderbolt"
+    },
+    {
+      "slug": "07-thunderbolt-origin",
+      "objective": "07.5",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.5,
+      "stem": "Who developed Thunderbolt?",
+      "correct": "Intel, with collaboration from Apple",
+      "distractors": [
+        "Apple alone, as a proprietary Macintosh interface",
+        "The USB Implementers Forum as a successor to USB 3.1",
+        "IBM, for its zEnterprise mainframe series"
+      ],
+      "rationale": "Intel developed it with Apple's collaboration. The last distractor belongs to InfiniBand, which IBM's zEnterprise mainframes have relied on — the two are adjacent in §7.8 and easy to swap.",
+      "source": "ch-07.md §7.8 — 'developed by Intel with collaboration from Apple'"
+    },
+    {
+      "slug": "07-thunderbolt-throughput",
+      "objective": "07.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "How does Thunderbolt's stated throughput compare with USB 3.0's SuperSpeed signalling rate?",
+      "correct": "Thunderbolt provides up to 10 Gbps in each direction, twice SuperSpeed's 5 Gbps signalling rate",
+      "distractors": [
+        "They are identical, both at 5 Gbps",
+        "Thunderbolt is slower but carries power, which USB does not",
+        "Thunderbolt reaches 10 Gbps only in one direction at a time"
+      ],
+      "rationale": "USB 3.0 SuperSpeed signals at 5 Gbps with a usable rate up to 4 Gbps; USB 3.1 SuperSpeed+ reaches 10 Gbps. Thunderbolt's 10 Gbps is per direction. USB also supplies power, so the second distractor's contrast is false.",
+      "source": "ch-07.md §7.8 — USB and Thunderbolt data rates"
+    },
+    {
+      "slug": "07-infiniband-market",
+      "objective": "07.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What market is InfiniBand aimed at?",
+      "correct": "The high-end server market, including storage area networking and large storage configurations",
+      "distractors": [
+        "Consumer peripherals such as keyboards, printers and external drives",
+        "Embedded microcontrollers in automotive and industrial systems",
+        "Wireless connections between mobile devices"
+      ],
+      "rationale": "InfiniBand is a server-room technology — IBM's zEnterprise mainframes have relied on it for years. The consumer peripheral space is where USB and Thunderbolt sit, which is the contrast §7.8 draws by listing them together.",
+      "source": "ch-07.md §7.8 — InfiniBand"
+    },
+    {
+      "slug": "07-infiniband-fabric",
+      "objective": "07.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.48,
+      "stem": "How does InfiniBand connect servers, storage and network devices?",
+      "correct": "Through a central fabric of switches and links, rather than a shared bus",
+      "distractors": [
+        "Through a shared parallel bus with arbitration, like SCSI",
+        "Through point-to-point cables between every pair of devices",
+        "Through the existing Ethernet infrastructure using a software layer"
+      ],
+      "rationale": "A switch-based fabric is what lets the architecture scale to up to 64,000 devices. A shared bus could not — every device would contend for one medium, which is the limitation chapter 3 identified as the reason buses gave way to point-to-point structures.",
+      "source": "ch-07.md §7.8 — 'a central fabric of switches and links'"
+    },
+    {
+      "slug": "07-infiniband-scale",
+      "objective": "07.6",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "InfiniBand's switch-based architecture can connect up to 64,000 devices. What makes that scale reachable where a bus architecture could not?",
+      "correct": "Switches create many simultaneous paths, so devices do not contend for a single shared medium",
+      "distractors": [
+        "Switches operate at a higher clock rate than a bus can sustain",
+        "Each device is given a longer time slice on the shared medium",
+        "The fabric compresses data so more devices fit in the same bandwidth"
+      ],
+      "rationale": "On a shared bus only one device can transmit successfully at a time, so adding devices divides a fixed capacity. A switched fabric adds capacity along with devices. This is the same argument as PCIe replacing the PCI bus, one layer up.",
+      "source": "ch-07.md §7.8 — InfiniBand switch-based architecture; ch-03.md §3.4 on shared media"
+    },
+    {
+      "slug": "07-io-module-functions",
+      "objective": "07.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "Which of the following is one of the major functions of an I/O module?",
+      "correct": "Device communication and control, including command decoding and status reporting",
+      "distractors": [
+        "Translating virtual addresses into physical addresses",
+        "Scheduling which process runs next on the processor",
+        "Maintaining coherence between processor caches"
+      ],
+      "rationale": "An I/O module's functions include control and timing, processor communication, device communication, data buffering and error detection. Address translation belongs to the MMU, scheduling to the operating system, and coherence to the multicore cache hierarchy.",
+      "source": "ch-07.md §7.2 — I/O Modules, module function"
+    },
+    {
+      "slug": "07-choose-io-technique",
+      "objective": "07.2",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "stem": "A system must move a 64 MiB file from disk into memory while the processor continues running other work. Which I/O technique is appropriate?",
+      "correct": "Direct memory access, because the transfer bypasses the processor entirely and raises one interrupt at completion",
+      "distractors": [
+        "Programmed I/O, because it gives the processor precise control of the transfer",
+        "Interrupt-driven I/O, because the processor is freed while each word transfers",
+        "Either programmed or interrupt-driven I/O, since both avoid processor involvement"
+      ],
+      "rationale": "The volume is what decides it. Programmed and interrupt-driven I/O both route every word through the processor, so 64 MiB would consume it entirely regardless of polling. Only DMA takes the data path off the processor, which is exactly the distinction Table 7.1 draws.",
+      "source": "ch-07.md §7.3 — Table 7.1, I/O Techniques"
+    }
+  ]
+}

@@ -1,0 +1,323 @@
+{
+  "stageId": "02",
+  "chapter": "Stallings ch 1 §1.3–1.6 (evolution, x86, ARM) + ch 2 (performance)",
+  "note": "This stage spans TWO book chapters in the 10th edition. Evolution, the Intel x86 line and ARM are ch 1; the performance material is ch 2. `pnpm book:map` owns that mapping and reports 10 of 18 chapters renumbered. The six P items here carry no stem of their own — resolve.ts takes it from the solver.",
+  "items": [
+    {
+      "slug": "02-first-generation-tech",
+      "objective": "02.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.82,
+      "stem": "The first generation of computers used which technology for its digital logic elements and memory?",
+      "correct": "Vacuum tubes",
+      "distractors": ["Discrete transistors", "Small-scale integrated circuits", "Electromechanical relays"],
+      "rationale": "First generation is vacuum tubes, second is transistors, third is integrated circuits. Relays predate the generations scheme entirely and belong to the electromechanical machines that came before ENIAC.",
+      "source": "ch-01.md §1.3 — The First Generation: Vacuum Tubes"
+    },
+    {
+      "slug": "02-generations-order",
+      "objective": "02.1",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.7,
+      "stem": "Put these computer generations in the order they appeared.",
+      "order": ["Vacuum tubes", "Transistors", "Integrated circuits", "Very-large-scale integration"],
+      "rationale": "Each generation is defined by the logic technology of its day, and each is smaller, faster and cheaper than the one before. The progression is the physical story behind Moore's law: the same functions realised in progressively less silicon.",
+      "source": "ch-01.md §1.3 — the generation headings"
+    },
+    {
+      "slug": "02-stored-program-ias",
+      "objective": "02.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "What is the fundamental design approach first implemented in the IAS computer, which makes it the prototype of all later general-purpose machines?",
+      "correct": "The stored-program concept — instructions and data share one memory",
+      "distractors": [
+        "The use of vacuum tubes rather than relays for logic",
+        "The separation of instruction memory from data memory",
+        "The use of an accumulator for arithmetic results"
+      ],
+      "rationale": "The stored-program concept, attributed to von Neumann and developed independently by Turing, is what lets a machine be reprogrammed rather than rewired. The second distractor describes a Harvard architecture, which is the opposite arrangement.",
+      "source": "ch-01.md §1.3 — the IAS computer and the stored-program concept"
+    },
+
+    {
+      "slug": "02-superscalar-definition",
+      "objective": "02.2",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.7,
+      "stem": "Which contemporary processor technique is defined as the ability to issue more than one instruction in every clock cycle?",
+      "correct": "Superscalar execution",
+      "distractors": ["Pipelining", "Speculative execution", "Branch prediction"],
+      "rationale": "Superscalar uses multiple parallel pipelines to issue several instructions per cycle. Pipelining overlaps the STAGES of instructions without issuing more than one per cycle, which is the distinction this item exists to draw.",
+      "source": "ch-02.md §2.1 — techniques built into contemporary processors"
+    },
+    {
+      "slug": "02-data-flow-analysis",
+      "objective": "02.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "What does data flow analysis allow a processor to do?",
+      "correct": "Schedule instructions to execute when their operands are ready, independent of program order",
+      "distractors": [
+        "Predict which branch of the code will be taken next",
+        "Execute instructions ahead of their appearance and hold the results temporarily",
+        "Retrieve more bits from memory in a single access"
+      ],
+      "rationale": "Data flow analysis works out which instructions depend on which results, so an optimised schedule can be built. The second distractor is speculative execution, which USES data flow analysis but is a different technique.",
+      "source": "ch-02.md §2.1 — data flow analysis"
+    },
+    {
+      "slug": "02-branch-prediction-purpose",
+      "objective": "02.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.62,
+      "stem": "Why does branch prediction increase performance even though it does not make any single instruction faster?",
+      "correct": "It increases the amount of work available to execute by prefetching and buffering the likely instructions",
+      "distractors": [
+        "It removes branches from the instruction stream entirely",
+        "It reduces the number of cycles each branch instruction takes",
+        "It allows two branches to be taken simultaneously"
+      ],
+      "rationale": "The processor's raw speed is wasted unless it is fed a constant stream of work. Prediction keeps the pipeline full by guessing what comes next. Branches are not removed and their individual cost is unchanged; what changes is whether the processor has anything to do while they resolve.",
+      "source": "ch-02.md §2.1 — branch prediction, and 'feeding the monster'"
+    },
+
+    {
+      "slug": "02-amdahl-p",
+      "objective": "02.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "amdahl-speedup",
+      "source": "ch-02.md §2.3 — Amdahl's Law"
+    },
+    {
+      "slug": "02-mem-cost-p",
+      "objective": "02.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "mem-cost-per-bit",
+      "source": "ch-04.md §4.3 — average cost per bit of a two-level memory"
+    },
+    {
+      "slug": "02-hit-ratio-p",
+      "objective": "02.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "solver": "required-hit-ratio",
+      "source": "ch-04.md §4.3 — two-level memory average access time"
+    },
+
+    {
+      "slug": "02-8086-first-x86",
+      "objective": "02.4",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.68,
+      "stem": "Which Intel processor is the first appearance of the x86 architecture?",
+      "correct": "8086",
+      "distractors": ["8080", "80286", "80386"],
+      "rationale": "The 8086 is a 16-bit machine and the first x86. The 8080 came earlier and was the world's first general-purpose microprocessor, but it is 8-bit and pre-x86 — which is why its number looks similar and it is the distractor most often chosen.",
+      "source": "ch-01.md §1.4 — 'The 8086 is the first appearance of the x86 architecture'"
+    },
+    {
+      "slug": "02-80386-first-32bit",
+      "objective": "02.4",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "Which Intel x86 processor was the first 32-bit machine and the first to support multitasking?",
+      "correct": "80386",
+      "distractors": ["80286", "80486", "Pentium"],
+      "rationale": "The 80286 extended addressing to 16 MB but remained 16-bit. The 80386 was the 32-bit overhaul. The 80486 added sophisticated cache, instruction pipelining and a built-in math coprocessor, and the Pentium added superscalar execution.",
+      "source": "ch-01.md §1.4 — the 80386 entry"
+    },
+    {
+      "slug": "02-pentium-pro-techniques",
+      "objective": "02.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "The Pentium Pro deepened the superscalar organization begun with the Pentium. Which group of techniques did it use aggressively?",
+      "correct": "Register renaming, branch prediction, data flow analysis and speculative execution",
+      "distractors": [
+        "MMX multimedia instructions and a built-in math coprocessor",
+        "Streaming SIMD Extensions and dual-core execution",
+        "Instruction pipelining and an on-chip instruction queue"
+      ],
+      "rationale": "Those four are exactly the techniques §2.1 lists for keeping a fast processor fed, and the Pentium Pro is where they arrive together. MMX is the Pentium II, SSE is the Pentium III, and dual core is the Core.",
+      "source": "ch-01.md §1.4 — the Pentium Pro entry"
+    },
+
+    {
+      "slug": "02-arm-licensing-model",
+      "objective": "02.5",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.68,
+      "stem": "What is unusual about ARM Holdings' business model?",
+      "correct": "It does not manufacture processors; it designs architectures and licenses them to manufacturers",
+      "distractors": [
+        "It manufactures every ARM chip itself and sells no designs",
+        "It sells only completed devices, never the processors inside them",
+        "It licenses only software, and the hardware designs are public domain"
+      ],
+      "rationale": "ARM Holdings licenses two kinds of product: a processor, where the customer uses ARM's design in their own chip, and a processor architecture, where the customer designs their own compliant processor. This is why ARM cores appear in chips from many different manufacturers.",
+      "source": "ch-01.md §1.6 — ARM Evolution and the two licensable products"
+    },
+    {
+      "slug": "02-arm-risc-family",
+      "objective": "02.5",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.72,
+      "stem": "ARM is a family of processors built on which design philosophy?",
+      "correct": "RISC — reduced instruction set computing",
+      "distractors": [
+        "CISC — complex instruction set computing, like the x86",
+        "VLIW — very long instruction word",
+        "Stack-based execution with no general-purpose registers"
+      ],
+      "rationale": "Stallings uses exactly two running examples: the x86 as the CISC exemplar and ARM as the RISC one. Keeping that pairing straight matters, because most later chapters compare the two.",
+      "source": "ch-01.md §1.4 intro — the CISC/RISC pairing, and §1.6"
+    },
+    {
+      "slug": "02-arm-instruction-length",
+      "objective": "02.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.58,
+      "stem": "What is regular about the ARM instruction set that makes it efficient to implement across a wide range of products?",
+      "correct": "All instructions are 32 bits long and follow a regular format",
+      "distractors": [
+        "Instructions vary in length so common operations can be encoded compactly",
+        "All instructions are 16 bits long to save memory in embedded devices",
+        "Instructions are decoded into microinstructions of a fixed internal width"
+      ],
+      "rationale": "Fixed-width, regularly formatted instructions are a defining RISC trait: decoding is simple and predictable, which is what makes pipelining straightforward. The first distractor describes CISC encoding, which is the x86's approach.",
+      "source": "ch-01.md §1.6 — Instruction Set Architecture"
+    },
+
+    {
+      "slug": "02-cortex-a-application",
+      "objective": "02.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.62,
+      "stem": "Which ARM Cortex family is intended for application processors in devices such as smartphones and eBook readers?",
+      "correct": "Cortex-A",
+      "distractors": ["Cortex-R", "Cortex-M", "Cortex-M0+"],
+      "rationale": "The three Cortex architectures are labelled with the initials A, R and M: A for application, R for real-time, M for microcontroller. The Cortex-A runs above 1 GHz and supports an MMU, which full operating systems like Linux and Android require.",
+      "source": "ch-01.md §1.6 — ARM Products, Cortex-A/Cortex-A50"
+    },
+    {
+      "slug": "02-cortex-r-realtime",
+      "objective": "02.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.55,
+      "stem": "Automotive braking systems, mass storage controllers and printing devices are given as examples of embedded systems that would use which ARM family?",
+      "correct": "Cortex-R",
+      "distractors": ["Cortex-A", "Cortex-M", "Cortex-A50"],
+      "rationale": "The Cortex-R is built for real-time applications, where the timing of events must be controlled with rapid response. Those three examples are the book's own. A braking system's requirement is not raw throughput but a bounded, predictable response latency.",
+      "source": "ch-01.md §1.6 — Cortex-R examples"
+    },
+    {
+      "slug": "02-cortex-m-domain",
+      "objective": "02.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "The Cortex-M series was developed primarily for which domain?",
+      "correct": "Microcontrollers, where deterministic interrupt management, low gate count and lowest possible power matter most",
+      "distractors": [
+        "Mobile application processors running full operating systems",
+        "Server-class processors for cloud data centres",
+        "Real-time industrial controllers requiring a memory protection unit only"
+      ],
+      "rationale": "Cortex-M targets the microcontroller domain — IoT devices, wireless sensor and actuator networks, automotive body electronics. The last distractor describes the Cortex-R, which is the neighbouring family and the easiest one to confuse it with.",
+      "source": "ch-01.md §1.6 — Cortex-M"
+    },
+
+    {
+      "slug": "02-mmu-versus-mpu",
+      "objective": "02.7",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Which ARM Cortex family includes a memory management unit (MMU), and what does that enable?",
+      "correct": "Cortex-A — an MMU translates virtual addresses to physical ones, which full operating systems require",
+      "distractors": [
+        "Cortex-R — an MMU stops one program accessing another's memory",
+        "Cortex-M — an MMU reduces interrupt latency",
+        "All three, since every ARM core supports virtual memory"
+      ],
+      "rationale": "Only the Cortex-A has an MMU. The Cortex-R and Cortex-M have a memory PROTECTION unit instead, which fences programs off from each other but does not translate addresses. The first distractor describes what an MPU does while naming the MMU.",
+      "source": "ch-01.md §1.6 — MMU on Cortex-A, MPU on Cortex-R and Cortex-M"
+    },
+    {
+      "slug": "02-why-no-mmu-cortex-r",
+      "objective": "02.7",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.42,
+      "stem": "Most Cortex-R processors have no MMU. What justifies leaving it out?",
+      "correct": "Limited data requirements and few simultaneous processes remove the need for virtual memory support",
+      "distractors": [
+        "An MMU cannot operate at the clock frequencies the Cortex-R targets",
+        "Real-time code is written in assembly, which does not use virtual addresses",
+        "The MPU already performs address translation more quickly"
+      ],
+      "rationale": "The book's reason is workload, not capability: with limited data and a small number of concurrent processes, the elaborate hardware and software support virtual memory needs would buy nothing. Note the last distractor's claim is false — an MPU does not translate addresses at all.",
+      "source": "ch-01.md §1.6 — 'the limited data requirements and the limited number of simultaneous processes'"
+    },
+    {
+      "slug": "02-thumb2-only",
+      "objective": "02.7",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "Which Cortex family uses ONLY the Thumb-2 instruction set rather than both ARM and Thumb-2?",
+      "correct": "Cortex-M",
+      "distractors": ["Cortex-A", "Cortex-A50", "Cortex-R"],
+      "rationale": "The Cortex-A and Cortex-A50 use both the ARM and Thumb-2 instruction sets. The Cortex-M uses Thumb-2 alone, which suits a family optimised for the smallest possible gate count and power draw.",
+      "source": "ch-01.md §1.6 — 'The Cortex-M uses only the Thumb-2 instruction set'"
+    },
+
+    {
+      "slug": "02-cpi-mix-p",
+      "objective": "02.8",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "cpi-from-mix",
+      "source": "ch-02.md §2.4 — Example 2.2, CPI from an instruction mix"
+    },
+    {
+      "slug": "02-mips-rate-p",
+      "objective": "02.8",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "solver": "mips-rate",
+      "source": "ch-02.md §2.4 — equation 2.3, MIPS rate"
+    },
+    {
+      "slug": "02-mflops-rate-p",
+      "objective": "02.8",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "mflops-rate",
+      "source": "ch-02.md §2.4 — MFLOPS rate"
+    }
+  ]
+}

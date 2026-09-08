@@ -1,0 +1,225 @@
+{
+  "stageId": "08",
+  "chapter": "Stallings ch 8 — Operating System Support",
+  "note": "Closes act 2 and the examinable scope. Table 8.4's four scheduling types and the paging/segmentation contrast (invisible versus visible to the programmer) are used as the book states them.",
+  "items": [
+    {
+      "slug": "08-batch-queue-longterm",
+      "objective": "08.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "In a batch system, what happens to a newly submitted job before it becomes a process?",
+      "correct": "It is routed to disk and held in a batch queue until the long-term scheduler creates a process from it",
+      "distractors": [
+        "It is loaded straight into main memory and given a time slice",
+        "It is executed immediately at the lowest available priority",
+        "It is held in main memory until an existing process terminates"
+      ],
+      "rationale": "The job waits on DISK, not in memory — that is what makes the long-term scheduler a control on the degree of multiprogramming. It makes two decisions: whether the system can take another process at all, and which job to admit.",
+      "source": "ch-08.md §8.2 — Long-Term Scheduling"
+    },
+    {
+      "slug": "08-timesharing-admission",
+      "objective": "08.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "How does admission differ for interactive users in a time-sharing system compared with batch jobs?",
+      "correct": "All authorised users are accepted until the system reaches a saturation measure, after which a request is refused with a message to try later",
+      "distractors": [
+        "Interactive users are queued in the same way, but with higher priority",
+        "Interactive users are always admitted, and the system degrades gracefully",
+        "Interactive users bypass the long-term scheduler entirely"
+      ],
+      "rationale": "Time-sharing users are not simply queued and kept waiting — a person staring at a blank terminal is a worse outcome than an honest refusal. The saturation threshold is what turns an unbounded queue into a bounded one.",
+      "source": "ch-08.md §8.2 — 'the OS will accept all authorized comers until the system is saturated'"
+    },
+    {
+      "slug": "08-multiprogramming-purpose",
+      "objective": "08.1",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "What problem does multiprogramming solve that a simple batch system leaves unsolved?",
+      "correct": "A single process blocked on I/O leaves the processor idle; holding several processes in memory lets another run in the gap",
+      "distractors": [
+        "It reduces the memory each individual process needs",
+        "It removes the need for the processor to handle interrupts",
+        "It guarantees each process a fixed share of processor time"
+      ],
+      "rationale": "This is the same efficiency argument as interrupts in chapter 3, one level up: the processor should not wait when there is other work available. Fixed shares are a scheduling POLICY, not the reason multiprogramming exists.",
+      "source": "ch-08.md §8.1 — the evolution toward multiprogrammed batch systems"
+    },
+    {
+      "slug": "08-shortterm-scheduling",
+      "objective": "08.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "According to Table 8.4, what decision does SHORT-TERM scheduling make?",
+      "correct": "Which available process will be executed by the processor",
+      "distractors": [
+        "Which jobs to add to the pool of processes to be executed",
+        "How many processes should be partially or fully in main memory",
+        "Which process's pending I/O request an available device should handle"
+      ],
+      "rationale": "The three distractors are the other three rows of the same table: long-term, medium-term and I/O scheduling. They are distinguished by WHAT is being decided, and the short-term scheduler is the one that runs most often.",
+      "source": "ch-08.md §8.2 — Table 8.4, Types of Scheduling"
+    },
+    {
+      "slug": "08-longterm-multiprogramming-degree",
+      "objective": "08.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "The long-term scheduler controls the degree of multiprogramming. What does that phrase mean?",
+      "correct": "The number of processes in memory, which it sets by deciding how many jobs to admit",
+      "distractors": [
+        "The number of processors available to run processes",
+        "The number of time slices each process receives per second",
+        "The proportion of memory allocated to the operating system"
+      ],
+      "rationale": "Admitting more jobs raises the degree of multiprogramming and with it the chance the processor always has work; admitting too many exhausts memory and drives swapping. The long-term scheduler is where that balance is struck.",
+      "source": "ch-08.md §8.2 — 'it controls the degree of multiprogramming'"
+    },
+    {
+      "slug": "08-mediumterm-swapping",
+      "objective": "08.2",
+      "difficulty": 0.42,
+      "source": "ch-08.md §8.2 — Medium-Term Scheduling",
+      "type": "G",
+      "bloom": "understand",
+      "stem": "Put the three process schedulers in order, from the one that runs least often to the one that runs most often.",
+      "order": [
+        "Long-term scheduler",
+        "Medium-term scheduler",
+        "Short-term scheduler"
+      ],
+      "rationale": "The long-term scheduler acts when a job is admitted, controlling the degree of multiprogramming. The medium-term scheduler is part of the swapping function, deciding how many processes are in main memory. The short-term scheduler chooses which ready process runs next and acts most frequently of the three. The three operate on three different timescales, which is what separates them."
+    },
+    {
+      "slug": "08-page-offset-p",
+      "objective": "08.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "solver": "page-offset-bits",
+      "source": "ch-08.md §8.3 — Paging, address structure"
+    },
+    {
+      "slug": "08-why-partition",
+      "objective": "08.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Why is main memory partitioned at all in a multiprogramming system?",
+      "correct": "Several processes must be resident at once, and each needs a region of memory that is its own",
+      "distractors": [
+        "The processor can only address a limited amount of memory at a time",
+        "Partitioning is required for the cache to map addresses correctly",
+        "Each partition is served by a different memory bus"
+      ],
+      "rationale": "Multiprogramming requires several processes in memory simultaneously, and partitioning is how that space is divided and protected. Cache mapping and bus structure are organizational matters below this level and do not depend on partitioning.",
+      "source": "ch-08.md §8.3 — Partitioning"
+    },
+    {
+      "slug": "08-fixed-partition-waste",
+      "objective": "08.3",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.42,
+      "stem": "A fixed-partition scheme uses equal-size partitions. What waste does that guarantee?",
+      "correct": "Any process smaller than its partition leaves the remainder unusable by anyone else",
+      "distractors": [
+        "Gaps between partitions accumulate as processes come and go",
+        "Partitions must be recompacted periodically to remain contiguous",
+        "The partition table grows without bound as processes are created"
+      ],
+      "rationale": "Internal waste is inherent to fixed partitions: the unused tail of an occupied partition cannot be reallocated. The first two distractors describe what happens with VARIABLE partitions instead, where the gaps fall between allocations rather than inside them.",
+      "source": "ch-08.md §8.3 — Partitioning, and Problem 8.4's fixed-partition scheme"
+    },
+    {
+      "slug": "08-paging-invisible",
+      "objective": "08.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "How does paging differ from segmentation in the programmer's view?",
+      "correct": "Paging is invisible to the programmer; segmentation is usually visible and is provided as a convenience for organising programs and data",
+      "distractors": [
+        "Both are invisible; the difference is only in how the hardware translates addresses",
+        "Paging is visible and segmentation invisible, which is why segments have no names",
+        "Both are visible, but only segmentation requires the programmer to manage it"
+      ],
+      "rationale": "This is the load-bearing distinction. Paging exists to give the programmer a LARGER address space without their involvement. Segmentation exists to let them organise that space and attach privilege and protection attributes to the parts.",
+      "source": "ch-08.md §8.3 — 'paging is invisible to the programmer ... segmentation is usually visible'"
+    },
+    {
+      "slug": "08-segment-size-variable",
+      "objective": "08.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What form does a memory reference take under segmentation, and why?",
+      "correct": "A (segment number, offset) pair, because segments are of variable and even dynamic size",
+      "distractors": [
+        "A single linear address, because segments are contiguous in physical memory",
+        "A (page number, offset) pair, identical to paging",
+        "A (segment number, page number, offset) triple in every implementation"
+      ],
+      "rationale": "Segments vary in size, so the offset cannot be a fixed-width field carved from a linear address the way a page offset is — the two parts must be given explicitly. That variability is also why segmentation suffers external fragmentation where paging does not.",
+      "source": "ch-08.md §8.3 — Segmentation, '(segment number, offset) form of address'"
+    },
+    {
+      "slug": "08-segmentation-protection",
+      "objective": "08.4",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.38,
+      "stem": "Segmentation associates privilege and protection attributes with instructions and data. Why does segmentation support this more naturally than paging?",
+      "correct": "A segment corresponds to a meaningful unit such as a procedure or a data structure, so a single access right describes something coherent",
+      "distractors": [
+        "Pages cannot carry protection bits in hardware",
+        "Segments are always smaller than pages, so protection is finer grained",
+        "Paging places all of a process's data in one page by design"
+      ],
+      "rationale": "Protection is most useful when its unit matches a logical unit of the program. A page is an arbitrary fixed-size slice that may straddle two unrelated structures. Pages CAN carry protection bits — they just protect a region with no inherent meaning.",
+      "source": "ch-08.md §8.3 — Segmentation, privilege and protection attributes"
+    },
+    {
+      "slug": "08-page-table-entries-p",
+      "objective": "08.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "page-table-entries",
+      "source": "ch-08.md §8.3 — Virtual Memory, page tables"
+    },
+    {
+      "slug": "08-tlb-eat-p",
+      "objective": "08.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "solver": "tlb-effective-access",
+      "source": "ch-08.md §8.3 — Translation Lookaside Buffer"
+    },
+    {
+      "slug": "08-virtual-memory-definition",
+      "objective": "08.5",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.65,
+      "stem": "What is virtual memory?",
+      "correct": "A scheme in which a process's address space may exceed physical memory, with parts held on disk and brought in as referenced",
+      "distractors": [
+        "A region of disk reserved as a permanent extension of main memory for all processes",
+        "A cache of recently used page table entries kept inside the processor",
+        "Memory shared between processes so they can communicate without copying"
+      ],
+      "rationale": "Virtual memory decouples the address space a program sees from the physical memory installed. The second distractor is the translation lookaside buffer, which SUPPORTS virtual memory — a component, not a definition.",
+      "source": "ch-08.md §8.3 — Virtual Memory"
+    }
+  ]
+}

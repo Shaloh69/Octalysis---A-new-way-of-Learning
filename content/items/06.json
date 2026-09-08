@@ -1,0 +1,498 @@
+{
+  "stageId": "06",
+  "chapter": "Stallings ch 6 — External Memory",
+  "note": "The widest stage in act 2: ten objectives, 30 items, five parameterized. RAID's three common characteristics and the CAV/MZR comparison are taken as the book states them.",
+  "items": [
+    {
+      "slug": "06-external-memory-types",
+      "objective": "06.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.72,
+      "stem": "Which of the following is NOT one of the external memory technologies this chapter covers?",
+      "correct": "Static RAM used as a processor cache",
+      "distractors": [
+        "Magnetic disk",
+        "Optical memory such as CD and DVD",
+        "Magnetic tape"
+      ],
+      "rationale": "External memory is reached by the processor through an I/O module. SRAM cache is INTERNAL memory and belongs to chapter 4. The chapter covers magnetic disk, RAID, solid state drives, optical memory and magnetic tape.",
+      "source": "ch-06.md — chapter introduction and section list"
+    },
+    {
+      "slug": "06-disk-foundation",
+      "objective": "06.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.66,
+      "stem": "Why does Stallings call the magnetic disk 'the most important' external memory device?",
+      "correct": "Magnetic disks are the foundation of external memory on virtually all computer systems",
+      "distractors": [
+        "They are the fastest external storage technology available",
+        "They are the only external storage that supports direct access",
+        "They are the cheapest storage per byte of any technology"
+      ],
+      "rationale": "Importance here is about universality, not superlatives. Solid state drives are faster, tape is cheaper per byte at scale, and optical media also support direct access — the disk's claim is that nearly every system has one.",
+      "source": "ch-06.md — 'Magnetic disks are the foundation of external memory'"
+    },
+    {
+      "slug": "06-tape-sequential-only",
+      "objective": "06.1",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Magnetic tape and magnetic disk both store data magnetically. What separates them most sharply in use?",
+      "correct": "Tape is a sequential-access device, so reaching record N means passing every record before it",
+      "distractors": [
+        "Tape is non-magnetic and therefore non-volatile, unlike disk",
+        "Tape cannot be rewritten once recorded",
+        "Tape stores data optically once written"
+      ],
+      "rationale": "Access method, not medium, is the dividing line. To read record N from record 1 the drive must read 1 through N-1 one at a time, and if it has gone too far it must rewind. That is why tape survives for archive and backup but not for working storage.",
+      "source": "ch-06.md §6.5 — 'A tape drive is a sequential-access device'"
+    },
+    {
+      "slug": "06-disk-substrate",
+      "objective": "06.2",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.68,
+      "stem": "What is a magnetic disk made of?",
+      "correct": "A circular platter of non-magnetic substrate coated with a magnetizable material",
+      "distractors": [
+        "A circular platter of magnetizable material coated with a protective non-magnetic film",
+        "A flexible polymer sheet impregnated with magnetic particles throughout",
+        "A rigid ceramic disc with magnetic domains etched into its surface"
+      ],
+      "rationale": "The substrate is the structural base and is NOT magnetic — traditionally aluminium, more recently glass. Only the coating stores data. The first distractor inverts the two layers, which is the error the term 'substrate' is there to prevent.",
+      "source": "ch-06.md §6.1 — 'a circular platter constructed of nonmagnetic material, called the substrate'"
+    },
+    {
+      "slug": "06-glass-substrate",
+      "objective": "06.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Glass substrates were introduced in place of aluminium. What class of benefit does this bring?",
+      "correct": "Improved surface uniformity and rigidity, which allow the head to fly closer and raise recording density",
+      "distractors": [
+        "Reduced cost per platter, allowing cheaper drives",
+        "Immunity to magnetic interference from nearby drives",
+        "The ability to record on both sides, which aluminium cannot support"
+      ],
+      "rationale": "Better surface quality and stiffness let the head-to-disk clearance shrink, and closer heads mean denser recording. Double-sided recording predates glass entirely, and the substrate plays no magnetic role, so shielding is not the argument.",
+      "source": "ch-06.md §6.1 — benefits of a glass substrate"
+    },
+    {
+      "slug": "06-head-flying-height",
+      "objective": "06.2",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "Why does a smaller head-to-disk clearance permit greater recording density?",
+      "correct": "A closer head can write and sense a smaller magnetized region, so more bits fit in the same area",
+      "distractors": [
+        "A closer head spins the disk faster, increasing the data rate",
+        "A closer head reduces the seek distance between tracks",
+        "A closer head allows more platters to be stacked in the same enclosure"
+      ],
+      "rationale": "Field strength falls with distance, so a head further away needs a larger magnetized area to write and read reliably. Density is a geometry problem. The distractors confuse density with speed, seek time and platter count — three different characteristics.",
+      "source": "ch-06.md §6.1 — magnetic read and write mechanisms"
+    },
+    {
+      "slug": "06-disk-capacity-p",
+      "objective": "06.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "solver": "disk-capacity",
+      "source": "ch-06.md §6.1 — disk data layout, tracks and sectors"
+    },
+    {
+      "slug": "06-formatting-overhead",
+      "objective": "06.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "In the example disk format, each sector occupies 600 bytes but holds 512 bytes of user data. What is the remainder?",
+      "correct": "Control information used only by the disk drive — an ID field, a synch byte, track and head numbers, and error-detecting codes",
+      "distractors": [
+        "Space reserved by the operating system for file system metadata",
+        "Unused padding that guarantees sectors align to a power of two",
+        "A backup copy of the sector's most critical bytes"
+      ],
+      "rationale": "Formatting overhead is invisible to the user and belongs to the drive, not the file system. The ID field locates the sector, the SYNCH byte delimits the field, and error-detecting codes protect both ID and data. This is why a formatted disk reports less capacity than its raw figure.",
+      "source": "ch-06.md §6.1 — Figure 6.4, disk formatting"
+    },
+    {
+      "slug": "06-track-sector-cylinder",
+      "objective": "06.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "On a multi-surface disk, what is a cylinder?",
+      "correct": "The set of tracks at the same radius across all surfaces",
+      "distractors": [
+        "The stack of platters together with the spindle that turns them",
+        "A group of adjacent sectors on one track",
+        "The physical enclosure containing the drive mechanism"
+      ],
+      "rationale": "The heads move together on one arm, so all tracks at a given radius are reachable without any further seek. That is what makes the cylinder a useful unit: data placed within one cylinder costs no additional head movement.",
+      "source": "ch-06.md §6.1 — disk data organization, tracks and cylinders"
+    },
+    {
+      "slug": "06-cav-disadvantage",
+      "objective": "06.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "What is the disadvantage of a straightforward constant angular velocity (CAV) layout?",
+      "correct": "The long outer tracks store no more than the short inner ones, so capacity is limited by the innermost track's density",
+      "distractors": [
+        "Blocks cannot be addressed directly by track and sector",
+        "The disk must change speed as the head moves between tracks",
+        "The bit density is identical on every track, which wastes inner tracks"
+      ],
+      "rationale": "CAV's advantage is direct addressing by track and sector with a fixed rotation speed. Its cost is wasted outer-track area. The last distractor inverts the physics: under CAV density INCREASES toward the centre, and the innermost track sets the limit.",
+      "source": "ch-06.md §6.1 — constant angular velocity"
+    },
+    {
+      "slug": "06-mzr-mechanism",
+      "objective": "06.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "How does multiple zone recording (MZR) increase capacity?",
+      "correct": "The surface is divided into zones, and zones farther from the centre hold more sectors per track",
+      "distractors": [
+        "The disk speed varies continuously so every track has identical bit density",
+        "Sectors are made smaller on the inner tracks than on the outer ones",
+        "Data is compressed before writing to the outer tracks"
+      ],
+      "rationale": "Within a zone the number of bits per track is constant; between zones it grows outward, approximating equal linear density. Truly equal density on every track would need unacceptably complex circuitry, which is why zones are the practical compromise — 16 zones is typical.",
+      "source": "ch-06.md §6.1 — multiple zone recording"
+    },
+    {
+      "slug": "06-mzr-cost",
+      "objective": "06.4",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.42,
+      "stem": "What does MZR cost, relative to plain CAV?",
+      "correct": "More complex circuitry, because read and write timing must change as the head crosses zones",
+      "distractors": [
+        "Slower rotation, because the disk must decelerate at the outer edge",
+        "Loss of direct addressing, so sectors must be located by searching",
+        "Reduced reliability, because outer zones are written at higher power"
+      ],
+      "rationale": "The bit length along the track changes between zones, so timing must change with it. Rotation stays constant — that is what makes it angular velocity — and addressing remains direct. Confusing MZR with CLV, where the speed genuinely varies, is the error worth catching here.",
+      "source": "ch-06.md §6.1 — 'causing a change in the timing for reads and writes'"
+    },
+    {
+      "slug": "06-rotational-latency-p",
+      "objective": "06.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.65,
+      "solver": "disk-rotational-latency",
+      "source": "ch-06.md §6.1 — disk performance parameters"
+    },
+    {
+      "slug": "06-access-time-p",
+      "objective": "06.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "disk-access-time",
+      "source": "ch-06.md §6.1 — seek time, rotational delay and transfer time"
+    },
+    {
+      "slug": "06-seek-versus-rotational",
+      "objective": "06.5",
+      "difficulty": 0.6,
+      "source": "ch-06.md §6.1 — disk performance parameters",
+      "type": "G",
+      "bloom": "understand",
+      "stem": "Put the phases of a single disk read in the order they occur.",
+      "order": [
+        "Seek to the correct track",
+        "Wait for the sector to rotate under the head",
+        "Transfer the sector's bytes"
+      ],
+      "rationale": "Seek is radial head movement, rotational delay is waiting for the platter to bring the sector around, and transfer is the read itself. Access time is all three summed. Seek and rotation dominate, which is why sequential access on a spinning disk costs so much less per byte than random access."
+    },
+    {
+      "slug": "06-raid-three-characteristics",
+      "objective": "06.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.55,
+      "stem": "Which of the following is one of the three characteristics common to the RAID scheme?",
+      "correct": "A set of physical disk drives is viewed by the operating system as a single logical drive",
+      "distractors": [
+        "Every level stores parity information to guarantee recoverability",
+        "All drives in the array must be of identical make and capacity",
+        "The array is managed entirely by the operating system, never in hardware"
+      ],
+      "rationale": "The three are: one logical drive from many physical ones; data striped across the drives; and redundant capacity holding parity. The first distractor is nearly right and is the trap — RAID 0 and RAID 1 do NOT support the parity characteristic.",
+      "source": "ch-06.md §6.2 — the three common characteristics"
+    },
+    {
+      "slug": "06-raid-acronym",
+      "objective": "06.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.7,
+      "stem": "How many RAID levels does the standardised scheme define, and how are they numbered?",
+      "correct": "Seven levels, numbered zero through six",
+      "distractors": [
+        "Six levels, numbered one through six",
+        "Five levels, numbered zero through four",
+        "Seven levels, numbered one through seven"
+      ],
+      "rationale": "Zero through six is seven levels. The numbering is important for a second reason the book stresses: the levels do NOT form a hierarchy — a higher number is not a better array, just a different design.",
+      "source": "ch-06.md §6.2 — 'seven levels, zero through six'"
+    },
+    {
+      "slug": "06-raid-not-hierarchical",
+      "objective": "06.6",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.42,
+      "stem": "The RAID levels 'do not imply a hierarchical relationship'. What does that mean in practice?",
+      "correct": "Each level is a different design architecture with its own trade-offs, so a higher number is not automatically better",
+      "distractors": [
+        "The levels must be applied in order, each building on the one before",
+        "A RAID 6 array contains a RAID 5 array inside it",
+        "Higher levels always offer more redundancy than lower ones"
+      ],
+      "rationale": "RAID 0 has no redundancy at all but the best capacity and write performance; RAID 1 has the most redundancy and the worst capacity efficiency. Choosing a level is a trade among capacity, performance and recoverability, not a climb up a ladder.",
+      "source": "ch-06.md §6.2 — 'These levels do not imply a hierarchical relationship'"
+    },
+    {
+      "slug": "06-raid5-capacity-p",
+      "objective": "06.7",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.62,
+      "solver": "raid5-capacity",
+      "source": "ch-06.md §6.2 — RAID Level 5"
+    },
+    {
+      "slug": "06-raid5-overhead-p",
+      "objective": "06.7",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "raid5-overhead",
+      "source": "ch-06.md §6.2 — RAID Level 5 parity"
+    },
+    {
+      "slug": "06-raid0-no-redundancy",
+      "objective": "06.7",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Why is RAID 0 arguably not a true member of the RAID family?",
+      "correct": "It stripes data across drives but stores no redundant information, so it cannot recover from a failure",
+      "distractors": [
+        "It uses only one physical disk, so there is no array",
+        "It mirrors data rather than striping it",
+        "It stores parity on a dedicated drive rather than distributing it"
+      ],
+      "rationale": "The third common characteristic — redundant capacity for parity — is absent in RAID 0. It raises throughput by striping and raises the RISK of loss, because any one drive failing takes the array with it. Mirroring is RAID 1 and dedicated parity is RAID 4.",
+      "source": "ch-06.md §6.2 — RAID Level 0, and 'RAID 0 and RAID 1 do not support the third characteristic'"
+    },
+    {
+      "slug": "06-pits-and-lands",
+      "objective": "06.8",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "On a CD, how does the drive read a binary 1?",
+      "correct": "The beginning or end of a pit — a change in elevation between sampling intervals",
+      "distractors": [
+        "The presence of a pit anywhere under the beam",
+        "A land, which reflects light back at high intensity",
+        "A pit, which scatters light and reflects at low intensity"
+      ],
+      "rationale": "It is the TRANSITION that encodes a 1, not the pit or the land itself. Where no change in elevation occurs between intervals, a 0 is recorded. Reading 'pit means 1' is the intuitive but incorrect model, which is why both pit and land appear as distractors.",
+      "source": "ch-06.md §6.4 — 'The beginning or end of a pit represents a 1'"
+    },
+    {
+      "slug": "06-cd-spiral-clv",
+      "objective": "06.8",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "How is information laid out on a CD-ROM, and how is it scanned?",
+      "correct": "On a single spiral track from the centre outward, scanned at constant linear velocity so the disk slows for outer accesses",
+      "distractors": [
+        "On concentric tracks, scanned at constant angular velocity like a hard disk",
+        "On a single spiral track, scanned at constant angular velocity",
+        "On concentric zones, with more sectors on the outer tracks"
+      ],
+      "rationale": "The spiral plus CLV is what packs information evenly across the whole surface and gives the CD its capacity advantage over a CAV layout. The cost is that rotational delay and track capacity both grow toward the outer edge. The last distractor is MZR, the hard disk's answer to the same problem.",
+      "source": "ch-06.md §6.4 — 'read by the laser at a constant linear velocity'"
+    },
+    {
+      "slug": "06-bluray-density",
+      "objective": "06.8",
+      "difficulty": 0.52,
+      "source": "ch-06.md §6.4 — Blu-ray, 405-nm blue-violet laser",
+      "type": "G",
+      "bloom": "understand",
+      "stem": "Put these optical disc formats in order of increasing storage capacity.",
+      "order": [
+        "CD-ROM",
+        "DVD",
+        "Blu-ray"
+      ],
+      "rationale": "A CD-ROM holds about 680 MB. DVD raises this substantially, and Blu-ray reaches 25 GB on a single layer of a single side. The mechanism behind the progression is laser wavelength: Blu-ray's 405 nm blue-violet laser focuses to a smaller spot than its predecessors, so it can resolve smaller pits and pack them more densely."
+    },
+    {
+      "slug": "06-optical-read-mechanism",
+      "objective": "06.9",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "How does an optical drive turn the disc surface into a digital signal?",
+      "correct": "A photosensor measures reflected laser intensity at regular intervals and detects changes between pits and lands",
+      "distractors": [
+        "A magnetic head senses the polarity of each recorded region",
+        "The laser heats the surface and the resulting resistance change is measured",
+        "A capacitive sensor measures the depth of each pit directly"
+      ],
+      "rationale": "Low-powered laser, changing reflected intensity, photosensor sampling at intervals. The magnetic answer is the hard disk's mechanism — the contrast between the two read paths is the substance of this objective.",
+      "source": "ch-06.md §6.4 — CD reading mechanism"
+    },
+    {
+      "slug": "06-disk-write-versus-read",
+      "objective": "06.9",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "On a magnetic disk, what physical quantity distinguishes a write operation from a read?",
+      "correct": "A write drives current through the head to magnetize the surface; a read senses the field the moving surface induces",
+      "distractors": [
+        "A write uses a higher rotation speed than a read",
+        "A write uses the head's outer coil and a read its inner coil",
+        "A write is performed optically and a read magnetically"
+      ],
+      "rationale": "Writing imposes a field, reading detects one. Everything else about the operation — seek, rotation, transfer — is identical, which is why the timing model in this chapter applies equally to both.",
+      "source": "ch-06.md §6.1 — magnetic read and write mechanisms"
+    },
+    {
+      "slug": "06-tape-serpentine",
+      "objective": "06.9",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.48,
+      "stem": "In serpentine recording, what happens when the head reaches the end of the tape?",
+      "correct": "It is repositioned to a new track and records back along the tape in the opposite direction",
+      "distractors": [
+        "The tape rewinds fully and recording restarts on the next track in the same direction",
+        "The tape is flipped so the other side can be used",
+        "Recording stops and the cartridge must be replaced"
+      ],
+      "rationale": "Back and forth across parallel tracks — hence 'serpentine' — until the tape is full. Rewinding after every track would waste enormous time on a medium already limited by sequential access.",
+      "source": "ch-06.md §6.5 — serpentine recording"
+    },
+    {
+      "slug": "06-tape-in-motion",
+      "objective": "06.10",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "How does tape motion differ from disk motion?",
+      "correct": "The tape moves only during a read or write; a disk spins continuously",
+      "distractors": [
+        "Both move continuously while powered",
+        "The tape moves continuously and the disk spins only on access",
+        "Neither moves until the operating system issues a seek"
+      ],
+      "rationale": "A disk keeps spinning so that rotational delay stays bounded and predictable. A tape starts and stops, which adds mechanical latency to every access but costs nothing while idle — an appropriate trade for archival storage.",
+      "source": "ch-06.md §6.5 — 'the tape is in motion only during a read or write operation'"
+    },
+    {
+      "slug": "06-tape-multiple-tracks",
+      "objective": "06.10",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "Modern tape heads read and write several adjacent tracks at once, typically two to eight. What is the effect on how data is laid out?",
+      "correct": "Data is still recorded serially along each track, but successive blocks are placed on adjacent tracks",
+      "distractors": [
+        "Each block is split across all the simultaneous tracks, like disk striping",
+        "Tracks are written in parallel from the same starting position",
+        "The tape becomes a direct-access device, since several positions are reachable at once"
+      ],
+      "rationale": "Reading several tracks together raises throughput without changing the serial nature of each track. Access remains sequential — parallelism here buys bandwidth, not random access, which is what the last distractor gets wrong.",
+      "source": "ch-06.md §6.5 — 'blocks in sequence are stored on adjacent tracks'"
+    },
+    {
+      "slug": "06-tape-role-today",
+      "objective": "06.10",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "Given its sequential access and start-stop motion, why does magnetic tape remain in use?",
+      "correct": "For backup and archive, where enormous capacity at low cost per byte matters more than access latency",
+      "distractors": [
+        "Because it is faster than disk for large sequential transfers of any kind",
+        "Because it is the only non-volatile storage medium available",
+        "Because operating systems can page directly to it"
+      ],
+      "rationale": "Tape's weaknesses — latency and sequential access — are irrelevant to workloads that write once and read rarely, and its cost per byte and removability are unmatched there. Every other external medium in this chapter is also non-volatile.",
+      "source": "ch-06.md §6.5 — magnetic tape, and §6.4 on removability for archival storage"
+    },
+    {
+      "slug": "06-ssd-in-chapter",
+      "objective": "06.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.68,
+      "stem": "Which technology does chapter 6 cover alongside magnetic disk, optical memory and tape?",
+      "correct": "The solid state drive",
+      "distractors": [
+        "The translation lookaside buffer",
+        "The memory management unit",
+        "The instruction cache"
+      ],
+      "rationale": "The chapter covers magnetic disk, RAID, solid state drives, optical memory and magnetic tape. The three distractors are all internal to the processor or memory system and belong to chapters 4 and 8.",
+      "source": "ch-06.md §6.3 — Solid State Drives"
+    },
+    {
+      "slug": "06-which-term-dominates",
+      "objective": "06.5",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.48,
+      "stem": "A disk has a 4 ms average seek time, spins at 7200 RPM, and stores 500 sectors per track. For a single-sector read, which component of the access time is smallest?",
+      "correct": "The transfer time, at about 0.017 ms",
+      "distractors": [
+        "The seek time, at 4 ms",
+        "The average rotational delay, at about 4.17 ms",
+        "They are all approximately equal"
+      ],
+      "rationale": "One sector is 1/500 of a track, and a revolution takes 8.33 ms, so transferring it costs about 0.017 ms — more than two hundred times smaller than either mechanical delay. This is why moving a whole track costs barely more than moving one sector, and why sequential layout matters so much on a spinning disk.",
+      "source": "ch-06.md §6.1 — disk performance parameters"
+    },
+    {
+      "slug": "06-choose-raid-level",
+      "objective": "06.7",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "stem": "A workload needs the array to survive any single disk failure while wasting as little capacity as possible across eight disks. Which RAID level fits best?",
+      "correct": "RAID 5 — one disk's worth of parity, distributed, leaving seven disks of usable capacity",
+      "distractors": [
+        "RAID 0 — it stripes across all eight for maximum capacity",
+        "RAID 1 — mirroring guarantees survival of a failure",
+        "RAID 6 — it survives a failure with the least overhead"
+      ],
+      "rationale": "RAID 0 has no redundancy and cannot survive any failure. RAID 1 survives one but costs half the capacity. RAID 6 survives TWO failures and costs two disks, which is more overhead than the requirement asks for. RAID 5 meets the stated requirement at the lowest cost.",
+      "source": "ch-06.md §6.2 — RAID Levels 0, 1, 5 and 6"
+    }
+  ]
+}

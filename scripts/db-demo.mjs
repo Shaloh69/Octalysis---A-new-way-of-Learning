@@ -164,6 +164,35 @@ async function main() {
     process.exit(1);
   }
 
+  process.stdout.write("  sync-items.mjs      ... ");
+  try {
+    /*
+     * The item bank -- the actual fix for F-41. Before this step existed nothing
+     * in the repo seeded `items`, so a clean `pnpm db:reset` left the bank at
+     * zero and the only way to get one was to run the API test suite and keep
+     * its artefacts.
+     *
+     * It runs AFTER sync-content because every item names an objective, and
+     * sync-items refuses an item whose objective does not exist yet.
+     */
+    await run("node", [resolve(ROOT, "scripts/sync-items.mjs")], {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        DATABASE_URL:
+          process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa",
+      },
+      maxBuffer: 32 * 1024 * 1024,
+    });
+    console.log(c.green("ok"));
+  } catch (err) {
+    console.log(c.red("FAILED"));
+    console.error(c.red(`
+${err.stderr || err.message}
+`));
+    process.exit(1);
+  }
+
   /*
    * Counted, not assumed. The failure this script exists to prevent is SILENT:
    * a seeded database with 4 objectives looks fine until the map is empty, so
@@ -179,6 +208,7 @@ async function main() {
     count("stages", "select count(*) from stages"),
     count("objectives", "select count(*) from objectives"),
     count("stage_progress", "select count(*) from stage_progress"),
+    count("items (review)", "select count(*) from items where status = 'review'"),
     count("flagged items", "select count(*) from item_stats where flagged"),
   ]);
 

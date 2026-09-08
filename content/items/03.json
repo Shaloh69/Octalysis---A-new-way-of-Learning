@@ -1,0 +1,506 @@
+{
+  "stageId": "03",
+  "chapter": "Stallings ch 3 — A Top-Level View of Computer Function and Interconnection",
+  "note": "The widest stage in act 1: eleven objectives, 33 items. Five are parameterized. Where the book gives a table verbatim (Table 3.1, Classes of Interrupts) the item uses that list rather than a paraphrase.",
+  "items": [
+    {
+      "slug": "03-von-neumann-concepts",
+      "objective": "03.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.75,
+      "stem": "Which statement is one of the three key concepts of the von Neumann architecture?",
+      "correct": "Data and instructions are stored in a single read-write memory",
+      "distractors": [
+        "Data and instructions are stored in separate memories with separate buses",
+        "Memory is addressed by content rather than by location",
+        "Execution proceeds in parallel across independent instruction streams"
+      ],
+      "rationale": "The three concepts are: one read-write memory for both data and instructions; memory addressable by location regardless of the type of data held there; and sequential execution unless explicitly modified. The first distractor is the Harvard architecture, the exact contrast.",
+      "source": "ch-03.md §3.1 — the three key concepts"
+    },
+    {
+      "slug": "03-addressable-by-location",
+      "objective": "03.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Von Neumann memory is addressable by location 'without regard to the type of data contained there'. What follows from this?",
+      "correct": "A memory location's meaning as instruction or data comes from how it is used, not from how it is stored",
+      "distractors": [
+        "Instructions are tagged so the processor can refuse to execute data",
+        "Data locations and instruction locations occupy separate address ranges",
+        "The type of each location is fixed when the program is loaded"
+      ],
+      "rationale": "Each location holds a binary number that can be interpreted as either an instruction or data. Nothing in memory marks which. That is what makes a stored program possible — and it is also why a program can corrupt itself by jumping into data.",
+      "source": "ch-03.md §3.1 — 'addressable by location, without regard to the type'"
+    },
+    {
+      "slug": "03-sequential-unless-modified",
+      "objective": "03.1",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.5,
+      "stem": "The third von Neumann concept is that execution occurs sequentially 'unless explicitly modified'. Which mechanism performs that explicit modification?",
+      "correct": "A branch or jump instruction writing a new value into the program counter",
+      "distractors": [
+        "An interrupt, which is the only way to leave sequential order",
+        "The memory address register selecting a non-consecutive location",
+        "The instruction register decoding an out-of-order opcode"
+      ],
+      "rationale": "Sequential execution is the default because the PC increments. A branch overrides it by loading a different address. Interrupts also divert control, but they are asynchronous events rather than the program's own explicit modification — which is what the concept is describing.",
+      "source": "ch-03.md §3.1 and §3.2 — sequential execution and the program counter"
+    },
+
+    {
+      "slug": "03-hardwired-program",
+      "objective": "03.2",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.7,
+      "stem": "What is a hardwired program?",
+      "correct": "A computation expressed as a specific physical configuration of logic components",
+      "distractors": [
+        "A program stored permanently in read-only memory",
+        "A program written in machine code rather than a high-level language",
+        "A sequence of control signals held in a control memory"
+      ],
+      "rationale": "The 'program' is the wiring itself — connect the components in the configuration that performs the computation. The first distractor is firmware, which is still a stored program; the wiring is not stored anywhere, it IS the hardware.",
+      "source": "ch-03.md §3.1 — 'termed a hardwired program'"
+    },
+    {
+      "slug": "03-general-purpose-hardware",
+      "objective": "03.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.62,
+      "stem": "With general-purpose hardware rather than customised hardware, what does the system accept in addition to data?",
+      "correct": "Control signals, which select which function the hardware performs",
+      "distractors": [
+        "A new wiring diagram supplied before each run",
+        "A compiled binary that reconfigures the logic gates",
+        "Nothing further — general-purpose hardware infers the operation from the data"
+      ],
+      "rationale": "Customised hardware takes data and produces results. General-purpose hardware takes data AND control signals. That extra input is what removes the need to rewire, and supplying it is what programming becomes.",
+      "source": "ch-03.md §3.1 — Figure 3.1a and the general-purpose alternative"
+    },
+    {
+      "slug": "03-programming-becomes",
+      "objective": "03.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.58,
+      "stem": "Once hardware is general purpose, what does programming reduce to?",
+      "correct": "Supplying a new sequence of control signals, one set per step",
+      "distractors": [
+        "Rewiring a smaller number of components than before",
+        "Selecting from a fixed catalogue of pre-wired computations",
+        "Adjusting the clock rate to suit the computation"
+      ],
+      "rationale": "A program is a sequence of steps, and each step needs its own set of control signals. Giving each possible set a unique code is the step that turns control signals into instructions — the argument the chapter builds toward.",
+      "source": "ch-03.md §3.1 — 'the programmer merely needs to supply a new set of control signals'"
+    },
+
+    {
+      "slug": "03-two-step-processing",
+      "objective": "03.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.72,
+      "stem": "In its simplest form, instruction processing consists of which two steps?",
+      "correct": "The processor fetches an instruction from memory, then executes it",
+      "distractors": [
+        "The processor decodes an instruction, then writes back its result",
+        "The processor loads operands, then stores results",
+        "The processor issues a control signal, then waits for an acknowledgement"
+      ],
+      "rationale": "Fetch and execute. Program execution is that pair repeated. Decoding and write-back are real activities but they sit INSIDE those two steps rather than replacing them, which is the level confusion this item targets.",
+      "source": "ch-03.md §3.2 — 'reads (fetches) instructions ... and executes each instruction'"
+    },
+    {
+      "slug": "03-cpu-memory-registers",
+      "objective": "03.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Which pair of registers does the CPU use to exchange data with memory?",
+      "correct": "The memory address register and the memory buffer register",
+      "distractors": [
+        "The program counter and the instruction register",
+        "The I/O address register and the I/O buffer register",
+        "The instruction register and the memory buffer register"
+      ],
+      "rationale": "MAR specifies WHERE, MBR holds WHAT. The I/O pair does the same job for an I/O module rather than memory, and the PC/IR pair belongs to instruction sequencing — the parallel structure is deliberate and worth seeing.",
+      "source": "ch-03.md §3.2 — Figure 3.2, Computer Components: Top-Level View"
+    },
+    {
+      "slug": "03-io-module-buffers",
+      "objective": "03.3",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.48,
+      "stem": "Why does an I/O module contain internal buffers?",
+      "correct": "To hold data temporarily because external devices operate far more slowly than the processor",
+      "distractors": [
+        "To store the device driver code that controls the peripheral",
+        "To translate between the device's address space and main memory's",
+        "To hold interrupt vectors for the devices it manages"
+      ],
+      "rationale": "The speed mismatch between processor and peripheral is the recurring problem of this chapter, and buffering is the first response to it. Interrupts are the second. Neither is about address translation or code storage.",
+      "source": "ch-03.md §3.2 — 'internal buffers for temporarily holding these data'"
+    },
+
+    {
+      "slug": "03-memory-references-p",
+      "objective": "03.4",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "memory-references",
+      "source": "ch-03.md §3.2 — the program execution example"
+    },
+    {
+      "slug": "03-pc-holds",
+      "objective": "03.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.75,
+      "stem": "At the beginning of each instruction cycle, what does the program counter hold?",
+      "correct": "The address of the next instruction to be fetched",
+      "distractors": [
+        "The instruction currently being executed",
+        "The number of instructions executed so far",
+        "The address of the operand the current instruction needs"
+      ],
+      "rationale": "The PC holds an ADDRESS, not an instruction and not a count. The fetched instruction goes into the instruction register. The second distractor reads 'counter' as a tally, which is the misreading the name invites.",
+      "source": "ch-03.md §3.2 — Instruction Fetch and Execute"
+    },
+    {
+      "slug": "03-trace-pc-after-fetch",
+      "objective": "03.4",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "stem": "A processor fetches the instruction at address 300. No branch is taken. What does the program counter contain when the next fetch begins?",
+      "correct": "301 — the processor increments the PC after each fetch",
+      "distractors": [
+        "300 — the PC only changes when a branch executes",
+        "The address of the operand named by the instruction at 300",
+        "The contents of the instruction register"
+      ],
+      "rationale": "Unless told otherwise the processor always fetches the next instruction in sequence, so the PC advances after each fetch. This is the mechanism that makes 'sequential unless explicitly modified' true, and it is why a branch works by writing to the PC.",
+      "source": "ch-03.md §3.2 — 'Unless told otherwise, the processor ...'"
+    },
+
+    {
+      "slug": "03-instruction-cycle-order",
+      "objective": "03.5",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Put the phases of a basic instruction cycle in order, for an instruction that reads one operand from memory.",
+      "order": [
+        "Fetch the instruction from the address in the PC",
+        "Load the instruction into the instruction register",
+        "Interpret the instruction to determine the action required",
+        "Fetch the operand named by the instruction",
+        "Perform the required operation"
+      ],
+      "rationale": "The cycle is fetch then execute, and the execute half expands into interpretation, operand access and the operation itself. The operand fetch cannot precede interpretation, because until the instruction is decoded the processor does not know there IS an operand.",
+      "source": "ch-03.md §3.2 — Instruction Fetch and Execute, and the instruction cycle state diagram"
+    },
+    {
+      "slug": "03-fetch-versus-execute-cycle",
+      "objective": "03.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "Why does the execute cycle vary in length between instructions while the fetch cycle does not?",
+      "correct": "Fetching is the same operation every time; what execution involves depends on the nature of the instruction",
+      "distractors": [
+        "The fetch cycle is implemented in hardware and the execute cycle in microcode",
+        "The execute cycle waits for the memory bus, and the fetch cycle does not",
+        "The fetch cycle is skipped whenever the instruction is already in cache"
+      ],
+      "rationale": "Every fetch does the same thing: read the location the PC names. Execution may involve arithmetic, a memory reference, an I/O transfer or a change of sequence, so its cost is instruction-dependent. This variability is precisely what CPI measures.",
+      "source": "ch-03.md §3.2 — 'The instruction execution may involve several operations'"
+    },
+    {
+      "slug": "03-four-action-categories",
+      "objective": "03.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "The actions an executed instruction can call for fall into four categories. Which of the following is one of them?",
+      "correct": "Processor–memory: data transferred between the processor and main memory",
+      "distractors": [
+        "Processor–cache: data promoted between cache levels",
+        "Memory–memory: data copied without processor involvement",
+        "Processor–processor: data exchanged between cores"
+      ],
+      "rationale": "The four are processor–memory, processor–I/O, data processing, and control. Cache promotion and inter-core traffic are real, but they are organizational mechanisms below this level of description rather than categories of instruction action.",
+      "source": "ch-03.md §3.2 — 'these actions fall into four categories'"
+    },
+
+    {
+      "slug": "03-mar-purpose",
+      "objective": "03.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.72,
+      "stem": "What does the memory address register (MAR) hold?",
+      "correct": "The address in memory for the next read or write",
+      "distractors": [
+        "The data to be written into memory",
+        "The address of the next instruction to fetch",
+        "The address of the I/O device being accessed"
+      ],
+      "rationale": "MAR is the address, MBR is the data. The second distractor is the program counter and the third is the I/O address register — three registers that all hold addresses, distinguished by what they address.",
+      "source": "ch-03.md §3.2 — the MAR definition"
+    },
+    {
+      "slug": "03-mbr-purpose",
+      "objective": "03.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.7,
+      "stem": "What does the memory buffer register (MBR) contain?",
+      "correct": "The data to be written into memory, or the data just read from it",
+      "distractors": [
+        "The address in memory being read or written",
+        "The instruction currently being interpreted",
+        "A copy of the most recently used cache line"
+      ],
+      "rationale": "MBR carries data in both directions — it is the buffer between the processor and the memory bus. Pairing it with the MAR is the point: one says where, the other says what.",
+      "source": "ch-03.md §3.2 — the MBR definition"
+    },
+    {
+      "slug": "03-ir-purpose",
+      "objective": "03.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.74,
+      "stem": "Where is a fetched instruction placed so the processor can interpret it?",
+      "correct": "The instruction register (IR)",
+      "distractors": [
+        "The program counter (PC)",
+        "The memory buffer register (MBR)",
+        "The accumulator (AC)"
+      ],
+      "rationale": "The instruction arrives via the MBR but is loaded into the IR, where its bits specify the action to take. Answering MBR confuses the transport register with the destination — a defensible-sounding mistake, which is why it is a distractor rather than noise.",
+      "source": "ch-03.md §3.2 — 'loaded into a register ... known as the instruction register'"
+    },
+
+    {
+      "slug": "03-interrupt-classes",
+      "objective": "03.7",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "Table 3.1 lists the common classes of interrupt. Which set is correct?",
+      "correct": "Program, timer, I/O, and hardware failure",
+      "distractors": [
+        "Maskable, non-maskable, software, and external",
+        "Synchronous, asynchronous, precise, and imprecise",
+        "Fetch, decode, execute, and interrupt"
+      ],
+      "rationale": "Those four are the book's classes, organised by what CAUSES the interrupt. The distractors are all real vocabulary from elsewhere in the field, classifying interrupts by how they are handled rather than by origin.",
+      "source": "ch-03.md §3.2 — Table 3.1, Classes of Interrupts"
+    },
+    {
+      "slug": "03-interrupt-purpose",
+      "objective": "03.7",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.68,
+      "stem": "Interrupts are provided primarily for what reason?",
+      "correct": "To improve processing efficiency by freeing the processor from waiting on slow devices",
+      "distractors": [
+        "To allow a program to be stopped safely when it contains an error",
+        "To let the operating system enforce memory protection between programs",
+        "To synchronise multiple processors sharing one memory"
+      ],
+      "rationale": "Most external devices are far slower than the processor, and without interrupts it must idle after each write until the device catches up — potentially thousands of instruction cycles wasted. Error handling and protection are things interrupts are also USED for, but efficiency is the stated primary reason.",
+      "source": "ch-03.md §3.2 — 'Interrupts are provided primarily as a way to improve processing efficiency'"
+    },
+    {
+      "slug": "03-program-interrupt-examples",
+      "objective": "03.7",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.58,
+      "stem": "Which event generates a PROGRAM class interrupt?",
+      "correct": "Division by zero during instruction execution",
+      "distractors": [
+        "A printer signalling that it has finished a page",
+        "The processor's internal timer expiring",
+        "A memory parity error detected by the hardware"
+      ],
+      "rationale": "A program interrupt arises from a condition produced by executing an instruction: arithmetic overflow, division by zero, an illegal opcode, or a reference outside the allowed memory space. The three distractors are the I/O, timer and hardware-failure classes respectively.",
+      "source": "ch-03.md §3.2 — Table 3.1, Program row"
+    },
+
+    {
+      "slug": "03-interrupt-saving-p",
+      "objective": "03.8",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "interrupt-saving",
+      "source": "ch-03.md §3.2 — Figure 3.7, program flow with and without interrupts"
+    },
+    {
+      "slug": "03-short-wait-benefit",
+      "objective": "03.8",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.42,
+      "stem": "When the I/O wait is SHORT relative to the user program's own work, what does interrupt-driven I/O actually buy?",
+      "correct": "Very little — the processor was not idle long, so the handler overhead offsets most of the saving",
+      "distractors": [
+        "The full duration of the transfer, exactly as with a long wait",
+        "Nothing at all, because short transfers cannot raise interrupts",
+        "More than a long wait, because short transfers complete sooner"
+      ],
+      "rationale": "The saving is the idle time avoided MINUS the cost of taking and returning from the interrupt. When the device is nearly as fast as the processor, that difference is small. This is why the comparison of no-interrupt, short-wait and long-wait cases is worth drawing rather than assuming interrupts always win.",
+      "source": "ch-03.md §3.2 — Figure 3.7b and 3.7c, short and long I/O waits"
+    },
+    {
+      "slug": "03-long-wait-ordering",
+      "objective": "03.8",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "With a LONG I/O wait and interrupts enabled, what happens to user code segment 2 relative to the case with no interrupts?",
+      "correct": "It runs while the device is still busy, instead of after the transfer completes",
+      "distractors": [
+        "It runs in the same position but faster, because the processor is less loaded",
+        "It is skipped until the interrupt handler returns",
+        "It runs twice — once speculatively and once after the interrupt"
+      ],
+      "rationale": "That overlap IS the benefit. Without interrupts the processor waits at the I/O command and segment 2 cannot begin. With them, the wait is replaced by useful work and the completion arrives asynchronously. Nothing runs faster; work is merely rearranged into the gap.",
+      "source": "ch-03.md §3.2 — Figure 3.7, code segments 1, 2 and 3"
+    },
+
+    {
+      "slug": "03-bus-bandwidth-p",
+      "objective": "03.9",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "solver": "bus-bandwidth",
+      "source": "ch-03.md §3.4 — bus structure, width and timing"
+    },
+    {
+      "slug": "03-cycle-time-p",
+      "objective": "03.9",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.65,
+      "solver": "cycle-time",
+      "source": "ch-03.md §3.4 — bus clocking"
+    },
+    {
+      "slug": "03-bus-shared-medium",
+      "objective": "03.9",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.65,
+      "stem": "What is the key characteristic of a bus, and its central limitation?",
+      "correct": "It is a shared transmission medium, so only one device can transmit successfully at a time",
+      "distractors": [
+        "It is a dedicated link between exactly two devices, so it needs no arbitration",
+        "It carries only data, with addresses travelling on a separate control path",
+        "It transmits one bit at a time, so width does not affect throughput"
+      ],
+      "rationale": "A signal from any device on a bus reaches all the others. If two transmit at once the signals overlap and become garbled — which is why arbitration exists, and ultimately why point-to-point interconnects displaced buses in general-purpose machines.",
+      "source": "ch-03.md §3.4 — 'a shared transmission medium'"
+    },
+
+    {
+      "slug": "03-pcie-throughput-p",
+      "objective": "03.10",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "pcie-throughput",
+      "source": "ch-03.md §3.6 — PCI Express"
+    },
+    {
+      "slug": "03-point-to-point-definition",
+      "objective": "03.10",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "How does a point-to-point interconnect differ from a bus?",
+      "correct": "It provides dedicated links between pairs of components rather than one medium shared by all",
+      "distractors": [
+        "It carries signals in parallel rather than serially",
+        "It connects only processors, never memory or I/O",
+        "It requires arbitration where a bus does not"
+      ],
+      "rationale": "Dedicated links remove the contention that makes a shared bus arbitrate. It is the arbitration requirement that goes away, not one that appears — which is what the last distractor inverts.",
+      "source": "ch-03.md §3.5 — Point-to-Point Interconnect"
+    },
+    {
+      "slug": "03-why-buses-gave-way",
+      "objective": "03.10",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Buses dominated component interconnection for decades but gave way to point-to-point structures in general-purpose computers. Where do bus structures still commonly appear?",
+      "correct": "In embedded systems, particularly microcontrollers",
+      "distractors": [
+        "In server processors, where many cores share one medium",
+        "In graphics subsystems, where bandwidth demand is highest",
+        "Nowhere — buses have been fully replaced"
+      ],
+      "rationale": "The book is explicit that buses remain common in embedded systems and microcontrollers, where the component count is small and the simplicity is worth more than the bandwidth. The high-contention cases named in the distractors are exactly the ones that drove the move away from buses.",
+      "source": "ch-03.md §3.4 — 'still commonly used for embedded systems'"
+    },
+
+    {
+      "slug": "03-pcie-layers",
+      "objective": "03.11",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "PCI Express is defined as a protocol stack. Put its layers in order, from the one closest to the wire to the one closest to the software.",
+      "order": ["Physical layer", "Data link layer", "Transaction layer"],
+      "rationale": "The physical layer moves the actual signals over the lanes, the data link layer provides reliable delivery across a link, and the transaction layer carries read and write requests on behalf of software. Layering is what lets PCIe change its physical signalling between generations without the transaction layer noticing.",
+      "source": "ch-03.md §3.6 — PCIe Physical, Data Link and Transaction Layers"
+    },
+    {
+      "slug": "03-pcie-lanes-scale",
+      "objective": "03.11",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "A PCIe link can be built from 1, 2, 4, 8 or 16 lanes. What does adding lanes do?",
+      "correct": "It scales bandwidth roughly linearly, since the lanes carry data in parallel",
+      "distractors": [
+        "It reduces latency, because each lane carries a shorter message",
+        "It increases the clock rate of the link",
+        "It adds redundancy, with spare lanes idle unless one fails"
+      ],
+      "rationale": "Lanes are parallel serial links, so a x16 link carries roughly sixteen times a x1 link at the same signalling rate. Latency is set by distance and signalling, not by lane count, and lanes are not spares.",
+      "source": "ch-03.md §3.6 — PCIe physical architecture and lane configurations"
+    },
+    {
+      "slug": "03-pci-logical-vs-physical",
+      "objective": "03.11",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "PCIe is physically a point-to-point serial interconnect, yet software written for the older parallel PCI bus continues to work. What makes that possible?",
+      "correct": "PCIe preserves PCI's logical architecture — the configuration and addressing model software sees — while replacing the physical one",
+      "distractors": [
+        "PCIe includes a hardware translation unit that emulates a parallel bus",
+        "Operating systems rewrite PCI driver code at load time",
+        "PCIe devices operate in a compatibility mode that disables the serial lanes"
+      ],
+      "rationale": "This is the architecture/organization distinction from chapter 1 applied to an interconnect: what a program can see was held constant while the realisation changed completely. That is the whole reason the transition was survivable.",
+      "source": "ch-03.md §3.6 — PCI Physical and Logical Architecture"
+    }
+  ]
+}

@@ -64,23 +64,25 @@ list three things, two of which had been struck through as DONE — a heading th
 no longer described anything. The resolved ones are in
 `PROGRESS-FINDINGS.md`; these two are live.
 
-1. **F-41 — nothing seeds `items` or `assessments`. RULED ON, IN PROGRESS.**
-   A clean `pnpm db:reset` still leaves both at zero. The instructor's call came
-   on 9 Sep: build the complete bank from Stallings, write the solvers the
-   engine needs, and **stop at stage 08 and the Midterm** — Semi-final and
-   Finals in a later update.
+1. **F-41 — the item bank. THE BANK IS BUILT; the assessments are not.**
+   `pnpm db:reset && node scripts/db-demo.mjs` now yields **183 items in
+   `review`**, authored from Stallings ch 1-8 and covering all 59 gradeable
+   objectives in stages 01-08. The instructor's ruling scoped it to **stage 08
+   and the Midterm**; Semi-final and Finals are deferred behind
+   `engine/scope.ts`.
 
-   The blocker was never the authoring. **Type P items take their stem,
-   distractors and rationale from the SOLVER, not the item row**, so the number
-   of distinct computational questions equals the number of registered solvers
-   — and there were four, none of them applicable to act 2. **56 new solvers**
-   now exist across four act banks, all tested against hand-computed values and
-   published figures, and `services/api/src/engine/scope.ts` carries the
-   examinable-scope flag. See **F-42**.
+   **Proven, not assumed.** `bank-feasibility.spec.ts` fills a real Prelim and a
+   real Midterm from the real files and asserts every constraint cell lands
+   exactly, across 60 different student seeds, with papers that differ. It
+   already caught the failure that mattered: act 2's only `apply` items were its
+   14 parameterized ones, while the Midterm demands `apply: 14` AND `P: 13`
+   together — so the bank looked complete on every per-dimension count and could
+   not have produced one valid paper.
 
-   **Still owed before F-41 closes:** the item rows, a seed that survives
-   `db:reset`, Prelim and Midterm assessments, a feasibility proof, and the
-   instructor's review pass.
+   **What still owes.** No `assessments` row exists yet, so a student still
+   cannot press Start — creating one mints the exam salt and is a console
+   action (`/assessments`). And every item is `review`: nothing is `live` until
+   the instructor approves it at `/items`, which is the ruling and not a gap.
 
 2. **No phase owns the public marketing site.** Five routes, including the
    landing page whose re-rollable demo `PAGE-SPECS.md` calls "the one
