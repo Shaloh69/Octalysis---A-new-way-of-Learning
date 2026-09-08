@@ -20,9 +20,24 @@ import pg from "pg";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
+/*
+ * SIX FILES, IN THIS ORDER. Five of them here plus `local-bootstrap.sql`, which
+ * is local-only and forbidden below.
+ *
+ * `addendum-submissions.sql` was MISSING from this list, and the live Supabase
+ * project proves what that costs: it was pushed with 21 tables where the schema
+ * defines 22, and the absent one is `submissions` -- labs, the project and
+ * participation, which is **40% of the grade**.
+ *
+ * This is the same defect root `CLAUDE.md` records against `scripts/db-reset.mjs`.
+ * It was fixed there and never here, so the local stack was correct and every
+ * deployment silently was not. Nothing failed: the schema applied cleanly, the
+ * API started, and the gap only appears if you count tables.
+ */
 const FILES = [
   "db/schema.sql",
   "db/addendum-feedback.sql",
+  "db/addendum-submissions.sql",
   "db/addendum-audit.sql",
   // Scheduled work. This is where pg_cron actually EXISTS -- locally the
   // extension is absent and the file only creates the functions.
