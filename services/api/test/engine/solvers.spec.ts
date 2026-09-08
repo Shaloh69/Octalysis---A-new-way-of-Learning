@@ -177,13 +177,50 @@ describe("amat", () => {
 });
 
 describe("registry", () => {
-  it("exposes exactly the four P3 solvers", () => {
-    expect(listSolvers().map((s) => s.id).sort()).toEqual([
-      "amat",
-      "cycle-time",
-      "twos-complement",
-      "unit-convert",
-    ]);
+  /*
+   * This used to assert the registry held EXACTLY the four P3 solvers, and it
+   * failed the moment the act banks were added -- correctly. The rule it was
+   * really protecting is not "there are four" but "1.0.0 never loses or renames
+   * one", because a stored seed referencing a vanished ref cannot regenerate the
+   * paper its student actually sat. That is what it asserts now, so the registry
+   * can grow without the test needing an edit each time.
+   */
+  it("keeps every solver 1.0.0 has ever published", () => {
+    const ids = listSolvers().map((s) => s.id);
+    for (const original of ["amat", "cycle-time", "twos-complement", "unit-convert"]) {
+      expect(ids, `${original} was removed or renamed from engine 1.0.0`).toContain(original);
+    }
+  });
+
+  it("has no duplicate ids — a collision would silently shadow one solver", () => {
+    const ids = listSolvers().map((s) => s.id);
+    expect(new Set(ids).size, `duplicate solver id in ${ids.join(", ")}`).toBe(ids.length);
+  });
+
+  it("every solver is reachable by its own id", () => {
+    for (const s of listSolvers()) {
+      expect(getSolver(s.id).id).toBe(s.id);
+    }
+  });
+
+  it("every solver offers at least 4 distractor candidates", () => {
+    // resolve.ts dedupes candidates against the correct answer and each other,
+    // then needs 3 survivors. Fewer than 4 proposals leaves no margin at all.
+    const rng = makeRng("7".repeat(64));
+    for (const s of listSolvers()) {
+      const p = s.draw(rng);
+      expect(s.distractors(p, s.solve(p)).length, `${s.id} proposes too few`).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it("every distractor names a misconception rather than being noise", () => {
+    const rng = makeRng("8".repeat(64));
+    for (const s of listSolvers()) {
+      const p = s.draw(rng);
+      for (const d of s.distractors(p, s.solve(p))) {
+        expect(d.misconception.length, `${s.id} has an unexplained distractor`).toBeGreaterThan(8);
+      }
+    }
   });
 
   it("names the known solvers when asked for one that does not exist", () => {

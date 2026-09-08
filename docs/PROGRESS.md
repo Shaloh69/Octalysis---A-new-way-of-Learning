@@ -64,14 +64,23 @@ list three things, two of which had been struck through as DONE — a heading th
 no longer described anything. The resolved ones are in
 `PROGRESS-FINDINGS.md`; these two are live.
 
-1. **F-41 — nothing seeds `items` or `assessments`.** A clean `pnpm db:reset`
-   leaves both at zero, so no student can sit a check and the attempt runner is
-   unreachable; ten spec cases skip naming this. The only current way to get an
-   item bank locally is **to run `pnpm verify`**, whose API suite creates 22
-   items and 2 assessments as artefacts — a dependency nobody would guess.
-   **Needs an instructor's call:** which blueprint should the demo data ship,
-   and against which stage? Guessing the cells would produce papers that fail
-   feasibility at the moment forty students press Start.
+1. **F-41 — nothing seeds `items` or `assessments`. RULED ON, IN PROGRESS.**
+   A clean `pnpm db:reset` still leaves both at zero. The instructor's call came
+   on 9 Sep: build the complete bank from Stallings, write the solvers the
+   engine needs, and **stop at stage 08 and the Midterm** — Semi-final and
+   Finals in a later update.
+
+   The blocker was never the authoring. **Type P items take their stem,
+   distractors and rationale from the SOLVER, not the item row**, so the number
+   of distinct computational questions equals the number of registered solvers
+   — and there were four, none of them applicable to act 2. **56 new solvers**
+   now exist across four act banks, all tested against hand-computed values and
+   published figures, and `services/api/src/engine/scope.ts` carries the
+   examinable-scope flag. See **F-42**.
+
+   **Still owed before F-41 closes:** the item rows, a seed that survives
+   `db:reset`, Prelim and Midterm assessments, a feasibility proof, and the
+   instructor's review pass.
 
 2. **No phase owns the public marketing site.** Five routes, including the
    landing page whose re-rollable demo `PAGE-SPECS.md` calls "the one
@@ -93,15 +102,14 @@ After `pnpm verify`, reseed with **`node scripts/db-demo.mjs`** — the API suit
 truncates fixtures. It refuses to run over another user's attempt history and
 tells you to `pnpm db:reset` first, because `responses` is append-only.
 
-**Open for the instructor:** **F-41** — the demo fixture ships **no
-assessments**, because `demo-seed.sql` never inserts one. A clean reset leaves
-no student able to sit a check and the attempt runner untestable. Seeding one
-needs a blueprint matched to the item bank, and the bank has live items for
-stage 07 only while every seeded blueprint is `final` scope. Which blueprint
-should the demo data ship, against which stage?
+**Answered by the instructor, 9 Sep 2026:** F-41's question is settled — build
+the complete bank, write the solvers, and scope it to **stages 01–08 / Prelim +
+Midterm**. `engine/scope.ts` is the flag and `engine/scope.spec.ts` holds it
+against the database.
 
-**Also open:** whether chapter 18 belongs in the Finals (assumed
-yes, and seeded that way), and nothing else outstanding.
+**Still open:** whether chapter 18 belongs in the Finals (assumed yes, and
+seeded that way). It does not block anything until act 4 is authored, which the
+scope flag now defers.
 
 ---
 

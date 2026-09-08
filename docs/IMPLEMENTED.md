@@ -66,8 +66,11 @@ exist**, and no phase owns it — `PROGRESS.md` carries this as a blocker.
 **`services/api` — 10 route modules**: `assessments` `attempts` `auth` `console`
 `cosmetics` `feedback` `items` `live` `stages` `submissions`.
 
-**The question engine — 5 modules**: `blueprint` `grade` `resolve` `seed`
-`solvers`. All grading is here; nothing in `apps/web` imports from it, which
+**The question engine — 11 modules**: `blueprint` `grade` `resolve` `scope` `seed`
+`solver-core` `solvers` `solvers-act1` `solvers-act2` `solvers-act3` `solvers-act4`.
+**60 solvers registered** under engine version 1.0.0 (4 original + 56 added 9 Sep).
+`scope.ts` is the examinable-scope flag: the bank ships through **stage 08 and the
+Midterm**, and acts 3–4 are written but deliberately out of scope. All grading is here; nothing in `apps/web` imports from it, which
 `scripts/check-redesign-boundary.mjs` enforces.
 
 **`packages/contracts`** is a single `index.ts`. **`packages/tokens`** ships
@@ -138,9 +141,9 @@ where they live; the next biome sourced as loose elements needs them.
 
 ## Tests
 
-- **`design/specs/` — 15 Playwright spec files** (10 on 7 Sep; five added 7–8 Sep:
+- **`design/specs/` — 16 Playwright spec files** (10 on 7 Sep; five added 7–8 Sep:
   student states, the attempt runner, the console gate, the console teaching
-  pages, and `/live` + `/feedback`).
+  pages, and `/live` + `/feedback`; the item review queue added 9 Sep).
 - **20 unit spec files** across `services/api/test`, `apps/web` and `apps/console`.
 - **`pnpm test:rls` — 38 denial tests**, verified by running it 7 Sep.
 - **`scripts/check-contrast.mjs` — 1181 checks** (1080 palette, 42 encounter,
@@ -161,8 +164,13 @@ absences are what the next session needs.
 - **The public marketing site.** `/` redirects to `/app`. Five routes, no owner.
 - **The reverse travel transition** — leaving a stage back to the map. §4.2 says
   the arrival is "reversed on the way back out"; only the inbound half exists.
-- **Most of R3's template pass** — **28 of 49** on 8 Sep. R3.2 (student app) and
-  R3.3 (teacher console) are closed; R3.5's six-states sweep is not.
+- **R3's remaining sign-off** — **41 of 49**, counted from the phase file on
+  9 Sep. This entry said "28 of 49" and "R3.5's six-states sweep is not [closed]"
+  while the phase file held 41 and R3.5 was ticked — the same drift this file
+  exists to catch, in the file itself. R3.1, R3.2, R3.2b, R3.3 and R3.5 are all
+  closed. What is open is one R3.4 item (both loading screens captured as frame
+  sequences, not stills) and the seven Definition-of-done boxes, of which
+  `design/templates/` being populated is the only one not substantively met.
 - **R4 (moons and subtopics) and R5 (testing and sign-off)** — 0 of 13 and 0 of
   24. Nothing has started.
 - **`docs/superseded/`** — named in §2c as an EngiRent practice worth copying,

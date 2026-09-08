@@ -1,4 +1,3 @@
-import type { Rng } from "./seed.js";
 
 /**
  * The parameterized-item solver registry.
@@ -18,35 +17,19 @@ import type { Rng } from "./seed.js";
  *    regenerates *a* paper, just not the one the student sat. Add a new version.
  */
 
-export interface SolverParams {
-  readonly [k: string]: number;
-}
+/*
+ * The types and `round` live in `solver-core.ts` so the per-act banks below can
+ * share them without importing this file back. This module stays the ONLY
+ * public surface -- `resolve.ts` and the tests import from here -- so the types
+ * are re-exported rather than moved out of reach.
+ */
+export type { Distractor, Solver, SolverParams } from "./solver-core.js";
+import { type Solver, round } from "./solver-core.js";
 
-export interface Distractor {
-  readonly value: number;
-  /** The misconception this represents. Surfaces in distractor analysis. */
-  readonly misconception: string;
-}
-
-export interface Solver {
-  readonly id: string;
-  readonly version: string;
-  /** Objective this item type measures, for blueprint accounting. */
-  readonly objectiveHint: string;
-  readonly unit: string;
-  /** Relative tolerance. 0.01 = accept within 1%. */
-  readonly tolerance: number;
-  /** Significant figures used when rendering the expected answer. */
-  readonly sigFigs: number;
-  draw(rng: Rng): SolverParams;
-  solve(p: SolverParams): number;
-  stem(p: SolverParams): string;
-  distractors(p: SolverParams, correct: number): Distractor[];
-  rationale(p: SolverParams, correct: number): string;
-}
-
-const round = (n: number, sf: number): number =>
-  Number.parseFloat(n.toPrecision(sf));
+import { ACT1_SOLVERS } from "./solvers-act1.js";
+import { ACT2_SOLVERS } from "./solvers-act2.js";
+import { ACT3_SOLVERS } from "./solvers-act3.js";
+import { ACT4_SOLVERS } from "./solvers-act4.js";
 
 /* ============================================================
  * P-07 · Cycle time.  t = 1 / f
@@ -355,12 +338,17 @@ const amat: Solver = {
  * Registry
  * ========================================================== */
 
-const REGISTRY_1_0_0: ReadonlyMap<string, Solver> = new Map([
-  [cycleTime.id, cycleTime],
-  [unitConvert.id, unitConvert],
-  [twosComplement.id, twosComplement],
-  [amat.id, amat],
-]);
+/*
+ * The four original solvers, plus the per-act banks.
+ *
+ * ADDING to 1.0.0 is safe and is why the banks land here rather than behind a
+ * new engine_version: a stored seed only ever references a ref that already
+ * existed, so new ids cannot change any paper already sat. MUTATING one of the
+ * four below would not be safe, and none of them is touched.
+ */
+const REGISTRY_1_0_0: ReadonlyMap<string, Solver> = new Map(
+  [cycleTime, unitConvert, twosComplement, amat, ...ACT1_SOLVERS, ...ACT2_SOLVERS, ...ACT3_SOLVERS, ...ACT4_SOLVERS].map((s) => [s.id, s] as const),
+);
 
 /**
  * Registries are keyed by engine_version and kept FOREVER. An attempt stores the

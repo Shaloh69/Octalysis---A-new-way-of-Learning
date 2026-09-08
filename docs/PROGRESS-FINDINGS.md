@@ -1434,6 +1434,71 @@ right. Nothing was broken enough to notice. It took rendering two students side
 by side and comparing the DOM against the rows — which is exactly the check R2
 wrote down and left for last.
 
+### F-42 · The item bank was blocked by the engine, not by the authoring — and the scope now says so
+
+**Instructor's ruling, 9 September 2026.** F-41 asked which blueprint the demo
+should ship. The answer went further: build the complete item bank, sourced from
+Stallings and verified, with new solvers written where the engine needed them.
+A second ruling the same day scoped it: **stop at stage 08 and the Midterm.
+Semi-final and Finals land in a later update.**
+
+**What the audit found first, and why it changed the job.** Type P items do not
+own their question. `resolve.ts` sets `stem: solver.stem(params)` and takes the
+distractors and the rationale from the solver too, ignoring `items.stem_template`
+entirely. So **the number of distinct P questions the system can express equals
+the number of registered solvers**, and there were four: `cycle-time`,
+`unit-convert`, `twos-complement`, `amat`. Every period blueprint demands 13 P
+items from its own act. Acts 2 and 4 had no applicable solver at all. That is not
+a hard authoring problem, it is an arithmetic impossibility, and no amount of
+item writing would have moved it.
+
+Those four solvers also carry `objectiveHint` values from the SUPERSEDED course
+(`07.3`, `07.2`, `09.2`, `16.3`) and a comment reading "Stage 07 is the drill
+week". That is why the only bank that ever existed was 22 stage-07 items.
+
+**Written, with the engine boundary crossed deliberately and on the record.**
+`REDESIGN-CLAUDE.md` §1 puts `services/api/src/engine` outside the redesign
+track. This is not redesign work -- it is the P3/P5 curriculum work F-41 was
+blocking -- and it was authorised explicitly before any code was written.
+
+- **`solver-core.ts`** -- shared types plus `round`, `log2`, `bytes`, so the act
+  banks and the registry do not import each other.
+- **`solvers-act1.ts` (16)**, `solvers-act2.ts` (14), `solvers-act3.ts` (13),
+  `solvers-act4.ts` (13). **56 new solvers, 60 in the registry.**
+- Added to **REGISTRY_1_0_0, not a new engine version**. Adding a ref is safe:
+  a stored seed only ever names a ref that already existed, so no paper already
+  sat can change. The original four are untouched.
+- **`scope.ts`** -- the examinable-scope flag. A constant, not an env var:
+  exam scope decides what a real class is graded on, and an env var makes it
+  flippable with no review, no diff and no test run.
+
+**Four defects the tests caught that reading the code did not.**
+
+1. `programmed-io-cost` could draw 4096 bytes at 5 us against a 10 ms window and
+   ask for **163.84% of the processor** -- an impossible answer on a graded paper.
+2. `instruction-address-bits` could draw a 16-bit instruction with a 4-bit opcode
+   and three 4-bit register fields, leaving an address field of **zero bits**.
+3. The registry test asserted "exactly the four P3 solvers" and failed on the
+   first bank. It was protecting the wrong rule; it now asserts that 1.0.0 never
+   LOSES or renames a solver, which is the rule that actually matters.
+4. `scope.spec.ts` passed alone and failed inside the suite, because `resetAll()`
+   truncates `blueprints` and `helpers/bank.ts` substitutes fixtures. It now
+   reads the canonical exams from `db/schema.sql` and asks the database only the
+   question that belongs to it. Same order-dependence that makes `pnpm qa`
+   unreliable -- see the note in `PROGRESS.md`.
+
+**Measured after the work:** API suite **350 passed, 1 skipped** (was 266),
+21 files. Typecheck clean. Acts 3 and 4 solvers are written, tested and
+registered but **out of examinable scope** -- inert until an item references
+them, and `scope.spec.ts` fails if the flag is widened without the bank.
+
+**Still owed:** the item rows themselves (S and G for stages 01-08, plus one P
+row per in-scope solver), a seed that survives `pnpm db:reset`, an assessment for
+Prelim and Midterm, a feasibility proof that both blueprints can actually be
+filled, and the instructor's review pass.
+
+
+
 ### F-41 · Every multiple-choice answer was rejected, and the fixture cannot exercise the fix
 
 **Two defects, found together, because the first one hid the second.**
