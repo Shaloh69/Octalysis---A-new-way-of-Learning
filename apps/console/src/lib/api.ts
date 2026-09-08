@@ -511,6 +511,17 @@ export const api = {
    * stay distinguishable, because extending an exam indefinitely and not
    * mentioning the date are different intentions.
    */
+  /**
+   * Replace your OWN email and password, clearing the bootstrap flag.
+   * Self-only on the server: the user id comes from the verified JWT, never
+   * from this body.
+   */
+  setOwnCredentials: (body: { email: string; password: string }) =>
+    request<{ ok: true; reauthRequired: boolean }>("/api/v1/console/account/credentials", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
   setAssessmentWindow: (
     id: string,
     body: {

@@ -115,14 +115,15 @@ async function main() {
       created++;
     }
 
-    if (missingBlueprints.length > 0) {
-      await client.query("rollback");
-      console.log(c.red(`\n  blueprint(s) not found: ${missingBlueprints.join(", ")}`));
-      console.log(c.dim("  Blueprints are seeded by db/schema.sql. Run `pnpm db:reset` first.\n"));
-      process.exitCode = 1;
-      return;
-    }
-
+    /*
+     * A MISSING BLUEPRINT IS A WARNING, NOT A FAILURE.
+     *
+     * `pnpm verify` runs the API suite, which truncates `blueprints` and
+     * substitutes its own fixtures; restoring afterwards with `db-demo` is the
+     * documented recovery. Failing hard here took the WHOLE seed down for a
+     * condition that is both routine and self-inflicted, leaving the operator
+     * with no items either. Say what is wrong and let the rest land.
+     */
     await client.query("commit");
   } catch (e) {
     await client.query("rollback");
@@ -132,6 +133,20 @@ async function main() {
   }
 
   console.log("");
+  if (missingBlueprints.length > 0) {
+    console.log(
+      c.yellow(
+        `  ${String(missingBlueprints.length).padStart(3)}  blueprint(s) missing, skipped: ` +
+          missingBlueprints.join(", "),
+      ),
+    );
+    console.log(
+      c.dim(
+        "       Blueprints come from db/schema.sql, and the API suite truncates them.\n" +
+          "       Run `pnpm db:reset` and then this again to get the exams back.",
+      ),
+    );
+  }
   console.log(`  ${String(created).padStart(5)}  ${c.dim(`created, ${ATTEMPTS_ALLOWED} attempts, every section`)}`);
   if (existing.length > 0) {
     console.log(`  ${String(existing.length).padStart(5)}  ${c.dim("already present, left untouched")}`);

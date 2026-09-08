@@ -32,6 +32,19 @@ const REGISTER_FAILED =
 /** The ONLY failure message the login/resolve path ever returns. */
 const RESOLVE_FAILED = "Check your ID and password.";
 
+/**
+ * A new email and password, together.
+ *
+ * Both are required rather than optional. The bootstrap account is created with
+ * an address chosen by whoever ran the script and a password printed to their
+ * terminal; changing one and not the other leaves half of a known credential
+ * pair in place.
+ */
+const CredentialsBody = z.object({
+  email: z.string().trim().email().max(200),
+  password: z.string().min(12).max(200),
+});
+
 export interface SupabaseAdmin {
   createUser(input: {
     email: string;
@@ -39,6 +52,15 @@ export interface SupabaseAdmin {
     appMetadata: Record<string, unknown>;
   }): Promise<{ id: string }>;
   deleteUser(id: string): Promise<void>;
+  /** Change an existing user's email, password and/or `app_metadata`. */
+  updateUser(
+    id: string,
+    input: {
+      email?: string;
+      password?: string;
+      appMetadata?: Record<string, unknown>;
+    },
+  ): Promise<void>;
 }
 
 /**
@@ -75,6 +97,20 @@ export function makeSupabaseAdmin(env: Env): SupabaseAdmin {
       }
       const body = (await res.json()) as { id: string };
       return { id: body.id };
+    },
+    async updateUser(id, input) {
+      const res = await fetch(`${base}/auth/v1/admin/users/${id}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+          ...(input.email ? { email: input.email, email_confirm: true } : {}),
+          ...(input.password ? { password: input.password } : {}),
+          ...(input.appMetadata ? { app_metadata: input.appMetadata } : {}),
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`admin updateUser failed: ${res.status}`);
+      }
     },
     async deleteUser(id) {
       await fetch(`${base}/auth/v1/admin/users/${id}`, { method: "DELETE", headers });
@@ -284,4 +320,69 @@ export function registerAuthRoutes(
 
     return reply.send({ dryRun: false, summary });
   });
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/console/account/credentials
+   *
+   * Changing your OWN email and password, and clearing the bootstrap flag.
+   *
+   * `bootstrap-admin.mjs` creates the first staff account with a temporary
+   * password that is printed to a terminal — which means it has been seen, and
+   * possibly scrolled back to, copied, or left in a screenshot. It is not a
+   * secret. `app_metadata.must_change_credentials` marks the account until the
+   * credentials are actually replaced, and this is the only route that clears it.
+   *
+   * SELF ONLY. The user id comes from the verified JWT and never from the body,
+   * so this cannot be pointed at another account — an admin resetting a
+   * colleague's password is a different operation with different consequences,
+   * and it is not this one.
+   *
+   * The flag is cleared in the SAME Admin API call that sets the password. Two
+   * calls could clear the flag and then fail to change the password, leaving an
+   * account that is still on its bootstrap credentials and no longer says so.
+   * -------------------------------------------------------- */
+  app.post(
+    "/api/v1/console/account/credentials",
+    { config: { rateLimit: { max: 5 * app.limitScale, timeWindow: "1 minute" } } },
+    async (req, reply) => {
+      const id = await identityFrom(req, env);
+      requireStaff(id);
+      if (!admin) throw errors.badRequest("Credential changes need a configured Supabase project.");
+
+      const body = CredentialsBody.safeParse(req.body);
+      if (!body.success) {
+        throw errors.badRequest(
+          "Give a valid email and a password of at least 12 characters.",
+        );
+      }
+
+      const cur = await app.db.query("select role from profiles where id = $1", [id.userId]);
+      if (cur.rows.length === 0) throw errors.notFound("No such account.");
+
+      /*
+       * The role is re-asserted rather than merged from the incoming token. A
+       * PUT to app_metadata REPLACES it, so omitting `role` here would strip the
+       * account's own staff claim and lock it out on the next sign-in.
+       */
+      await admin.updateUser(id.userId, {
+        email: body.data.email,
+        password: body.data.password,
+        appMetadata: { role: cur.rows[0].role, must_change_credentials: false },
+      });
+
+      await app.db.query(
+        `insert into audit_log (actor_id, action, target_type, target_id, payload)
+         values ($1,'account.credentials','profile',$2,$3)`,
+        [
+          id.userId,
+          id.userId,
+          // The new email is recorded; the password never is, not even hashed.
+          JSON.stringify({ email: body.data.email, clearedBootstrapFlag: true }),
+        ],
+      );
+
+      return reply.send({ ok: true, reauthRequired: true });
+    },
+  );
+
 }

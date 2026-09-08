@@ -73,7 +73,13 @@ const WHO = {
   },
 };
 
-const which = (process.argv[2] ?? "staff").toLowerCase();
+/*
+ * `--must-change` mints a token carrying the bootstrap flag, so the blocking
+ * change-credentials screen can be seen on the local stack -- where there is no
+ * Supabase and therefore no real bootstrap account to create.
+ */
+const mustChange = process.argv.includes("--must-change");
+const which = (process.argv.find((a) => !a.startsWith("--") && a !== process.argv[0] && a !== process.argv[1]) ?? "staff").toLowerCase();
 const who = WHO[which];
 if (!who) {
   console.error(c.red(`\n  Unknown identity "${which}". Use "staff" or "student".\n`));
@@ -87,14 +93,20 @@ const payload = b64({
   email: who.email,
   aud: "authenticated",
   exp: Math.floor(Date.now() / 1000) + 86_400,
-  app_metadata: who.app_metadata,
+  app_metadata: { ...who.app_metadata, ...(mustChange ? { must_change_credentials: true } : {}) },
 });
 const sig = createHmac("sha256", SECRET).update(`${header}.${payload}`).digest("base64url");
 const token = `${header}.${payload}.${sig}`;
 
 console.log(c.bold("\nOCTA -- local dev token\n"));
 console.log(`  ${who.label}`);
-console.log(c.dim(`  valid 24 hours · HS256 · local stack only\n`));
+console.log(c.dim("  valid 24 hours · HS256 · local stack only"));
+if (mustChange) {
+  console.log(
+    c.yellow("  carrying must_change_credentials — the console will block on the change screen"),
+  );
+}
+console.log("");
 
 if (process.env.SUPABASE_URL) {
   console.log(

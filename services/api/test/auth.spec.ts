@@ -45,6 +45,37 @@ class FakeAdmin implements SupabaseAdmin {
     this.deleted.push(id);
     await pool.query("delete from auth.users where id = $1", [id]);
   }
+
+  /**
+   * Records what the credentials route asked for, so a test can assert the
+   * app_metadata it sends -- which is the part that would silently strip an
+   * account's staff claim if it were built wrong.
+   */
+  updated: Array<{
+    id: string;
+    email: string | undefined;
+    appMetadata: Record<string, unknown> | undefined;
+  }> = [];
+
+  async updateUser(
+    id: string,
+    input: { email?: string; password?: string; appMetadata?: Record<string, unknown> },
+  ): Promise<void> {
+    if (this.failNext) {
+      this.failNext = false;
+      throw new Error("simulated Supabase failure");
+    }
+    this.updated.push({ id, email: input.email, appMetadata: input.appMetadata });
+    if (input.email || input.appMetadata) {
+      await pool.query(
+        `update auth.users
+            set email = coalesce($2, email),
+                raw_app_meta_data = coalesce($3::jsonb, raw_app_meta_data)
+          where id = $1`,
+        [id, input.email ?? null, input.appMetadata ? JSON.stringify(input.appMetadata) : null],
+      );
+    }
+  }
 }
 
 let app: FastifyInstance;
@@ -258,5 +289,95 @@ describe("POST /console/roster/import", () => {
 
     const audit = await pool.query("select action, payload from audit_log where action = 'roster.import'");
     expect(audit.rows.length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * CHANGING YOUR OWN CREDENTIALS, AND CLEARING THE BOOTSTRAP FLAG.
+ *
+ * `bootstrap-admin.mjs` creates the first staff account with a temporary
+ * password printed to a terminal. That password has been SEEN — scrolled back
+ * to, copied, possibly screenshotted — so it is not a secret, and
+ * `app_metadata.must_change_credentials` marks the account until it is replaced.
+ *
+ * This route is the only thing that clears the flag. Led by the denial tests,
+ * because the interesting questions are who may call it and whose account it can
+ * touch — not whether the happy path works.
+ */
+describe("POST /console/account/credentials", () => {
+  const strong = "a-much-longer-password-1";
+
+  it("DENIES a student", async () => {
+    const studentToken = mintToken(teacherId, "student");
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/account/credentials",
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { email: "sneaky@example.com", password: strong },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it("DENIES an anonymous caller", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/account/credentials",
+      payload: { email: "nobody@example.com", password: strong },
+    });
+    expect([401, 403]).toContain(res.statusCode);
+  });
+
+  it("refuses a short password — the bootstrap one was already visible", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/account/credentials",
+      headers: { authorization: `Bearer ${teacherToken}` },
+      payload: { email: "fine@example.com", password: "short" },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("requires BOTH an email and a password", async () => {
+    for (const payload of [{ email: "only@example.com" }, { password: strong }]) {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/v1/console/account/credentials",
+        headers: { authorization: `Bearer ${teacherToken}` },
+        payload,
+      });
+      expect(res.statusCode).toBe(400);
+    }
+  });
+
+  it("changes both, clears the flag, and KEEPS the staff role", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/account/credentials",
+      headers: { authorization: `Bearer ${teacherToken}` },
+      payload: { email: "newadmin@example.com", password: strong },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().reauthRequired).toBe(true);
+
+    const sent = admin.updated.at(-1)!;
+    expect(sent.id, "it must only ever touch the caller's own account").toBe(teacherId);
+    expect(sent.email).toBe("newadmin@example.com");
+    /*
+     * The one that would be a real incident. A PUT to app_metadata REPLACES it,
+     * so an implementation that sent only the flag would strip the account's own
+     * staff claim and lock it out on the next sign-in.
+     */
+    expect(sent.appMetadata).toMatchObject({ must_change_credentials: false });
+    expect(sent.appMetadata!.role, "the staff role must be re-asserted").toBeTruthy();
+  });
+
+  it("records the change without ever recording the password", async () => {
+    const audit = await pool.query(
+      "select payload from audit_log where action = 'account.credentials' order by at desc limit 1",
+    );
+    expect(audit.rowCount).toBe(1);
+    const p = JSON.stringify(audit.rows[0]!.payload);
+    expect(p).toContain("newadmin@example.com");
+    expect(p, "the password must never reach the audit log").not.toContain(strong);
   });
 });

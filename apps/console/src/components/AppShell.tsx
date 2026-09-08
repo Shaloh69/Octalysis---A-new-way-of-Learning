@@ -7,6 +7,9 @@ import {
 import { cn } from "@/lib/utils";
 import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } from "@/lib/session";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
 
 /**
  * The console shell.
@@ -90,6 +93,31 @@ export function AppShell() {
           </Button>
         </div>
       </main>
+    );
+  }
+
+  /*
+   * THE BOOTSTRAP ACCOUNT HAS NOT CHANGED ITS CREDENTIALS YET.
+   *
+   * `bootstrap-admin.mjs` creates the first staff account with a password
+   * PRINTED TO A TERMINAL. It has been seen — scrolled back to, copied, possibly
+   * screenshotted — so it is not a secret, and this account can read every
+   * answer key in the bank.
+   *
+   * This blocks the whole console rather than showing a dismissible banner. A
+   * banner on the busiest screen in the app is a banner nobody reads, and the
+   * window between "deployed" and "credentials changed" is exactly when a known
+   * password matters most.
+   *
+   * The flag lives in `app_metadata`, which is service-role only, so it cannot
+   * be cleared by editing a row — only by actually changing the credentials.
+   */
+  if (identity.mustChangeCredentials) {
+    return (
+      <ChangeCredentials
+        identity={identity}
+        onSignOut={() => void signOut().then(() => navigate("/signin", { replace: true }))}
+      />
     );
   }
 
@@ -192,5 +220,140 @@ export function AppShell() {
         <Outlet />
       </main>
     </div>
+  );
+}
+
+/* ------------------------------------------------- bootstrap credentials */
+
+/**
+ * The blocking change-your-credentials screen.
+ *
+ * Shown while `app_metadata.must_change_credentials` is set, which
+ * `bootstrap-admin.mjs` stamps on every account it creates. Both fields are
+ * required together: the bootstrap account has an address someone chose and a
+ * password a terminal printed, and replacing one leaves half of a known pair.
+ *
+ * There is no "later". The one thing this screen offers besides changing the
+ * credentials is signing out, because an admin who opened the console on the
+ * wrong account needs a way back — not a way past.
+ */
+function ChangeCredentials({
+  identity, onSignOut,
+}: { identity: Identity; onSignOut: () => void }) {
+  const [email, setEmail] = useState(identity.email ?? "");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const tooShort = password.length > 0 && password.length < 12;
+  const mismatch = confirm.length > 0 && confirm !== password;
+  const ready = email.includes("@") && password.length >= 12 && confirm === password;
+
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.setOwnCredentials({ email: email.trim(), password });
+      /*
+       * The token in hand still carries the old email and the flag. Supabase
+       * mints claims at sign-in, so the only honest thing to do is send them
+       * back through it rather than pretend the session is current.
+       */
+      setDone(true);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "That change was not saved.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <main className="mx-auto max-w-md p-8">
+        <h1 className="mb-2 font-display text-xl">Credentials changed</h1>
+        <p className="mb-5 text-sm text-ink-muted">
+          Sign in again with your new email and password. Your existing session still carries the
+          old details, so it has to be replaced rather than refreshed.
+        </p>
+        <Button onClick={onSignOut}>Sign in again</Button>
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto max-w-md p-8">
+      <h1 className="mb-2 font-display text-xl">Change your email and password</h1>
+      <p className="mb-4 text-sm text-ink-muted">
+        This account was created with a temporary password that was printed to a terminal, so it
+        is not a secret. It can read every answer key in the bank. Replace both before doing
+        anything else.
+      </p>
+
+      {/*
+        The warning that matters most. There is no password reset flow in this
+        app — recovery means the Supabase dashboard or re-running the bootstrap
+        script, and a teacher should know that BEFORE choosing a password rather
+        than after losing one.
+      */}
+      <p className="mb-5 rounded-md border border-warning bg-warning-bg px-3 py-2 text-xs text-warning">
+        <strong>Do not lose these.</strong> There is no self-service password reset here. If you
+        lock yourself out, recovery means resetting the password in the Supabase dashboard or
+        running the bootstrap script again. Put them in a password manager now.
+      </p>
+
+      <div className="mb-3">
+        <Label htmlFor="new-email">Email</Label>
+        <Input
+          id="new-email"
+          type="email"
+          autoComplete="username"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+
+      <div className="mb-3">
+        <Label htmlFor="new-password">New password</Label>
+        <Input
+          id="new-password"
+          type="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <p className={cn("mt-1 text-xs", tooShort ? "text-danger" : "text-ink-muted")}>
+          At least 12 characters.
+        </p>
+      </div>
+
+      <div className="mb-4">
+        <Label htmlFor="confirm-password">Confirm new password</Label>
+        <Input
+          id="confirm-password"
+          type="password"
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+        />
+        {mismatch ? <p className="mt-1 text-xs text-danger">These do not match.</p> : null}
+      </div>
+
+      {err ? (
+        <p className="mb-3 text-sm text-danger" role="alert">
+          {err}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={busy || !ready} onClick={() => void save()}>
+          Change and continue
+        </Button>
+        <Button variant="outline" onClick={onSignOut}>
+          Sign out
+        </Button>
+      </div>
+    </main>
   );
 }

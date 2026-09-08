@@ -39,6 +39,11 @@ export interface Identity {
   role: Role;
   email: string | null;
   fullName: string | null;
+  /**
+   * Set by `bootstrap-admin.mjs` on an account created with a temporary
+   * password, and cleared only when the credentials are actually changed.
+   */
+  mustChangeCredentials: boolean;
 }
 
 /**
@@ -54,6 +59,26 @@ export function roleFromClaims(claims: unknown): Role {
   const meta = (claims as { app_metadata?: { role?: unknown } } | null)?.app_metadata;
   const raw = typeof meta?.role === "string" ? meta.role : "";
   return raw === "admin" ? "admin" : raw === "teacher" ? "teacher" : "student";
+}
+
+/**
+ * Is this account still on its bootstrap credentials?
+ *
+ * Read from `app_metadata`, NOT from `profiles` and never from `user_metadata`.
+ * `profiles` carries a `p_update` policy letting a user edit their own row, so a
+ * column there could be cleared without the password ever changing; and
+ * `user_metadata` is writable through the Supabase auth API by the user
+ * themselves. `app_metadata` is service-role only, which is the same reason
+ * `role` lives there.
+ *
+ * Least privilege runs the other way here: anything missing or malformed means
+ * NOT flagged, because a stuck prompt that cannot be dismissed would lock an
+ * admin out of their own console.
+ */
+export function mustChangeFromClaims(claims: unknown): boolean {
+  const meta = (claims as { app_metadata?: { must_change_credentials?: unknown } } | null)
+    ?.app_metadata;
+  return meta?.must_change_credentials === true;
 }
 
 /** `teacher` and `admin` are deliberately equivalent in this deployment (D4). */
@@ -104,6 +129,7 @@ export async function getIdentity(): Promise<Identity | null> {
     role: roleFromClaims(claims),
     email: typeof claims.email === "string" ? claims.email : null,
     fullName: meta?.full_name ?? null,
+    mustChangeCredentials: mustChangeFromClaims(claims),
   };
 }
 

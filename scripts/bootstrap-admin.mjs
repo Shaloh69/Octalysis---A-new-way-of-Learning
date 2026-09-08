@@ -43,7 +43,26 @@ const c = {
   bold: (s) => `\x1b[1m${s}\x1b[0m`,
 };
 
-const [email, password, fullName = "Course Administrator"] = process.argv.slice(2);
+/**
+ * THE SEEDED TEST PASSWORD.
+ *
+ * Used when none is given, so there is a documented way in on a fresh project.
+ * It is deliberately not a secret and not meant to survive first contact: it is
+ * printed to a terminal, which means it has been seen, and it can be scrolled
+ * back to, copied, or caught in a screenshot.
+ *
+ * Every account this script creates is therefore stamped with
+ * `app_metadata.must_change_credentials`, and the console blocks on a change
+ * prompt until it is cleared. The flag lives in app_metadata because that is
+ * service-role only -- `profiles` carries a `p_update` policy letting a user
+ * edit their own row, so a column there could be cleared without the password
+ * ever changing.
+ */
+const TEST_PASSWORD = "OctaTemp-2026-change-me";
+
+const [email, passwordArg, fullName = "Course Administrator"] = process.argv.slice(2);
+const password = passwordArg || TEST_PASSWORD;
+const usingTestPassword = !passwordArg;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -54,10 +73,11 @@ function die(msg, hint = "") {
   process.exit(1);
 }
 
-if (!email || !password) {
+if (!email) {
   die(
-    'Usage: node scripts/bootstrap-admin.mjs "<email>" "<password>" ["Full Name"]',
-    "Quote the password if it contains shell characters.",
+    'Usage: node scripts/bootstrap-admin.mjs "<email>" ["<password>"] ["Full Name"]',
+    "Omit the password to use the seeded test one, which must be changed at " +
+      "first sign-in. Quote it if it contains shell characters.",
   );
 }
 if (!SUPABASE_URL || !SERVICE_KEY) {
@@ -113,7 +133,13 @@ async function main() {
       email,
       password,
       email_confirm: true,
-      app_metadata: { role: "admin" },
+      /*
+       * The flag rides with the role. Both are app_metadata because that is the
+       * half of the token a user cannot write -- `user_metadata` is client-
+       * writable through the Supabase auth API, which is why nothing in this
+       * project ever reads it.
+       */
+      app_metadata: { role: "admin", must_change_credentials: true },
     }),
   });
 
@@ -157,7 +183,35 @@ async function main() {
   }
   console.log(c.green("ok"));
 
-  console.log(c.green("\n  Done. Sign in at the console with that email and password.\n"));
+  console.log(c.green("\n  Done.\n"));
+
+  if (usingTestPassword) {
+    console.log(c.bold("  Sign in with:\n"));
+    console.log(`    email     ${email}`);
+    console.log(`    password  ${TEST_PASSWORD}\n`);
+    console.log(
+      c.yellow(
+        "  WRITE THIS DOWN NOW. It is the only way in, and nothing else can recreate\n" +
+          "  it -- a lost bootstrap account means running this script again against a\n" +
+          "  different email, or resetting the password in the Supabase dashboard.\n",
+      ),
+    );
+    console.log(
+      c.yellow(
+        "  The console will BLOCK on a change prompt at first sign-in. That is the\n" +
+          "  flag doing its job: this password was printed to a terminal, so it has\n" +
+          "  been seen and is not a secret.\n",
+      ),
+    );
+  } else {
+    console.log(c.dim("  Sign in at the console with that email and password.\n"));
+    console.log(
+      c.yellow(
+        "  The console will still prompt for a change at first sign-in: every account\n" +
+          "  this script creates is flagged, whoever chose the password.\n",
+      ),
+    );
+  }
   console.log(
     c.dim(
       "  The role lives in the JWT's app_metadata, which is what jwt_role() reads.\n" +

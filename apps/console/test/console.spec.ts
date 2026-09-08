@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { parseRoster, splitCsvLine, nextLockState } from "../src/lib/csv";
-import { roleFromClaims, isStaff, decodeJwtPayload } from "../src/lib/session";
+import {
+  roleFromClaims,
+  isStaff,
+  decodeJwtPayload,
+  mustChangeFromClaims,
+} from "../src/lib/session";
 
 /**
  * The console's pure logic.
@@ -204,5 +209,52 @@ describe("JWT payload decoding", () => {
     expect(claims).toBeNull();
     expect(roleFromClaims(claims)).toBe("student");
     expect(isStaff(roleFromClaims(claims))).toBe(false);
+  });
+});
+
+/**
+ * The bootstrap-credentials flag.
+ *
+ * `bootstrap-admin.mjs` stamps `app_metadata.must_change_credentials` on every
+ * account it creates, because the password it prints to a terminal has been seen
+ * and is not a secret. The console blocks on a change screen while it is set.
+ *
+ * Read from `app_metadata` and NOWHERE else. `profiles` carries a `p_update`
+ * policy letting a user edit their own row, so a column there could be cleared
+ * without the password ever changing; `user_metadata` is writable by the user
+ * through the Supabase auth API. Only `app_metadata` is service-role only, which
+ * is the same reason `role` lives there.
+ */
+describe("mustChangeFromClaims", () => {
+  it("is true only for an explicit boolean true in app_metadata", () => {
+    expect(mustChangeFromClaims({ app_metadata: { must_change_credentials: true } })).toBe(true);
+    expect(mustChangeFromClaims({ app_metadata: { must_change_credentials: false } })).toBe(false);
+  });
+
+  it("defaults to NOT flagged when the claim is missing or malformed", () => {
+    /*
+     * Least privilege runs the other way here than it does for `role`. A stuck
+     * prompt that cannot be dismissed locks an admin out of their own console,
+     * so anything unclear means "not flagged" rather than "flagged".
+     */
+    for (const claims of [
+      null,
+      undefined,
+      {},
+      { app_metadata: {} },
+      { app_metadata: { must_change_credentials: "true" } },
+      { app_metadata: { must_change_credentials: 1 } },
+      "not an object",
+    ]) {
+      expect(mustChangeFromClaims(claims)).toBe(false);
+    }
+  });
+
+  it("ignores user_metadata, which the user can write themselves", () => {
+    // The mirror image of the role rule, and the reason it is tested: a user who
+    // could set this could not GRANT themselves anything, but they could dodge
+    // the prompt — and the prompt is the only thing standing between a printed
+    // password and a live gradebook.
+    expect(mustChangeFromClaims({ user_metadata: { must_change_credentials: true } })).toBe(false);
   });
 });
