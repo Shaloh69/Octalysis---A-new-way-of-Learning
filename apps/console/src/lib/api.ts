@@ -504,6 +504,27 @@ export const api = {
       body: JSON.stringify({ reason }),
     }),
 
+  /**
+   * The exam window, after creation.
+   *
+   * `undefined` leaves a field alone; `null` clears that bound. The two must
+   * stay distinguishable, because extending an exam indefinitely and not
+   * mentioning the date are different intentions.
+   */
+  setAssessmentWindow: (
+    id: string,
+    body: {
+      opensAt?: string | null;
+      closesAt?: string | null;
+      attemptsAllowed?: number;
+      reason: string;
+    },
+  ) =>
+    request<{ ok: true }>(`/api/v1/console/assessments/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
   setItemStatus: (
     id: string,
     status: string,

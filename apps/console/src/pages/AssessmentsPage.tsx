@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CalendarClock, Plus, AlertTriangle, Check } from "lucide-react";
-import { api, type Blueprint, type Feasibility } from "@/lib/api";
+import { api, type Assessment, type Blueprint, type Feasibility } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
 import { shortDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ import {
 export function AssessmentsPage() {
   const { data, error, loading, reload } = useAsync(() => api.assessments(), []);
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Assessment | null>(null);
 
   if (loading) return <Loading what="assessments" />;
   if (error) return <ErrorNote message={error} />;
@@ -82,6 +83,7 @@ export function AssessmentsPage() {
                 <TH className="text-right">Attempts</TH>
                 <TH>Section</TH>
                 <TH>Window</TH>
+                <TH aria-label="Set window" />
                 <TH className="text-right">Submitted</TH>
               </TR>
             </THead>
@@ -135,6 +137,17 @@ export function AssessmentsPage() {
                     <TD className="num whitespace-nowrap text-right">
                       {a.submitted}/{a.attempts}
                     </TD>
+                    {/*
+                      The window is the one property of a live assessment a
+                      teacher genuinely needs to change. Until this existed the
+                      PATCH route had no caller, and an exam seeded without dates
+                      was open forever with no way to close it.
+                    */}
+                    <TD className="whitespace-nowrap text-right">
+                      <Button size="sm" variant="outline" onClick={() => setEditing(a)}>
+                        Set window
+                      </Button>
+                    </TD>
                   </TR>
                 );
               })}
@@ -142,6 +155,15 @@ export function AssessmentsPage() {
           </Table>
         </div>
       )}
+
+      <WindowDialog
+        assessment={editing}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          reload();
+        }}
+      />
 
       {creating && (
         <CreateDialog
@@ -317,4 +339,167 @@ function CreateDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/* ------------------------------------------------------------- window */
+
+/**
+ * Setting the exam window on an assessment that already exists.
+ *
+ * Until this dialog there was no caller for `PATCH .../assessments/:id`, and
+ * before that route there was no way at all: an assessment seeded without dates
+ * was open forever, and one created with them could never be extended. The
+ * route file's own comment said "closing it is a `closes_at` in the past; that
+ * is the supported way to end one" while offering only GET and POST.
+ *
+ * THE REASON IS REQUIRED, and that is not ceremony. Moving an exam window
+ * changes what students can do, so it lands in `audit_log` with both the before
+ * and the after — and an audit entry nobody can interpret six weeks later is not
+ * worth writing.
+ *
+ * `datetime-local` gives a value with no zone. It is read as the browser's local
+ * time and converted to an ISO instant on the way out, because the server stores
+ * `timestamptz` and an exam that opens at "08:00" means 08:00 where the class is.
+ */
+function WindowDialog({
+  assessment, onClose, onSaved,
+}: { assessment: Assessment | null; onClose: () => void; onSaved: () => void }) {
+  const [opensAt, setOpensAt] = useState("");
+  const [closesAt, setClosesAt] = useState("");
+  const [attempts, setAttempts] = useState(5);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+
+  if (!assessment) return null;
+
+  // Seed the fields from the assessment the first time it opens.
+  if (loadedFor !== assessment.id) {
+    setLoadedFor(assessment.id);
+    setOpensAt(toLocalInput(assessment.opensAt));
+    setClosesAt(toLocalInput(assessment.closesAt));
+    setAttempts(assessment.attemptsAllowed);
+    setReason("");
+    setErr(null);
+  }
+
+  async function save() {
+    if (!assessment) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.setAssessmentWindow(assessment.id, {
+        // "" means the teacher cleared the field, which is null, not "unchanged".
+        opensAt: opensAt ? new Date(opensAt).toISOString() : null,
+        closesAt: closesAt ? new Date(closesAt).toISOString() : null,
+        attemptsAllowed: attempts,
+        reason: reason.trim(),
+      });
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "That change was not saved.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const nothingSet = !opensAt && !closesAt;
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{assessment.title}</DialogTitle>
+          <DialogDescription>
+            When students may sit this, and how many times. Leave a date empty for no bound.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="mb-3 grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="opens-at">Opens</Label>
+            <Input
+              id="opens-at"
+              type="datetime-local"
+              value={opensAt}
+              onChange={(e) => setOpensAt(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="closes-at">Closes</Label>
+            <Input
+              id="closes-at"
+              type="datetime-local"
+              value={closesAt}
+              onChange={(e) => setClosesAt(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <Label htmlFor="attempts-allowed">Attempts allowed</Label>
+          <Input
+            id="attempts-allowed"
+            type="number"
+            min={1}
+            max={10}
+            value={attempts}
+            onChange={(e) => setAttempts(Number(e.target.value))}
+          />
+          <p className="mt-1 text-xs text-ink-muted">
+            Each attempt is a different paper from the same blueprint, generated from the
+            student&apos;s own seed. It cannot go below a sitting that has already happened.
+          </p>
+        </div>
+
+        {/*
+          Said plainly rather than left to be discovered. A NULL bound is no
+          bound, and `engine-repo.ts` enforces exactly that — so an assessment
+          with neither date is open to every student right now.
+        */}
+        {nothingSet ? (
+          <p className="mb-3 rounded-md border border-warning bg-warning-bg px-3 py-2 text-xs text-warning">
+            With no dates set, this assessment is <strong>open now</strong> and stays open.
+          </p>
+        ) : null}
+
+        <div className="mb-3">
+          <Label htmlFor="window-reason">Reason</Label>
+          <Input
+            id="window-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Prelim week, per the department calendar"
+          />
+          <p className="mt-1 text-xs text-ink-muted">
+            Recorded in the audit log with the old and new window.
+          </p>
+        </div>
+
+        {err ? (
+          <p className="mb-2 text-sm text-danger" role="alert">
+            {err}
+          </p>
+        ) : null}
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={busy || reason.trim().length < 3} onClick={() => void save()}>
+            Save window
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** An ISO instant as a `datetime-local` value in the browser's own zone. */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
