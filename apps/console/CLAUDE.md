@@ -43,7 +43,7 @@ secure.
 | `/audit` | who changed what and why. Read-only, and there is no delete control by design |
 | `/system` | `run_invariants()`, live |
 | `/feedback` | reports with the resolved variant attached, and the SUS score |
-| `/items` | the bank and its review queue. Approve, retire, version. p-value and discrimination per item once `item_stats` has them |
+| `/items` | the bank and its review queue. Approve, **send back with a required reason**, retire, version. A decision advances to the next item rather than closing — a seeded bank is a few hundred decisions and closing each time pushes a reviewer toward rubber-stamping. The self-approval tick is gated on AUTHORSHIP, not just status: offering it on an item the reviewer did not write records a false statement in `audit_log`. p-value and discrimination per item once `item_stats` has them |
 | `/assessments` | **the route that made the engine reachable.** Creating one mints the exam salt. The feasibility check answers *"can this blueprint be filled?"* naming the shortfall cell, before a student presses Start rather than at Start |
 | `/submissions` | the lab and project marking queue. A graded submission's content freezes; regrade is an explicit, audited unlock |
 | `/live`, `/live/present` | Lecture Mode and the projector view |

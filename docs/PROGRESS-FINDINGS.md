@@ -1497,6 +1497,39 @@ row per in-scope solver), a seed that survives `pnpm db:reset`, an assessment fo
 Prelim and Midterm, a feasibility proof that both blueprints can actually be
 filled, and the instructor's review pass.
 
+**Approval goes through the console — instructor's ruling, 9 September 2026.**
+Not a CLI promotion script. `/items` already had the review queue, status
+filters, and a preview that resolves through the SAME `resolveItem()` a
+student's paper goes through. Pointing a few hundred seeded items at it exposed
+three things a two-item fixture never could:
+
+1. **`review` offered exactly one decision: Approve and publish.** There was no
+   way to reject. A reviewer who found a wrong key could publish it or leave it
+   in the queue forever. The API had accepted a `reason` on every status change
+   all along and the UI had never sent one. **Send back** now exists, the reason
+   is required, and it lands in `audit_log`.
+2. **Every decision closed the dialog.** Two hundred open/close cycles is not
+   just slow, it pushes a reviewer toward clicking Approve to make the modal go
+   away — the exact failure the review rule exists to prevent. Decisions now
+   advance to the next item. One decision per item is untouched; only the
+   navigation between them is gone.
+3. **The self-approval tick was offered on items the reviewer did not write.**
+   It says *"I wrote this item and have re-checked the answer key myself"*, and
+   on a seeded item that is a false statement recorded in `audit_log`. It is now
+   gated on authorship, which also matches what the server does — it only
+   demands self-approval when `author_id` equals the reviewer.
+
+**This decides how the bank must be seeded: `author_id = NULL`.** The demo
+fixture has exactly ONE member of staff, so an item authored by the instructor
+can only go live as a self-approval. An item with no author on record is
+reviewed normally — which is the honest reading, because the instructor really
+is the first person to check it. The dialog says so on the item.
+
+**Verified:** `design/specs/console-item-review.spec.ts`, 3 cases, and the
+advance is **mutation-tested** — reverting `advanceFrom` to close-on-decision
+makes it fail. Capture in `design/item-review/`. `r3-gate` and the other console
+specs re-run clean: 57 passed, 17 skipped.
+
 
 
 ### F-41 · Every multiple-choice answer was rejected, and the fixture cannot exercise the fix

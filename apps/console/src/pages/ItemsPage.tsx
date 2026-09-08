@@ -53,9 +53,31 @@ export function ItemsPage() {
   const stagesQ = useAsync(() => api.stages(), []);
   const [preview, setPreview] = useState<BankItem | null>(null);
 
+  /*
+   * Advance through the queue instead of closing on every decision.
+   *
+   * Reviewing a seeded bank means a few hundred decisions in a row. Closing the
+   * dialog after each one and hunting for the next row is not just slow -- it
+   * pushes a reviewer towards clicking Approve to make the modal go away, which
+   * is the exact failure the review rule exists to prevent. One decision per
+   * item is preserved; only the navigation between them is removed.
+   *
+   * `next` is taken from the list as it stands BEFORE the reload, because after
+   * the reload the item just decided has left the filter and every index moves.
+   */
+  function advanceFrom(item: BankItem): void {
+    const list = data?.items ?? [];
+    const i = list.findIndex((x) => x.id === item.id);
+    setPreview(i >= 0 ? (list[i + 1] ?? null) : null);
+    reload();
+  }
+
   if (loading) return <Loading what="the item bank" />;
   if (error) return <ErrorNote message={error} />;
   if (!data) return null;
+
+  const queue = data.items;
+  const queueIndex = preview ? queue.findIndex((x) => x.id === preview.id) : -1;
 
   const s = data.summary;
   const total = Object.values(s).reduce((a, b) => a + b, 0);
@@ -222,7 +244,12 @@ export function ItemsPage() {
         </div>
       )}
 
-      <PreviewDialog item={preview} onClose={() => setPreview(null)} onChanged={reload} />
+      <PreviewDialog
+        item={preview}
+        position={queueIndex >= 0 ? { at: queueIndex + 1, of: queue.length } : null}
+        onClose={() => setPreview(null)}
+        onDecided={advanceFrom}
+      />
     </>
   );
 }
@@ -303,12 +330,20 @@ function PsychometricCells({ stats }: { stats: BankItem["stats"] }) {
 /* ------------------------------------------------------------- preview */
 
 function PreviewDialog({
-  item, onClose, onChanged,
-}: { item: BankItem | null; onClose: () => void; onChanged: () => void }) {
+  item, position, onClose, onDecided,
+}: {
+  item: BankItem | null;
+  /** Where this item sits in the filtered list, for "12 of 177". */
+  position: { at: number; of: number } | null;
+  onClose: () => void;
+  onDecided: (item: BankItem) => void;
+}) {
   const [seed, setSeed] = useState("preview-1");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [selfApproved, setSelfApproved] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
   const { data, error, loading } = useAsync<ResolvedPreview | null>(
     () => (item ? api.previewItem(item.id, seed) : Promise.resolve(null)),
     [item?.id, seed],
@@ -316,14 +351,24 @@ function PreviewDialog({
 
   if (!item) return null;
 
-  async function setStatus(status: string) {
+  async function decide(status: string, opts: { reason?: string } = {}) {
     if (!item) return;
     setBusy(true);
     setErr(null);
     try {
-      await api.setItemStatus(item.id, status, selfApproved ? { selfApproved: true } : {});
-      onChanged();
-      onClose();
+      await api.setItemStatus(item.id, status, {
+        ...opts,
+        ...(selfApproved ? { selfApproved: true } : {}),
+      });
+      /*
+       * Reset the per-item controls before advancing, or the next item inherits
+       * this one's ticked self-approval and typed reason -- which would attach a
+       * confirmation the reviewer never made to an item they have not read.
+       */
+      setSelfApproved(false);
+      setRejecting(false);
+      setReason("");
+      onDecided(item);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "That change was not saved.");
     } finally {
@@ -335,10 +380,23 @@ function PreviewDialog({
     <Dialog open={item !== null} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{item.slug}</DialogTitle>
+          <DialogTitle>
+            {item.slug}
+            {position ? (
+              <span className="num ml-2 text-xs font-normal text-ink-faint">
+                {position.at} of {position.of}
+              </span>
+            ) : null}
+          </DialogTitle>
           <DialogDescription>
             Resolved by the same engine a student&apos;s paper goes through. Re-roll to see the
             spread of variants your students will actually get.
+            {item.authorName ? null : (
+              <span className="mt-1 block">
+                No author on record — this item was seeded rather than written in the console, so
+                approving it counts as a first review, not a self-approval.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -398,7 +456,18 @@ function PreviewDialog({
           </>
         ) : null}
 
-        {item.status === "review" ? (
+        {/*
+          THE SELF-APPROVAL BOX IS GATED ON AUTHORSHIP, not just on status.
+
+          It says "I wrote this item and have re-checked the answer key myself".
+          On a seeded item the reviewer did NOT write it, so offering the tick
+          invites them to record a false statement in `audit_log` -- and the
+          server would not have asked for it anyway, because it only demands
+          self-approval when `author_id` matches the reviewer. An item with no
+          author on record is reviewed normally, which is the honest reading:
+          the instructor really is the first person to check it.
+        */}
+        {item.status === "review" && item.authorName ? (
           /*
            * The self-approval acknowledgement.
            *
@@ -425,16 +494,46 @@ function PreviewDialog({
           </label>
         ) : null}
 
-        {err ? (
-          <p className="mb-2 text-sm text-danger" role="alert">
-            {err}
-          </p>
-        ) : null}
-
         {item.status === "live" ? (
           <p className="rounded-md border border-info bg-info-bg px-3 py-2 text-xs text-info">
             This item is live. It cannot be edited — an edit creates a new version and retires this
             one, and <strong>statistics do not carry over</strong>.
+          </p>
+        ) : null}
+
+        {/*
+          SENDING AN ITEM BACK.
+          Until now `review` offered exactly one decision: Approve and publish.
+          A reviewer who found a wrong key, a bad distractor or a stem that did
+          not match its objective had no way to say so -- the item either went
+          live or sat in the queue forever. On a seeded bank that is the decision
+          they will need most, so it is a first-class action, and the reason is
+          REQUIRED: "rejected" with no reason tells the next person nothing, and
+          the API already records it in `audit_log`.
+        */}
+        {rejecting ? (
+          <div className="mb-3 rounded-md border border-line bg-surface-0 p-3">
+            <label htmlFor="reject-reason" className="mb-1.5 block text-sm text-ink">
+              What is wrong with this item?
+            </label>
+            <textarea
+              id="reject-reason"
+              className="w-full rounded-sm border border-line bg-surface-1 px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-faint"
+              rows={3}
+              maxLength={500}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="The key is wrong — B is also correct at 8 bits."
+            />
+            <p className="mt-1 text-xs text-ink-muted">
+              Recorded in the audit log against this item. It goes back to draft, not away.
+            </p>
+          </div>
+        ) : null}
+
+        {err ? (
+          <p className="mb-2 text-sm text-danger" role="alert">
+            {err}
           </p>
         ) : null}
 
@@ -443,17 +542,36 @@ function PreviewDialog({
             Close
           </Button>
           {item.status === "draft" ? (
-            <Button variant="outline" disabled={busy} onClick={() => void setStatus("review")}>
+            <Button variant="outline" disabled={busy} onClick={() => void decide("review")}>
               Send to review
             </Button>
           ) : null}
-          {item.status === "review" ? (
-            <Button disabled={busy} onClick={() => void setStatus("live")}>
+          {item.status === "review" && !rejecting ? (
+            <Button variant="outline" disabled={busy} onClick={() => setRejecting(true)}>
+              Send back
+            </Button>
+          ) : null}
+          {/*
+            NOT `danger` below. That variant is reserved for destructive staff
+            actions, and sending an item back is neither destructive nor unusual
+            -- it is half of what a review is for. Approve is hidden while this
+            panel is open, so the primary variant is unambiguous.
+          */}
+          {item.status === "review" && rejecting ? (
+            <Button
+              disabled={busy || reason.trim().length < 3}
+              onClick={() => void decide("draft", { reason: reason.trim() })}
+            >
+              Send back to draft
+            </Button>
+          ) : null}
+          {item.status === "review" && !rejecting ? (
+            <Button disabled={busy} onClick={() => void decide("live")}>
               Approve and publish
             </Button>
           ) : null}
           {item.status === "live" ? (
-            <Button variant="danger" disabled={busy} onClick={() => void setStatus("retired")}>
+            <Button variant="danger" disabled={busy} onClick={() => void decide("retired")}>
               Retire
             </Button>
           ) : null}
