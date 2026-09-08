@@ -31,9 +31,37 @@ const CreateBody = z.object({
   title: z.string().trim().min(3).max(200),
   /** Null means every section. */
   sectionId: z.string().uuid().nullable().optional(),
-  attemptsAllowed: z.number().int().min(1).max(10).default(1),
+  /**
+   * FIVE, by the instructor's ruling of 9 September 2026 -- not one.
+   *
+   * A self-check a student may sit once is an exam; one they may sit five times
+   * is practice that happens to be graded. The engine reseeds every attempt, so
+   * the second sitting is a DIFFERENT paper from the same blueprint rather than
+   * a second look at the same questions -- which is what makes repeat attempts
+   * defensible here at all.
+   */
+  attemptsAllowed: z.number().int().min(1).max(10).default(5),
   opensAt: z.string().datetime().nullable().optional(),
   closesAt: z.string().datetime().nullable().optional(),
+});
+
+/**
+ * The editable half of an assessment.
+ *
+ * `undefined` means "leave alone" and `null` means "clear this bound", and the
+ * two have to stay distinguishable — clearing a closing date is a real thing a
+ * teacher does when an exam is extended indefinitely, and it must not look the
+ * same as not mentioning the field.
+ *
+ * The reason is REQUIRED. Moving an exam window changes what students can do,
+ * and `audit_log` entries without a reason are the ones nobody can interpret
+ * six weeks later.
+ */
+const WindowBody = z.object({
+  opensAt: z.string().datetime().nullable().optional(),
+  closesAt: z.string().datetime().nullable().optional(),
+  attemptsAllowed: z.number().int().min(1).max(10).optional(),
+  reason: z.string().trim().min(3).max(500),
 });
 
 export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
@@ -226,9 +254,105 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
   });
 
   /* ----------------------------------------------------------
+   * PATCH /api/v1/console/assessments/:id
+   *
+   * The window, after the fact.
+   *
+   * This route was MISSING, and its absence made the comment below false: the
+   * file said "closing it is a `closes_at` in the past; that is the supported
+   * way to end one", while offering only GET and POST. There was no way to set
+   * or move a window once an assessment existed, so an exam created without
+   * dates was open forever and one created with them could never be extended.
+   *
+   * Three things it deliberately does NOT allow:
+   *   - changing the blueprint. That would silently redefine what a paper is
+   *     while attempts already exist against it.
+   *   - changing the section. Who sits an exam is not a detail to adjust after
+   *     students have started.
+   *   - deleting anything. An assessment with attempts against it is evidence.
+   *
+   * Every change is audited with a reason, because moving an exam window is
+   * student-visible state (`apps/console/CLAUDE.md`).
+   * -------------------------------------------------------- */
+  app.patch("/api/v1/console/assessments/:id", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const assessmentId = (req.params as { id: string }).id;
+
+    const body = WindowBody.safeParse(req.body);
+    if (!body.success) throw errors.badRequest("That change could not be read.");
+    const b = body.data;
+
+    const cur = await app.db.query(
+      "select title, opens_at, closes_at, attempts_allowed from assessments where id = $1",
+      [assessmentId],
+    );
+    if (cur.rows.length === 0) throw errors.notFound("No such assessment.");
+    const before = cur.rows[0]!;
+
+    // The resulting window must make sense, not merely the fields being sent.
+    const opensAt = b.opensAt === undefined ? before.opens_at : b.opensAt;
+    const closesAt = b.closesAt === undefined ? before.closes_at : b.closesAt;
+    if (opensAt && closesAt && new Date(closesAt) <= new Date(opensAt)) {
+      throw errors.badRequest("An assessment cannot close before it opens.");
+    }
+
+    /*
+     * Lowering the attempt limit below what a student has ALREADY used would
+     * retroactively invalidate a sitting that was legitimate when it happened.
+     * Raising it is always safe.
+     */
+    if (b.attemptsAllowed !== undefined && b.attemptsAllowed < Number(before.attempts_allowed)) {
+      const used = await app.db.query(
+        `select coalesce(max(attempt_no), 0)::int as n from attempts where assessment_id = $1`,
+        [assessmentId],
+      );
+      const highest = Number(used.rows[0]!.n);
+      if (b.attemptsAllowed < highest) {
+        throw errors.badRequest(
+          `A student has already sat attempt ${highest}. The limit cannot go below that ` +
+            `without invalidating a sitting that was allowed at the time.`,
+        );
+      }
+    }
+
+    await app.db.query(
+      `update assessments
+          set opens_at = $2, closes_at = $3, attempts_allowed = $4
+        where id = $1`,
+      [assessmentId, opensAt, closesAt, b.attemptsAllowed ?? before.attempts_allowed],
+    );
+
+    await app.db.query(
+      `insert into audit_log (actor_id, action, target_type, target_id, payload)
+       values ($1,'assessment.window','assessment',$2,$3)`,
+      [
+        id!.userId,
+        assessmentId,
+        JSON.stringify({
+          title: before.title,
+          reason: b.reason,
+          from: {
+            opensAt: before.opens_at,
+            closesAt: before.closes_at,
+            attemptsAllowed: Number(before.attempts_allowed),
+          },
+          to: {
+            opensAt,
+            closesAt,
+            attemptsAllowed: b.attemptsAllowed ?? Number(before.attempts_allowed),
+          },
+        }),
+      ],
+    );
+
+    return reply.send({ ok: true });
+  });
+
+  /* ----------------------------------------------------------
    * DELETE is deliberately absent.
    *
    * An assessment with attempts against it is evidence. Closing it is a
-   * `closes_at` in the past; that is the supported way to end one.
+   * `closes_at` in the past, set through the PATCH above.
    * -------------------------------------------------------- */
 }

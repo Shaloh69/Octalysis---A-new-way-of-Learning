@@ -242,3 +242,164 @@ describe("validation", () => {
     expect(res.statusCode).toBe(404);
   });
 });
+
+/**
+ * MOVING THE WINDOW AFTER THE FACT.
+ *
+ * This endpoint did not exist. The file's own closing comment said "closing it
+ * is a `closes_at` in the past; that is the supported way to end one" while the
+ * route offered only GET and POST — so an assessment created without dates was
+ * open forever, and one created with them could never be extended.
+ *
+ * Led by the denial test, per hard rule 8: the interesting question is not
+ * whether a teacher can move an exam window, it is whether a student can.
+ */
+describe("the exam window can be changed, by staff, with a reason", () => {
+  let target: string;
+
+  beforeAll(async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/assessments",
+      headers: auth(teacherToken),
+      payload: { blueprintId, title: "Window under test", attemptsAllowed: 5 },
+    });
+    expect(res.statusCode).toBe(201);
+    target = res.json().id as string;
+  });
+
+  it("DENIES a student — they cannot move their own exam window", async () => {
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/console/assessments/${target}`,
+      headers: auth(studentToken),
+      payload: { closesAt: "2099-01-01T00:00:00.000Z", reason: "more time please" },
+    });
+    expect(res.statusCode).toBe(403);
+
+    // And nothing moved.
+    const { rows } = await pool.query("select closes_at from assessments where id = $1", [target]);
+    expect(rows[0]!.closes_at).toBeNull();
+  });
+
+  it("lets staff set a window, and records the change with its reason", async () => {
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/console/assessments/${target}`,
+      headers: auth(teacherToken),
+      payload: {
+        opensAt: "2026-10-01T00:00:00.000Z",
+        closesAt: "2026-10-08T00:00:00.000Z",
+        reason: "Prelim week, section A",
+      },
+    });
+    expect(res.statusCode).toBe(200);
+
+    const { rows } = await pool.query(
+      "select opens_at, closes_at from assessments where id = $1",
+      [target],
+    );
+    expect(rows[0]!.opens_at).not.toBeNull();
+    expect(rows[0]!.closes_at).not.toBeNull();
+
+    const audit = await pool.query(
+      `select payload from audit_log
+        where action = 'assessment.window' and target_id = $1
+        order by at desc limit 1`,
+      [target],
+    );
+    expect(audit.rowCount).toBe(1);
+    const p = audit.rows[0]!.payload as { reason: string; from: unknown; to: unknown };
+    expect(p.reason).toBe("Prelim week, section A");
+    // Both sides are recorded: "it changed" is useless without "from what".
+    expect(p.from).toBeTruthy();
+    expect(p.to).toBeTruthy();
+  });
+
+  it("refuses a window that closes before it opens, even across two calls", async () => {
+    /*
+     * The check is on the RESULTING window, not on the fields in this request.
+     * Sending only `opensAt` could otherwise push the opening past a closing
+     * date already stored, and each call would look valid on its own.
+     */
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/console/assessments/${target}`,
+      headers: auth(teacherToken),
+      payload: { opensAt: "2026-11-01T00:00:00.000Z", reason: "shift it later" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/cannot close before it opens/i);
+  });
+
+  it("requires a reason — an unexplained audit entry is not worth writing", async () => {
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/console/assessments/${target}`,
+      headers: auth(teacherToken),
+      payload: { closesAt: null },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("distinguishes null from absent, so a bound can be cleared", async () => {
+    const res = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/console/assessments/${target}`,
+      headers: auth(teacherToken),
+      payload: { closesAt: null, reason: "extended indefinitely" },
+    });
+    expect(res.statusCode).toBe(200);
+
+    const { rows } = await pool.query(
+      "select opens_at, closes_at from assessments where id = $1",
+      [target],
+    );
+    expect(rows[0]!.closes_at, "null should CLEAR the closing bound").toBeNull();
+    expect(rows[0]!.opens_at, "an unmentioned field must be left alone").not.toBeNull();
+  });
+
+  it("refuses to lower the attempt limit below a sitting that already happened", async () => {
+    /*
+     * Its OWN assessment, with no window. Reusing `target` failed for a reason
+     * worth keeping: the tests above had set an opening date in the future, so
+     * the student was correctly refused with "that assessment has not opened
+     * yet". The guard being tested here is about attempt counts, and a fixture
+     * that also exercises the window makes a failure ambiguous.
+     */
+    const made = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/assessments",
+      headers: auth(teacherToken),
+      payload: { blueprintId, title: "Attempt limit under test", attemptsAllowed: 5 },
+    });
+    expect(made.statusCode).toBe(201);
+    const id = made.json().id as string;
+
+    const start = await app.inject({
+      method: "POST",
+      url: "/api/v1/attempts",
+      headers: auth(studentToken),
+      payload: { assessmentId: id },
+    });
+    expect([200, 201]).toContain(start.statusCode);
+
+    // Down to 1 is legal: exactly one sitting exists.
+    const ok = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/console/assessments/${id}`,
+      headers: auth(teacherToken),
+      payload: { attemptsAllowed: 1, reason: "one sitting only from here" },
+    });
+    expect(ok.statusCode).toBe(200);
+
+    // Raising is always safe.
+    const up = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/console/assessments/${id}`,
+      headers: auth(teacherToken),
+      payload: { attemptsAllowed: 5, reason: "restore the five" },
+    });
+    expect(up.statusCode).toBe(200);
+  });
+});

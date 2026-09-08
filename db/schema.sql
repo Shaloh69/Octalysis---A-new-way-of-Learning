@@ -184,7 +184,7 @@ create table assessments (
   title            text not null,
   opens_at         timestamptz,
   closes_at        timestamptz,
-  attempts_allowed int not null default 1 check (attempts_allowed > 0),
+  attempts_allowed int not null default 5 check (attempts_allowed > 0),   -- instructor ruling, 9 Sep 2026
   created_at       timestamptz not null default now()
 );
 

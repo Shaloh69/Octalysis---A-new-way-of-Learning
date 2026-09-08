@@ -159,7 +159,7 @@ function CreateDialog({
 }: { blueprints: Blueprint[]; onClose: () => void; onCreated: () => void }) {
   const [blueprintId, setBlueprintId] = useState(blueprints[0]?.id ?? "");
   const [title, setTitle] = useState(blueprints[0]?.name ?? "");
-  const [attempts, setAttempts] = useState(1);
+  const [attempts, setAttempts] = useState(5);
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
   const [busy, setBusy] = useState(false);

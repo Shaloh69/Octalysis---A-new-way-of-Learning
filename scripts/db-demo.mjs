@@ -193,6 +193,31 @@ ${err.stderr || err.message}
     process.exit(1);
   }
 
+  process.stdout.write("  sync-assessments    ... ");
+  try {
+    /*
+     * One assessment per examinable blueprint. Runs AFTER sync-items because an
+     * assessment with no bank behind it is an exam a student can start and the
+     * sampler cannot fill.
+     */
+    await run("node", [resolve(ROOT, "scripts/sync-assessments.mjs")], {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        DATABASE_URL:
+          process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa",
+      },
+      maxBuffer: 32 * 1024 * 1024,
+    });
+    console.log(c.green("ok"));
+  } catch (err) {
+    console.log(c.red("FAILED"));
+    console.error(c.red(`
+${err.stderr || err.message}
+`));
+    process.exit(1);
+  }
+
   /*
    * Counted, not assumed. The failure this script exists to prevent is SILENT:
    * a seeded database with 4 objectives looks fine until the map is empty, so
@@ -209,6 +234,7 @@ ${err.stderr || err.message}
     count("objectives", "select count(*) from objectives"),
     count("stage_progress", "select count(*) from stage_progress"),
     count("items (review)", "select count(*) from items where status = 'review'"),
+    count("assessments", "select count(*) from assessments"),
     count("flagged items", "select count(*) from item_stats where flagged"),
   ]);
 

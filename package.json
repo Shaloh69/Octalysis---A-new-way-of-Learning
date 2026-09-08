@@ -40,7 +40,9 @@
     "qa:report": "playwright show-report design/qa-report",
     "dev:api": "node scripts/dev-api.mjs",
     "check:items": "node scripts/sync-items.mjs --check",
-    "db:items": "node scripts/sync-items.mjs"
+    "db:items": "node scripts/sync-items.mjs",
+    "db:assessments": "node scripts/sync-assessments.mjs",
+    "dev:token": "node scripts/dev-token.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
