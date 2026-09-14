@@ -38,6 +38,31 @@ function stageFacts(): Map<string, { act: number; gradeable: boolean }> {
   return out;
 }
 
+/**
+ * The stage checks, read from the schema's `insert ... select` over `stages`.
+ *
+ * They are generated rather than listed there, so this rebuilds them the same
+ * way: one per gradeable stage, 8 items, `max_per_objective: 2`, and no type or
+ * bloom constraint. F-44 is why they exist at all — without a stage-scoped
+ * blueprint no mastery is ever written and nothing unlocks.
+ */
+function stageBlueprints(): Blueprint[] {
+  const sql = readFileSync(resolve(ROOT, "db/schema.sql"), "utf8");
+  const m = sql.match(/'Stage ' \|\| s\.id \|\| ' Check',[\s\S]*?(\d+),[\s\S]*?'(\{[^']*\})'::jsonb/);
+  if (!m) throw new Error("stage-check blueprint not found in db/schema.sql");
+  const total = Number(m[1]!);
+  const constraints = JSON.parse(m[2]!);
+  return [...stageFacts().entries()]
+    .filter(([, f]) => f.gradeable)
+    .map(([id]) => ({
+      id: `stage-${id}`,
+      name: `Stage ${id} Check`,
+      scope: "stage" as const,
+      totalItems: total,
+      constraints,
+    }));
+}
+
 /** The four period exams, read from the schema rather than restated here. */
 function blueprints(): Blueprint[] {
   const sql = readFileSync(resolve(ROOT, "db/schema.sql"), "utf8");
@@ -149,6 +174,74 @@ describe("the authored bank fills every examinable paper", () => {
       expect(overlap, `papers overlap ${Math.round(overlap * 100)}%`).toBeLessThan(0.95);
     });
   }
+
+  /*
+   * EVERY STAGE CHECK MUST FILL, for the stages the bank covers.
+   *
+   * This is the test F-44 should have had from the start. A stage check that
+   * cannot be filled is worse than none: the reader offers the student a link,
+   * and the engine throws when they press it.
+   *
+   * The stage blueprints deliberately carry no by_type or by_bloom, and this is
+   * the evidence for why — stage 01 holds zero P items and stage 08 holds a
+   * single `remember` one, so any uniform mix would be unsatisfiable somewhere.
+   */
+  describe("stage checks", () => {
+    const inScope = [...new Set(bank.map((i) => i.stageId))].sort();
+
+    for (const bp of stageBlueprints()) {
+      const stage = bp.name.match(/Stage (\d\d)/)![1]!;
+      if (!inScope.includes(stage)) continue;
+
+      /*
+       * The pool is filtered to the stage BEFORE sampling, because that is what
+       * production does: `engine-repo.ts:41` adds `and i.stage_id = $n` when the
+       * blueprint is stage-scoped, and `routes/assessments.ts:152` does the same
+       * for the feasibility check. `fillBlueprint` itself takes whatever pool it
+       * is handed and has no opinion about stages.
+       *
+       * Feeding it the whole bank passed — and drew stage 08 items into a stage
+       * 01 check. The paper filled, so a test that only asserted `.length` would
+       * have been green while the product graded students on material they had
+       * not reached.
+       */
+      const stagePool = bank.filter((i) => i.stageId === stage);
+
+      it(`${bp.name} fills, and never leans on one objective`, () => {
+        const result = fillBlueprint(bp, stagePool, `check-${stage}`);
+        expect(result.items.length).toBe(bp.totalItems);
+
+        // Every item must come from THIS stage. A stage check drawing on a
+        // neighbour would grade a student on material they have not reached.
+        expect([...new Set(result.items.map((i) => i.stageId))]).toEqual([stage]);
+
+        const perObjective = result.items.reduce<Record<string, number>>((a, i) => {
+          const k = i.objectiveId ?? "(none)";
+          a[k] = (a[k] ?? 0) + 1;
+          return a;
+        }, {});
+        for (const [obj, n] of Object.entries(perObjective)) {
+          expect(n, `objective ${obj} appears ${n} times`).toBeLessThanOrEqual(
+            bp.constraints.max_per_objective!,
+          );
+        }
+      });
+
+      it(`${bp.name} gives different students different papers`, () => {
+        const a = new Set(fillBlueprint(bp, stagePool, `s-a-${stage}`).items.map((i) => i.slug));
+        const b = fillBlueprint(bp, stagePool, `s-b-${stage}`).items.map((i) => i.slug);
+        const overlap = b.filter((x) => a.has(x)).length / b.length;
+        expect(overlap, `stage ${stage} papers overlap ${Math.round(overlap * 100)}%`).toBeLessThan(1);
+      });
+    }
+
+    it("covers every stage the bank holds items for", () => {
+      const covered = stageBlueprints()
+        .map((b) => b.name.match(/Stage (\d\d)/)![1]!)
+        .filter((s) => inScope.includes(s));
+      expect(covered.sort()).toEqual(inScope);
+    });
+  });
 
   for (const name of DEFERRED_BLUEPRINTS) {
     it(`${name} is correctly NOT fillable yet — the scope flag is honest`, () => {

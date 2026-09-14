@@ -58,18 +58,50 @@ function examinableBlueprints() {
   return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
 }
 
+/** The last stage the authored bank covers, read from the flag not restated. */
+function examinableThroughStage() {
+  const src = readFileSync(SCOPE_TS, "utf8");
+  const m = src.match(/EXAMINABLE_THROUGH_STAGE\s*=\s*"(\d{2})"/);
+  if (!m) throw new Error("Could not read EXAMINABLE_THROUGH_STAGE from scope.ts");
+  return m[1];
+}
+
 const ATTEMPTS_ALLOWED = 5;
 
 async function main() {
   console.log(c.bold("\nOCTA -- assessments\n"));
-  const wanted = examinableBlueprints();
-  console.log(c.dim(`  ${wanted.length} examinable blueprint(s): ${wanted.join(", ")}`));
+  const finals = examinableBlueprints();
+  const through = examinableThroughStage();
+  console.log(c.dim(`  ${finals.length} examinable exam(s): ${finals.join(", ")}`));
+  console.log(c.dim(`  stage checks through stage ${through}`));
 
   const client = new pg.Client({
     connectionString:
       process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa",
   });
   await client.connect();
+
+  /*
+   * STAGE CHECKS ARE WHAT MAKE THE COURSE MOVE (F-44).
+   *
+   * `stage_progress.mastery` is written only for a STAGE-scoped attempt, and
+   * `is_stage_unlocked()` needs every prerequisite at >= 70% of it. Without
+   * these, a student reads stage 00 and never reaches stage 01.
+   *
+   * Only stages inside the examinable scope get one. A stage blueprint exists
+   * for all eighteen -- blueprints are the plan -- but offering an assessment
+   * for a stage with no items would put an unfillable paper in front of a
+   * student, which is the failure the scope flag exists to prevent.
+   */
+  const stageChecks = await client.query(
+    `select name from blueprints
+      where scope = 'stage' and stage_id is not null and stage_id <= $1
+        and exists (select 1 from items i where i.stage_id = blueprints.stage_id)
+      order by stage_id`,
+    [through],
+  );
+  const wanted = [...finals, ...stageChecks.rows.map((r) => r.name)];
+  console.log(c.dim(`  ${stageChecks.rowCount} stage check(s) with a bank behind them`));
 
   let created = 0;
   const existing = [];

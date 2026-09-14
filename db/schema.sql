@@ -726,3 +726,45 @@ insert into blueprints (name, scope, total_items, constraints) values
     "exclude_non_gradeable_stages": true,
     "difficulty_target": 0.62
   }'::jsonb);
+
+-- ---------------------------------------------------------------------------
+-- STAGE CHECKS — one per gradeable stage.
+--
+-- These were MISSING, and their absence stopped the course working (F-44).
+-- `is_stage_unlocked()` needs every prerequisite at >= 70% mastery;
+-- `stage_progress.mastery` is written only for an attempt whose blueprint is
+-- STAGE-scoped; and `routes/stages.ts` finds a stage's check by looking for an
+-- assessment whose blueprint is scoped to that stage. With only the four
+-- final-scope exams seeded, no check existed, no mastery was ever earned, and
+-- every stage after orientation stayed locked for every student.
+--
+-- Nothing failed visibly, which is why it survived: the schema applies, the API
+-- starts, the map renders, and `is_stage_unlocked()` returns true for staff on
+-- its first line — so a teacher walking the app sees everything open.
+--
+-- WHY THESE CARRY NO by_type OR by_bloom.
+--
+-- A stage's bank is small and uneven, and a constraint the bank cannot meet
+-- throws at the moment a student presses Start. Measured across the authored
+-- bank: stage 01 holds ZERO parameterized items, so any uniform `by_type`
+-- demanding one is unsatisfiable there; stages 02, 04, 07 and 08 hold exactly
+-- one G item each; and stage 08 holds a single `remember` item. Every plausible
+-- uniform mix fails on some stage.
+--
+-- So a stage check constrains only its SIZE and its spread across objectives.
+-- The paper is still different for every student — sampling is seeded per
+-- student — and it still cannot dwell on one objective. Tightening the mix is a
+-- thing to do when a stage's bank is deep enough to support it, not before.
+--
+-- `max_per_objective` is 2, not 3: the thinnest stages carry five objectives,
+-- and 8 items at 3 per objective could be drawn from three of them.
+insert into blueprints (name, scope, stage_id, total_items, constraints)
+select
+  'Stage ' || s.id || ' Check',
+  'stage',
+  s.id,
+  8,
+  '{"max_per_objective": 2, "exclude_non_gradeable_stages": true}'::jsonb
+from stages s
+where s.gradeable
+order by s.id;
