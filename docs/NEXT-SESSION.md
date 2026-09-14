@@ -294,8 +294,48 @@ stage-01 items across 5 objectives → 8/8 → mastery 1.0 on stage 01 → stage
 unlocked, stage 03 still correctly locked. With all 96 act-1 items live,
 `pnpm db:invariants` reports 25 clean, 0 failures.
 
-**Still unproven:** the browser. Every check above went through the API, not the
-student UI. The Playwright MCP server failed to connect this session.
+### 7c. The browser pass, and the blocker only it could find
+
+The MCP Playwright server was down, so this used the project's own
+`@playwright/test` against the student app on **5183** (5173/5174 belong to
+another project on this machine). Captures in
+`design/screenshots/session-2026-09-14/`.
+
+**A fourth blocker, invisible to every test: ordering items were unanswerable.**
+`AttemptRunner` had no branch on `item.type`, so a type-G item rendered as a
+radio group — a sequence question with a single-choice control. It sent
+`{index}`, and `grade.ts:85` returns `miss(item, "no ordering submitted")` for
+anything that is not `{order}`. **Every ordering item was wrong, always.** Six
+are live in act 1; a Stage 01 check drew two of eight, capping an honest student
+at 6/8 against a 70% threshold. Fixed in `da5831b` with a keyboard-first
+move-up/move-down control.
+
+The second bug inside the fix is worth remembering: committing on every move
+recorded the arrangement after the FIRST click, because `recordAnswer()` inserts
+`on conflict do nothing` and the first answer wins. The UI ended visibly correct
+and the database stored a half-sorted list. **Reordering does not submit; an
+explicit button does.**
+
+**Verified in the browser:** the 3D map, the flat map, the stage reader (9,857
+characters and a "Start the check" control once unlocked), and the runner — at
+1440 and 380, no horizontal scroll on any route, no page errors, 44px touch
+targets, contrast AA across 1,181 checks.
+
+**`/app/map` is genuinely keyboard-operable** — 0 canvases, 1 SVG, every stage a
+focusable `<button>` carrying its state and lock reason, behind a skip link.
+CLAUDE.md's degrade-in-place rule holds; it looks orbital but it is real DOM.
+
+**Two things to look at, neither a blocker.** The first thing a student meets on
+`/app` is an onboarding card reading "PLACEHOLDER TEXT — NOT REAL COURSE CONTENT
+YET". And the runner never tells a student that the first answer for a question
+is final, which is how `responses` actually behaves for every item type.
+
+**Still unproven: the deployed apps.** Vercel and Render are reported live, but
+the repo records no URLs — `CORS_ALLOWED_ORIGINS` is `sync: false` in
+`render.yaml`, which that file itself calls the likeliest cause of "works
+locally, not deployed". `octa-api.onrender.com/healthz` answers **404 with an
+HTML body**, not OCTA's `{"error":{"code":...}}` envelope, so that is not this
+API. Get the real URLs before believing anything about production.
 
 ---
 
