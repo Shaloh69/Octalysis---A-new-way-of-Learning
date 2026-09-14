@@ -129,23 +129,73 @@ returns table(item_id uuid, slug text) language sql stable as $$
   select id, slug from items where status = 'live' and reviewed_by is null
 $$;
 
+-- INV-16: a live static item can actually be rendered as a question.
+--
+-- The engine builds a 4-option paper: `resolveItem()` defaults `optionCount` to
+-- 4 and no call site overrides it, and `resolveStatic()` asks `pickDistinct()`
+-- for `optionCount - 1` = THREE distractors. Fewer than three and the item
+-- throws at the moment a student presses Start; three is exactly enough.
+--
+-- The threshold used to be 4, which is one more than the engine has ever asked
+-- for, and every authored item disagreed with it: measured on the seeded bank,
+-- all 141 type-S items carry exactly 3 distractors. That is not an oversight in
+-- the bank, it is the standard shape of a 4-option MCQ — one key and three
+-- distractors. The old threshold reads like "an MCQ needs 4 options" written as
+-- if options and distractors were the same thing.
+--
+-- Like INV-17, it never fired because the predicate only looks at `live` rows
+-- and no item had ever been approved. Approving act 1 turned all 74 of its
+-- static items into failures at once.
+--
+-- WHAT THIS DOES NOT CHECK, on purpose. Three distractors for three slots means
+-- every student sees the same four options in a different order; a deeper pool
+-- would vary the options too. That is a desirable property and NOT a
+-- correctness one — per-student uniqueness already comes from which items are
+-- sampled. If the bank is ever deepened, raise this threshold then. Pool depth
+-- is a content decision; this invariant is about whether the engine can render
+-- the item at all.
+--
+-- `pickDistinct()` dedupes candidates against the CORRECT answer, so a pool of
+-- exactly 3 has no margin: one distractor equal to the key leaves two and the
+-- item throws. Measured across the whole bank, zero items collide that way and
+-- zero have duplicate pool entries.
 create or replace function inv_16_static_distractor_pool()
 returns table(item_id uuid, slug text, pool_size int) language sql stable as $$
   select id, slug, jsonb_array_length(distractor_pool)
   from items
   where status = 'live' and type = 'S'
-    and coalesce(jsonb_array_length(distractor_pool), 0) < 4
+    and coalesce(jsonb_array_length(distractor_pool), 0) < 3
 $$;
 
+-- INV-17: a live type-P item carries what the ENGINE needs to resolve it, which
+-- is `solver_ref` and nothing else.
+--
+-- This used to demand `tolerance` and `params_schema` as well, and that was a
+-- stale reading of a design the engine had already left behind.
+-- `resolveParameterized()` (engine/resolve.ts) takes the solver from
+-- `item.solver_ref`, then draws params from `solver.draw()` and reads tolerance,
+-- sig figs, unit, stem and rationale off the registered solver. Neither column
+-- is read anywhere in the resolve or grade path.
+--
+-- It survived because `test/helpers/bank.ts` seeds its P fixtures WITH both
+-- columns filled, while no authored item has ever carried either: measured on
+-- the seeded bank, 30 P items, 30 with a solver_ref, 0 with a tolerance or a
+-- params_schema. The fixture matched the invariant and the real bank did not,
+-- and nothing caught it because no item has ever been `live` — the predicate
+-- only looks at live rows. The first approval at `/items` would have put the
+-- database into a state its own suite calls illegal, at `fail` severity, and
+-- `run_invariants_nightly()` would have alerted on all 30 at once.
+--
+-- The rule this keeps is the one that matters: a live P item with no solver_ref
+-- makes `resolveParameterized()` throw "is type P but has no solver_ref" at the
+-- moment a student presses Start. That must never sit in a live bank.
+-- `test/invariants.spec.ts` holds all three cases.
 create or replace function inv_17_param_items_complete()
 returns table(item_id uuid, slug text, missing text) language sql stable as $$
-  select id, slug,
-         case when solver_ref is null then 'solver_ref'
-              when tolerance  is null then 'tolerance'
-              when params_schema is null then 'params_schema' end
+  select id, slug, 'solver_ref'
   from items
   where status = 'live' and type = 'P'
-    and (solver_ref is null or tolerance is null or params_schema is null)
+    and solver_ref is null
 $$;
 
 -- INV-18 bank starvation: does the live bank satisfy every blueprint cell?
@@ -393,9 +443,15 @@ declare
   smp  jsonb;
 begin
   foreach c slice 1 in array checks loop
-    execute format('select count(*), coalesce(jsonb_agg(t), ''[]''::jsonb)
+    -- The COUNT is over the whole result and the SAMPLE is the first five.
+    -- Counting inside the `limit 5` subquery capped `offending_count` at 5, so
+    -- 74 illegal rows and 5 illegal rows were indistinguishable to
+    -- `run_invariants_nightly()`, to the console's /audit/system, and to
+    -- `db-invariants.mjs`, all of which print this number to say how bad it is.
+    execute format('select count(*) from %I() t', c[2]) into cnt;
+    execute format('select coalesce(jsonb_agg(t), ''[]''::jsonb)
                     from (select * from %I() limit 5) t', c[2])
-      into cnt, smp;
+      into smp;
     id := c[1]; name := c[2]; severity := c[3];
     offending_count := cnt; sample := smp;
     return next;
