@@ -63,6 +63,7 @@ const FINAL: Blueprint = {
   id: "bp-final",
   name: "Final Knowledge Check",
   scope: "final",
+  stageId: null,
   totalItems: 70,
   constraints: {
     by_act: { "1": 18, "2": 20, "3": 20, "4": 12 },

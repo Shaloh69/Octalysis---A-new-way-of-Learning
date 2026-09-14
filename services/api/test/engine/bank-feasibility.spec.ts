@@ -58,6 +58,7 @@ function stageBlueprints(): Blueprint[] {
       id: `stage-${id}`,
       name: `Stage ${id} Check`,
       scope: "stage" as const,
+      stageId: id,
       totalItems: total,
       constraints,
     }));
@@ -72,6 +73,7 @@ function blueprints(): Blueprint[] {
       id: m[1]!,
       name: m[1]!,
       scope: "final",
+      stageId: null,
       totalItems: Number(m[2]),
       constraints: JSON.parse(m[3]!),
     });

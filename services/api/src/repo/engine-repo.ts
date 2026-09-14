@@ -75,7 +75,7 @@ export async function loadLivePool(
 
 export async function loadBlueprintFor(db: Db, assessmentId: string): Promise<Blueprint> {
   const { rows } = await db.query(
-    `select b.id, b.name, b.scope, b.total_items, b.constraints
+    `select b.id, b.name, b.scope, b.stage_id, b.total_items, b.constraints
        from assessments a join blueprints b on b.id = a.blueprint_id
       where a.id = $1`,
     [assessmentId],
@@ -86,6 +86,7 @@ export async function loadBlueprintFor(db: Db, assessmentId: string): Promise<Bl
     id: r.id,
     name: r.name,
     scope: r.scope,
+    stageId: r.stage_id ?? null,
     totalItems: Number(r.total_items),
     constraints: r.constraints ?? {},
   };
@@ -181,7 +182,15 @@ export async function startAttempt(
       examSalt: salt,
     });
 
-    const pool = await loadLivePool(db);
+    // A stage check samples its OWN stage. `fillBlueprint()` has no stage
+    // dimension, so this narrowing is the only thing that keeps a "Stage 01
+    // Check" from drawing chapter-4 cache questions out of the whole live bank
+    // — which is exactly what it did until `loadBlueprintFor()` started
+    // carrying `stage_id`. A final is cumulative and takes the full pool.
+    const pool = await loadLivePool(
+      db,
+      blueprint.scope === "stage" && blueprint.stageId ? { stageId: blueprint.stageId } : {},
+    );
     // BlueprintUnsatisfiable propagates. It is never swallowed into a short
     // paper -- a paper quietly missing three `analyze` items measures something
     // other than what it claims to.

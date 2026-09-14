@@ -36,6 +36,16 @@ export interface Blueprint {
   readonly id: string;
   readonly name: string;
   readonly scope: "stage" | "final";
+  /**
+   * The stage a `scope: "stage"` blueprint belongs to; null for a final.
+   *
+   * `fillBlueprint()` does NOT filter on this — it selects from whatever pool it
+   * is handed. Narrowing the pool to one stage is the caller's job, and the
+   * reason this field has to travel with the blueprint at all: without it the
+   * caller cannot know which stage to narrow to, and a stage check silently
+   * samples the entire live bank.
+   */
+  readonly stageId: string | null;
   readonly totalItems: number;
   readonly constraints: BlueprintConstraints;
 }
