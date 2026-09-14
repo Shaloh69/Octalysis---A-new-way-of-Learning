@@ -168,6 +168,15 @@ This is a rule because the project has drifted repeatedly: `PROGRESS.md` claimed
 of 44 while eight of its routes were reworked and committed; R0/R1/R2 sat at 0 of
 85 while all three were called complete. Full rule: `REDESIGN-CLAUDE.md` §2b.
 
+**Give a phase report, every session.** Run `pnpm phase` and show the output —
+at the start, and again before you finish. It counts the R0–R5 checkboxes from
+`docs/redesign/phases/*.md` and reads the P0–P10 statuses from `docs/PHASES.md`,
+so the numbers cannot drift from the files the way a remembered figure does.
+`pnpm phase --open` lists every open box when you need the detail.
+
+This is a rule because a report you compose from memory is how the project lost
+track twice. A report that is counted costs one command.
+
 **Against context degradation** — §2c, with the rules that matter most here:
 verify a claim before repeating it, check the stack is alive (and is the right
 app) before believing a red run, measure on real data and say which state you

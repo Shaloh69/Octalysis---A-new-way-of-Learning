@@ -43,7 +43,8 @@
     "db:items": "node scripts/sync-items.mjs",
     "db:assessments": "node scripts/sync-assessments.mjs",
     "dev:token": "node scripts/dev-token.mjs",
-    "bootstrap:admin": "node scripts/bootstrap-admin.mjs"
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
+    "phase": "node scripts/phase-report.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

@@ -1434,6 +1434,61 @@ right. Nothing was broken enough to notice. It took rendering two students side
 by side and comparing the DOM against the rows — which is exactly the check R2
 wrote down and left for last.
 
+### F-44 · No stage-scoped blueprint exists, so nothing unlocks past stage 00
+
+**Found 14 September 2026 while answering "what can we ship early".** It is the
+single blocker between the current code and a usable course, and nothing about it
+is visible from a staff account.
+
+**Measured.** `db/schema.sql` seeds four blueprints and **all four are
+`scope = 'final'`** — Prelim, Midterm, Semi-final, Final. There is no
+`scope = 'stage'` blueprint anywhere. Then, for a real seeded student:
+
+```
+ id | prereq | prereq_mastery | unlocked
+----+--------+----------------+----------
+ 00 | {}     |              0 | t
+ 01 | {00}   |              0 | f
+ 02 | {01}   |          0.440 | f
+ 05 | {04}   |          0.300 | f
+```
+
+**The chain, each link checked:**
+
+1. `is_stage_unlocked()` step 4 — all prerequisites at **≥ 70% mastery**.
+2. `stage_progress.mastery` is written only by `updateStageProgress`, and
+   `routes/attempts.ts:142` calls it **only when `blueprintScope === "stage"`**.
+   The comment there says so outright: *"the final does not unlock anything"*.
+3. `routes/stages.ts:233` resolves a stage's check as *"an `assessments` row
+   whose blueprint is scoped to this stage"*.
+4. No stage-scoped blueprint exists, so step 3 finds nothing, so step 2 never
+   runs, so step 1 is never satisfied.
+
+The curriculum is one linear chain `00 → 01 → … → 18`, so this locks **every
+stage after orientation**. The only way through today is a teacher overriding
+each stage by hand in `/locks`.
+
+**Why it survived this long.** Nothing fails. The schema applies, the API starts,
+the map renders, both exams exist and can be sat. And `is_stage_unlocked()`
+returns true on its first line for staff — so a teacher walking the app sees
+everything open. It appears only for a real student with a real profile.
+
+**My first test of it was wrong, and worth recording.** I passed a `user_id`
+taken from an `attempts` row rather than a `profiles` id. The function's second
+step returns false for a user it cannot find, so *every* stage including 00 came
+back locked and it looked far worse than it is. §2c rule 4 — check the world
+before believing a red result — caught inside one minute, but it would have made
+a convincing and completely false report.
+
+**The fix is small.** Seed one stage-scoped blueprint per gradeable stage;
+`sync-assessments.mjs` creates the matching assessments. The bank supports it
+already — items carry `stage_id` and `fillBlueprint` filters the pool for a
+stage-scoped blueprint. Constraints must stay loose: **stage 01 holds no P items
+at all**, so a uniform `by_type` requiring them is unsatisfiable there, and the
+feasibility spec would say so.
+
+Full ship analysis in `docs/SHIP-EARLY.md`.
+
 ### F-43 · The live Supabase project is a bare, stale schema — and the push script omitted 40% of the grade
 
 **Measured read-only on 9 September 2026** against

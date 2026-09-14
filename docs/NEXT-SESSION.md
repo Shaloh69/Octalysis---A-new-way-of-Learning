@@ -12,6 +12,16 @@ given beside each figure so you can re-run one rather than re-derive all of them
 
 ---
 
+## 0. Run the phase report
+
+```
+pnpm phase          # counted from the files, never from memory
+pnpm phase --open   # every open R-phase box, with its section
+```
+
+**Show it at the start and again before you finish.** Root `CLAUDE.md` makes this
+a rule because a remembered figure is how this project lost track twice.
+
 ## 1. Say this out loud, first
 
 **Redesign phase: R3 — page templates and redesign, 41 of 49.**
@@ -71,6 +81,28 @@ building is **unverified** — no dashboard access from the agent. Ask the
 instructor rather than assuming either way.
 
 ---
+
+## 2b. SHIPPING EARLY — read `docs/SHIP-EARLY.md`
+
+The instructor wants this in production as soon as possible. The analysis is a
+document of its own; the two things to carry in your head:
+
+**Ship 1 is stages 00–04 plus the Prelim.** Everything it needs is authored,
+banked and tested. Ship 2 adds 05–08 and the Midterm and is **one authored
+chapter away** — 05, 06 and 07 are written, chapter 08 is still a scaffold.
+Semi-final and Finals are a later update and `engine/scope.ts` already withholds
+them.
+
+**One blocker stands in front of all of it — F-44.** There are no stage-scoped
+blueprints, so no stage check exists, so mastery never advances, so **no student
+gets past stage 00**. Measured, not inferred. It is invisible from a staff
+account because `is_stage_unlocked()` returns true for staff on its first line.
+The fix is bounded: seed a stage-scoped blueprint per gradeable stage, let
+`sync-assessments.mjs` create the assessments, keep the constraints loose
+(stage 01 has no P items), and extend `bank-feasibility.spec.ts` to prove each
+stage check fills.
+
+**Do this before anything else if the goal is to ship.**
 
 ## 3. The one decision waiting
 
@@ -213,8 +245,9 @@ which is the instructor's review and not a test.
 >
 > Name the phase. Then pick ONE of:
 >
-> **(a) Go live.** Confirm with me before `--reset`. Re-run `--check` first,
-> then the sequence in §3, then verify a student can reach a stage.
+> **(a) SHIP — the critical path.** Fix F-44 first (stage-scoped blueprints, or
+> no student passes stage 00), then approve enough of the bank for act 1, then
+> go live. Confirm with me before `--reset`; re-run `--check` first.
 >
 > **(b) Approve the bank.** Walk `/items` with `pnpm dev:token`, using the review
 > queue's send-back to reject what is wrong. Nothing is examinable until this is
