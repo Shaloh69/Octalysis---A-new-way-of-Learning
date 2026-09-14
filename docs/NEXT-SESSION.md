@@ -59,7 +59,7 @@ pnpm db:reset && node scripts/db-demo.mjs   183 items · 22 blueprints · 10 ass
 pnpm dev:api                                :8090   NOT the raw dev script
 pnpm dev:token                              a signed-in console session
 pnpm dev:token staff --must-change          the bootstrap-credentials screen
-pnpm verify                                 388 API · 53 web · 27 console, green
+pnpm verify                                 396 API · 53 web · 27 console, green
 pnpm phase                                  the report above
 ```
 
@@ -106,6 +106,42 @@ exists. Three options, none of which an engineer should pick alone:
 1. Orientation completes on **reading** rather than testing — no code path today
 2. **Stage 01's prereq changes** to `{}`
 3. A **global unlock** on stage 01 in `/locks` covers it operationally
+
+**What a real student sees today** (14 Sep, `GET /api/v1/stages` as the seeded
+student, local stack):
+
+```
+01 | locked | "Unlocks when Stage 00 (Orientation) reaches 70%. You're at 0%."
+```
+
+The app instructs the student to do something that has no path.
+
+**Measured against the code, 14 Sep — option 3 is not what it reads like.**
+`LocksPage.tsx:85` hard-codes `scope: "user"`. The API supports `global`
+(`console.ts:161`) but **no console control reaches it**, and the matrix is
+empty until a student registers. So option 3 means the instructor toggling a
+cell per student, after each registers, with a reason each time, for every new
+enrollee — a standing chore, not a policy, and it leaves the broken edge in the
+data.
+
+**Option 1 is the most expensive.** `routes/stages.ts` has no POST at all. It
+needs an endpoint, a contract, a client control, a denial test, and a ruling on
+what number "I read it" writes — which then lands in `avg(sp.mastery)`
+unfiltered at `console.ts:34` and `live.ts:50`, inflating every student's roster
+average with a figure nobody earned, and making `mastery` mean two things.
+
+**The engineer's recommendation is option 2**, on the grounds that the current
+edge asserts something the schema contradicts: `gradeable = false` says the
+stage yields no mastery, `prereq = {00}` says you need mastery from it. Option 2
+deletes a false claim; 1 and 3 build machinery to satisfy it. Orientation
+becomes skippable, but it is already skippable-by-impossibility. Option 1 stays
+available later and composes: build the completion path, then restore the edge.
+
+**Worth doing alongside whichever is chosen:** an invariant that a non-gradeable
+stage never appears in any `prereq`. INV-19 checks prereqs exist and INV-20 that
+they are acyclic; nothing checks one is *satisfiable*, which is this bug's
+shape. INV-30 already forbids non-gradeable stages from supplying items — this
+is the symmetric rule.
 
 ### 3b. Re-pushing the schema needs `--reset`, which drops the public schema
 
@@ -221,6 +257,45 @@ whether Vercel and Render are connected and building; whether
 `bootstrap-admin.mjs`'s *success* path works against a real project (guards are
 exercised, the happy path is not); and the pedagogical quality of the 183 items,
 which is the instructor's review, not a test.
+
+---
+
+## 7b. Three ship blockers found by going live, 14 September
+
+All three were invisible until items were approved, because every predicate
+involved looks only at `live` rows and **nothing had ever been live**. Found by
+approving act 1 on the local stack and walking a real student through. Fixed,
+tested, committed — `808d28e`, `efd50a0`.
+
+1. **A stage check sampled the whole bank.** A "Stage 01 Check" returned items
+   from stages 01–04. Worse, `routes/attempts.ts:145` writes mastery for
+   `items[0].stageId`, so submitting it would have written stage 01's mastery
+   onto **stage 04** and unlocked stage 05. `loadBlueprintFor()` never selected
+   `b.stage_id`, so the caller had no stage to narrow the pool to.
+   `test/stage-check-scope.spec.ts` now holds it with 40 decoy items.
+
+2. **INV-17 demanded columns the engine does not read.** `tolerance` and
+   `params_schema` on live P items; the engine reads only `solver_ref`. All 30
+   authored P items would have failed a `fail`-severity invariant on approval.
+
+3. **INV-16 demanded 4 distractors** where the engine asks for 3
+   (`optionCount` defaults to 4). All 141 authored S items carry 3.
+
+Plus: `run_invariants()` counted inside its own `limit 5`, so **74 illegal rows
+reported as "5"** to the nightly job and the console alike.
+
+**The lesson, and it generalises:** a guard that only inspects `live` rows is
+untested until something is live. `helpers/bank.ts` seeds ONE stage and fills
+`tolerance`/`params_schema` that no authored item has — so the fixtures were
+shaped to a contract the bank had left behind, and every suite was green.
+
+**Proven end to end on the local stack after the fixes:** stage 01 check → 8
+stage-01 items across 5 objectives → 8/8 → mastery 1.0 on stage 01 → stage 02
+unlocked, stage 03 still correctly locked. With all 96 act-1 items live,
+`pnpm db:invariants` reports 25 clean, 0 failures.
+
+**Still unproven:** the browser. Every check above went through the API, not the
+student UI. The Playwright MCP server failed to connect this session.
 
 ---
 
