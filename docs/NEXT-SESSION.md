@@ -1,58 +1,71 @@
 # NEXT-SESSION.md — start here after a `/clear`
 
-**Written 9 September 2026, at the end of the session that built the item bank.**
-Everything below was **measured, not remembered**, and the measurement command is
-given beside each figure so you can re-run one rather than re-derive all of them.
+**Last updated 14 September 2026.** Every figure here was **measured, not
+remembered**, with the command beside it so you can re-run one rather than
+re-derive all of them.
 
-> **Do not re-audit this file's contents.** It exists so a fresh session does not
-> spend its first hour rediscovering what the last one already established.
-> Check a number only when you are about to depend on it, and then check that
-> one. `REDESIGN-CLAUDE.md` §2c rule 3 cuts both ways: verify before repeating,
-> but do not re-derive what carries its own evidence.
+> **Do not re-audit this file.** It exists so a fresh session does not spend its
+> first hour rediscovering what the last one established. Check a number when
+> you are about to depend on it — then check that one.
+> `REDESIGN-CLAUDE.md` §2c rule 3 cuts both ways: verify before repeating, but
+> do not re-derive what carries its own evidence.
 
 ---
 
-## 0. Run the phase report
+## 0. Run the phase report — this is a rule
 
 ```
 pnpm phase          # counted from the files, never from memory
 pnpm phase --open   # every open R-phase box, with its section
 ```
 
-**Show it at the start and again before you finish.** Root `CLAUDE.md` makes this
-a rule because a remembered figure is how this project lost track twice.
+**Show it at the start and again before you finish.** Root `CLAUDE.md` requires
+it, because a remembered figure is how this project lost track twice.
 
-## 1. Say this out loud, first
+Current: `R0 28/28 · R1 36/36 · R2 21/21 · R3 41/49 · R4 0/13 · R5 0/24`
+— **126 done · 45 to-do (171 items, 74%)**, live phase **R3**.
 
-**Redesign phase: R3 — page templates and redesign, 41 of 49.**
-Counted from `docs/redesign/phases/R3-page-templates-and-redesign.md`, not copied.
-
-R0 28/28 · R1 36/36 · R2 21/21 · **R3 41/49** · R4 0/13 · R5 0/24
-
-**But the last two sessions of work were NOT R3.** The item bank, the solvers,
-the assessments and the deployment fixes are P3/P4/P5 work on `PHASES.md`'s
-track. No R-phase box moved, and that is correct rather than an oversight — do
-not "reconcile" the phase files to account for it.
-
-R3's 8 open boxes are **one real task** (both loading screens captured as frame
-sequences, not stills) plus **seven sign-off boxes**, of which only
-`design/templates/` being populated is genuinely unmet.
+**The last three sessions were NOT R3 work.** The item bank, the solvers, the
+assessments, the stage checks and the deployment fixes are P3/P4/P5 on
+`PHASES.md`'s track. No R-phase box moved, and that is correct — do not
+"reconcile" the phase files to account for it.
 
 ---
 
-## 2. The state of the world, measured
+## 1. THE GOAL IS TO SHIP, SOON — read `docs/SHIP-EARLY.md`
+
+**Ship 1 — stages 00–04 plus the Prelim.** Authored prose, 96 banked items, five
+attempts, submissions, console, feedback, the map. Everything it needs exists.
+
+**Ship 2 — stages 05–08 plus the Midterm.** One authored chapter away: 05, 06
+and 07 are written, **chapter 08 is still a scaffold** with 15 items against it.
+
+**Later update — Semi-final and Finals (09–18).** Solvers are written, tested and
+registered; items are not, and the prose is eleven scaffolds. `engine/scope.ts`
+withholds both exams and `scope.spec.ts` fails if the flag widens without the
+bank moving with it. **Nothing must change for the first two ships to be
+correct.**
+
+---
+
+## 2. State of the world, measured
 
 ### Local — works, and is the only place anything works
 
 ```
 pnpm db:up                                  Postgres 16 on :54329
-pnpm db:reset && node scripts/db-demo.mjs   -> 183 items, 2 assessments, 115 objectives
+pnpm db:reset && node scripts/db-demo.mjs   183 items · 22 blueprints · 10 assessments
+                                            115 objectives · 19 stages
 pnpm dev:api                                :8090   NOT the raw dev script
 pnpm dev:token                              a signed-in console session
-pnpm verify                                 371 API · 53 web · 27 console, all green
+pnpm dev:token staff --must-change          the bootstrap-credentials screen
+pnpm verify                                 388 API · 53 web · 27 console, green
+pnpm phase                                  the report above
 ```
 
-`pnpm verify` also runs `check:items`, which validates the bank without writing.
+The 10 assessments are **2 exams** (Prelim, Midterm) **+ 8 stage checks**
+(stages 01–08). 22 blueprints = 4 exams + 18 stage checks, one per gradeable
+stage.
 
 ### Live Supabase — exists, answers, and is empty and stale
 
@@ -63,159 +76,132 @@ nothing. Project `lqvkqdaqtkhxmnvodmyr`, PostgreSQL 17.6.
 |---|---|---|
 | public tables | **21** | 22 |
 | stages | **18** | 19 |
-| profiles · objectives · content_blocks | 0 · 0 · 0 | 25 · 115 · 217 |
-| items · assessments | 0 · 0 | 183 · 2 |
+| objectives · content_blocks | 0 · 0 | 115 · 217 |
+| items · assessments · profiles | 0 · 0 · 0 | 183 · 10 · 25 |
 
-The missing table is **`submissions`** — 40% of the grade. `db-push-supabase.mjs`
-omitted `addendum-submissions.sql`; **that is fixed** (`d98ed0d`), but the fix
-has not been applied to the live project. 18 stages means the live schema
-predates the 18-chapter rebuild.
+The missing table is **`submissions`** — 40% of the grade.
+`db-push-supabase.mjs` omitted `addendum-submissions.sql`; **fixed** (`d98ed0d`),
+**not yet applied to the project**. 18 stages means the live schema predates the
+18-chapter rebuild.
 
-**Nothing has been lost, because nothing was there** — 0 profiles, 0 attempts,
+**Nothing was lost, because nothing was there** — 0 profiles, 0 attempts,
 0 responses.
 
 ### Vercel / Render
 
-`origin/main` is current as of this session. Whether the hosts are connected and
-building is **unverified** — no dashboard access from the agent. Ask the
-instructor rather than assuming either way.
+The instructor says they are live. `origin/main` is current. Whether they are
+connected and building is **unverified from here** — ask rather than assume.
 
 ---
 
-## 2b. SHIPPING EARLY — read `docs/SHIP-EARLY.md`
+## 3. Two decisions waiting — both are the instructor's
 
-The instructor wants this in production as soon as possible. The analysis is a
-document of its own; the two things to carry in your head:
+### 3a. Stage 00 cannot be completed, so stage 01 never unlocks
 
-**Ship 1 is stages 00–04 plus the Prelim.** Everything it needs is authored,
-banked and tested. Ship 2 adds 05–08 and the Midterm and is **one authored
-chapter away** — 05, 06 and 07 are written, chapter 08 is still a scaffold.
-Semi-final and Finals are a later update and `engine/scope.ts` already withholds
-them.
+Stage 00 is `gradeable = false` with no items, so it gets no stage check — and
+stage 01's prerequisite is stage 00. `is_stage_unlocked()` needs every
+prerequisite at ≥70% mastery, and orientation can reach it by no path that
+exists. Three options, none of which an engineer should pick alone:
 
-**One blocker stands in front of all of it — F-44.** There are no stage-scoped
-blueprints, so no stage check exists, so mastery never advances, so **no student
-gets past stage 00**. Measured, not inferred. It is invisible from a staff
-account because `is_stage_unlocked()` returns true for staff on its first line.
-The fix is bounded: seed a stage-scoped blueprint per gradeable stage, let
-`sync-assessments.mjs` create the assessments, keep the constraints loose
-(stage 01 has no P items), and extend `bank-feasibility.spec.ts` to prove each
-stage check fills.
+1. Orientation completes on **reading** rather than testing — no code path today
+2. **Stage 01's prereq changes** to `{}`
+3. A **global unlock** on stage 01 in `/locks` covers it operationally
 
-**Do this before anything else if the goal is to ship.**
+### 3b. Re-pushing the schema needs `--reset`, which drops the public schema
 
-## 3. The one decision waiting
+Irreversible and outward-facing. Today's reading says it is safe — nothing to
+lose — but that reading is a **snapshot, not consent**. Ask explicitly, and
+re-run `--check` immediately beforehand.
 
-**Re-pushing the schema to Supabase requires `--reset`, which runs
-`drop schema public cascade`.** It is irreversible and outward-facing.
-
-Today's reading says it is safe — there is no data to lose. That reading is a
-**snapshot**, and it is not consent. **Ask the instructor explicitly before
-running it**, and re-run `--check` immediately beforehand so the decision rests
-on a current reading rather than this file.
-
-If it is approved, the go-live sequence is:
+If approved, the go-live sequence:
 
 ```bash
 node scripts/db-push-supabase.mjs --reset      # schema, all five files
-# then, with DATABASE_URL pointing at Supabase:
+# then with DATABASE_URL pointing at Supabase:
 node scripts/sync-content.mjs                  # 19 stages, 115 objectives, content
 node scripts/sync-items.mjs                    # 183 items, all `review`
-node scripts/sync-assessments.mjs              # Prelim + Midterm, 5 attempts
+node scripts/sync-assessments.mjs              # 2 exams + 8 stage checks
 SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... DATABASE_URL=... \
-  node scripts/bootstrap-admin.mjs "instructor@email" 
+  node scripts/bootstrap-admin.mjs "instructor@email"
 ```
 
-The last one prints a temporary password and stamps
+The last prints a temporary password and stamps
 `app_metadata.must_change_credentials`, so the console blocks on a change screen
 at first sign-in. That is deliberate.
 
 ---
 
-## 4. What is built, and what is deliberately not
+## 4. Built, and deliberately not
 
-### Built and verified this session
+**Built and verified across the last three sessions**
 
-- **60 solvers** in `engine/` (4 original + 56 new across four act banks), each
-  tested against hand-computed values or published figures — Hamming check bits
-  reproduce Stallings Table 5.2, PCIe gives 250 MB/s and 8 GB/s, 7200 RPM gives
-  4.17 ms, IEEE 754 uses biases 127 and 1023.
-- **183 items** covering all 59 gradeable objectives in stages 01–08, every one
-  citing its book section, checked against `content/book-map.json`.
-- **`engine/scope.ts`** — the examinable-scope flag. Stage 08 / Midterm.
-- **`bank-feasibility.spec.ts`** — fills a real Prelim and Midterm from the real
-  files, asserts every constraint cell exactly, across 60 student seeds.
-- **Console**: item review queue (send back with a reason, advance to next),
-  the exam window control, and the bootstrap-credentials block.
-- **`bootstrap-admin.mjs`**, **`dev-token.mjs`**, **`sync-items.mjs`**,
-  **`sync-assessments.mjs`**.
+- **60 solvers** (4 original + 56 new), each tested against hand-computed values
+  or published figures — Hamming check bits reproduce Stallings Table 5.2, PCIe
+  gives 250 MB/s and 8 GB/s, 7200 RPM gives 4.17 ms, IEEE 754 biases 127/1023.
+- **183 items** across stages 01–08, covering all 59 gradeable objectives, each
+  citing its book section and checked against `content/book-map.json`.
+- **Stage checks** — 18 blueprints, 8 offered. Without these nothing unlocked
+  (F-44).
+- **`engine/scope.ts`** — the examinable-scope flag, stage 08 / Midterm.
+- **`bank-feasibility.spec.ts`** — fills real exams AND every in-scope stage
+  check from the real files, asserting constraint cells, provenance and spread.
+- **Console** — item review queue (send back with a reason, advance to next),
+  the exam window control, the bootstrap-credentials block.
+- **Scripts** — `bootstrap-admin`, `dev-token`, `sync-items`,
+  `sync-assessments`, `phase-report`.
 
-### Deliberately deferred, with the reason recorded
+**Deferred, with the reason recorded**
 
-- **Acts 3 and 4 (stages 09–18)** — solvers are written, tested and registered
-  but **out of examinable scope**. Instructor's ruling: stop at the Midterm.
-  Widening means authoring items, raising `EXAMINABLE_THROUGH_STAGE`, adding the
-  two blueprints to `EXAMINABLE_BLUEPRINTS`, then `pnpm verify` — the
-  feasibility spec proves the exams fill before a student sees them.
-- **Five minigames** — R3.2b, deferred because their chapters are scaffolds.
-  Hard rule 5 forbids inventing the lesson to have something to practise.
-- **The public marketing site** — five routes, still owned by no phase.
+- Acts 3–4 (stages 09–18) — out of examinable scope by the instructor's ruling.
+- Five minigames — R3.2b, their chapters are scaffolds, and hard rule 5 forbids
+  inventing the lesson to have something to practise.
+- The public marketing site — five routes, owned by no phase.
 
-### The honest gaps
+**Honest gaps**
 
-- **Nothing is `live`.** All 183 items are `review` until the instructor
-  approves them at `/items`. That is the ruling, not a gap — but no student can
-  sit anything until it happens.
-- **`design/templates/`** is empty. R3 sign-off item.
-- **The reverse travel transition** (leaving a stage back to the map).
-- **R4 and R5** have not started.
+- **Nothing is `live`.** All 183 items are `review` until approved at `/items`.
+  No student can sit anything until that happens.
+- `design/templates/` is empty — an R3 sign-off item.
+- The reverse travel transition (leaving a stage back to the map).
+- R4 and R5 have not started.
 
 ---
 
-## 5. Context degradation — what happened, so it is not repeated
-
-Three claims went stale **inside the session that wrote them**, all corrected in
-`0ef2856`:
-
-- `IMPLEMENTED.md` said "183 items, **0** assessments" — written an hour before
-  assessments existed.
-- The same file said "nothing seeds items or assessments" in the present tense,
-  describing a problem that session had already fixed.
-- `PROGRESS.md` and the findings log both said "no assessments row exists".
-
-**The lesson is not "the docs were wrong".** It is that a doc edited early in a
-long session describes a repository that no longer exists by the end of it. If
-you write a count, write the command beside it.
-
-Two environment traps fired and were caught by their own guards, which is the
-system working:
-
-- `design/global-setup.ts` refused to run specs against a truncated database
-  after a vitest run had truncated the fixtures.
-- `sync-assessments.mjs` failed hard on missing blueprints and took the whole
-  `db-demo` seed down with it. Now a warning (`62a67f7`).
-
----
-
-## 6. Process documents — applied, and not
+## 5. Process documents — applied, and not
 
 **Applied:** hard rules 1–8 (denial tests led every data-touching change), the
-engine rules (`Math.random` banned, distractors name a misconception,
-never mutate a live solver), the content rules (book-map checked, sources cited),
-`REDESIGN-CLAUDE.md` §2 (screenshot before believing), §2b (phase named),
-§2c (verify before repeating), §2d (stopped for the instructor's calls on scope
-and on P-item solvers).
+engine rules, the content rules (book-map checked, sources cited),
+`REDESIGN-CLAUDE.md` §2 (screenshot before believing — it caught three defects),
+§2b, §2c, §2d (stopped for the instructor's calls on scope, P-item solvers, and
+the stage-00 gate).
 
 **Not applied, and worth deciding on:**
 
-- **`CLAUDE-CODE-PRACTICES.md` §4, the Writer/Reviewer pattern** — "use it for
-  the engine". 56 solvers were written and self-reviewed. The tests are strong,
-  but a second pass by a reviewer agent was never run.
-- **`PROMPT-LIBRARY.md`'s four templates** — work proceeded conversationally
-  rather than through Template A/B/C/D.
-- **`CLAUDE-CODE-PRACTICES.md` §6, skills** — "write one for anything you'll do
-  twice". Item authoring was done eight times by hand and is the obvious
-  candidate for act 3–4.
+- **`CLAUDE-CODE-PRACTICES.md` §4, Writer/Reviewer** — the doc says use it *for
+  the engine*. 56 solvers were written and self-reviewed. Tests are strong; a
+  second reviewer pass never ran.
+- **`PROMPT-LIBRARY.md`'s four templates** — work went conversationally.
+- **§6, "write a skill for anything you'll do twice"** — eight item files were
+  hand-authored. The obvious candidate before acts 3–4.
+
+---
+
+## 6. Context degradation — what actually happened
+
+Three claims went stale **inside the session that wrote them** (`0ef2856`): an
+items/assessments count written an hour before assessments existed, and two
+"no assessments row exists" lines that were true for about an hour. The lesson
+is not that the docs were wrong — it is that **a doc edited early in a long
+session describes a repository that no longer exists by the end of it.** If you
+write a count, write the command beside it.
+
+Guards that fired and worked, which is the system doing its job:
+
+- `design/global-setup.ts` refused specs against a truncated database.
+- `sync-assessments.mjs` took the whole seed down on missing blueprints — now a
+  warning.
+- `bank-feasibility.spec.ts` went green on length and **red on provenance**, and
+  the product was right while the test was wrong.
 
 ---
 
@@ -225,38 +211,31 @@ and on P-item solvers).
 
 > **"Which parts of this did you actually run, and what are you unsure about?"**
 
-**Ran:** `pnpm verify` end to end repeatedly; every solver test; the RLS denial
-suite (38); the feasibility spec including a mutation that made it fail; the
-Playwright specs for the review queue, the exam window and the credentials block,
-each opened and looked at; `--check` against live Supabase.
+**Last session ran:** `pnpm verify` end to end; every solver test; the 38 RLS
+denial tests; the feasibility spec including a mutation that made it fail;
+Playwright for the review queue, exam window and credentials block, each opened
+and looked at; `--check` against live Supabase.
 
-**Did not run, and am unsure about:** anything against live Supabase beyond the
-read-only check; whether Vercel or Render are connected and building; whether the
-`bootstrap-admin.mjs` happy path works against a real project — its guards are
-exercised, its success path is not; and the 183 items' *pedagogical* quality,
-which is the instructor's review and not a test.
+**Unsure about:** anything against live Supabase beyond the read-only check;
+whether Vercel and Render are connected and building; whether
+`bootstrap-admin.mjs`'s *success* path works against a real project (guards are
+exercised, the happy path is not); and the pedagogical quality of the 183 items,
+which is the instructor's review, not a test.
 
 ---
 
-## 8. Suggested opening for the next session
+## 8. Pick one, and say the phase first
 
-> Read `docs/NEXT-SESSION.md` first — it carries the measured state and you
-> should not re-derive it.
->
-> Name the phase. Then pick ONE of:
->
-> **(a) SHIP — the critical path.** Fix F-44 first (stage-scoped blueprints, or
-> no student passes stage 00), then approve enough of the bank for act 1, then
-> go live. Confirm with me before `--reset`; re-run `--check` first.
->
-> **(b) Approve the bank.** Walk `/items` with `pnpm dev:token`, using the review
-> queue's send-back to reject what is wrong. Nothing is examinable until this is
-> done.
->
-> **(c) Close R3.** One real task and `design/templates/`; then R4.
->
-> **(d) Author acts 3–4.** Solvers exist. Write items for stages 09–18, widen
-> `scope.ts`, and let `bank-feasibility.spec.ts` prove the exams fill.
->
-> End by answering: which parts did you actually run, and what are you unsure
-> about?
+**(a) SHIP — the critical path.** Decide 3a, then approve enough of the act-1
+bank at `/items`, then 3b and go live. Verify a real student can read a stage,
+sit its check, and see the next stage unlock.
+
+**(b) Approve the bank.** `pnpm dev:token`, walk `/items`, use send-back to
+reject what is wrong. Nothing is examinable until this is done.
+
+**(c) Author chapter 08.** The one thing between Ship 1 and Ship 2.
+
+**(d) Close R3.** One real task plus `design/templates/`; then R4.
+
+**(e) Author acts 3–4.** Solvers exist. Items for 09–18, widen `scope.ts`, and
+let `bank-feasibility.spec.ts` prove the exams fill.
