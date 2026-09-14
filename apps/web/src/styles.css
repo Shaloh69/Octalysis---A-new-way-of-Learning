@@ -1164,6 +1164,45 @@ button {
 .runner-letter { color: var(--ink-faint); font-size: var(--text-sm); }
 .runner-option-text { flex: 1; }
 
+/*
+ * Ordering items (type G). Move up / move down rather than drag, because the
+ * definition of done is keyboard-only and a drag target is not reachable
+ * without a pointer. 44px minimum on the buttons for the same reason
+ * `.runner-option` has one: a touch target below that is a miss at 380px.
+ */
+.runner-ordering-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: var(--space-2);
+  counter-reset: none;
+}
+.runner-ordering-row {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-hair) solid var(--line);
+  border-radius: var(--radius-sm);
+  min-height: 44px;
+}
+.runner-ordering-pos { color: var(--ink-faint); font-size: var(--text-sm); min-width: 1.5rem; }
+.runner-ordering-text { flex: 1; }
+.runner-ordering-controls { display: flex; gap: var(--space-1); flex-shrink: 0; }
+.runner-ordering-controls button {
+  min-width: 44px; min-height: 44px;
+  background: var(--surface-0);
+  border: var(--border-hair) solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink); font: inherit; cursor: pointer;
+}
+.runner-ordering-controls button:hover:not(:disabled) { background: var(--surface-2); border-color: var(--accent); }
+.runner-ordering-controls button:disabled { opacity: 0.4; cursor: default; }
+.runner-ordering-commit {
+  margin-top: var(--space-3); min-height: 44px; padding: 0 var(--space-4);
+  background: var(--surface-0); border: var(--border-hair) solid var(--accent);
+  border-radius: var(--radius-sm); color: var(--ink); font: inherit; cursor: pointer;
+}
+.runner-ordering-commit:hover { background: var(--accent-muted); }
+.runner-ordering-hint { font-size: var(--text-xs); color: var(--ink-faint); margin: var(--space-1) 0 0; }
+.runner-ordering-done { font-size: var(--text-sm); color: var(--info); margin: var(--space-3) 0 0; }
+
 .runner-entry { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .runner-entry input {
   padding: var(--space-3); min-width: 12rem;

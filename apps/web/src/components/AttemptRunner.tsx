@@ -119,7 +119,7 @@ export function AttemptRunner({ assessmentId, title, onFinished, onLeave }: Prop
    * repeated distractor is a real thing.
    */
   const answer = useCallback(
-    async (raw: { index: number } | { value: string }, display: string) => {
+    async (raw: { index: number } | { value: string } | { order: string[] }, display: string) => {
       if (!attemptId || !item) return;
       setAnswers((a) => ({ ...a, [item.ordinal]: display }));
       setSaving(true);
@@ -253,7 +253,27 @@ export function AttemptRunner({ assessmentId, title, onFinished, onLeave }: Prop
 
         <p className="runner-stem">{item.stem}</p>
 
-        {item.options.length > 0 ? (
+        {item.type === "G" ? (
+          /*
+           * An ordering item asks for a SEQUENCE, and a radio group cannot
+           * express one. Until this existed, every type-G item rendered as
+           * single-select radios, the runner sent `{index}`, and
+           * `gradeResponse()` returned `miss(item, "no ordering submitted")` —
+           * so an ordering item was unanswerable through the UI and graded
+           * wrong 100% of the time. Six are live in act 1, and a stage 01 check
+           * of 8 items drew two of them, capping an honest student at 6/8
+           * against a 70% unlock threshold.
+           *
+           * Caught by screenshotting the runner, not by a test: the API accepts
+           * `{order}` perfectly well and every suite was green.
+           */
+          <Ordering
+            key={item.ordinal}
+            options={item.options}
+            committed={chosen !== undefined}
+            onCommit={(order) => void answer({ order }, order.join(" | "))}
+          />
+        ) : item.options.length > 0 ? (
           <fieldset className="runner-options">
             <legend className="sr-only">Choose one answer</legend>
             {item.options.map((opt, k) => (
@@ -359,6 +379,112 @@ export function AttemptRunner({ assessmentId, title, onFinished, onLeave }: Prop
  * request per character would put "4", "42", "420" into `responses` as three
  * answers, and that table is append-only so they would all stay there.
  */
+/**
+ * The ordering control for a type-G item.
+ *
+ * **Move up / move down, not drag and drop.** Dragging is the obvious gesture
+ * and it is the wrong one here: this project's definition of done says every
+ * surface works keyboard-only, and a drag target is unreachable without a
+ * pointer unless a parallel keyboard path is built anyway. Two buttons per row
+ * ARE that path, so they are the whole control rather than a fallback behind
+ * one.
+ *
+ * Against `DESIGN-MANDATE.md` §1: pressing a button changes the submitted
+ * sequence (consequence); the position number and the disabled end-stops say
+ * what the sequence currently is (legibility); every move has an exact inverse
+ * (reversibility); and for these items the sequence IS the thing being learned
+ * — the instruction cycle, the memory hierarchy, the PCIe stack (teaching).
+ *
+ * The starting order is the engine's shuffle, so "already correct on arrival"
+ * is possible but seeded per student rather than chosen here.
+ *
+ * **Reordering does NOT submit. The button does.** `recordAnswer()` inserts
+ * `on conflict (attempt_id, ordinal) do nothing` — the first answer for an
+ * ordinal is the one that counts and nothing overwrites it. Committing on
+ * every move therefore recorded the arrangement after the student's FIRST
+ * click and silently discarded every correction: measured, a run that ended
+ * visibly correct in the UI stored
+ * `["Sequencing logic", "Computer", "CPU", "Control unit"]` and graded wrong.
+ *
+ * A radio does not have this problem because one click is a whole answer. An
+ * ordering takes several moves, and the moves in between are not answers.
+ */
+function Ordering({
+  options,
+  committed,
+  onCommit,
+}: {
+  options: string[];
+  committed: boolean;
+  onCommit: (order: string[]) => void;
+}): JSX.Element {
+  const [order, setOrder] = useState<string[]>(options);
+
+  const move = (from: number, to: number) => {
+    if (committed || to < 0 || to >= order.length) return;
+    const next = [...order];
+    const [it] = next.splice(from, 1);
+    next.splice(to, 0, it!);
+    setOrder(next);
+  };
+
+  return (
+    <div className="runner-ordering">
+      <p className="sr-only" id="ordering-help">
+        Use the move up and move down buttons to put the items in order, then
+        choose Record this order. Nothing is submitted until you do.
+      </p>
+      <ol className="runner-ordering-list" aria-describedby="ordering-help">
+        {order.map((opt, i) => (
+          <li key={opt} className="runner-ordering-row">
+            <span className="mono runner-ordering-pos">{i + 1}</span>
+            <span className="runner-ordering-text">{opt}</span>
+            <span className="runner-ordering-controls">
+              <button
+                type="button"
+                onClick={() => move(i, i - 1)}
+                disabled={committed || i === 0}
+                aria-label={`Move "${opt}" up, from position ${i + 1} to ${i}`}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                onClick={() => move(i, i + 1)}
+                disabled={committed || i === order.length - 1}
+                aria-label={`Move "${opt}" down, from position ${i + 1} to ${i + 2}`}
+              >
+                ↓
+              </button>
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      {committed ? (
+        <p className="runner-ordering-done">
+          This order is recorded. Like every other answer here, the first one
+          recorded is the one that counts.
+        </p>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="runner-ordering-commit"
+            onClick={() => onCommit(order)}
+          >
+            Record this order
+          </button>
+          <p className="runner-ordering-hint">
+            Arrange all {order.length} first — once recorded, this answer cannot
+            be changed.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 function FreeEntry({
   unit,
   value,
