@@ -60,9 +60,34 @@ const c = {
  */
 const TEST_PASSWORD = "OctaTemp-2026-change-me";
 
-const [email, passwordArg, fullName = "Course Administrator"] = process.argv.slice(2);
-const password = passwordArg || TEST_PASSWORD;
-const usingTestPassword = !passwordArg;
+/**
+ * THE DEFAULT EMAIL, for the same reason.
+ *
+ * `POST /console/account/credentials` refuses to clear
+ * `must_change_credentials` while EITHER value is still a default, so the
+ * instructor replaces both or stays on the change screen. A default password
+ * with a real email would otherwise let the address survive as the one written
+ * down in a deployment guide.
+ *
+ * Exported so the API imports these rather than restating them. Two copies of
+ * a constant whose whole job is to be recognised is one copy too many.
+ */
+export const DEFAULT_ADMIN_EMAIL = "admin@octa.local";
+export const DEFAULT_ADMIN_PASSWORD = TEST_PASSWORD;
+
+/*
+ * Arguments win; `deploy/render-api.env.example`'s OCTA_ADMIN_* fill in behind
+ * them. The env path exists so the deployment guide is a thing you paste once
+ * and then run `node scripts/bootstrap-admin.mjs` with no arguments -- a
+ * password typed on a command line lands in shell history, which is a worse
+ * place for it than a file the repo ignores.
+ */
+const [emailArg, passwordArg, nameArg] = process.argv.slice(2);
+const email = emailArg || process.env.OCTA_ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL;
+const password = passwordArg || process.env.OCTA_ADMIN_PASSWORD || TEST_PASSWORD;
+const fullName = nameArg || process.env.OCTA_ADMIN_NAME || "Course Administrator";
+const usingTestPassword = password === TEST_PASSWORD;
+const usingTestEmail = email === DEFAULT_ADMIN_EMAIL;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -73,11 +98,19 @@ function die(msg, hint = "") {
   process.exit(1);
 }
 
-if (!email) {
-  die(
-    'Usage: node scripts/bootstrap-admin.mjs "<email>" ["<password>"] ["Full Name"]',
-    "Omit the password to use the seeded test one, which must be changed at " +
-      "first sign-in. Quote it if it contains shell characters.",
+if (usingTestEmail || usingTestPassword) {
+  const which =
+    usingTestEmail && usingTestPassword
+      ? "the default email AND password"
+      : usingTestEmail
+        ? "the default email"
+        : "the default password";
+  console.log(
+    c.yellow(
+      `\n  Using ${which}.\n` +
+        "  The console will block on a change screen and will not let either default\n" +
+        "  survive it. That is deliberate.\n",
+    ),
   );
 }
 if (!SUPABASE_URL || !SERVICE_KEY) {

@@ -71,3 +71,7 @@ docs/source/book/
 # real student or teacher name.
 design/screenshots/
 design/qa-report/
+
+# deploy env — the .example templates are committed, filled-in copies never are
+deploy/*.env
+!deploy/*.env.example
