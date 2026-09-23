@@ -50,7 +50,20 @@ export async function resetAll(): Promise<void> {
     delete from student_directory  where true;
     delete from sections           where true;
     delete from stages             where id = '99';
-    delete from auth.users         where email like '%@octa-test.local';
+    -- BOTH fixture domains, or the suite stops being idempotent.
+    --
+    -- octa-test.local is what fixtures are created with, but the credentials
+    -- test CHANGES an account's email to newadmin@example.com -- that is the
+    -- whole point of it. Cleaning only the first domain left that row in
+    -- auth.users forever, and the next run died on users_email_key with a 500
+    -- that reads as a broken endpoint rather than a dirty database. Two runs of
+    -- "pnpm verify" therefore disagreed, which is the worst property a
+    -- verification command can have.
+    --
+    -- example.com is reserved by RFC 2606 and can never be a real account, so
+    -- this stays as safe as the scoping note above requires.
+    delete from auth.users         where email like '%@octa-test.local'
+                                      or email like '%@example.com';
 
     alter table responses enable trigger responses_no_update;
     alter table responses enable trigger responses_no_delete;
