@@ -40,9 +40,40 @@ const RESOLVE_FAILED = "Check your ID and password.";
  * terminal; changing one and not the other leaves half of a known credential
  * pair in place.
  */
+/*
+ * THE BOOTSTRAP DEFAULTS ARE PUBLIC, so neither may survive the change.
+ *
+ * They are committed in `deploy/render-api.env.example` and printed to a
+ * terminal by `bootstrap-admin.mjs`. Length was no defence:
+ * "OctaTemp-2026-change-me" is 23 characters and passed `min(12)` unnoticed,
+ * so an admin could submit the defaults straight back, clear
+ * `must_change_credentials`, and leave the only staff account on credentials
+ * published in the repository — with the flag now saying it was dealt with.
+ *
+ * Restated here rather than imported: `bootstrap-admin.mjs` is a standalone
+ * script that the API does not and should not load at runtime. The test asserts
+ * both ends against the literal, so a drift fails loudly.
+ */
+const DEFAULT_ADMIN_EMAIL = "admin@octa.local";
+const DEFAULT_ADMIN_PASSWORD = "OctaTemp-2026-change-me";
+
 const CredentialsBody = z.object({
-  email: z.string().trim().email().max(200),
-  password: z.string().min(12).max(200),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .max(200)
+    .refine((v) => v.toLowerCase() !== DEFAULT_ADMIN_EMAIL, {
+      // Email case is not meaningful, so neither is casing it differently.
+      message: "That is the default address.",
+    }),
+  password: z
+    .string()
+    .min(12)
+    .max(200)
+    .refine((v) => v !== DEFAULT_ADMIN_PASSWORD, {
+      message: "That is the default password.",
+    }),
 });
 
 export interface SupabaseAdmin {
@@ -351,8 +382,20 @@ export function registerAuthRoutes(
 
       const body = CredentialsBody.safeParse(req.body);
       if (!body.success) {
+        /*
+         * "Give a valid email and a password of at least 12 characters" is a
+         * true and useless answer to someone who just submitted the defaults —
+         * they DID give a valid email and a 23-character password. Say which
+         * one is the default instead, or they retype it and fail again.
+         *
+         * Safe to be specific: these values are already published. Nothing is
+         * disclosed that `deploy/render-api.env.example` does not state.
+         */
+        const isDefault = body.error.issues.find((i) => /default/i.test(i.message));
         throw errors.badRequest(
-          "Give a valid email and a password of at least 12 characters.",
+          isDefault
+            ? `${isDefault.message} Choose a different one — the defaults are published in the repository.`
+            : "Give a valid email and a password of at least 12 characters.",
         );
       }
 

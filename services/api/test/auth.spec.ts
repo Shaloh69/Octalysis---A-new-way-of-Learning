@@ -337,6 +337,46 @@ describe("POST /console/account/credentials", () => {
     expect(res.statusCode).toBe(400);
   });
 
+  /*
+   * The bootstrap defaults are committed to the repo and printed to a terminal,
+   * so they are public. Length alone did not stop them being re-submitted here:
+   * "OctaTemp-2026-change-me" is 23 characters and sailed past `min(12)`, which
+   * meant an admin could "change" their credentials to the exact defaults,
+   * clear `must_change_credentials`, and leave the only staff account on a
+   * password anyone can read in `deploy/render-api.env.example`.
+   */
+  it("DENIES the default password — it is in the repo, so length is no defence", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/account/credentials",
+      headers: { authorization: `Bearer ${teacherToken}` },
+      payload: { email: "real@example.com", password: "OctaTemp-2026-change-me" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/default/i);
+  });
+
+  it("DENIES the default email, so the address cannot survive the change either", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/account/credentials",
+      headers: { authorization: `Bearer ${teacherToken}` },
+      payload: { email: "admin@octa.local", password: strong },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/default/i);
+  });
+
+  it("matches the default case-insensitively, since email case is not meaningful", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/account/credentials",
+      headers: { authorization: `Bearer ${teacherToken}` },
+      payload: { email: "ADMIN@Octa.Local", password: strong },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
   it("requires BOTH an email and a password", async () => {
     for (const payload of [{ email: "only@example.com" }, { password: strong }]) {
       const res = await app.inject({
