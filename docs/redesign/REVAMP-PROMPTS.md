@@ -34,10 +34,19 @@ live. §4 says what that actually requires, and most of it is not design work.
 >    verified. Read it and `SOURCE.md`. Write `SPEC.md` beside them: the
 >    structural decisions you are taking, and what you are deliberately not
 >    copying. Colours and fonts are always ours.
-> 3. Write `design/specs/console-items.spec.ts` with the six assertions from
->    `CONSOLE-REVAMP.md` §2, at 1440 and 380. **Watch it fail first.** The action
->    column is clipped in production, so assertion 1 must go red before you touch
->    the page.
+> 3. **`design/specs/console-items.spec.ts` ALREADY EXISTS** — 174 lines, four
+>    passing tests covering row density, the 30-exposure rule appearing once,
+>    flagged items explaining themselves in words, and every column surviving.
+>    **EXTEND it. Do not overwrite it.** Those four are regression cover someone
+>    earned — the density one exists because that page was once a card list — and
+>    they must still pass at the end.
+>
+>    Add the six assertions from `CONSOLE-REVAMP.md` §2, at 1440 and 380. **Watch
+>    the new ones fail first.** The action column is clipped in production, so the
+>    clipping assertion must go red before you touch the page.
+>
+>    Check `design/specs/` before writing a spec for any route — 18 exist, nine
+>    of them console.
 > 4. **Rebuild the page.** Not improve — rebuild. You may replace it entirely.
 >    It must carry toasts, loading states and transitions per
 >    `.claude/rules/design.md`; none of the three exists today.
@@ -66,7 +75,12 @@ live. §4 says what that actually requires, and most of it is not design work.
 > **verify** the reference first (open the file and look at it — a 200 and a
 > saved PNG prove a file exists, not that it shows what you needed), write
 > `SPEC.md`, write the spec and watch it fail, rebuild — replacing entirely if
-> that is the right answer — then `current.png`, `current-380.png`, `motion.md`.
+> that is the right answer — then capture `current.png` and `current-380.png`
+> and **open both and look at them**, then write `motion.md`.
+>
+> **Check `design/specs/` before writing a spec.** 18 already exist. If the route
+> has one, EXTEND it — the REDO rule licenses replacing the *page*, never the
+> proof that it works.
 >
 > Toasts, loading states and transitions are required, not optional.
 >
