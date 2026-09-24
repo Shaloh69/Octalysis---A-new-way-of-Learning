@@ -197,3 +197,37 @@ title and refuses a run pointed at a stranger's app.
 > If a route turns out to need a decision that is the instructor's — a lock
 > policy, what a control should do, anything that changes what a student sees —
 > stop and ask rather than choosing.
+
+
+---
+
+## 8. After the console — the student app
+
+`apps/web` needs the same pass and gets it **second**. It is barely finished:
+intended features missing, layouts wrong, theming wrong. Same tree
+(`design/templates/web/<route>/`), same five files per route, same six-assertion
+gate, same one-at-a-time rule.
+
+It is second because the console is what the instructor uses to run the course,
+it is the smaller surface, and it is the one blocking the Prelim — 183 items
+cannot be approved through a page whose action column is clipped.
+
+Order, worst-first:
+
+| # | Route | Why here |
+|---|---|---|
+| 1 | `/app/stage/:id/check` | The attempt runner. It grades. A layout defect here costs marks — an ordering item shipped unanswerable and was found by screenshot, not by any test |
+| 2 | `/app/stage/:id` | The reader. 9,857 characters of content per stage and the longest page in the app |
+| 3 | `/app/map` | The flat map. Already keyboard-correct — 0 canvases, real DOM buttons — so this is layout and density only, and that property must not regress |
+| 4 | `/app` | The 3D map. Highest risk: a `<canvas>` has no accessibility semantics, and `VISUAL-SYSTEM-3D.md` §5's degradation ladder owns the fallback. It degrades **in place**, never by redirect |
+| 5 | `/login`, `/claim` | First contact |
+| 6 | `/app/progress`, `/app/work`, `/app/settings` | Lower traffic |
+
+**The first thing a student meets on `/app` is a card reading "PLACEHOLDER TEXT
+— NOT REAL COURSE CONTENT YET".** Fix that in pass 1, or delete the card.
+
+Two properties the student pass must not break, both already verified working:
+
+- `/app/map` is real DOM, not a canvas — every stage a focusable `<button>`
+  carrying its state and lock reason, behind a skip link.
+- No horizontal scroll at 380 on `/app`, `/app/map` or a stage page.

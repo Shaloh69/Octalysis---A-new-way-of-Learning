@@ -202,6 +202,33 @@ If any part is untrue, say which part, and do not round it up. Everything past
 the Prelim — the Midterm, acts 3 and 4 — is **not** covered by that sentence
 and must not be implied by it.
 
+**When context management is about to kick in, COMMIT AND PUSH FIRST.** Not
+commit — commit *and push*. The moment you notice the context is being
+summarised, or you are told it is, stop and get the work to `origin/main` before
+anything else. A summary carries what you learned; it does not carry an
+uncommitted working tree, and it does not carry a local commit to a host that
+builds from GitHub.
+
+This is not optional tidiness. Render and both Vercel projects build from
+`main`, so an unpushed commit is work that exists on one laptop and nowhere the
+deployment can see. This session found a Render deploy sitting on a commit from
+ten commits back for exactly that reason.
+
+Commit in logical pieces with real messages, push, and say the range you pushed.
+
+**Templates are ARTIFACTS, never links.** A row in `TEMPLATE-LINKS.md` naming a
+URL is a lead, not a template. Before a route is rebuilt, its reference must be
+captured into `design/templates/<app>/<route>/template.png` with a `SOURCE.md`
+recording the URL, the capture date, the HTTP status and what actually rendered.
+
+A link rots, redirects, paywalls, or renders only with JavaScript that did not
+run. "The link is in the doc" has never once been enough to compare a page
+against. If a link cannot be captured, find a replacement **before** building,
+and record why the original was rejected.
+
+Verify the artifact by opening it. A 200 and a saved PNG prove a file exists,
+not that it shows the thing you needed.
+
 **Against context degradation** — §2c, with the rules that matter most here:
 verify a claim before repeating it, check the stack is alive (and is the right
 app) before believing a red run, measure on real data and say which state you
@@ -211,6 +238,17 @@ measured in, and trust the code over the docs when they disagree.
 record it, continue. Stop only for a genuinely ambiguous reading, an
 instructor's call, something irreversible, or a rule that would have to be
 broken.
+
+## The revamp — console first, then the student app
+
+Both apps need it. `apps/web` is barely finished: intended features missing,
+layouts wrong, theming wrong. It gets the **same treatment**, in the same shape,
+and it goes **second** — `docs/redesign/CONSOLE-REVAMP.md` §8 carries its order.
+
+Do not start the student app while a console route is unfinished. The whole
+point of the gate is that one surface reaches a known state before attention
+moves, and R3 reaching 41/49 with an empty `design/templates/` is what happens
+otherwise.
 
 ## Console revamp — one page at a time
 

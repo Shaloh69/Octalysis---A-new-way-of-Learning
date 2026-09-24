@@ -87,14 +87,46 @@ const total = totalDone + totalTodo;
 console.log(c.bold("\nOCTA — phase report") + c.dim(`   ${new Date().toISOString().slice(0, 10)}\n`));
 
 console.log(c.bold("  Redesign track") + c.dim("   docs/redesign/phases/*.md, checkbox-counted\n"));
+/*
+ * TABLE FORM, ALWAYS.
+ *
+ * This report gets pasted into sessions and read at a glance. Aligned columns
+ * inside a visible frame survive that; a loose list does not, and two runs read
+ * one above the other no longer line up.
+ *
+ * `pad()` measures the string WITHOUT its ANSI colour codes. `padEnd()` on a
+ * coloured string counts the escape bytes as width and shears the column by
+ * roughly nine characters per colour — which looks like a broken table and is
+ * actually a broken measurement.
+ */
+const VIS = /\x1b\[[0-9;]*m/g;
+const pad = (s, w) => s + " ".repeat(Math.max(0, w - s.replace(VIS, "").length));
+const W = [6, 24, 13, 13, 32];
+const line = (l, m, r) => c.dim(l + W.map((w) => "─".repeat(w + 2)).join(m) + r);
+const row = (cells) =>
+  c.dim("│") + cells.map((x, i) => ` ${pad(x, W[i])} `).join(c.dim("│")) + c.dim("│");
+
+console.log("  " + line("┌", "┬", "┐"));
+console.log(
+  "  " + row([c.bold("PHASE"), c.bold("PROGRESS"), c.bold("DONE"), c.bold("STATE"), c.bold("WHAT IT IS")]),
+);
+console.log("  " + line("├", "┼", "┤"));
 for (const p of phases) {
+  const tot = p.done + p.todo;
   const state = p.todo === 0 ? c.green("done") : p.done === 0 ? c.dim("not started") : c.yellow("LIVE");
+  const share = tot === 0 ? 0 : Math.round((p.done / tot) * 100);
   console.log(
-    `   ${c.cyan(p.id)}  ${bar(p.done, p.done + p.todo)}  ` +
-      `${String(p.done).padStart(3)}/${String(p.done + p.todo).padEnd(3)} ` +
-      `${state.padEnd(20)} ${c.dim(p.label)}`,
+    "  " +
+      row([
+        c.cyan(p.id),
+        bar(p.done, tot, 24),
+        `${String(p.done).padStart(3)}/${String(tot).padEnd(3)} ${c.dim(String(share).padStart(3) + "%")}`,
+        state,
+        c.dim(p.label),
+      ]),
   );
 }
+console.log("  " + line("└", "┴", "┘"));
 const pct = total === 0 ? 0 : Math.round((totalDone / total) * 100);
 console.log(
   `\n   ${c.bold("TOTAL")}  ${totalDone} done · ${totalTodo} to-do ` +
@@ -109,11 +141,20 @@ if (live.length > 0) {
 }
 
 console.log(c.bold("\n  Build track") + c.dim("   docs/PHASES.md, status read from the headings\n"));
+const BW = [6, 34, 48];
+const bline = (l, m, r) => c.dim(l + BW.map((w) => "─".repeat(w + 2)).join(m) + r);
+const brow = (cells) =>
+  c.dim("│") + cells.map((x, i) => ` ${pad(x, BW[i])} `).join(c.dim("│")) + c.dim("│");
+
+console.log("  " + bline("┌", "┬", "┐"));
+console.log("  " + brow([c.bold("PHASE"), c.bold("WHAT IT IS"), c.bold("STATUS")]));
+console.log("  " + bline("├", "┼", "┤"));
 for (const p of buildPhases()) {
-  const s = p.status || c.dim("(no status)");
-  const tone = /DONE/i.test(p.status) ? c.green(p.status) : /NOT BUILT/i.test(p.status) ? c.dim(p.status) : c.yellow(s);
-  console.log(`   ${c.cyan(p.id.padEnd(4))} ${p.label.padEnd(34)} ${tone}`);
+  const st = p.status || "(no status)";
+  const tone = /DONE/i.test(st) ? c.green(st) : /NOT BUILT/i.test(st) ? c.dim(st) : c.yellow(st);
+  console.log("  " + brow([c.cyan(p.id), p.label, tone]));
 }
+console.log("  " + bline("└", "┴", "┘"));
 
 if (process.argv.includes("--open")) {
   console.log(c.bold("\n  Open boxes\n"));
