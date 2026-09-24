@@ -177,6 +177,31 @@ so the numbers cannot drift from the files the way a remembered figure does.
 This is a rule because a report you compose from memory is how the project lost
 track twice. A report that is counted costs one command.
 
+**Every phase report carries the percentage.** `pnpm phase` already prints
+`126 done · 45 to-do (171 items, 74%)`. Say the percentage out loud in the
+report, at the start and before you finish, alongside the live phase. A phase
+name without a number is how "nearly done" survived three sessions of not being
+nearly done.
+
+**Say what is safe to put in front of students, every session.** The sentence is
+literal and it is about the Prelim:
+
+> *Prelim-worth of data is okay to run on students, to use and to grade against.*
+
+That claim is true only when all of it holds, and you check it rather than
+remember it:
+
+- stages 00–04 authored and readable
+- act 1's items **approved to `live`** — 96 of them; the engine samples
+  `where status = 'live'` and an unapproved bank fails to fill at Start
+- the Prelim and the four stage checks fill — `bank-feasibility.spec.ts`
+- a real student can read a stage, sit its check, and see the next unlock
+- `db-invariants` clean against the deployment students will use
+
+If any part is untrue, say which part, and do not round it up. Everything past
+the Prelim — the Midterm, acts 3 and 4 — is **not** covered by that sentence
+and must not be implied by it.
+
 **Against context degradation** — §2c, with the rules that matter most here:
 verify a claim before repeating it, check the stack is alive (and is the right
 app) before believing a red run, measure on real data and say which state you
@@ -186,6 +211,25 @@ measured in, and trust the code over the docs when they disagree.
 record it, continue. Stop only for a genuinely ambiguous reading, an
 instructor's call, something irreversible, or a rule that would have to be
 broken.
+
+## Console revamp — one page at a time
+
+`docs/redesign/CONSOLE-REVAMP.md` owns this. Sits under R3; opens no new phase.
+
+Each console route gets its own folder under `design/templates/console/<route>/`
+holding `template.png`, `SPEC.md`, `current.png`, `current-380.png` and
+`motion.md`, plus a spec at `design/specs/console-<route>.spec.ts`.
+
+**The reference comes before the rebuild**, and **no route starts until the
+previous route's spec is green.** The specs assert structure, never pixels — the
+colours are ours by design, so a pixel diff against a third-party template can
+only ever fail. Six assertions per route, at 1440 and 380: nothing clipped, no
+horizontal page scroll, keyboard reachable, AA contrast computed on all three
+themes, tokens actually used in the rendered output, and
+`prefers-reduced-motion` honoured with the media feature emulated.
+
+`design/templates/` sat empty through all of R3, which is why a clipped action
+column shipped to production unseen.
 
 ## Definition of done
 
