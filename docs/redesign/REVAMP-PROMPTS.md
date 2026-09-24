@@ -120,7 +120,9 @@ None of the following is negotiable, and the first outranks the rest:
   `PAGE-SPECS.md` row. A planned feature that is missing, or a planned page that
   does not exist, gets named, planned, given a captured template, and **brought
   to the instructor for approval** — never built unasked, never skipped
-  silently. 42 routes are specified and 29 exist.
+  silently. 42 routes are specified, 27 are built, and the console ones are
+  written with a `/console/` prefix the app does not use — reconcile names
+  before calling anything missing.
 - **Every phase report is a table and carries the percentage.**
 - **Toasts, loading states, transitions** — `.claude/rules/design.md`, on every
   page you create or change, not only revamped ones.

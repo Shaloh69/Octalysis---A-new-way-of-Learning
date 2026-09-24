@@ -287,12 +287,27 @@ Before touching a route, read what it was supposed to be:
 `LESSON-PLAN-AND-LEVELS.md` or `SOLAR-SYSTEM-SPEC.md` where they own part of it.
 Then compare against what exists. The gap is the finding.
 
-Measured 25 Sep 2026: **`PAGE-SPECS.md` specifies 42 routes and 29 exist** — 13
-in `apps/web`, 16 in `apps/console`. Absent entirely: `/app/notebook`,
-`/app/mistakes`, `/app/final`, `/app/help`, the three `/app/lab/*` simulators,
-`/404`, `/500`, `/about`, `/accessibility`, `/console/analytics`. Some of those
-are deliberate deferrals. Nobody can currently tell which, and that is the
-problem.
+Measured 25 Sep 2026: **`PAGE-SPECS.md` specifies 42 routes; 27 distinct routes
+are built** — 13 in `apps/web`, 16 in `apps/console`.
+
+**Reconcile names before declaring anything missing.** `PAGE-SPECS.md` writes
+console routes with a `/console/` prefix; the console app is mounted at root, so
+`/console/roster` IS `/students`, `/console/students/:id` IS
+`/students/:userId`, and `/console` IS `/`. Those are naming drift, not gaps,
+and building them again would produce a duplicate of a page that already works.
+
+**Genuinely absent — zero references anywhere in the source:**
+
+- student app: `/app/notebook`, `/app/mistakes`, `/app/final`, `/app/help`,
+  `/app/live`, and `/app/lab` with its three simulators `asm`, `cache`, `fde`
+- public and auth: `/404`, `/500`, `/about`, `/accessibility`, `/course`,
+  `/for-teachers`, `/how-it-works`, `/forgot-password`, `/reset-password`
+- console: `/console/analytics`, `/console/settings`, `/console/items/:id/edit`
+
+Some are deliberate — the public marketing site is owned by no phase, and
+`/console/analytics` is documented as blocked until items have 30+ exposures.
+The rest are not recorded either way, and nobody can currently tell which is
+which. That is the problem.
 
 When a planned feature is missing from a page, or a planned page does not exist:
 
