@@ -96,7 +96,14 @@ connected and building is **unverified from here** — ask rather than assume.
 
 ## 3. Two decisions waiting — both are the instructor's
 
-### 3a. Stage 00 cannot be completed, so stage 01 never unlocks
+### 3a. Stage 00 cannot be completed, so stage 01 never unlocks — RESOLVED 25 Sep 2026
+
+> **Decided by the instructor.** Orientation has no moons (cosmetic asteroids
+> instead), and **a non-gradeable prerequisite never blocks**, so stage 01 is
+> open from the start. Recorded in `WEB-REVAMP.md` §3.7 and R4.6. **Not yet
+> built:** `is_stage_unlocked()` still applies the old rule, so the symptom below
+> is still live until that server-side change lands. The analysis is kept for
+> the reasoning.
 
 Stage 00 is `gradeable = false` with no items, so it gets no stage check — and
 stage 01's prerequisite is stage 00. `is_stage_unlocked()` needs every

@@ -25,7 +25,9 @@ accidentally scope-creep into "let's also change how mastery is computed."
 
 ## R4.2 — Moon rendering
 - [ ] Moon count per planet = objective count for that stage, computed, not
-      hardcoded per stage
+      hardcoded per stage — **for gradeable stages only**. Stage 00 has five
+      objectives and no moons (decided 25 Sep 2026); its objectives still appear
+      in its sidebar as text
 - [ ] Three-state visual language: dim/unlit, partial glow, full glow — same
       language as the planet itself, one level down, per §1.4
 - [ ] Moon select → camera zooms onto the moon and the **map sidebar updates to it**
@@ -94,13 +96,27 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
 Instructor rulings, 25 Sep 2026 (`WEB-REVAMP.md` §3.6 and §3.7). **These
 supersede the R4.2 box above that says no new gating logic is built.**
 
-- [ ] **Instructor decision recorded: the moon threshold.** Every act-1 moon has
-      3 questions, so a per-moon 70% bar means a perfect score on every
-      subtopic. Proposed: 2 of 3 correct, best result per question across
-      attempts
-- [ ] **Instructor decision recorded: stage 00's moons.** 5 moons, 0 questions,
-      so under moon gating stage 01 never opens. Proposed: Orientation has no
-      moons
+- [x] **Instructor decision recorded: the moon threshold. DECIDED 25 Sep 2026:
+      2 of 3.** A moon is mastered when 2 of its 3 questions have been answered
+      correctly, counting the best result per question across attempts, so
+      practice can raise it and nothing lowers it. A per-moon 70% bar would have
+      meant a perfect score on every subtopic
+- [x] **Instructor decision recorded: stage 00's moons. DECIDED 25 Sep 2026:
+      Orientation has no moons.** It gets purely cosmetic asteroids instead
+      (below). Because a planet with no moons has nothing to master, **a
+      non-gradeable prerequisite never blocks** — which is what resolves
+      decision 3a: stage 01 is open from the start
+- [ ] **Stage 00's asteroids** — a small belt orbiting Orientation, purely
+      cosmetic: seeded per student (never `Math.random`), so the same student
+      sees the same belt every session; irregular, grey and unlit so no one
+      mistakes them for moons; `aria-hidden`, not focusable, not selectable,
+      absent from the flat map and the sidebar; frozen under `QA_MODE`, still
+      under `prefers-reduced-motion`; Keplerian like everything else
+- [ ] **`is_stage_unlocked()`: a non-gradeable prerequisite never blocks.**
+      Server-side, denial test first — including the test that a student still
+      cannot open stage 02 without stage 01's moons. This is independent of the
+      rest of moon gating and can land first, which removes one of the two
+      non-design Prelim blockers on its own
 - [ ] Objective mastery stored server-side, written only by the grading
       service, RLS'd like `stage_progress`, with its denial tests written and
       watched failing first

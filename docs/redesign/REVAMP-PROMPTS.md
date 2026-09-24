@@ -237,10 +237,12 @@ even where the course is not yet.
 1. **0 of 183 items are `live`.** The engine samples `where status = 'live'`, so
    every attempt fails to fill at Start. Act 1's 96 items must be approved,
    through `/items` — which is why `/items` goes first.
-2. **Stage 00 gates stage 01 and cannot be completed.** `gradeable = false`, no
-   stage check, and `is_stage_unlocked()` wants every prerequisite at 70%. A real
-   student is told *"Unlocks when Stage 00 reaches 70%. You're at 0%."* Three
-   options in `NEXT-SESSION.md` §3a; the instructor's call.
+2. **Stage 00 gates stage 01 — DECIDED, not yet built.** The instructor ruled
+   on 25 Sep 2026 that Orientation has no moons and that **a non-gradeable
+   prerequisite never blocks**, so stage 01 is open from the start. Until
+   `is_stage_unlocked()` is changed a real student is still told *"Unlocks when
+   Stage 00 reaches 70%. You're at 0%."* The change is small, server-side,
+   denial test first, and independent of the rest of moon gating (R4.6).
 
 ### Order
 

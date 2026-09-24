@@ -213,16 +213,19 @@ that make the obvious version wrong:
 1. **Where moon mastery lives.** Nothing stores mastery per objective today,
    only `stage_progress` and `level_progress`. It needs a table written by the
    grading service alone, RLS'd like `stage_progress`.
-2. **The threshold, an instructor decision.** Every act-1 moon has **three**
-   questions, so a moon can only score 0, 33, 67 or 100%. The course's 70% bar,
-   applied per moon, means **a perfect score on every single subtopic** to open
-   the next planet. Proposed instead: a moon is mastered when **2 of its 3
-   questions have been answered correctly**, counted as the best result per
-   question across attempts, so practice can raise it and nothing can lower it.
-3. **Stage 00, an instructor decision.** Orientation has 5 moons and **zero
-   questions**. Under moon gating those moons can never be mastered, so stage 01
-   would never open: decision 3a in a new shape. Proposed: Orientation has no
-   moons; its objectives are read, not tested.
+2. **The threshold. DECIDED 25 Sep 2026: 2 of 3.** Every act-1 moon has
+   **three** questions, so a moon can only score 0, 33, 67 or 100%, and the
+   course's 70% bar applied per moon would have meant a perfect score on every
+   subtopic. A moon is mastered when **2 of its 3 questions have been answered
+   correctly**, counting the best result per question across attempts, so
+   practice can raise it and nothing lowers it.
+3. **Stage 00. DECIDED 25 Sep 2026: no moons — cosmetic asteroids instead.**
+   Orientation has 5 objectives and zero questions, so its moons could never be
+   mastered. It gets a belt of asteroids that is **purely cosmetic** (§3.10),
+   and its objectives stay in its sidebar as text. The rule that follows: **a
+   non-gradeable prerequisite never blocks.** A planet with no moons has nothing
+   to master, so stage 01 is open from the start. **This resolves decision
+   3a**, open since 14 Sep.
 
 The stage check stays what it is: the graded measure of the planet, feeding the
 Prelim and the gradebook. **Moons decide what opens; the check decides what is
@@ -259,6 +262,27 @@ with that route's revamp.
   moves to its heading on open
 - It is a page surface like any other: template, `SPEC.md`, spec, screenshot at
   1440 and 380, the gate
+
+### 3.10 Stage 00's asteroids — purely cosmetic
+
+Orientation carries no moons, so it gets a small belt of asteroids instead,
+decided by the instructor on 25 Sep 2026. They are decoration and must never be
+mistaken for anything else:
+
+- **Seeded, not random.** "Random" means seeded per student from
+  `cosmetic-seed.ts`, the same way biomes are — never `Math.random`. The same
+  student sees the same belt every session; spatial memory is the point of a
+  map
+- **Unmistakably not moons.** Irregular shapes, grey, unlit, never glowing. A
+  moon's glow means mastery; an asteroid has no state and must not look like it
+  has one
+- **Invisible to assistive technology and to input.** `aria-hidden`, not
+  focusable, not selectable, not in the flat map, not in the sidebar. Selecting
+  Orientation opens its sidebar exactly as before
+- **Motion rules like everything else.** Keplerian around Orientation, frozen
+  under `QA_MODE`, still under `prefers-reduced-motion`
+- **Cheap.** A handful of instanced meshes, inside the 3D chunk's existing
+  budget — no new dependency
 
 ---
 

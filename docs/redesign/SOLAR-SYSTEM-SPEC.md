@@ -361,6 +361,9 @@ future decision wants moons to individually gate the planet's own completion,
 that's a curriculum-policy change and belongs in a review of
 `is_stage_unlocked()`, not silently implied by adding orbiting spheres.
 
+- > **Stage 00 has no moons — decided 25 Sep 2026.** It carries a belt of
+  > purely cosmetic asteroids instead (`WEB-REVAMP.md` §3.10). The 110 below
+  > already excluded it.
 - **Moon count = objective count for that stage — real data now confirmed:
   110 moons across the 18 authored/seeded chapters, unevenly distributed
   (Stage 03 alone has 11).** The old draft's "~5 average" was an estimate
