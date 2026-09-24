@@ -6,6 +6,14 @@ additive visualisation over real data, not a new mastery model — say so
 explicitly at every step, since it's the easiest phase in this redesign to
 accidentally scope-creep into "let's also change how mastery is computed."
 
+> **Depends on `WEB-REVAMP.md` §3.** A moon is only meaningful once selecting a
+> planet and zooming to it exists to reveal one. Do not start R4 until route 4
+> of `WEB-REVAMP.md` §6 is green; moons rendered on a map nobody can zoom into
+> are decoration, and decoration is what this project deletes.
+>
+> Moons follow the same Kepler relationship locally around their planet
+> (`WEB-REVAMP.md` §4), animated only while their planet is selected.
+
 ## R4.1 — Confirm the data before building the visual
 - [ ] Locate where `objectives` per stage are currently exposed to the client
       (`/app/progress` already does per-objective mastery per `PAGE-SPECS.md`

@@ -635,5 +635,22 @@ thesis deliverable, and right now no phase is accountable for it.
       expected outcome for all five while chapters 08–18 are scaffolds — that
       is a real answer, not a slip, and it is not a reversal of R0.1b's approval
 - [ ] `design/templates/` fully populated and committed
+- [ ] **Console revamp** (`CONSOLE-REVAMP.md`) — every console route has
+      `template.png` + `SOURCE.md` + `SPEC.md` captured and VERIFIED BY OPENING
+      IT, and its `design/specs/console-<route>.spec.ts` green on all six
+      assertions at 1440 and 380
+- [ ] **Student app revamp** (`WEB-REVAMP.md`) — same, for `apps/web`, second,
+      and REDONE rather than improved per root `CLAUDE.md`
+- [ ] **Shared icon** — `packages/tokens/icon.svg` wired into both apps and
+      verified rendering at 96/48/32/16 on light and dark chrome
+- [ ] **Planet selection and zoom** (`WEB-REVAMP.md` §3) — select by click AND
+      keyboard, camera easing with nodes pinned and no force simulation, Escape
+      returns focus to the selected planet, flat map carries the same selection
+      in place
+- [ ] **Orbital motion follows Kepler's third law** (`WEB-REVAMP.md` §4) —
+      `ω ∝ a^-1.5`, circular orbits kept so radius still means level, phase
+      seeded not random, frozen under `QA_MODE`, stopped under
+      `prefers-reduced-motion`, with a unit test asserting the ratio across all
+      seven rings
 - [ ] `docs/PROGRESS.md` reflects real progress through this phase — given
       the size, update it after every batch of routes, not just at the end

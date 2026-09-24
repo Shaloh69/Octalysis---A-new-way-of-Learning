@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="OCTA">
+  <!--
+    OCTA's mark: a square core inside concentric rings.
+
+    It is the map's own grammar, not decoration. `SOLAR-SYSTEM-SPEC.md` §1.1:
+    the sun at the centre is THE MACHINE, and orbit radius is the Computer
+    Level Hierarchy — L0 innermost, L6 outermost. So: a die at the centre, the
+    levels around it, and one lit body on a ring for the stage you are on.
+
+    A square core rather than a circle, because the thing at the centre of this
+    course is a chip, and because at 16px a circle inside circles reads as a
+    target and nothing else.
+
+    THREE RINGS, NOT SEVEN. Seven concentric strokes inside 32px land under one
+    device pixel each and mush into a grey disc at favicon size. Three keeps the
+    idea legible; the map itself carries the real count.
+
+    This file lives in packages/tokens because it is the one place a literal hex
+    is allowed — `.claude/hooks/guard.mjs` blocks six-digit hex everywhere else,
+    and a favicon cannot resolve a CSS custom property. The values below are the
+    computed sRGB of bare-metal's surface-0, ink and accent at the default
+    hue, so the mark and the app agree.
+
+    `prefers-color-scheme` is handled inside the SVG so the mark survives a
+    light browser chrome without shipping a second file.
+  -->
+  <style>
+    .bg   { fill: #1a1d21; }
+    .ring { fill: none; stroke: #9aa3ad; stroke-width: 1.4; opacity: 0.55; }
+    .core { fill: #e8eaed; }
+    .body { fill: #5fd39b; }
+    @media (prefers-color-scheme: light) {
+      .bg   { fill: #f3f4f6; }
+      .ring { stroke: #6b7280; }
+      .core { fill: #1a1d21; }
+      .body { fill: #10855a; }
+    }
+  </style>
+
+  <rect class="bg" width="32" height="32" rx="7" />
+
+  <circle class="ring" cx="16" cy="16" r="6.5" />
+  <circle class="ring" cx="16" cy="16" r="10" />
+  <circle class="ring" cx="16" cy="16" r="13.2" />
+
+  <!-- the machine -->
+  <rect class="core" x="13" y="13" width="6" height="6" rx="1.2" />
+
+  <!-- one lit body: the stage in progress -->
+  <circle class="body" cx="26" cy="16" r="2.6" />
+</svg>

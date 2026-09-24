@@ -268,6 +268,16 @@ there before.
 
 ## The revamp — console first, then the student app
 
+`docs/redesign/CONSOLE-REVAMP.md` runs first, `docs/redesign/WEB-REVAMP.md`
+second. Both are tracked as R3 boxes, so the phase report counts them.
+
+`WEB-REVAMP.md` also owns three things the map never had: **planet selection
+with a camera zoom** (§3), **orbital motion that follows Kepler's third law**
+(§4 — `ω ∝ a^-1.5`, circular orbits kept so radius still means level), and the
+**shared icon** at `packages/tokens/icon.svg` (§5). Moons are R4 and land with
+the zoom, never before it.
+
+
 Both apps need it. `apps/web` is barely finished: intended features missing,
 layouts wrong, theming wrong. It gets the **same treatment**, in the same shape,
 and it goes **second** — `docs/redesign/CONSOLE-REVAMP.md` §8 carries its order.
