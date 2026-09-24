@@ -86,6 +86,46 @@ async function main() {
     process.exit(1);
   }
 
+  /*
+   * THE CONNECTION AND `SUPABASE_URL` MUST NAME THE SAME PROJECT.
+   *
+   * This script reads SUPABASE_DB_SESSION; every other migration script reads
+   * DATABASE_URL. And `env` above merges the ROOT .env underneath process.env,
+   * so an unset SUPABASE_DB_SESSION does not fail — it silently falls through
+   * to whatever project the root .env happens to describe.
+   *
+   * Measured 25 Sep 2026, mid-migration: every variable in the operator's env
+   * pointed at the new project, SUPABASE_DB_SESSION was not among them, and
+   * `--check` connected to the OLD one and reported its 21 tables. The only
+   * reason that was caught is that `--check` was run first and someone read the
+   * host line. `--reset` runs `drop schema public cascade`.
+   *
+   * A ref mismatch is never intentional, so it is fatal rather than a warning —
+   * including on --check, because --check exists to tell you where you are
+   * pointed and must not be the one command that lies about it.
+   */
+  const refFrom = (s) =>
+    s?.match(/postgres\.([a-z0-9]{20})/)?.[1] ??
+    s?.match(/https:\/\/([a-z0-9]{20})\.supabase\.co/)?.[1] ??
+    null;
+
+  const connRef = refFrom(conn);
+  const urlRef = refFrom(env.SUPABASE_URL);
+
+  if (connRef && urlRef && connRef !== urlRef) {
+    console.error(c.red("\nRefusing to run: these name two different Supabase projects.\n"));
+    console.error(c.dim(`  SUPABASE_DB_SESSION -> ${connRef}`));
+    console.error(c.dim(`  SUPABASE_URL        -> ${urlRef}\n`));
+    console.error(
+      c.dim(
+        "  One of them is stale. The root .env is merged underneath your shell\n" +
+          "  environment, so an unset SUPABASE_DB_SESSION silently uses the project\n" +
+          "  described there. Set both, in the same place, to the same project.\n",
+      ),
+    );
+    process.exit(1);
+  }
+
   console.log(c.bold("\nOCTA — apply schema to Supabase\n"));
   console.log(c.dim(`  host  ${conn.replace(/:[^:@]*@/, ":****@")}`));
 
