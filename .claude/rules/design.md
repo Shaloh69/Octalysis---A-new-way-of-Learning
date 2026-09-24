@@ -26,11 +26,12 @@ Accessibility floor: WCAG 2.2 AA on all three themes, verified by computation no
 drag interaction has a tap-to-select fallback. `aria-live` on answer feedback. Visible focus
 everywhere. 380px with no horizontal scroll.
 
-## Feedback, loading and transitions — required on every revamped route
+## Feedback, loading and transitions — required on EVERY page you create or change
 
-These three are not polish. A page that does work silently, snaps between
-states, or blanks while it fetches is unfinished, and all three are currently
-missing.
+These three are not polish and they are not revamp-only. A page that does work
+silently, snaps between states, or blanks while it fetches is unfinished —
+whether it is new, being changed, or being rebuilt. All three are currently
+missing across both apps.
 
 **Toasts.** There is **no toast system** — measured 25 Sep 2026: no toast
 library is installed in either app, `useFormation.ts` only describes toasts in
@@ -77,5 +78,5 @@ any loading state at all.
 - **`prefers-reduced-motion` removes all of it** — cut, do not slow down. And
   `QA_MODE=1` freezes every ambient loop so screenshots are stable.
 
-Each revamped route records its own in `motion.md`, including which reduced-motion
+Each route records its own in `motion.md`, including which reduced-motion
 path each transition takes.

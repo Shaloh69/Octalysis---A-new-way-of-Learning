@@ -239,6 +239,31 @@ record it, continue. Stop only for a genuinely ambiguous reading, an
 instructor's call, something irreversible, or a rule that would have to be
 broken.
 
+## THESE RULES ARE NOT A REVAMP PROTOCOL — THEY GOVERN ALL PAGE WORK
+
+**The revamp is the first application of these rules, not their scope.** They
+apply, permanently and in full, to:
+
+- **a new page** — it is born with a `template.png`, a `SPEC.md` and a spec, and
+  it does not merge until that spec is green
+- **a change to an existing page** — same gate, on the page you touched
+- a revamp pass
+
+The rules are the gate below, REDO/REPLACE, templates-as-artifacts, and the
+toasts / loading / transitions in `.claude/rules/design.md`.
+
+**The one narrow exemption**, and it is narrow on purpose: a change that alters
+no structure, layout, control or state — a copy fix, a typo, a comment, a
+data-only change — needs no new template capture. It still must leave that
+route's existing spec **green**, and you must say you ran it. "It was only
+copy" is how a layout regression ships.
+
+If a page has no spec yet and you are touching it, **you are the session that
+gives it one.** That is not scope creep; it is the price of changing a page
+nobody can verify. Every defect this project has shipped — the clipped action
+column, unstyled purple links, an ordering item that was unanswerable and graded
+wrong every time — reached production through a page with no spec behind it.
+
 ## NEVER PROCEED TO ANOTHER PAGE IF THIS ONE HAS NOT PASSED
 
 **One route at a time, and the gate is the spec, not your judgement.**

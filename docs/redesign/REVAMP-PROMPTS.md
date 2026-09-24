@@ -80,7 +80,17 @@ live. §4 says what that actually requires, and most of it is not design work.
 
 ## 3. The rules that bind every one of these sessions
 
-From root `CLAUDE.md`, and none of them are negotiable:
+**And not only these sessions.** Root `CLAUDE.md` says it plainly: the revamp is
+the first application of these rules, not their scope. A **new page** is born
+with a template, a `SPEC.md` and a spec, and does not merge until that spec is
+green. **Changing an existing page** carries the same gate on the page you
+touched. If the page has no spec yet, you are the session that gives it one.
+
+The only exemption is a change that alters no structure, layout, control or
+state — copy, a typo, a comment, data. Even then the route's existing spec must
+be **green** and you must say you ran it.
+
+None of the following is negotiable:
 
 - **NEVER PROCEED TO ANOTHER PAGE IF THIS ONE HAS NOT PASSED.** Green on all six
   assertions at both widths. Not "mostly". If a route cannot pass, that route is
@@ -95,7 +105,8 @@ From root `CLAUDE.md`, and none of them are negotiable:
 - **Commit and push when context management kicks in.** Not commit — push. Both
   hosts build from `main`.
 - **Every phase report is a table and carries the percentage.**
-- **Toasts, loading states, transitions** — `.claude/rules/design.md`.
+- **Toasts, loading states, transitions** — `.claude/rules/design.md`, on every
+  page you create or change, not only revamped ones.
 
 And the standing ones: screenshot before believing a page works; denial test
 first for anything touching data; check the stack is alive and is the right app
