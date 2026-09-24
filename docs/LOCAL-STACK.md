@@ -9,10 +9,38 @@ component; all of it is needed the moment the database or the API misbehaves.
 **Read this when:** the stack will not start, a gate fails for no reason you can
 see, or you are applying SQL by hand.
 
+## Why the local database is on 15432 — and why it moved
+
+It was on **54329** until 25 Sep 2026. That port sits inside Windows' dynamic
+range (**49152–65535**), and WinNAT/Hyper-V reserves blocks of that range at
+boot — a different block each time. On the boot it broke, Windows held
+**54273–54372**:
+
+```
+netsh interface ipv4 show excludedportrange protocol=tcp
+```
+
+Docker cannot publish into a reserved range, and it **says nothing**. The
+container reports `healthy`, `docker ps` shows `5432/tcp` with no host mapping,
+and `docker port octa-db` prints an empty line. Anything that goes through
+`docker exec psql` — `pnpm db:reset`, `demo-seed.sql` — keeps working, so the
+database looks fine. Everything connecting from the host — the API, every Node
+script, Playwright — gets `ECONNREFUSED` on both `::1` and `127.0.0.1`, which
+Node wraps in an `AggregateError` whose `.message` is **empty**, so the scripts
+printed *"cannot reach the database: "* with nothing after the colon.
+
+Restarting the container does not help. Stopping and starting WinNAT from an
+elevated shell releases the block, but only until the next boot.
+
+**15432 is below the dynamic range, so Windows never reserves it.** If you ever
+pick a new local port, keep it under 49152 — and if `docker port <container>`
+comes back empty for a container that is healthy, check the excluded ranges
+before anything else.
+
 ## Local stack — production runs here until cloud projects exist
 
 ```bash
-pnpm db:up      # Postgres 16 in Docker on :54329
+pnpm db:up      # Postgres 16 in Docker on :15432
 pnpm db:reset   # drop, recreate, apply all SIX SQL files, run invariants
 pnpm dev:api    # the API on :8090, configured for LOCAL auth  <- not `pnpm dev`
 pnpm test:rls   # the 38-test denial suite
@@ -60,7 +88,7 @@ Three Postgres semantics this project has already been bitten by — see `VERIFI
 
 | Port | What is there |
 |---|---|
-| `54329` | `octa-db`, Postgres 16 in Docker |
+| `15432` | `octa-db`, Postgres 16 in Docker |
 | `8090` | the API — **`pnpm dev:api`** |
 | `5183` | `apps/web` (5173 belongs to another project) |
 | `5174` | `apps/console` |

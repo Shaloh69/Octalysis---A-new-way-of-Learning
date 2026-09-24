@@ -28,7 +28,7 @@ import pg from "pg";
 const { Pool } = pg;
 
 export const CONNECTION_STRING =
-  process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa";
+  process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa";
 
 export const pool = new Pool({ connectionString: CONNECTION_STRING, max: 8 });
 

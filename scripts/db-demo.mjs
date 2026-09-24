@@ -153,7 +153,7 @@ async function main() {
       env: {
         ...process.env,
         DATABASE_URL:
-          process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa",
+          process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa",
       },
       maxBuffer: 32 * 1024 * 1024,
     });
@@ -180,7 +180,7 @@ async function main() {
       env: {
         ...process.env,
         DATABASE_URL:
-          process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa",
+          process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa",
       },
       maxBuffer: 32 * 1024 * 1024,
     });
@@ -205,7 +205,7 @@ ${err.stderr || err.message}
       env: {
         ...process.env,
         DATABASE_URL:
-          process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa",
+          process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa",
       },
       maxBuffer: 32 * 1024 * 1024,
     });

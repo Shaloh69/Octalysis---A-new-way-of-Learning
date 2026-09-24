@@ -134,7 +134,7 @@ if (password.length < 12) {
  * A local stack has no Supabase Auth admin API, and pointing this at one would
  * fail confusingly rather than loudly. Say so instead.
  */
-if (/localhost|127\.0\.0\.1|:54329/.test(SUPABASE_URL)) {
+if (/localhost|127\.0\.0\.1|:15432/.test(SUPABASE_URL)) {
   die(
     "SUPABASE_URL looks local. This script is for a real Supabase project.",
     "For the local stack use `pnpm dev:token`, which mints a signed dev session.",

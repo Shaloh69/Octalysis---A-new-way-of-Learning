@@ -152,7 +152,7 @@ async function walk(dir) {
 
 /** Pull every live answer value out of the local database, if it is reachable. */
 async function liveAnswerStrings() {
-  const conn = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa";
+  const conn = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa";
   let pg;
   try {
     ({ default: pg } = await import("pg"));

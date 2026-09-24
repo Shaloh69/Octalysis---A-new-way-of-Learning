@@ -183,7 +183,7 @@ production.
 
 ```bash
 pnpm install
-pnpm db:up          # Postgres 16 in Docker on :54329
+pnpm db:up          # Postgres 16 in Docker on :15432
 pnpm db:reset       # drop, recreate, apply all four SQL files, run invariants
 pnpm test:rls       # the denial suite
 pnpm verify         # typecheck + all tests + invariants

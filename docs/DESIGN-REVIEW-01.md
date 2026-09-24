@@ -137,7 +137,7 @@ pnpm db:up
 docker exec -i octa-db psql -U postgres -d octa < db/demo-seed.sql
 
 # API on 8090 (8080 is often taken by another project's Adminer)
-DATABASE_URL=postgres://postgres:postgres@localhost:54329/octa \
+DATABASE_URL=postgres://postgres:postgres@localhost:15432/octa \
 EXAM_SALT_SECRET=$(head -c 40 /dev/zero | tr '\0' 'x') \
 SUPABASE_JWT_SECRET=test-secret-at-least-32-characters-long-000000 \
 PORT=8090 pnpm --filter @octa/api start

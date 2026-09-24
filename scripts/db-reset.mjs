@@ -180,7 +180,7 @@ async function main() {
     console.log(c.red(`  ${real.length} structural invariant(s) failing. That is a defect, not an empty database.`));
     process.exit(1);
   }
-  console.log(c.green("  Database ready.") + c.dim("  postgres://postgres:postgres@localhost:54329/octa\n"));
+  console.log(c.green("  Database ready.") + c.dim("  postgres://postgres:postgres@localhost:15432/octa\n"));
 }
 
 main().catch((err) => {

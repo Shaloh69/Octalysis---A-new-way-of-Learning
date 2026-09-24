@@ -96,7 +96,7 @@ delete env.SUPABASE_URL;
 delete env.SUPABASE_ANON_KEY;
 
 if (!env.DATABASE_URL) {
-  env.DATABASE_URL = "postgres://postgres:postgres@localhost:54329/octa";
+  env.DATABASE_URL = "postgres://postgres:postgres@localhost:15432/octa";
 }
 if (!env.EXAM_SALT_SECRET) {
   // Any value works locally; it only has to be stable across a run so seeds

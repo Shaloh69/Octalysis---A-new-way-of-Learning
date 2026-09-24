@@ -53,7 +53,7 @@ correct.**
 ### Local — works, and is the only place anything works
 
 ```
-pnpm db:up                                  Postgres 16 on :54329
+pnpm db:up                                  Postgres 16 on :15432
 pnpm db:reset && node scripts/db-demo.mjs   183 items · 22 blueprints · 10 assessments
                                             115 objectives · 19 stages
 pnpm dev:api                                :8090   NOT the raw dev script

@@ -393,7 +393,7 @@ async function main() {
     return;
   }
 
-  const conn = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa";
+  const conn = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa";
   const client = new pg.Client({
     connectionString: conn,
     connectionTimeoutMillis: 15000,

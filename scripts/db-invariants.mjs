@@ -8,7 +8,7 @@
 
 import pg from "pg";
 
-const conn = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa";
+const conn = process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa";
 const EXPECTED_EMPTY_DB = new Set(["INV-18", "INV-27", "INV-28", "INV-29"]);
 
 const c = {

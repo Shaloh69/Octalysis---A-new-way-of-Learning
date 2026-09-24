@@ -65,7 +65,7 @@ other documents — check it before believing any claim that something is built.
 ## Local stack — production runs here until cloud projects exist
 
 ```bash
-pnpm db:up      # Postgres 16 in Docker on :54329
+pnpm db:up      # Postgres 16 in Docker on :15432
 pnpm db:reset   # drop, recreate, apply all SIX SQL files, run invariants
 pnpm dev:api    # the API on :8090, configured for LOCAL auth  <- not `pnpm dev`
 pnpm test:rls   # the 38-test denial suite

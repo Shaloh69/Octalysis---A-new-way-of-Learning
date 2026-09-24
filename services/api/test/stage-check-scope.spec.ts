@@ -148,7 +148,7 @@ beforeAll(async () => {
   app = await buildServer(
     loadEnv({
       NODE_ENV: "test",
-      DATABASE_URL: process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa",
+      DATABASE_URL: process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa",
       EXAM_SALT_SECRET: "x".repeat(40),
       SUPABASE_JWT_SECRET: JWT_SECRET,
       JWT_AUDIENCE: "authenticated",

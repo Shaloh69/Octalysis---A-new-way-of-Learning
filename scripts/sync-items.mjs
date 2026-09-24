@@ -215,7 +215,7 @@ async function main() {
 
   const client = new pg.Client({
     connectionString:
-      process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:54329/octa",
+      process.env.DATABASE_URL ?? "postgres://postgres:postgres@localhost:15432/octa",
   });
   await client.connect();
 

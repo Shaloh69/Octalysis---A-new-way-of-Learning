@@ -328,7 +328,7 @@ salt. `pnpm check:boundary` enforces this.
 
 ## Local stack used for captures
 
-Already running from the previous session; `octa-db` up on :54329, API on :8090,
+Already running from the previous session; `octa-db` up on :15432, API on :8090,
 web on :5173, console on :5174. Launch sequence is in `DESIGN-REVIEW-01.md`.
 **Re-run `db/demo-seed.sql` after `pnpm verify`** — the API suite's `resetAll()`
 truncates and leaves two fixtures. It was in exactly that state at the start of

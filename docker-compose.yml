@@ -25,7 +25,7 @@ services:
       LANG: C
       POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
     ports:
-      - "54329:5432"
+      - "15432:5432"
     volumes:
       - octa-db-data:/var/lib/postgresql/data
     healthcheck:
