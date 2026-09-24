@@ -369,6 +369,11 @@ that's a curriculum-policy change and belongs in a review of
 - Moon state: dim/unlit = not yet attempted, partial glow = attempted not
   mastered, full glow = mastered — same three-state visual language as the
   planet itself, applied one level down
+- > **SUPERSEDED 25 Sep 2026 — `WEB-REVAMP.md` §3.2.** Selecting a moon now
+  > zooms onto it and updates the map sidebar to that moon, with its own ENTER
+  > JOURNEY into the stage at that subtopic's anchor. The popover and the
+  > "moons are not a destination" line below are kept for the reasoning, not
+  > as the spec.
 - Clicking a moon opens a compact popover: objective text, mastery status, a
   "Review this" link into the stage reader at that objective's anchor — reuses
   the exact link `/app/stage/:id/results/:attemptId` already sends a student
@@ -482,6 +487,13 @@ information is identical either way; only the motion stops.
 ---
 
 ## 2. Approach and land — the planet dialog redone as signs, corrected after R0
+
+> **SUPERSEDED 25 Sep 2026 — `WEB-REVAMP.md` §3.** Selecting a planet now opens
+> a **sidebar** that explains the planet and carries **ENTER JOURNEY**; the biome
+> appears only after it is pressed. What this section established still binds
+> the sidebar and is carried into it: **the lock reason and distance are
+> printed in words, never moved into a tooltip**, and the DOM text is the
+> accessibility contract rather than a rough draft of the 3D view.
 
 Revised after seeing the current flat map's word density in practice (a real
 screenshot, not a hypothetical) — the fix belongs here, at the 3D layer,

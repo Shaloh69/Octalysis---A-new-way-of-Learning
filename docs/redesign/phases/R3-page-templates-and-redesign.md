@@ -647,6 +647,14 @@ thesis deliverable, and right now no phase is accountable for it.
       reverse travel transition leaving a stage does not exist
 - [ ] **Shared icon** — `packages/tokens/icon.svg` wired into both apps and
       verified rendering at 96/48/32/16 on light and dark chrome
+- [ ] **Map sidebar and ENTER JOURNEY** (`WEB-REVAMP.md` §3) — selecting a
+      planet opens a sidebar explaining it, with the lock reason printed in words
+      from the API and ENTER JOURNEY disabled when locked; selecting a moon zooms
+      and updates the sidebar; **the biome appears only after ENTER JOURNEY**;
+      the flat map opens the same sidebar in place
+- [ ] **Stage summaries for the sidebar** — 0 of 19 exist. Drafted from
+      `docs/source/` **only with the instructor's approval** (hard rule 5);
+      until then the sidebar shows the stage's objectives
 - [ ] **Planet selection and zoom** (`WEB-REVAMP.md` §3) — select by click AND
       keyboard, camera easing with nodes pinned and no force simulation, Escape
       returns focus to the selected planet, flat map carries the same selection

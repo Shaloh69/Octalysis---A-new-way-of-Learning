@@ -46,8 +46,11 @@ it is done when it does these things.
 
 | Feature | State |
 |---|---|
-| **Select a planet → camera zooms to it** | **missing.** §3 |
-| Moons visible as subtopics | **missing.** R4, 0/13 |
+| **Select a planet → camera zooms to it → sidebar opens** explaining the planet, with **ENTER JOURNEY** | **missing.** §3 |
+| **Select a moon → camera zooms further → the sidebar updates to that moon**, with its own ENTER JOURNEY | **missing.** §3, R4 |
+| Moons visible as subtopics | **missing.** R4 |
+| **Biome only after ENTER JOURNEY** — never on the map, never in the sidebar | map is correct today; the rule must survive the rebuild (§3.5) |
+| An authored one-line description per planet for the sidebar | **missing — 0 of 19 stages have a `summary`.** Content, not design; §3.4 |
 | Orbital motion that reads as a solar system | **wrong.** §4 |
 | "What do I do next" affordance | **missing** — the page says *0 of 19 subsystems online* over an empty starfield and a lone `?` |
 | Lock reason legible on the map itself | partial — the flat map carries it, the 3D map does not |
@@ -78,35 +81,116 @@ no design pass at all.
 
 ---
 
-## 3. Planet selection and zoom
+## 3. Select, zoom, sidebar, ENTER JOURNEY
 
-The interaction the map was always supposed to have.
+**Instructor ruling, 25 Sep 2026.** Supersedes the planet HUD of
+`SOLAR-SYSTEM-SPEC.md` §2 and the moon popover of §1.4 — both notes are marked
+there. The map is where you *choose*; the sidebar is where you *learn what you
+are choosing*; ENTER JOURNEY is the only door into a planet's content, and the
+biome is what you find on the other side of it.
 
-**Select → ease → inspect → return.**
+```
+system view ──select planet──▶ planet in focus + SIDEBAR(planet)
+                                   │                      │
+                          select moon                ENTER JOURNEY
+                                   ▼                      ▼
+                  moon in focus + SIDEBAR(moon)     landing ─▶ stage content
+                                   │                          over its BIOME
+                              ENTER JOURNEY ──────────────────▶ same, at that
+                                                                 subtopic
+  Escape / Back:  moon ─▶ planet ─▶ system, focus returns to the body you left
+```
 
-1. **Select.** Click a planet, or Tab to it and press Enter. Keyboard parity is
-   not optional; `/app/map` already proves every stage can be a focusable
-   element and that property must survive the rebuild.
-2. **Ease.** The camera moves to the planet over ~700ms with an ease-out curve.
-   `react-force-graph-3d` is allowed **for picking and camera easing with nodes
-   pinned** — that is its entire licence here. It must not run a force
-   simulation. Positions are a pure function of seed data
-   (`solar-system/layout.ts`) and a simulation would rearrange the map between
-   sessions, destroying the spatial memory that makes a map worth having.
-3. **Inspect.** At rest, the planet fills roughly a third of the viewport and
-   **its moons become individually selectable** — that is R4, and it is the
-   payoff for zooming at all. The dialog carries title, lock state or mastery,
-   "N of M subtopics mastered", and the enter-stage action.
-4. **Return.** Escape, or a visible Back control. The camera eases back to the
-   system view. Focus returns to the planet that was selected, not to the top of
-   the document.
+### 3.1 Selecting a planet
 
-**Under `prefers-reduced-motion`: no easing.** Cut straight to the target and
-back. The information is the destination, not the journey.
+Click it, or Tab to it and press Enter. Keyboard parity is not optional —
+`/app/map` already proves every stage can be a real focusable element, and that
+survives the rebuild.
 
-**Under reduced motion, absent WebGL, or a small viewport**, the flat map at
-`/app/map` carries the same selection — in place, on the same route, never by
-redirect. `VISUAL-SYSTEM-3D.md` §5's degradation ladder owns that rule.
+The camera eases to the planet over ~700ms, ease-out. `react-force-graph-3d` is
+licensed **for picking and camera easing with nodes pinned** and nothing else —
+never a force simulation, because positions are a pure function of seed data and
+a simulation would rearrange the map between sessions.
+
+At rest, **a sidebar opens** — right-hand at 1440, a bottom sheet at 380. It
+carries, in this order:
+
+1. Stage number and title
+2. **What this planet is** — see §3.4 for where the words come from
+3. Its level or levels, and estimated minutes
+4. **State, in words:** locked, available, in progress with mastery, or
+   mastered
+5. **If locked: the reason and the distance, printed** — *"Unlocks when Stage 02
+   reaches 70%. You're at 62%."* — taken verbatim from the API's `lockReason`.
+   Never a tooltip: `SOLAR-SYSTEM-SPEC.md` §2 already caught that regression once,
+   and three documents require the reason printed. **Never computed in the
+   client** — hard rule 4; the sidebar renders what `is_stage_unlocked()`
+   decided.
+6. "N of M subtopics mastered", and the moons as a list of links — the DOM
+   equivalent of clicking one
+7. **ENTER JOURNEY** — the primary action. **Disabled when locked**, with the
+   reason beside it rather than instead of it
+
+### 3.2 Selecting a moon
+
+A moon is one objective of its planet. Selecting it — click, or from the
+sidebar's moon list — **zooms further, onto the moon**, and **the sidebar
+updates in place to that moon**: objective code and text, its mastery state in
+words, which planet it belongs to with a control back to it, and its own
+**ENTER JOURNEY**, which lands in the stage at that subtopic's anchor rather
+than at the top.
+
+Moons are selectable only while their planet is in focus. At system scale they
+are too small to hit and a mis-tap there is worse than no target at all.
+
+### 3.3 Leaving
+
+Escape, or the sidebar's Back control, steps out one level: moon → planet →
+system. The camera eases back; **focus returns to the body you left**, never to
+the top of the document. The sidebar closes only at system scale.
+
+### 3.4 Where "what this planet is" comes from — a content gap, not a design one
+
+**Measured: 0 of 19 stages have a `summary`.** That column is what the sidebar's
+description would read. Writing 19 of them is authoring course content, and
+hard rule 5 is absolute: stage prose comes from `docs/source/*.md` or the
+database, and if content is missing, stop and say so.
+
+So:
+
+- **Until summaries exist, the sidebar shows the stage's objectives** (115 exist,
+  every stage has them) under the heading *"What you will be able to do"*.
+  Real content, already authored, never invented.
+- **Drafting the 19 summaries from `docs/source/` is proposed work that needs the
+  instructor's approval**, not something a design session writes on its own.
+
+### 3.5 The biome appears only after ENTER JOURNEY
+
+The biome is the **background of a planet's or moon's content** — the reading,
+the activities, the minigames — and it appears **only once ENTER JOURNEY has been
+pressed.** Never on the map. Never in the sidebar. `BIOME-AND-LOADING-SPEC.md`
+§1b already keeps it off `/app` and `/app/map`; this extends the same line to
+the sidebar and to a moon's detail, and that spec is amended to match.
+
+ENTER JOURNEY hands over to the landing transition (`BIOME-AND-LOADING-SPEC.md`,
+the loading screens), and the stage content mounts on top of the biome. The
+reverse — leaving the content — returns through the same transition to the map,
+**with the planet still selected and its sidebar open**, so the student lands
+back exactly where they chose.
+
+### 3.6 Motion, fallbacks and accessibility
+
+- **`prefers-reduced-motion`:** no easing at any step. Cut to the planet, cut
+  to the moon, cut into the content. The information is the destination.
+- **Reduced motion, no WebGL, or a small viewport:** the flat map at `/app/map`
+  opens **the same sidebar** from the same selections — in place, on the same
+  route, never by redirect. `VISUAL-SYSTEM-3D.md` §5's ladder owns that rule.
+- **The sidebar is DOM, and it is the accessibility contract.** A canvas has no
+  semantics, so everything the 3D view shows must be readable here in words.
+  It is a labelled region, not a modal: it does not dim the map, and focus moves
+  to its heading on open.
+- It is a page surface like any other: template, `SPEC.md`, spec, screenshot at
+  1440 and 380, the gate.
 
 ---
 

@@ -188,9 +188,10 @@ eventually will.
 |---|---|---|
 | **Console** | every route the instructor needs to run act 1, `/items` first | 0/14 routes through the gate |
 | **Student routes** | the attempt runner, the stage reader, both maps, `/app/work`, login | rebuild pending (`WEB-REVAMP.md` §6) |
-| **Planet selection and zoom** | select any planet, camera eases to it | not built (`WEB-REVAMP.md` §3) |
+| **Planet selection, sidebar, ENTER JOURNEY** | select a planet → zoom → sidebar explaining it → ENTER JOURNEY → content over its biome. Biome only after ENTER JOURNEY | not built (`WEB-REVAMP.md` §3) |
+| **Stage summaries for the sidebar** | one line per planet | **0 of 19 exist** — content, needs instructor approval (hard rule 5); objectives stand in until then |
 | **Keplerian orbits** | the whole map, `ω ∝ a^-1.5` | not built (`WEB-REVAMP.md` §4) |
-| **Moons** | **planets 00–04**: one moon per objective, three-state mastery glow, click for the popover | R4, 0/13 |
+| **Moons** | **planets 00–04**: one moon per objective, three-state mastery glow, select to zoom and update the sidebar | R4 |
 | **Minigames** | **the act-1 encounters** — below | **none exist** |
 | **Toasts, loading, transitions** | every route above | none exist |
 | **Icon** | both apps | done |

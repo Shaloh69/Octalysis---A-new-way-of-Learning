@@ -31,8 +31,10 @@ background of the whole page when one is selected.**
 
 | Surface | Biome | Why |
 |---|---|---|
-| `/app/stage/:id` and its beats | **Yes — full page** | This is the landing. It is what §4.2's hand-off delivers you into |
-| A moon's detail | **Yes** | Same landing, smaller scope |
+| `/app/stage/:id` and its beats — **after ENTER JOURNEY** | **Yes — full page** | This is the landing. It is what §4.2's hand-off delivers you into |
+| A moon's journey — **after ENTER JOURNEY** on a moon | **Yes** | Same landing, entered at that subtopic's anchor |
+| A stage's activities and minigames | **Yes** | They are the planet's content, and the biome is that content's background |
+| **The map sidebar — planet or moon** | **No** | Ruled 25 Sep 2026 (`WEB-REVAMP.md` §3.5). The sidebar is where you choose; the biome is what you find after choosing. **This row supersedes the earlier "a moon's detail: Yes"**, which was written when a moon's detail was a landing rather than a panel on the map |
 | `/app`, `/app/map`, hub routes | **No** | The solar system is the background there (`SOLAR-SYSTEM-SPEC.md` §1.5). Two backgrounds is two visual systems arguing |
 | **The Self-Test / any assessment** | **NEVER** | `DESIGN-MANDATE.md` §1B rule 1: theatre dresses the practice, never the assessment |
 

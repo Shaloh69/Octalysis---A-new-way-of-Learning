@@ -28,8 +28,11 @@ accidentally scope-creep into "let's also change how mastery is computed."
       hardcoded per stage
 - [ ] Three-state visual language: dim/unlit, partial glow, full glow — same
       language as the planet itself, one level down, per §1.4
-- [ ] Moon click → compact popover: objective text, mastery status, "Review
-      this" link into the stage reader at that objective's anchor
+- [ ] Moon select → camera zooms onto the moon and the **map sidebar updates to it**
+      (`WEB-REVAMP.md` §3.2) — objective, mastery in words, back-to-planet, and
+      ENTER JOURNEY into the stage at that subtopic. This replaces the earlier
+      compact popover (objective text, mastery, a "Review this" link), which is
+      no longer built
 - [ ] Explicitly NOT built: any new gating logic. A planet's own
       locked/available/mastered state still comes from `is_stage_unlocked()`
       and `stage_progress.mastery` exactly as before moons existed. If moon
@@ -37,7 +40,10 @@ accidentally scope-creep into "let's also change how mastery is computed."
       open decision for the instructor (§10 of `SKILL-TREE-3D.md` already
       shows this project's pattern for "not mine to fix" decisions — use it)
 
-## R4.3 — Planet dialog update
+## R4.3 — Planet sidebar (was: planet dialog update)
+
+> The dialog became a sidebar on 25 Sep 2026 (`WEB-REVAMP.md` §3.1). The
+> "N of M subtopics mastered" line below lands in the sidebar.
 - [ ] Add the "N of M subtopics mastered" line per
       `SOLAR-SYSTEM-SPEC.md` §2, item 5
 - [ ] Verify focus-trap, Escape-closes, background-stops-animating still hold
@@ -68,7 +74,8 @@ Instructor decision, 25 Sep 2026: act 1 (stages 00–04) ships with moons and it
 minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
 
 - [ ] Moons live on **planets 00–04** first — one per objective, three-state
-      glow, popover — verified by screenshot at 1440 and 380
+      glow, select-to-zoom with the sidebar updating — verified by screenshot at
+      1440 and 380
 - [ ] Stage 01 encounter — Sort (DOM), through the page gate
 - [ ] Stage 02 encounter — Drill (DOM), through the page gate
 - [ ] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
