@@ -136,3 +136,64 @@ so "the port is up" proves nothing. Use 5183/5184 and pass
 title and refuses a run pointed at a stranger's app.
 
 **`pnpm verify` empties the seeded database.** Reseed before any capture.
+
+---
+
+## 6. Starting prompt — paste after a `/clear`
+
+> Read `docs/redesign/CONSOLE-REVAMP.md` in full, then `docs/NEXT-SESSION.md`.
+> Do not re-derive what those carry; check a number only when you are about to
+> depend on it.
+>
+> Run `pnpm phase` and show it, including the percentage. Name the live phase
+> out loud. Then state plainly whether Prelim-worth of data is okay to run on
+> students to use and grade against — checking the five conditions in root
+> `CLAUDE.md`, not remembering them. If any part is untrue, say which part.
+>
+> **This session is the teacher console only.** `apps/console`. The student app
+> is not in scope.
+>
+> Work `/items` first and only `/items`. In order:
+>
+> 1. Bring up the local stack. `pnpm db:up` (check `docker ps` — Docker Desktop
+>    stops silently), `pnpm db:reset && node scripts/db-demo.mjs`, `pnpm dev:api`
+>    on 8090, console on **5184**, `pnpm dev:token` for a session. 5173/5174
+>    belong to other projects and both answer 200.
+> 2. Capture the reference for `/items` from `docs/redesign/TEMPLATE-LINKS.md`
+>    into `design/templates/console/items/template.png`, and write `SPEC.md`
+>    beside it — the structural decisions you are taking from it, and what you
+>    are deliberately not copying. Colours and fonts are always ours.
+> 3. Write `design/specs/console-items.spec.ts` with the six assertions from §2,
+>    at 1440 and 380. **Watch it fail first** — the action column is clipped in
+>    production, so assertion 1 must go red before you fix anything.
+> 4. Fix `/items` until the spec is green. Capture `current.png` and
+>    `current-380.png`. Write `motion.md` for any transition you add.
+> 5. Show me the screenshots and the spec output. **Stop there.** Do not start
+>    the next route.
+>
+> Rules that bind: root `CLAUDE.md`'s eight hard rules, `.claude/rules/*`,
+> `REDESIGN-CLAUDE.md` §2b/§2c/§2d, and `apps/console/CLAUDE.md` — no
+> `slate-`/`blue-` utilities, no literal hex, no `dark:` variant, no second
+> component library. Screenshot before believing a page works. Tick the phase
+> box in the same commit as the work.
+
+## 7. Continuation prompt — paste for each route after the first
+
+> Continue `docs/redesign/CONSOLE-REVAMP.md`. Console only.
+>
+> Start with `pnpm phase`, the percentage, and the Prelim-readiness sentence.
+>
+> Confirm the previous route's spec is still green before touching anything —
+> `pnpm qa` or the single spec. If it is red, that is this session's work and
+> the next route waits.
+>
+> Then take the next route from §3's table, in order, and do the same five
+> steps: reference and `SPEC.md` first, spec written and **watched failing**,
+> then the rebuild, then `current.png` / `current-380.png` / `motion.md`.
+>
+> One route. Show me the screenshots and the spec output, and say which of the
+> six assertions you actually ran versus assumed. Stop before the next one.
+>
+> If a route turns out to need a decision that is the instructor's — a lock
+> policy, what a control should do, anything that changes what a student sees —
+> stop and ask rather than choosing.
