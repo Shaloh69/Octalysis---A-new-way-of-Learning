@@ -91,6 +91,10 @@ The only exemption is a change that alters no structure, layout, control or
 state — copy, a typo, a comment, data. Even then the route's existing spec must
 be **green** and you must say you ran it.
 
+Every one of these applies to **all pages already built**, not only to routes
+in a revamp list — a new page, a page being changed, and a page being rebuilt
+are all governed the same way.
+
 None of the following is negotiable, and the first outranks the rest:
 
 - **SCREENSHOT IT WITH PLAYWRIGHT, THEN OPEN IT AND LOOK.** Every page, every
@@ -112,6 +116,11 @@ None of the following is negotiable, and the first outranks the rest:
 - **Templates are artifacts, never links.** Capture, then open it and look.
 - **Commit and push when context management kicks in.** Not commit — push. Both
   hosts build from `main`.
+- **Audit the page against its spec before touching it.** Read its
+  `PAGE-SPECS.md` row. A planned feature that is missing, or a planned page that
+  does not exist, gets named, planned, given a captured template, and **brought
+  to the instructor for approval** — never built unasked, never skipped
+  silently. 42 routes are specified and 29 exist.
 - **Every phase report is a table and carries the percentage.**
 - **Toasts, loading states, transitions** — `.claude/rules/design.md`, on every
   page you create or change, not only revamped ones.

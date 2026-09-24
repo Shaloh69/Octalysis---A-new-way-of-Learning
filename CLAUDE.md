@@ -278,6 +278,39 @@ Corollaries, each learned the same way:
 - **Never report a page works on the strength of a passing spec alone.** Say
   which screenshots you looked at.
 
+## AUDIT EVERY PAGE AGAINST ITS SPEC — THEN ASK, NEVER ASSUME
+
+**This applies to every page already built, not only to ones being rebuilt.**
+
+Before touching a route, read what it was supposed to be:
+`docs/PAGE-SPECS.md` for its row, plus `GAME-DESIGN.md`,
+`LESSON-PLAN-AND-LEVELS.md` or `SOLAR-SYSTEM-SPEC.md` where they own part of it.
+Then compare against what exists. The gap is the finding.
+
+Measured 25 Sep 2026: **`PAGE-SPECS.md` specifies 42 routes and 29 exist** — 13
+in `apps/web`, 16 in `apps/console`. Absent entirely: `/app/notebook`,
+`/app/mistakes`, `/app/final`, `/app/help`, the three `/app/lab/*` simulators,
+`/404`, `/500`, `/about`, `/accessibility`, `/console/analytics`. Some of those
+are deliberate deferrals. Nobody can currently tell which, and that is the
+problem.
+
+When a planned feature is missing from a page, or a planned page does not exist:
+
+1. **Say so.** Name it, and name the document that planned it.
+2. **Plan it** — what it does, the data it needs, the controls it owns.
+3. **Find a template for it** and capture it as an artifact, per the
+   templates-are-artifacts rule.
+4. **Stop and ask for approval before building it.**
+
+**Do not build it unasked, and do not skip it silently.** Both are failures, and
+the second is worse: an unbuilt feature that nobody wrote down becomes a feature
+nobody remembers was intended. A deliberate deferral is a fine answer — it just
+has to be *recorded* as one, with its reason, rather than left as an absence.
+
+This is how `/console/analytics` stayed honest: `apps/console/CLAUDE.md` names it
+as not built and says why — `item_stats` cannot say anything true until items
+have 30+ exposures. That is the standard. Match it.
+
 ## THESE RULES ARE NOT A REVAMP PROTOCOL — THEY GOVERN ALL PAGE WORK
 
 **The revamp is the first application of these rules, not their scope.** They
