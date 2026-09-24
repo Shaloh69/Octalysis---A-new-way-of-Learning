@@ -61,3 +61,23 @@ accidentally scope-creep into "let's also change how mastery is computed."
 - [ ] Zero new client-side gating logic — grep confirms it
 - [ ] Screen-reader pass confirms moon data is present in the accessible
       equivalent, not just the visual one
+
+## R4.5 — The first release: act 1 as the full experience
+
+Instructor decision, 25 Sep 2026: act 1 (stages 00–04) ships with moons and its
+minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
+
+- [ ] Moons live on **planets 00–04** first — one per objective, three-state
+      glow, popover — verified by screenshot at 1440 and 380
+- [ ] Stage 01 encounter — Sort (DOM), through the page gate
+- [ ] Stage 02 encounter — Drill (DOM), through the page gate
+- [ ] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
+      keyboard path and a non-canvas fallback
+- [ ] Stage 04 encounter — cache drill (DOM), through the page gate
+- [ ] **The Descent** (04→06, Phaser) — instructor's decision recorded: first
+      release or Midterm. Its payoff lands in stage 06, which is Midterm content
+- [ ] Phaser verified absent from the initial bundle — lazy-loaded per route,
+      grep `dist/index.html` for a preload, same discipline as the 3D chunk
+- [ ] No encounter dresses an assessment — grep confirms `data-encounter` never
+      wraps the attempt runner
+

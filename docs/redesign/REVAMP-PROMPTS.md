@@ -2,16 +2,22 @@
 ### The prompts for the revamp sessions — paste one, get one route
 
 The revamp is deliberately many small sessions, not one large one. Each session
-takes **one route**, rebuilds it, proves it, and stops. That is the whole
+takes **one route**, rebuilds it, proves it, **rewrites §1 of this file for the
+next session**, and stops. §1 is therefore always the prompt to paste next — it
+is updated by the session before yours, not by hand. That is the whole
 method, and it exists because the alternative already happened: R3 reached 41
 boxes with `design/templates/` empty, and a clipped action column and unstyled
 purple links both reached production unseen.
 
 **Order:** every console route (`CONSOLE-REVAMP.md` §3) → every student route
-(`WEB-REVAMP.md` §6) → moons (R4).
+(`WEB-REVAMP.md` §6) → moons for planets 00–04 (R4) → the act-1 minigames. Each
+minigame is a page like any other: one session, one gate.
 
-**Milestone:** ship the Prelim with the student app rebuilt and subtopic moons
-live. §4 says what that actually requires, and most of it is not design work.
+**Milestone: the first release is act 1 — stages 00–04 and the Prelim — as the
+full experience.** Rebuilt pages, planet zoom, real orbits, moons and the act-1
+minigames, so students use the finished product while 05–18 are built. §4 has
+the scope, what exists today (very little), and the two blockers that are not
+design work at all.
 
 ---
 
@@ -24,7 +30,10 @@ live. §4 says what that actually requires, and most of it is not design work.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
 > checking the five conditions in `CLAUDE.md` rather than remembering them.
 >
-> **This session is `apps/console` `/items`, and nothing else.**
+> **THIS SESSION IS ONLY FOR `apps/console` `/items`. NOTHING ELSE.** Not a
+> second route, not a quick fix elsewhere, not the student app. If you find a
+> defect on another page, write it down in `docs/NEXT-SESSION.md` and leave it.
+> The last thing this session does is rewrite this prompt for the next one.
 >
 > 1. Bring the local stack up: `pnpm db:up` — check `docker ps`, Docker Desktop
 >    stops silently — then `pnpm db:reset && node scripts/db-demo.mjs`,
@@ -54,9 +63,16 @@ live. §4 says what that actually requires, and most of it is not design work.
 >    with Playwright, then **open both and look at them** — a green spec is not
 >    seeing. Write `motion.md`.
 > 6. Tick the R3 box in the same commit as the work. Commit and push.
+> 7. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session.**
+>    Replace `/items` with the next route in order, and carry forward what this
+>    session learned that the next one needs: new gotchas, a spec that now
+>    exists, anything found on another page and parked. Update the phase figures
+>    in it. Commit and push that too — the next session starts from this file,
+>    not from this conversation.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
-> versus assumed, and **stop**. Do not start the next route.
+> versus assumed, show me the rewritten §1, and **stop**. Do not start the next
+> route.
 
 ---
 
@@ -84,8 +100,14 @@ live. §4 says what that actually requires, and most of it is not design work.
 >
 > Toasts, loading states and transitions are required, not optional.
 >
+> **THIS SESSION IS ONLY FOR THAT ONE ROUTE.** Defects found elsewhere go into
+> `docs/NEXT-SESSION.md`, not into this session's diff.
+>
 > One route. Screenshots, spec output, assertions run versus assumed. Tick the
-> box in the same commit. Commit and push. Stop.
+> box in the same commit. Commit and push.
+>
+> **Then rewrite §1 of this file for the session after you** — the next route,
+> what you learned, updated phase figures — and commit and push that. Stop.
 >
 > If a route needs a decision that is the instructor's — a lock policy, what a
 > control should do, anything that changes what a student sees — stop and ask
@@ -118,6 +140,10 @@ None of the following is negotiable, and the first outranks the rest:
   ordering items rendered as radio buttons, the purple links, and an icon that
   wrote successfully and rendered as a broken-image glyph.
 
+- **ONE SESSION, ONE ROUTE — AND IT HANDS OVER.** A session does exactly the
+  route its prompt names. It ends by rewriting §1 of this file for the next
+  session, committed and pushed. The prompt is the handoff; a chat transcript
+  is not.
 - **NEVER PROCEED TO ANOTHER PAGE IF THIS ONE HAS NOT PASSED.** Green on all six
   assertions at both widths. Not "mostly". If a route cannot pass, that route is
   the work — say what is blocking it and stop.
@@ -148,37 +174,79 @@ before measuring.
 
 ---
 
-## 4. The milestone — ship the Prelim, with moons
+## 4. The first release — the Prelim, as the full experience
 
-The revamp is not the blocker for shipping. Say this plainly every session,
-because it is easy to spend a month on design and ship nothing.
+**Decision, 25 Sep 2026 (instructor):** the first release is not a bare exam
+with a map attached. It is **act 1, stages 00–04, playable as the finished
+product** — so students get the real OCTA while stages 05–18 are still being
+built. Everything a student can touch in act 1 works the way the whole course
+eventually will.
 
-**Design work required before the Prelim ships:**
+### In the first release
 
-- `/items` — 183 items must be reviewed through this page and its action column
-  is clipped. **This is the one route the Prelim genuinely depends on.**
-- `/app/stage/:id/check` — it grades.
-- `/app/stage/:id` — no control exists to leave a stage.
+| | Scope | State, measured 25 Sep |
+|---|---|---|
+| **Console** | every route the instructor needs to run act 1, `/items` first | 0/14 routes through the gate |
+| **Student routes** | the attempt runner, the stage reader, both maps, `/app/work`, login | rebuild pending (`WEB-REVAMP.md` §6) |
+| **Planet selection and zoom** | select any planet, camera eases to it | not built (`WEB-REVAMP.md` §3) |
+| **Keplerian orbits** | the whole map, `ω ∝ a^-1.5` | not built (`WEB-REVAMP.md` §4) |
+| **Moons** | **planets 00–04**: one moon per objective, three-state mastery glow, click for the popover | R4, 0/13 |
+| **Minigames** | **the act-1 encounters** — below | **none exist** |
+| **Toasts, loading, transitions** | every route above | none exist |
+| **Icon** | both apps | done |
 
-**Not required for the Prelim, and must not be allowed to hold it up:** the 3D
-map's camera zoom, Keplerian orbits, moons, `/gradebook`, `/live`, and every
-console route past `/items`. They are the right work and they are not on the
-critical path.
+**The act-1 encounters** — `GAME-DESIGN.md` §10.3's table, keyed to the real
+curriculum:
 
-**Not design work at all, and both still blocking:**
+| Stage | Encounter | Built with |
+|---|---|---|
+| 01 · Introduction | Sort — classification | DOM |
+| 02 · Computer Evolution and Performance | Drill — computed answer | DOM |
+| 03 · Top Level View and Interconnection | Bus wiring — the shared bus visibly constricting is the lesson | **Phaser** |
+| 04 · Cache Memory | Cache drill — `<input type=range>`, keyboard-accessible for free | DOM |
+| after 04 | **The Descent** — memory-hierarchy platformer, unlocked on completing 04, paid off at 06 | **Phaser** |
+
+**Measured: zero of these exist.** `apps/web/src/lib/encounters.ts` maps panel
+*themes* to stages — skins, not games. Phaser is not installed. The "existing
+Cache Tuner" `MINIGAME-PROPOSALS.md` refers to is not in the source. Every row is
+new work.
+
+Rules that bind them, from `GAME-DESIGN.md` §10 and root `CLAUDE.md`: Phaser is
+**lazy-loaded per route and never in the initial bundle** (it is ~1 MB, four
+times the entire 3D budget); a canvas encounter has no accessibility semantics,
+so every Phaser game carries a keyboard path and a non-canvas fallback;
+encounters dress the LAB beat and **never an assessment**; and they are pages
+like any other — template, `SPEC.md`, spec, screenshot, gate.
+
+**The Descent spans 04→06**, so its payoff lands in Midterm content. Stages 05
+and 06 are authored, so it can be built — but whether it ships in the first
+release or waits for the Midterm is **the instructor's call**. Ask before
+building it.
+
+### Not in the first release
+
+Stages 05–18 as playable content, the Semi-final and Finals exams, the
+remaining four approved minigames (Hazard Interceptor 14, Fault Line 18, Amdahl
+500 17, Mnemonic Sprint 10→11), `/console/analytics`. Their planets still render
+on the map — in orbit, correctly placed, honestly locked — so the map is whole
+even where the course is not yet.
+
+### Not design work, and still blocking — say this every session
 
 1. **0 of 183 items are `live`.** The engine samples `where status = 'live'`, so
-   every attempt fails to fill at Start. Act 1's 96 items must be approved.
-2. **Stage 00 gates stage 01 and cannot be completed.** It is
-   `gradeable = false`, gets no stage check, and `is_stage_unlocked()` wants
-   every prerequisite at 70%. A real student is told *"Unlocks when Stage 00
-   reaches 70%. You're at 0%."* Three options in `NEXT-SESSION.md` §3a; the
-   instructor's call.
+   every attempt fails to fill at Start. Act 1's 96 items must be approved,
+   through `/items` — which is why `/items` goes first.
+2. **Stage 00 gates stage 01 and cannot be completed.** `gradeable = false`, no
+   stage check, and `is_stage_unlocked()` wants every prerequisite at 70%. A real
+   student is told *"Unlocks when Stage 00 reaches 70%. You're at 0%."* Three
+   options in `NEXT-SESSION.md` §3a; the instructor's call.
 
-**Moons are R4 and land with the map's zoom** (`WEB-REVAMP.md` §3), never
-before it — moons on a map nobody can zoom into are decoration. R4 is 0/13 and
-its checklist already exists.
+### Order
 
-So the honest ordering is: `/items` → approve act 1 → decide stage 00 → the two
-student routes that carry an attempt → **ship the Prelim** → then the map, the
-orbits and the moons.
+`/items` → approve act 1 → decide stage 00 → the rest of the console →
+attempt runner → stage reader → flat map → 3D map with zoom and orbits →
+**moons for 00–04** → **act-1 encounters, one per session like any page** →
+`/app/work`, login → **ship act 1** → then 05–18.
+
+Moons land with the zoom, never before it — moons on a map nobody can zoom into
+are decoration.

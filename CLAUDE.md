@@ -351,6 +351,22 @@ nobody can verify. Every defect this project has shipped — the clipped action
 column, unstyled purple links, an ordering item that was unanswerable and graded
 wrong every time — reached production through a page with no spec behind it.
 
+## ONE SESSION, ONE ROUTE — AND EVERY SESSION WRITES THE NEXT ONE'S PROMPT
+
+A page-work session does **only** the route its prompt names. A defect found on
+another page is written into `docs/NEXT-SESSION.md` and left alone — fixing it
+"while you're there" is how a session ends with two half-done routes.
+
+**The session's last act is rewriting §1 of `docs/redesign/REVAMP-PROMPTS.md`**
+for the session after it: the next route in order, what this session learned
+that the next one needs, anything parked, current phase figures. Committed and
+pushed. The prompt is the handoff. A chat transcript does not survive a `/clear`
+and must never be the only place something was written down.
+
+**The first release is act 1 as the full experience** — stages 00–04, rebuilt
+pages, planet zoom, Keplerian orbits, moons on planets 00–04, and the act-1
+minigames. `REVAMP-PROMPTS.md` §4 owns the scope; R4.5 tracks it.
+
 ## NEVER PROCEED TO ANOTHER PAGE IF THIS ONE HAS NOT PASSED
 
 **One route at a time, and the gate is the spec, not your judgement.**
