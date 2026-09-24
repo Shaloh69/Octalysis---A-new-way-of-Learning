@@ -641,6 +641,10 @@ thesis deliverable, and right now no phase is accountable for it.
       assertions at 1440 and 380
 - [ ] **Student app revamp** (`WEB-REVAMP.md`) — same, for `apps/web`, second,
       and REDONE rather than improved per root `CLAUDE.md`
+- [ ] **Toasts, loading states and transitions** on every revamped route per
+      `.claude/rules/design.md` — no toast library is installed in either app
+      today, exactly one route in `apps/web` has a loading state, and the
+      reverse travel transition leaving a stage does not exist
 - [ ] **Shared icon** — `packages/tokens/icon.svg` wired into both apps and
       verified rendering at 96/48/32/16 on light and dark chrome
 - [ ] **Planet selection and zoom** (`WEB-REVAMP.md` §3) — select by click AND

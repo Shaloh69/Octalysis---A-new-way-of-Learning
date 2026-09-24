@@ -239,6 +239,23 @@ record it, continue. Stop only for a genuinely ambiguous reading, an
 instructor's call, something irreversible, or a rule that would have to be
 broken.
 
+## NEVER PROCEED TO ANOTHER PAGE IF THIS ONE HAS NOT PASSED
+
+**One route at a time, and the gate is the spec, not your judgement.**
+
+`design/specs/<app>-<route>.spec.ts` must be green on all six assertions, at
+1440 **and** 380, before a single line is written for the next route. Not
+"mostly green". Not "green except the one I know about". Green.
+
+If a route cannot pass, that route is the work — say what is blocking it and
+stop. Do not open another file to make progress feel better. A batch of
+half-finished routes is exactly how R3 reached 41 boxes with an empty
+`design/templates/`, and it is why a clipped action column and unstyled purple
+links both reached production unseen.
+
+Report per route: which of the six assertions you ran, which you assumed, and
+the screenshots. Then stop and let the instructor look.
+
 ## REDO THE PAGE. DO NOT IMPROVE IT.
 
 **This is the largest rule in the revamp and it overrides the instinct to be
@@ -262,6 +279,16 @@ real focusable DOM rather than a canvas is a hard-won property and must survive.
 
 **The old page is a requirements document, not a starting point.** Read it to
 learn what the page must do. Then close it and build.
+
+**YOU MAY REPLACE A PAGE ENTIRELY.** Not a refactor — a replacement. Delete the
+component, write a new one, pick a different layout, a different component
+structure, a different interaction. The only things that bind are the ones that
+were always binding: `packages/tokens` for every colour, type size, space and
+duration; the three themes at AA; keyboard-only operation; 380px with no
+horizontal scroll; the eight hard rules; and the data and controls the route
+legitimately owes its user.
+
+Inside those, you have a free hand. Do not ask permission to throw a page away.
 
 A route is finished when its spec is green, not when it resembles what was
 there before.
