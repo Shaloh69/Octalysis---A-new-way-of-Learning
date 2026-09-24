@@ -68,6 +68,12 @@ Every route's spec asserts, **at 1440 and 380**:
 6. **`prefers-reduced-motion` respected**, asserted with the media feature
    emulated rather than assumed from the CSS.
 
+**Specs already exist for many routes.** `design/specs/` holds 18, nine of them
+console. **Extend, never overwrite.** `console-items.spec.ts` alone is 174 lines
+of regression cover — its density assertion exists because that page was once a
+card list, and losing it invites the regression back. The REDO rule licenses
+replacing the *page*; it never licenses deleting the proof that it works.
+
 **Only when a route's spec is green does the next route begin.** One page at a
 time. A batch of half-finished routes is how R3 reached 41/49 with an empty
 template folder.
