@@ -1,13 +1,22 @@
 # deploy/ — one paste per host
 
-Three templates, one per hosting target. Copy the file, fill in every
-`REPLACE-ME`, paste into the host's bulk env import, **redeploy**.
+Four templates. Copy the file, fill in every `REPLACE-ME`, paste into the
+host's bulk env import, **redeploy**.
 
-| File | Host | Import at |
+| File | Where it goes | Import at |
 |---|---|---|
 | `vercel-web.env.example` | Vercel · octa-web | Settings → Environment Variables → Import .env |
 | `vercel-console.env.example` | Vercel · octa-console | same |
 | `render-api.env.example` | Render · octa-api | Environment → Add from .env |
+| `local-admin.env.example` | **your own machine** | `set -a; . deploy/local-admin.env; set +a` |
+
+The fourth is not a hosting dashboard. The schema push, the content syncs and
+`bootstrap-admin.mjs` all run from your laptop — Render never runs them — so the
+service-role key and the admin defaults belong there and nowhere else. Delete it
+when the migration is done.
+
+**Moving to new accounts?** `docs/MIGRATE-HOSTING.md` is the ordered runbook,
+including what to do about the old deployment. This file is just the variables.
 
 A filled-in copy saved as `deploy/*.env` (no `.example`) is gitignored.
 
@@ -33,8 +42,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    schema**. Run it before anything else, or it deletes what came after. Re-run
    `--check` immediately beforehand.
 2. Content: `sync-content` → `sync-items` → `sync-assessments`.
-3. **Then** `node scripts/bootstrap-admin.mjs` — with `OCTA_ADMIN_*` exported,
-   it needs no arguments.
+3. **Then** `node scripts/bootstrap-admin.mjs` — with `local-admin.env`
+   sourced, it needs no arguments.
 4. Vercel env vars → redeploy **both** apps.
 5. Render `CORS_ALLOWED_ORIGINS` → both Vercel origins, no trailing slashes.
 6. Console: Settings → Deployment Protection → **Disabled**, and hand people the

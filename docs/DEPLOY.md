@@ -8,6 +8,12 @@ Budget about an hour. Most of it is waiting for builds.
 
 ---
 
+**Moving to different accounts rather than deploying fresh?**
+`docs/MIGRATE-HOSTING.md` is the runbook for that — every key changes, the four
+services have to learn each other's new addresses, and the old deployment has to
+be retired in the right order. Read this file's §2 and §3 traps first; they
+apply either way.
+
 ## 0. Before you touch a dashboard
 
 **Rotate the credentials.** The Supabase keys and the database password were
@@ -65,7 +71,7 @@ care about** — see §6.
 ### 1.3 Confirm it before moving on
 
 ```bash
-pnpm db:invariants     # 23 clean
+pnpm db:invariants     # 28 registered, 0 failures
 pnpm test:rls          # 38/38 against the real project
 ```
 
@@ -246,7 +252,7 @@ Then, in the console:
 1. **Import the roster.** Nobody can register until their ID is on it. Preview
    first — the import is dry-run by default.
 2. **Publish items.** The bank is empty. Nothing can be sat until it is not.
-3. **Check `/system`** — 23 invariants, live.
+3. **Check `/system`** — 28 invariants, live, 0 failures.
 
 And take a backup you have actually restored:
 
