@@ -33,7 +33,8 @@ accidentally scope-creep into "let's also change how mastery is computed."
       ENTER JOURNEY into the stage at that subtopic. This replaces the earlier
       compact popover (objective text, mastery, a "Review this" link), which is
       no longer built
-- [ ] Explicitly NOT built: any new gating logic. A planet's own
+- ~~SUPERSEDED 25 Sep 2026 by R4.6: moons now DO gate the next planet.~~
+      Kept for the reasoning: explicitly NOT built: any new gating logic. A planet's own
       locked/available/mastered state still comes from `is_stage_unlocked()`
       and `stage_progress.mastery` exactly as before moons existed. If moon
       completion should someday gate planet completion, that's flagged as an
@@ -87,4 +88,28 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
       grep `dist/index.html` for a preload, same discipline as the 3D chunk
 - [ ] No encounter dresses an assessment — grep confirms `data-encounter` never
       wraps the attempt runner
+
+## R4.6 Moons unlock the next planet, and hold the minigames
+
+Instructor rulings, 25 Sep 2026 (`WEB-REVAMP.md` §3.6 and §3.7). **These
+supersede the R4.2 box above that says no new gating logic is built.**
+
+- [ ] **Instructor decision recorded: the moon threshold.** Every act-1 moon has
+      3 questions, so a per-moon 70% bar means a perfect score on every
+      subtopic. Proposed: 2 of 3 correct, best result per question across
+      attempts
+- [ ] **Instructor decision recorded: stage 00's moons.** 5 moons, 0 questions,
+      so under moon gating stage 01 never opens. Proposed: Orientation has no
+      moons
+- [ ] Objective mastery stored server-side, written only by the grading
+      service, RLS'd like `stage_progress`, with its denial tests written and
+      watched failing first
+- [ ] `is_stage_unlocked()` opens the next planet when every moon of its
+      prerequisite is mastered. Server-side only (hard rule 4); the client
+      renders the result and the `lockReason` names the moons still missing
+- [ ] A moon's ENTER JOURNEY opens practice on that objective's own questions
+- [ ] **Minigame placement on moons approved** (`WEB-REVAMP.md` §3.6), then each
+      minigame built on its moon through the page gate
+- [ ] Biome seeded **per planet** (student and stage), cosmetic only, shown as
+      the sidebar background; a moon uses its planet's biome
 

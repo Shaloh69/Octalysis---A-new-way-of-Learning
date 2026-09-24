@@ -47,10 +47,12 @@ it is done when it does these things.
 | Feature | State |
 |---|---|
 | **Select a planet → camera zooms to it → sidebar opens** explaining the planet, with **ENTER JOURNEY** | **missing.** §3 |
-| **Select a moon → camera zooms further → the sidebar updates to that moon**, with its own ENTER JOURNEY | **missing.** §3, R4 |
+| **Select a moon → camera zooms further → the sidebar updates to that moon**; its ENTER JOURNEY opens the moon's practice and minigame | **missing.** §3.2, R4 |
 | Moons visible as subtopics | **missing.** R4 |
-| **Biome only after ENTER JOURNEY** — never on the map, never in the sidebar | map is correct today; the rule must survive the rebuild (§3.5) |
-| An authored one-line description per planet for the sidebar | **missing — 0 of 19 stages have a `summary`.** Content, not design; §3.4 |
+| **Sidebar background is the planet's biome**; the map canvas never carries one | **missing**: biomes are seeded once per student, not per planet (§3.5) |
+| A tiny summary per planet, plus its objectives, in the sidebar | **19 drafted, 0 approved**: shown only once the instructor approves (§3.8) |
+| **Moons unlock the next planet** | **missing**: nothing stores mastery per objective; two decisions open (§3.7) |
+| **Minigames live in moons** | **none built**; placement proposed for approval (§3.6) |
 | Orbital motion that reads as a solar system | **wrong.** §4 |
 | "What do I do next" affordance | **missing** — the page says *0 of 19 subsystems online* over an empty starfield and a lone `?` |
 | Lock reason legible on the map itself | partial — the flat map carries it, the 3D map does not |
@@ -81,116 +83,182 @@ no design pass at all.
 
 ---
 
-## 3. Select, zoom, sidebar, ENTER JOURNEY
+## 3. Planets, moons, the sidebar, and ENTER JOURNEY
 
-**Instructor ruling, 25 Sep 2026.** Supersedes the planet HUD of
-`SOLAR-SYSTEM-SPEC.md` §2 and the moon popover of §1.4 — both notes are marked
-there. The map is where you *choose*; the sidebar is where you *learn what you
-are choosing*; ENTER JOURNEY is the only door into a planet's content, and the
-biome is what you find on the other side of it.
+**Instructor rulings, 25 Sep 2026.** Supersede the planet HUD of
+`SOLAR-SYSTEM-SPEC.md` §2 and the moon popover of §1.4.
+
+### 3.0 The model
 
 ```
-system view ──select planet──▶ planet in focus + SIDEBAR(planet)
-                                   │                      │
-                          select moon                ENTER JOURNEY
-                                   ▼                      ▼
-                  moon in focus + SIDEBAR(moon)     landing ─▶ stage content
-                                   │                          over its BIOME
-                              ENTER JOURNEY ──────────────────▶ same, at that
-                                                                 subtopic
-  Escape / Back:  moon ─▶ planet ─▶ system, focus returns to the body you left
+PLANET  = one topic, a chapter of the syllabus              (Stage 04 · Cache Memory)
+  holds: its summary, its reading, its stage check, its biome
+  MOON  = one subtopic, one of that chapter's objectives    (04.5 · Compute for cache
+    holds: the objective, its practice questions,                    addresses and size)
+           its minigame if one is attached, and its mastery
 ```
 
-### 3.1 Selecting a planet
+**A planet is where you learn the topic; a moon is where you prove a piece of
+it.** The reading is one continuous sequence per planet. `content_blocks` carry
+no objective, and splitting 217 blocks across 115 objectives is not planned. The
+questions are already per moon: every item has an `objective_id`, and every
+act-1 moon has exactly three. That is what makes a moon a place worth going.
 
-Click it, or Tab to it and press Enter. Keyboard parity is not optional —
-`/app/map` already proves every stage can be a real focusable element, and that
-survives the rebuild.
+### 3.1 Selecting a planet: the planet sidebar
 
-The camera eases to the planet over ~700ms, ease-out. `react-force-graph-3d` is
-licensed **for picking and camera easing with nodes pinned** and nothing else —
-never a force simulation, because positions are a pure function of seed data and
-a simulation would rearrange the map between sessions.
-
-At rest, **a sidebar opens** — right-hand at 1440, a bottom sheet at 380. It
-carries, in this order:
+Click, or Tab and Enter. The camera eases in over ~700ms, nodes pinned, no force
+simulation. The sidebar opens (right-hand at 1440, a bottom sheet at 380) and
+carries:
 
 1. Stage number and title
-2. **What this planet is** — see §3.4 for where the words come from
-3. Its level or levels, and estimated minutes
-4. **State, in words:** locked, available, in progress with mastery, or
-   mastered
-5. **If locked: the reason and the distance, printed** — *"Unlocks when Stage 02
-   reaches 70%. You're at 62%."* — taken verbatim from the API's `lockReason`.
-   Never a tooltip: `SOLAR-SYSTEM-SPEC.md` §2 already caught that regression once,
-   and three documents require the reason printed. **Never computed in the
-   client** — hard rule 4; the sidebar renders what `is_stage_unlocked()`
-   decided.
-6. "N of M subtopics mastered", and the moons as a list of links — the DOM
-   equivalent of clicking one
-7. **ENTER JOURNEY** — the primary action. **Disabled when locked**, with the
-   reason beside it rather than instead of it
+2. **A tiny summary**: `stages.summary`, one or two sentences. Drafted for all
+   19 stages and **shown only once the instructor approves it** (§3.8). Until
+   then this line is simply absent; nothing stands in for it
+3. **The objectives**: the planet's moons, listed in words, each with its
+   mastery state. Always shown; they are the syllabus's own wording
+4. Level or levels, estimated minutes
+5. State in words, and **if locked, the reason and the distance printed
+   verbatim from the API's `lockReason`**. Never a tooltip, never computed in
+   the client (hard rule 4)
+6. "N of M subtopics mastered", which is now also what unlocks the next planet
+   (§3.7)
+7. **ENTER JOURNEY**, into the planet's reading and stage check. Disabled when
+   locked, with the reason beside it
 
-### 3.2 Selecting a moon
+**The sidebar's background is that planet's biome** (§3.5).
 
-A moon is one objective of its planet. Selecting it — click, or from the
-sidebar's moon list — **zooms further, onto the moon**, and **the sidebar
-updates in place to that moon**: objective code and text, its mastery state in
-words, which planet it belongs to with a control back to it, and its own
-**ENTER JOURNEY**, which lands in the stage at that subtopic's anchor rather
-than at the top.
+### 3.2 Selecting a moon: the moon sidebar
 
-Moons are selectable only while their planet is in focus. At system scale they
-are too small to hit and a mis-tap there is worse than no target at all.
+Select a moon, on the canvas or from the planet sidebar's objective list, and
+the camera zooms onto it; **the sidebar updates in place to that moon:**
+
+1. The objective, code and wording
+2. Its mastery in words: *not started, 1 of 3, 2 of 3, mastered*
+3. Its minigame, named, if one is attached (§3.6)
+4. The planet it belongs to, with a control back to it
+5. **ENTER JOURNEY**, into **the moon's journey**: practice on that objective's
+   own questions, and its minigame if it has one. This is what finally gives a
+   moon something to hold. It is not a second door into the planet's reading
+
+Moons are selectable only while their planet is in focus; at system scale they
+are too small to hit.
 
 ### 3.3 Leaving
 
-Escape, or the sidebar's Back control, steps out one level: moon → planet →
-system. The camera eases back; **focus returns to the body you left**, never to
-the top of the document. The sidebar closes only at system scale.
+Escape or Back steps out one level (moon, then planet, then system) and focus
+returns to the body you left. Leaving a journey returns to the map with that
+planet or moon still selected and its sidebar open.
 
-### 3.4 Where "what this planet is" comes from — a content gap, not a design one
+### 3.4 What the biome covers, and what it does not
 
-**Measured: 0 of 19 stages have a `summary`.** That column is what the sidebar's
-description would read. Writing 19 of them is authoring course content, and
-hard rule 5 is absolute: stage prose comes from `docs/source/*.md` or the
-database, and if content is missing, stop and say so.
+The **map canvas** never carries a biome: the solar system is its background
+(`BIOME-AND-LOADING-SPEC.md` §1b). **The sidebar does**, and so does everything
+after ENTER JOURNEY.
 
-So:
+### 3.5 The biome is the sidebar's background (reversed on 25 Sep)
 
-- **Until summaries exist, the sidebar shows the stage's objectives** (115 exist,
-  every stage has them) under the heading *"What you will be able to do"*.
-  Real content, already authored, never invented.
-- **Drafting the 19 summaries from `docs/source/` is proposed work that needs the
-  instructor's approval**, not something a design session writes on its own.
+*The previous version of this section said the sidebar never shows a biome. The
+instructor reversed that the same day.* The sidebar is a small window into where
+you are about to go, so it wears that world:
 
-### 3.5 The biome appears only after ENTER JOURNEY
+- **A planet's sidebar** shows that planet's biome
+- **A moon's sidebar** shows **its planet's** biome. A moon is part of its
+  planet's world, and giving each of 115 moons its own would break that
+- After ENTER JOURNEY the same biome becomes the full-page background of the
+  reading, the practice and the minigames
 
-The biome is the **background of a planet's or moon's content** — the reading,
-the activities, the minigames — and it appears **only once ENTER JOURNEY has been
-pressed.** Never on the map. Never in the sidebar. `BIOME-AND-LOADING-SPEC.md`
-§1b already keeps it off `/app` and `/app/map`; this extends the same line to
-the sidebar and to a moon's detail, and that spec is amended to match.
+**One biome per planet does not exist yet.** Today a biome is seeded **once per
+student** (`cosmetic-seed.ts` holds a single `biomeIndex`), so every planet a
+student visits looks the same. The sidebar needs a biome **per planet, seeded
+from student and stage**, deterministic, cosmetic only: never touching a lock, a
+ring or a grade, the same boundary `SOLAR-SYSTEM-SPEC.md` §3 already draws.
 
-ENTER JOURNEY hands over to the landing transition (`BIOME-AND-LOADING-SPEC.md`,
-the loading screens), and the stage content mounts on top of the biome. The
-reverse — leaving the content — returns through the same transition to the map,
-**with the planet still selected and its sidebar open**, so the student lands
-back exactly where they chose.
+**Legibility is not negotiable.** Sidebar text sits on a token surface laid over
+the biome, held to AA **computed on all three themes and all seven biomes**, the
+same rule `BIOME-AND-LOADING-SPEC.md` applies to a full-page background. A biome
+that cannot hold AA behind a sidebar gets a stronger scrim, not an exemption.
 
-### 3.6 Motion, fallbacks and accessibility
+### 3.6 Minigames live in moons
 
-- **`prefers-reduced-motion`:** no easing at any step. Cut to the planet, cut
-  to the moon, cut into the content. The information is the destination.
-- **Reduced motion, no WebGL, or a small viewport:** the flat map at `/app/map`
-  opens **the same sidebar** from the same selections — in place, on the same
-  route, never by redirect. `VISUAL-SYSTEM-3D.md` §5's ladder owns that rule.
-- **The sidebar is DOM, and it is the accessibility contract.** A canvas has no
-  semantics, so everything the 3D view shows must be readable here in words.
-  It is a labelled region, not a modal: it does not dim the map, and focus moves
-  to its heading on open.
+A minigame belongs to the **subtopic it exercises**, not to the whole planet. The
+act-1 encounters, placed on the moon each one actually teaches. **Proposed, for
+the instructor's approval:**
+
+| Moon | Objective | Minigame | Built with |
+|---|---|---|---|
+| 01.2 | Differentiate Computer Organization and Computer Architecture | **Sort**: features into *visible to the programmer* vs *chosen underneath*, the question stage 01 is built on | DOM |
+| 02.8 | Compute for CPI, MIPS rate and MFLOPS rate | **Drill**: parameterised, computed answer | DOM |
+| 03.9 | Enumerate the elements of bus design | **Bus wiring**: the shared bus visibly constricting is the lesson | Phaser |
+| 04.5 | Compute for cache addresses and size | **Cache drill**: `<input type=range>`, keyboard-accessible for free | DOM |
+| 04.3 | Illustrate the memory hierarchy | **The Descent**: unlocked after 04, paid off at 06. First release or Midterm is still the instructor's call | Phaser |
+
+Every other moon's journey is its practice alone. A moon without a minigame is
+not unfinished; a minigame on the wrong moon teaches the wrong verb, which is
+exactly what `MINIGAME-PROPOSALS.md`'s correction of 2 Sep 2026 caught once.
+
+Minigames still dress practice, **never an assessment**, and Phaser is still
+lazy-loaded per route and never in the initial bundle.
+
+### 3.7 Moons unlock the next planet
+
+**Instructor ruling, 25 Sep 2026: a planet is completed through its moons, and
+completing it is what opens the next planet.** This supersedes R4's line that
+moons add no gating. It changes `is_stage_unlocked()`: server-side only, never
+decided in the client (hard rule 4), denial tests first, and `VERIFICATION.md`
+read before the schema moves.
+
+Three things have to be settled before it can be built. Two are measured facts
+that make the obvious version wrong:
+
+1. **Where moon mastery lives.** Nothing stores mastery per objective today,
+   only `stage_progress` and `level_progress`. It needs a table written by the
+   grading service alone, RLS'd like `stage_progress`.
+2. **The threshold, an instructor decision.** Every act-1 moon has **three**
+   questions, so a moon can only score 0, 33, 67 or 100%. The course's 70% bar,
+   applied per moon, means **a perfect score on every single subtopic** to open
+   the next planet. Proposed instead: a moon is mastered when **2 of its 3
+   questions have been answered correctly**, counted as the best result per
+   question across attempts, so practice can raise it and nothing can lower it.
+3. **Stage 00, an instructor decision.** Orientation has 5 moons and **zero
+   questions**. Under moon gating those moons can never be mastered, so stage 01
+   would never open: decision 3a in a new shape. Proposed: Orientation has no
+   moons; its objectives are read, not tested.
+
+The stage check stays what it is: the graded measure of the planet, feeding the
+Prelim and the gradebook. **Moons decide what opens; the check decides what is
+recorded.** A stage check draws 8 questions, at most 2 per objective, so on a
+planet with 11 moons (stage 03) it cannot touch every moon. That is one more
+reason moon mastery has to come from the moons' own journeys.
+
+### 3.8 The summaries: drafted, gated on approval
+
+**Instructor ruling, 25 Sep 2026:** summaries may be drafted, because the
+instructor reviews every one before a student sees it. All 19 are written in
+`content/stages/NN.md` as `summary:` with `summary_status: draft`, grounded in
+each stage's own authored brief (00 to 07) and its syllabus objectives (08 to
+18). `.claude/rules/content.md` already allows original prose organised around
+the objectives; these define nothing, so no definition is paraphrased.
+
+`sync-content.mjs` writes a summary to `stages.summary` **only when its status
+is `approved`**, and a draft actively clears the column, so un-approving takes a
+summary back off students' screens. Verified: 19 drafts gave 0 live; approving
+one gave 1 live; moving it back to draft gave 0 live.
+
+Approving one today means editing its status line and re-syncing. **Reviewing
+them in the console is a missing feature.** It belongs on `/content` and arrives
+with that route's revamp.
+
+### 3.9 Motion, fallbacks and accessibility
+
+- `prefers-reduced-motion`: no easing anywhere. Cut to planet, cut to moon, cut
+  into the journey
+- Reduced motion, no WebGL or a small viewport: `/app/map` opens **the same
+  sidebars** in place, never by redirect (`VISUAL-SYSTEM-3D.md` §5)
+- The sidebar is DOM and it is the accessibility contract: everything the canvas
+  shows must be readable there in words. A labelled region, not a modal; focus
+  moves to its heading on open
 - It is a page surface like any other: template, `SPEC.md`, spec, screenshot at
-  1440 and 380, the gate.
+  1440 and 380, the gate
 
 ---
 

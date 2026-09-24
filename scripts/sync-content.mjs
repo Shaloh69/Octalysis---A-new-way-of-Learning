@@ -250,6 +250,7 @@ async function verifyAgainstSource(stages) {
 /* ---------- apply ---------- */
 async function sync(client, stages, { dryRun }) {
   let inserted = 0, updated = 0, unchanged = 0, removed = 0, objectives = 0;
+  let summariesLive = 0, summariesPending = 0;
 
   for (const stage of stages) {
     const { rows: stageRows } = await client.query("select id, title from stages where id = $1", [
@@ -277,6 +278,24 @@ async function sync(client, stages, { dryRun }) {
           `seeded as "${seededTitle}". Stage ids are positional -- a curriculum change renames ` +
           `what an id means. Fix the file, or move it to docs/source/superseded-course/.`,
       );
+    }
+
+    // THE PLANET SUMMARY — shown in the map sidebar, and only once approved.
+    //
+    // Instructor ruling, 25 Sep 2026: summaries may be DRAFTED from each
+    // stage's own authored brief and objectives, as a narrow exception to hard
+    // rule 5, because the instructor reviews every one before students see it.
+    // That review is the whole safeguard, so the gate is here: a summary reaches
+    // `stages.summary` only when its front matter says `summary_status:
+    // approved`. A draft actively CLEARS the column, so moving a summary back to
+    // draft takes it off students' screens on the next sync rather than leaving
+    // an unreviewed version live. Until then the sidebar shows the objectives.
+    const approved = stage.fm.summary_status === "approved";
+    const summary = approved && stage.fm.summary ? String(stage.fm.summary) : null;
+    if (stage.fm.summary && !approved) summariesPending++;
+    if (summary) summariesLive++;
+    if (!dryRun) {
+      await client.query("update stages set summary = $2 where id = $1", [stage.stageId, summary]);
     }
 
     // Objectives
@@ -352,7 +371,7 @@ async function sync(client, stages, { dryRun }) {
     }
   }
 
-  return { inserted, updated, unchanged, removed, objectives };
+  return { inserted, updated, unchanged, removed, objectives, summariesLive, summariesPending };
 }
 
 async function main() {
@@ -418,6 +437,11 @@ async function main() {
     console.log(`  ${c.green(String(s.inserted))} inserted   ${c.yellow(String(s.updated))} updated   ` +
       `${c.dim(String(s.unchanged) + " unchanged")}   ${s.removed} removed`);
     console.log(c.dim(`  ${s.objectives} objective(s) upserted`));
+    console.log(
+      c.dim(
+        `  planet summaries: ${s.summariesLive} live, ${s.summariesPending} awaiting the instructor's approval`,
+      ),
+    );
 
     if (dryRun) {
       console.log(c.dim("\n  --check: rolled back, nothing written.\n"));

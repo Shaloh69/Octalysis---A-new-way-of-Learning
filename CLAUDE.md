@@ -39,6 +39,11 @@ other documents — check it before believing any claim that something is built.
    lock; it does not compute one.
 5. **Never invent course content.** Stage prose, figures, and definitions come from
    `docs/source/*.md` or the database. If content is missing, stop and say so.
+   **One narrow exception, instructor ruling 25 Sep 2026:** the one- or
+   two-sentence **planet summaries** may be drafted from a stage's own authored
+   brief and its syllabus objectives, because each is reviewed before students
+   see it. `sync-content.mjs` publishes a summary only at `summary_status:
+   approved`. The exception covers those summaries and nothing else.
 6. **Items are versioned, never edited in place.** New version = new row sharing `family_id`.
    Old version is retired, not deleted.
 7. **`responses` and `attempt_items` are written only by the grading service, and `responses` is

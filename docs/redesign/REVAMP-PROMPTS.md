@@ -188,11 +188,11 @@ eventually will.
 |---|---|---|
 | **Console** | every route the instructor needs to run act 1, `/items` first | 0/14 routes through the gate |
 | **Student routes** | the attempt runner, the stage reader, both maps, `/app/work`, login | rebuild pending (`WEB-REVAMP.md` §6) |
-| **Planet selection, sidebar, ENTER JOURNEY** | select a planet → zoom → sidebar explaining it → ENTER JOURNEY → content over its biome. Biome only after ENTER JOURNEY | not built (`WEB-REVAMP.md` §3) |
-| **Stage summaries for the sidebar** | one line per planet | **0 of 19 exist** — content, needs instructor approval (hard rule 5); objectives stand in until then |
+| **Planet selection, sidebar, ENTER JOURNEY** | select a planet → zoom → sidebar with a tiny summary and the objectives, over the planet's biome → ENTER JOURNEY → content over the same biome. The map canvas never carries a biome | not built (`WEB-REVAMP.md` §3) |
+| **Planet summaries** | a tiny summary and the objectives, in the sidebar | **19 drafted, 0 approved**: live only once the instructor approves each |
 | **Keplerian orbits** | the whole map, `ω ∝ a^-1.5` | not built (`WEB-REVAMP.md` §4) |
-| **Moons** | **planets 00–04**: one moon per objective, three-state mastery glow, select to zoom and update the sidebar | R4 |
-| **Minigames** | **the act-1 encounters** — below | **none exist** |
+| **Moons** | **planets 01–04**: one per objective; each moon's journey is its own practice plus its minigame; **moons unlock the next planet** | R4; two decisions open (`WEB-REVAMP.md` §3.7) |
+| **Minigames** | **the act-1 encounters, each living in the moon it teaches** (`WEB-REVAMP.md` §3.6) | **none exist** |
 | **Toasts, loading, transitions** | every route above | none exist |
 | **Icon** | both apps | done |
 

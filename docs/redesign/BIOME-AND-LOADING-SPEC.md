@@ -34,7 +34,7 @@ background of the whole page when one is selected.**
 | `/app/stage/:id` and its beats — **after ENTER JOURNEY** | **Yes — full page** | This is the landing. It is what §4.2's hand-off delivers you into |
 | A moon's journey — **after ENTER JOURNEY** on a moon | **Yes** | Same landing, entered at that subtopic's anchor |
 | A stage's activities and minigames | **Yes** | They are the planet's content, and the biome is that content's background |
-| **The map sidebar — planet or moon** | **No** | Ruled 25 Sep 2026 (`WEB-REVAMP.md` §3.5). The sidebar is where you choose; the biome is what you find after choosing. **This row supersedes the earlier "a moon's detail: Yes"**, which was written when a moon's detail was a landing rather than a panel on the map |
+| **The map sidebar, planet or moon** | **Yes: its planet's biome** | Reversed by the instructor on 25 Sep 2026 (`WEB-REVAMP.md` §3.5): the sidebar is a window into where you are about to go. A moon's sidebar wears its planet's biome. The map canvas itself still never does. Text sits on a token surface over the biome, AA computed on all themes and biomes. Requires a biome per planet, which does not exist yet: today one biome is seeded per student |
 | `/app`, `/app/map`, hub routes | **No** | The solar system is the background there (`SOLAR-SYSTEM-SPEC.md` §1.5). Two backgrounds is two visual systems arguing |
 | **The Self-Test / any assessment** | **NEVER** | `DESIGN-MANDATE.md` §1B rule 1: theatre dresses the practice, never the assessment |
 

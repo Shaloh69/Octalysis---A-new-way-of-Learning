@@ -650,11 +650,13 @@ thesis deliverable, and right now no phase is accountable for it.
 - [ ] **Map sidebar and ENTER JOURNEY** (`WEB-REVAMP.md` §3) — selecting a
       planet opens a sidebar explaining it, with the lock reason printed in words
       from the API and ENTER JOURNEY disabled when locked; selecting a moon zooms
-      and updates the sidebar; **the biome appears only after ENTER JOURNEY**;
+      and updates the sidebar; **the sidebar wears the planet's biome, the map canvas never does**;
       the flat map opens the same sidebar in place
-- [ ] **Stage summaries for the sidebar** — 0 of 19 exist. Drafted from
-      `docs/source/` **only with the instructor's approval** (hard rule 5);
-      until then the sidebar shows the stage's objectives
+- [ ] **Planet summaries approved** — all 19 drafted 25 Sep 2026 in
+      `content/stages/NN.md` as `summary_status: draft`; each goes live only
+      when the instructor sets it to `approved` (`WEB-REVAMP.md` §3.8)
+- [ ] **Summary review in the console** — approve or send back a summary on
+      `/content`, instead of editing a file by hand
 - [ ] **Planet selection and zoom** (`WEB-REVAMP.md` §3) — select by click AND
       keyboard, camera easing with nodes pinned and no force simulation, Escape
       returns focus to the selected planet, flat map carries the same selection
