@@ -239,6 +239,33 @@ record it, continue. Stop only for a genuinely ambiguous reading, an
 instructor's call, something irreversible, or a rule that would have to be
 broken.
 
+## REDO THE PAGE. DO NOT IMPROVE IT.
+
+**This is the largest rule in the revamp and it overrides the instinct to be
+conservative.** When a route is in the revamp, you are authorised to delete its
+JSX and its styles and build the page again from `template.png` and `SPEC.md`.
+You are not patching. You are not nudging spacing. You are rebuilding.
+
+Improving a broken page preserves the decisions that broke it. `apps/web`'s
+`styles.css` styles anchors inside `.app-nav` and `.encounter` and **nowhere
+else**, so every `<Link>` on `/app` renders browser-default purple. No amount of
+improvement finds that; rebuilding from a reference does, immediately, because
+the reference has no purple links in it.
+
+**Rebuild:** layout, markup structure, class names, styling, spacing, hierarchy,
+motion, and which element is a heading versus a div.
+
+**Carry over, deliberately and by reading the old code first:** the data it
+fetches and from where, the route contract, every control the page legitimately
+offers, and any accessibility property already proven good — `/app/map` being
+real focusable DOM rather than a canvas is a hard-won property and must survive.
+
+**The old page is a requirements document, not a starting point.** Read it to
+learn what the page must do. Then close it and build.
+
+A route is finished when its spec is green, not when it resembles what was
+there before.
+
 ## The revamp — console first, then the student app
 
 Both apps need it. `apps/web` is barely finished: intended features missing,

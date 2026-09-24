@@ -231,3 +231,41 @@ Two properties the student pass must not break, both already verified working:
 - `/app/map` is real DOM, not a canvas — every stage a focusable `<button>`
   carrying its state and lock reason, behind a skip link.
 - No horizontal scroll at 380 on `/app`, `/app/map` or a stage page.
+
+---
+
+## 9. What the student app actually looks like — 25 Sep 2026
+
+Three screenshots from the instructor, and these are the standard the rebuild
+has to clear. Recorded because a screenshot in a chat transcript does not
+survive a `/clear`.
+
+**`/app` — the 3D map**
+
+- **Links render browser-default purple and underlined.** *"All 19 stages, with
+  progress and lock reasons"* and *"Show the flat map"* are unstyled anchors.
+  Confirmed in source: `apps/web/src/styles.css` styles `a` only inside
+  `.app-nav` and `.encounter`, and there is **no base `a { }` rule anywhere**.
+  Every `<Link>` outside those two contexts is unstyled. This is the clearest
+  possible argument for §REDO rather than improve.
+- **"0 of 19 subsystems online"** with an empty starfield and a lone `?` button.
+  Nothing communicates what the student should do next.
+- Header is a flat grey slab; *"Report a problem"* is a full-width white bar
+  dominating the footer.
+
+**`/app/stage/01` and `/app/stage/00` — the reader**
+
+- **The two pages disagree about the theme.** Stage 01 renders dark panels;
+  stage 00 renders near-white panels — same backdrop, same session. One of them
+  is wrong and possibly both.
+- The biome backdrop is **heavily pixelated** at 1440 and fights the text it
+  sits behind rather than receding.
+- A **clipped artifact strip on the right edge** on both stage pages.
+- No visible control to leave the stage or mark it finished. The reverse travel
+  transition was already a known gap; this is what it looks like to a student.
+
+**Transitions do not show.** The one orchestrated moment per stage that
+`CLAUDE.md` allows is not visible.
+
+None of this is styling drift. It is a surface that was never built against a
+reference, which is what §0 and §REDO exist to fix.
