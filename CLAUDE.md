@@ -239,6 +239,45 @@ record it, continue. Stop only for a genuinely ambiguous reading, an
 instructor's call, something irreversible, or a rule that would have to be
 broken.
 
+## THE HARDEST RULE: SCREENSHOT IT WITH PLAYWRIGHT, THEN OPEN IT AND LOOK
+
+**This outranks every other rule in this section.** No page, panel, dialog,
+biome, minigame, console view or icon is implemented until it has been captured
+with Playwright **and the image has actually been viewed** — every page, every
+iteration, at **1440 and 380**.
+
+**A green spec is not seeing.** A passing assertion, an exit code of 0, a
+written file and a printed "ok" are all claims about a process, not evidence
+about a picture. Read the image back. Every time.
+
+This is the hardest rule because it is the one that keeps catching things
+nothing else does. In this project, from real runs:
+
+- `/items` shipped with its **action column clipped mid-word**. Every test was
+  green. A screenshot showed it in one second.
+- Type-G ordering items rendered as **radio buttons** and were graded wrong 100%
+  of the time. 396 API tests passed throughout; the API accepts `{order}`
+  perfectly well. Only the runner screenshot revealed it.
+- `apps/web` renders **browser-default purple links** because `styles.css` has
+  no base `a { }` rule. No test asserts link colour.
+- The first `icon.svg` was written successfully, the script printed `ok`, and
+  the file rendered as a **broken-image glyph** — a double hyphen is illegal
+  inside an XML comment. The file existed. It was malformed.
+- An icon preview came back **entirely blank** because the route interception
+  was registered after `setContent`. The command still exited 0.
+
+Corollaries, each learned the same way:
+
+- **Capture, then read the file.** Writing a PNG proves a file exists, not that
+  it shows what you needed. The same applies to a template captured from a URL.
+- **Confirm you are looking at the right app.** 5173 and 5174 belong to other
+  projects on this machine and both answer 200 with an `<h1>`.
+  `design/global-setup.ts` checks the page title for exactly this reason.
+- **Re-capture after a deploy.** A bundle fetched mid-redeploy is a stale
+  artifact, and this session chased a fixed bug because of one.
+- **Never report a page works on the strength of a passing spec alone.** Say
+  which screenshots you looked at.
+
 ## THESE RULES ARE NOT A REVAMP PROTOCOL — THEY GOVERN ALL PAGE WORK
 
 **The revamp is the first application of these rules, not their scope.** They

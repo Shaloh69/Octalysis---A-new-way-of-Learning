@@ -41,8 +41,9 @@ live. §4 says what that actually requires, and most of it is not design work.
 > 4. **Rebuild the page.** Not improve — rebuild. You may replace it entirely.
 >    It must carry toasts, loading states and transitions per
 >    `.claude/rules/design.md`; none of the three exists today.
-> 5. Green on all six, both widths. Capture `current.png`, `current-380.png`,
->    write `motion.md`.
+> 5. Green on all six, both widths. Capture `current.png` and `current-380.png`
+>    with Playwright, then **open both and look at them** — a green spec is not
+>    seeing. Write `motion.md`.
 > 6. Tick the R3 box in the same commit as the work. Commit and push.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
@@ -90,7 +91,14 @@ The only exemption is a change that alters no structure, layout, control or
 state — copy, a typo, a comment, data. Even then the route's existing spec must
 be **green** and you must say you ran it.
 
-None of the following is negotiable:
+None of the following is negotiable, and the first outranks the rest:
+
+- **SCREENSHOT IT WITH PLAYWRIGHT, THEN OPEN IT AND LOOK.** Every page, every
+  iteration, 1440 and 380. A green spec is not seeing — a passing assertion and
+  an exit code of 0 are claims about a process, not evidence about a picture.
+  Read the image back. It is the rule that caught the clipped action column, the
+  ordering items rendered as radio buttons, the purple links, and an icon that
+  wrote successfully and rendered as a broken-image glyph.
 
 - **NEVER PROCEED TO ANOTHER PAGE IF THIS ONE HAS NOT PASSED.** Green on all six
   assertions at both widths. Not "mostly". If a route cannot pass, that route is
