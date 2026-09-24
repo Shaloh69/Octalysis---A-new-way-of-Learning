@@ -115,11 +115,24 @@ not add it by hand in the SQL editor.
 
 ```bash
 node scripts/db-invariants.mjs   # 28 registered, 0 failures
-pnpm test:rls                    # 38/38 against the real project
 ```
 
-The denial suite against Supabase — not just locally — is the only thing that
-proves RLS works on the deployment students will actually use.
+**The 38 denial tests must run BEFORE any content is loaded, or not at all.**
+`rls.spec.ts` calls `resetWorld()` -> `resetAll()`, which issues unscoped
+`delete from stages / items / objectives / content_blocks / profiles /
+assessments`. Against a seeded project that is not a test run, it is a wipe --
+including the staff profile row, leaving an `auth.users` entry with no profile
+and a console nobody can sign in to.
+
+So either run it here, on a schema-only project, immediately after the push:
+
+```bash
+pnpm test:rls                    # 38/38, BEFORE the content syncs below
+```
+
+or leave it to `pnpm verify`, which runs the same 38 against the local stack on
+every commit. The marginal thing a live run catches is a Supabase-specific role
+difference; weigh that against the cost of getting the order wrong once.
 
 ### 2.5 Auth settings
 
