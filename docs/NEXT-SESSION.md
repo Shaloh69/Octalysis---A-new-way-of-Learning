@@ -102,8 +102,12 @@ pnpm phase --open   # every open R-phase box, with its section
 **Show it at the start and again before you finish.** Root `CLAUDE.md` requires
 it, because a remembered figure is how this project lost track twice.
 
-Current: `R0 28/28 · R1 36/36 · R2 21/21 · R3 41/49 · R4 0/13 · R5 0/24`
-— **126 done · 45 to-do (171 items, 74%)**, live phase **R3**.
+Current, counted 25 Sep 2026 after `/signin`:
+`R0 28/28 · R1 36/36 · R2 21/21 · R3 43/72 · R4 2/29 · R5 0/24`
+— **130 done · 80 to-do (210 items, 62%)**, live phase **R3** (R4 also open).
+The denominator grew from 171 when R3 gained one box per console route and R4
+gained the moon and minigame scope; the percentage fell because work was
+*found*, not lost.
 
 **The last three sessions were NOT R3 work.** The item bank, the solvers, the
 assessments, the stage checks and the deployment fixes are P3/P4/P5 on

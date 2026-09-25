@@ -21,28 +21,33 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: `/signin`
+## 1. Start here — the next session: `/locks`
 
-*Rewritten 25 Sep 2026 by the `/items` session, which put the first console
-route through the gate. Phase at handover: **R3 live at 42 / 72 (58%)**; all
-tracks **129 done · 81 to-do (210 items, 61%)**. R3 gained 14 per-route console
-boxes this session, which is why its denominator moved. `pnpm phase` is the
-count, not this line.*
+*Rewritten 25 Sep 2026 by the `/signin` session, the second console route
+through the gate. Phase at handover: **R3 live at 43 / 72 (60%)**; all tracks
+**130 done · 80 to-do (210 items, 62%)**. `pnpm phase` is the count, not this
+line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
-> full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md` §0a**
-> (seven things the `/items` session parked). Do not re-derive what those carry.
+> full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md` §0a
+> and §0b** (seven things the `/items` session parked, five the `/signin` session
+> parked). Do not re-derive what those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
 > checking the five conditions in `CLAUDE.md` rather than remembering them.
+> (On 25 Sep it was NOT: all 96 act-1 items sat at `review`, 0 live, and live
+> Supabase was last measured empty and stale.)
 >
-> **Confirm `/items` is still green before touching anything:**
-> `npx playwright test design/specs/console-items.spec.ts` with
-> `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` set to `http://localhost:5184`: 29 passed,
-> 5 skipped (1440-only by design). If it is red, that is this session's work.
+> **Confirm the two finished routes are still green before touching anything**,
+> with `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` set to `http://localhost:5184`:
+> `npx playwright test design/specs/console-items.spec.ts` (29 passed, 5 skipped)
+> and `npx playwright test design/specs/console-gate.spec.ts
+> design/specs/console-bootstrap-credentials.spec.ts` (53 passed, 5 skipped). The
+> skips are 1440-only tests by design. If either is red, that is this session's
+> work.
 >
-> **THIS SESSION IS ONLY FOR `apps/console` `/signin`. NOTHING ELSE.** Not a
+> **THIS SESSION IS ONLY FOR `apps/console` `/locks`. NOTHING ELSE.** Not a
 > second route, not a quick fix elsewhere, not the student app. If you find a
 > defect on another page, write it down in `docs/NEXT-SESSION.md` and leave it.
 > The last thing this session does is rewrite this prompt for the next one.
@@ -51,79 +56,97 @@ count, not this line.*
 >    stops silently), then **`pnpm db:reset && node scripts/db-demo.mjs`**,
 >    `pnpm dev:api` on 8090, console on **5184**
 >    (`pnpm --filter @octa/console dev --port 5184 --strictPort`), and
->    `pnpm dev:token` for a session. 5173 and 5174 belong to other projects.
->    **After ANY API test run, reset, do not just re-demo:** the API suite leaves
->    22 live stage-07 fixture items behind and `db-demo` only adds.
-> 2. **`design/templates/console/signin/` is EMPTY.** No `template.png`, no
->    `SOURCE.md`. And **`TEMPLATE-LINKS.md` has no row for console `/signin`**:
->    `CONSOLE-REVAMP.md` §3 names only "shadcn-admin auth block". Leads:
->    `https://shadcn-admin.netlify.app/sign-in` and `/sign-in-2`. Both answered
->    200 on 25 Sep, which proves nothing about a single-page app. Capture with
->    Playwright, **open the PNG and look**, write `SOURCE.md`, and add the row to
->    `TEMPLATE-LINKS.md`. (The student app's `/login` row says *do not* use a
->    generic auth block; that row is `apps/web`'s, not this route's.) Then
->    write `SPEC.md`: structure taken, what is not copied. Colours and fonts are ours.
-> 3. **`/signin` already has TWO specs. EXTEND them; do not write a third.**
->    `console-gate.spec.ts` (208 lines: the server-side denials for student and
->    anonymous callers, the redirect to `/signin`, the student told why) and
->    `console-bootstrap-credentials.spec.ts` (112 lines: the forced
->    credential-change screen that blocks the whole console). Both must still pass
->    at the end. Add the six assertions by **importing
->    `design/specs/_gate.ts`**: `clippedElements`, `horizontalOverflow`,
->    `unreachableByKeyboard`, `contrastFailures` with `setTheme` and `THEMES`,
->    `offTokenStyles`, and `recordMotion` / `recordedMotion` for assertion 6, whose
->    **positive control** (something must animate with motion allowed) is what
->    stops it passing on a page with no motion. **Watch them fail first.**
-> 4. **Rebuild the page.** Not improve: rebuild. It must carry toasts, loading
->    states and transitions per `.claude/rules/design.md`. Three things specific
->    to this route:
->    - **`/signin` renders OUTSIDE `AppShell`**, so the `<Toaster />` the `/items`
->      session mounted in the shell is **not on this page**. Moving it to the app
->      root touches every route; decide, and say which you chose.
->    - **Locally the API logs "auth routes not mounted"** (no `SUPABASE_URL`), so
->      a real sign-in cannot succeed on 5184. The spec can drive the failure
->      state, and needs to: a wrong password must say so and must not vanish.
->    - `PAGE-SPECS.md` has **no row for `/signin`**. The contract is those two
->      specs plus `CONSOLE-REVAMP.md` §3: first thing anyone sees, with the
->      forced credential change behind it. Say so in `SPEC.md` rather than
->      inventing features. Anything planned but missing gets named and brought to
->      the instructor, never built unasked.
-> 5. Green on all six, both widths. Capture `current.png` and `current-380.png`
->    with Playwright, then **open both and look at them**. Write `motion.md`.
->    Running the console specs rewrites `design/item-review/assessment-window.png`;
->    restore it before committing.
-> 6. Tick **`/signin`** under the R3 "Console revamp" box: one box per route now
->    exists, and `/items` is the one ticked. Tick it in the same commit as the
->    work. Commit and push.
-> 7. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
->    (`/locks`, #3 in `CONSOLE-REVAMP.md` §3), carrying forward what this
->    session learned. Update the phase figures. Commit and push that too.
+>    `pnpm dev:token` for a session. 5173 and 5174 belong to other projects. If
+>    8090 or 5184 already answer, confirm they are OURS (the process command
+>    line, and the page title "OCTA Console") before trusting them. **After ANY
+>    API test run, reset, do not just re-demo:** the API suite leaves 22 live
+>    stage-07 fixture items behind and `db-demo` only adds.
+> 2. **`/locks` has NO URL to capture.** `TEMPLATE-LINKS.md`'s row says "build
+>    from `PAGE-SPECS.md` directly; closest structural reference is a permissions
+>    matrix — any admin-panel roles × resources grid". That is a lead, not a
+>    template. Find a real, capturable page with a dense two-axis grid of toggles
+>    (a roles × permissions matrix), capture it with Playwright into
+>    `design/templates/console/locks/template.png` at 1440 and 380, **open the
+>    PNGs and look**, and write `SOURCE.md` with the URL, date, HTTP status, what
+>    rendered, and why it beat the alternatives you tried. Put the URL in the
+>    `TEMPLATE-LINKS.md` row. Then `SPEC.md`: structure taken, what is not
+>    copied. Colours and fonts are ours.
+> 3. **Audit against `PAGE-SPECS.md` §`/console/locks`** before building. It
+>    plans: students × stages grid, click to toggle, **shift-click for bulk**,
+>    three visual states (auto / manually unlocked / manually locked), a reason
+>    prompt on every toggle writing `audit_log`, **hover shows who overrode it,
+>    when and why**, and **section-level and scheduled (`unlock_at`) overrides on
+>    their own tab**. Read `LocksPage.tsx` (286 lines) and say which exist. On a
+>    first read, shift-click bulk and the section/scheduled tab do not. Name each
+>    missing one, plan it, **and ask before building it**. Hover-only
+>    information fails at 380 and for keyboard users; say how the page carries it
+>    instead. **Hard rule 4: the page renders `is_stage_unlocked()`'s answer and
+>    never computes a lock.**
+> 4. **Specs.** There is no `console-locks.spec.ts`; `CONSOLE-REVAMP.md` §1
+>    names that file, so the six go there, importing `design/specs/_gate.ts`
+>    (see the `/items` and `/signin` specs for the pattern, including assertion
+>    6's **positive control**). `/locks` is already covered in part by
+>    `console-teaching.spec.ts` (its "SAVING state" describe) and
+>    `console-audit.spec.ts`: **extend, never delete them; both must still
+>    pass.** **Intercept every lock write** in your spec: `console-audit.spec.ts`
+>    once wrote GLOBAL locks to shared state, and a spec that toggles real locks
+>    to prove a layout is changing what a student can open. **Watch them fail
+>    first.**
+> 5. **Rebuild the page.** Not improve: rebuild. Toasts, loading states and
+>    transitions per `.claude/rules/design.md`. `<Toaster />` is at the app root
+>    now (`App.tsx`), so `toast` works everywhere. Specific to this route:
+>    - It is **the densest grid in the app**: 19 stages × every student. At 380
+>      it cannot be 19 columns. Decide the reflow and write it in `SPEC.md`.
+>    - **The reason prompt is the shared `Dialog`, whose scrim renders nothing**
+>      (`NEXT-SESSION.md` §0a.1: `bg-surface-0/80` emits no CSS on a `var()`
+>      colour). It is a shared primitive: fixing it changes every console dialog
+>      and every spec that opens one. Decide whether this route owns that fix
+>      and say which you chose; if you fix it, run every console spec after.
+> 6. Green on all six, both widths, plus the route's own structure tests.
+>    Capture `current.png` and `current-380.png` with Playwright against seeded
+>    fixture data only (never a real name), then **open both and look at them**.
+>    Write `motion.md`. **A full console spec run rewrites TWO committed PNGs:**
+>    `git checkout -- design/item-review/` before committing.
+> 7. Tick **`/locks`** under the R3 "Console revamp" box in the same commit as
+>    the work. Commit with explicit paths (a staged `git rm` rides along with the
+>    next commit otherwise). Commit and push.
+> 8. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
+>    (`/students` and `/students/:userId`, #4 in `CONSOLE-REVAMP.md` §3), carrying
+>    forward what this session learned. Update the phase figures. Commit and push
+>    that too.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
 > versus assumed, and **end your last message with the rewritten §1 prompt in
 > one fenced code block, plain text with no `> ` markers, ready to copy and
-> paste**. Then **stop**. Do not start the next
-> route.
+> paste**. Then **stop**. Do not start the next route.
 
-**What the `/items` session learned that every later route needs:**
+**What the `/signin` session learned that every later route needs:**
 
-- **A skip that fires on a race is a test that has stopped existing.**
-  `console-items.spec.ts`' four tests skipped on every run for weeks while being
-  reported as passing: they counted rows while the page still said "Loading".
-  Read a spec's *skipped* count, not just its failures.
-- **Measure colours on a settled frame.** A click leaves the hovered control
-  mid-transition, and a colour caught halfway is an interpolated `oklab()`, not
-  an off-palette colour. `_gate.ts`' `settle()` waits for transitions.
-- **A screen-reader-only header is not clipping.** `_gate.ts` skips anything
-  inside a 1px clipped box. Any other exemption goes in `_gate.ts` with its
-  reason, never in a route's spec.
-- **The shared `Dialog` has no visible scrim** (`bg-surface-0/80` produces no CSS
-  on a `var()` colour). Parked, not this route's fix.
-- **Toasts exist now**: `toast.success(title, body)` and `toast.error(title,
-  body)` from `components/ui/toast.tsx`. Successes leave after 4s; errors stay
-  until dismissed. Radix hides everything outside an open modal from screen
-  readers, the toast region included, so a decision made inside a dialog also
-  needs a `role="status"` line inside the dialog.
+- **A green gate is not a finished page.** `/signin`'s six assertions were
+  already green on the OLD page. Everything that went red came from the route's
+  own tests: the template's structure, the failure state, the missing controls.
+  Write those too. The six are the floor, not the spec.
+- **Look, every time: the gate cannot see sibling layers.** The first rebuild
+  had a bus trace running through a caption like a strikethrough, with every
+  spec green. `contrastFailures` finds a background by walking *ancestors*, and
+  the backdrop is a sibling. Found in a screenshot, then held by "no text sits
+  on a bus trace" in `console-gate.spec.ts`. Any route with a layer painted
+  beside its text rather than behind it needs the same kind of test.
+- **`clip-path` on a bordered box cuts the border off the diagonals.** A notched
+  frame is two real boxes: the outer one the border colour, the inner one the
+  surface. Real elements, not a `::before`, or the contrast gate measures text
+  against the border colour.
+- **A failure message is part of the page, not a toast.** It belongs next to the
+  control that caused it, stays until the next attempt, and is `role="alert"`.
+  Toasts confirm changes that happened; `toast.success` on the page you land on
+  works because the toaster is at the app root.
+- **Distinguish "wrong" from "not checked".** The console used to tell a
+  teacher their password was wrong when the service had not answered. Any
+  route whose write can fail for a network reason must not word it as the
+  user's mistake.
+- Still true from `/items`: a skip that fires on a race is a test that stopped
+  existing (read the *skipped* count); measure colours on a settled frame
+  (`settle()`); any new exemption goes in `_gate.ts` with its reason.
 
 ---
 
