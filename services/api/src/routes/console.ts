@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import type { PoolClient } from "pg";
 import { z } from "zod";
 import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
@@ -55,7 +56,11 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
 
   /* ----------------------------------------------------------
    * GET /api/v1/console/locks
-   * The students x stages matrix.
+   * The students x stages matrix, and every section and global override.
+   *
+   * Who set an override and when come back with the reason (PAGE-SPECS.md
+   * §/console/locks: "shows who overrode it, when, and why"). They were
+   * selected here from the start and then dropped on the way out.
    * -------------------------------------------------------- */
   app.get("/api/v1/console/locks", async (req, reply) => {
     const id = await identityFrom(req, env);
@@ -66,7 +71,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
     );
 
     const students = await app.db.query(
-      `select p.id as user_id, p.student_id, p.full_name
+      `select p.id as user_id, p.student_id, p.full_name, p.section_id
          from profiles p
         where p.student_id is not null and p.deleted_at is null
         order by p.student_id`,
@@ -78,19 +83,31 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
       `select p.id as user_id, s.id as stage_id,
               is_stage_unlocked(p.id, s.id) as unlocked,
               coalesce(sp.mastery, 0) as mastery,
-              sl.state as override, sl.reason, sl.actor_id, sl.created_at
+              sl.state as override, sl.reason, sl.created_at as set_at,
+              actor.full_name as set_by
          from profiles p
          cross join stages s
          left join stage_progress sp on sp.user_id = p.id and sp.stage_id = s.id
          left join stage_locks sl
                 on sl.scope = 'user' and sl.scope_user_id = p.id and sl.stage_id = s.id
+         left join profiles actor on actor.id = sl.actor_id
         where p.student_id is not null and p.deleted_at is null`,
     );
 
-    const globals = await app.db.query(
-      `select stage_id, state, reason, unlock_at, lock_at
-         from stage_locks where scope = 'global'`,
+    const sections = await app.db.query("select id, code, term from sections order by code");
+
+    const scopeLocks = await app.db.query(
+      `select sl.id, sl.scope, sl.scope_section_id, sec.code as section_code, sl.stage_id,
+              sl.state, sl.reason, sl.unlock_at, sl.lock_at, sl.created_at,
+              actor.full_name as set_by
+         from stage_locks sl
+         left join sections sec on sec.id = sl.scope_section_id
+         left join profiles actor on actor.id = sl.actor_id
+        where sl.scope in ('global', 'section') and sl.state <> 'auto'
+        order by sl.stage_id, sl.scope, sec.code`,
     );
+
+    const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : v == null ? null : String(v));
 
     return reply.send({
       stages: stages.rows.map((s) => ({ id: s.id, title: s.title, ordinal: Number(s.ordinal) })),
@@ -98,19 +115,104 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
         userId: s.user_id,
         studentId: s.student_id,
         fullName: s.full_name,
+        sectionId: s.section_id,
       })),
-      cells: cells.rows.map((c) => ({
-        userId: c.user_id,
-        stageId: c.stage_id,
-        unlocked: c.unlocked,
-        mastery: Number(c.mastery),
+      cells: cells.rows.map((c) => {
         // null means "auto" -- the curriculum policy decides.
-        override: c.override === "auto" ? null : (c.override ?? null),
-        reason: c.reason,
+        const override = c.override === "auto" ? null : (c.override ?? null);
+        return {
+          userId: c.user_id,
+          stageId: c.stage_id,
+          unlocked: c.unlocked,
+          mastery: Number(c.mastery),
+          override,
+          reason: override ? c.reason : null,
+          // A staff account with no profile row still set it; say so rather
+          // than leave the "who" blank.
+          setBy: override ? (c.set_by ?? "a staff account") : null,
+          setAt: override ? iso(c.set_at) : null,
+        };
+      }),
+      sections: sections.rows.map((s) => ({ id: s.id, code: s.code, term: s.term })),
+      scopeLocks: scopeLocks.rows.map((l) => ({
+        id: l.id,
+        scope: l.scope,
+        sectionId: l.scope_section_id,
+        sectionCode: l.section_code,
+        stageId: l.stage_id,
+        state: l.state,
+        reason: l.reason,
+        unlockAt: iso(l.unlock_at),
+        lockAt: iso(l.lock_at),
+        setBy: l.set_by ?? "a staff account",
+        setAt: iso(l.created_at),
       })),
-      globalLocks: globals.rows,
     });
   });
+
+  /* ----------------------------------------------------------
+   * One override, written. Shared by the single-cell and the bulk route so
+   * the two can never disagree about what "auto" or "a repeat toggle" means.
+   * -------------------------------------------------------- */
+  interface LockWrite {
+    scope: "global" | "section" | "user";
+    stageId: string;
+    state: "locked" | "unlocked" | "auto";
+    userId?: string | undefined;
+    sectionId?: string | undefined;
+    reason: string;
+    unlockAt?: string | undefined;
+    lockAt?: string | undefined;
+  }
+
+  async function writeLock(
+    client: PoolClient,
+    b: LockWrite,
+    actorId: string,
+    audit: Record<string, unknown>,
+  ): Promise<void> {
+    if (b.state === "auto") {
+      // "auto" means: stop overriding, let the curriculum decide. Delete the
+      // row rather than storing a no-op.
+      await client.query(
+        `delete from stage_locks
+          where scope = $1 and stage_id = $2
+            and coalesce(scope_user_id::text, '') = coalesce($3::text, '')
+            and coalesce(scope_section_id::text, '') = coalesce($4::text, '')`,
+        [b.scope, b.stageId, b.userId ?? null, b.sectionId ?? null],
+      );
+    } else {
+      await client.query(
+        `insert into stage_locks
+           (scope, scope_user_id, scope_section_id, stage_id, state, unlock_at, lock_at, reason, actor_id)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         on conflict do nothing`,
+        [
+          b.scope, b.userId ?? null, b.sectionId ?? null, b.stageId, b.state,
+          b.unlockAt ?? null, b.lockAt ?? null, b.reason, actorId,
+        ],
+      );
+      // A repeat toggle should update, not silently no-op.
+      await client.query(
+        `update stage_locks
+            set state = $5, unlock_at = $6, lock_at = $7, reason = $8,
+                actor_id = $9, created_at = now()
+          where scope = $1 and stage_id = $4
+            and coalesce(scope_user_id::text, '') = coalesce($2::text, '')
+            and coalesce(scope_section_id::text, '') = coalesce($3::text, '')`,
+        [
+          b.scope, b.userId ?? null, b.sectionId ?? null, b.stageId, b.state,
+          b.unlockAt ?? null, b.lockAt ?? null, b.reason, actorId,
+        ],
+      );
+    }
+
+    await client.query(
+      `insert into audit_log (actor_id, action, target_type, target_id, payload)
+       values ($1, 'lock.set', 'stage', $2, $3)`,
+      [actorId, b.stageId, JSON.stringify(audit)],
+    );
+  }
 
   /* ----------------------------------------------------------
    * POST /api/v1/console/locks
@@ -144,66 +246,83 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
     if (b.scope === "section" && !b.sectionId) {
       throw errors.badRequest("A section-scope lock needs a sectionId.");
     }
-
-    await withTransaction(app.db, async (client) => {
-      if (b.state === "auto") {
-        // "auto" means: stop overriding, let the curriculum decide. Delete the
-        // row rather than storing a no-op.
-        await client.query(
-          `delete from stage_locks
-            where scope = $1 and stage_id = $2
-              and coalesce(scope_user_id::text, '') = coalesce($3::text, '')
-              and coalesce(scope_section_id::text, '') = coalesce($4::text, '')`,
-          [b.scope, b.stageId, b.userId ?? null, b.sectionId ?? null],
-        );
-      } else {
-        await client.query(
-          `insert into stage_locks
-             (scope, scope_user_id, scope_section_id, stage_id, state, unlock_at, lock_at, reason, actor_id)
-           values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-           on conflict do nothing`,
-          [
-            b.scope,
-            b.userId ?? null,
-            b.sectionId ?? null,
-            b.stageId,
-            b.state,
-            b.unlockAt ?? null,
-            b.lockAt ?? null,
-            b.reason,
-            id.userId,
-          ],
-        );
-        // A repeat toggle should update, not silently no-op.
-        await client.query(
-          `update stage_locks
-              set state = $5, unlock_at = $6, lock_at = $7, reason = $8,
-                  actor_id = $9, created_at = now()
-            where scope = $1 and stage_id = $4
-              and coalesce(scope_user_id::text, '') = coalesce($2::text, '')
-              and coalesce(scope_section_id::text, '') = coalesce($3::text, '')`,
-          [
-            b.scope,
-            b.userId ?? null,
-            b.sectionId ?? null,
-            b.stageId,
-            b.state,
-            b.unlockAt ?? null,
-            b.lockAt ?? null,
-            b.reason,
-            id.userId,
-          ],
-        );
-      }
-
-      await client.query(
-        `insert into audit_log (actor_id, action, target_type, target_id, payload)
-         values ($1, 'lock.set', 'stage', $2, $3)`,
-        [id.userId, b.stageId, JSON.stringify(b)],
+    // The table's lock_window_ordered check would refuse this too -- as a 500
+    // with nothing a teacher can act on. Say it in words first.
+    if (b.unlockAt && b.lockAt && Date.parse(b.lockAt) <= Date.parse(b.unlockAt)) {
+      throw errors.badRequest("The window has to close after it opens.");
+    }
+    // A foreign-key violation would surface as a 500 nobody can act on.
+    if (b.scope === "user") {
+      const { rows } = await app.db.query(
+        "select 1 from profiles where id = $1 and student_id is not null and deleted_at is null",
+        [b.userId],
       );
-    });
+      if (rows.length === 0) throw errors.badRequest("That student is not on the roster. Nothing was changed.");
+    }
+    if (b.scope === "section") {
+      const { rows } = await app.db.query("select 1 from sections where id = $1", [b.sectionId]);
+      if (rows.length === 0) throw errors.badRequest("That section does not exist. Nothing was changed.");
+    }
+
+    await withTransaction(app.db, (client) => writeLock(client, b, id.userId, b));
 
     return reply.send({ ok: true });
+  });
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/console/locks/bulk
+   *
+   * Shift-click bulk (PAGE-SPECS.md §/console/locks). One reason for every
+   * cell, ONE transaction -- half a bulk change is worse than none, because
+   * nobody can tell afterwards which half landed -- and one audit row per
+   * cell, so `/audit` still answers "who opened stage 06 for Juan" without
+   * anyone having to know a bulk change was involved.
+   * -------------------------------------------------------- */
+  const BulkBody = z.object({
+    state: z.enum(["locked", "unlocked", "auto"]),
+    reason: z.string().trim().min(3).max(500),
+    cells: z
+      .array(z.object({ userId: z.string().uuid(), stageId: z.string().regex(/^\d{2}$/) }))
+      .min(1)
+      .max(5000),
+  });
+
+  app.post("/api/v1/console/locks/bulk", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+
+    const body = BulkBody.safeParse(req.body);
+    if (!body.success) {
+      throw errors.badRequest(
+        "A bulk change needs a state, at least one cell, and a reason of at least 3 characters.",
+      );
+    }
+    const b = body.data;
+
+    const userIds = [...new Set(b.cells.map((c) => c.userId))];
+    const known = await app.db.query(
+      `select id from profiles
+        where id = any($1::uuid[]) and student_id is not null and deleted_at is null`,
+      [userIds],
+    );
+    const missing = userIds.length - known.rows.length;
+    if (missing > 0) {
+      throw errors.badRequest(
+        `${missing} of those students ${missing === 1 ? "is" : "are"} not on the roster. Nothing was changed.`,
+      );
+    }
+
+    const count = b.cells.length;
+    await withTransaction(app.db, async (client) => {
+      for (const c of b.cells) {
+        const one: LockWrite = {
+          scope: "user", userId: c.userId, stageId: c.stageId, state: b.state, reason: b.reason,
+        };
+        await writeLock(client, one, id.userId, { ...one, bulk: count });
+      }
+    });
+
+    return reply.send({ ok: true, count });
   });
 
   /* ----------------------------------------------------------

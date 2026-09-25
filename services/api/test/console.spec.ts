@@ -139,6 +139,256 @@ describe("lock matrix", () => {
   });
 });
 
+/*
+ * `/locks` rebuild, 25 Sep 2026 — PAGE-SPECS.md §/console/locks plans three
+ * things the page never had: who set an override and when, shift-click bulk,
+ * and section-level and scheduled overrides on their own tab. Each is a write
+ * or a read the API did not offer, so each is proven here, denial first.
+ */
+describe("lock writes are staff-only — the denial comes first", () => {
+  it("refuses a student on the single-cell write", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(studentToken),
+      payload: { scope: "user", userId: w.studentA, stageId: "05", state: "unlocked", reason: "let me in" },
+    });
+    expect(res.statusCode, "a student opened their own stage").toBe(403);
+  });
+
+  it("refuses a student on the bulk write, and writes nothing", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks/bulk", headers: auth(studentToken),
+      payload: {
+        state: "unlocked", reason: "let us all in",
+        cells: [{ userId: w.studentA, stageId: "06" }, { userId: w.studentB, stageId: "06" }],
+      },
+    });
+    expect(res.statusCode, "a student bulk-opened stages").toBe(403);
+    const { rows } = await pool.query(
+      "select count(*)::int n from stage_locks where scope = 'user' and stage_id = '06'",
+    );
+    expect(rows[0].n).toBe(0);
+  });
+
+  it("refuses the bulk write with no token at all", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks/bulk",
+      payload: { state: "unlocked", reason: "anyone", cells: [{ userId: w.studentA, stageId: "06" }] },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+});
+
+describe("a lock for someone who is not there is refused in words, not a 500", () => {
+  it("a student who is not on the roster", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(teacherToken),
+      payload: {
+        scope: "user", userId: "00000000-0000-4000-8000-00000000dead", stageId: "05",
+        state: "unlocked", reason: "nobody",
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/not on the roster/i);
+  });
+
+  it("a section that does not exist", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(teacherToken),
+      payload: {
+        scope: "section", sectionId: "00000000-0000-4000-8000-00000000dead", stageId: "05",
+        state: "unlocked", reason: "no such section",
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/section/i);
+  });
+});
+
+describe("the matrix says who set an override, when, and why", () => {
+  it("returns the actor's name and the time with the reason", async () => {
+    await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(teacherToken),
+      payload: { scope: "user", userId: w.studentA, stageId: "07", state: "locked", reason: "quiz on Friday" },
+    });
+    const res = await app.inject({ method: "GET", url: "/api/v1/console/locks", headers: auth(teacherToken) });
+    const cell = (res.json().cells as Array<Record<string, unknown>>).find(
+      (c) => c.userId === w.studentA && c.stageId === "07",
+    )!;
+    expect(cell.override).toBe("locked");
+    expect(cell.reason).toBe("quiz on Friday");
+    expect(cell.setBy).toBe("Instructor");
+    expect(Number.isNaN(Date.parse(String(cell.setAt)))).toBe(false);
+
+    await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(teacherToken),
+      payload: { scope: "user", userId: w.studentA, stageId: "07", state: "auto", reason: "quiz done" },
+    });
+  });
+
+  it("an automatic cell names nobody", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/v1/console/locks", headers: auth(teacherToken) });
+    const cell = (res.json().cells as Array<Record<string, unknown>>).find(
+      (c) => c.userId === w.studentA && c.stageId === "08",
+    )!;
+    expect(cell.override).toBeNull();
+    expect(cell.setBy).toBeNull();
+    expect(cell.setAt).toBeNull();
+  });
+});
+
+describe("bulk overrides — one reason, one transaction, one audit row per cell", () => {
+  it("refuses a bulk change with no reason", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks/bulk", headers: auth(teacherToken),
+      payload: { state: "unlocked", cells: [{ userId: w.studentA, stageId: "06" }] },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/reason/i);
+  });
+
+  it("writes NOTHING when one cell names someone who is not a student", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks/bulk", headers: auth(teacherToken),
+      payload: {
+        state: "unlocked", reason: "review session",
+        cells: [
+          { userId: w.studentA, stageId: "06" },
+          { userId: "00000000-0000-4000-8000-00000000dead", stageId: "06" },
+        ],
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).not.toMatch(/select|insert|violat/i);
+    const { rows } = await pool.query(
+      "select count(*)::int n from stage_locks where scope = 'user' and stage_id = '06'",
+    );
+    expect(rows[0].n, "half a bulk change was applied").toBe(0);
+  });
+
+  it("applies every cell and audits each one with the actor and the reason", async () => {
+    const before = await pool.query("select count(*)::int n from audit_log where action = 'lock.set'");
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks/bulk", headers: auth(teacherToken),
+      payload: {
+        state: "unlocked", reason: "review session before the prelim",
+        cells: [
+          { userId: w.studentA, stageId: "06" },
+          { userId: w.studentB, stageId: "06" },
+          { userId: w.studentA, stageId: "09" },
+        ],
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().count).toBe(3);
+
+    const locks = await pool.query(
+      `select count(*)::int n from stage_locks
+        where scope = 'user' and state = 'unlocked' and reason = 'review session before the prelim'`,
+    );
+    expect(locks.rows[0].n).toBe(3);
+
+    const after = await pool.query(
+      `select actor_id, payload from audit_log where action = 'lock.set'
+        order by id desc limit 3`,
+    );
+    const total = await pool.query("select count(*)::int n from audit_log where action = 'lock.set'");
+    expect(total.rows[0].n - before.rows[0].n).toBe(3);
+    for (const r of after.rows) {
+      expect(r.actor_id).toBe(w.teacher);
+      expect(r.payload.reason).toBe("review session before the prelim");
+      expect(r.payload.bulk).toBe(3);
+    }
+
+    // And the student's own map sees it: the same authority the matrix reads.
+    const map = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
+    const node = (map.json().nodes as Array<{ id: string; state: string }>).find((n) => n.id === "06")!;
+    expect(node.state).not.toBe("locked");
+  });
+
+  it("returns every cell to automatic in one change", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks/bulk", headers: auth(teacherToken),
+      payload: {
+        state: "auto", reason: "review session finished",
+        cells: [
+          { userId: w.studentA, stageId: "06" },
+          { userId: w.studentB, stageId: "06" },
+          { userId: w.studentA, stageId: "09" },
+        ],
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    const { rows } = await pool.query(
+      "select count(*)::int n from stage_locks where scope = 'user' and stage_id in ('06','09')",
+    );
+    expect(rows[0].n).toBe(0);
+  });
+});
+
+describe("section-level and scheduled overrides", () => {
+  it("refuses a window that closes before it opens, in words, not as a 500", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(teacherToken),
+      payload: {
+        scope: "section", sectionId: w.sectionId, stageId: "10", state: "unlocked",
+        reason: "lab week", unlockAt: "2026-10-05T08:00:00.000Z", lockAt: "2026-10-01T08:00:00.000Z",
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.message).toMatch(/close.*after.*open|opens/i);
+  });
+
+  it("lists a section override with its window, who set it and when", async () => {
+    const set = await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(teacherToken),
+      payload: {
+        scope: "section", sectionId: w.sectionId, stageId: "10", state: "unlocked",
+        reason: "lab week", unlockAt: "2099-10-01T00:00:00.000Z", lockAt: "2099-10-08T00:00:00.000Z",
+      },
+    });
+    expect(set.statusCode).toBe(200);
+
+    const res = await app.inject({ method: "GET", url: "/api/v1/console/locks", headers: auth(teacherToken) });
+    const body = res.json();
+    expect(body.sections.map((s: { id: string }) => s.id)).toContain(w.sectionId);
+    const row = (body.scopeLocks as Array<Record<string, unknown>>).find(
+      (l) => l.scope === "section" && l.stageId === "10",
+    )!;
+    expect(row.sectionId).toBe(w.sectionId);
+    expect(row.sectionCode).toBe("BSCPE-2A");
+    expect(row.state).toBe("unlocked");
+    expect(Date.parse(String(row.unlockAt))).toBe(Date.parse("2099-10-01T00:00:00.000Z"));
+    expect(Date.parse(String(row.lockAt))).toBe(Date.parse("2099-10-08T00:00:00.000Z"));
+    expect(row.setBy).toBe("Instructor");
+    expect(row.reason).toBe("lab week");
+
+    // A window that has not opened yet keeps it shut for the student --
+    // is_stage_unlocked() decides, and this page only reports it.
+    const map = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
+    const node = (map.json().nodes as Array<{ id: string; state: string }>).find((n) => n.id === "10")!;
+    expect(node.state).toBe("locked");
+
+    await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(teacherToken),
+      payload: { scope: "section", sectionId: w.sectionId, stageId: "10", state: "auto", reason: "lab week over" },
+    });
+    const after = await app.inject({ method: "GET", url: "/api/v1/console/locks", headers: auth(teacherToken) });
+    expect(
+      (after.json().scopeLocks as Array<{ scope: string; stageId: string }>).some(
+        (l) => l.scope === "section" && l.stageId === "10",
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses a student on the section write", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/locks", headers: auth(studentToken),
+      payload: { scope: "section", sectionId: w.sectionId, stageId: "10", state: "unlocked", reason: "all of us" },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+});
+
 describe("student drill-down regenerates the exact paper from the seed", () => {
   it("reconstructs what the student saw, byte for byte", async () => {
     // Generate a paper as the student.
