@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { createHmac } from "node:crypto";
+import {
+  clippedElements, contrastFailures, horizontalOverflow, offTokenStyles,
+  recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
+} from "./_gate";
 
 /**
  * The blocking change-your-credentials screen.
@@ -108,5 +113,94 @@ test.describe("the bootstrap credentials prompt", () => {
       page.getByRole("heading", { name: /Change your email and password/i }),
     ).toHaveCount(0);
     await expect(page.getByRole("navigation").first()).toBeVisible();
+  });
+});
+
+/* ======================================================================
+ * THE SIX-ASSERTION GATE — `CONSOLE-REVAMP.md` §2, at 1440 AND 380, on the
+ * screen that sits behind `/signin` and blocks the whole console.
+ *
+ * Measured in two states: with the form half-filled and BOTH of its hints
+ * showing (too short, does not match) -- the state a person is actually in
+ * while using it -- and after a successful change, "Credentials changed".
+ *
+ * The change itself is INTERCEPTED, never sent. The local stack has no
+ * Supabase Auth, and a spec that really rewrote an account's credentials
+ * would be changing a password to prove a layout.
+ * ==================================================================== */
+
+async function withHints(page: Page): Promise<void> {
+  await page.getByLabel("New password", { exact: true }).fill("tooshort");
+  await page.getByLabel("Confirm new password").fill("different");
+  await page.getByText(/do not match/i).waitFor();
+}
+
+async function changed(page: Page): Promise<void> {
+  await page.route("**/api/v1/console/account/credentials", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true,"reauthRequired":true}' }),
+  );
+  await page.getByLabel("New password", { exact: true }).fill("a-much-longer-password-1");
+  await page.getByLabel("Confirm new password").fill("a-much-longer-password-1");
+  await page.getByRole("button", { name: "Change and continue" }).click();
+  await page.getByRole("heading", { name: /Credentials changed/i }).waitFor({ timeout: 10_000 });
+}
+
+test.describe("the gate — CONSOLE-REVAMP.md §2, credential change", () => {
+  test("1 · nothing is clipped", async ({ page }) => {
+    await openAs(page, true);
+    await withHints(page);
+    expect(await clippedElements(page), "the form, hints showing").toEqual([]);
+    await changed(page);
+    expect(await clippedElements(page), "credentials changed").toEqual([]);
+  });
+
+  test("2 · no horizontal page scroll", async ({ page }) => {
+    await openAs(page, true);
+    await withHints(page);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+  });
+
+  test("3 · every control is reachable from the keyboard alone", async ({ page }) => {
+    await openAs(page, true);
+    await page.getByLabel("New password", { exact: true }).fill("a-much-longer-password-1");
+    await page.getByLabel("Confirm new password").fill("a-much-longer-password-1");
+    expect(await unreachableByKeyboard(page, "main"), "the form, submittable").toEqual([]);
+  });
+
+  test("4 · AA contrast, computed, on all three themes", async ({ page }) => {
+    test.setTimeout(90_000);
+    await openAs(page, true);
+    await withHints(page);
+    const failures: string[] = [];
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      failures.push(...(await contrastFailures(page)).map((f) => `${theme}: ${f}`));
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test("5 · the token system is what actually rendered", async ({ page }) => {
+    await openAs(page, true);
+    await withHints(page);
+    expect(await offTokenStyles(page), "the form").toEqual([]);
+    await changed(page);
+    expect(await offTokenStyles(page), "credentials changed").toEqual([]);
+  });
+
+  test("6 · prefers-reduced-motion is honoured, emulated rather than assumed", async ({ page }) => {
+    // Positive control: the same POST readout counts up on this screen too.
+    await recordMotion(page);
+    await openAs(page, true);
+    await page.waitForTimeout(1_200);
+    const moving = (await recordedMotion(page)).filter((m) => m.on.startsWith("main") && m.ms >= 100);
+    expect(moving.length, "with motion allowed, the readout should count up").toBeGreaterThan(0);
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator("h1").first().waitFor();
+    await withHints(page);
+    await page.waitForTimeout(600);
+    const still = (await recordedMotion(page)).filter((m) => m.ms > 1);
+    expect(still, "under reduced motion nothing on the route may animate").toEqual([]);
   });
 });

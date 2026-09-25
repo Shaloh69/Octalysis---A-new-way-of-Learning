@@ -55,6 +55,7 @@ this section only lists the baseline, that file has the actual depth.**
 | Route | Deviation from the shadcn-admin default | Source |
 |---|---|---|
 | `/console` (overview) | Standard KPI-card-row dashboard pattern | shadcn-admin's own dashboard demo |
+| `/signin` (console) | **Added 25 Sep 2026 — this route was built and had no row.** shadcn-admin's split auth layout: form left, a panel of its own right, one column at 380. The right half holds the POST readout of `DESIGN-REFERENCES.md` §7 instead of a product screenshot. Not copied: OAuth buttons, sign-up, "Forgot password?" (there is no self-service reset), Terms/Privacy. This is the CONSOLE's gate; the student app's `/login` row above says not to use a generic auth block, and that row still stands for `apps/web` | https://shadcn-admin.netlify.app/sign-in-2 — captured `design/templates/console/signin/template.png`, see its `SOURCE.md` |
 | `/console/roster` | Add: dry-run preview modal pattern | shadcn Blocks — confirmation/preview dialog | https://ui.shadcn.com/blocks |
 | `/console/students/:id` | Add: expandable row → regenerated-variant detail, a nested-detail pattern | TanStack Table's expanding-rows example — https://tanstack.com/table/latest/docs/framework/react/examples/expanding |
 | `/console/locks` | Add: grid-of-toggles-with-reason-prompt, not in shadcn-admin's stock pages | Build from `PAGE-SPECS.md`'s spec directly; closest structural reference is a permissions matrix — any admin-panel "roles × resources" grid pattern |

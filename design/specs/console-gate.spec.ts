@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { createHmac } from "node:crypto";
+import {
+  clippedElements, contrastFailures, horizontalOverflow, offTokenStyles,
+  recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
+} from "./_gate";
 
 /**
  * `/signin` — the console gate. **Nothing past it renders without a staff
@@ -204,5 +208,263 @@ test.describe("the console gate — the screen a person sees", () => {
       );
       expect(overflow, "the sign-in page scrolls sideways at 380px").toBeLessThanOrEqual(1);
     }
+  });
+});
+
+/* ======================================================================
+ * THE SIX-ASSERTION GATE — `CONSOLE-REVAMP.md` §2, at 1440 AND 380.
+ *
+ * Two screens are measured here, because both are the gate:
+ *
+ *   - `/signin` itself, fresh AND with a failed attempt on it. The failure
+ *     state is the one a teacher is most likely to be staring at, and the one
+ *     a template never shows.
+ *   - the student-account screen ("This is the teacher console"), which
+ *     `AppShell` renders at whatever guarded URL was asked for.
+ *
+ * The credential-change screen is the third, and is gated in
+ * `console-bootstrap-credentials.spec.ts` beside the tests that own it.
+ *
+ * LOCALLY THERE IS NO SUPABASE AUTH. The console is built without
+ * `VITE_SUPABASE_URL`, so every submit takes the "built without its Supabase
+ * settings" branch. That is still a real failure through the real code path,
+ * and it is the one this spec can drive; the three credential-failure
+ * sentences are unit-tested in `apps/console/test/console.spec.ts`
+ * (`signInFailureMessage`), where no network is needed to reach them.
+ * ==================================================================== */
+
+async function openSignIn(page: Page): Promise<void> {
+  await asConsole(page, null);
+  await page.goto(`${CONSOLE_URL}/signin`, { waitUntil: "networkidle" });
+  await page.getByRole("heading", { level: 1 }).waitFor({ timeout: 15_000 });
+}
+
+/** A failed sign-in, left on screen. */
+async function failSignIn(page: Page): Promise<void> {
+  await page.getByLabel("Email").fill("nobody@example.com");
+  await page.getByLabel("Password", { exact: true }).fill("not-the-password");
+  await page.getByRole("button", { name: /^sign in$/i }).click();
+  await page.getByRole("alert").filter({ hasText: /\S/ }).first().waitFor({ timeout: 10_000 });
+}
+
+async function openStudentScreen(page: Page): Promise<void> {
+  await asConsole(page, STUDENT);
+  await page.goto(`${CONSOLE_URL}/locks`, { waitUntil: "networkidle" });
+  await page.getByRole("heading", { name: /teacher console/i }).waitFor({ timeout: 15_000 });
+}
+
+test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
+  test("1 · nothing is clipped — sign-in, its failure, the student screen", async ({ page }) => {
+    await openSignIn(page);
+    expect(await clippedElements(page), "sign-in").toEqual([]);
+    await failSignIn(page);
+    expect(await clippedElements(page), "sign-in, failed").toEqual([]);
+    await openStudentScreen(page);
+    expect(await clippedElements(page), "student screen").toEqual([]);
+  });
+
+  test("2 · no horizontal page scroll", async ({ page }) => {
+    await openSignIn(page);
+    expect(await horizontalOverflow(page), "sign-in").toBeLessThanOrEqual(0);
+    await failSignIn(page);
+    expect(await horizontalOverflow(page), "sign-in, failed").toBeLessThanOrEqual(0);
+    await openStudentScreen(page);
+    expect(await horizontalOverflow(page), "student screen").toBeLessThanOrEqual(0);
+  });
+
+  test("3 · every control is reachable from the keyboard alone", async ({ page }) => {
+    await openSignIn(page);
+    expect(await unreachableByKeyboard(page, "main"), "sign-in").toEqual([]);
+
+    /*
+     * And the whole sign-in can be DONE from the keyboard: type, Tab, type,
+     * Enter, and the failure arrives without a mouse ever moving. Tab from the
+     * email field lands on the password -- the show-password toggle comes
+     * AFTER its field, never between the two.
+     */
+    await page.getByLabel("Email").focus();
+    await page.keyboard.type("nobody@example.com");
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Password", { exact: true })).toBeFocused();
+    await page.keyboard.type("not-the-password");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("alert").filter({ hasText: /\S/ }).first()).toBeVisible();
+
+    await openStudentScreen(page);
+    expect(await unreachableByKeyboard(page, "main"), "student screen").toEqual([]);
+  });
+
+  test("4 · AA contrast, computed, on all three themes", async ({ page }) => {
+    test.setTimeout(90_000);
+    const failures: string[] = [];
+    await openSignIn(page);
+    await failSignIn(page);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      failures.push(...(await contrastFailures(page)).map((f) => `${theme} sign-in: ${f}`));
+    }
+    await openStudentScreen(page);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      failures.push(...(await contrastFailures(page)).map((f) => `${theme} student: ${f}`));
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test("5 · the token system is what actually rendered", async ({ page }) => {
+    await openSignIn(page);
+    await failSignIn(page);
+    expect(await offTokenStyles(page), "sign-in, failed").toEqual([]);
+    await openStudentScreen(page);
+    expect(await offTokenStyles(page), "student screen").toEqual([]);
+  });
+
+  test("6 · prefers-reduced-motion is honoured, emulated rather than assumed", async ({ page }) => {
+    /*
+     * POSITIVE CONTROL FIRST: with motion allowed, the POST readout must
+     * visibly count up (DESIGN-REFERENCES.md §7.1). Without this the test
+     * passes on a page with no motion at all.
+     */
+    await recordMotion(page);
+    await openSignIn(page);
+    await page.waitForTimeout(1_200); // the whole sequence is under a second
+    const moving = (await recordedMotion(page)).filter((m) => m.on.startsWith("main") && m.ms >= 100);
+    expect(moving.length, "with motion allowed, the POST readout should count up").toBeGreaterThan(0);
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openSignIn(page);
+    expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
+    await failSignIn(page);
+    await page.waitForTimeout(600);
+    const still = (await recordedMotion(page)).filter((m) => m.ms > 1);
+    expect(still, "under reduced motion nothing on the route may animate").toEqual([]);
+
+    // Skipped, not shortened: every readout line is there on the first frame.
+    const waiting = await page.evaluate(
+      () =>
+        [...document.querySelectorAll("main dl > div")].filter((d) => getComputedStyle(d).opacity !== "1")
+          .length,
+    );
+    expect(waiting, "a readout line was still waiting to appear under reduced motion").toBe(0);
+  });
+});
+
+/* ======================================================================
+ * THE TEMPLATE'S STRUCTURE, and the failure state it does not have.
+ * `design/templates/console/signin/SPEC.md`.
+ * ==================================================================== */
+
+test.describe("the sign-in — SPEC.md", () => {
+  test("split at 1440, one column at 380 with the form first", async ({ page }, testInfo) => {
+    await openSignIn(page);
+    const form = await page.locator("main form").boundingBox();
+    const readout = await page.locator("main dl").first().boundingBox();
+    expect(form && readout, "the form and the POST readout both render").toBeTruthy();
+    if (testInfo.project.name === "desktop-1440") {
+      expect(readout!.x, "at 1440 the readout sits in the right half").toBeGreaterThanOrEqual(720);
+      expect(form!.x + form!.width, "at 1440 the form stays in the left half").toBeLessThanOrEqual(720);
+    } else {
+      expect(readout!.y, "at 380 the form comes first and the readout below it").toBeGreaterThan(
+        form!.y + form!.height,
+      );
+      const vh = page.viewportSize()!.height;
+      const button = await page.getByRole("button", { name: /^sign in$/i }).boundingBox();
+      expect(button!.y + button!.height, "at 380 the sign-in button is above the fold").toBeLessThanOrEqual(vh);
+    }
+  });
+
+  test("a failed sign-in says so, and it does not vanish", async ({ page }) => {
+    await openSignIn(page);
+    await failSignIn(page);
+    const alert = page.getByRole("alert").filter({ hasText: /\S/ }).first();
+    await expect(alert).toContainText(/did not match|did not answer|too many|cannot sign anyone in/i);
+
+    // Not on a timer, and not on the first keystroke either.
+    await page.waitForTimeout(5_000);
+    await expect(alert, "the failure vanished on a timer").toBeVisible();
+    await page.getByLabel("Password", { exact: true }).press("End");
+    await page.getByLabel("Password", { exact: true }).pressSequentially("x");
+    await expect(alert, "the failure vanished when the teacher started to correct it").toBeVisible();
+
+    // What was typed is kept, and the button is usable again.
+    await expect(page.getByLabel("Email")).toHaveValue("nobody@example.com");
+    await expect(page.getByRole("button", { name: /^sign in$/i })).toBeEnabled();
+  });
+
+  test("the password can be shown and hidden, and the control says which", async ({ page }) => {
+    await openSignIn(page);
+    const field = page.getByLabel("Password", { exact: true });
+    await field.fill("visible-now");
+    await expect(field).toHaveAttribute("type", "password");
+    // A fixed label, with the state in aria-pressed -- never both changing at once.
+    const toggle = page.getByRole("button", { name: "Show password" });
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(field).toHaveAttribute("type", "text");
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.press("Enter");
+    await expect(field, "and hidden again, from the keyboard").toHaveAttribute("type", "password");
+  });
+
+  test("no dead ends: no sign-up, no reset link, and a real way to the student app", async ({ page }) => {
+    await openSignIn(page);
+    // The template's controls that would go nowhere here must not have been copied.
+    await expect(page.getByRole("link", { name: /sign up|forgot|terms|privacy/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /github|facebook|google/i })).toHaveCount(0);
+    // And a student at the wrong door has a door.
+    await expect(page.getByRole("link", { name: /student app/i })).toBeVisible();
+  });
+
+  test("no text sits on a bus trace", async ({ page }) => {
+    /*
+     * Found by LOOKING at the first rebuild, not by the gate: a trace ran
+     * straight through the caption under the readout, like a strikethrough.
+     * The contrast assertion cannot see it -- the backdrop is a sibling of the
+     * text, not an ancestor, so it is never "the background". `backdrop.css`
+     * has always said text must never sit directly on a trace; this holds it.
+     */
+    const onTrace = async () =>
+      page.evaluate(() => {
+        const traceEls = [...document.querySelectorAll(".octa-trace")];
+        const traces = traceEls.map((t) => t.getBoundingClientRect());
+        /*
+         * Text inside an opaque box that does NOT also contain the backdrop
+         * (the notched readout frame) is painted over the trace, not on it.
+         * A shared ancestor paints beneath both, so it covers nothing.
+         */
+        const covered = (el: Element) => {
+          for (let a: Element | null = el; a && a.tagName !== "MAIN"; a = a.parentElement) {
+            if (traceEls.some((t) => a!.contains(t))) return false;
+            const bg = getComputedStyle(a).backgroundColor;
+            if (bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") return true;
+          }
+          return false;
+        };
+        const out: string[] = [];
+        for (const el of document.querySelectorAll<HTMLElement>("main *")) {
+          const text = [...el.childNodes].some(
+            (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? "").trim() !== "",
+          );
+          if (!text || covered(el)) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width <= 1 || r.height <= 1) continue;
+          for (const t of traces) {
+            if (t.width > 0 && t.bottom >= r.top && t.top <= r.bottom && t.right >= r.left && t.left <= r.right) {
+              out.push(`"${(el.textContent ?? "").trim().slice(0, 40)}" at y=${Math.round(r.top)} crosses a trace at y=${Math.round(t.top)}`);
+            }
+          }
+        }
+        return out;
+      });
+    await openSignIn(page);
+    expect(await onTrace(), "sign-in").toEqual([]);
+    await openStudentScreen(page);
+    expect(await onTrace(), "student screen").toEqual([]);
+  });
+
+  test("the toaster reaches this page — it lives at the app root, not in the shell", async ({ page }) => {
+    await openSignIn(page);
+    await expect(page.locator("[data-toaster]")).toHaveCount(1);
   });
 });
