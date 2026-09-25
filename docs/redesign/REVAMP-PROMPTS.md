@@ -21,58 +21,107 @@ design work at all.
 
 ---
 
-## 1. Start here — the first revamp session
+## 1. Start here — the next session: `/signin`
+
+*Rewritten 25 Sep 2026 by the `/items` session, which put the first console
+route through the gate. Phase at handover: **R3 live at 42 / 72 (58%)**; all
+tracks **129 done · 81 to-do (210 items, 61%)**. R3 gained 14 per-route console
+boxes this session, which is why its denominator moved. `pnpm phase` is the
+count, not this line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
-> full, then root `CLAUDE.md`'s revamp rules. Do not re-derive what those carry.
+> full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md` §0a**
+> (seven things the `/items` session parked). Do not re-derive what those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
 > checking the five conditions in `CLAUDE.md` rather than remembering them.
 >
-> **THIS SESSION IS ONLY FOR `apps/console` `/items`. NOTHING ELSE.** Not a
+> **Confirm `/items` is still green before touching anything:**
+> `npx playwright test design/specs/console-items.spec.ts` with
+> `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` set to `http://localhost:5184`: 29 passed,
+> 5 skipped (1440-only by design). If it is red, that is this session's work.
+>
+> **THIS SESSION IS ONLY FOR `apps/console` `/signin`. NOTHING ELSE.** Not a
 > second route, not a quick fix elsewhere, not the student app. If you find a
 > defect on another page, write it down in `docs/NEXT-SESSION.md` and leave it.
 > The last thing this session does is rewrite this prompt for the next one.
 >
-> 1. Bring the local stack up: `pnpm db:up` — check `docker ps`, Docker Desktop
->    stops silently — then `pnpm db:reset && node scripts/db-demo.mjs`,
->    `pnpm dev:api` on 8090, console on **5184**, `pnpm dev:token` for a session.
->    5173 and 5174 belong to other projects and both answer 200.
-> 2. `design/templates/console/items/template.png` is already captured and
->    verified. Read it and `SOURCE.md`. Write `SPEC.md` beside them: the
->    structural decisions you are taking, and what you are deliberately not
->    copying. Colours and fonts are always ours.
-> 3. **`design/specs/console-items.spec.ts` ALREADY EXISTS** — 174 lines, four
->    passing tests covering row density, the 30-exposure rule appearing once,
->    flagged items explaining themselves in words, and every column surviving.
->    **EXTEND it. Do not overwrite it.** Those four are regression cover someone
->    earned — the density one exists because that page was once a card list — and
->    they must still pass at the end.
->
->    Add the six assertions from `CONSOLE-REVAMP.md` §2, at 1440 and 380. **Watch
->    the new ones fail first.** The action column is clipped in production, so the
->    clipping assertion must go red before you touch the page.
->
->    Check `design/specs/` before writing a spec for any route — 18 exist, nine
->    of them console.
-> 4. **Rebuild the page.** Not improve — rebuild. You may replace it entirely.
->    It must carry toasts, loading states and transitions per
->    `.claude/rules/design.md`; none of the three exists today.
+> 1. Bring the local stack up: `pnpm db:up` (check `docker ps`; Docker Desktop
+>    stops silently), then **`pnpm db:reset && node scripts/db-demo.mjs`**,
+>    `pnpm dev:api` on 8090, console on **5184**
+>    (`pnpm --filter @octa/console dev --port 5184 --strictPort`), and
+>    `pnpm dev:token` for a session. 5173 and 5174 belong to other projects.
+>    **After ANY API test run, reset, do not just re-demo:** the API suite leaves
+>    22 live stage-07 fixture items behind and `db-demo` only adds.
+> 2. **`design/templates/console/signin/` is EMPTY.** No `template.png`, no
+>    `SOURCE.md`. And **`TEMPLATE-LINKS.md` has no row for console `/signin`**:
+>    `CONSOLE-REVAMP.md` §3 names only "shadcn-admin auth block". Leads:
+>    `https://shadcn-admin.netlify.app/sign-in` and `/sign-in-2`. Both answered
+>    200 on 25 Sep, which proves nothing about a single-page app. Capture with
+>    Playwright, **open the PNG and look**, write `SOURCE.md`, and add the row to
+>    `TEMPLATE-LINKS.md`. (The student app's `/login` row says *do not* use a
+>    generic auth block; that row is `apps/web`'s, not this route's.) Then
+>    write `SPEC.md`: structure taken, what is not copied. Colours and fonts are ours.
+> 3. **`/signin` already has TWO specs. EXTEND them; do not write a third.**
+>    `console-gate.spec.ts` (208 lines: the server-side denials for student and
+>    anonymous callers, the redirect to `/signin`, the student told why) and
+>    `console-bootstrap-credentials.spec.ts` (112 lines: the forced
+>    credential-change screen that blocks the whole console). Both must still pass
+>    at the end. Add the six assertions by **importing
+>    `design/specs/_gate.ts`**: `clippedElements`, `horizontalOverflow`,
+>    `unreachableByKeyboard`, `contrastFailures` with `setTheme` and `THEMES`,
+>    `offTokenStyles`, and `recordMotion` / `recordedMotion` for assertion 6, whose
+>    **positive control** (something must animate with motion allowed) is what
+>    stops it passing on a page with no motion. **Watch them fail first.**
+> 4. **Rebuild the page.** Not improve: rebuild. It must carry toasts, loading
+>    states and transitions per `.claude/rules/design.md`. Three things specific
+>    to this route:
+>    - **`/signin` renders OUTSIDE `AppShell`**, so the `<Toaster />` the `/items`
+>      session mounted in the shell is **not on this page**. Moving it to the app
+>      root touches every route; decide, and say which you chose.
+>    - **Locally the API logs "auth routes not mounted"** (no `SUPABASE_URL`), so
+>      a real sign-in cannot succeed on 5184. The spec can drive the failure
+>      state, and needs to: a wrong password must say so and must not vanish.
+>    - `PAGE-SPECS.md` has **no row for `/signin`**. The contract is those two
+>      specs plus `CONSOLE-REVAMP.md` §3: first thing anyone sees, with the
+>      forced credential change behind it. Say so in `SPEC.md` rather than
+>      inventing features. Anything planned but missing gets named and brought to
+>      the instructor, never built unasked.
 > 5. Green on all six, both widths. Capture `current.png` and `current-380.png`
->    with Playwright, then **open both and look at them** — a green spec is not
->    seeing. Write `motion.md`.
-> 6. Tick the R3 box in the same commit as the work. Commit and push.
-> 7. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session.**
->    Replace `/items` with the next route in order, and carry forward what this
->    session learned that the next one needs: new gotchas, a spec that now
->    exists, anything found on another page and parked. Update the phase figures
->    in it. Commit and push that too — the next session starts from this file,
->    not from this conversation.
+>    with Playwright, then **open both and look at them**. Write `motion.md`.
+>    Running the console specs rewrites `design/item-review/assessment-window.png`;
+>    restore it before committing.
+> 6. Tick **`/signin`** under the R3 "Console revamp" box: one box per route now
+>    exists, and `/items` is the one ticked. Tick it in the same commit as the
+>    work. Commit and push.
+> 7. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
+>    (`/locks`, #3 in `CONSOLE-REVAMP.md` §3), carrying forward what this
+>    session learned. Update the phase figures. Commit and push that too.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
 > versus assumed, show me the rewritten §1, and **stop**. Do not start the next
 > route.
+
+**What the `/items` session learned that every later route needs:**
+
+- **A skip that fires on a race is a test that has stopped existing.**
+  `console-items.spec.ts`' four tests skipped on every run for weeks while being
+  reported as passing: they counted rows while the page still said "Loading".
+  Read a spec's *skipped* count, not just its failures.
+- **Measure colours on a settled frame.** A click leaves the hovered control
+  mid-transition, and a colour caught halfway is an interpolated `oklab()`, not
+  an off-palette colour. `_gate.ts`' `settle()` waits for transitions.
+- **A screen-reader-only header is not clipping.** `_gate.ts` skips anything
+  inside a 1px clipped box. Any other exemption goes in `_gate.ts` with its
+  reason, never in a route's spec.
+- **The shared `Dialog` has no visible scrim** (`bg-surface-0/80` produces no CSS
+  on a `var()` colour). Parked, not this route's fix.
+- **Toasts exist now**: `toast.success(title, body)` and `toast.error(title,
+  body)` from `components/ui/toast.tsx`. Successes leave after 4s; errors stay
+  until dismissed. Radix hides everything outside an open modal from screen
+  readers, the toast region included, so a decision made inside a dialog also
+  needs a `role="status"` line inside the dialog.
 
 ---
 
@@ -186,14 +235,14 @@ eventually will.
 
 | | Scope | State, measured 25 Sep |
 |---|---|---|
-| **Console** | every route the instructor needs to run act 1, `/items` first | 0/14 routes through the gate |
+| **Console** | every route the instructor needs to run act 1, `/items` first | **1/14** routes through the gate: `/items`, 25 Sep 2026 |
 | **Student routes** | the attempt runner, the stage reader, both maps, `/app/work`, login | rebuild pending (`WEB-REVAMP.md` §6) |
 | **Planet selection, sidebar, ENTER JOURNEY** | select a planet → zoom → sidebar with a tiny summary and the objectives, over the planet's biome → ENTER JOURNEY → content over the same biome. The map canvas never carries a biome | not built (`WEB-REVAMP.md` §3) |
 | **Planet summaries** | a tiny summary and the objectives, in the sidebar | **19 drafted, 0 approved**: live only once the instructor approves each |
 | **Keplerian orbits** | the whole map, `ω ∝ a^-1.5` | not built (`WEB-REVAMP.md` §4) |
 | **Moons** | **planets 01–04**: one per objective; each moon's journey is its own practice plus its minigame; **moons unlock the next planet** | R4; two decisions open (`WEB-REVAMP.md` §3.7) |
 | **Minigames** | **the act-1 encounters, each living in the moon it teaches** (`WEB-REVAMP.md` §3.6) | **none exist** |
-| **Toasts, loading, transitions** | every route above | none exist |
+| **Toasts, loading, transitions** | every route above | on `/items` only; the toast component is shared from `apps/console` |
 | **Icon** | both apps | done |
 
 **The act-1 encounters** — `GAME-DESIGN.md` §10.3's table, keyed to the real

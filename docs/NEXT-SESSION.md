@@ -252,8 +252,9 @@ at first sign-in. That is deliberate.
   No student can sit anything until that happens. `/items` passed the revamp gate
   on 25 Sep 2026, so the page is ready; the 96 act-1 approvals are the
   instructor's to make.
-- `design/templates/` — every console route has `template.png`; only `/items`
-  has passed the gate (25 Sep 2026). An R3 sign-off item.
+- `design/templates/console/` — **only `/items` has a template**, and it passed the
+  gate on 25 Sep 2026. The other 13 route folders are EMPTY: each session captures
+  its own reference first. An R3 sign-off item.
 - The reverse travel transition (leaving a stage back to the map).
 - R4 and R5 have not started.
 
