@@ -47,10 +47,19 @@ const STAFF = staffToken();
  * right to: the map really had changed underneath them.
  *
  * A user-scope lock produces the same audit rows without touching anyone else's
- * curriculum. `21-0001` is a seeded student that appears in no other spec, so
- * the blast radius is one row of a table nothing asserts on.
+ * curriculum. `232129021` is seeded by `db/demo-seed.sql` (a deterministic
+ * id) and appears in no other spec, so the blast radius is one row of a table
+ * nothing asserts on.
+ *
+ * It used to be `7091eff0-…`, a student from an older seed. Every "open" write
+ * to it failed on a foreign key, and every "auto" write deleted nothing and
+ * STILL wrote an audit row about a student who did not exist. Those junk rows
+ * were what this spec found. The `/locks` session (25 Sep 2026) made the API
+ * refuse a lock for anyone not on the roster, which took the junk away and
+ * showed the spec had been standing on it. `ensureEntries` now asserts every
+ * write, so a missing student fails loudly instead of quietly writing nothing.
  */
-const ISOLATED_STUDENT = "7091eff0-d8a3-4a3f-8d3e-f4d8ec395ffb";
+const ISOLATED_STUDENT = "dddddddd-1111-4000-8000-000000000021";
 
 /**
  * The audit log is empty in `db/demo-seed.sql`, so this makes its own entries
@@ -60,7 +69,7 @@ const ISOLATED_STUDENT = "7091eff0-d8a3-4a3f-8d3e-f4d8ec395ffb";
 async function ensureEntries(request: import("@playwright/test").APIRequestContext): Promise<void> {
   for (const stageId of ["01", "02", "03", "04", "05", "06"]) {
     for (const state of ["unlocked", "auto"] as const) {
-      await request.post(`${API}/api/v1/console/locks`, {
+      const res = await request.post(`${API}/api/v1/console/locks`, {
         headers: { Authorization: `Bearer ${STAFF}`, "Content-Type": "application/json" },
         data: {
           scope: "user",
@@ -73,6 +82,12 @@ async function ensureEntries(request: import("@playwright/test").APIRequestConte
               : "Review session finished, returning this chapter to the normal prerequisite chain",
         },
       });
+      if (!res.ok()) {
+        throw new Error(
+          `fixture lock write ${state} ${stageId} got ${res.status()}: ${await res.text()} ` +
+            "(is ISOLATED_STUDENT still in the demo seed?)",
+        );
+      }
     }
   }
 }
