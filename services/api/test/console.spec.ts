@@ -484,3 +484,250 @@ describe("the system audit page", () => {
     expect(body.failing, JSON.stringify(body.results.filter((r: { severity: string; offendingCount: number }) => r.severity === "fail" && r.offendingCount > 0))).toBe(0);
   });
 });
+
+/*
+ * `/students` rebuild, 25 Sep 2026 — PAGE-SPECS.md §/console/roster plans a
+ * dry-run preview of new / existing / CONFLICTING rows, deactivate, and a bulk
+ * section move. Each is a write the API did not offer, and the last two change
+ * who can sign in and what a student is scoped to. Denial first.
+ *
+ * Deactivate is a REAL lock-out, instructor ruling 25 Sep 2026: the student app
+ * sends anything with an `@` straight to Supabase, so `profiles.deleted_at`
+ * alone only closed the sign-in-by-ID path. The API now refuses every request
+ * from a deactivated account, and the student app reads nothing except
+ * through the API.
+ *
+ * Its own students, so nothing above is disturbed: C is registered, D is not.
+ */
+describe("roster writes — /students", () => {
+  let studentC: string;
+  let tokenC: string;
+  let sectionB: string;
+
+  beforeAll(async () => {
+    const { rows } = await pool.query(
+      `with u as (
+         insert into auth.users (id, email, raw_app_meta_data)
+         values (gen_random_uuid(), 'c@octa-test.local', '{"role":"student"}'::jsonb) returning id
+       ), d as (
+         insert into student_directory (student_id, full_name, section_id, status, claimed_by, claimed_at)
+         select '21-0003', 'Dela Cruz, Juan Miguel', $1::uuid, 'claimed'::claim_status, (select id from u), now()
+         union all
+         select '21-0004', 'Santos, Maria', $1::uuid, 'unclaimed'::claim_status, null, null
+       ), p as (
+         insert into profiles (id, student_id, full_name, section_id, role)
+         select id, '21-0003', 'Dela Cruz, Juan Miguel', $1::uuid, 'student'::user_role from u
+       ), s as (
+         insert into sections (code, term) values ('BSCPE-2B', '2026-1') returning id
+       )
+       select (select id from u) c, (select id from s) sb`,
+      [w.sectionId],
+    );
+    studentC = rows[0].c;
+    sectionB = rows[0].sb;
+    tokenC = mintToken(studentC, "student", "21-0003");
+  });
+
+  const post = (url: string, token: string | null, payload: object) =>
+    app.inject({ method: "POST", url, payload, ...(token ? { headers: auth(token) } : {}) });
+
+  describe("staff-only — the denial comes first", () => {
+    it("refuses a student deactivating anyone, and changes nothing", async () => {
+      const res = await post("/api/v1/console/roster/status", studentToken, {
+        studentId: "21-0002", active: false, reason: "I do not like them",
+      });
+      expect(res.statusCode, "a student deactivated a classmate").toBe(403);
+      const { rows } = await pool.query("select deleted_at from profiles where student_id = '21-0002'");
+      expect(rows[0].deleted_at).toBeNull();
+    });
+
+    it("refuses a student moving anyone's section, and changes nothing", async () => {
+      const res = await post("/api/v1/console/roster/section", studentToken, {
+        studentIds: ["21-0001"], sectionId: sectionB, reason: "moving myself",
+      });
+      expect(res.statusCode, "a student moved a section").toBe(403);
+      const { rows } = await pool.query("select section_id from student_directory where student_id = '21-0001'");
+      expect(rows[0].section_id).toBe(w.sectionId);
+    });
+
+    it("refuses both with no token at all", async () => {
+      const off = await post("/api/v1/console/roster/status", null, { studentId: "21-0002", active: false, reason: "x y z" });
+      const move = await post("/api/v1/console/roster/section", null, { studentIds: ["21-0001"], sectionId: sectionB, reason: "x y z" });
+      expect(off.statusCode).toBe(401);
+      expect(move.statusCode).toBe(401);
+    });
+  });
+
+  describe("the roster read", () => {
+    it("lists the sections a student can be moved into, with each row's section id", async () => {
+      const res = await app.inject({ method: "GET", url: "/api/v1/console/roster", headers: auth(teacherToken) });
+      const body = res.json();
+      expect(body.sections.map((s: { code: string }) => s.code)).toEqual(["BSCPE-2A", "BSCPE-2B"]);
+      const c = body.students.find((s: { studentId: string }) => s.studentId === "21-0003");
+      expect(c).toMatchObject({ sectionId: w.sectionId, sectionCode: "BSCPE-2A", status: "claimed", deactivated: false });
+    });
+  });
+
+  describe("the import preview names every row's outcome before anything is written", () => {
+    const rows = [
+      { studentId: "21-0009", fullName: "Villanueva, Kim Patrick" },                // new
+      { studentId: "21-0004", fullName: "Santos, Maria" },                          // the same ID twice...
+      { studentId: "21-0004", fullName: "Santos, Maria Clara" },                    // ...in one file
+      { studentId: "21-0003", fullName: "Dela Cruz, Juan" },                        // registered AND different
+      { studentId: "21-0001", fullName: "Student A" },                              // registered, identical
+      { studentId: "21-0010", fullName: "Sy Tan, Jocelyn", sectionCode: "NOPE-1" }, // no such section
+    ];
+
+    it("sorts rows into new, unchanged, will change and conflict, and writes nothing on a dry run", async () => {
+      const res = await post("/api/v1/console/roster/import", teacherToken, { sectionCode: "BSCPE-2A", rows });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.dryRun).toBe(true);
+      const by = (id: string) => body.plan.filter((p: { studentId: string }) => p.studentId === id);
+      expect(by("21-0009")[0]).toMatchObject({ action: "insert", sectionCode: "BSCPE-2A" });
+      expect(by("21-0001")[0]).toMatchObject({ action: "unchanged" });
+      expect(by("21-0003")[0]).toMatchObject({
+        action: "conflict", why: "registered",
+        current: { fullName: "Dela Cruz, Juan Miguel", sectionCode: "BSCPE-2A", status: "claimed" },
+      });
+      expect(by("21-0004").map((p: { action: string; why: string }) => `${p.action}:${p.why}`)).toEqual([
+        "conflict:duplicate", "conflict:duplicate",
+      ]);
+      expect(by("21-0010")[0]).toMatchObject({ action: "conflict", why: "unknown-section" });
+      expect(body.summary).toEqual({ insert: 1, update: 0, unchanged: 1, conflict: 4 });
+
+      const { rows: n } = await pool.query("select count(*)::int n from student_directory where student_id = '21-0009'");
+      expect(n[0].n, "a dry run wrote a row").toBe(0);
+    });
+
+    it("an unregistered row whose name changes is 'will change', with the old value beside it", async () => {
+      const res = await post("/api/v1/console/roster/import", teacherToken, {
+        sectionCode: "BSCPE-2B", rows: [{ studentId: "21-0004", fullName: "Santos, Maria Clara" }],
+      });
+      expect(res.json().plan[0]).toMatchObject({
+        action: "update", sectionCode: "BSCPE-2B",
+        current: { fullName: "Santos, Maria", sectionCode: "BSCPE-2A", status: "unclaimed" },
+      });
+    });
+
+    it("applies only new and changed rows (a registered row is never overwritten) and audits it", async () => {
+      const res = await post("/api/v1/console/roster/import", teacherToken, { sectionCode: "BSCPE-2A", rows, apply: true });
+      expect(res.statusCode).toBe(200);
+      const { rows: d } = await pool.query(
+        "select student_id, full_name from student_directory where student_id in ('21-0003','21-0009','21-0010') order by 1",
+      );
+      expect(d).toEqual([
+        { student_id: "21-0003", full_name: "Dela Cruz, Juan Miguel" },
+        { student_id: "21-0009", full_name: "Villanueva, Kim Patrick" },
+      ]);
+      const { rows: a } = await pool.query(
+        "select actor_id, payload from audit_log where action = 'roster.import' order by at desc limit 1",
+      );
+      expect(a[0].actor_id).toBe(w.teacher);
+      expect(a[0].payload.inserted).toEqual(["21-0009"]);
+      expect(a[0].payload.summary.conflict).toBe(4);
+    });
+  });
+
+  describe("deactivate — a real lock-out, and reversible", () => {
+    it("refuses without a reason", async () => {
+      const res = await post("/api/v1/console/roster/status", teacherToken, { studentId: "21-0003", active: false });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.message).toMatch(/reason/i);
+    });
+
+    it("refuses someone who is not on the roster, in words", async () => {
+      const res = await post("/api/v1/console/roster/status", teacherToken, {
+        studentId: "99-9999", active: false, reason: "nobody",
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.message).toMatch(/not on the roster/i);
+    });
+
+    it("a registered student: the API refuses every request from them, and nothing they did is removed", async () => {
+      expect((await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(tokenC) })).statusCode).toBe(200);
+
+      const res = await post("/api/v1/console/roster/status", teacherToken, {
+        studentId: "21-0003", active: false, reason: "Dropped the course on 20 September",
+      });
+      expect(res.statusCode).toBe(200);
+
+      const denied = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(tokenC) });
+      expect(denied.statusCode, "a deactivated student still reads the map").toBe(403);
+      expect(denied.json().error.message).toMatch(/deactivated/i);
+
+      const { rows } = await pool.query("select deleted_at from profiles where id = $1", [studentC]);
+      expect(rows[0].deleted_at).not.toBeNull();
+      const { rows: a } = await pool.query(
+        "select actor_id, target_id, payload from audit_log where action = 'roster.deactivate' order by at desc limit 1",
+      );
+      expect(a[0]).toMatchObject({ actor_id: w.teacher, target_id: "21-0003" });
+      expect(a[0].payload.reason).toBe("Dropped the course on 20 September");
+
+      const roster = await app.inject({ method: "GET", url: "/api/v1/console/roster", headers: auth(teacherToken) });
+      expect(roster.json().students.find((s: { studentId: string }) => s.studentId === "21-0003").deactivated).toBe(true);
+    });
+
+    it("reactivating lets them back in, and is audited too", async () => {
+      const res = await post("/api/v1/console/roster/status", teacherToken, {
+        studentId: "21-0003", active: true, reason: "Re-enrolled after the drop was reversed",
+      });
+      expect(res.statusCode).toBe(200);
+      expect((await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(tokenC) })).statusCode).toBe(200);
+      const { rows } = await pool.query(
+        "select count(*)::int n from audit_log where action = 'roster.reactivate' and target_id = '21-0003'",
+      );
+      expect(rows[0].n).toBe(1);
+    });
+
+    it("an unregistered row is disabled, which the claim's status = 'unclaimed' refuses, and comes back", async () => {
+      await post("/api/v1/console/roster/status", teacherToken, { studentId: "21-0004", active: false, reason: "Never enrolled" });
+      let { rows } = await pool.query("select status from student_directory where student_id = '21-0004'");
+      expect(rows[0].status).toBe("disabled");
+      const roster = await app.inject({ method: "GET", url: "/api/v1/console/roster", headers: auth(teacherToken) });
+      expect(roster.json().students.find((s: { studentId: string }) => s.studentId === "21-0004").deactivated).toBe(true);
+
+      await post("/api/v1/console/roster/status", teacherToken, { studentId: "21-0004", active: true, reason: "Enrolled late" });
+      ({ rows } = await pool.query("select status from student_directory where student_id = '21-0004'"));
+      expect(rows[0].status).toBe("unclaimed");
+    });
+  });
+
+  describe("bulk section move", () => {
+    it("refuses a section that does not exist, and changes nothing", async () => {
+      const res = await post("/api/v1/console/roster/section", teacherToken, {
+        studentIds: ["21-0003"], sectionId: "00000000-0000-4000-8000-00000000dead", reason: "nowhere",
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.message).toMatch(/section/i);
+    });
+
+    it("refuses the whole move if any student is not on the roster", async () => {
+      const res = await post("/api/v1/console/roster/section", teacherToken, {
+        studentIds: ["21-0003", "99-9999"], sectionId: sectionB, reason: "half of it",
+      });
+      expect(res.statusCode).toBe(400);
+      const { rows } = await pool.query("select section_id from student_directory where student_id = '21-0003'");
+      expect(rows[0].section_id, "a refused move moved someone").toBe(w.sectionId);
+    });
+
+    it("moves the roster row AND the profile, and writes one audit row per student", async () => {
+      const res = await post("/api/v1/console/roster/section", teacherToken, {
+        studentIds: ["21-0003", "21-0004"], sectionId: sectionB, reason: "Section split for the lab schedule",
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({ moved: 2, sectionCode: "BSCPE-2B" });
+      const { rows: d } = await pool.query(
+        "select student_id from student_directory where section_id = $1 order by 1", [sectionB],
+      );
+      expect(d.map((r) => r.student_id)).toEqual(["21-0003", "21-0004"]);
+      const { rows: p } = await pool.query("select section_id from profiles where id = $1", [studentC]);
+      expect(p[0].section_id, "the profile, which locks and assessments read, did not move").toBe(sectionB);
+      const { rows: a } = await pool.query(
+        "select target_id, payload from audit_log where action = 'roster.section' order by target_id",
+      );
+      expect(a.map((r) => r.target_id)).toEqual(["21-0003", "21-0004"]);
+      expect(a[0].payload).toMatchObject({ reason: "Section split for the lab schedule", from: "BSCPE-2A", to: "BSCPE-2B" });
+    });
+  });
+});

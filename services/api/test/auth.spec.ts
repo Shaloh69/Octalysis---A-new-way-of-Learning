@@ -262,7 +262,11 @@ describe("POST /console/roster/import", () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().dryRun).toBe(true);
-    expect(res.json().summary).toEqual({ insert: 1, update: 0, skipped: 1 });
+    // 21-0001 is registered and the file moves them to another section: that is
+    // a CONFLICT, named in the plan and never written (was `skipped` before the
+    // /students rebuild; the section move is the audited way to do it).
+    expect(res.json().summary).toEqual({ insert: 1, update: 0, unchanged: 0, conflict: 1 });
+    expect(res.json().plan[1]).toMatchObject({ studentId: "21-0001", action: "conflict", why: "registered" });
 
     const after = await pool.query("select count(*)::int n from student_directory");
     expect(after.rows[0].n).toBe(before.rows[0].n);

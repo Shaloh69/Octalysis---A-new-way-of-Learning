@@ -133,9 +133,30 @@ export async function identityFrom(req: FastifyRequest, env: Env): Promise<Ident
 
   if (!payload.sub) throw errors.unauthorized("Your session is not valid. Sign in again.");
 
+  const role = normaliseRole(payload.app_metadata?.role);
+
+  /*
+   * A DEACTIVATED STUDENT IS REFUSED HERE, on every route (V-20, instructor
+   * ruling 25 Sep 2026). `/auth/resolve` already refuses them sign-in by
+   * student ID, but the student app sends anything containing `@` straight to
+   * Supabase, so a deactivated student could still sign in with their email
+   * and hold a perfectly valid token. The token is not the question; the
+   * roster is. The student app reads nothing except through this API, so this
+   * one check is the whole lock-out. A primary-key lookup, students only.
+   */
+  if (role === "student") {
+    const { rows } = await req.server.db.query<{ off: boolean }>(
+      "select deleted_at is not null as off from profiles where id = $1",
+      [payload.sub],
+    );
+    if (rows[0]?.off) {
+      throw errors.forbidden("This account has been deactivated. Ask your instructor.");
+    }
+  }
+
   return {
     userId: payload.sub,
-    role: normaliseRole(payload.app_metadata?.role),
+    role,
     studentId: payload.app_metadata?.student_id ?? null,
     email: payload.email ?? null,
   };
