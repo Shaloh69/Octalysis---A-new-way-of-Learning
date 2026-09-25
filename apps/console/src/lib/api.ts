@@ -133,27 +133,41 @@ export interface LockStudent {
   userId: string;
   studentId: string;
   fullName: string;
+  sectionId: string | null;
 }
 export interface LockCell {
   userId: string;
   stageId: string;
+  /** From is_stage_unlocked(). The page renders this; it never derives it. */
   unlocked: boolean;
   mastery: number;
   /** null means "auto" — the curriculum policy decides, not a person. */
   override: "locked" | "unlocked" | null;
   reason: string | null;
+  /** Who set the override and when. Both null on an automatic cell. */
+  setBy: string | null;
+  setAt: string | null;
+}
+/** A course-wide ("global") or section override, with its window. */
+export interface ScopeLock {
+  id: string;
+  scope: "global" | "section";
+  sectionId: string | null;
+  sectionCode: string | null;
+  stageId: string;
+  state: "locked" | "unlocked";
+  reason: string | null;
+  unlockAt: string | null;
+  lockAt: string | null;
+  setBy: string;
+  setAt: string | null;
 }
 export interface LockMatrix {
   stages: LockStage[];
   students: LockStudent[];
   cells: LockCell[];
-  globalLocks: Array<{
-    stage_id: string;
-    state: string;
-    reason: string | null;
-    unlock_at: string | null;
-    lock_at: string | null;
-  }>;
+  sections: Array<{ id: string; code: string; term: string }>;
+  scopeLocks: ScopeLock[];
 }
 
 export interface StudentDetail {
@@ -431,6 +445,17 @@ export const api = {
 
   setLock: (input: SetLockInput) =>
     request<{ ok: true }>("/api/v1/console/locks", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  /** One reason, one transaction, one audit row per cell. */
+  setLocks: (input: {
+    state: "locked" | "unlocked" | "auto";
+    reason: string;
+    cells: Array<{ userId: string; stageId: string }>;
+  }) =>
+    request<{ ok: true; count: number }>("/api/v1/console/locks/bulk", {
       method: "POST",
       body: JSON.stringify(input),
     }),

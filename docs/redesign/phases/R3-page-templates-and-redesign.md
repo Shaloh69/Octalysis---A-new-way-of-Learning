@@ -666,7 +666,18 @@ thesis deliverable, and right now no phase is accountable for it.
         28 passed) and an API wake on arrival. Folded into this box rather
         than given boxes of their own: they are the gate, and new ticked boxes
         would move the percentage without moving the work
-  - [ ] `/locks`
+  - [x] `/locks` — 25 Sep 2026. Rebuilt against shadcn.io's permission-matrix
+        table (cell grammar from its dashboard sibling). Six assertions green at
+        1440 and 380 (`console-locks.spec.ts`: 44 passed / 10 skipped-by-design),
+        plus hard rule 4 proven on a fixture built to disagree, three states
+        told apart by shape, who/when/why never hover-only, toasts, skeleton,
+        error-with-retry. At 380 the matrix pivots to one stage at a time.
+        **Instructor-approved, built:** shift-click bulk (`POST /locks/bulk`,
+        one transaction, one audit row per cell), who and when on every
+        override, and the Sections & schedules tab. **Also fixed here:** the
+        shared dialog scrim (NEXT-SESSION §0a.1), every console spec re-run
+        green. `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`,
+        `current-380.png`
   - [ ] `/students`
   - [ ] `/students/:userId`
   - [ ] `/assessments`

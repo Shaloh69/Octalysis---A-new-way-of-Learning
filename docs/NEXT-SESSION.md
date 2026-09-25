@@ -17,7 +17,9 @@ re-derive all of them.
 Found while rebuilding `/items` and deliberately **not** fixed there (one
 session, one route). Each names where it lives and what it breaks.
 
-1. **The console's dialog scrim renders nothing.** `components/ui/dialog.tsx`
+1. **FIXED by the `/locks` session, 25 Sep 2026** (`.dialog-scrim` in
+   `index.css`, a `color-mix()` of `--surface-0`; every console spec re-run,
+   190 passed). Kept for the record: **The console's dialog scrim renders nothing.** `components/ui/dialog.tsx`
    draws its overlay with `bg-surface-0/80`, and Tailwind 3 emits no CSS for an
    opacity modifier on a `var()` colour, so every console dialog opens over an
    undimmed page. Seen on `/items`' review and import dialogs. A shared
@@ -102,6 +104,58 @@ seven still stand; none of them was touched.
 
 ---
 
+## 0c. Parked by the `/locks` revamp — 25 Sep 2026
+
+Found while rebuilding `/locks` and deliberately **not** fixed there. §0a and
+§0b still stand, apart from §0a.1 (the scrim), which this session fixed.
+
+1. **`pnpm db:reset` KILLS THE DEV API, and the same bug would kill Render.**
+   `services/api/src/db.ts` creates a `pg` Pool with **no `'error'`
+   listener**. A reset terminates the pool's idle connections ("terminating
+   connection due to administrator command"), the pool emits `error`, nothing
+   handles it, and Node exits. Seen twice in one session: every run after a
+   reset died with "Failed to fetch" until `pnpm dev:api` was restarted. **In
+   production the trigger is a Supabase restart, pause or dropped connection**,
+   and the API goes down instead of reconnecting. The fix is one listener that
+   logs and carries on, plus a test; it is API infrastructure, not `/locks`.
+   **Until it lands: after any `db:reset`, `curl localhost:8090/healthz`
+   before believing a red run.**
+2. **FIXED here, because `/locks` broke it: `console-audit.spec.ts` wrote to a
+   student who did not exist.** `ISOLATED_STUDENT = 7091eff0-…` is in no
+   seed. Its "open" writes failed on a foreign key; its "auto" writes deleted
+   nothing and **still wrote an audit row about a nonexistent student**, and
+   those junk rows were what "the reason is never truncated" found. The API
+   now refuses a lock for anyone not on the roster, the junk stopped, and the
+   spec went red. It now uses `232129021` (seeded, read by no other spec) and
+   **asserts every write**. Lesson for every spec that seeds through an API:
+   check the response, or the fixture can be empty and the spec still green.
+3. **Stage 01 is closed for all 21 demo students.** `/locks` shows it plainly
+   now: column 01 reads 0. This is §3a's decided-but-unbuilt rule
+   (`is_stage_unlocked()` still requires stage 00 at 70%). The page renders it
+   correctly; the function is what changes, server side, denial tests first.
+4. **A controlled Radix dialog with no `Trigger` does not return focus.** Radix
+   has nowhere to send it and focus lands on `<body>`. `/locks`' reason
+   dialog fixes it with `onCloseAutoFocus` and a remembered opener. Any other
+   console page opening a dialog from state (not a `DialogTrigger`) has the
+   same bug; `/items` proved its own, the rest are unchecked.
+5. **A radio group is a keyboard-gate failure waiting to happen.** Only the
+   checked radio of a group is in the Tab order, so `unreachableByKeyboard`
+   counts the others. `/locks`' sections form uses two `aria-pressed` buttons
+   instead. The reason dialog's three radios passed, because Radix's focus
+   trap cycles through every candidate. Prefer pressed buttons for a two-way
+   or three-way choice on a new page.
+6. **The GET the matrix reads changed shape.** `globalLocks` is gone;
+   `scopeLocks` (global AND section, with `setBy`/`setAt`) and `sections`
+   replace it, and every cell carries `setBy`/`setAt`. Nothing else read
+   `globalLocks` (grepped), but a script that did would now get `undefined`.
+
+**Available to every route from now on:** `.dialog-scrim` (every dialog dims
+the page), and `design/specs/_locks-fixture.ts` as the pattern for a spec
+that patches a REAL response rather than inventing one: the layout is tested on
+real rows, and only the states the seed lacks are added.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```
@@ -112,9 +166,9 @@ pnpm phase --open   # every open R-phase box, with its section
 **Show it at the start and again before you finish.** Root `CLAUDE.md` requires
 it, because a remembered figure is how this project lost track twice.
 
-Current, counted 25 Sep 2026 after `/signin`:
-`R0 28/28 · R1 36/36 · R2 21/21 · R3 43/72 · R4 2/29 · R5 0/24`
-— **130 done · 80 to-do (210 items, 62%)**, live phase **R3** (R4 also open).
+Current, counted 25 Sep 2026 after `/locks`:
+`R0 28/28 · R1 36/36 · R2 21/21 · R3 44/72 · R4 2/29 · R5 0/24`
+— **131 done · 79 to-do (210 items, 62%)**, live phase **R3** (R4 also open).
 The denominator grew from 171 when R3 gained one box per console route and R4
 gained the moon and minigame scope; the percentage fell because work was
 *found*, not lost.
