@@ -65,6 +65,9 @@ exist**, and no phase owns it — `PROGRESS.md` carries this as a blocker.
 
 **`services/api` — 10 route modules**: `assessments` `attempts` `auth` `console`
 `cosmetics` `feedback` `items` `live` `stages` `submissions`.
+`items` gained `POST /console/items/bulk-status` (drafts into review only),
+`/import` (dry run first; drafts only; never a live item) and `/export` on
+25 Sep 2026, with the pure planner in `src/items/import-plan.ts`.
 
 **The question engine — 11 modules**: `blueprint` `grade` `resolve` `scope` `seed`
 `solver-core` `solvers` `solvers-act1` `solvers-act2` `solvers-act3` `solvers-act4`.

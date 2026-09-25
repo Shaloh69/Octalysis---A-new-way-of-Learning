@@ -85,6 +85,171 @@
   }
 }
 
+/*
+ * ------------------------------------------------------------------ /items
+ *
+ * The item bank table. Plain CSS rather than utilities because its one hard
+ * requirement -- NOTHING CLIPPED, at any width -- is a container query, and
+ * Tailwind 3 has none without a plugin.
+ *
+ * The page this replaced put a nine-column table in `.table-scroll` and let it
+ * run off the right-hand edge: "Discrimination" was cut mid-word and the
+ * action column was not on screen at all at 1440. Two changes make that
+ * impossible here rather than unlikely:
+ *
+ *   1. `table-layout: fixed` with a width per column, and `overflow-wrap:
+ *      anywhere`, so the table is exactly as wide as its box and a long slug
+ *      breaks instead of pushing.
+ *   2. Below 60rem of AVAILABLE width -- not viewport width; the sidebar takes
+ *      a quarter of it -- each row reflows into a stacked block, labels
+ *      beside values, and the header row is kept for screen readers only.
+ *
+ * `design/specs/console-items.spec.ts` asserts both, at 1440 and 380.
+ */
+@layer components {
+  .bank {
+    container-type: inline-size;
+    position: relative;
+    overflow: hidden;
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+  }
+
+  .bank-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+  .bank-table th,
+  .bank-table td {
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+  .bank-table th {
+    font-size: var(--text-xs);
+    line-height: var(--lh-xs);
+    font-weight: 600;
+    color: var(--ink-muted);
+    border-bottom: var(--border-hair) solid var(--line-strong);
+    white-space: nowrap;
+  }
+  .bank-table tbody tr {
+    border-bottom: var(--border-hair) solid var(--line);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .bank-table tbody tr:last-child { border-bottom: 0; }
+  .bank-table tbody tr:hover { background: var(--surface-2); }
+  .bank-table tbody tr[data-selected] { background: var(--accent-muted); }
+  .bank-table .num-col { text-align: right; }
+
+  /* Column widths. The stem takes whatever is left; see SPEC.md for the budget. */
+  .bank-table .c-item   { width: 13rem; }
+  .bank-table .c-status { width: 6.5rem; }
+  .bank-table .c-exp    { width: 6rem; }
+  .bank-table .c-p      { width: 6rem; }
+  .bank-table .c-disc   { width: 9rem; }
+  .bank-table .c-act    { width: 6rem; }
+
+  /* Rows arrive with a short fade when the page or a filter changes. */
+  .bank-rows { animation: octa-fade-in var(--dur-fast) var(--ease-out); }
+
+  @container (max-width: 60rem) {
+    .bank-table,
+    .bank-table tbody { display: block; }
+    .bank-table colgroup { display: none; }
+    /* The header row stays in the accessibility tree, off screen. */
+    .bank-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+    .bank-table tbody tr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: var(--space-1) var(--space-3);
+      padding: var(--space-3);
+    }
+    .bank-table tbody td { display: block; padding: 0; min-width: 0; }
+    .bank-table td.c-item   { order: 1; flex: 1 1 0; }
+    .bank-table td.c-act    { order: 2; flex: none; }
+    .bank-table td.c-stem   { order: 3; flex: 1 1 100%; }
+    .bank-table td.c-status { order: 4; flex: none; }
+    .bank-table td.c-exp,
+    .bank-table td.c-p      { order: 5; flex: none; text-align: left; }
+    .bank-table td.c-disc   { order: 6; flex: 1 1 auto; }
+    .bank-table td[data-label]::before {
+      content: attr(data-label) " ";
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      color: var(--ink-muted);
+    }
+  }
+
+  /* ---- the skeleton: the table's shape, before the table ---- */
+  .skeleton-bar {
+    display: block;
+    height: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--surface-3);
+    /* Six of the base duration: a slow breath, and zero under reduced motion. */
+    animation: octa-shimmer calc(var(--dur-base) * 6) var(--ease-inout) infinite;
+  }
+
+  /* The same column budget as `.bank-table`, and the same reflow below 60rem. */
+  .skeleton-row {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 1fr) 6.5rem 6rem 6rem 9rem 6rem;
+    align-items: start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+  @container (max-width: 60rem) {
+    .skeleton-row { grid-template-columns: minmax(0, 1fr) 6rem; }
+    .skeleton-row > :nth-child(n + 3):not(:last-child) { display: none; }
+    /* As the rows will stand: item and Review on one line, the stem below. */
+    .skeleton-row > :last-child { order: 2; }
+    .skeleton-row > :nth-child(2) { order: 3; grid-column: 1 / -1; }
+  }
+
+  /* ---- dialogs on this page ease in and out; the shared primitive does not ---- */
+  .ease-dialog[data-state="open"]   { animation: octa-pop-in var(--dur-fast) var(--ease-out); }
+  .ease-dialog[data-state="closed"] { animation: octa-fade-out var(--dur-fast) var(--ease-out); }
+  /* A decision advances the dialog to the next item: the new item fades up. */
+  .ease-swap { animation: octa-fade-in var(--dur-fast) var(--ease-out); }
+
+  /* ---- toasts ---- */
+  .toast { animation: octa-rise-in var(--dur-fast) var(--ease-out); }
+
+  /* ---- the bulk-review bar ---- */
+  .bulk-bar { animation: octa-rise-in var(--dur-fast) var(--ease-out); }
+}
+
+/*
+ * The dialog keeps its centring transform, so the pop animates `scale` and
+ * `opacity` only -- animating `transform` here would fight `-translate-1/2`.
+ */
+@keyframes octa-pop-in {
+  from { opacity: 0; scale: 0.97; }
+  to   { opacity: 1; scale: 1; }
+}
+@keyframes octa-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes octa-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes octa-rise-in {
+  from { opacity: 0; translate: 0 var(--space-2); }
+  to   { opacity: 1; translate: 0 0; }
+}
+@keyframes octa-shimmer {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

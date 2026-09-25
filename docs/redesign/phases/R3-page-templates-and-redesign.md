@@ -639,6 +639,31 @@ thesis deliverable, and right now no phase is accountable for it.
       `template.png` + `SOURCE.md` + `SPEC.md` captured and VERIFIED BY OPENING
       IT, and its `design/specs/console-<route>.spec.ts` green on all six
       assertions at 1440 and 380
+
+      One box per route, in `CONSOLE-REVAMP.md` §3 order, ticked in the commit
+      that turns that route's spec green. Added 25 Sep 2026: the single box
+      above covers fourteen routes, so it could not move until the last one
+      and the count could not show any of them landing.
+
+  - [x] `/items` — 25 Sep 2026. Rebuilt; six assertions green at 1440 and 380
+        (`console-items.spec.ts`, 29 passed / 5 skipped-by-design), plus
+        toasts, skeleton, error-with-retry and eased dialogs. Also built the
+        four `PAGE-SPECS.md` features the instructor approved: type and
+        objective filters, bulk approve drafts (into review only), import and
+        export JSON. `SPEC.md`, `motion.md`, `current.png`, `current-380.png`
+  - [ ] `/signin`
+  - [ ] `/locks`
+  - [ ] `/students`
+  - [ ] `/students/:userId`
+  - [ ] `/assessments`
+  - [ ] `/submissions`
+  - [ ] `/gradebook`
+  - [ ] `/content`
+  - [ ] `/audit`
+  - [ ] `/system`
+  - [ ] `/feedback`
+  - [ ] `/live`
+  - [ ] `/attempts/:attemptId` — last, and with care: the only place a key is shown
 - [ ] **Student app revamp** (`WEB-REVAMP.md`) — same, for `apps/web`, second,
       and REDONE rather than improved per root `CLAUDE.md`
 - [ ] **Toasts, loading states and transitions** on every revamped route per

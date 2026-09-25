@@ -37,7 +37,7 @@ and R3's denominator had grown. Count, do not copy.
 | R0 scope and guardrails | ✅ 28 / 28 |
 | R1 solar system foundation | ✅ 36 / 36 |
 | R2 per-student cosmetics | ✅ **21 / 21** — closed 7 Sep, and closing it found **F-40** |
-| **R3 page templates** | **41 / 49** ← live |
+| **R3 page templates** | **42 / 72** ← live (14 per-route console boxes added 25 Sep; `pnpm phase` is the count) |
 | R4 moons and subtopics | ▫️ 0 / 13 |
 | R5 testing and sign-off | ▫️ 0 / 24 |
 
@@ -164,6 +164,18 @@ student, 14 console. What has landed under R3 so far:
 - **The map override on `/app/settings`** — `VISUAL-SYSTEM-3D.md` §5's last
   line, and the last rung of its ladder to be built. Rungs 1–5 all decide *for*
   the student; this is the student deciding, which is why §5 requires it
+
+**The console revamp has its first route through the gate — `/items`, 25 Sep
+2026.** Rebuilt from `design/templates/console/items/template.png`; the six
+`CONSOLE-REVAMP.md` §2 assertions green at 1440 and 380 in
+`console-items.spec.ts` (29 passed, 5 skipped by design), watched red first on
+the clipped action column. Toasts, skeleton, error-with-retry and eased dialogs
+exist for the first time. The four features `PAGE-SPECS.md` planned and the
+instructor approved on 25 Sep are built: type and objective filters, bulk
+approve drafts (into review only), import JSON (dry run first, drafts only,
+never a live item) and export JSON. The review dialog now shows an ordering
+item's key, which it never had. R3 gained one box per console route; 1 of 14
+is ticked.
 
 **R3's route pass has started.** `design/specs/r3-inventory.spec.ts` captures
 all **42** built route × width combinations, asserts every route throws no page

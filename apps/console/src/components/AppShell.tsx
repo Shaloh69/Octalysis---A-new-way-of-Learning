@@ -9,6 +9,7 @@ import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } fr
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Toaster } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 
 /**
@@ -219,6 +220,10 @@ export function AppShell() {
       <main id="main" className="min-w-0 flex-1 p-4 lg:p-6">
         <Outlet />
       </main>
+
+      {/* The z-toast layer this shell always reserved and nothing rendered into.
+          Outside <main> so a route's content never scrolls it away. */}
+      <Toaster />
     </div>
   );
 }

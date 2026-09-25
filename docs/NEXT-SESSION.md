@@ -12,6 +12,52 @@ re-derive all of them.
 
 ---
 
+## 0a. Parked by the `/items` revamp — 25 Sep 2026
+
+Found while rebuilding `/items` and deliberately **not** fixed there (one
+session, one route). Each names where it lives and what it breaks.
+
+1. **The console's dialog scrim renders nothing.** `components/ui/dialog.tsx`
+   draws its overlay with `bg-surface-0/80`, and Tailwind 3 emits no CSS for an
+   opacity modifier on a `var()` colour, so every console dialog opens over an
+   undimmed page. Seen on `/items`' review and import dialogs. A shared
+   primitive: fix it as its own change (a token-based `color-mix()`), and run
+   every console spec with a dialog, because every one of them changes.
+2. **Spec skips that fire on a race are tests that have stopped existing.**
+   `console-items.spec.ts` counted table rows the instant `<main>` appeared,
+   while the page still said "Loading", so all four of its tests SKIPPED on
+   every run for weeks while being reported as "four passing tests". Fixed in
+   that file. `console-teaching.spec.ts`'s count-then-skip was checked and is
+   not affected. **Any new count-then-skip must wait for the page to decide.**
+3. **`db-demo` alone does not clean up after the API suite.** `pnpm test` /
+   `pnpm verify` leaves the API test world behind (22 live stage-07 fixture
+   items), and `db-demo` only adds, so `/items` then reads "205 in the bank ·
+   22 live". **After any API test run: `pnpm db:reset && node scripts/db-demo.mjs`**,
+   not `db-demo` on its own.
+4. **The flagged-item fixture had never seeded anything.** It lived at the
+   bottom of `demo-seed.sql`, which runs before the item bank exists, and named
+   a slug (`G-07-order-1`) that no longer exists. Moved to
+   `db/demo-item-stats.sql`, run after `sync-items`, and it now raises if its
+   slug disappears again.
+5. **`/console/items/:id/edit` is still not built.** Import refuses a live item
+   for exactly that reason (versioning a live item retires it at once, and that
+   page's confirm dialog is where "statistics do not carry over" is said).
+6. **Two definitions of a valid item.** `services/api/src/items/import-plan.ts`
+   mirrors `scripts/sync-items.mjs`' `validateShape()` rule for rule, because
+   that script cannot import TypeScript. Change one, change the other;
+   `import-plan.spec.ts` names each rule in the same order.
+7. **Running the console specs rewrites committed PNGs.**
+   `design/item-review/assessment-window.png` changes on every run of
+   `console-assessment-window.spec.ts`. Restore it before committing unless
+   that route is the session's work.
+
+**Available to every route from now on:** `toast` (`components/ui/toast.tsx`,
+mounted once in `AppShell`), `useDelayed` for the 400ms skeleton rule, and
+`design/specs/_gate.ts` — the six assertions as functions. Import them; do not
+re-derive them.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```
@@ -203,8 +249,11 @@ at first sign-in. That is deliberate.
 **Honest gaps**
 
 - **Nothing is `live`.** All 183 items are `review` until approved at `/items`.
-  No student can sit anything until that happens.
-- `design/templates/` is empty — an R3 sign-off item.
+  No student can sit anything until that happens. `/items` passed the revamp gate
+  on 25 Sep 2026, so the page is ready; the 96 act-1 approvals are the
+  instructor's to make.
+- `design/templates/` — every console route has `template.png`; only `/items`
+  has passed the gate (25 Sep 2026). An R3 sign-off item.
 - The reverse travel transition (leaving a stage back to the map).
 - R4 and R5 have not started.
 

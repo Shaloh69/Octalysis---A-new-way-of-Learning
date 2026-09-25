@@ -1,3 +1,7 @@
+import type {
+  ItemBulkStatusRequest, ItemBulkStatusResult, ItemExportRequest, ItemFile,
+  ItemImportRequest, ItemImportResult,
+} from "@octa/contracts";
 import { getAccessToken } from "./session";
 
 /**
@@ -436,11 +440,18 @@ export const api = {
       body: JSON.stringify(input),
     }),
 
-  items: (filter: { stageId?: string | null; status?: string | null; flagged?: string | null }) => {
+  items: (filter: {
+    stageId?: string | null;
+    status?: string | null;
+    flagged?: string | null;
+    /** `/items` asks for the whole bank (up to 2000) and filters in the page. */
+    limit?: number;
+  }) => {
     const q = new URLSearchParams();
     if (filter.stageId) q.set("stageId", filter.stageId);
     if (filter.status) q.set("status", filter.status);
     if (filter.flagged) q.set("flagged", filter.flagged);
+    if (filter.limit) q.set("limit", String(filter.limit));
     const qs = q.toString();
     return request<{ items: BankItem[]; summary: Record<string, number> }>(
       `/api/v1/console/items${qs ? `?${qs}` : ""}`,
@@ -545,4 +556,25 @@ export const api = {
       `/api/v1/console/items/${encodeURIComponent(id)}/status`,
       { method: "PATCH", body: JSON.stringify({ status, ...opts }) },
     ),
+
+  /** Drafts into review, and nothing else. The API refuses any other `to`. */
+  bulkSendToReview: (ids: string[]) =>
+    request<ItemBulkStatusResult>("/api/v1/console/items/bulk-status", {
+      method: "POST",
+      body: JSON.stringify({ ids, to: "review" } satisfies ItemBulkStatusRequest),
+    }),
+
+  /** Always called with `dryRun: true` first; the page shows the plan. */
+  importItems: (file: ItemFile, dryRun: boolean) =>
+    request<ItemImportResult>("/api/v1/console/items/import", {
+      method: "POST",
+      body: JSON.stringify({ dryRun, file } satisfies ItemImportRequest),
+    }),
+
+  /** Carries the answer keys. Staff only, and only ever saved to a file. */
+  exportItems: (ids: string[]) =>
+    request<ItemFile>("/api/v1/console/items/export", {
+      method: "POST",
+      body: JSON.stringify({ ids } satisfies ItemExportRequest),
+    }),
 };

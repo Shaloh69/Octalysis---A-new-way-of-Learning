@@ -1,584 +1,492 @@
-import { useState } from "react";
-import { Dices, Flag } from "lucide-react";
-import { api, type BankItem, type ResolvedPreview } from "@/lib/api";
-import { useAsync } from "@/lib/useAsync";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Empty, ErrorNote, Loading } from "@/components/ui/empty";
+import { useMemo, useRef, useState } from "react";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download, FileUp, Flag, ListChecks, Search,
+} from "lucide-react";
+import { api, type BankItem } from "@/lib/api";
+import { useAsync } from "@/lib/useAsync";
+import { useDelayed } from "@/lib/useDelayed";
+import {
+  MIN_EXPOSURES, NO_FILTER, STATUSES, TYPE_LABEL, exportFileName, filterItems,
+  firstAwaitingReview, isFiltered, nextAfter, objectiveOptions, paginate, sortForReview,
+  statusCounts, type ItemsFilter,
+} from "@/lib/items-view";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Empty } from "@/components/ui/empty";
+import { toast } from "@/components/ui/toast";
+import { BankSkeleton, BankTable } from "./items/BankTable";
+import { ReviewDialog } from "./items/ReviewDialog";
+import { ImportDialog } from "./items/ImportDialog";
 
 /**
- * The item bank.
+ * `/items` — the item bank and its review queue. REBUILT 25 Sep 2026 against
+ * `design/templates/console/items/template.png`; `SPEC.md` beside it records
+ * what was taken from the template and what was not.
  *
  * `PHASES.md` calls the bank the real project: the code is finite, the bank is
- * continuous, and no amount of code substitutes for it. This page is where
- * "approve every one by hand before it goes live" becomes something a person
- * can actually do.
+ * continuous. This page is where "approve every one by hand before it goes
+ * live" becomes something a person can actually do -- 96 act-1 items stand
+ * between the Prelim and a student, and every one of them is approved here.
  *
- * WHAT THE NUMBERS MEAN, because a psychometric shown without its reading is
- * just a number a teacher will ignore:
+ * WHAT THE NUMBERS MEAN, because a psychometric without its reading is just a
+ * number a teacher will ignore:
  *
- *   p-value        the proportion who got it right. It is DIFFICULTY, and it
- *                  runs the intuitive way round: HIGH means EASY. Below ~0.25
- *                  on a 4-option item is at or under guessing.
- *   discrimination point-biserial. Does this item separate students who know
- *                  the material from those who do not? Below ~0.15 it does not,
- *                  whatever its p-value says — and a NEGATIVE value means the
- *                  students who did best on the paper did worst on this item,
- *                  which almost always means the key is wrong.
+ *   p-value        the proportion who got it right: DIFFICULTY, and HIGH means
+ *                  EASY. Below ~0.25 on a 4-option item is at guessing.
+ *   discrimination point-biserial. Below ~0.15 the item does not separate
+ *                  students who know the material from those who do not, and a
+ *                  NEGATIVE value means the students who did best on the paper
+ *                  did worst on this item -- almost always a wrong key.
  *
- * Both need exposures before they mean anything. Under 30 the page says so
- * rather than showing a number that looks authoritative and is noise.
+ * Both need 30 exposures before they mean anything, and the page says so once.
+ *
+ * The whole bank is fetched once and filtered here (`lib/items-view.ts`), so
+ * every count is counted over the list the table shows, and the review queue
+ * advances through exactly the order the reviewer is looking at.
  */
 
-const STATUS_TONE = {
-  draft: "neutral",
-  review: "warning",
-  live: "success",
-  retired: "locked",
-} as const;
+const PAGE_SIZES = [25, 50, 100] as const;
 
 export function ItemsPage() {
-  const [stageId, setStageId] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const [onlyFlagged, setOnlyFlagged] = useState(false);
-  const { data, error, loading, reload } = useAsync(
-    () => api.items({ stageId, status, flagged: onlyFlagged ? "true" : null }),
-    [stageId, status, onlyFlagged],
-  );
+  const bank = useAsync(() => api.items({ limit: 2000 }), []);
   const stagesQ = useAsync(() => api.stages(), []);
-  const [preview, setPreview] = useState<BankItem | null>(null);
 
-  /*
-   * Advance through the queue instead of closing on every decision.
-   *
-   * Reviewing a seeded bank means a few hundred decisions in a row. Closing the
-   * dialog after each one and hunting for the next row is not just slow -- it
-   * pushes a reviewer towards clicking Approve to make the modal go away, which
-   * is the exact failure the review rule exists to prevent. One decision per
-   * item is preserved; only the navigation between them is removed.
-   *
-   * `next` is taken from the list as it stands BEFORE the reload, because after
-   * the reload the item just decided has left the filter and every index moves.
+  const [filter, setFilter] = useState<ItemsFilter>(NO_FILTER);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState<number>(25);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [reviewing, setReviewing] = useState<BankItem | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const lastReviewed = useRef<string | null>(null);
+
+  const firstLoad = bank.loading && !bank.data;
+  const showSkeleton = useDelayed(firstLoad, 400);
+  const slow = useDelayed(firstLoad, 3000);
+
+  const all = useMemo(() => bank.data?.items ?? [], [bank.data]);
+  const view = useMemo(() => sortForReview(filterItems(all, filter)), [all, filter]);
+  const pg = paginate(view, page, size);
+  const counts = statusCounts(all, filter);
+  const objectives = useMemo(() => objectiveOptions(all, filter.stageId), [all, filter.stageId]);
+  const flaggedCount = filterItems(all, filter, "flaggedOnly").filter((i) => i.stats.flagged).length;
+  const stageCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const i of filterItems(all, filter, "stageId")) m.set(i.stageId, (m.get(i.stageId) ?? 0) + 1);
+    return m;
+  }, [all, filter]);
+  const stageTitle = new Map(stagesQ.data?.nodes.map((n) => [n.id, n.title]) ?? []);
+  const nextUp = firstAwaitingReview(view);
+
+  /** Any filter change starts from page one, with nothing selected. */
+  function update(patch: Partial<ItemsFilter>): void {
+    setFilter((f) => {
+      const next = { ...f, ...patch };
+      // An objective from another stage would silently empty the table.
+      if (patch.stageId !== undefined && next.objectiveId && !next.objectiveId.startsWith(`${next.stageId}.`)) {
+        next.objectiveId = "";
+      }
+      return next;
+    });
+    setPage(1);
+    setSelected(new Set());
+  }
+
+  function review(item: BankItem): void {
+    lastReviewed.current = item.id;
+    setReviewing(item);
+  }
+
+  /**
+   * After a decision, the NEXT item in the list being looked at -- taken before
+   * the reload, because afterwards the decided item may have left the filter
+   * and every index moves.
    */
   function advanceFrom(item: BankItem): void {
-    const list = data?.items ?? [];
-    const i = list.findIndex((x) => x.id === item.id);
-    setPreview(i >= 0 ? (list[i + 1] ?? null) : null);
-    reload();
+    const next = nextAfter(view, item.id);
+    if (next) review(next);
+    else setReviewing(null);
+    bank.reload();
   }
 
-  if (loading) return <Loading what="the item bank" />;
-  if (error) return <ErrorNote message={error} />;
-  if (!data) return null;
-
-  const queue = data.items;
-  const queueIndex = preview ? queue.findIndex((x) => x.id === preview.id) : -1;
-
-  const s = data.summary;
-  const total = Object.values(s).reduce((a, b) => a + b, 0);
-
-  return (
-    <>
-      <header className="mb-4">
-        <h1 className="mb-1 font-display text-2xl">Items</h1>
-        <p className="max-w-2xl text-sm text-ink-muted">
-          <span className="num">{total}</span> in the bank ·{" "}
-          <span className="num text-success">{s.live ?? 0}</span> live ·{" "}
-          <span className="num text-warning">{s.review ?? 0}</span> awaiting review ·{" "}
-          <span className="num">{s.draft ?? 0}</span> draft ·{" "}
-          <span className="num text-ink-faint">{s.retired ?? 0}</span> retired
-        </p>
-      </header>
-
-      <div className="mb-4 flex flex-wrap items-center gap-1.5">
-        <Button size="sm" variant={status === null ? "default" : "outline"} onClick={() => setStatus(null)}>
-          All
-        </Button>
-        {(["draft", "review", "live", "retired"] as const).map((st) => (
-          <Button key={st} size="sm" variant={status === st ? "default" : "outline"} onClick={() => setStatus(st)}>
-            {st}
-          </Button>
-        ))}
-
-        <span className="mx-2 h-5 w-px bg-line" aria-hidden="true" />
-
-        <Button
-          size="sm"
-          variant={onlyFlagged ? "default" : "outline"}
-          onClick={() => setOnlyFlagged((v) => !v)}
-        >
-          <Flag className="h-3.5 w-3.5" aria-hidden="true" /> Flagged
-        </Button>
-
-        <select
-          aria-label="Filter by stage"
-          className="ml-auto h-8 rounded-md border border-line bg-surface-0 px-2 text-xs text-ink"
-          value={stageId ?? ""}
-          onChange={(e) => setStageId(e.target.value || null)}
-        >
-          <option value="">Every stage</option>
-          {stagesQ.data?.nodes.map((n) => (
-            <option key={n.id} value={n.id}>
-              {n.id} · {n.title}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {data.items.length === 0 ? (
-        <Empty
-          title="No items match"
-          hint={
-            total === 0
-              ? "The bank is empty. Target is roughly 40 live items per gradeable chapter — author eight to ten by hand first to set the style."
-              : "Try a different filter."
-          }
-        />
-      ) : (
-        /*
-          A TABLE, not a card list. Measured at 122px per card across 33 items,
-          this page cost about 4,000px to scan a bank that is meant to reach
-          ~40 live items per gradeable chapter -- roughly 700 items, or 85,000
-          pixels, at target.
-
-          `CONSOLE-DATA-AND-TEMPLATES.md` §2 named this exactly: an item bank
-          with p-value / discrimination / exposure columns "is the same shape"
-          as the submissions queue D-4 fixed, and the two "should be solved
-          together against the same reference rather than separately by taste".
-          The reference is shadcn-admin's Tasks page, the densest table in the
-          template this console already uses.
-
-          Nothing is dropped in the move. Every field the card carried has a
-          column, and the two psychometric WARNINGS -- a p-value at guessing,
-          and a negative discrimination meaning the key is probably wrong --
-          still say so in words, because those sentences are the entire reason
-          a teacher opens this page.
-        */
-        <div className="table-scroll rounded-lg border border-line bg-surface-1">
-          {/*
-            The 30-exposure rule, once. Every row would otherwise repeat it, and
-            on a new bank that is every row in the table.
-          */}
-          <p className="border-b border-line px-3 py-2 text-xs text-ink-faint">
-            p-value and discrimination stay blank until an item has been seen{" "}
-            <span className="num">30</span> times — below that the numbers do not mean anything
-            yet.
-          </p>
-          <Table>
-            <THead>
-              <TR>
-                <TH>Item</TH>
-                <TH>Stem</TH>
-                <TH>Objective</TH>
-                <TH className="text-right">Exposures</TH>
-                <TH className="text-right">p</TH>
-                <TH>Discrimination</TH>
-                <TH aria-label="Preview" />
-              </TR>
-            </THead>
-            <TBody>
-              {data.items.map((i) => (
-                <TR key={i.id}>
-                  <TD className="whitespace-nowrap align-top">
-                    <div className="flex items-center gap-1.5">
-                      <Badge tone={STATUS_TONE[i.status]}>{i.status}</Badge>
-                      {i.stats.flagged ? (
-                        <Badge tone="danger" title={i.stats.flagReason ?? ""}>
-                          <Flag className="mr-1 h-3 w-3" aria-hidden="true" /> flagged
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <div className="num mt-0.5 text-xs text-ink-faint">
-                      {i.slug} · v{i.version} · stage {i.stageId} ·{" "}
-                      {i.type === "S" ? "static" : i.type === "P" ? "parameterized" : "generated"} ·{" "}
-                      {i.bloom}
-                    </div>
-                  </TD>
-
-                  <TD className="min-w-[18rem] max-w-lg align-top text-sm">{i.stemTemplate}</TD>
-
-                  {/*
-                    Clamped to two lines, with the full text on hover.
-                    Objective descriptions are whole sentences ("Illustrate the
-                    cell structures of DRAM and SRAM"), and left unbounded they
-                    were the biggest single contributor to row height -- 98px per
-                    row against the 122px card list is not a density pass, it is
-                    a rounding error. The ID above it is the identifier; the
-                    sentence is context, and context can be two lines.
-                  */}
-                  <TD className="max-w-[16rem] align-top text-xs">
-                    {i.objectiveText ? (
-                      <span title={i.objectiveText}>
-                        <span className="num">{i.objectiveId}</span>{" "}
-                        <span className="line-clamp-2 text-ink-muted">{i.objectiveText}</span>
-                      </span>
-                    ) : (
-                      /* Kept in full: an unlinked item is invisible to objective
-                         coverage, which is a bank-integrity problem, not a note. */
-                      <span className="text-warning">
-                        Not linked to an objective — it cannot be sampled by objective coverage.
-                      </span>
-                    )}
-                  </TD>
-
-                  <TD className="num align-top text-right text-xs text-ink-muted">
-                    {i.stats.exposures}
-                  </TD>
-
-                  <PsychometricCells stats={i.stats} />
-
-                  <TD className="align-top">
-                    <Button size="sm" variant="outline" onClick={() => setPreview(i)}>
-                      Preview
-                    </Button>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        </div>
-      )}
-
-      <PreviewDialog
-        item={preview}
-        position={queueIndex >= 0 ? { at: queueIndex + 1, of: queue.length } : null}
-        onClose={() => setPreview(null)}
-        onDecided={advanceFrom}
-      />
-    </>
-  );
-}
-
-/**
- * The p-value and discrimination cells.
- *
- * Two cells rather than a block, so the numbers line up down the column and can
- * be compared at a glance — which is the entire reason for having them.
- *
- * THE WARNINGS SURVIVE THE DENSITY PASS. A negative point-biserial means the
- * students who did best on the paper did worst on this item, which almost
- * always means the key is wrong; that sentence is why a teacher opens this page
- * at all, and compressing it into a colour would have been the density pass
- * eating the thing it was meant to surface.
- */
-function PsychometricCells({ stats }: { stats: BankItem["stats"] }) {
-  const { exposures, pValue, discrimination } = stats;
-
-  if (exposures < 30) {
-    /*
-     * Said ONCE, above the table, not on every row.
-     *
-     * The first version printed "Not enough exposures to say anything yet --
-     * statistics start meaning something around 30" in every row, which on a
-     * fresh bank is every row: 22 copies of one sentence, and the single
-     * biggest contributor to row height. Repeating an explanation per row is
-     * how a density pass quietly gives back what it won.
-     *
-     * The em dash carries it instead, and the exposure count beside it is the
-     * evidence. The rule itself lives in the note above the table.
-     */
-    return (
-      <>
-        <TD className="align-top text-right text-xs text-ink-faint">—</TD>
-        <TD className="align-top text-xs text-ink-faint">—</TD>
-      </>
-    );
-  }
-
-  // A negative point-biserial is the loud one: the students who did best on the
-  // paper did WORST on this item, which almost always means the key is wrong.
-  const badDiscrimination = discrimination !== null && discrimination < 0.15;
-  const negative = discrimination !== null && discrimination < 0;
-
-  return (
-    <>
-      <TD
-        className={cn(
-          "num align-top text-right text-xs",
-          pValue !== null && pValue < 0.25 ? "text-warning" : "text-ink-muted",
-        )}
-      >
-        {pValue?.toFixed(2) ?? "—"}
-        {pValue !== null ? (
-          <span className="ml-1 block text-ink-faint">
-            {pValue > 0.85 ? "very easy" : pValue < 0.25 ? "at guessing" : "reasonable"}
-          </span>
-        ) : null}
-      </TD>
-      <TD
-        className={cn(
-          "align-top text-xs",
-          negative ? "text-danger" : badDiscrimination ? "text-warning" : "text-ink-muted",
-        )}
-      >
-        <span className="num">{discrimination?.toFixed(2) ?? "—"}</span>
-        {negative ? (
-          <span className="ml-1">— the key is probably wrong</span>
-        ) : badDiscrimination ? (
-          <span className="ml-1 text-ink-faint">— not separating students</span>
-        ) : null}
-      </TD>
-    </>
-  );
-}
-
-/* ------------------------------------------------------------- preview */
-
-function PreviewDialog({
-  item, position, onClose, onDecided,
-}: {
-  item: BankItem | null;
-  /** Where this item sits in the filtered list, for "12 of 177". */
-  position: { at: number; of: number } | null;
-  onClose: () => void;
-  onDecided: (item: BankItem) => void;
-}) {
-  const [seed, setSeed] = useState("preview-1");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [selfApproved, setSelfApproved] = useState(false);
-  const [rejecting, setRejecting] = useState(false);
-  const [reason, setReason] = useState("");
-  const { data, error, loading } = useAsync<ResolvedPreview | null>(
-    () => (item ? api.previewItem(item.id, seed) : Promise.resolve(null)),
-    [item?.id, seed],
-  );
-
-  if (!item) return null;
-
-  async function decide(status: string, opts: { reason?: string } = {}) {
-    if (!item) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      await api.setItemStatus(item.id, status, {
-        ...opts,
-        ...(selfApproved ? { selfApproved: true } : {}),
-      });
-      /*
-       * Reset the per-item controls before advancing, or the next item inherits
-       * this one's ticked self-approval and typed reason -- which would attach a
-       * confirmation the reviewer never made to an item they have not read.
-       */
-      setSelfApproved(false);
-      setRejecting(false);
-      setReason("");
-      onDecided(item);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "That change was not saved.");
-    } finally {
-      setBusy(false);
+  /** Focus comes home to the row of the item last reviewed, if it is on screen. */
+  function returnFocus(e: Event): void {
+    const id = lastReviewed.current;
+    const el = id ? document.querySelector<HTMLButtonElement>(`[data-review-id="${id}"]`) : null;
+    if (el) {
+      e.preventDefault();
+      el.focus();
     }
   }
 
-  return (
-    <Dialog open={item !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {item.slug}
-            {position ? (
-              <span className="num ml-2 text-xs font-normal text-ink-faint">
-                {position.at} of {position.of}
-              </span>
-            ) : null}
-          </DialogTitle>
-          <DialogDescription>
-            Resolved by the same engine a student&apos;s paper goes through. Re-roll to see the
-            spread of variants your students will actually get.
-            {item.authorName ? null : (
-              <span className="mt-1 block">
-                No author on record — this item was seeded rather than written in the console, so
-                approving it counts as a first review, not a self-approval.
-              </span>
-            )}
-          </DialogDescription>
-        </DialogHeader>
+  async function exportView(): Promise<void> {
+    setExporting(true);
+    try {
+      const file = await api.exportItems(view.map((i) => i.id));
+      const name = exportFileName(new Date(), filter.stageId);
+      const url = URL.createObjectURL(
+        new Blob([`${JSON.stringify(file, null, 2)}\n`], { type: "application/json" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+      toast.success(
+        `Exported ${file.items.length} items`,
+        `Saved as ${name}. It holds the answer keys: keep it where students cannot reach it.`,
+      );
+    } catch (e) {
+      toast.error("Nothing was exported", e instanceof Error ? e.message : "Try again.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
-        <div className="mb-3 flex items-center gap-2">
-          <span className="num text-xs text-ink-faint">seed {seed}</span>
+  async function sendSelectedToReview(): Promise<void> {
+    setMoving(true);
+    try {
+      const r = await api.bulkSendToReview([...selected]);
+      const n = r.moved.length;
+      toast.success(
+        `${n} draft${n === 1 ? "" : "s"} sent to review`,
+        r.skipped.length > 0
+          ? `${r.skipped.length} skipped: ${r.skipped.map((s) => s.reason).join("; ")}`
+          : "Each one is still approved on its own.",
+      );
+      setSelected(new Set());
+      bank.reload();
+    } catch (e) {
+      toast.error("No drafts were moved", e instanceof Error ? e.message : "Try again.");
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  const summary = bank.data?.summary ?? {};
+  const inBank = Object.values(summary).reduce((a, b) => a + b, 0);
+  const queuePosition =
+    reviewing && view.findIndex((x) => x.id === reviewing.id) >= 0
+      ? { at: view.findIndex((x) => x.id === reviewing.id) + 1, of: view.length }
+      : null;
+
+  return (
+    <div className="grid gap-4">
+      {/* ---------------------------------------------------------- header */}
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl text-ink">Items</h1>
+          <p className="text-sm text-ink-muted">
+            {bank.data ? (
+              <>
+                <span className="num text-ink">{inBank}</span> in the bank ·{" "}
+                <span className="num text-ink">{summary.live ?? 0}</span> live ·{" "}
+                <span className="num text-ink">{summary.review ?? 0}</span> awaiting review ·{" "}
+                <span className="num text-ink">{summary.draft ?? 0}</span> draft ·{" "}
+                <span className="num text-ink">{summary.retired ?? 0}</span> retired
+              </>
+            ) : (
+              "Every item is approved by hand before a student can draw it."
+            )}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setImporting(true)}>
+            <FileUp className="h-4 w-4" aria-hidden="true" /> Import JSON
+          </Button>
           <Button
-            size="sm"
             variant="outline"
-            onClick={() => setSeed(`preview-${Math.floor(Math.random() * 1e6)}`)}
+            disabled={exporting || view.length === 0}
+            onClick={() => void exportView()}
           >
-            <Dices className="h-3.5 w-3.5" aria-hidden="true" /> Re-roll
+            <Download className="h-4 w-4" aria-hidden="true" /> Export {view.length} as JSON
+          </Button>
+          <Button disabled={nextUp === null} onClick={() => nextUp && review(nextUp)}>
+            <ListChecks className="h-4 w-4" aria-hidden="true" /> Review next
           </Button>
         </div>
+      </header>
 
-        {loading ? (
-          <Loading what="the preview" />
-        ) : error ? (
-          <ErrorNote message={error} />
-        ) : data?.error ? (
-          <ErrorNote message={`This item could not be resolved: ${data.error}`} />
-        ) : data?.item ? (
-          <>
-            <p className="mb-3 whitespace-pre-wrap rounded-md border border-line bg-surface-0 p-3 text-sm text-ink">
-              {data.item.stem}
-            </p>
-            <ul className="mb-3 space-y-1">
-              {data.item.options.map((o, k) => (
-                <li
-                  key={k}
-                  className={cn(
-                    "flex items-start gap-2 rounded-sm border px-2.5 py-1.5 text-sm",
-                    k === data.item!.correctIndex
-                      ? "border-success bg-success-bg text-success"
-                      : "border-transparent text-ink-muted",
-                  )}
-                >
-                  <span className="num text-xs">{String.fromCharCode(65 + k)}</span>
-                  <span className="flex-1">{o}</span>
-                  {k === data.item!.correctIndex ? <span className="text-xs">key</span> : null}
-                </li>
-              ))}
-            </ul>
-            {data.item.rationale ? (
-              <p className="mb-3 text-sm text-ink-muted">{data.item.rationale}</p>
-            ) : (
-              <p className="mb-3 text-sm text-warning">
-                No rationale. A student who gets this wrong learns nothing from it.
-              </p>
-            )}
-            {Object.keys(data.item.resolvedParams ?? {}).length > 0 ? (
-              <p className="num mb-3 text-xs text-ink-faint">
-                {Object.entries(data.item.resolvedParams)
-                  .map(([k, v]) => `${k}=${String(v)}`)
-                  .join("  ")}
-              </p>
-            ) : null}
-          </>
-        ) : null}
-
-        {/*
-          THE SELF-APPROVAL BOX IS GATED ON AUTHORSHIP, not just on status.
-
-          It says "I wrote this item and have re-checked the answer key myself".
-          On a seeded item the reviewer did NOT write it, so offering the tick
-          invites them to record a false statement in `audit_log` -- and the
-          server would not have asked for it anyway, because it only demands
-          self-approval when `author_id` matches the reviewer. An item with no
-          author on record is reviewed normally, which is the honest reading:
-          the instructor really is the first person to check it.
-        */}
-        {item.status === "review" && item.authorName ? (
-          /*
-           * The self-approval acknowledgement.
-           *
-           * The server decides whether this is even allowed -- it is refused
-           * outright while a second member of staff exists, so this box is a
-           * fallback for a one-instructor install rather than a way around the
-           * review rule. Ticking it is recorded in audit_log as a
-           * self-approval, distinguishable from a real review forever.
-           */
-          <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-md border border-line bg-surface-0 p-3">
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4 accent-accent"
-              checked={selfApproved}
-              onChange={(e) => setSelfApproved(e.target.checked)}
-            />
-            <span className="text-sm text-ink">
-              I wrote this item and have re-checked the answer key myself.
-              <span className="mt-0.5 block text-xs text-ink-muted">
-                Only needed when you are the only member of staff. Recorded in the audit log as a
-                self-approval. If someone else can review it, ask them instead.
-              </span>
-            </span>
+      {/* --------------------------------------------------------- toolbar */}
+      <div className="grid gap-2 lg:flex lg:flex-wrap lg:items-center">
+        <div className="relative lg:w-72">
+          <label htmlFor="items-query" className="sr-only">
+            Filter items
           </label>
-        ) : null}
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+          <Input
+            id="items-query"
+            type="search"
+            className="h-control-sm pl-6 text-xs"
+            placeholder="Filter by slug, stem or objective"
+            value={filter.query}
+            onChange={(e) => update({ query: e.target.value })}
+          />
+        </div>
 
-        {item.status === "live" ? (
-          <p className="rounded-md border border-info bg-info-bg px-3 py-2 text-xs text-info">
-            This item is live. It cannot be edited — an edit creates a new version and retires this
-            one, and <strong>statistics do not carry over</strong>.
-          </p>
-        ) : null}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <FilterSelect
+            id="items-status"
+            label="Status"
+            value={filter.status}
+            onChange={(v) => update({ status: v as ItemsFilter["status"] })}
+          >
+            <option value="">All statuses ({Object.values(counts).reduce((a, b) => a + b, 0)})</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s === "review" ? "Awaiting review" : s[0]!.toUpperCase() + s.slice(1)} ({counts[s]})
+              </option>
+            ))}
+          </FilterSelect>
 
-        {/*
-          SENDING AN ITEM BACK.
-          Until now `review` offered exactly one decision: Approve and publish.
-          A reviewer who found a wrong key, a bad distractor or a stem that did
-          not match its objective had no way to say so -- the item either went
-          live or sat in the queue forever. On a seeded bank that is the decision
-          they will need most, so it is a first-class action, and the reason is
-          REQUIRED: "rejected" with no reason tells the next person nothing, and
-          the API already records it in `audit_log`.
-        */}
-        {rejecting ? (
-          <div className="mb-3 rounded-md border border-line bg-surface-0 p-3">
-            <label htmlFor="reject-reason" className="mb-1.5 block text-sm text-ink">
-              What is wrong with this item?
-            </label>
-            <textarea
-              id="reject-reason"
-              className="w-full rounded-sm border border-line bg-surface-1 px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-faint"
-              rows={3}
-              maxLength={500}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="The key is wrong — B is also correct at 8 bits."
-            />
-            <p className="mt-1 text-xs text-ink-muted">
-              Recorded in the audit log against this item. It goes back to draft, not away.
-            </p>
-          </div>
-        ) : null}
+          <FilterSelect id="items-stage" label="Stage" value={filter.stageId} onChange={(v) => update({ stageId: v })}>
+            <option value="">Every stage</option>
+            {[...stageCounts.keys()].sort().map((id) => (
+              <option key={id} value={id}>
+                {id}
+                {stageTitle.get(id) ? ` · ${stageTitle.get(id)}` : ""} ({stageCounts.get(id)})
+              </option>
+            ))}
+          </FilterSelect>
 
-        {err ? (
-          <p className="mb-2 text-sm text-danger" role="alert">
-            {err}
-          </p>
-        ) : null}
+          <FilterSelect
+            id="items-type"
+            label="Type"
+            value={filter.type}
+            onChange={(v) => update({ type: v as ItemsFilter["type"] })}
+          >
+            <option value="">Every type</option>
+            {(["S", "P", "G"] as const).map((t) => (
+              <option key={t} value={t}>
+                {TYPE_LABEL[t][0]!.toUpperCase() + TYPE_LABEL[t].slice(1)}
+              </option>
+            ))}
+          </FilterSelect>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Close
+          <FilterSelect
+            id="items-objective"
+            label="Objective"
+            value={filter.objectiveId}
+            onChange={(v) => update({ objectiveId: v })}
+          >
+            <option value="">Every objective</option>
+            {objectives.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.id}
+                {o.text ? ` · ${o.text}` : ""}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <Button
+            size="sm"
+            variant={filter.flaggedOnly ? "default" : "outline"}
+            aria-pressed={filter.flaggedOnly}
+            onClick={() => update({ flaggedOnly: !filter.flaggedOnly })}
+          >
+            <Flag className="h-3.5 w-3.5" aria-hidden="true" /> Flagged <span className="num">({flaggedCount})</span>
           </Button>
-          {item.status === "draft" ? (
-            <Button variant="outline" disabled={busy} onClick={() => void decide("review")}>
-              Send to review
+
+          {isFiltered(filter) ? (
+            <Button size="sm" variant="ghost" onClick={() => update(NO_FILTER)}>
+              Clear filters
             </Button>
           ) : null}
-          {item.status === "review" && !rejecting ? (
-            <Button variant="outline" disabled={busy} onClick={() => setRejecting(true)}>
-              Send back
-            </Button>
+        </div>
+      </div>
+
+      {/* -------------------------------------------------------- bulk bar */}
+      {selected.size > 0 ? (
+        <div
+          role="region"
+          aria-label="Bulk review"
+          className="bulk-bar flex flex-wrap items-center gap-3 rounded-lg border border-accent bg-accent-muted px-3 py-2"
+        >
+          <p className="min-w-0 flex-1 text-sm text-ink">
+            <span className="num">{selected.size}</span> draft{selected.size === 1 ? "" : "s"} selected.
+            Sending them to review puts them in the queue; each is still approved on its own.
+          </p>
+          <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+            Clear selection
+          </Button>
+          <Button size="sm" disabled={moving} onClick={() => void sendSelectedToReview()}>
+            Send {selected.size} to review
+          </Button>
+        </div>
+      ) : null}
+
+      {/* --------------------------------------------------------- content */}
+      {bank.error && !bank.data ? (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-bg px-4 py-3">
+          <p className="min-w-0 flex-1 text-sm text-ink">
+            The item bank could not be loaded. <span className="text-ink-muted">{bank.error}</span>
+          </p>
+          <Button size="sm" variant="outline" onClick={bank.reload}>
+            Try again
+          </Button>
+        </div>
+      ) : firstLoad ? (
+        // Space reserved either way, so nothing moves when the rows land.
+        showSkeleton ? <BankSkeleton slow={slow} /> : <div className="min-h-[28rem]" aria-busy="true" />
+      ) : view.length === 0 ? (
+        <Empty
+          title={inBank === 0 ? "The bank is empty" : "No items match"}
+          hint={
+            inBank === 0
+              ? "Import a file, or run sync-items. Target: roughly 40 live items per gradeable chapter."
+              : "Nothing in the bank matches every filter at once."
+          }
+          action={
+            inBank > 0 ? (
+              <Button size="sm" variant="outline" onClick={() => update(NO_FILTER)}>
+                Clear filters
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className="bank">
+          {bank.error ? (
+            <div role="alert" className="flex flex-wrap items-center gap-2 border-b border-danger bg-danger-bg px-3 py-2">
+              <p className="min-w-0 flex-1 text-xs text-ink">Refreshing failed: {bank.error}</p>
+              <Button size="sm" variant="outline" onClick={bank.reload}>
+                Try again
+              </Button>
+            </div>
           ) : null}
-          {/*
-            NOT `danger` below. That variant is reserved for destructive staff
-            actions, and sending an item back is neither destructive nor unusual
-            -- it is half of what a review is for. Approve is hidden while this
-            panel is open, so the primary variant is unambiguous.
-          */}
-          {item.status === "review" && rejecting ? (
-            <Button
-              disabled={busy || reason.trim().length < 3}
-              onClick={() => void decide("draft", { reason: reason.trim() })}
+          {/* The 30-exposure rule, ONCE. Per row it was 22 copies of one sentence. */}
+          <p className="border-b border-line px-3 py-2 text-xs text-ink-muted">
+            p-value and discrimination stay blank until an item has been seen{" "}
+            <span className="num">{MIN_EXPOSURES}</span> times; below that the numbers do not mean
+            anything yet.
+          </p>
+          <BankTable
+            rows={pg.rows}
+            viewKey={`${JSON.stringify(filter)}:${pg.page}:${size}`}
+            busy={bank.loading}
+            selected={selected}
+            onToggle={(id) =>
+              setSelected((s) => {
+                const n = new Set(s);
+                if (n.has(id)) n.delete(id);
+                else n.add(id);
+                return n;
+              })
+            }
+            onToggleAll={(ids, on) =>
+              setSelected((s) => {
+                const n = new Set(s);
+                for (const id of ids) {
+                  if (on) n.add(id);
+                  else n.delete(id);
+                }
+                return n;
+              })
+            }
+            onReview={review}
+          />
+        </div>
+      )}
+
+      {/* ------------------------------------------------------ pagination */}
+      {view.length > 0 ? (
+        <nav aria-label="Pages" className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="items-page-size" className="text-xs text-ink-muted">
+              Rows per page
+            </label>
+            <select
+              id="items-page-size"
+              className="h-control-sm rounded-md border border-line bg-surface-0 px-2 text-xs text-ink"
+              value={size}
+              onChange={(e) => {
+                setSize(Number(e.target.value));
+                setPage(1);
+              }}
             >
-              Send back to draft
-            </Button>
-          ) : null}
-          {item.status === "review" && !rejecting ? (
-            <Button disabled={busy} onClick={() => void decide("live")}>
-              Approve and publish
-            </Button>
-          ) : null}
-          {item.status === "live" ? (
-            <Button variant="danger" disabled={busy} onClick={() => void decide("retired")}>
-              Retire
-            </Button>
-          ) : null}
-        </DialogFooter>
+              {PAGE_SIZES.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p data-total={pg.total} className="text-xs text-ink-muted">
+            <span className="num text-ink">
+              {pg.from}–{pg.to}
+            </span>{" "}
+            of <span className="num text-ink">{pg.total}</span> · page{" "}
+            <span className="num text-ink">{pg.page}</span> of <span className="num text-ink">{pg.pages}</span>
+          </p>
+          <div className="flex items-center gap-1">
+            <PageButton label="First page" disabled={pg.page <= 1} onClick={() => setPage(1)} icon={ChevronsLeft} />
+            <PageButton label="Previous page" disabled={pg.page <= 1} onClick={() => setPage(pg.page - 1)} icon={ChevronLeft} />
+            <PageButton label="Next page" disabled={pg.page >= pg.pages} onClick={() => setPage(pg.page + 1)} icon={ChevronRight} />
+            <PageButton label="Last page" disabled={pg.page >= pg.pages} onClick={() => setPage(pg.pages)} icon={ChevronsRight} />
+          </div>
+        </nav>
+      ) : null}
 
+      <ReviewDialog
+        item={reviewing}
+        position={queuePosition}
+        onClose={() => setReviewing(null)}
+        onDecided={advanceFrom}
+        onCloseFocus={returnFocus}
+      />
+      <ImportDialog open={importing} onOpenChange={setImporting} onImported={bank.reload} />
+    </div>
+  );
+}
 
-      </DialogContent>
-    </Dialog>
+/**
+ * A native select with a label kept for screen readers. The first option names
+ * the filter ("Every stage"), so the visible control says what it is.
+ */
+function FilterSelect({
+  id, label, value, onChange, children,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <label htmlFor={id} className="sr-only">
+        {label}
+      </label>
+      <select
+        id={id}
+        className={cn(
+          "h-control-sm w-full rounded-md border bg-surface-0 px-2 text-xs text-ink sm:w-auto sm:max-w-[16rem]",
+          value ? "border-accent" : "border-line",
+        )}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
+
+function PageButton({
+  label, disabled, onClick, icon: Icon,
+}: {
+  label: string;
+  disabled: boolean;
+  onClick: () => void;
+  icon: typeof ChevronLeft;
+}) {
+  return (
+    <Button size="icon" variant="outline" className="h-control-sm w-8" aria-label={label} disabled={disabled} onClick={onClick}>
+      <Icon className="h-4 w-4" aria-hidden="true" />
+    </Button>
   );
 }
