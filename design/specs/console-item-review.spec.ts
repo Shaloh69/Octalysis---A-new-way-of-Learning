@@ -122,7 +122,13 @@ async function openReviewQueue(page: Page): Promise<void> {
   await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), TEACHER);
   await page.goto(`${CONSOLE_URL}/items`, { waitUntil: "domcontentloaded" });
   await page.locator("h1").first().waitFor({ timeout: 15_000 });
-  await page.getByRole("button", { name: "review", exact: true }).click();
+  // The /items rebuild (25 Sep 2026) replaced the row of status buttons with a
+  // labelled Status select, and "Preview" with "Review <slug>". The behaviour
+  // under test is unchanged; only how the spec finds the controls moved.
+  await page.getByLabel("Status").selectOption("review");
+  // The rebuilt table pages at 25 rows and sorts flagged-first then by stage,
+  // so this run's fixtures are rarely on page one. Find them by name.
+  await page.getByLabel("Filter items").fill(RUN);
   await expect(page.getByRole("row").filter({ hasText: RUN }).first()).toBeVisible({
     timeout: 15_000,
   });
@@ -139,7 +145,7 @@ test.describe("the item review queue", () => {
       await page
         .getByRole("row")
         .filter({ hasText: made[0]!.slug })
-        .getByRole("button", { name: "Preview" })
+        .getByRole("button", { name: /^Review / })
         .click();
 
       const dialog = page.getByRole("dialog");
@@ -182,7 +188,7 @@ test.describe("the item review queue", () => {
       await page
         .getByRole("row")
         .filter({ hasText: made[0]!.slug })
-        .getByRole("button", { name: "Preview" })
+        .getByRole("button", { name: /^Review / })
         .click();
 
       const dialog = page.getByRole("dialog");
@@ -225,7 +231,7 @@ test.describe("the item review queue", () => {
       await page
         .getByRole("row")
         .filter({ hasText: made[0]!.slug })
-        .getByRole("button", { name: "Preview" })
+        .getByRole("button", { name: /^Review / })
         .click();
 
       const dialog = page.getByRole("dialog");

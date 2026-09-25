@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { createHmac } from "node:crypto";
+import {
+  clippedElements, contrastFailures, horizontalOverflow, offTokenStyles,
+  recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
+} from "./_gate";
 
 /**
  * `/items` — the question bank, dense, with the psychometric warnings intact.
@@ -55,6 +59,19 @@ const STAFF = staffToken();
  * these skip and name the finding instead.
  */
 async function bankIsEmpty(page: Page): Promise<boolean> {
+  /*
+   * WAIT FOR THE PAGE TO DECIDE before counting. This used to count rows the
+   * instant `<main>` existed -- which is while the page still says "Loading" --
+   * so it found zero rows and SKIPPED all four tests below on every run, with
+   * 183 items in the bank. Measured 25 Sep 2026: "8 skipped", reported for
+   * weeks as "four passing tests". A skip that fires on a race is a test that
+   * has quietly stopped existing.
+   */
+  await page
+    .locator("table tbody tr")
+    .or(page.getByText(/No items match|The bank is empty/))
+    .first()
+    .waitFor({ timeout: 15_000 });
   const rows = await page.locator("table tbody tr").count();
   return rows === 0;
 }
@@ -170,5 +187,336 @@ test.describe("the item bank is scannable", () => {
     expect(first, "slug, version, stage, type and bloom all still shown").toMatch(
       /v\d+.*stage \d{2}/s,
     );
+  });
+});
+
+/* ======================================================================
+ * THE GATE — `CONSOLE-REVAMP.md` §2's six assertions, at 1440 AND 380.
+ *
+ * Added 25 Sep 2026 for the /items revamp, and written to fail first against
+ * the page as it stood: its action column sat past the right-hand edge of a
+ * horizontally scrolling table ("DISCRIMINA" cut mid-word, "Preview" not on
+ * screen at all at 1440; at 380 only the ITEM column was visible).
+ *
+ * These run at BOTH widths -- no `test.skip` on the project -- because the
+ * defect was worst at 380 and a gate that only looks at 1440 would have
+ * passed it.
+ *
+ * The route's surfaces are the page AND its two dialogs. A dialog is where the
+ * decisions happen; a gate that closed its eyes when one opened would be
+ * gating the half of the page nobody acts on.
+ * ==================================================================== */
+
+async function openItems(page: Page): Promise<void> {
+  await page.goto(`${CONSOLE_URL}/items`, { waitUntil: "domcontentloaded" });
+  await page.locator("table tbody tr").first().waitFor({ timeout: 20_000 });
+}
+
+/** The first row's review control, by what it says it does. */
+function firstReview(page: Page) {
+  return page.locator("table tbody tr").first().getByRole("button", { name: /^Review / });
+}
+
+async function openReview(page: Page): Promise<void> {
+  await firstReview(page).click();
+  await page.getByRole("dialog").waitFor();
+  // The resolved instance, not "Loading": the preview is what is being judged.
+  await page.getByRole("dialog").getByText(/^key$/).first().waitFor({ timeout: 15_000 });
+}
+
+async function closeDialog(page: Page): Promise<void> {
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+}
+
+/** A tiny, VALID import file. Used for dry runs only; nothing is committed. */
+const PROBE_FILE = JSON.stringify({
+  stageId: "01",
+  items: [
+    {
+      slug: "01-gate-probe-dry-run",
+      objective: "01.1",
+      type: "S",
+      bloom: "remember",
+      stem: "Which of these is a probe item that exists only to exercise the dry run?",
+      correct: "This one",
+      distractors: ["Not this one", "Nor this", "Nor that"],
+      rationale: "It is a probe.",
+      source: "design/specs/console-items.spec.ts, gate probe, never committed",
+    },
+  ],
+});
+
+async function openImportWithProbe(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Import JSON" }).click();
+  await page.getByRole("dialog").waitFor();
+  await page.locator("[role=dialog] input[type=file]").setInputFiles({
+    name: "probe.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(PROBE_FILE),
+  });
+  await page.getByRole("dialog").getByText(/would be created/i).waitFor({ timeout: 15_000 });
+}
+
+test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), STAFF);
+  });
+
+  test("1 · nothing is clipped — page, review dialog, import dialog", async ({ page }) => {
+    await openItems(page);
+    expect(await clippedElements(page), "on the page").toEqual([]);
+
+    await openReview(page);
+    expect(await clippedElements(page), "in the review dialog").toEqual([]);
+    await closeDialog(page);
+
+    await openImportWithProbe(page);
+    expect(await clippedElements(page), "in the import dialog").toEqual([]);
+  });
+
+  test("2 · no horizontal page scroll", async ({ page }) => {
+    await openItems(page);
+    expect(await horizontalOverflow(page), "the page").toBeLessThanOrEqual(0);
+    await openReview(page);
+    expect(await horizontalOverflow(page), "with the review dialog open").toBeLessThanOrEqual(0);
+  });
+
+  test("3 · every control is reachable from the keyboard alone", async ({ page }) => {
+    await openItems(page);
+    expect(await unreachableByKeyboard(page, "main"), "on the page").toEqual([]);
+
+    // Open a review WITHOUT the mouse, walk it, and leave it: focus must come
+    // home to the row it left, or a reviewer loses their place in 183 items.
+    const trigger = firstReview(page);
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("dialog").getByText(/^key$/).first().waitFor({ timeout: 15_000 });
+    expect(await unreachableByKeyboard(page, "[role=dialog]"), "in the review dialog").toEqual([]);
+    await closeDialog(page);
+    await expect(trigger).toBeFocused();
+
+    const importer = page.getByRole("button", { name: "Import JSON" });
+    await importer.focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("dialog").waitFor();
+    expect(await unreachableByKeyboard(page, "[role=dialog]"), "in the import dialog").toEqual([]);
+  });
+
+  test("4 · AA contrast, computed, on all three themes", async ({ page }) => {
+    test.setTimeout(90_000);
+    await openItems(page);
+    const failures: string[] = [];
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      failures.push(...(await contrastFailures(page)).map((f) => `${theme} page: ${f}`));
+      await openReview(page);
+      failures.push(...(await contrastFailures(page)).map((f) => `${theme} review: ${f}`));
+      await closeDialog(page);
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test("5 · the token system is what actually rendered", async ({ page }) => {
+    await openItems(page);
+    expect(await offTokenStyles(page), "on the page").toEqual([]);
+    await openReview(page);
+    expect(await offTokenStyles(page), "in the review dialog").toEqual([]);
+  });
+
+  test("6 · prefers-reduced-motion is honoured, emulated rather than assumed", async ({ page }) => {
+    /*
+     * POSITIVE CONTROL FIRST. Without it this test passes on a page with no
+     * motion at all -- which is exactly what /items was, and what design.md
+     * says it must not be. So: with motion allowed, the review dialog must
+     * visibly ease in. Then, with the media feature emulated, nothing the route
+     * owns may animate for longer than the 0.01ms the global rule allows.
+     */
+    await recordMotion(page);
+    await openItems(page);
+    await openReview(page);
+    const moving = (await recordedMotion(page)).filter((m) => m.on.startsWith("dialog") && m.ms >= 100);
+    expect(moving.length, "with motion allowed, the review dialog should ease in").toBeGreaterThan(0);
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openItems(page);
+    expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
+    await openReview(page);
+    const still = (await recordedMotion(page)).filter((m) => m.ms > 1);
+    expect(still, "under reduced motion nothing on the route may animate").toEqual([]);
+  });
+});
+
+/* ======================================================================
+ * FEEDBACK, LOADING, TRANSITIONS — `.claude/rules/design.md`, required on
+ * every page that is changed. None of the three existed on /items.
+ *
+ * Writes are INTERCEPTED here, never sent. These specs run against the local
+ * demo bank the Prelim is reviewed from; a spec that approved items to prove a
+ * toast would be quietly publishing questions.
+ * ==================================================================== */
+
+test.describe("feedback, loading and failure — design.md", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), STAFF);
+  });
+
+  test("a slow bank shows a skeleton shaped like the table, never a blank", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "the skeleton's shape is a desktop claim");
+    await page.route("**/api/v1/console/items?*", async (route) => {
+      await new Promise((r) => setTimeout(r, 1500));
+      await route.continue();
+    });
+    await page.goto(`${CONSOLE_URL}/items`, { waitUntil: "domcontentloaded" });
+
+    const skeleton = page.locator("[data-skeleton]");
+    await expect(skeleton).toBeVisible({ timeout: 1_400 });
+    const skeletonCols = Number(await skeleton.getAttribute("data-cols"));
+
+    await page.locator("table tbody tr").first().waitFor();
+    await expect(skeleton).toHaveCount(0);
+    const tableCols = await page.locator("table thead th").count();
+    expect(skeletonCols, "the skeleton promises the columns that arrive").toBe(tableCols);
+  });
+
+  test("a failed fetch says so and offers a retry", async ({ page }) => {
+    let fail = true;
+    await page.route("**/api/v1/console/items?*", async (route) => {
+      if (fail) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code: "internal", message: "The bank could not be read." } }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+    await page.goto(`${CONSOLE_URL}/items`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("main [role=alert]")).toContainText("could not be read");
+    fail = false;
+    await page.getByRole("button", { name: "Try again" }).click();
+    await page.locator("table tbody tr").first().waitFor();
+  });
+
+  test("a decision confirms itself in words, and a failure stays until dismissed", async ({ page }) => {
+    test.setTimeout(60_000);
+    let ok = true;
+    await page.route("**/api/v1/console/items/*/status", async (route) => {
+      await route.fulfill(
+        ok
+          ? { status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, status: "live" }) }
+          : {
+              status: 403,
+              contentType: "application/json",
+              body: JSON.stringify({
+                error: { code: "forbidden", message: "Ask another member of staff to review it." },
+              }),
+            },
+      );
+    });
+    await openItems(page);
+    const slug = (await page.locator("table tbody tr").first().locator("[data-slug]").innerText()).trim();
+
+    await openReview(page);
+    await page.getByRole("button", { name: "Approve and publish" }).click();
+
+    // What happened to what -- the slug, and the verb. Not "Success".
+    await expect(page.getByRole("dialog").getByRole("status")).toContainText(`${slug} approved`);
+    await expect(page.locator("[data-toaster]")).toContainText(`${slug} approved`);
+
+    ok = false;
+    await page.getByRole("button", { name: "Approve and publish" }).click();
+    const alert = page.locator("[data-toaster] [role=alert]");
+    await expect(alert).toContainText("Ask another member of staff");
+    await closeDialog(page);
+    await page.waitForTimeout(4_600); // longer than a success toast lives
+    await expect(alert, "a failure must not vanish on a timer").toBeVisible();
+    await alert.getByRole("button", { name: "Dismiss" }).click();
+    await expect(alert).toHaveCount(0);
+  });
+});
+
+/* ======================================================================
+ * THE FEATURES PAGE-SPECS.md PLANNED AND THE PAGE NEVER HAD.
+ * Approved by the instructor 25 Sep 2026: browse by type and by objective,
+ * bulk approve drafts, import and export JSON.
+ * ==================================================================== */
+
+test.describe("the planned features — PAGE-SPECS.md §/console/items", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), STAFF);
+  });
+
+  test("browse by type and by objective narrows the table", async ({ page }) => {
+    await openItems(page);
+    await page.getByLabel("Type").selectOption("G");
+    const metas = await page.locator("table tbody tr [data-meta]").allInnerTexts();
+    expect(metas.length).toBeGreaterThan(0);
+    for (const m of metas) expect(m).toContain("ordering");
+
+    await page.getByLabel("Type").selectOption("");
+    await page.getByLabel("Objective").selectOption("04.3");
+    const objs = await page.locator("table tbody tr [data-objective]").allInnerTexts();
+    expect(objs.length).toBeGreaterThan(0);
+    for (const o of objs) expect(o).toContain("04.3");
+  });
+
+  test("drafts are approved into review together — and only drafts", async ({ page }) => {
+    // The demo bank has no drafts (sync-items lands everything in review), so
+    // three rows are relabelled in the RESPONSE. The write is intercepted.
+    await page.route("**/api/v1/console/items?*", async (route) => {
+      const res = await route.fetch();
+      const body = await res.json();
+      for (const i of body.items.slice(0, 3)) i.status = "draft";
+      body.summary = { draft: 3, review: body.items.length - 3 };
+      await route.fulfill({ response: res, json: body });
+    });
+    let sent: { ids: string[]; to: string } | null = null;
+    await page.route("**/api/v1/console/items/bulk-status", async (route) => {
+      sent = route.request().postDataJSON();
+      await route.fulfill({ json: { moved: sent!.ids, skipped: [] } });
+    });
+
+    await openItems(page);
+    await page.getByLabel("Status").selectOption("draft");
+    await page.getByRole("checkbox", { name: "Select every draft on this page" }).check();
+    await page.getByRole("button", { name: "Send 3 to review" }).click();
+
+    await expect(page.locator("[data-toaster]")).toContainText("3 drafts sent to review");
+    expect(sent!.to).toBe("review");
+    expect(sent!.ids).toHaveLength(3);
+
+    // A row that is not a draft never offers a checkbox: bulk can only ever
+    // move drafts, and publishing stays one decision per item.
+    await page.getByLabel("Status").selectOption("review");
+    await expect(page.locator("main").getByRole("checkbox")).toHaveCount(0);
+  });
+
+  test("import runs as a dry run first, and says what it would do", async ({ page }) => {
+    await openItems(page);
+    await openImportWithProbe(page);
+    const dlg = page.getByRole("dialog");
+    await expect(dlg).toContainText("01-gate-probe-dry-run");
+    await expect(dlg).toContainText(/1 would be created/i);
+    await expect(dlg.getByRole("button", { name: "Import 1 item as draft" })).toBeEnabled();
+    // Deliberately NOT pressed. The API spec proves the commit.
+  });
+
+  test("export downloads exactly what the filters show", async ({ page }) => {
+    await openItems(page);
+    await page.getByLabel("Stage").selectOption("04");
+    const shown = Number(await page.locator("[data-total]").getAttribute("data-total"));
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: `Export ${shown} as JSON` }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^octa-items-.*\.json$/);
+    const chunks: Buffer[] = [];
+    for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
+    const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    expect(body.items).toHaveLength(shown);
+    for (const i of body.items) expect(i.stageId).toBe("04");
+    await expect(page.locator("[data-toaster]")).toContainText(`Exported ${shown} items`);
   });
 });
