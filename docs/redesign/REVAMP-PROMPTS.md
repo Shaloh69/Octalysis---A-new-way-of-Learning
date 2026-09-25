@@ -24,13 +24,14 @@ design work at all.
 ## 1. Start here — the next session: `/locks`
 
 *Rewritten 25 Sep 2026 by the `/signin` session, the second console route
-through the gate. Phase at handover: **R3 live at 43 / 72 (60%)**; all tracks
+through the gate, which also built the instructor-approved password reset
+(`/forgot-password`, `/reset-password`) and API wake. Phase at handover: **R3 live at 43 / 72 (60%)**; all tracks
 **130 done · 80 to-do (210 items, 62%)**. `pnpm phase` is the count, not this
 line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
 > full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md` §0a
-> and §0b** (seven things the `/items` session parked, five the `/signin` session
+> and §0b** (seven things the `/items` session parked, six the `/signin` session
 > parked). Do not re-derive what those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
@@ -43,8 +44,9 @@ line.*
 > with `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` set to `http://localhost:5184`:
 > `npx playwright test design/specs/console-items.spec.ts` (29 passed, 5 skipped)
 > and `npx playwright test design/specs/console-gate.spec.ts
-> design/specs/console-bootstrap-credentials.spec.ts` (53 passed, 5 skipped). The
-> skips are 1440-only tests by design. If either is red, that is this session's
+> design/specs/console-bootstrap-credentials.spec.ts` (59 passed, 5 skipped) and
+> `npx playwright test design/specs/console-password-reset.spec.ts` (28 passed).
+> The skips are 1440-only tests by design. If either is red, that is this session's
 > work.
 >
 > **THIS SESSION IS ONLY FOR `apps/console` `/locks`. NOTHING ELSE.** Not a
@@ -58,7 +60,9 @@ line.*
 >    (`pnpm --filter @octa/console dev --port 5184 --strictPort`), and
 >    `pnpm dev:token` for a session. 5173 and 5174 belong to other projects. If
 >    8090 or 5184 already answer, confirm they are OURS (the process command
->    line, and the page title "OCTA Console") before trusting them. **After ANY
+>    line, and the page title "OCTA Console") before trusting them. **Docker
+>    Desktop stopped twice in the last session and took the dev servers with
+>    it**: if a run dies in global setup, run `docker ps` before anything else. **After ANY
 >    API test run, reset, do not just re-demo:** the API suite leaves 22 live
 >    stage-07 fixture items behind and `db-demo` only adds.
 > 2. **`/locks` has NO URL to capture.** `TEMPLATE-LINKS.md`'s row says "build
@@ -144,6 +148,14 @@ line.*
   teacher their password was wrong when the service had not answered. Any
   route whose write can fail for a network reason must not word it as the
   user's mistake.
+- **A spec that changes only the hash does not reload the page.** Going from
+  `/reset-password#a` to `/reset-password#b` is a same-document navigation;
+  the page never re-read its link and twelve gate tests timed out. Go to
+  `about:blank` first when a state is decided by the address.
+- **Bring an unplanned feature to the instructor; do not build it, do not drop
+  it.** `/signin` shipped without a reset link and said so. The instructor
+  approved the reset and the API wake the same day, and both were built behind
+  specs that failed first. The `/locks` audit will find features too.
 - Still true from `/items`: a skip that fires on a race is a test that stopped
   existing (read the *skipped* count); measure colours on a settled frame
   (`settle()`); any new exemption goes in `_gate.ts` with its reason.
