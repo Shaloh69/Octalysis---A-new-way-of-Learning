@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { Toaster } from "./components/ui/toast";
 import { LocksPage } from "./pages/LocksPage";
 import { StudentsPage } from "./pages/StudentsPage";
 import { StudentDetailPage } from "./pages/StudentDetailPage";
@@ -68,6 +69,16 @@ export function App() {
           <Route path="*" element={<Navigate to="/locks" replace />} />
         </Route>
       </Routes>
+
+      {/*
+       * ONE toaster, for every route, mounted here rather than in AppShell.
+       * `/signin` and the two gate screens render outside the shell's layout,
+       * and a successful sign-in raises its toast on /signin and navigates
+       * away: a toaster scoped to the shell could not reach the first and
+       * would have been swapped out under the second. It is position: fixed,
+       * so where it sits in the tree changes nothing about where it paints.
+       */}
+      <Toaster />
     </Router>
   );
 }

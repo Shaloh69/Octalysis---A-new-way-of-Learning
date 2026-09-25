@@ -35,6 +35,7 @@ secure.
 ## Pages
 | Route | What it is for |
 |---|---|
+| `/signin` | the gate. **Rebuilt 25 Sep 2026** (`design/templates/console/signin/SPEC.md`): split layout, the task left and the POST readout right. Its two sibling screens, the student-account screen and the forced credential change, are rendered by `AppShell` from `pages/GateScreens.tsx` in the same `GateFrame`. One failure sentence for every credential cause; a network failure or rate limit says so instead (`signInFailureMessage`). `<Toaster />` is mounted at the app root in `App.tsx`, not in the shell, so these screens can raise one |
 | `/locks` | students × stages. Reason mandatory on every toggle. **Never computes a lock** — `is_stage_unlocked()` decides, the same authority the student app reads |
 | `/students`, `/students/:id` | roster, import (dry-run first), progress, attempt list |
 | `/attempts/:id` | the exact paper, replayed from the stored seed. The only place the key is shown |

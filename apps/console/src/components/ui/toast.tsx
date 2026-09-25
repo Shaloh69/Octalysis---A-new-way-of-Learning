@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
  *
  * `.claude/rules/design.md`: there was NO toast system. `AppShell` reserved a
  * `z-toast` layer that nothing rendered into. This is that component, built
- * first for `/items` and mounted once in the shell so every route shares it.
+ * first for `/items` and mounted once, in `App.tsx` at the app root, so every
+ * route shares it -- including `/signin` and the two gate screens, which render
+ * outside `AppShell`. (It lived in the shell until the `/signin` rebuild.)
  *
  * The rules it enforces rather than asks for:
  *

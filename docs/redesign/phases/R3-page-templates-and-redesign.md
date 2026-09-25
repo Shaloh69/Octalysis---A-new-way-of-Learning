@@ -651,7 +651,16 @@ thesis deliverable, and right now no phase is accountable for it.
         four `PAGE-SPECS.md` features the instructor approved: type and
         objective filters, bulk approve drafts (into review only), import and
         export JSON. `SPEC.md`, `motion.md`, `current.png`, `current-380.png`
-  - [ ] `/signin`
+  - [x] `/signin` — 25 Sep 2026. Rebuilt against shadcn-admin's split auth
+        block, with the gate's other two screens (student account, forced
+        credential change) moved into the same `GateFrame`. Six assertions green
+        at 1440 and 380 on all three screens (`console-gate.spec.ts` +
+        `console-bootstrap-credentials.spec.ts`: 53 passed / 5 skipped-by-design),
+        plus split-at-1440, a fault that stays, show-password, no dead-end links,
+        and no text on a bus trace. `<Toaster />` moved to the app root. Sign-in
+        failures now tell a network failure and a rate limit apart from a wrong
+        password (unit-tested). `SOURCE.md`, `SPEC.md`, `motion.md`,
+        `current.png`, `current-380.png`
   - [ ] `/locks`
   - [ ] `/students`
   - [ ] `/students/:userId`

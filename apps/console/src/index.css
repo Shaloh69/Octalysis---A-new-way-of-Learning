@@ -232,6 +232,108 @@
 }
 
 /*
+ * ------------------------------------------------------------------- the gate
+ *
+ * `/signin`, the student-account screen and the forced credential change --
+ * `components/GateFrame.tsx`, `design/templates/console/signin/SPEC.md`.
+ *
+ * shadcn-admin's split auth layout: the task in the left half, the POST
+ * readout in the right half, one column below 64rem with the task first.
+ * 64rem is Tailwind's `lg`, the same break at which AppShell's sidebar
+ * appears, so the console changes shape at one width and not two.
+ */
+@layer components {
+  .gate {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .gate-task {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6) var(--space-4);
+    background: var(--surface-0);
+  }
+  .gate-task-inner { width: 100%; max-width: 24rem; }
+
+  .gate-machine {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-5);
+    padding: var(--space-6) var(--space-4);
+    background: var(--surface-1);
+    border-top: var(--border-hair) solid var(--line);
+  }
+  /* The shared backdrop is `position: fixed` for full-page use; here it is held
+     to this half, so the form never sits on moving lines. */
+  .gate-machine > .octa-backdrop { position: absolute; }
+  .gate-machine > :not(.octa-backdrop) { position: relative; z-index: 1; }
+
+  @media (min-width: 64rem) {
+    .gate { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .gate-machine { border-top: 0; border-left: var(--border-hair) solid var(--line); }
+  }
+
+  /*
+   * The notched POST frame (DESIGN-REFERENCES.md §7.2, CSS-Tricks' notched
+   * boxes). TWO real boxes, not one: the frame this replaced put `clip-path`
+   * on a bordered box, which cut the border away along both diagonals and
+   * left the corners open. Here the outer box is the border colour and the
+   * inner box, one hair smaller, is the surface -- so the diagonals are drawn
+   * too. The inner notch is shorter by (sqrt2 - 1) of a hair, which keeps the
+   * diagonal stroke as thick as the straight ones.
+   *
+   * Real boxes rather than a ::before, because the contrast gate walks
+   * ELEMENTS to find the background text sits on; a painted pseudo-element
+   * would be measured as the border colour.
+   */
+  .gate-post {
+    --notch: 18px;
+    width: 100%;
+    max-width: 26rem;
+    padding: var(--border-hair);
+    background: var(--line-strong);
+    clip-path: polygon(
+      var(--notch) 0, 100% 0, 100% calc(100% - var(--notch)),
+      calc(100% - var(--notch)) 100%, 0 100%, 0 var(--notch)
+    );
+  }
+  .gate-post-inner {
+    --inner: calc(var(--notch) - 0.42 * var(--border-hair));
+    padding: var(--space-5);
+    background: var(--surface-2);
+    clip-path: polygon(
+      var(--inner) 0, 100% 0, 100% calc(100% - var(--inner)),
+      calc(100% - var(--inner)) 100%, 0 100%, 0 var(--inner)
+    );
+  }
+
+
+  /*
+   * A link that looks like one, in the theme's own accent. `apps/web` shipped
+   * browser-default purple links because it never had a base anchor rule;
+   * this app styles each one on purpose.
+   */
+  .gate-link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .gate-link:hover { color: var(--accent-hover); }
+
+  /* A fault arrives; it does not jump in. Never a shake. */
+  .gate-fault { animation: octa-fade-in var(--dur-fast) var(--ease-out); }
+}
+
+/*
  * The dialog keeps its centring transform, so the pop animates `scale` and
  * `opacity` only -- animating `transform` here would fight `-translate-1/2`.
  */

@@ -5,6 +5,8 @@ import {
   isStaff,
   decodeJwtPayload,
   mustChangeFromClaims,
+  signInFailureMessage,
+  CREDENTIALS_REJECTED,
 } from "../src/lib/session";
 
 /**
@@ -256,5 +258,32 @@ describe("mustChangeFromClaims", () => {
     // the prompt — and the prompt is the only thing standing between a printed
     // password and a live gradebook.
     expect(mustChangeFromClaims({ user_metadata: { must_change_credentials: true } })).toBe(false);
+  });
+});
+
+describe("sign-in failures — one sentence for every credential cause, and never for anything else", () => {
+  it("prints the SAME sentence for every 4xx, so it cannot tell who exists", () => {
+    // Supabase answers 400 for a wrong password AND for an unknown address.
+    // Any split between them here would be an enumeration oracle on the app
+    // that holds the answer keys.
+    for (const status of [400, 401, 403, 404, 422]) {
+      expect(signInFailureMessage({ status })).toBe(CREDENTIALS_REJECTED);
+    }
+  });
+
+  it("does not blame the password when the service never answered", () => {
+    // A paused project or a dropped connection used to print "did not match",
+    // and a teacher with the right password retyped it forever.
+    for (const error of [{}, { status: 0 }, { status: 500 }, { status: 503 }]) {
+      const m = signInFailureMessage(error);
+      expect(m).not.toBe(CREDENTIALS_REJECTED);
+      expect(m).toMatch(/not checked/);
+    }
+  });
+
+  it("says a rate limit is a rate limit", () => {
+    const m = signInFailureMessage({ status: 429 });
+    expect(m).not.toBe(CREDENTIALS_REJECTED);
+    expect(m).toMatch(/too many/i);
   });
 });

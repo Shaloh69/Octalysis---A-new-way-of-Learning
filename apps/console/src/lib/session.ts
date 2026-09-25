@@ -168,8 +168,38 @@ export async function signIn(email: string, password: string): Promise<SignInRes
     };
   }
   const { error } = await c.auth.signInWithPassword({ email: email.trim(), password });
-  if (error) return { ok: false, message: "That email and password did not match an account." };
+  if (error) return { ok: false, message: signInFailureMessage(error) };
   return { ok: true };
+}
+
+/** The one generic sentence for every credential failure. */
+export const CREDENTIALS_REJECTED = "That email and password did not match an account.";
+
+/**
+ * What to say when the auth server refuses or fails a sign-in.
+ *
+ * **Three sentences, and the credential one is shared by every cause.** Any
+ * 4xx about the credentials -- unknown address, wrong password, disabled
+ * account -- prints `CREDENTIALS_REJECTED`, so this function cannot become the
+ * enumeration oracle `signIn`'s header forbids.
+ *
+ * The other two are not about the credentials at all, and this used to print
+ * the credential sentence for them too. A teacher whose password was RIGHT,
+ * on a paused project or a dropped connection, was told it was wrong and
+ * retyped it forever:
+ *
+ * - **429**: the limit is per client, not per account, so saying so reveals
+ *   nothing about who exists.
+ * - **no status, 0, or 5xx**: the request never got an answer about the
+ *   credentials, so it says they were not checked.
+ */
+export function signInFailureMessage(error: { status?: number | undefined }): string {
+  const s = error.status;
+  if (s === 429) {
+    return "Too many sign-in attempts from here. Wait a minute, then try again.";
+  }
+  if (typeof s === "number" && s >= 400 && s < 500) return CREDENTIALS_REJECTED;
+  return "The sign-in service did not answer, so what you typed was not checked. Try again in a minute.";
 }
 
 export async function signOut(): Promise<void> {

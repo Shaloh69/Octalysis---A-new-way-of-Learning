@@ -52,9 +52,43 @@ session, one route). Each names where it lives and what it breaks.
    that route is the session's work.
 
 **Available to every route from now on:** `toast` (`components/ui/toast.tsx`,
-mounted once in `AppShell`), `useDelayed` for the 400ms skeleton rule, and
-`design/specs/_gate.ts` — the six assertions as functions. Import them; do not
-re-derive them.
+mounted once **in `App.tsx` at the app root** since the `/signin` session),
+`useDelayed` for the 400ms skeleton rule, and `design/specs/_gate.ts` — the six
+assertions as functions. Import them; do not re-derive them.
+
+---
+
+## 0b. Parked by the `/signin` revamp — 25 Sep 2026
+
+Found while rebuilding `/signin` and deliberately **not** fixed there. §0a's
+seven still stand; none of them was touched.
+
+1. **Running the console specs rewrites TWO committed PNGs, not one.**
+   `design/item-review/send-back-panel.png` changes on a full console run as
+   well as `assessment-window.png` (§0a.7). Restore both before committing:
+   `git checkout -- design/item-review/`.
+2. **Signing out confirms nothing.** The three sign-out handlers live in
+   `AppShell` (the nav, the student screen's "Sign in as someone else", the
+   credential screen's "Sign out") and land on `/signin` with no toast and no
+   line saying it happened. The toaster now reaches `/signin`, so the fix is a
+   `toast.success("Signed out")` in the shell's handlers. A shell change, so
+   not made from the `/signin` session.
+3. **"Checking your access…" flashes on every console route.** `AppShell`
+   renders that bare text while `getIdentity()` resolves, with no 400ms delay
+   rule (`useDelayed`), so it blinks on a fast load. Shell, not `/signin`.
+4. **A real sign-in has never been seen succeed on the rebuilt page.** Locally
+   there is no Supabase Auth and the console is built without
+   `VITE_SUPABASE_URL`, so every submit takes the "built without its Supabase
+   settings" branch. The three credential-failure sentences are unit-tested;
+   the success path, and the "Signed in as …" toast on `/locks`, need a look
+   **on the deployment** before anyone calls them verified.
+5. **Two things the page does NOT do, for the instructor to decide:**
+   - a **self-service password reset** (`/forgot-password`, `/reset-password`,
+     listed as absent in root `CLAUDE.md`). The page now says "an administrator
+     resets it" rather than offering a link that goes nowhere.
+   - **pre-waking the API.** Render's free tier sleeps (~50s to wake). The
+     sign-in page could ping the API while a teacher types, so `/locks` does
+     not sit on its first request. Not planned anywhere, so not built.
 
 ---
 
