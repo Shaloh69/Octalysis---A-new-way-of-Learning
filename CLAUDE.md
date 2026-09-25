@@ -368,6 +368,16 @@ that the next one needs, anything parked, current phase figures. Committed and
 pushed. The prompt is the handoff. A chat transcript does not survive a `/clear`
 and must never be the only place something was written down.
 
+**Every session ends by giving the user the next prompt, ready to paste.** This
+applies to every session, not only revamp sessions. The last thing in the
+closing message is the next session's prompt in **one fenced code block**,
+written as plain text with no `> ` quote markers, so it can be copied in one go
+and pasted straight after a `/clear`. It is the same text as the committed §1
+(or, outside the revamp, the prompt that picks up exactly where this session
+stopped), not a summary of it and not a link to it. A handoff the user has to
+dig out of a file and strip of Markdown is a handoff that gets retyped from
+memory. Instructor ruling, 25 Sep 2026.
+
 **The first release is act 1 as the full experience** — stages 00–04, rebuilt
 pages, planet zoom, Keplerian orbits, moons on planets 00–04, and the act-1
 minigames. `REVAMP-PROMPTS.md` §4 owns the scope; R4.5 tracks it.

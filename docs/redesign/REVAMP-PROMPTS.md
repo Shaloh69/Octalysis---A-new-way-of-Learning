@@ -100,7 +100,9 @@ count, not this line.*
 >    session learned. Update the phase figures. Commit and push that too.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
-> versus assumed, show me the rewritten §1, and **stop**. Do not start the next
+> versus assumed, and **end your last message with the rewritten §1 prompt in
+> one fenced code block, plain text with no `> ` markers, ready to copy and
+> paste**. Then **stop**. Do not start the next
 > route.
 
 **What the `/items` session learned that every later route needs:**
@@ -193,6 +195,11 @@ None of the following is negotiable, and the first outranks the rest:
   route its prompt names. It ends by rewriting §1 of this file for the next
   session, committed and pushed. The prompt is the handoff; a chat transcript
   is not.
+- **END WITH THE PROMPT, READY TO PASTE.** The session's closing message ends
+  with the new §1 prompt in one fenced code block, as plain text with no `> `
+  quote markers, so the user can copy it in one go. The full text, not a link
+  and not a summary. Instructor ruling, 25 Sep 2026; root `CLAUDE.md` makes it
+  a rule for every session, not only these.
 - **NEVER PROCEED TO ANOTHER PAGE IF THIS ONE HAS NOT PASSED.** Green on all six
   assertions at both widths. Not "mostly". If a route cannot pass, that route is
   the work — say what is blocking it and stop.
