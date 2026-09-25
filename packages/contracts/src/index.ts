@@ -185,3 +185,127 @@ export const SERVER_ONLY_SECRETS = [
   "CRON_SECRET",
   "SENTRY_DSN",
 ] as const;
+
+/* ============================================================
+ * The item bank — import, export, bulk review.
+ *
+ * `PAGE-SPECS.md` planned "bulk approve drafts" and "import/export JSON" for
+ * /items; the instructor approved both on 25 Sep 2026. The file shape is the
+ * AUTHORED shape of `content/items/NN.json`, on purpose: an exported item can
+ * be committed straight into the repo, and a file from the repo can be
+ * imported, so there is one way to write an item down rather than two.
+ * ========================================================== */
+
+export const ItemType = z.enum(["S", "P", "G"]);
+export type ItemType = z.infer<typeof ItemType>;
+
+export const ItemBloom = z.enum(["remember", "understand", "apply", "analyze"]);
+export type ItemBloom = z.infer<typeof ItemBloom>;
+
+export const ItemStatus = z.enum(["draft", "review", "live", "retired"]);
+export type ItemStatus = z.infer<typeof ItemStatus>;
+
+/**
+ * One item as a person writes it. Loose on purpose: which fields a type needs
+ * (S: stem, correct, distractors; G: stem, order; P: solver) is checked by the
+ * API's import planner, which can name the rule an item broke. A schema union
+ * could only say "invalid".
+ */
+export const AuthoredItem = z.object({
+  slug: z.string().trim(),
+  /** Per item in an export; a stage file carries it once at the top instead. */
+  stageId: StageId.optional(),
+  objective: z.string().trim().max(20),
+  type: ItemType,
+  bloom: ItemBloom,
+  difficulty: z.number().min(0).max(1).optional(),
+  stem: z.string().optional(),
+  correct: z.string().optional(),
+  distractors: z.array(z.string()).optional(),
+  order: z.array(z.string()).optional(),
+  take: z.number().int().min(2).optional(),
+  solver: z.string().trim().optional(),
+  rationale: z.string().nullable().optional(),
+  /** Where the item came from. Required for anything new or changed. */
+  source: z.string().nullable().optional(),
+});
+export type AuthoredItem = z.infer<typeof AuthoredItem>;
+
+export const ITEM_FILE_FORMAT = "octa-items/1";
+
+export const ItemFile = z.object({
+  format: z.literal(ITEM_FILE_FORMAT).optional(),
+  exportedAt: z.string().optional(),
+  stageId: StageId.optional(),
+  items: z.array(AuthoredItem).min(1).max(1000),
+});
+export type ItemFile = z.infer<typeof ItemFile>;
+
+export const ItemImportRequest = z.object({
+  /** A dry run writes nothing. The console always sends one first. */
+  dryRun: z.boolean(),
+  file: ItemFile,
+});
+export type ItemImportRequest = z.infer<typeof ItemImportRequest>;
+
+/**
+ * What an import does to one item.
+ *
+ * - `create`    a new slug, inserted as a DRAFT authored by the importer
+ * - `version`   an existing draft/review item with different content: a new
+ *               draft version in the same family; the old row is retired
+ *               (hard rule 6 -- never edited in place)
+ * - `unchanged` identical to what the bank already holds
+ * - `refused`   the bank's copy is live or retired; an import never pulls a
+ *               live item out from under students
+ * - `invalid`   breaks a rule; `reasons` says which
+ */
+export const ItemImportAction = z.enum(["create", "version", "unchanged", "refused", "invalid"]);
+export type ItemImportAction = z.infer<typeof ItemImportAction>;
+
+export const ItemImportRow = z.object({
+  slug: z.string(),
+  stageId: z.string().nullable(),
+  action: ItemImportAction,
+  reasons: z.array(z.string()),
+});
+export type ItemImportRow = z.infer<typeof ItemImportRow>;
+
+export const ItemImportResult = z.object({
+  dryRun: z.boolean(),
+  applied: z.boolean(),
+  rows: z.array(ItemImportRow),
+  counts: z.object({
+    create: z.number().int(),
+    version: z.number().int(),
+    unchanged: z.number().int(),
+    refused: z.number().int(),
+    invalid: z.number().int(),
+  }),
+});
+export type ItemImportResult = z.infer<typeof ItemImportResult>;
+
+/**
+ * Bulk review moves DRAFTS INTO REVIEW, and nothing else.
+ *
+ * `to` is a literal on purpose. Publishing stays one decision per item, by a
+ * reviewer who is not the author: bulk-publishing is how a wrong key reaches a
+ * live bank, and `apps/console/CLAUDE.md`'s review queue advances item by item
+ * precisely so nobody is pushed towards rubber-stamping.
+ */
+export const ItemBulkStatusRequest = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(500),
+  to: z.literal("review"),
+});
+export type ItemBulkStatusRequest = z.infer<typeof ItemBulkStatusRequest>;
+
+export const ItemBulkStatusResult = z.object({
+  moved: z.array(z.string()),
+  skipped: z.array(z.object({ id: z.string(), reason: z.string() })),
+});
+export type ItemBulkStatusResult = z.infer<typeof ItemBulkStatusResult>;
+
+export const ItemExportRequest = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(2000),
+});
+export type ItemExportRequest = z.infer<typeof ItemExportRequest>;

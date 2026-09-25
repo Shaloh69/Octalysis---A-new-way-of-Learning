@@ -1,9 +1,19 @@
 import type { FastifyInstance } from "fastify";
+import type pg from "pg";
 import { z } from "zod";
+import {
+  ITEM_FILE_FORMAT, ItemBulkStatusRequest, ItemExportRequest, ItemImportRequest,
+  type ItemFile,
+} from "@octa/contracts";
 import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
 import { withTransaction } from "../db.js";
 import { resolveItem, type BankItem } from "../engine/resolve.js";
+import { EXAMINABLE_THROUGH_STAGE, isStageExaminable } from "../engine/scope.js";
+import { listSolvers } from "../engine/solvers.js";
+import {
+  countActions, planImport, toAuthored, type ExistingItem, type PlannedRow, type RowFields,
+} from "../items/import-plan.js";
 import type { Env } from "../env.js";
 
 /**
@@ -40,7 +50,13 @@ const ListQuery = z.object({
   stageId: z.string().regex(/^\d{2}$/).optional(),
   status: z.enum(["draft", "review", "live", "retired"]).optional(),
   flagged: z.enum(["true", "false"]).optional(),
-  limit: z.coerce.number().int().min(1).max(500).default(200),
+  /*
+   * 2000, up from 500. The bank targets ~40 live items per gradeable chapter,
+   * roughly 700, and /items filters, counts and pages the whole bank in the
+   * browser: a list silently cut at 500 would have made every count on that
+   * page wrong without saying so.
+   */
+  limit: z.coerce.number().int().min(1).max(2000).default(200),
 });
 
 const StatusBody = z.object({
@@ -99,6 +115,74 @@ function toBankItem(r: Record<string, unknown>): BankItem {
     distractorPool: r.distractor_pool,
     rationaleTemplate: (r.rationale_template as string | null) ?? null,
   };
+}
+
+/** A bank row's columns in the import planner's terms. */
+function rowFields(r: Record<string, unknown>): RowFields {
+  return {
+    stageId: r.stage_id as string,
+    objectiveId: (r.objective_id as string | null) ?? "",
+    type: r.type as RowFields["type"],
+    bloom: r.bloom as string,
+    targetDifficulty: r.target_difficulty === null ? 0.6 : Number(r.target_difficulty),
+    stemTemplate: r.stem_template as string,
+    solverRef: (r.solver_ref as string | null) ?? null,
+    correctSpec: (r.correct_spec ?? {}) as Record<string, unknown>,
+    distractorPool: Array.isArray(r.distractor_pool) ? (r.distractor_pool as unknown[]) : [],
+    rationale: (r.rationale_template as string | null) ?? null,
+  };
+}
+
+/**
+ * Plan an import against the bank as it stands, through `q` -- the pool for a
+ * dry run, the locked transaction for a commit, so the plan that is applied is
+ * the plan computed inside the lock rather than one read a moment earlier.
+ */
+async function planAgainstBank(
+  q: Pick<pg.PoolClient, "query">,
+  file: ItemFile,
+  env: Env,
+): Promise<PlannedRow[]> {
+  const slugs = file.items.map((i) => i.slug);
+  const objectiveIds = file.items.map((i) => i.objective);
+
+  const existing = await q.query(
+    `select distinct on (slug) id, family_id, slug, status::text as status, version, stage_id,
+            objective_id, type::text as type, bloom, target_difficulty, stem_template,
+            solver_ref, correct_spec, distractor_pool, rationale_template
+       from items where slug = any($1::text[])
+      order by slug, version desc`,
+    [slugs],
+  );
+  const objectives = await q.query(
+    "select id, stage_id from objectives where id = any($1::text[])",
+    [objectiveIds],
+  );
+
+  return planImport(file, {
+    existing: new Map(
+      existing.rows.map((r): [string, ExistingItem] => [
+        r.slug,
+        {
+          id: r.id,
+          familyId: r.family_id,
+          slug: r.slug,
+          status: r.status,
+          version: Number(r.version),
+          fields: rowFields(r),
+        },
+      ]),
+    ),
+    objectives: new Map(objectives.rows.map((r) => [r.id as string, r.stage_id as string])),
+    solvers: new Set(listSolvers(env.ENGINE_VERSION).map((s) => s.id)),
+    examinable: isStageExaminable,
+    examinableThrough: EXAMINABLE_THROUGH_STAGE,
+  });
+}
+
+/** The public face of a planned row: what happens and why, never the columns. */
+function publicRow(r: PlannedRow) {
+  return { slug: r.slug, stageId: r.stageId, action: r.action, reasons: r.reasons };
 }
 
 export function registerItemRoutes(app: FastifyInstance, env: Env): void {
@@ -436,5 +520,203 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
     );
 
     return reply.send({ ok: true, status: body.data.status });
+  });
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/console/items/bulk-status
+   *
+   * Bulk review: DRAFTS INTO REVIEW, and nothing else. `PAGE-SPECS.md`'s "bulk
+   * approve drafts", approved 25 Sep 2026. A draft's approval is its entry
+   * into the review queue; publishing stays one decision per item, by rule 3,
+   * which is why `to` is a literal the schema will not widen.
+   *
+   * Anything in `ids` that is not a draft is skipped and named, never moved:
+   * a stale selection must not be able to drag a live item backwards.
+   * -------------------------------------------------------- */
+  app.post("/api/v1/console/items/bulk-status", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+
+    const body = ItemBulkStatusRequest.safeParse(req.body);
+    if (!body.success) {
+      throw errors.badRequest(
+        "Bulk review only sends drafts to review. Publish items one at a time.",
+      );
+    }
+    const ids = [...new Set(body.data.ids)];
+
+    const result = await withTransaction(app.db, async (client) => {
+      const cur = await client.query(
+        "select id, status::text as status from items where id = any($1::uuid[]) for update",
+        [ids],
+      );
+      const status = new Map(cur.rows.map((r) => [r.id as string, r.status as string]));
+      const moved: string[] = [];
+      const skipped: Array<{ id: string; reason: string }> = [];
+
+      for (const itemId of ids) {
+        const st = status.get(itemId);
+        if (st === undefined) skipped.push({ id: itemId, reason: "no such item" });
+        else if (st !== "draft") skipped.push({ id: itemId, reason: `is ${st}, not a draft` });
+        else moved.push(itemId);
+      }
+
+      if (moved.length > 0) {
+        await client.query(
+          "update items set status = 'review'::item_status where id = any($1::uuid[])",
+          [moved],
+        );
+        // One row per item, as a single decision writes, so the audit log reads
+        // the same whichever way an item reached review.
+        await client.query(
+          `insert into audit_log (actor_id, action, target_type, target_id, payload)
+           select $1, 'item.status', 'item', x, $3::jsonb from unnest($2::uuid[]) x`,
+          [id!.userId, moved, JSON.stringify({ from: "draft", to: "review", bulk: true })],
+        );
+      }
+      return { moved, skipped };
+    });
+
+    return reply.send(result);
+  });
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/console/items/import
+   *
+   * An authored item file -- the shape of `content/items/NN.json`, or an
+   * export -- into the bank. A dry run plans and writes nothing; the console
+   * always sends one first and shows the plan.
+   *
+   * Everything imported lands as a DRAFT authored by the importer: never
+   * review, never live. A commit with any invalid row writes nothing at all.
+   * The rules are `import-plan.ts`'s; this route only reads and writes.
+   * -------------------------------------------------------- */
+  app.post(
+    "/api/v1/console/items/import",
+    { bodyLimit: 4 * 1024 * 1024 },
+    async (req, reply) => {
+      const id = await identityFrom(req, env);
+      requireStaff(id);
+
+      const body = ItemImportRequest.safeParse(req.body);
+      if (!body.success) {
+        throw errors.badRequest(
+          'That file could not be read as an item file. It needs an "items" list in the ' +
+            "shape of content/items/NN.json.",
+        );
+      }
+      const { dryRun, file } = body.data;
+
+      if (dryRun) {
+        const rows = await planAgainstBank(app.db, file, env);
+        return reply.send({
+          dryRun: true, applied: false, rows: rows.map(publicRow), counts: countActions(rows),
+        });
+      }
+
+      const rows = await withTransaction(app.db, async (client) => {
+        // One import at a time: two overlapping uploads of the same slug would
+        // otherwise both plan a v2.
+        await client.query("select pg_advisory_xact_lock(hashtext('octa:item-import'))");
+        const plan = await planAgainstBank(client, file, env);
+
+        const invalid = plan.filter((r) => r.action === "invalid").length;
+        if (invalid > 0) {
+          throw errors.badRequest(
+            `${invalid} item${invalid === 1 ? " is" : "s are"} invalid, so nothing was ` +
+              "imported. Run the dry run to see why.",
+          );
+        }
+
+        for (const r of plan) {
+          if (r.action !== "create" && r.action !== "version") continue;
+          const f = r.fields!;
+          const version = r.action === "version" ? r.replaces!.version + 1 : 1;
+          const created = await client.query(
+            `insert into items
+               (family_id, slug, stage_id, objective_id, type, status, version, bloom,
+                target_difficulty, stem_template, solver_ref, solver_version,
+                correct_spec, distractor_pool, rationale_template, author_id)
+             values (coalesce($1::uuid, gen_random_uuid()), $2, $3, $4, $5::item_type, 'draft',
+                     $6, $7, $8, $9, $10, $11, $12::jsonb, $13::jsonb, $14, $15)
+             returning id`,
+            [
+              r.replaces?.familyId ?? null, r.slug, f.stageId, f.objectiveId, f.type, version,
+              f.bloom, f.targetDifficulty, f.stemTemplate, f.solverRef,
+              f.solverRef ? env.ENGINE_VERSION : null,
+              JSON.stringify(f.correctSpec), JSON.stringify(f.distractorPool), f.rationale,
+              id!.userId,
+            ],
+          );
+          const newId = created.rows[0]!.id as string;
+
+          if (r.action === "version") {
+            // Retired, never deleted, never edited in place (hard rule 6). Only
+            // a draft or review row reaches here -- the plan refuses live ones.
+            await client.query("update items set status = 'retired' where id = $1", [
+              r.replaces!.id,
+            ]);
+          }
+
+          await client.query(
+            `insert into audit_log (actor_id, action, target_type, target_id, payload)
+             values ($1, $2, 'item', $3, $4)`,
+            [
+              id!.userId,
+              r.action === "create" ? "item.create" : "item.version",
+              newId,
+              JSON.stringify({
+                slug: r.slug,
+                stageId: f.stageId,
+                via: "import",
+                // The items table has no column for it; the audit log keeps it.
+                source: r.source ?? null,
+                ...(r.action === "version"
+                  ? { familyId: r.replaces!.familyId, from: r.replaces!.id, version }
+                  : {}),
+              }),
+            ],
+          );
+        }
+        return plan;
+      });
+
+      return reply.send({
+        dryRun: false, applied: true, rows: rows.map(publicRow), counts: countActions(rows),
+      });
+    },
+  );
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/console/items/export
+   *
+   * The named items in the authored file shape, so an export can be committed
+   * to `content/items/` or imported back. POST because the console sends the
+   * exact ids its filters show, and 700 uuids do not belong in a query string.
+   *
+   * CARRIES THE ANSWER KEYS -- that is what makes it an export. Staff only,
+   * which `ai_after_submit` already grants in the database; the refusal test
+   * checks a student gets no key back in the error either.
+   * -------------------------------------------------------- */
+  app.post("/api/v1/console/items/export", { bodyLimit: 1024 * 1024 }, async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+
+    const body = ItemExportRequest.safeParse(req.body);
+    if (!body.success) throw errors.badRequest("Choose at least one item to export.");
+
+    const { rows } = await app.db.query(
+      `select slug, stage_id, objective_id, type::text as type, bloom, target_difficulty,
+              stem_template, solver_ref, correct_spec, distractor_pool, rationale_template
+         from items where id = any($1::uuid[])
+        order by stage_id, slug, version desc`,
+      [body.data.ids],
+    );
+
+    return reply.send({
+      format: ITEM_FILE_FORMAT,
+      exportedAt: new Date().toISOString(),
+      items: rows.map((r) => toAuthored(r.slug as string, rowFields(r))),
+    });
   });
 }

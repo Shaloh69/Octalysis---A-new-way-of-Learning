@@ -391,3 +391,300 @@ describe("every change is auditable", () => {
     expect(byAction["item.status"]).toBeGreaterThan(0);
   });
 });
+
+/* =====================================================================
+ * Bulk review, import and export — approved for /items on 25 Sep 2026
+ * (`PAGE-SPECS.md` planned them; the page never had them).
+ *
+ * DENIAL FIRST (hard rule 8). Every one of these routes either writes to the
+ * bank or hands out answer keys, so the student and the anonymous caller are
+ * tested before anything is tested working.
+ * =================================================================== */
+
+/** A stage-07 file in the authored shape, valid against the test world. */
+function file07(items: Array<Record<string, unknown>>) {
+  return { stageId: "07", items };
+}
+const NEW_S = {
+  slug: "07-import-new-static",
+  objective: "07.1",
+  type: "S",
+  bloom: "remember",
+  stem: "Which SI prefix denotes one thousand?",
+  correct: "kilo",
+  distractors: ["mega", "milli", "micro"],
+  rationale: "Kilo is 10^3.",
+  source: "services/api/test/items.spec.ts",
+};
+
+describe("bulk review, import and export are staff-only", () => {
+  it("refuses a student on every one of them", async () => {
+    const calls = [
+      app.inject({
+        method: "POST", url: "/api/v1/console/items/bulk-status", headers: auth(studentToken),
+        payload: { ids: ["00000000-0000-4000-8000-000000000000"], to: "review" },
+      }),
+      app.inject({
+        method: "POST", url: "/api/v1/console/items/import", headers: auth(studentToken),
+        payload: { dryRun: true, file: file07([NEW_S]) },
+      }),
+      app.inject({
+        method: "POST", url: "/api/v1/console/items/import", headers: auth(studentToken),
+        payload: { dryRun: false, file: file07([NEW_S]) },
+      }),
+      app.inject({
+        method: "POST", url: "/api/v1/console/items/export", headers: auth(studentToken),
+        payload: { ids: ["00000000-0000-4000-8000-000000000000"] },
+      }),
+    ];
+    for (const res of await Promise.all(calls)) expect(res.statusCode).toBe(403);
+
+    const { rows } = await pool.query("select 1 from items where slug = $1", [NEW_S.slug]);
+    expect(rows, "a refused import must have written nothing").toHaveLength(0);
+  });
+
+  it("refuses an anonymous caller too", async () => {
+    for (const url of ["bulk-status", "import", "export"]) {
+      const res = await app.inject({
+        method: "POST", url: `/api/v1/console/items/${url}`, payload: {},
+      });
+      expect(res.statusCode, url).toBe(401);
+    }
+  });
+
+  it("an export refused to a student carries no answer key", async () => {
+    const live = await pool.query("select id from items where slug = 'S-07-prefix-1'");
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/export", headers: auth(studentToken),
+      payload: { ids: [live.rows[0]!.id] },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.body).not.toContain("kilo");
+  });
+});
+
+describe("bulk review moves drafts into review — and nothing else", () => {
+  let drafts: string[];
+  let liveId: string;
+
+  beforeAll(async () => {
+    const made = await Promise.all(
+      [1, 2].map((n) =>
+        app.inject({
+          method: "POST", url: "/api/v1/console/items", headers: auth(teacherToken),
+          payload: { ...DRAFT, slug: `bulk-draft-${n}` },
+        }),
+      ),
+    );
+    drafts = made.map((r) => r.json().id as string);
+    liveId = (await pool.query("select id from items where slug = 'S-07-prefix-2'")).rows[0]!.id;
+  });
+
+  it("REFUSES to publish in bulk: `to` may only be review", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/bulk-status", headers: auth(teacherToken),
+      payload: { ids: drafts, to: "live" },
+    });
+    expect(res.statusCode).toBe(400);
+    const { rows } = await pool.query("select status from items where id = any($1)", [drafts]);
+    for (const r of rows) expect(r.status).toBe("draft");
+  });
+
+  it("moves the drafts, skips anything that is not a draft, and says why", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/bulk-status", headers: auth(teacherToken),
+      payload: { ids: [...drafts, liveId], to: "review" },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.moved.sort()).toEqual([...drafts].sort());
+    expect(body.skipped).toEqual([{ id: liveId, reason: "is live, not a draft" }]);
+
+    const { rows } = await pool.query("select id, status from items where id = any($1)", [
+      [...drafts, liveId],
+    ]);
+    const by = Object.fromEntries(rows.map((r) => [r.id, r.status]));
+    for (const d of drafts) expect(by[d]).toBe("review");
+    expect(by[liveId], "a live item is untouched by a bulk move").toBe("live");
+  });
+
+  it("writes one audit row per item moved, marked as bulk", async () => {
+    const { rows } = await pool.query(
+      `select target_id, payload from audit_log
+        where action = 'item.status' and target_id = any($1::text[])`,
+      [drafts],
+    );
+    expect(rows).toHaveLength(2);
+    for (const r of rows) {
+      expect(r.payload).toMatchObject({ from: "draft", to: "review", bulk: true });
+    }
+  });
+});
+
+describe("import: a dry run first, drafts only, and never a live item", () => {
+  const count = async (sql: string, p: unknown[] = []) =>
+    Number((await pool.query(sql, p)).rows[0]!.n);
+
+  it("a dry run plans and writes NOTHING", async () => {
+    const items0 = await count("select count(*) n from items");
+    const audit0 = await count("select count(*) n from audit_log");
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: true, file: file07([NEW_S]) },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ dryRun: true, applied: false, counts: { create: 1 } });
+    expect(await count("select count(*) n from items")).toBe(items0);
+    expect(await count("select count(*) n from audit_log")).toBe(audit0);
+  });
+
+  it("names every broken rule, and a commit with a broken row writes nothing", async () => {
+    const bad = [
+      { ...NEW_S, slug: "07-import-no-key", correct: "" },
+      { ...NEW_S, slug: "07-import-bad-objective", objective: "04.1" },
+      { ...NEW_S, slug: "07-import-no-source", source: null },
+      { slug: "07-import-bad-solver", objective: "07.3", type: "P", bloom: "apply", solver: "no-such-solver", source: "t" },
+      { ...NEW_S, slug: "07-import-dupe-distractor", distractors: ["kilo", "mega", "milli"] },
+      { ...NEW_S, slug: "BAD SLUG" },
+    ];
+    const dry = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: true, file: file07(bad) },
+    });
+    const rows = dry.json().rows as Array<{ slug: string; action: string; reasons: string[] }>;
+    for (const r of rows) expect(r.action, r.slug).toBe("invalid");
+    const reasons = rows.map((r) => r.reasons.join(" ")).join(" | ");
+    expect(reasons).toContain("no correct answer");
+    expect(reasons).toContain("belongs to stage 04");
+    expect(reasons).toContain("no source");
+    expect(reasons).toContain('unknown solver "no-such-solver"');
+    expect(reasons).toContain("also appears as a distractor");
+    expect(reasons).toContain("slug must be");
+
+    const items0 = await count("select count(*) n from items");
+    const commit = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: false, file: file07([NEW_S, ...bad]) },
+    });
+    expect(commit.statusCode).toBe(400);
+    expect(await count("select count(*) n from items"), "all or nothing").toBe(items0);
+  });
+
+  it("refuses a stage beyond the examinable scope", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: true, file: { stageId: "15", items: [{ ...NEW_S, objective: "15.1" }] } },
+    });
+    expect(res.json().rows[0].action).toBe("invalid");
+    expect(res.json().rows[0].reasons.join(" ")).toContain("beyond the examinable scope");
+  });
+
+  it("commits new items as DRAFTS authored by the importer, with the source audited", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: false, file: file07([NEW_S]) },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ applied: true, counts: { create: 1 } });
+
+    const { rows } = await pool.query(
+      "select id, status, author_id, correct_spec from items where slug = $1",
+      [NEW_S.slug],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.status, "never review, never live").toBe("draft");
+    expect(rows[0]!.author_id).toBe(w.teacher);
+    expect(rows[0]!.correct_spec).toEqual({ value: "kilo" });
+
+    const audit = await pool.query(
+      "select payload from audit_log where action = 'item.create' and target_id = $1",
+      [rows[0]!.id],
+    );
+    expect(audit.rows[0]!.payload).toMatchObject({ via: "import", source: NEW_S.source });
+  });
+
+  it("re-importing the same content is a no-op", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: true, file: file07([NEW_S]) },
+    });
+    expect(res.json().rows[0].action).toBe("unchanged");
+  });
+
+  it("a changed DRAFT becomes v2 and v1 is retired, never edited in place", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: false, file: file07([{ ...NEW_S, stem: "Which SI prefix denotes 10^3?" }]) },
+    });
+    expect(res.json().counts.version).toBe(1);
+    const { rows } = await pool.query(
+      "select version, status, stem_template from items where slug = $1 order by version",
+      [NEW_S.slug],
+    );
+    expect(rows.map((r) => [r.version, r.status])).toEqual([[1, "retired"], [2, "draft"]]);
+    expect(rows[0]!.stem_template, "v1 keeps its words").toBe(NEW_S.stem);
+  });
+
+  it("REFUSES a live item named by its own slug", async () => {
+    // A live item whose slug IS valid in the authored format.
+    const created = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: false, file: file07([{ ...NEW_S, slug: "07-import-goes-live" }]) },
+    });
+    expect(created.statusCode).toBe(200);
+    await pool.query("update items set status = 'live' where slug = '07-import-goes-live'");
+
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: {
+        dryRun: false,
+        file: file07([{ ...NEW_S, slug: "07-import-goes-live", stem: "Rewritten by an import" }]),
+      },
+    });
+    expect(res.json().rows[0]).toMatchObject({ action: "refused" });
+    expect(res.json().rows[0].reasons.join(" ")).toContain("live");
+    const { rows } = await pool.query(
+      "select status, stem_template from items where slug = '07-import-goes-live'",
+    );
+    expect(rows).toEqual([{ status: "live", stem_template: NEW_S.stem }]);
+  });
+});
+
+describe("export", () => {
+  it("returns the authored shape, and it imports back as unchanged", async () => {
+    const { rows } = await pool.query(
+      "select id from items where slug in ('07-import-new-static', '07-import-goes-live') and status <> 'retired'",
+    );
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/export", headers: auth(teacherToken),
+      payload: { ids: rows.map((r) => r.id) },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.format).toBe("octa-items/1");
+    expect(body.items).toHaveLength(2);
+    const s = body.items.find((i: { slug: string }) => i.slug === "07-import-new-static");
+    expect(s).toMatchObject({ stageId: "07", type: "S", correct: "kilo", objective: "07.1" });
+
+    const back = await app.inject({
+      method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
+      payload: { dryRun: true, file: body },
+    });
+    for (const r of back.json().rows) expect(r.action, r.slug).toBe("unchanged");
+  });
+
+  it("exports a parameterized and an ordering item in their own shapes", async () => {
+    const { rows } = await pool.query(
+      "select id, slug from items where slug in ('P-07-cycle-1', 'G-07-order-1')",
+    );
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/items/export", headers: auth(teacherToken),
+      payload: { ids: rows.map((r) => r.id) },
+    });
+    const items = res.json().items as Array<Record<string, unknown>>;
+    expect(items.find((i) => i.type === "P")).toMatchObject({ solver: "cycle-time" });
+    expect(items.find((i) => i.type === "P")).not.toHaveProperty("stem");
+    expect(items.find((i) => i.type === "G")).toMatchObject({ take: 4 });
+    expect((items.find((i) => i.type === "G")!.order as string[])[0]).toBe("pico");
+  });
+});
