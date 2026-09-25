@@ -82,13 +82,23 @@ seven still stand; none of them was touched.
    settings" branch. The three credential-failure sentences are unit-tested;
    the success path, and the "Signed in as …" toast on `/locks`, need a look
    **on the deployment** before anyone calls them verified.
-5. **Two things the page does NOT do, for the instructor to decide:**
-   - a **self-service password reset** (`/forgot-password`, `/reset-password`,
-     listed as absent in root `CLAUDE.md`). The page now says "an administrator
-     resets it" rather than offering a link that goes nowhere.
-   - **pre-waking the API.** Render's free tier sleeps (~50s to wake). The
-     sign-in page could ping the API while a teacher types, so `/locks` does
-     not sit on its first request. Not planned anywhere, so not built.
+5. ~~Two things for the instructor to decide~~ **Both approved and built, 25 Sep
+   2026:** a self-service password reset (`/forgot-password`,
+   `/reset-password`), and waking the API from `/signin` while the teacher
+   types. **Neither success path has been seen**: locally there is no Supabase
+   Auth and no email. **Before the reset works on the deployment:**
+   - add `https://<console-domain>/reset-password` to Supabase → Auth → URL
+     Configuration → **Redirect URLs** (without it the link goes to the Site
+     URL, the student app)
+   - check the project's **auth email delivery**. The built-in sender is
+     heavily rate-limited and may deliver only to the project's team members.
+     A teacher who is not on the Supabase team may need custom SMTP
+   - then request a reset for a real staff address, open the email, set a
+     password, and look at the "Password changed" toast on `/locks`
+6. **The local stack went down twice in this session**: Docker Desktop stopped
+   and took the dev servers with it. `design/global-setup.ts` caught it ("nothing
+   is listening at :5184") before a single assertion ran against nothing. If a
+   run dies in global setup, check `docker ps` before anything else.
 
 ---
 

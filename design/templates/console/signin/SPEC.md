@@ -90,7 +90,8 @@ sits on a bus trace"**, which went red on that build before the fix.
 | `Sign in` heading, one line of description | `h1` "Sign in" in display type, then who it is for | |
 | Email, Password, **show-password button inside the field** | Same, the toggle is a real `<button>` with `aria-pressed` and a label that says what it will do | Passes all four tests in `DESIGN-MANDATE.md` §1: it changes what the teacher can see, is legible, reversible, and saves a mistyped password |
 | Full-width primary button with an icon | Same, `LogIn` icon, the word changes to "Checking…" while it runs | |
-| A small-print footer under the form | Three honest sentences: no sign-up, no self-service reset, and a **link** to the student app for a student who came to the wrong door | Each replaces a template control that would be a dead end here (below) |
+| A small-print footer under the form | Three sentences: no sign-up, **"Forgot your password?"** leading to `/forgot-password`, and a **link** to the student app for a student who came to the wrong door | Sign-up and the student link replace template controls that would be dead ends here (below) |
+| *(not in the template)* | A `SERVER` line in the readout: `WAKING`, `ONLINE` or `NO ANSWER`, and past 3s a `role="status"` sentence | **The API is woken on arrival** (below) |
 
 ## Deliberately NOT copied
 
@@ -99,17 +100,33 @@ sits on a bus trace"**, which went red on that build before the fix.
   configured and none is planned.
 - **"Don't have an account? Sign Up".** There is no sign-up, by design: a
   staff account can read every answer key. The footer says so in words.
-- **"Forgot password?".** There is no self-service reset: recovery is the
-  Supabase dashboard or `bootstrap-admin.mjs`. A link here would be a control
-  that goes nowhere. The footer says who resets it instead. A reset flow
-  (`/forgot-password`, `/reset-password`) is listed in root `CLAUDE.md` as
-  genuinely absent and is **not built here**: it is a feature, and features
-  are brought to the instructor, not built unasked.
+- ~~**"Forgot password?"**~~ **Now copied, 25 Sep 2026.** The first rebuild
+  left it out because there was nowhere for it to go, and brought the missing
+  reset to the instructor rather than building it unasked. **The instructor
+  approved it the same day**, so the link is back as "Forgot your password?",
+  in the footer rather than beside the password label (the template's place),
+  so that Tab from the email field still lands on the password. It leads to
+  `/forgot-password` and `/reset-password`, each with its own folder beside
+  this one.
 - **Terms of Service / Privacy Policy.** Neither page exists.
 - **The product screenshot in the right half.** Replaced by the POST readout,
   which is this project's own auth vocabulary (§7), plus one real sentence:
   past this screen the teacher can read every answer key, and every change a
   student can see is written to the audit log with their name.
+
+## The API is woken on arrival — approved 25 Sep 2026
+
+Render's free tier sleeps and takes ~50s to wake, and signing in goes to
+Supabase, **not** to the API. So without this, a teacher signs in in ten
+seconds and then sits on `/locks` waiting for a server nobody asked to start.
+
+`/signin` and `/reset-password` (both end on `/locks`) call `wakeApi()`
+(`lib/api.ts`) on arrival: one `GET /healthz` per page load, which touches no
+database and needs no token. It never blocks the form. The readout's `SERVER`
+line reports it. Under 3s nothing else is said. Past 3s a `role="status"` line
+says the server is starting up and to carry on. If it never answers, a line
+says so and that signing in still works. `console-gate.spec.ts` holds all
+three states, with `/healthz` intercepted: slow, refused, fast.
 
 ## The failure state, which the template does not have
 

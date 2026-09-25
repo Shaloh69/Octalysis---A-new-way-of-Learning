@@ -17,6 +17,7 @@ credential change), because they share `GateFrame`.
 | **A fault arrives** under the fields | `.gate-fault`: `octa-fade-in` | `--dur-fast` | **Cut.** It appears in place. Never a shake, never a flash |
 | **The readout halts**: `AUTH FAULT`, `CONSOLE HALTED` | none. The words change | — | Same. It is words, and the real message is the `role="alert"` beside the form |
 | **Checking…** spinner in the button while a sign-in is in flight | `animate-spin` on the icon | 1s, infinite | **Still.** The word "Checking…" carries it, and past 3s a `role="status"` line says the service is slow |
+| **The `SERVER` line** (the API wake): `WAKING` → `ONLINE` / `NO ANSWER`, and past 3s a sentence under the form | none. The words change | — | Same. The sentence is `role="status"`, and it goes when the server answers |
 | **Show-password** toggle, link and button hovers | colour transition | `--dur-fast` | **Cut** |
 | **"Signed in as …" toast** on the page the teacher lands on | `octa-rise-in` (the shared `.toast`) | `--dur-fast` | **Cut** |
 

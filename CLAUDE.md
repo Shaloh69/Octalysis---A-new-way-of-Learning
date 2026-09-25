@@ -307,6 +307,7 @@ and building them again would produce a duplicate of a page that already works.
   `/app/live`, and `/app/lab` with its three simulators `asm`, `cache`, `fde`
 - public and auth: `/404`, `/500`, `/about`, `/accessibility`, `/course`,
   `/for-teachers`, `/how-it-works`, `/forgot-password`, `/reset-password`
+  (the student app's; the **console** has its own pair since 25 Sep 2026)
 - console: `/console/analytics`, `/console/settings`, `/console/items/:id/edit`
 
 Some are deliberate — the public marketing site is owned by no phase, and

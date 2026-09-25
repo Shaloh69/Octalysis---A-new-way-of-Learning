@@ -7,7 +7,12 @@ import {
   mustChangeFromClaims,
   signInFailureMessage,
   CREDENTIALS_REJECTED,
+  resetRequestFailureMessage,
+  passwordUpdateFailureMessage,
+  recoveryLinkState,
+  LINK_EXPIRED,
 } from "../src/lib/session";
+import { newPasswordState } from "../src/lib/password";
 
 /**
  * The console's pure logic.
@@ -285,5 +290,84 @@ describe("sign-in failures — one sentence for every credential cause, and neve
     const m = signInFailureMessage({ status: 429 });
     expect(m).not.toBe(CREDENTIALS_REJECTED);
     expect(m).toMatch(/too many/i);
+  });
+});
+
+describe("password reset request — it never says whether an account exists", () => {
+  it("treats every non-specific 4xx as sent, so an unknown address reads like a known one", () => {
+    for (const status of [400, 401, 403, 404, 422]) {
+      expect(resetRequestFailureMessage({ status })).toBeNull();
+    }
+  });
+
+  it("says a rate limit, by status or by Supabase's code", () => {
+    expect(resetRequestFailureMessage({ status: 429 })).toMatch(/too many/i);
+    expect(resetRequestFailureMessage({ status: 400, code: "over_email_send_rate_limit" })).toMatch(/too many/i);
+  });
+
+  it("says a malformed address is not an address -- that reveals nothing about accounts", () => {
+    expect(resetRequestFailureMessage({ status: 400, code: "email_address_invalid" })).toMatch(/not an email/i);
+  });
+
+  it("does not claim a mail was sent when the service never answered", () => {
+    for (const error of [{}, { status: 0 }, { status: 500 }, { status: 503 }]) {
+      expect(resetRequestFailureMessage(error)).toMatch(/not sent/);
+    }
+  });
+});
+
+describe("setting the new password — every failure says why, none says success", () => {
+  it("names a reused password and a weak one", () => {
+    expect(passwordUpdateFailureMessage({ status: 422, code: "same_password" })).toMatch(/already your password/);
+    expect(passwordUpdateFailureMessage({ status: 422, code: "weak_password" })).toMatch(/too weak/);
+  });
+
+  it("calls a missing or bad recovery session an expired link", () => {
+    for (const error of [
+      { name: "AuthSessionMissingError", status: 400 },
+      { code: "session_not_found", status: 403 },
+      { code: "bad_jwt", status: 403 },
+      { status: 401 },
+    ]) {
+      expect(passwordUpdateFailureMessage(error)).toBe(LINK_EXPIRED);
+    }
+  });
+
+  it("does not blame the link when the service never answered", () => {
+    for (const error of [{}, { status: 0 }, { status: 502 }]) {
+      const m = passwordUpdateFailureMessage(error);
+      expect(m).not.toBe(LINK_EXPIRED);
+      expect(m).toMatch(/did not answer/);
+    }
+  });
+});
+
+describe("the recovery link, read from the address", () => {
+  it("recognises the implicit flow's hash and the PKCE flow's code", () => {
+    expect(recoveryLinkState("#access_token=x&type=recovery", "").kind).toBe("recovery");
+    expect(recoveryLinkState("", "?code=abc").kind).toBe("recovery");
+  });
+
+  it("recognises a used or expired link, even though it also looks like a redirect", () => {
+    const hash = "#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid";
+    expect(recoveryLinkState(hash, "").kind).toBe("expired");
+  });
+
+  it("is not fooled by a sign-in or sign-up token that is not a recovery", () => {
+    expect(recoveryLinkState("#access_token=x&type=signup", "").kind).toBe("none");
+    expect(recoveryLinkState("", "").kind).toBe("none");
+  });
+});
+
+describe("the new-password rule — shared by the credential screen and /reset-password", () => {
+  it("wants 12 characters and a matching confirmation", () => {
+    expect(newPasswordState("", "").ready).toBe(false);
+    expect(newPasswordState("elevenchars", "elevenchars")).toEqual({ tooShort: true, mismatch: false, ready: false });
+    expect(newPasswordState("twelve-chars", "twelve-charz")).toEqual({ tooShort: false, mismatch: true, ready: false });
+    expect(newPasswordState("twelve-chars", "twelve-chars")).toEqual({ tooShort: false, mismatch: false, ready: true });
+  });
+
+  it("says nothing about an empty field -- a hint before typing is noise", () => {
+    expect(newPasswordState("", "")).toEqual({ tooShort: false, mismatch: false, ready: false });
   });
 });

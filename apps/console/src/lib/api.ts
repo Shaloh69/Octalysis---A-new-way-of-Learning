@@ -34,6 +34,35 @@ import { getAccessToken } from "./session";
  */
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8090";
 
+/**
+ * Wake the API. `true` once it answers, `false` if it never does.
+ *
+ * Approved by the instructor 25 Sep 2026. Render's free tier sleeps when idle
+ * and takes ~50s to start, and signing in goes to Supabase -- not to this API
+ * -- so a teacher could sign in in ten seconds and then sit on /locks waiting
+ * for a server nobody had asked to start. The gate pages call this on arrival,
+ * so the wake overlaps the typing.
+ *
+ * `/healthz` on purpose: it touches no database and needs no token
+ * (`services/api/src/server.ts`), so waking costs nothing and reveals nothing.
+ *
+ * One request per page load, however many components ask: StrictMode mounts
+ * twice, and two gate pages can mount in one visit. A failed wake is forgotten
+ * so the next page can try again.
+ */
+let waking: Promise<boolean> | null = null;
+
+export function wakeApi(): Promise<boolean> {
+  waking ??= fetch(`${BASE}/healthz`, { cache: "no-store", signal: AbortSignal.timeout(75_000) })
+    .then((r) => r.ok)
+    .catch(() => false)
+    .then((ok) => {
+      if (!ok) waking = null;
+      return ok;
+    });
+  return waking;
+}
+
 export class ApiError extends Error {
   readonly code: string;
   readonly status: number;

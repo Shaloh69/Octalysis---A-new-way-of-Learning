@@ -3,8 +3,9 @@ import { GateFrame, type ReadoutLine } from "@/components/GateFrame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NewPasswordFields } from "@/components/NewPasswordFields";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { newPasswordState } from "@/lib/password";
 import type { Identity } from "@/lib/session";
 
 /**
@@ -90,9 +91,7 @@ export function ChangeCredentialsScreen({
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const tooShort = password.length > 0 && password.length < 12;
-  const mismatch = confirm.length > 0 && confirm !== password;
-  const ready = email.includes("@") && password.length >= 12 && confirm === password;
+  const ready = email.includes("@") && newPasswordState(password, confirm).ready;
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -154,15 +153,14 @@ export function ChangeCredentialsScreen({
       caption="This account can read every answer key in the bank. Nothing else in the console opens until both are replaced."
     >
       {/*
-        The warning that matters most. There is no password reset flow in this
-        app -- recovery means the Supabase dashboard or re-running the bootstrap
-        script -- and a teacher should know that BEFORE choosing a password,
-        not after losing one.
+        The warning that matters most, said BEFORE the email is chosen. A
+        forgotten password is reset by a link to this address (/forgot-password,
+        approved 25 Sep 2026) and to no other, so an address nobody reads is a
+        password nobody can recover.
       */}
       <p className="mb-5 rounded-md border border-warning bg-warning-bg px-3 py-2 text-xs text-warning">
-        <strong>Do not lose these.</strong> There is no self-service password reset here. If you
-        lock yourself out, recovery means resetting the password in the Supabase dashboard or
-        running the bootstrap script again. Put them in a password manager now.
+        <strong>Use an email address you can read.</strong> A forgotten password is reset by a link
+        sent to this address, and no other. Put the new password in a password manager now.
       </p>
 
       <form onSubmit={(e) => void save(e)} noValidate>
@@ -177,37 +175,12 @@ export function ChangeCredentialsScreen({
           />
         </div>
 
-        <div className="mb-4">
-          <Label htmlFor="new-password">New password</Label>
-          <Input
-            id="new-password"
-            type="password"
-            autoComplete="new-password"
-            aria-describedby="new-password-hint"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <p id="new-password-hint" className={cn("mt-1 text-xs", tooShort ? "text-danger" : "text-ink-muted")}>
-            At least 12 characters.
-          </p>
-        </div>
-
-        <div className="mb-5">
-          <Label htmlFor="confirm-password">Confirm new password</Label>
-          <Input
-            id="confirm-password"
-            type="password"
-            autoComplete="new-password"
-            aria-describedby={mismatch ? "confirm-password-hint" : undefined}
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-          {mismatch ? (
-            <p id="confirm-password-hint" className="mt-1 text-xs text-danger">
-              These do not match.
-            </p>
-          ) : null}
-        </div>
+        <NewPasswordFields
+          password={password}
+          confirm={confirm}
+          onPassword={setPassword}
+          onConfirm={setConfirm}
+        />
 
         {err ? (
           <p role="alert" className="gate-fault mb-4 flex gap-2 border border-danger bg-danger-bg p-2.5 font-mono text-xs text-danger">

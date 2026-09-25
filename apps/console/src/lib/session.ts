@@ -202,6 +202,131 @@ export function signInFailureMessage(error: { status?: number | undefined }): st
   return "The sign-in service did not answer, so what you typed was not checked. Try again in a minute.";
 }
 
+/* ------------------------------------------------------ password reset
+ *
+ * Self-service reset, approved by the instructor 25 Sep 2026. Before it, a
+ * forgotten staff password meant the Supabase dashboard or re-running
+ * `bootstrap-admin.mjs`. `design/templates/console/forgot-password/SPEC.md`.
+ *
+ * Supabase does the work: `resetPasswordForEmail` mails a one-use link, the
+ * link lands on `/reset-password` carrying a recovery session, and
+ * `updateUser({ password })` sets the new one. Nothing here touches
+ * `app_metadata`, so a reset never clears the bootstrap flag and never
+ * changes a role.
+ */
+
+type AuthFailure = { status?: number | undefined; code?: string | undefined; name?: string | undefined };
+
+const NOT_CONFIGURED =
+  "This console was built without its Supabase settings, so it cannot send a reset link. VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are missing.";
+
+/**
+ * What to say when a reset email could not be requested -- or `null`, meaning
+ * "say it was sent".
+ *
+ * **`null` for every 4xx that is not about the request itself.** An address
+ * with no account must read exactly like one with an account, or this page
+ * becomes the enumeration oracle `signIn` refuses to be. Supabase already
+ * answers 200 for an unknown address; this keeps any other refusal from
+ * leaking the difference.
+ */
+export function resetRequestFailureMessage(error: AuthFailure): string | null {
+  const s = error.status;
+  if (s === 429 || error.code === "over_email_send_rate_limit") {
+    return "Too many reset emails have been requested. Wait a while, then try again.";
+  }
+  if (error.code === "email_address_invalid" || error.code === "validation_failed") {
+    return "That is not an email address.";
+  }
+  if (typeof s === "number" && s >= 400 && s < 500) return null;
+  return "The reset email was not sent: the service did not answer. Try again in a minute.";
+}
+
+export async function requestPasswordReset(email: string): Promise<SignInResult> {
+  const c = supabase();
+  if (!c) return { ok: false, message: NOT_CONFIGURED };
+  const { error } = await c.auth.resetPasswordForEmail(email.trim(), {
+    // Must be listed under Auth > URL Configuration > Redirect URLs, or
+    // Supabase sends the link to the Site URL instead. See the route's SPEC.md.
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) {
+    const message = resetRequestFailureMessage(error);
+    if (message) return { ok: false, message };
+  }
+  return { ok: true };
+}
+
+export const LINK_EXPIRED = "This reset link has expired or was already used. Send a new one.";
+
+/** What to say when a new password was not saved. Never "success" by default. */
+export function passwordUpdateFailureMessage(error: AuthFailure): string {
+  if (error.code === "same_password") return "That is already your password. Choose a different one.";
+  if (error.code === "weak_password") {
+    return "The sign-in service refused that password as too weak. Choose a longer one.";
+  }
+  if (
+    error.name === "AuthSessionMissingError" ||
+    error.code === "session_not_found" ||
+    error.code === "bad_jwt" ||
+    error.status === 401 ||
+    error.status === 403
+  ) {
+    return LINK_EXPIRED;
+  }
+  if (error.status === 429) return "Too many attempts from here. Wait a minute, then try again.";
+  if (typeof error.status === "number" && error.status >= 400 && error.status < 500) {
+    return "The password was not changed. Send a new link and try again.";
+  }
+  return "The password was not changed: the service did not answer. Try again in a minute.";
+}
+
+export async function setNewPassword(password: string): Promise<SignInResult> {
+  const c = supabase();
+  if (!c) {
+    return {
+      ok: false,
+      message:
+        "This console was built without its Supabase settings, so it cannot change a password. VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are missing.",
+    };
+  }
+  const { error } = await c.auth.updateUser({ password });
+  if (error) return { ok: false, message: passwordUpdateFailureMessage(error) };
+  return { ok: true };
+}
+
+export type RecoveryLink =
+  | { kind: "recovery" }
+  | { kind: "expired" }
+  | { kind: "none" };
+
+/**
+ * What the address says about the reset link that brought someone here.
+ *
+ * Supabase's implicit flow appends `#...&type=recovery`; the PKCE flow
+ * appends `?code=`. A used or expired link comes back as `#error=...`. The
+ * page shows the password form for a recovery link WITHOUT verifying it
+ * first -- a bogus one is refused at submit (`LINK_EXPIRED`), which costs the
+ * holder nothing they did not already have.
+ */
+export function recoveryLinkState(hash: string, search: string): RecoveryLink {
+  const h = new URLSearchParams(hash.replace(/^#/, ""));
+  if (h.has("error") || h.has("error_code")) return { kind: "expired" };
+  if (h.get("type") === "recovery") return { kind: "recovery" };
+  if (new URLSearchParams(search).has("code")) return { kind: "recovery" };
+  return { kind: "none" };
+}
+
+/**
+ * Let supabase-js consume the recovery link before the page takes it off the
+ * address bar. The client reads the URL when it initialises; `getSession`
+ * waits for that. Locally there is no client, and nothing to wait for.
+ */
+export async function primeRecovery(): Promise<void> {
+  const c = supabase();
+  if (c) await c.auth.getSession();
+}
+
 export async function signOut(): Promise<void> {
   const c = supabase();
   if (c) await c.auth.signOut();

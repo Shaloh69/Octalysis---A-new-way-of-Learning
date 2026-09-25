@@ -660,7 +660,12 @@ thesis deliverable, and right now no phase is accountable for it.
         and no text on a bus trace. `<Toaster />` moved to the app root. Sign-in
         failures now tell a network failure and a rate limit apart from a wrong
         password (unit-tested). `SOURCE.md`, `SPEC.md`, `motion.md`,
-        `current.png`, `current-380.png`
+        `current.png`, `current-380.png`. **Same day, instructor-approved:**
+        a self-service reset (`/forgot-password`, `/reset-password`, each with
+        its own template folder, gated by `console-password-reset.spec.ts`,
+        28 passed) and an API wake on arrival. Folded into this box rather
+        than given boxes of their own: they are the gate, and new ticked boxes
+        would move the percentage without moving the work
   - [ ] `/locks`
   - [ ] `/students`
   - [ ] `/students/:userId`

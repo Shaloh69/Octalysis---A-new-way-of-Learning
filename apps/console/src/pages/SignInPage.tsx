@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
 import { GateFrame, type ReadoutLine } from "@/components/GateFrame";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
 import { getIdentity, isStaff, signIn } from "@/lib/session";
+import { useApiWake } from "@/lib/useApiWake";
 import { useDelayed } from "@/lib/useDelayed";
 
 /**
@@ -46,6 +47,8 @@ export function SignInPage(): JSX.Element {
 
   // design.md: past ~3s, say so in words rather than spinning in silence.
   const slow = useDelayed(busy, 3_000);
+  // Wake the API while the teacher types (lib/api.ts `wakeApi` says why).
+  const wake = useApiWake();
 
   /*
    * Someone already signed in should not be looking at a sign-in form: the
@@ -88,6 +91,7 @@ export function SignInPage(): JSX.Element {
     { label: "ROSTER", value: "MOUNTED" },
     { label: "POLICIES", value: "ARMED" },
     { label: "AUDIT", value: "RECORDING" },
+    wake.line,
     busy
       ? { label: "AUTH", value: "CHECKING" }
       : fault
@@ -113,7 +117,12 @@ export function SignInPage(): JSX.Element {
       footer={
         <>
           <p>No account? Staff accounts are created by an administrator. There is no sign-up here.</p>
-          <p>Lost your password? There is no self-service reset. An administrator resets it.</p>
+          <p>
+            <Link to="/forgot-password" className="gate-link">
+              Forgot your password?
+            </Link>{" "}
+            A reset link goes to your account&apos;s email address.
+          </p>
           <p>
             A student?{" "}
             <a href={WEB_URL} className="gate-link">
@@ -200,6 +209,7 @@ export function SignInPage(): JSX.Element {
             Still checking. The sign-in service is slow to answer; this can take up to a minute.
           </p>
         ) : null}
+        {wake.notice}
       </form>
     </GateFrame>
   );

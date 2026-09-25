@@ -15,6 +15,8 @@ import { AuditPage } from "./pages/AuditPage";
 import { SystemPage } from "./pages/SystemPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
 import { SignInPage } from "./pages/SignInPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 
 /**
  * The gradebook is lazy, and it is the only page that is.
@@ -42,6 +44,10 @@ export function App() {
          * redirect would land on itself forever.
          */}
         <Route path="/signin" element={<SignInPage />} />
+        {/* The password reset sits outside the shell for the same reason:
+            whoever needs it is, by definition, not signed in. */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         <Route element={<AppShell />}>
           {/* Locks first: it is the page a teacher opens mid-class. */}
