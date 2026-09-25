@@ -117,6 +117,46 @@ describe("roster import — the format a teacher actually pastes", () => {
   });
 });
 
+/*
+ * PAGE-SPECS.md §/console/roster: `student_id,full_name,section_code`. A third
+ * column cannot be found by counting commas, because "Dela Cruz, Juan Miguel"
+ * already has one. It is recognised ONLY when the last field is a section that
+ * exists, so no given name can ever be mistaken for a section.
+ */
+describe("parseRoster — an optional section column", () => {
+  const SECTIONS = ["BSCPE - 4", "BSCPE-2B"];
+
+  it("takes a trailing field that is a real section code", () => {
+    const { rows } = parseRoster("21-1,Dela Cruz, Juan Miguel,BSCPE - 4", SECTIONS);
+    expect(rows[0]).toEqual({ studentId: "21-1", fullName: "Dela Cruz, Juan Miguel", sectionCode: "BSCPE - 4" });
+  });
+
+  it("never takes a given name for a section", () => {
+    const { rows } = parseRoster("21-1,Dela Cruz, Juan Miguel", SECTIONS);
+    expect(rows[0]).toEqual({ studentId: "21-1", fullName: "Dela Cruz, Juan Miguel" });
+  });
+
+  it("matches a section however its spacing and case were typed, and returns the real code", () => {
+    const { rows } = parseRoster("21-1,Santos, Maria, bscpe-4", SECTIONS);
+    expect(rows[0]).toEqual({ studentId: "21-1", fullName: "Santos, Maria", sectionCode: "BSCPE - 4" });
+  });
+
+  it("reads a spreadsheet export, where the name is quoted", () => {
+    const { rows } = parseRoster('21-1,"Dela Cruz, Juan",BSCPE-2B', SECTIONS);
+    expect(rows[0]).toEqual({ studentId: "21-1", fullName: "Dela Cruz, Juan", sectionCode: "BSCPE-2B" });
+  });
+
+  it("leaves an unknown trailing field in the name, where the preview shows it", () => {
+    const { rows } = parseRoster("21-1,Santos, Maria,BSCPE-9Z", SECTIONS);
+    expect(rows[0]).toEqual({ studentId: "21-1", fullName: "Santos, Maria,BSCPE-9Z" });
+  });
+
+  it("skips the three-column header", () => {
+    const { rows } = parseRoster("student_id,full_name,section_code\n21-1,Reyes, Ana,BSCPE-2B", SECTIONS);
+    expect(rows).toEqual([{ studentId: "21-1", fullName: "Reyes, Ana", sectionCode: "BSCPE-2B" }]);
+  });
+});
+
 describe("gradebook CSV — reads exactly what the server writes", () => {
   it("round-trips a quoted field containing a comma", () => {
     expect(splitCsvLine('21-1,"Dela Cruz, Juan",100,80')).toEqual([

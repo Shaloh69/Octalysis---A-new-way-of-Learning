@@ -15,6 +15,8 @@
 export interface RosterLine {
   studentId: string;
   fullName: string;
+  /** Present only when the line named a section that exists. */
+  sectionCode?: string;
 }
 
 export interface RosterParse {
@@ -44,9 +46,13 @@ export interface RosterParse {
 // makes that line fall through to the comma rule, where it belongs.
 const LEADING_ID = /^([0-9][0-9-]{2,})[ 	]+([^,\s].*)$/;
 
-export function parseRoster(text: string): RosterParse {
+/** "BSCPE - 4", "bscpe-4" and "BSCPE-4" are one section as typed by a person. */
+const sectionKey = (s: string): string => s.replace(/\s+/g, "").toUpperCase();
+
+export function parseRoster(text: string, sections: readonly string[] = []): RosterParse {
   const rows: RosterLine[] = [];
   let bad = 0;
+  const known = new Map(sections.map((c) => [sectionKey(c), c]));
 
   for (const raw of text.split("\n")) {
     const line = raw.trim();
@@ -84,6 +90,25 @@ export function parseRoster(text: string): RosterParse {
       name = line.slice(comma + 1).trim();
     }
 
+    /*
+     * An optional THIRD column, `section_code` (PAGE-SPECS.md §/console/roster).
+     * It cannot be found by counting commas: "Dela Cruz, Juan Miguel" already
+     * has one. So the last comma field is a section ONLY when it names a
+     * section that exists. "Juan Miguel" never will, and an unknown code stays
+     * in the name, where the preview shows the teacher exactly what was read.
+     * Done before unquoting, because a spreadsheet quotes the name and not the
+     * section: `"Dela Cruz, Juan",BSCPE-2B`.
+     */
+    let sectionCode: string | undefined;
+    const last = name.lastIndexOf(",");
+    if (last !== -1 && known.size > 0) {
+      const hit = known.get(sectionKey(name.slice(last + 1)));
+      if (hit) {
+        sectionCode = hit;
+        name = name.slice(0, last).trim();
+      }
+    }
+
     // A spreadsheet export quotes any field containing a comma, and doubles
     // quotes inside it. Unwrap before anything else looks at the name.
     if (name.startsWith('"') && name.endsWith('"') && name.length >= 2) {
@@ -98,7 +123,7 @@ export function parseRoster(text: string): RosterParse {
     // fragments from the middle of a spreadsheet as often as whole files.
     if (/^student_?\s?id$/i.test(id)) continue;
 
-    rows.push({ studentId: id, fullName: name });
+    rows.push(sectionCode ? { studentId: id, fullName: name, sectionCode } : { studentId: id, fullName: name });
   }
 
   return { rows, bad };
