@@ -6,7 +6,7 @@
  * and truncates the tables, leaving its own two fixtures behind. Restoring is
  * two steps, and the second one is easy to forget:
  *
- *   1. `db/demo-seed.sql`     — profiles, sections, progress, the flagged item
+ *   1. `db/demo-seed.sql`     — profiles, sections, progress
  *   2. `scripts/sync-content.mjs` — the 115 objectives, from
  *                                    `content/stages/*.md` front matter
  *
@@ -209,6 +209,24 @@ ${err.stderr || err.message}
       },
       maxBuffer: 32 * 1024 * 1024,
     });
+    console.log(c.green("ok"));
+  } catch (err) {
+    console.log(c.red("FAILED"));
+    console.error(c.red(`
+${err.stderr || err.message}
+`));
+    process.exit(1);
+  }
+
+  process.stdout.write("  demo-item-stats     ... ");
+  try {
+    /*
+     * The one flagged item, for `/items`. AFTER sync-items, because it attaches
+     * stats to an item by slug and the bank does not exist until that step. It
+     * used to live in demo-seed.sql, which runs first, so it matched nothing --
+     * silently -- and the flagged-item spec had nothing to find.
+     */
+    await psqlFile("db/demo-item-stats.sql");
     console.log(c.green("ok"));
   } catch (err) {
     console.log(c.red("FAILED"));

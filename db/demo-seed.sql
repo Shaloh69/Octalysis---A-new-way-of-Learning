@@ -266,32 +266,7 @@ delete from student_directory where student_id not like '232129%';
 update assessments set section_id = 'dddddddd-5EC0-4000-8000-000000000001' where section_id is not null;
 delete from sections where code <> 'BSCPE - 4';
 
--- ---------------------------------------------------------------
--- ONE ITEM WITH REAL PSYCHOMETRICS.
---
--- Every item in a fresh bank has zero exposures, so `/console/items` showed
--- nothing but "not enough exposures" on every row -- which meant the branch
--- that actually matters, and the one a teacher opens the page FOR, could not be
--- seen, screenshotted or reviewed by anybody.
---
--- These numbers describe the loud failure on purpose: a p-value of 0.18 is at
--- guessing, and a NEGATIVE point-biserial means the students who did best on
--- the paper did worst on this item, which almost always means the key is wrong.
--- The page says exactly that, and now there is data to make it say it.
---
--- Deliberately ONE item. This is a fixture for reviewing a rare state, not a
--- claim that the bank is in trouble.
--- ---------------------------------------------------------------
-insert into item_stats (item_id, n_exposures, n_correct, p_value, discrimination, flagged, flag_reason)
-select id, 120, 22, 0.18, -0.12, true, 'Negative discrimination on the last two papers'
-  from items
- where slug = 'G-07-order-1'
-on conflict (item_id) do update set
-  n_exposures    = excluded.n_exposures,
-  n_correct      = excluded.n_correct,
-  p_value        = excluded.p_value,
-  discrimination = excluded.discrimination,
-  flagged        = excluded.flagged,
-  flag_reason    = excluded.flag_reason;
+-- The one item with real psychometrics moved to `db/demo-item-stats.sql`:
+-- it has to run AFTER the item bank is synced, and this file runs before.
 
 commit;
