@@ -72,11 +72,17 @@ test.describe("the bootstrap credentials prompt", () => {
     await expect(page.getByRole("heading", { name: "Items" })).toHaveCount(0);
   });
 
-  test("warns that there is no password reset, before a password is chosen", async ({ page }) => {
+  test("warns that a reset link goes only to this email, before one is chosen", async ({ page }) => {
     await openAs(page, true);
-    // Said BEFORE they pick one, not after they lose it.
-    await expect(page.getByText(/Do not lose these/i)).toBeVisible();
-    await expect(page.getByText(/no self-service password reset/i)).toBeVisible();
+    /*
+     * Said BEFORE they pick one, not after they lose it. Until 25 Sep this
+     * said there was no self-service reset at all. There is one now
+     * (/forgot-password), and it makes the email the thing that matters: a
+     * reset link can only reach the address set here, so an address nobody
+     * reads is a password nobody can recover.
+     */
+    await expect(page.getByText(/Use an email address you can read/i)).toBeVisible();
+    await expect(page.getByText(/sent to this address, and no other/i)).toBeVisible();
   });
 
   test("will not submit until both fields are valid and matching", async ({ page }) => {

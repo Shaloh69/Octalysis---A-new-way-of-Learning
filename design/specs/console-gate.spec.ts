@@ -407,13 +407,65 @@ test.describe("the sign-in — SPEC.md", () => {
     await expect(field, "and hidden again, from the keyboard").toHaveAttribute("type", "password");
   });
 
-  test("no dead ends: no sign-up, no reset link, and a real way to the student app", async ({ page }) => {
+  test("no dead ends: no sign-up, a reset link that goes somewhere, a way to the student app", async ({ page }) => {
     await openSignIn(page);
     // The template's controls that would go nowhere here must not have been copied.
-    await expect(page.getByRole("link", { name: /sign up|forgot|terms|privacy/i })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /sign up|terms|privacy/i })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /github|facebook|google/i })).toHaveCount(0);
+    /*
+     * "Forgot password?" was left out on 25 Sep because there was nowhere for
+     * it to go. The instructor approved a self-service reset the same day, so
+     * it is back, and it must lead to a real page (console-password-reset.spec).
+     */
+    await expect(page.getByRole("link", { name: /forgot your password/i })).toHaveAttribute(
+      "href",
+      "/forgot-password",
+    );
     // And a student at the wrong door has a door.
     await expect(page.getByRole("link", { name: /student app/i })).toBeVisible();
+  });
+
+  /*
+   * THE API IS WOKEN WHILE THE TEACHER TYPES. Approved 25 Sep 2026.
+   *
+   * Render's free tier sleeps and takes ~50s to wake, and signing in goes to
+   * Supabase, not the API -- so without this, a teacher signs in quickly and
+   * then sits on /locks waiting for a server nobody asked to start. The page
+   * asks `GET /healthz` (no database, no auth) on arrival, and says so in the
+   * readout and, past 3s, in words.
+   */
+  test("the API is woken on arrival, and a slow wake is said in words", async ({ page }) => {
+    let asked = 0;
+    await page.route("**/healthz", async (route) => {
+      asked += 1;
+      await new Promise((r) => setTimeout(r, 4_500));
+      await route.continue();
+    });
+    await asConsole(page, null);
+    await page.goto(`${CONSOLE_URL}/signin`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("main dl")).toContainText(/SERVER\s*WAKING/);
+    const line = page.getByRole("status").filter({ hasText: /starting up/i });
+    await expect(line, "past 3s the wake must be said in words").toBeVisible({ timeout: 4_000 });
+    // And it carries on without blocking anything: the form works throughout.
+    await expect(page.getByLabel("Email")).toBeEditable();
+    await expect(page.locator("main dl")).toContainText(/SERVER\s*ONLINE/, { timeout: 8_000 });
+    await expect(line, "the words go once the server answers").toHaveCount(0);
+    expect(asked, "one wake per visit, not one per render").toBe(1);
+  });
+
+  test("a server that never answers is said plainly, and sign-in still works", async ({ page }) => {
+    await page.route("**/healthz", (route) => route.abort("connectionrefused"));
+    await asConsole(page, null);
+    await page.goto(`${CONSOLE_URL}/signin`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("main dl")).toContainText(/SERVER\s*NO ANSWER/, { timeout: 8_000 });
+    await expect(page.getByRole("status").filter({ hasText: /did not answer/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^sign in$/i })).toBeEnabled();
+  });
+
+  test("a fast server says nothing at all", async ({ page }) => {
+    await openSignIn(page);
+    await expect(page.locator("main dl")).toContainText(/SERVER\s*ONLINE/, { timeout: 8_000 });
+    await expect(page.getByRole("status").filter({ hasText: /starting up|did not answer/i })).toHaveCount(0);
   });
 
   test("no text sits on a bus trace", async ({ page }) => {
