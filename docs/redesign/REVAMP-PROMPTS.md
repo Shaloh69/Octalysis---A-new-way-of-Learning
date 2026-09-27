@@ -21,48 +21,51 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: `/submissions`
+## 1. Start here — the next session: `/gradebook`
 
-*Rewritten 27 Sep 2026 by the `/assessments` session, the sixth console route
-through the gate, which also built two instructor-approved features: section
-scope on create (and `POST /attempts` now refuses a student of another
-section), and rotating the exam salt between terms. Phase at handover: **R3
-live at 47 / 72 (65%)**; all tracks **134 done · 76 to-do (210 items, 64%)**.
-`pnpm phase` is the count, not this line.*
+*Rewritten 27 Sep 2026 by the `/submissions` session, the seventh console
+route through the gate, which also closed a hole in the API it found on the
+way: a GRADED submission could be re-marked in place by any staff token, with
+no return and no reason. Phase at handover: **R3 live at 48 / 72 (67%)**; all
+tracks **135 done · 75 to-do (210 items, 64%)**. `pnpm phase` is the count,
+not this line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
 > full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md`
-> §0a to §0f** (what the `/items`, `/signin`, `/locks`, `/students`,
-> `/students/:userId` and `/assessments` sessions parked). Do not re-derive
-> what those carry.
+> §0a to §0g** (what the `/items`, `/signin`, `/locks`, `/students`,
+> `/students/:userId`, `/assessments` and `/submissions` sessions parked). Do
+> not re-derive what those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
 > checking the five conditions in `CLAUDE.md` rather than remembering them.
 > (On 27 Sep it was NOT: locally stages 00-04 had 112 content blocks but all
 > 96 act-1 items sat at `review`, 0 live, so no paper can be filled and every
-> Start answers 500 (§0e.1); `/assessments` now says so on every row. Stage 01
-> was open for 0 of 24 demo students, because §3a is decided but not
-> built. The DEPLOYMENT was not re-measured; on 25 Sep it
-> had 0 items and 0 content blocks for stages 00-04 (§0d.1), and a read-only
-> connection hung on 27 Sep (§0e.6).)
+> Start answers 500 (§0e.1). Stage 01 was open for 0 of 24 demo students,
+> because §3a is decided but not built. The DEPLOYMENT was not re-measured;
+> on 25 Sep it had 0 items and 0 content blocks for stages 00-04 (§0d.1), and
+> a read-only connection hung on 27 Sep (§0e.6).)
 >
 > **Confirm the finished routes are still green before touching anything**,
 > with `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` set to `http://localhost:5184`:
-> `npx playwright test design/specs/console-*.spec.ts` gave **320 passed,
-> 42 skipped, 0 failed** on 27 Sep. **Read the skips**: they are the same 42
-> as before `/assessments`, width-specific by design, except
+> `npx playwright test design/specs/console-*.spec.ts` gave **374
+> passed, 44 skipped, 0 failed** on 27 Sep. **Read the skips**: 42
+> are the same as before, width-specific by design (including
 > `console-student-detail.spec.ts`' real-attempt test, which skips because no
-> paper can be filled (§0e.2). `console-assessment-window.spec.ts` alone is 54
-> tests at two widths, 0 skipped. If anything is red, that is this session's
-> work.
+> paper can be filled, §0e.2), and 2 are `/submissions`' own (its density
+> bound and its empty pane are 1440-only). `console-submissions.spec.ts`
+> alone is 56 tests at two widths. If anything is red, that is this
+> session's work. One full run went red on 27 Sep with a positive control
+> that passed alone: that race is fixed (`motionStarted()`, §0g.7), so a red
+> is real until proven otherwise.
 >
-> **THIS SESSION IS ONLY FOR `apps/console` `/submissions`. NOTHING ELSE.**
-> Not `/gradebook` (next), not `/attempts/:attemptId` (last; §0e.3), not the
-> student app's `/app/work`, not §0e.1's 500 on Start, not §0f.1's
-> feasibility cap. If you find a defect on another page, write it down in
-> `docs/NEXT-SESSION.md` and leave it. The last thing this session does is
-> rewrite this prompt for the next one.
+> **THIS SESSION IS ONLY FOR `apps/console` `/gradebook`. NOTHING ELSE.**
+> Not `/content`, `/audit`, `/system`, `/feedback` or `/live` (next, #8), not
+> `/attempts/:attemptId` (last; §0e.3), not the student app, not §0e.1's 500
+> on Start, not §0f.1's feasibility cap, not §0g.1's database-deep freeze. If
+> you find a defect on another page, write it down in `docs/NEXT-SESSION.md`
+> and leave it. The last thing this session does is rewrite this prompt for
+> the next one.
 >
 > 1. Bring the local stack up: **`docker ps` first** (Docker Desktop has
 >    stopped three times), `pnpm db:up`, then
@@ -70,103 +73,111 @@ live at 47 / 72 (65%)**; all tracks **134 done · 76 to-do (210 items, 64%)**.
 >    console on **5184** (`pnpm --filter @octa/console dev --port 5184
 >    --strictPort`), `pnpm dev:token` for a session. 5173 and 5174 belong to
 >    other projects. If 8090 or 5184 already answer, confirm they are OURS (the
->    process command line, and the page title "OCTA Console"). **Prove the API
->    with a staff GET, not `/healthz`** (§0e.7). **After ANY API test run,
->    reset and re-demo**: the API suite wipes the seed. The seed has 61
->    submissions (30 graded, 21 submitted, 10 draft); count them again rather
->    than trusting this line.
-> 2. **Capture the reference.** `TEMPLATE-LINKS.md`'s `/console/submissions`
->    row names shadcn-admin's Tasks page (https://shadcn-admin.netlify.app/tasks),
->    the same dense-table reference `/items` used, and says **`is_late` must be
->    a visible column, not inferred** (DESIGN-REVIEW-01 D-4). Capture it anyway
->    into `design/templates/console/submissions/` (the folder exists and is
->    EMPTY) at 1440 and 380: the grading panel (score, rubric, feedback, the
->    audited return) has no stock template, so find one for a
->    review-and-mark detail and record every rejected link and why. **Dismiss
->    any popover or floating site control** (shadcn.io's preview pages float a
->    theme switcher; hide it). **A centred template can clip itself at 380x900**:
->    `/assessments`' did, its heading at -46px; capture on a taller viewport
->    and say so. Open the PNGs and look; write `SOURCE.md` and `SPEC.md`; put
->    the URLs in `TEMPLATE-LINKS.md`. Colours and fonts are ours.
-> 3. **Audit before building. `PAGE-SPECS.md` has NO `/console/submissions`
->    row** (grepped 27 Sep): its requirements live in `apps/console/CLAUDE.md`
->    ("a graded submission's content freezes; regrade is an explicit, audited
->    unlock"), `TEMPLATE-LINKS.md` (is_late visible), `docs/LAB-MANUAL.md` and
->    `db/addendum-submissions.sql` (labs, project and participation: 40% of
->    the grade). Read `SubmissionsPage.tsx` (308 lines), its API routes and
->    their tests. Say which parts exist. Name each missing one, plan it, **and
->    ask before building it**. There is **no route spec yet**: only
->    `console-gate.spec.ts` lists the route and `console-teaching.spec.ts`
->    mentions its old density fix. You are the session that writes
->    `design/specs/console-submissions.spec.ts`, and it keeps D-4's density
->    and the frozen-after-grading rule as tests.
-> 4. **Specs.** The six from `design/specs/_gate.ts`, with assertion 6's
->    **positive control**. Patch the real response for states the seed lacks
->    (`_assessments-fixture.ts` is the newest pattern: real rows, patched by
->    title, every write intercepted, a `fail` option for error paths).
->    Grading and returning are writes to 40% of the grade: **intercept every
->    one**. Watch the specs fail first, and check the API is alive when they do.
->    Any API change leads with its denial test, watched failing.
-> 5. **Rebuild the page.** Not improve: rebuild. Toasts, loading states and
+>    process command line, and the page title "OCTA Console"). **`db:reset`
+>    kills the dev API** (§0c.1): stop it first, restart it after. **Prove the
+>    API with a staff GET, not `/healthz`** (§0e.7). **After ANY API test run,
+>    reset and re-demo**: the API suite wipes the seed.
+> 2. **Capture the reference.** The sources disagree, so read all three:
+>    `CONSOLE-REVAMP.md` §3 says *"KPI cards + chart"*; `TEMPLATE-LINKS.md`'s
+>    `/console/gradebook` row says *"Standard data table + export —
+>    shadcn-admin data table"*; `PAGE-SPECS.md` §`/console/gradebook` says
+>    *"Per-stage mastery + final score. Weighting configuration. CSV / XLSX
+>    export shaped for the university's format."* Capture what each names into
+>    `design/templates/console/gradebook/` (the folder exists and is EMPTY) at
+>    1440 and 380, choose, and record every rejected link and why. **Dismiss
+>    any floating site control** before capture. A centred template can clip
+>    itself at 380x900: capture taller and say so. `/submissions` found its
+>    detail-pane reference by walking shadcn.io's `crud-*` family from a block
+>    page's sibling links, and by trying shadcn-admin's own other pages (its
+>    Inbox won): do the same. Open the PNGs and look; write `SOURCE.md` and
+>    `SPEC.md`; put the URLs in `TEMPLATE-LINKS.md`. Colours and fonts are ours.
+> 3. **Audit before building.** Read `GradebookPage.tsx` (177 lines: it
+>    parses `GET /console/gradebook.csv` and `api.stages()`, and it imports
+>    Recharts), the CSV route in `routes/console.ts`, its tests, and the lazy
+>    import in `App.tsx`. Say which parts exist. Leads, NOT verified: nothing
+>    in the gradebook reads `submissions`, so **the 40% (labs, project,
+>    participation) is absent from it**; weighting configuration and XLSX
+>    look absent; and when submissions are read, count `status = 'graded'`
+>    only (a returned row keeps its old score, §0g.2) and normalise by
+>    `max_score` (the seed's labs are out of 100, the console marks them out
+>    of 4, §0g.3). Weighting is the syllabus's and may be an instructor's
+>    call. Name each missing part, plan it, **and ask before building it**.
+>    Specs: `console-teaching.spec.ts` already asserts gradebook things
+>    ("exports, and names every gradeable chapter", "says what a low column
+>    MEANS"). **Extend, never overwrite**; you are the session that writes
+>    `design/specs/console-gradebook.spec.ts`.
+> 4. **Recharts stays lazy-loaded.** It is about 105 KB gz and the gradebook is
+>    the only route that imports it (`App.tsx`: "the gradebook is lazy, and it
+>    is the only page that is"). A spec or a bundle check proves the initial
+>    bundle does not carry it after the rebuild. A chart is not a table: every
+>    number a chart shows must also be readable as text (mono), and follow
+>    the `dataviz` skill if a chart is kept.
+> 5. **Specs.** The six from `design/specs/_gate.ts`, with assertion 6's
+>    **positive control read through `motionStarted()`**, never a one-shot
+>    `recordedMotion`. Patch the real response for states the seed lacks
+>    (`_submissions-fixture.ts` is the newest pattern: real rows keyed by
+>    student ID + slug because row ids change on every reset, every write
+>    intercepted AND replayed into the next list, a `fail` option). Watch the
+>    specs fail first, and check the API is alive when they do. Any API change
+>    leads with its denial test, watched failing.
+> 6. **Rebuild the page.** Not improve: rebuild. Toasts, loading states and
 >    transitions per `.claude/rules/design.md`. A dialog opened from state
 >    returns focus through `onCloseAutoFocus` and a remembered opener. A menu
 >    is `components/ui/dropdown-menu.tsx`, `modal={false}`. Numbers, counts and
->    dates in mono, and **never inside a native `<option>`**, which cannot be
->    mono (§0f.5). A toast raised over an open dialog is outside the dialog:
->    **make sure it does not cover the dialog's own button** (§0f.3).
-> 6. Green on all six, both widths, plus the route's own structure tests.
+>    dates in mono, and never inside a native `<option>` (§0f.5). A toast must
+>    not cover the control that raised it, **including at 380, where the page
+>    may already be scrolled to its end** (§0g.6).
+> 7. Green on all six, both widths, plus the route's own structure tests.
 >    Capture `current.png` and `current-380.png` against seeded fixture data
 >    only, full page on a viewport tall enough not to resize, and state shots
->    on a normal-height window. **Open every one and look**: this session's
->    screenshots found a scope badge breaking "stage 01" across two lines,
->    window dates wrapping, a datetime field cutting off "PM", a dialog
->    repeating its own heading, and a toast over the Create button, **all
->    under a green gate**. Four became tests, each watched failing; the
->    repeated heading was fixed without one. Write
->    `motion.md`. Run every console spec before committing, then
->    `git checkout -- design/item-review/` unless that PNG is the route.
-> 7. Tick **`/submissions`** under the R3 "Console revamp" box in the same
+>    on a normal-height window. **Open every one and look**: `/submissions`'
+>    screenshots found a badge breaking "returne / d", a slug split "lab- /
+>    03", a pane counting 22 waiting beside a header saying 21, a toast over
+>    Save at 380, and "move this up a band" on a project with no bands, **all
+>    under a green gate**. Write `motion.md`. Run every console spec before
+>    committing, then `git checkout -- design/item-review/` unless that PNG is
+>    the route.
+> 8. Tick **`/gradebook`** under the R3 "Console revamp" box in the same
 >    commit as the work. Commit with explicit paths. Commit and push.
-> 8. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
->    (`/gradebook`, #7 in `CONSOLE-REVAMP.md` §3: Recharts stays lazy-loaded),
->    carrying forward what this session learned. Update the phase figures.
->    Commit and push that too.
+> 9. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
+>    (#8 in `CONSOLE-REVAMP.md` §3: `/content`, `/audit`, `/system`,
+>    `/feedback`, `/live`, one route per session, in that order unless §3
+>    says otherwise), carrying forward what this session learned. Update the
+>    phase figures. Commit and push that too.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
 > versus assumed, and **end your last message with the rewritten §1 prompt in
 > one fenced code block, plain text with no `> ` markers, ready to copy and
 > paste**. Then **stop**. Do not start the next route.
 
-**What the `/assessments` session learned that every later route needs:**
+**What the `/submissions` session learned that every later route needs:**
 
-- **The gate is the floor, and five defects lived above it.** A badge
-  breaking its number, dates wrapping, a native input cutting its value, a
-  duplicated heading and a toast over a button were all found by opening the
-  PNG, with every assertion green. Four are now tests, each watched failing
-  before its fix, the only proof a new assertion can see anything; the
-  duplicated heading was fixed with no test (the second commit's message
-  says five, which is wrong).
-- **A test that cannot fail is not a test.** The first date-width assertion
-  passed on the broken dialog because `getComputedStyle(input).font` is `""`
-  in Chromium and the probe measured in the wrong font. Break the page on
-  purpose, see red, restore it.
-- **Put the honest answer on every row, not only in the form.** The old page
-  said `open` in green on ten assessments no student could start. The list's
-  GET now runs the same feasibility function as the create form, so the two
-  cannot disagree.
-- **An API enforcing half a rule is a hole.** Section scope was honoured by
-  RLS and the stage reader and ignored by `POST /attempts`; the denial test
-  answered 200. Trace every way in.
-- **Ask with the plan.** Salt rotation and section scope were approved in one
-  question each because each came with the route, the tests and what it
-  could not break (a started paper stores its seed).
-- **Modal dialogs hide toasts from assistive technology** (§0f.2); give every
-  dialog its own `role=alert` for a failed write.
-- Still true from `/students/:userId`, `/students`, `/locks`, `/signin` and
-  `/items`: a skip can hide a test that never runs; build fixtures from real
-  responses; preflight strips list markers; ICU writes "Sept"; the console's
-  spacing scale is the token scale; only the checked radio is in the Tab
-  order; reuse a dialog through an adapter; look at the picture, even when
+- **Read the API behind a page, not just the page.** The old page's own
+  comment said "there is no edit path, here or in the API". The API re-marked
+  a graded row in place, returned drafts, and erased the grader's feedback on
+  every return. Three denial tests, each watched failing at 200, before a
+  line of JSX.
+- **A fixture must use the seed's real states.** The first run timed out on
+  every graded test because the fixture keyed a row that was still *to mark*.
+  Query the database for the rows you key before you key them.
+- **A red that only a full run shows is still red.** The gate's positive
+  control read its log one frame too early under load. Fixed in `_gate.ts`
+  for every spec, not skipped.
+- **The seed's words are not the teacher's.** "Waiting" had to mean *waiting
+  on the teacher*: a returned submission waits on the student, and counting
+  it made the pane disagree with the header.
+- **Make a test for what you saw, then break the page to see it fail.** The
+  slug check passed with the fix reverted until it was pointed at the row the
+  defect was actually seen on.
+- **Hide what must stay private in the payload, not the render.** A draft's
+  body never leaves the API now; the page could not show it if it tried.
+- Still true from `/assessments`, `/students/:userId`, `/students`, `/locks`,
+  `/signin` and `/items`: a test that cannot fail is not a test; put the
+  honest answer on every row; an API enforcing half a rule is a hole; ask
+  with the plan; modal dialogs hide toasts from assistive technology; a skip
+  can hide a test that never runs; preflight strips list markers; ICU writes
+  "Sept"; the console's spacing scale is the token scale (`pl-6` is 2rem);
+  only the checked radio is in the Tab order; look at the picture, even when
   green.
 
 ---
