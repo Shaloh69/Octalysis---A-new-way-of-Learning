@@ -69,13 +69,16 @@ seven still stand; none of them was touched.
    `design/item-review/send-back-panel.png` changes on a full console run as
    well as `assessment-window.png` (§0a.7). Restore both before committing:
    `git checkout -- design/item-review/`.
-2. **Signing out confirms nothing.** The three sign-out handlers live in
+2. **FIXED by the shell session, 28 Sep 2026** (one handler, `toast.success("Signed out", …)`,
+   asserted in `console-shell.spec.ts`). Kept for the record: **Signing out confirms nothing.** The three sign-out handlers live in
    `AppShell` (the nav, the student screen's "Sign in as someone else", the
    credential screen's "Sign out") and land on `/signin` with no toast and no
    line saying it happened. The toaster now reaches `/signin`, so the fix is a
    `toast.success("Signed out")` in the shell's handlers. A shell change, so
    not made from the `/signin` session.
-3. **"Checking your access…" flashes on every console route.** `AppShell`
+3. **FIXED by the shell session, 28 Sep 2026** (nothing under 400ms, the shell's skeleton
+   after, a sentence after 3s; the no-flash half is asserted, the skeleton half was not seen,
+   §0i.1). Kept for the record: **"Checking your access…" flashes on every console route.** `AppShell`
    renders that bare text while `getIdentity()` resolves, with no 400ms delay
    rule (`useDelayed`), so it blinks on a fast load. Shell, not `/signin`.
 4. **A real sign-in has never been seen succeed on the rebuilt page.** Locally
@@ -387,6 +390,50 @@ to patch a computed response and **recompute** what the patch touches, so a
 fixture screenshot never shows a total that disagrees with its own row; and
 `node --experimental-strip-types` runs a capture script that imports a spec
 fixture directly, so `current*.png` show exactly the data the spec tested.
+
+---
+
+## 0i. Parked by the shell revamp — 28 Sep 2026
+
+Found while rebuilding `AppShell` and deliberately **not** fixed there. §0a to
+§0h still stand, except §0b.2 and §0b.3, which this session fixed; §0e.1 (the
+500 on Start), §0f.1 (the feasibility cap), §0g.1 (the database-deep freeze)
+and §0h.2 (participation entry) are untouched.
+
+1. **The access skeleton has never been seen.** Locally `getIdentity()` reads
+   the dev token from `localStorage` and resolves at once, so the 400ms
+   skeleton and the 3s sentence cannot appear; the spec asserts only the
+   no-flash half. On the deployment `getIdentity()` waits on Supabase's
+   `getSession()`, which can refresh a token over the network. Look there,
+   on a cold load, before calling the skeleton verified.
+2. **Sign-out has been seen with the dev token only.** The toast, the landing
+   on `/signin` and the token removal are asserted locally, where `signOut()`
+   never calls Supabase. The deployed path (`auth.signOut()`, and its failure
+   toast) is unseen, like §0b.4's sign-in.
+3. **The console's main chunk: 566.38 KB (167.92 KB gz)** after this session,
+   560.28 KB (166.87 KB gz) before it, measured by building both trees. The
+   shell costs 1.05 KB gz. What makes up the other 560 KB was not measured;
+   `supabase-js`, Radix and TanStack are the likely weight. §0h.7 stands.
+4. **`_gate.ts`' motion recorder now names two more surfaces**, `menu`
+   (anything inside `[role=menu]`) and `shell` (`[data-shell]`), checked
+   after `main`. A route's reduced-motion test that filters ALL recorded
+   motion (not by surface) now also sees a row menu's fade; under reduced
+   motion that is ≤1ms, so no spec changed colour (455 passed). A new
+   positive control can read `motionStarted(page, "menu")`.
+5. **Nav hints are hover-only.** Each link keeps its hint in `title`
+   ("Projector view: no names, ever" on Live), which a keyboard or touch user
+   never sees. Nothing depends on them; if one ever carries something a
+   teacher must know, it belongs on the page, not in a tooltip.
+6. **`/submissions`' `current.png` changed state, not only shell.** The old
+   one (3418px) was a different state from the seeded default queue this
+   session captured (1335px). Only `/gradebook`'s and `/submissions`'
+   `current.png` / `current-380.png` were re-captured; every other console
+   route's `current*.png`, and every state shot, still shows the OLD shell.
+   Each route session re-captures its own; do not read a stale one as the
+   shell regressing.
+7. **`apps/console/test-results/`** sits untracked at the repo root of the
+   console (it was there before this session). Playwright writes it when a
+   spec runs from that directory. Add it to `.gitignore` or stop producing it.
 
 ---
 

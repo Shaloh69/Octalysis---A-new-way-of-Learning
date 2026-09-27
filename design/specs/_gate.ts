@@ -422,13 +422,24 @@ export async function recordMotion(page: Page): Promise<void> {
     const rec = (e: Event) => {
       const t = e.target;
       if (!(t instanceof Element)) return;
+      /*
+       * `shell` and `menu` added for the console shell (28 Sep 2026): the
+       * sidebar sheet at 380 and the account menu live outside `main`, and a
+       * recorder that cannot see them would pass a reduced-motion test on a
+       * shell that still animates. Checked after `main`, so no existing
+       * route's reading changes.
+       */
       const on = t.closest("[role=dialog]")
         ? "dialog"
         : t.closest("[data-toaster]")
           ? "toast"
           : t.closest("main")
             ? "main"
-            : null;
+            : t.closest("[role=menu]")
+              ? "menu"
+              : t.closest("[data-shell]")
+                ? "shell"
+                : null;
       if (!on) return;
       const cs = getComputedStyle(t);
       const anim = e.type === "animationstart";

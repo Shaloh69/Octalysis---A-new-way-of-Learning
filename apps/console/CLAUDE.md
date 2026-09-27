@@ -32,6 +32,21 @@ The guard decides what to RENDER and nothing more. Every console route calls `re
 the server and RLS denies beneath it, so deleting this file would make the app ruder, not less
 secure.
 
+## The shell
+`components/AppShell.tsx`, **rebuilt 28 Sep 2026** (`design/templates/console/shell/SPEC.md`).
+The nav is **four groups by job**, an instructor ruling: *In class* (Locks, Live), *Students*
+(Students, Submissions, Gradebook), *Course* (Assessments, Items, Content), *Records* (Audit log,
+System health, Feedback). A route added to the console goes into one of those groups, and a new
+group is the instructor's call. **No collapse control, by decision** (same day): at 1440 it would
+change nothing a teacher can see.
+
+The sidebar is sticky and **16rem, and must stay 16rem**: `<main>` is 70rem at 1440 with it, and
+`/gradebook` (66rem), `/assessments` (64), `/locks` and `/submissions` (62) choose their table
+layout on their own width. A wider sidebar pushes all four to their lists. The theme and Sign out
+live in the account menu at the foot; every sign-out goes through one handler and says so in a
+toast. At 380 the same `<aside>` is a sheet: a disclosure, never a modal, closed by Escape, the
+scrim, any route change or Tab into the page, with focus back on its button.
+
 ## Pages
 | Route | What it is for |
 |---|---|

@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as MenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -58,3 +59,39 @@ DropdownMenuItem.displayName = "DropdownMenuItem";
 export function DropdownMenuSeparator({ className }: { className?: string }) {
   return <MenuPrimitive.Separator className={cn("my-1 h-px bg-line", className)} />;
 }
+
+/**
+ * Added for the console shell's account menu (28 Sep 2026): a heading inside
+ * the menu, and a group of radio items for the theme. Radix gives each item
+ * `role=menuitemradio` and `aria-checked`, so the current choice is announced
+ * rather than only drawn.
+ */
+export function DropdownMenuLabel({ className, ...props }: React.ComponentPropsWithoutRef<typeof MenuPrimitive.Label>) {
+  return <MenuPrimitive.Label className={cn("px-2 py-1.5 text-xs text-ink-muted", className)} {...props} />;
+}
+
+export const DropdownMenuRadioGroup = MenuPrimitive.RadioGroup;
+
+export const DropdownMenuRadioItem = React.forwardRef<
+  React.ElementRef<typeof MenuPrimitive.RadioItem>,
+  React.ComponentPropsWithoutRef<typeof MenuPrimitive.RadioItem>
+>(({ className, children, ...props }, ref) => (
+  <MenuPrimitive.RadioItem
+    ref={ref}
+    className={cn(
+      "flex cursor-default select-none items-center gap-2 rounded-sm py-1.5 pl-2 pr-2 text-sm text-ink outline-none",
+      "[@media(pointer:coarse)]:min-h-[44px]",
+      "data-[highlighted]:bg-surface-2",
+      className,
+    )}
+    {...props}
+  >
+    <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+      <MenuPrimitive.ItemIndicator>
+        <Check className="h-4 w-4 text-accent" />
+      </MenuPrimitive.ItemIndicator>
+    </span>
+    {children}
+  </MenuPrimitive.RadioItem>
+));
+DropdownMenuRadioItem.displayName = "DropdownMenuRadioItem";

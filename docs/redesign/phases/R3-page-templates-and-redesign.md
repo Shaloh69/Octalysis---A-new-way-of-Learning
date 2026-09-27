@@ -778,22 +778,34 @@ thesis deliverable, and right now no phase is accountable for it.
         chart is HTML, so the gradebook chunk fell from ~105 KB gz to 4.3 KB.
         `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`,
         `current-380.png` and eight state shots per width
-  - [ ] **The console shell: sidebar, nav, account block, 380 top bar** —
+  - [x] **The console shell: sidebar, nav, account block, 380 top bar** —
         **added 28 Sep 2026 at the instructor's request** ("update the nav bar
         also, sidebar, everything"), and ordered **next, before `/content`**
         (instructor, 28 Sep 2026) so every route after it is captured with the
-        final shell. What the instructor's screenshot shows: a plain text
-        brand block, eleven flat nav items with no grouping, the account,
-        theme `<select>` and Sign out stacked straight under the nav with an
-        empty column below them, and at 380 a bare "OCTA Console" bar with a
-        hamburger. Reference to capture first: shadcn-admin's own sidebar
-        (grouped nav, the account menu pinned to the foot; visible in
-        `design/templates/console/gradebook/template.png`). Carries the two
-        shell defects parked in `NEXT-SESSION.md` §0b.2 (signing out confirms
-        nothing) and §0b.3 ("Checking your access…" flashes with no 400ms rule).
-        Gate: `design/specs/console-shell.spec.ts`, six assertions at 1440
-        and 380, and every console spec re-run, because every route's
-        screenshot changes
+        final shell. **Done 28 Sep 2026**
+        (`design/templates/console/shell/SPEC.md`), against shadcn-admin's
+        sidebar, with the 380 bar's page name from shadcn.io's
+        `sidebar-with-toggle-theme` (100 `sidebar-*` blocks walked, four
+        rejected with reasons). **Instructor rulings, built:** the nav in
+        **four groups by job** (In class: Locks, Live · Students: Students,
+        Submissions, Gradebook · Course: Assessments, Items, Content ·
+        Records: Audit log, System health, Feedback), and **no collapse
+        control**. The sidebar is **sticky** (it used to scroll away over an
+        empty column on long pages), still 16rem, so `<main>` keeps **70rem at
+        1440**, measured before and after on `/locks`, `/assessments`,
+        `/submissions`, `/gradebook`. The account menu at the foot holds the
+        theme (three radio items) and Sign out. At 380 a sticky bar names the
+        page, and the same `<aside>` opens as a sheet that traps nothing and
+        closes on Escape, the scrim, any route change or Tab into the page,
+        with focus back on its button. **§0b.2 fixed**: all three sign-outs go
+        through one handler and toast "Signed out". **§0b.3 fixed**: nothing
+        under 400ms, the shell's skeleton after, a sentence after 3s. Skip
+        link now lands focus in `<main>`. Gate:
+        `design/specs/console-shell.spec.ts`, 29 passed + 5 width-specific
+        skips, watched failing first; every console spec re-run, 455 passed,
+        51 skipped, 0 failed. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png`,
+        and `/gradebook`'s and `/submissions`' `current*.png` re-captured
+        under the new shell
   - [ ] `/content`
   - [ ] `/audit`
   - [ ] `/system`

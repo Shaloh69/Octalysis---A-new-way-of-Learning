@@ -93,7 +93,7 @@ Worst-first, then by how often an instructor touches it.
 | 5 | `/assessments` | shadcn Blocks — form + preview | The route that made the engine reachable; the feasibility panel is bespoke |
 | 6 | `/submissions` | marking-queue list | 40% of the grade goes through it |
 | 7 | `/gradebook` | KPI cards + chart | **Done 28 Sep 2026.** The chart is HTML now and the route imports no Recharts; it stays lazy |
-| 8 | **the shell**: sidebar, nav, account block, 380 top bar | shadcn-admin's sidebar | **Added 28 Sep 2026 at the instructor's request, ordered next.** It is in every route's screenshot, so it lands before the routes that remain; carries §0b.2 and §0b.3 of `NEXT-SESSION.md` |
+| 8 | **the shell**: sidebar, nav, account block, 380 top bar | shadcn-admin's sidebar | **Done 28 Sep 2026.** Four nav groups by job and no collapse control (instructor rulings); sticky, still 16rem, so every route keeps its 70rem at 1440. §0b.2 and §0b.3 of `NEXT-SESSION.md` fixed |
 | 9 | `/content`, `/audit`, `/system`, `/feedback`, `/live` | per `TEMPLATE-LINKS.md` | Lower traffic |
 
 `/attempts/:attemptId` is last and is handled with care: it is the **only** place
