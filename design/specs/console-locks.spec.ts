@@ -3,7 +3,7 @@ import type { Page, Route } from "@playwright/test";
 import { createHmac } from "node:crypto";
 import {
   clippedElements, contrastFailures, horizontalOverflow, offTokenStyles,
-  recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
+  motionStarted, recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
 } from "./_gate";
 import { FIX, WHO, patch, type Matrix } from "./_locks-fixture";
 
@@ -204,7 +204,7 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
     await recordMotion(page);
     const { matrix } = await openLocks(page);
     await openCellDialog(page, matrix, FIX.opened.student, FIX.opened.stage);
-    const moving = (await recordedMotion(page)).filter((m) => m.on.startsWith("dialog") && m.ms >= 100);
+    const moving = await motionStarted(page, "dialog");
     expect(moving.length, "with motion allowed, the reason dialog should ease in").toBeGreaterThan(0);
     await closeDialog(page);
 

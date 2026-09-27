@@ -3,7 +3,7 @@ import type { Page, Route } from "@playwright/test";
 import { createHmac } from "node:crypto";
 import {
   clippedElements, contrastFailures, horizontalOverflow, offTokenStyles,
-  recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
+  motionStarted, recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
 } from "./_gate";
 import {
   ATTEMPT, papersFrom, patchDetail, realItems, SECOND_SECTION, STUDENT_ID,
@@ -314,7 +314,7 @@ test.describe("the rebuilt record", () => {
       await recordMotion(page);
       await openRecord(page);
       await expand(page, ATTEMPT.submitted);
-      const moving = (await recordedMotion(page)).filter((m) => m.on.startsWith("main") && m.ms >= 100);
+      const moving = await motionStarted(page, "main");
       expect(moving.length, "with motion allowed, the paper should ease open").toBeGreaterThan(0);
 
       await page.emulateMedia({ reducedMotion: "reduce" });

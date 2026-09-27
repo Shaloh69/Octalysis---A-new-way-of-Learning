@@ -449,3 +449,32 @@ export async function recordedMotion(
 ): Promise<Array<{ kind: string; name: string; ms: number; on: string }>> {
   return page.evaluate(() => (window as unknown as { __motion: never[] }).__motion ?? []);
 }
+
+/**
+ * The positive control: wait for an entrance of at least `minMs` to be RECORDED
+ * on a surface whose label starts with `on`, then return every such entry.
+ *
+ * Reading `recordedMotion` once, the instant a dialog is visible, raced: under
+ * a full parallel run `animationstart` can arrive a frame after the dialog is
+ * already on screen, and `console-students.spec.ts` went red on 27 Sep with 0
+ * recorded while passing 6 of 6 alone. Waiting is not lenient: a page with no
+ * motion still records nothing and still fails, only `timeout` later.
+ */
+export async function motionStarted(
+  page: Page,
+  on: string,
+  minMs = 100,
+  timeout = 3000,
+): Promise<Array<{ kind: string; name: string; ms: number; on: string }>> {
+  await page
+    .waitForFunction(
+      ([prefix, min]) =>
+        ((window as unknown as { __motion?: Array<{ on: string; ms: number }> }).__motion ?? []).some(
+          (m) => m.on.startsWith(prefix as string) && m.ms >= (min as number),
+        ),
+      [on, minMs] as const,
+      { timeout },
+    )
+    .catch(() => undefined);
+  return (await recordedMotion(page)).filter((m) => m.on.startsWith(on) && m.ms >= minMs);
+}

@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 import { createHmac } from "node:crypto";
 import {
   clippedElements, contrastFailures, horizontalOverflow, offTokenStyles,
-  recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
+  motionStarted, recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
 } from "./_gate";
 
 /**
@@ -335,7 +335,7 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
     await recordMotion(page);
     await openItems(page);
     await openReview(page);
-    const moving = (await recordedMotion(page)).filter((m) => m.on.startsWith("dialog") && m.ms >= 100);
+    const moving = await motionStarted(page, "dialog");
     expect(moving.length, "with motion allowed, the review dialog should ease in").toBeGreaterThan(0);
 
     await page.emulateMedia({ reducedMotion: "reduce" });

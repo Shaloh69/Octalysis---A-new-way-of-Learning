@@ -3,7 +3,7 @@ import type { Page, Route } from "@playwright/test";
 import { createHmac } from "node:crypto";
 import {
   clippedElements, contrastFailures, horizontalOverflow, offTokenStyles,
-  recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
+  motionStarted, recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
 } from "./_gate";
 import { FIX, PASTE, patch, type Roster } from "./_students-fixture";
 
@@ -240,7 +240,7 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
     await recordMotion(page);
     const { roster } = await openRoster(page);
     await openDeactivate(page, roster);
-    const moving = (await recordedMotion(page)).filter((m) => m.on.startsWith("dialog") && m.ms >= 100);
+    const moving = await motionStarted(page, "dialog");
     expect(moving.length, "with motion allowed, the dialog should ease in").toBeGreaterThan(0);
     await closeDialog(page);
 
