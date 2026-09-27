@@ -444,6 +444,55 @@ describe("student drill-down regenerates the exact paper from the seed", () => {
   });
 });
 
+describe("the student record (/students/:userId) is staff-only", () => {
+  /*
+   * The record lists every attempt and opens each paper, key included, from
+   * the console. The key is allowed there only because the reader is staff
+   * (CLAUDE.md hard rule 1), so the denial is the test that matters.
+   */
+  it("refuses a student their OWN record", async () => {
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/students/${w.studentA}`, headers: auth(studentToken),
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.body).not.toContain("attempts");
+  });
+
+  it("refuses a student another student's record", async () => {
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/students/${w.studentB}`, headers: auth(studentToken),
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it("refuses no token at all", async () => {
+    const res = await app.inject({ method: "GET", url: `/api/v1/console/students/${w.studentA}` });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("gives a teacher the record, with registration, section and the sections to move to", async () => {
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/students/${w.studentA}`, headers: auth(teacherToken),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      student: Record<string, unknown>; sections: Array<{ id: string }>; attempts: unknown[];
+    };
+    expect(Object.keys(body.student)).toEqual(
+      expect.arrayContaining(["studentId", "fullName", "sectionId", "sectionCode", "claimedAt", "deactivated"]),
+    );
+    expect(body.sections.some((s) => s.id === w.sectionId)).toBe(true);
+    expect(Array.isArray(body.attempts)).toBe(true);
+  });
+
+  it("is not a record of a staff member", async () => {
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/students/${w.teacher}`, headers: auth(teacherToken),
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
 describe("gradebook export", () => {
   it("emits CSV with a column per gradeable stage", async () => {
     const res = await app.inject({

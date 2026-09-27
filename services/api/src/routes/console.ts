@@ -610,13 +610,21 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
     requireStaff(id);
     const userId = (req.params as { userId: string }).userId;
 
+    // A student is a profile with a student ID. Staff profiles are not records
+    // this page can show. The section is the directory's, as on the roster, so
+    // the two pages never disagree about where a student is.
     const profile = await app.db.query(
-      `select p.id, p.student_id, p.full_name, p.deleted_at, s.code as section_code
-         from profiles p left join sections s on s.id = p.section_id
-        where p.id = $1`,
+      `select p.id, p.student_id, p.full_name, p.deleted_at,
+              coalesce(d.section_id, p.section_id) as section_id, s.code as section_code,
+              d.claimed_at
+         from profiles p
+         left join student_directory d on d.student_id = p.student_id
+         left join sections s on s.id = coalesce(d.section_id, p.section_id)
+        where p.id = $1 and p.student_id is not null`,
       [userId],
     );
     if (profile.rows.length === 0) throw errors.notFound("No such student.");
+    const sections = await app.db.query("select id, code, term from sections order by code");
 
     const attempts = await app.db.query(
       `select a.id, a.attempt_no, a.status, a.score, a.max_score,
@@ -641,9 +649,13 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
         userId: profile.rows[0].id,
         studentId: profile.rows[0].student_id,
         fullName: profile.rows[0].full_name,
+        sectionId: profile.rows[0].section_id,
         sectionCode: profile.rows[0].section_code,
+        claimedAt: profile.rows[0].claimed_at,
         deactivated: profile.rows[0].deleted_at !== null,
       },
+      // For the record's "Move to section…", the same list the roster reads.
+      sections: sections.rows.map((s) => ({ id: s.id, code: s.code, term: s.term })),
       attempts: attempts.rows.map((a) => ({
         attemptId: a.id,
         attemptNo: Number(a.attempt_no),
