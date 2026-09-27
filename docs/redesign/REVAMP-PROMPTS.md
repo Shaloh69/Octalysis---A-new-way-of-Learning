@@ -21,20 +21,17 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: the console shell (sidebar and nav)
+## 1. Start here — the next session: `/content`
 
-*Rewritten 28 Sep 2026 by the `/gradebook` session, the eighth console route
-through the gate, which also put the 40% (labs, project, participation) and
-the major exams into the gradebook for the first time. The shell was added to
-R3 that day **at the instructor's request** ("update the nav bar also, sidebar,
-everything") and ordered **next, before `/content`**. Phase at handover: **R3
-live at 49 / 73 (67%)**; all tracks **136 done · 75 to-do (211 items, 64%)**.
-`pnpm phase` is the count, not this line.*
+*Rewritten 28 Sep 2026 by the console-shell session, which rebuilt the sidebar,
+nav, account block and 380 bar that every console route renders inside. Phase
+at handover: **R3 live at 50 / 73 (68%)**; all tracks **137 done · 74 to-do
+(211 items, 65%)**. `pnpm phase` is the count, not this line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
 > full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md`
-> §0a to §0h** (what the `/items`, `/signin`, `/locks`, `/students`,
-> `/students/:userId`, `/assessments`, `/submissions` and `/gradebook`
+> §0a to §0i** (what the `/items`, `/signin`, `/locks`, `/students`,
+> `/students/:userId`, `/assessments`, `/submissions`, `/gradebook` and shell
 > sessions parked). Do not re-derive what those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
@@ -43,149 +40,124 @@ live at 49 / 73 (67%)**; all tracks **136 done · 75 to-do (211 items, 64%)**.
 > (On 28 Sep it was NOT. Locally: stages 00-04 had 112 content blocks, but all
 > 96 act-1 items sat at `review`, 0 live, so no paper can be filled and every
 > Start answers 500 (§0e.1); stage 01 was open for 0 of 24 demo students (§3a
-> decided, not built); `run_invariants()` had 0 failing. The DEPLOYMENT
-> answered a read-only query this time: **0 content blocks for 00-04 and 0
-> items at all** (§0h.1).)
+> decided, not built); `run_invariants()` had 0 failing (4 warn-level with
+> offenders). The DEPLOYMENT was last measured on 28 Sep by the `/gradebook`
+> session: **0 content blocks for 00-04 and 0 items at all** (§0h.1).)
 >
 > **Confirm the finished routes are still green before touching anything**,
 > with `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` set to `http://localhost:5184`:
-> `npx playwright test design/specs/console-*.spec.ts` gave **426
-> passed, 46 skipped, 0 failed** on 28 Sep. **Read the skips**: 42 are
-> width-specific by design (including `console-student-detail.spec.ts`'
+> `npx playwright test design/specs/console-*.spec.ts` gave **455
+> passed, 51 skipped, 0 failed** on 28 Sep (506 tests). **Read the skips**: 42
+> are width-specific by design (including `console-student-detail.spec.ts`'
 > real-attempt test, which skips because no paper can be filled, §0e.2), 2 are
-> `/submissions`' (density bound, empty pane: 1440-only) and 2 are
-> `/gradebook`'s (density bound, bundle check: 1440-only). If anything is red,
+> `/submissions`' and 2 `/gradebook`'s (1440-only), and 5 are
+> `console-shell.spec.ts`' (four 380-only, one 1440-only). If anything is red,
 > that is this session's work, and a red is real until proven otherwise.
 >
-> **THIS SESSION IS ONLY FOR THE `apps/console` SHELL: `components/AppShell.tsx`
-> (202 lines) and what it renders around every route. NOTHING ELSE.** Not
-> `/content`, `/audit`, `/system`, `/feedback` or `/live` (next, #9, one per
-> session), not `/attempts/:attemptId` (last; §0e.3), not the student app, not
-> §0e.1's 500 on Start, §0f.1's feasibility cap or §0g.1's database-deep
-> freeze, not §0h.2's participation entry. The shell's gate screens
-> (`GateScreens.tsx`, the student-account screen and the forced credential
-> change) belong to `/signin` and are green: leave them unless the shell
-> change breaks them. If you find a defect on another page, write it down in
-> `docs/NEXT-SESSION.md` and leave it. The last thing this session does is
-> rewrite this prompt for the next one.
+> **THIS SESSION IS ONLY FOR `/content`** (`apps/console/src/pages/ContentPage.tsx`,
+> 165 lines, reading `GET /api/v1/console/content` in
+> `services/api/src/routes/console.ts`). NOTHING ELSE. Not `/audit`,
+> `/system`, `/feedback` or `/live` (next, one per session), not
+> `/attempts/:attemptId` (last; §0e.3), not the shell (done and green; the
+> shell is 16rem, content-height and sticky, and must stay that way), not the
+> student app, not §0e.1's 500 on Start, §0f.1, §0g.1 or §0h.2. If you find a
+> defect on another page, write it down in `docs/NEXT-SESSION.md` and leave
+> it. The last thing this session does is rewrite this prompt for the next one.
 >
-> 1. Bring the local stack up: **`docker ps` first** (Docker Desktop has
->    stopped three times), `pnpm db:up`, then
+> 1. Bring the local stack up: **`docker ps` first**, `pnpm db:up`, then
 >    **`pnpm db:reset && node scripts/db-demo.mjs`**, `pnpm dev:api` on 8090,
 >    console on **5184** (`pnpm --filter @octa/console dev --port 5184
 >    --strictPort`), `pnpm dev:token` for a session. 5173 and 5174 belong to
 >    other projects. If 8090 or 5184 already answer, confirm they are OURS (the
 >    process command line, and the page title "OCTA Console"). **`db:reset`
->    kills the dev API** (§0c.1): stop it first, restart it after. **Prove the
+>    kills the dev API** (§0c.1): stop it first (it runs as `tsx watch`
+>    under an `npx` parent; kill the tree), restart it after. **Prove the
 >    API with a staff GET, not `/healthz`** (§0e.7). **After ANY API test run,
->    reset and re-demo**: the API suite wipes the seed (it did, three times, on
->    28 Sep).
-> 2. **Capture the reference** into `design/templates/console/shell/` (the
->    folder does NOT exist yet; create it). The lead is **shadcn-admin's own
->    sidebar**: a team/brand switcher at the top, nav **grouped under
->    headings** (General / Pages / Other), the **account menu pinned to the
->    foot** (avatar, name, email, a menu), and a collapse control; at 380 a top
->    bar with the menu. It is already visible in
->    `design/templates/console/gradebook/template.png`, but capture it for this
->    folder at 1440 and 380, **with the 380 menu open** as a second shot, and
->    look for one alternative (shadcn.io's `sidebar-*` blocks, found the way
->    `/gradebook` walked the `tables-*` family from a block page's sibling
->    links). What the instructor's screenshot shows today: a plain text brand
->    block, eleven flat nav items with no grouping, the account, a native theme
->    `<select>` and Sign out stacked straight under the nav with an empty column
->    below, and at 380 a bare "OCTA Console" bar with a hamburger. Open the PNGs
->    and look; write `SOURCE.md` and `SPEC.md`; add a `TEMPLATE-LINKS.md` row
->    (there is none for the shell). Colours and fonts are ours.
-> 3. **Audit before building.** Read `AppShell.tsx` in full: its `NAV` list
->    (eleven routes, each with an icon and a `hint`), the guard (`getIdentity()`
->    and `isStaff()`; it decides what to RENDER, and `requireStaff()` plus RLS
->    are the security), the three sign-out handlers, the theme `<select>`
->    (`setTheme`, three themes), and the 380 menu (`aria-expanded`,
->    `aria-controls="console-nav"`). Say which parts exist. Two shell defects
->    are parked and belong to this session: **§0b.2, signing out confirms
->    nothing** (a `toast.success` in the shell's handlers; the toaster is at
->    the app root, so it reaches `/signin`) and **§0b.3, "Checking your
->    access…" flashes on every route** (bare text, no `useDelayed` 400ms rule).
->    Anything that changes what the nav offers, or groups routes in a way that
->    says something about the course, is **the instructor's call: plan it and
->    ask before building it**. Keyboard: the nav is the most-used control on
->    every page; a skip link to `<main>` may be missing (check), and the 380
->    menu must trap nothing and return focus to its button on close.
-> 4. **Specs.** Write `design/specs/console-shell.spec.ts`: the six from
->    `design/specs/_gate.ts` at 1440 and 380, scoped to the shell (the nav, the
->    account block, the 380 bar AND its open menu), with assertion 6's
->    **positive control read through `motionStarted()`** (the 380 menu opening
->    is the natural one). Plus the shell's own: the current route is marked
->    (`aria-current="page"`), every nav item reachable and named, sign out
->    confirms itself, no "Checking your access…" flash under 400ms, the theme
->    control changes `data-theme` on `<html>`, the 380 menu closes on Escape
->    and on navigation with focus back on its button. `console-gate.spec.ts`
->    already asserts the guard's server half and the student screen: **extend,
->    never overwrite**. Watch the new spec fail first, and check the API is
->    alive when it does.
-> 5. **Rebuild the shell.** Not improve: rebuild. Toasts, loading states and
->    transitions per `.claude/rules/design.md`. A menu is
->    `components/ui/dropdown-menu.tsx`, `modal={false}`, with focus returned
->    through a remembered opener. Nothing may shrink `<main>`'s width at 1440
->    below what the finished routes were built for: **`/gradebook` needs 66rem
->    of its own width for its 18-column table** (it falls back to a list
->    below), `/submissions` 62rem, `/assessments` 64rem, `/locks` 62rem. A
->    wider sidebar pushes every one of those toward its list layout, so
->    measure `main`'s width before and after.
-> 6. **Every console route's screenshot changes.** Run EVERY console spec, and
->    re-capture at least `/gradebook`'s and `/submissions`' `current.png` and
->    `current-380.png` to prove the routes still lay out as their `SPEC.md`
->    says under the new shell. Capture the shell's own `current.png`,
->    `current-380.png` and `current-menu-380.png` against seeded data, full
->    page on a viewport tall enough not to resize, and **open every one and
->    look**. `/gradebook`'s screenshots found, under a green gate, a class
->    average KPI with no `%`, a toolbar stacking its search over its buttons,
->    a section code set in mono, a SUM on a row labelled "Class average", and
->    "Laboratory exercises 10%" wrapping its own weight at 380. Write
->    `motion.md`. Then `git checkout -- design/item-review/` unless that PNG is
->    the route.
-> 7. Tick **"The console shell: sidebar, nav, account block, 380 top bar"**
->    under the R3 "Console revamp" box in the same commit as the work. Commit
->    with explicit paths. Commit and push.
+>    reset and re-demo.**
+> 2. **Audit against the plan FIRST; this route is mostly unbuilt.** Today
+>    `/content` is a read-only status view (authored / scaffold / empty per
+>    chapter). What was planned and is absent: **`PAGE-SPECS.md`
+>    `/console/content`: "Edit `content_blocks` with live preview.
+>    Versioned. A typo fix must never require a redeploy"**, and
+>    **`WEB-REVAMP.md` §3.8: reviewing the 19 planet summaries** (drafted,
+>    `summary_status: draft`; `sync-content.mjs` publishes one only at
+>    `approved`, and a draft CLEARS `stages.summary`). Say both are missing and
+>    name those documents. Then **plan them and ask before building either**:
+>    both change what students see, and there is a real conflict to put to
+>    the instructor. `sync-content.mjs` treats `content/stages/*.md` as the
+>    source of truth and rewrites the database from it, so an edit made in
+>    the console would be **overwritten by the next sync** unless the source
+>    of truth moves or the sync learns to respect console edits. Hard rule 5
+>    (never invent course content) and rule 6 (versioned, never edited in
+>    place) both bind any editor. Offer real choices with a recommended one
+>    and what each costs (the `/gradebook` session got four decisions in one
+>    round this way). A status-only rebuild with the editor recorded as a
+>    deliberate deferral is a legitimate answer; an unrecorded absence is not.
+> 3. **Capture the reference** into `design/templates/console/content/` (the
+>    folder EXISTS and is EMPTY). `TEMPLATE-LINKS.md`'s row says "Standard
+>    CMS-style split editor/preview"; no URL. Find one worth capturing (a
+>    shadcn.io block family walked from a block page's sibling links, the way
+>    the shell walked 100 `sidebar-*` blocks from `sidebar-accounting-app`;
+>    `https://www.shadcn.io/blocks` lists one per family, previews are
+>    `/preview/blocks/<family>/<name>`, and their `networkidle` never settles,
+>    so use `domcontentloaded` + a wait), plus one for the status list. Capture
+>    at 1440 and 380, open every PNG and look, and write `SOURCE.md` and
+>    `SPEC.md`; update the `TEMPLATE-LINKS.md` row. Colours and fonts are ours.
+> 4. **Specs.** `console-teaching.spec.ts` already asserts `/content` ("tells
+>    the truth about how much is written", "dense enough to scan 19
+>    chapters"): **extend, never overwrite**. Write
+>    `design/specs/console-content.spec.ts`: the six from `_gate.ts` at 1440
+>    and 380, assertion 6's positive control through `motionStarted()`, plus
+>    whatever the approved plan owes. If anything writes, a **denial test
+>    first** (a student token refused), watched failing. Watch the spec fail
+>    before the rebuild, and check the API is alive when it does.
+> 5. **Rebuild the page.** Not improve: rebuild. Toasts, loading (nothing
+>    under 400ms, a skeleton after, words after 3s), transitions per
+>    `.claude/rules/design.md`. `<main>` is **70rem** at 1440 under the
+>    shell; choose any table/list breakpoint from what the widest view needs.
+> 6. Capture `current.png` (1440, on a viewport TALLER than the page, so
+>    nothing sticky is stitched) and `current-380.png`, against seeded data,
+>    and **open every one and look**. Write `motion.md`. Run EVERY console
+>    spec. Then `git checkout -- design/item-review/`.
+> 7. Tick `/content` under the R3 "Console revamp" box in the same commit as
+>    the work. Commit with explicit paths. Commit and push.
 > 8. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
->    (#9 in `CONSOLE-REVAMP.md` §3: `/content` first, then `/audit`, `/system`,
->    `/feedback`, `/live`, one route per session), carrying forward what this
->    session learned. Update the phase figures. Commit and push that too.
+>    (`/audit`), carrying forward what this session learned. Update the phase
+>    figures. Commit and push that too.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
 > versus assumed, and **end your last message with the rewritten §1 prompt in
 > one fenced code block, plain text with no `> ` markers, ready to copy and
 > paste**. Then **stop**. Do not start the next route.
 
-**What the `/gradebook` session learned that every later route needs:**
+**What the shell session learned that every later route needs:**
 
-- **When the sources disagree, capture all of them and combine.** Three
-  documents named three references; the page took its frame from one, its grid
-  from another and its toolbar from the third, and `SOURCE.md` says which part
-  came from where.
-- **A page that computes a grade computes nothing.** The arithmetic moved to
-  one pure API function with a unit test per rule, and the CSV and the page
-  both read it. The old page parsed a CSV it did not own, and when the CSV
-  changed its chart silently plotted `section` as a stage.
-- **Ask with the plan, as a short list of real choices.** Four questions
-  (weights, missing marks, export, not-sat) were answered in one round,
-  because each had a recommended option and said what it would cost.
-- **The gate counts a sideways-scrolling table as clipping.** Choose the
-  table/list breakpoint from what the widest view needs to fit (66rem for 18
-  stage columns), not from a habit (48rem).
-- **`getClientRects().length > 1` is not a line break**: `{n}%` in JSX is two
-  text nodes on one line. Count distinct line tops.
-- **A fixture that patches a computed number must recompute what depends on
-  it**, or the screenshot shows a final that disagrees with its own row.
-- **A chart in HTML is a chart the gate can check.** Every value is DOM text,
-  so contrast, tokens and clipping are measured, and the route shed ~100 KB gz.
+- **The instructor will look at the picture and overrule the template.** The
+  shell took shadcn-admin's full-height sidebar with the account pinned to the
+  window's foot; the instructor's first look was "nav bar should not be this
+  long". A template is a lead, not a ruling. Show the picture early.
+- **Ask with a preview.** Grouping the nav and a collapse control were put as
+  two questions, each with a recommended option and an ASCII preview of the
+  result, and both came back in one round.
+- **A full-page screenshot of a sticky element lies.** Stitching a page
+  taller than the viewport draws a `100vh` sidebar ending mid-page. Capture on
+  a viewport taller than the page, and add a normal-height shot scrolled to
+  the foot when stickiness is the claim.
+- **The motion recorder only sees surfaces it names.** `_gate.ts` now records
+  `menu` (`[role=menu]`) and `shell` (`[data-shell]`) as well as `main`,
+  `dialog` and `toast`. Motion outside those is invisible to assertion 6.
+- **Measure the width you are about to change, before and after.** `<main>`
+  was 70rem on all four wide routes, and still is.
+- **A disclosure is not a modal.** The 380 sheet traps nothing: Escape, the
+  scrim, a route change or Tab into the page closes it, and focus returns to
+  its button for all but Tab.
 - Still true from every earlier route: read the API behind a page; a fixture
   must use the seed's real states; a red only a full run shows is still red;
-  a test that cannot fail is not a test; put the honest answer on every row;
-  hide what must stay private in the payload; modal dialogs hide toasts from
-  assistive technology; preflight strips list markers; ICU writes "Sept"; the
-  console's spacing scale is the token scale; only the checked radio is in
-  the Tab order; look at the picture, even when green.
+  a test that cannot fail is not a test; the gate counts a sideways-scrolling
+  table as clipping; `{n}%` is two text nodes on one line; modal dialogs hide
+  toasts from assistive technology; preflight strips list markers; ICU writes
+  "Sept"; the console's spacing scale is the token scale; only the checked
+  radio is in the Tab order; look at the picture, even when green.
 
 ---
 
