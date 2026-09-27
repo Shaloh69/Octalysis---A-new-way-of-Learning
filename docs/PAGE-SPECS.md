@@ -243,6 +243,11 @@ Timer for collective timed challenges (framed as a class effort, not individual 
 Every lock override, grade adjustment, item edit, roster change. Immutable, filterable,
 exportable. If a grade is ever challenged, this is the evidence.
 
+**Built 28 Sep 2026** (`design/templates/console/audit/SPEC.md`): immutable in the database (an
+append-only trigger for every role), filterable on the server over the whole log (action, who,
+about whom or what, a date range) with Load older instead of a newest-500 cap, and exportable as
+a CSV of every match.
+
 ### `/console/settings`
 Section config, curriculum policy defaults (the mastery threshold for auto-unlock), notification
 prefs, API health.

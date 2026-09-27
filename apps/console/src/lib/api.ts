@@ -1,5 +1,5 @@
 import type {
-  Gradebook, ItemBulkStatusRequest, ItemBulkStatusResult, ItemExportRequest, ItemFile,
+  AuditPage, Gradebook, ItemBulkStatusRequest, ItemBulkStatusResult, ItemExportRequest, ItemFile,
   ItemImportRequest, ItemImportResult,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
@@ -107,7 +107,18 @@ async function requestText(path: string): Promise<string> {
   const res = await fetch(`${BASE}${path}`, {
     headers: token ? { authorization: `Bearer ${token}` } : {},
   });
-  if (!res.ok) throw new ApiError("internal", "Export failed.", res.status);
+  if (!res.ok) {
+    // The refusal is a sentence worth showing: an audit export past its cap says
+    // how many entries matched and what to narrow.
+    let message = "Export failed.";
+    try {
+      const body = (await res.json()) as { error?: { message?: string } };
+      if (body.error?.message) message = body.error.message;
+    } catch {
+      /* non-JSON body; keep the default */
+    }
+    throw new ApiError("internal", message, res.status);
+  }
   return res.text();
 }
 
@@ -240,15 +251,7 @@ export interface AttemptDetail {
   }>;
 }
 
-export interface AuditEntry {
-  id: string;
-  action: string;
-  target_type: string | null;
-  target_id: string | null;
-  payload: Record<string, unknown> | null;
-  at: string;
-  actor_name: string | null;
-}
+export type { AuditEntry, AuditPage } from "@octa/contracts";
 
 export interface InvariantResult {
   id: string;
@@ -587,8 +590,10 @@ export const api = {
   attempt: (attemptId: string) =>
     request<AttemptDetail>(`/api/v1/console/attempts/${encodeURIComponent(attemptId)}`),
 
-  audit: (limit = 100) =>
-    request<{ entries: AuditEntry[] }>(`/api/v1/console/audit?limit=${limit}`),
+  /** One page of the log, newest first; `params` from `lib/audit-view.ts` `apiParams()`. */
+  audit: (params: URLSearchParams) => request<AuditPage>(`/api/v1/console/audit?${params}`),
+  /** Every entry the filter matches, as CSV (the cursor is ignored). */
+  auditCsv: (params: URLSearchParams) => requestText(`/api/v1/console/audit.csv?${params}`),
 
   systemAudit: () =>
     request<{ results: InvariantResult[]; failing: number; ranAt: string }>(

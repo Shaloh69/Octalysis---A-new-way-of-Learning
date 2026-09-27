@@ -1956,3 +1956,145 @@
   .ct-skel-kpi { min-height: 7rem; }
   .ct-skel-table { min-height: 36rem; margin-top: var(--space-4); }
 }
+
+/*
+ * ------------------------------------------------------------ /audit
+ *
+ * `design/templates/console/audit/SPEC.md`: shadcn-admin's Tasks for the frame
+ * and the dense table, shadcn.io's Activity Feed for the sentence, the day
+ * headings and Load older. The page chooses on its OWN width (a
+ * ResizeObserver): the table at 52rem and up, a list of cards below. The
+ * reason is never truncated, in any view.
+ */
+@layer components {
+  .au { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-4); }
+  .au-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+  .au-card {
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    min-width: 0;
+  }
+  .au-faint { font-size: var(--text-xs); color: var(--ink-muted); }
+  .au-link {
+    color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent);
+    text-underline-offset: 2px; background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  }
+
+  /* ---- toolbar ---- */
+  .au-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
+  .au-field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .au-field-search { flex: 1 1 16rem; }
+  .au-field-select { flex: 1 1 10rem; max-width: 14rem; }
+  .au-field-date { flex: 0 1 10rem; min-width: 9.5rem; }
+  .au-label { font-size: var(--text-xs); font-weight: 500; color: var(--ink-muted); }
+  .au-select {
+    height: var(--control-h-md); width: 100%; min-width: 0;
+    padding: 0 var(--space-2); font-size: var(--text-sm); color: var(--ink);
+    background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+  }
+  .au-clear { align-self: flex-end; }
+  @container (max-width: 36rem) {
+    .au-field-select, .au-field-date { flex: 1 1 calc(50% - var(--space-3)); max-width: none; min-width: 0; }
+  }
+
+  /* ---- result line ---- */
+  .au-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+  .au-result { flex: 1 1 18rem; font-size: var(--text-sm); color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+  .au-result-filter { color: var(--ink-muted); }
+  .au-loading { font-size: var(--text-xs); color: var(--ink-muted); }
+  .au-views { display: flex; gap: var(--space-1); }
+
+  /* ---- table ---- */
+  .au-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); line-height: var(--lh-sm); }
+  .au-table col.c-when { width: 9.25rem; }
+  .au-table col.c-who { width: 11.5rem; }
+  .au-table col.c-reason { width: 34%; }
+  .au-table col.c-more { width: 6rem; }
+  .au-table th, .au-table td { padding: var(--space-2); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+  .au-table th:first-child, .au-table td:first-child { padding-left: var(--space-4); }
+  .au-table th:last-child, .au-table td:last-child { padding-right: var(--space-4); }
+  .au-table thead th {
+    font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted);
+    border-bottom: var(--border-hair) solid var(--line-strong); vertical-align: bottom;
+  }
+  .au-table tbody tr { border-bottom: var(--border-hair) solid var(--line); transition: background-color var(--dur-fast) var(--ease-out); }
+  .au-table tbody tr:last-child { border-bottom: 0; }
+  .au-table tbody tr[data-entry]:hover, .au-table tbody tr.is-open { background: var(--surface-2); }
+  .au-table td { color: var(--ink); }
+  .au-when { font-size: var(--text-xs); color: var(--ink-muted); white-space: nowrap; }
+  .au-time { color: var(--ink); }
+  .au-who { color: var(--ink); }
+  .au-reason { color: var(--ink); }
+  .au-none { color: var(--ink-muted); }
+  .au-more-cell { text-align: right; }
+  .au-details-row > td { padding-top: 0; }
+
+  .au-details-btn {
+    display: inline-flex; align-items: center; gap: var(--space-1);
+    height: var(--control-h-sm); padding: 0 var(--space-2);
+    font-size: var(--text-xs); color: var(--ink); background: none;
+    border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .au-details-btn:hover { background: var(--surface-2); }
+  .au-chevron { transition: rotate var(--dur-fast) var(--ease-out); }
+  .au-chevron.is-open { rotate: 180deg; }
+
+  /* ---- details ---- */
+  .au-details {
+    display: flex; flex-direction: column; gap: var(--space-3);
+    margin-top: var(--space-2); padding: var(--space-3) var(--space-4);
+    background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+    animation: octa-rise-in var(--dur-fast) var(--ease-out);
+  }
+  .au-details.is-inline { margin-top: var(--space-2); padding: 0; background: none; border: 0; animation: none; }
+  .au-fields, .au-ids { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); margin: 0; font-size: var(--text-xs); }
+  .au-ids { padding-top: var(--space-2); border-top: var(--border-hair) solid var(--line); }
+  .au-details.is-inline .au-ids { border-top: 0; padding-top: 0; }
+  .au-field-row { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: var(--space-3); min-width: 0; }
+  @container (max-width: 36rem) { .au-field-row { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+  .au-field-row dt { color: var(--ink-muted); }
+  .au-field-row dd { margin: 0; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+  .au-quote {
+    margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--accent);
+    font-size: var(--text-sm); color: var(--ink); overflow-wrap: anywhere; max-width: 72ch;
+  }
+
+  /* ---- list (narrow) ---- */
+  .au-list { margin: 0; padding: 0; list-style: none; }
+  .au-item { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .au-item:last-child { border-bottom: 0; }
+  .au-item-what { font-size: var(--text-sm); color: var(--ink); overflow-wrap: anywhere; }
+  .au-item-meta { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+
+  /* ---- timeline ---- */
+  .au-timeline { margin: 0; padding: 0; list-style: none; }
+  .au-tl-item { border-bottom: var(--border-hair) solid var(--line); }
+  .au-tl-item:last-child { border-bottom: 0; }
+  .au-day {
+    padding: var(--space-2) var(--space-4); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted);
+    background: var(--surface-2); border-bottom: var(--border-hair) solid var(--line);
+  }
+  .au-tl-item:first-child .au-day { border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg); }
+  .au-tl-entry { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+  .au-tl-entry .au-quote { margin-top: var(--space-2); }
+  .au-tl-time { font-size: var(--text-xs); color: var(--ink); padding-top: 2px; }
+
+  /* ---- foot ---- */
+  .au-older { align-self: flex-start; }
+  .au-end { font-size: var(--text-sm); color: var(--ink-muted); }
+  .au-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-5) var(--space-4); }
+  .au-empty-title { font-size: var(--text-sm); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+
+  /* Entries brought in by Load older arrive once; never on a first load. */
+  [data-new] { animation: octa-fade-in var(--dur-base) var(--ease-out); }
+
+  /* ---- loading ---- */
+  .au-reserve { min-height: 40rem; }
+  .au-skel-card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); min-height: 40rem; }
+  .au-skel { animation: octa-shimmer calc(var(--dur-base) * 6) ease-in-out infinite; background: var(--surface-2); border-radius: var(--radius-sm); }
+  .au-skel-head { height: 1.25rem; width: 40%; }
+  .au-skel-row { height: 2.25rem; }
+  .au-skel-note { margin-bottom: var(--space-2); }
+}

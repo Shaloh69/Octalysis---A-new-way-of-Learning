@@ -523,6 +523,64 @@ the table exists.
 
 ---
 
+## 0k. Parked by the `/audit` revamp — 28 Sep 2026
+
+Found while rebuilding `/audit` (and building its server filters, Load older,
+CSV export and the append-only trigger, instructor rulings of 28 Sep) and
+deliberately **not** fixed there. §0a to §0j still stand; §0e.1, §0f.1,
+§0g.1, §0h.2 and §0j.3-7 are untouched.
+
+1. **THE DEPLOYED `/audit` WILL ANSWER 500 until the schema is pushed**, like
+   `/content` (§0j.1). `GET /console/audit` now joins `submissions` to name
+   the student a mark was for, and the deployed Supabase has no `submissions`
+   table (§0d.1). The same `db-push-supabase.mjs --reset` fixes both and also
+   brings the new append-only trigger; `schema.sql` carries it, so no seventh
+   file joins the apply order.
+2. **`audit_log` is append-only now, for every role, TRUNCATE included**
+   (`audit_log_no_update` / `_no_delete` / `_no_truncate`, `deny_audit_mutation()`).
+   Two fixtures delete from it and suspend the delete trigger by name as the
+   table owner: `resetAll()` (`services/api/test/helpers/reset.ts`) and
+   `db/demo-seed.sql` (demo actors only). **A new fixture that deletes audit
+   rows must do the same**, or it fails with "audit_log is append-only".
+   `auth.users` rows that appear in the log as an actor could never be
+   hard-deleted anyway (the FK has no `on delete`), which is V-20's stance.
+3. **No invariant checks that the three triggers exist.** `rls.spec.ts`
+   proves they refuse (watched failing first), but a deployment where the
+   schema was pushed without them would pass `run_invariants()`. A small
+   `inv_` over `pg_trigger` for `responses`, `content_block_versions` and
+   `audit_log` would make it structural. Schema work.
+4. **An entry names the student as they are NOW, not as they were.** The API
+   resolves `subject` through `profiles` / `student_directory` at read time,
+   so a renamed student reads under the new name in every old entry (the
+   API test meets exactly this: a roster test renames Student A first). The
+   ids never change and are in Details and the CSV. If the name at the time
+   is wanted as evidence, the writing routes must put it in the payload
+   (only `roster.deactivate` does, as `fullName`). Instructor's call.
+5. **`db/demo-audit.sql` is new and seeds only what the demo state agrees
+   with** (roster import, 21 account claims, 96 items to review, a lock
+   opened and handed back, 30 lab marks, a lifted Prelim window). It must
+   never seed `assessment.salt_rotate` (`/assessments` reads it back as
+   "rotated") or a null-actor row (append-only: nothing could remove it).
+   The spec adds content edits, summary decisions and a scheduled window
+   through `_audit-fixture.ts` instead.
+6. **`getByLabel()` matches by substring, and aria-labels count.** "To"
+   matched 53 Details buttons (their labels carry the entry's sentence) and
+   "Who" matched "About whom or what". Use `{ exact: true }` for a short
+   label; a green run elsewhere does not mean another spec is safe from it.
+7. **shadcn.io block previews are centred in a `min-h-screen` box, so at a
+   900px viewport a tall block overflows UPWARD** and a full-page capture
+   silently starts mid-block (the Audit Trail lost its heading and filters
+   under a 200). Capture those at 1440×1500 and 380×1900.
+
+**Available to every route from now on:** `requestText()` in
+`apps/console/src/lib/api.ts` now passes the server's refusal sentence
+through (an export over its cap says how many matched), and
+`_audit-fixture.ts`'s rule, **never slice a patched page back to its limit**:
+the dropped real rows are ones Load older, starting from the API's own
+cursor, would never fetch.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

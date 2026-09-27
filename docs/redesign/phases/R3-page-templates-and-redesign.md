@@ -827,7 +827,27 @@ thesis deliverable, and right now no phase is accountable for it.
         failing twice (missing tables, then a leaking policy and a disabled
         trigger). `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and six
         state shots per width
-  - [ ] `/audit`
+  - [x] `/audit` — **28 Sep 2026** (`design/templates/console/audit/SPEC.md`),
+        against shadcn-admin's Tasks (the frame and the dense table) and three
+        purpose-built shadcn.io blocks: Activity Feed (the sentence, day
+        headings, Load More), Audit Trail (action filter, date range), Log
+        Viewer (Export). **Instructor rulings, built:** filters on the SERVER
+        over the whole log (action family, who incl. System (scheduled), about
+        whom or what, a local-day range), in the address; 100 a page and
+        **Load older** (a keyset cursor) instead of the newest-500 cap;
+        **Export CSV** of every match (`GET /console/audit.csv`, formula-guarded);
+        **append-only in the database** for every role, TRUNCATE included.
+        Each entry is a sentence written by the API, naming the student a lock
+        keeps only in its payload; Details lists every recorded field (the
+        approved summary text in full). A table at 52rem of its own width,
+        cards below, the timeline under day headings. `db/demo-audit.sql`
+        seeds a history the demo agrees with. Gate:
+        `design/specs/console-audit.spec.ts`, 48 passed + 4 width-specific
+        skips (45 watched failing on the old page); every console spec 553
+        passed, 53 skipped, 0 failed against a build; API 557 passed; the
+        trigger's denials and the student refusal of `/audit.csv` watched
+        failing. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and six
+        state shots per width
   - [ ] `/system`
   - [ ] `/feedback`
   - [ ] `/live`
