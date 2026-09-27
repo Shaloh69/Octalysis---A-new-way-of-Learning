@@ -423,21 +423,36 @@ export interface Assessment {
   scope: "stage" | "final";
   stageId: string | null;
   totalItems: number;
+  sectionId: string | null;
   sectionCode: string | null;
+  /** When the exam salt was set. Null means no salt row: Start will fail. Never the salt. */
+  saltSetAt: string | null;
+  /** When it was last rotated, from the audit log; null if never. */
+  saltRotatedAt: string | null;
   attempts: number;
   submitted: number;
+  /** Can the live bank fill this assessment's blueprint? Same answer as `Feasibility`. */
+  bank: Bank;
 }
 
-/** Asked BEFORE an assessment is created -- see pages/AssessmentsPage.tsx. */
-export interface Feasibility {
-  blueprintId: string;
-  name: string;
+export interface Shortfall { dimension: string; cell: string; need: number; have: number }
+
+/** "Can the live bank fill this blueprint?", from `feasibilityOf()` in routes/assessments.ts. */
+export interface Bank {
   totalItems: number;
   poolSize: number;
   enoughItems: boolean;
-  shortfalls: Array<{ dimension: string; cell: string; need: number; have: number }>;
+  shortfalls: Shortfall[];
   satisfiable: boolean;
 }
+
+/** Asked BEFORE an assessment is created -- see pages/AssessmentsPage.tsx. */
+export interface Feasibility extends Bank {
+  blueprintId: string;
+  name: string;
+}
+
+export interface Section { id: string; code: string; term: string }
 
 export interface SetLockInput {
   scope: "global" | "section" | "user";
@@ -561,8 +576,18 @@ export const api = {
   live: () => request<LiveSnapshot>("/api/v1/console/live"),
 
   assessments: () =>
-    request<{ assessments: Assessment[]; blueprints: Blueprint[] }>(
+    request<{ assessments: Assessment[]; blueprints: Blueprint[]; sections: Section[] }>(
       "/api/v1/console/assessments",
+    ),
+
+  /**
+   * A new salt for papers not yet started. Staff only, reason required, audited.
+   * The response carries when, never the salt.
+   */
+  rotateSalt: (id: string, reason: string) =>
+    request<{ ok: true; rotatedAt: string }>(
+      `/api/v1/console/assessments/${encodeURIComponent(id)}/rotate-salt`,
+      { method: "POST", body: JSON.stringify({ reason }) },
     ),
 
   blueprintFeasibility: (id: string) =>
@@ -575,8 +600,8 @@ export const api = {
     title: string;
     attemptsAllowed: number;
     sectionId?: string | null;
-    opensAt?: string;
-    closesAt?: string;
+    opensAt?: string | null;
+    closesAt?: string | null;
   }) =>
     request<{ id: string }>("/api/v1/console/assessments", {
       method: "POST",

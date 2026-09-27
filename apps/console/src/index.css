@@ -1057,6 +1057,214 @@
 }
 
 /*
+ * ------------------------------------------------------------ /assessments
+ *
+ * `design/templates/console/assessments/SPEC.md`. The list chooses table or
+ * list on the page's OWN width (`AssessmentsPage`, a ResizeObserver), like
+ * /locks and /students:
+ *
+ *   - 64rem and up: a ten-column table, `table-layout: fixed`, exactly as
+ *     wide as its card. It never scrolls sideways.
+ *   - Below: a list, one assessment per item, every fact as a line.
+ *
+ * The create dialog is the template's form + preview: two halves split by a
+ * rule at 56rem of viewport and up, stacked below it, form first.
+ */
+@layer components {
+  .assess { container-type: inline-size; }
+  .assess-card {
+    position: relative; /* an sr-only child resolves here, not at the document */
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+  }
+
+  /* ---- the bank banner: warning, never danger ---- */
+  .assess-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hair) solid var(--warning);
+    border-left-width: var(--border-thick);
+    border-radius: var(--radius-md);
+    background: var(--warning-bg);
+  }
+  .assess-banner-icon { margin-top: 2px; color: var(--warning); }
+  .assess-link {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .assess-link:hover { color: var(--accent); }
+
+  /* ---- shared cell parts ---- */
+  .assess-title { display: block; min-width: 0; font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
+  .assess-sub { display: block; font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .assess-salt-missing { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ink); }
+  .assess-salt-missing > svg { color: var(--warning); }
+  .assess-window { display: flex; flex-direction: column; font-size: var(--text-xs); }
+  .assess-window > span,
+  .assess-table td:nth-child(3) > span { white-space: nowrap; }
+  .assess-bank-ok { font-size: var(--text-xs); font-weight: 600; color: var(--success); }
+  .assess-bank-short { display: flex; flex-direction: column; font-size: var(--text-xs); }
+  .assess-bank-word { display: inline-flex; align-items: center; gap: var(--space-1); font-weight: 600; color: var(--ink); }
+  .assess-bank-word > svg { color: var(--warning); }
+  .assess-bank-detail { color: var(--ink-muted); }
+  .assess-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
+  .assess-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--control-h-sm);
+    height: var(--control-h-sm);
+    border-radius: var(--radius-sm);
+    color: var(--ink-muted);
+    transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .assess-more:hover,
+  .assess-more[data-state="open"] { background: var(--surface-2); color: var(--ink); }
+  @media (pointer: coarse) { .assess-more { width: 44px; height: 44px; } }
+
+  /* ---- 64rem and up: the table ---- */
+  .assess-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); }
+  /*
+   * Measured, not guessed: a mono date at text-xs is ~7.2px a character, so
+   * "closes 20 Sep 2026, 21:18" needs 11.75rem, and "stage 01" in its badge
+   * needs 5.75rem. What is left, ~11rem at 1440, is the assessment's name.
+   */
+  .assess-table col.c-status    { width: 6.25rem; }
+  .assess-table col.c-scope     { width: 5.75rem; }
+  .assess-table col.c-items     { width: 3.75rem; }
+  .assess-table col.c-bank      { width: 6.5rem; }
+  .assess-table col.c-attempts  { width: 5rem; }
+  .assess-table col.c-section   { width: 6.25rem; }
+  .assess-table col.c-window    { width: 11.75rem; }
+  .assess-table col.c-submitted { width: 5rem; }
+  .assess-table col.c-actions   { width: 9rem; }
+  .assess-table th,
+  .assess-table td { padding: var(--space-2); text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+  .assess-table th:first-child,
+  .assess-table td:first-child { padding-left: var(--space-4); }
+  .assess-table th:last-child,
+  .assess-table td:last-child { padding-right: var(--space-3); }
+  .assess-table th {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--ink-muted);
+    border-bottom: var(--border-hair) solid var(--line-strong);
+    white-space: nowrap;
+  }
+  .assess-table .num-col { text-align: right; }
+  .assess-table td.text-ink,
+  .assess-table td.text-ink-muted { font-size: var(--text-xs); }
+  .assess-table tbody tr { border-bottom: var(--border-hair) solid var(--line); transition: background-color var(--dur-fast) var(--ease-out); }
+  .assess-table tbody tr:last-child { border-bottom: 0; }
+  .assess-table tbody tr:hover { background: var(--surface-2); }
+
+  /* ---- below 64rem: the list ---- */
+  .assess-list { margin: 0; padding: 0; list-style: none; }
+  .assess-list > li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: var(--border-hair) solid var(--line);
+  }
+  .assess-list > li:last-child { border-bottom: 0; }
+  .assess-list-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+  .assess-list-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+  .assess-list-meta .assess-window { flex-direction: row; flex-wrap: wrap; gap: 0 var(--space-3); }
+  .assess-list-meta .assess-bank-short { flex-direction: row; gap: var(--space-2); }
+  .assess-list .assess-actions { justify-content: flex-start; margin-top: var(--space-1); }
+
+  /* ---- the skeleton ---- */
+  .assess-skel-row { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: var(--space-3); align-items: center; height: 3.25rem; }
+  .assess-skel-narrow { grid-template-columns: minmax(0, 1fr); height: 7rem; }
+
+  /* ---- the create dialog: form beside preview ---- */
+  .assess-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+  .assess-half { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .assess-half + .assess-half { padding-top: var(--space-5); border-top: var(--border-hair) solid var(--line); }
+  @media (min-width: 56rem) {
+    .assess-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0; }
+    .assess-half:first-child { padding-right: var(--space-5); }
+    .assess-half + .assess-half { padding: 0 0 0 var(--space-5); border-top: 0; border-left: var(--border-hair) solid var(--line); }
+  }
+  .assess-half-title { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+  .assess-field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .assess-dates { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin-bottom: var(--space-3); }
+  @media (min-width: 30rem) { .assess-dates { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .assess-half .assess-dates { margin-bottom: 0; }
+  .assess-hint { font-size: var(--text-xs); color: var(--ink-muted); }
+  .assess-select {
+    height: var(--control-h-md);
+    width: 100%;
+    padding: 0 var(--space-2);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface-0);
+    color: var(--ink);
+    font-size: var(--text-sm);
+  }
+  .assess-callout {
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hair) solid var(--warning);
+    border-radius: var(--radius-md);
+    background: var(--warning-bg);
+    font-size: var(--text-xs);
+    color: var(--ink);
+  }
+
+  /* The preview: the thing as a student meets it. */
+  .assess-preview {
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+  }
+  .assess-preview-kicker { margin-bottom: var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); }
+  .assess-preview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+  .assess-preview-lines {
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) 0 0;
+    list-style: none;
+    border-top: var(--border-hair) solid var(--line);
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+  .assess-preview-lines > li { padding: 2px 0; }
+
+  /* The bank: the template's metadata box, label left, value right. */
+  .assess-box {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+  }
+  .assess-box-title { margin-bottom: var(--space-2); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); }
+  .assess-box-wait { display: flex; flex-direction: column; gap: var(--space-2); min-height: 6rem; }
+  .assess-verdict { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+  .assess-verdict > svg { color: var(--warning); }
+  .assess-verdict[data-ok] > svg { color: var(--success); }
+  .assess-kv { margin: 0; font-size: var(--text-xs); }
+  .assess-kv > div { display: flex; justify-content: space-between; gap: var(--space-3); padding: 2px 0; }
+  .assess-kv dt { color: var(--ink-muted); }
+  .assess-kv dd { margin: 0; color: var(--ink); text-align: right; }
+  .assess-kv > div[data-shortfall] { border-top: var(--border-hair) solid var(--line); }
+  .assess-note { margin-top: var(--space-2); font-size: var(--text-xs); color: var(--ink-muted); }
+}
+
+/*
  * The shared dialog's scrim. `bg-surface-0/80` emitted NO CSS -- Tailwind 3
  * cannot apply an opacity modifier to a `var()` colour -- so every console
  * dialog opened over an undimmed page (NEXT-SESSION.md §0a.1). Fixed from the

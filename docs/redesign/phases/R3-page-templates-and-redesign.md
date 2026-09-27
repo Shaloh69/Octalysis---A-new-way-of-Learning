@@ -710,7 +710,23 @@ thesis deliverable, and right now no phase is accountable for it.
         registration, `sectionId` and the sections, answers only for students,
         and now has its denial tests (watched failing). `SOURCE.md`, `SPEC.md`,
         `motion.md`, `current.png`, `current-380.png`
-  - [ ] `/assessments`
+  - [x] `/assessments` — **27 Sep 2026.** Rebuilt against shadcn.io's *Form
+        With Preview* block (the named *multi-step form* lead kept as
+        `template-multi-step.png` and rejected: a verdict at the last step
+        comes after the choices it depends on; `ui.shadcn.com/blocks` has no
+        form, `/examples/forms` and `/examples/cards` are 404). Six assertions
+        green at 1440 and 380, plus the route's own: header and cells agree
+        (the old page's did not), status in words, a Bank column and banner
+        (ten rows said `open` while none could be filled), salt dates never
+        salts, mono numbers and dates, no badge or date wrapping, datetime
+        fields wide enough for their values. **Instructor-approved, built:**
+        section scope on create, and `POST /attempts` now refuses a student of
+        another section (404, denial watched failing: it answered 200);
+        **rotating the exam salt** (`POST /console/assessments/:id/rotate-salt`,
+        staff only, reason required, audited without the salt, a started paper
+        proven unchanged). The list's GET answers feasibility per row through
+        the same `feasibilityOf()` as the create form. `SOURCE.md`, `SPEC.md`,
+        `motion.md`, `current.png`, `current-380.png`
   - [ ] `/submissions`
   - [ ] `/gradebook`
   - [ ] `/content`

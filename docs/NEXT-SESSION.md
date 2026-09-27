@@ -249,6 +249,46 @@ Found while rebuilding the student record and deliberately **not** fixed there.
 
 ---
 
+## 0f. Parked by the `/assessments` revamp — 27 Sep 2026
+
+Found while rebuilding `/assessments` and deliberately **not** fixed there.
+§0a to §0e still stand; §0e.1 (the 500 on an unfillable Start) is untouched.
+
+1. **Feasibility ignores `max_per_objective`, so "fills" can be a false
+   positive.** `feasibilityOf()` in `routes/assessments.ts` counts by act,
+   bloom and type; `engine/blueprint.ts` also caps items per objective (a
+   stage check draws at most 2 per objective). Once items go live, a row can
+   say `fills` and Start can still throw. Locally invisible (0 live, every
+   blueprint short). The fix is the check calling the engine's own filler, or
+   mirroring the cap, plus a test. API work.
+2. **A toast raised while a Radix modal is open is hidden from assistive
+   technology.** Radix marks everything outside the dialog `aria-hidden`, and
+   the toaster is outside it, so a screen reader hears only the dialog's own
+   `role=alert`. Every console dialog that stays open on a failed write works
+   this way, and each has its own in-dialog alert, so nothing is lost; but a
+   spec cannot find that toast with `getByRole` (`[data-toaster]` does).
+3. **A tall dialog's footer can sit under a toast.** The toaster is anchored
+   bottom-right at 1440; `/assessments`' create dialog (13 shortfall rows on
+   a final) put its Create button under the error toast until its height was
+   capped (`max-h-[calc(100vh-12rem)]`, with a spec that measures the overlap
+   and was watched failing). Other tall dialogs (`/items`' import preview,
+   `/students`' import) are unchecked.
+4. **The gate cannot see inside a native input.** A mono `datetime-local`
+   in a `max-w-md` dialog cut "PM" off its value under a green assertion 1.
+   `/assessments` now measures each date field against its value's rendered
+   width. Also learned: `getComputedStyle(input).font` is `""` in Chromium;
+   read `fontFamily` and `fontSize`.
+5. **A native `<option>` cannot set a number in mono.** The blueprint and
+   section pickers name blueprints and sections only; counts live in the
+   preview beside them, in mono. Any page putting numbers in an `<option>`
+   breaks the type rule where nothing can fix it.
+6. **Section scope is now enforced at Start** (instructor-approved, built
+   here, denial watched failing at 200): `startAttempt` answers 404 to a
+   student outside an assessment's section, matching RLS. Recorded because it
+   touches `engine-repo.ts`, which `/attempts` work reads.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

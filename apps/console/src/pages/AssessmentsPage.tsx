@@ -1,505 +1,185 @@
-import { useState } from "react";
-import { CalendarClock, Plus, AlertTriangle, Check } from "lucide-react";
-import { api, type Assessment, type Blueprint, type Feasibility } from "@/lib/api";
+import { useLayoutEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { AlertTriangle, Plus } from "lucide-react";
+import { api, type Assessment } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
-import { shortDate } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { useDelayed } from "@/lib/useDelayed";
+import { counts, unfillable, windowState } from "@/lib/assessments-view";
 import { Button } from "@/components/ui/button";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Empty, ErrorNote, Loading } from "@/components/ui/empty";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Empty } from "@/components/ui/empty";
+import { AssessList, AssessTable } from "./assessments/Views";
+import { CreateDialog } from "./assessments/CreateDialog";
+import { BankDialog, RotateDialog, WindowDialog } from "./assessments/RowDialogs";
+import type { RowActions } from "./assessments/Row";
 
 /**
- * Assessments — the thing a student actually opens.
+ * `/assessments`: what a student can open. Rebuilt 27 Sep 2026 against
+ * `design/templates/console/assessments/SPEC.md`; gated by
+ * `design/specs/console-assessment-window.spec.ts`.
  *
- * This page closes the gap that made the whole engine unreachable. Blueprints
- * were seeded and papers could be generated, but nothing could CREATE an
- * assessment, so a student had nothing to sit.
- *
- * **THE FEASIBILITY CHECK IS THE POINT.** A blueprint asking for 8 `apply`
- * items from a bank holding 3 cannot be filled, and the engine will say so by
- * throwing — at the moment forty students press Start. This page asks the
- * question first and names the shortfall cell by cell, so the failure happens
- * while there is still time to author items.
+ * This is the route that made the engine reachable, and its job is to be
+ * honest about Start before a student presses it: every row says whether the
+ * live bank can fill its paper, and a banner counts the ones a student can
+ * reach that cannot. It owns four writes, each audited by the API with an
+ * actor and a reason where one is due: create (which mints the exam salt),
+ * the window, and rotating the salt between terms.
  */
-export function AssessmentsPage() {
-  const { data, error, loading, reload } = useAsync(() => api.assessments(), []);
-  const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<Assessment | null>(null);
 
-  if (loading) return <Loading what="assessments" />;
-  if (error) return <ErrorNote message={error} />;
-  if (!data) return null;
+/** Below this much AVAILABLE width ten columns do not fit: a list instead. */
+const WIDE_PX = 1024; // 64rem
+
+export function AssessmentsPage() {
+  const list = useAsync(() => api.assessments(), []);
+  const data = list.data;
+  const firstLoad = list.loading && !data;
+  const showSkeleton = useDelayed(firstLoad, 400);
+  const slow = useDelayed(firstLoad, 3000);
+
+  const box = useRef<HTMLDivElement>(null);
+  const [wide, setWide] = useState(true);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setWide(el.getBoundingClientRect().width >= WIDE_PX);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const [creating, setCreating] = useState(false);
+  const [windowFor, setWindowFor] = useState<Assessment | null>(null);
+  const [bankFor, setBankFor] = useState<Assessment | null>(null);
+  const [rotateFor, setRotateFor] = useState<Assessment | null>(null);
+  /** What opened the dialog, so focus goes back there (NEXT-SESSION §0c.4). */
+  const opener = useRef<HTMLElement | null>(null);
+  const remember = (el?: HTMLElement | null) => {
+    opener.current = el ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  };
+
+  const on: RowActions = {
+    window: (a, from) => { remember(from); setWindowFor(a); },
+    bank: (a, from) => { remember(from); setBankFor(a); },
+    rotate: (a, from) => { remember(from); setRotateFor(a); },
+  };
+
+  const rows = data?.assessments ?? [];
+  const c = counts(rows);
+  const reachable = rows.filter((a) => windowState(a) !== "closed").length;
+  const short = unfillable(rows).length;
+
+  const startCreate = () => {
+    remember();
+    setCreating(true);
+  };
 
   return (
-    <>
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="mb-1 font-display text-2xl">Assessments</h1>
+    <div ref={box} className="assess">
+      <header className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl text-ink">Assessments</h1>
           <p className="max-w-2xl text-sm text-ink-muted">
-            What a student can open. Each one draws its paper from a blueprint, generated per
-            student from their own seed.
+            What a student can open. Each draws a paper per student from a blueprint and the
+            student&apos;s own seed, from the live bank only.
           </p>
+          {data ? (
+            <p className="mt-1 text-xs text-ink-muted" data-counts="">
+              <span className="num text-ink">{c.all}</span> assessments · <span className="num text-ink">{c.open}</span> open ·{" "}
+              <span className="num text-ink">{c.scheduled}</span> scheduled · <span className="num text-ink">{c.closed}</span> closed
+            </p>
+          ) : null}
         </div>
-        <Button onClick={() => setCreating(true)}>
+        <Button onClick={startCreate} disabled={!data}>
           <Plus className="h-4 w-4" aria-hidden="true" /> New assessment
         </Button>
       </header>
 
-      {data.assessments.length === 0 ? (
+      {list.error && !data ? (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-bg px-4 py-3">
+          <p className="min-w-0 flex-1 text-sm text-ink">
+            The assessments could not be loaded. <span className="text-ink-muted">{list.error}</span>
+          </p>
+          <Button size="sm" variant="outline" onClick={list.reload}>
+            Try again
+          </Button>
+        </div>
+      ) : firstLoad || !data ? (
+        showSkeleton ? <AssessSkeleton wide={wide} slow={slow} /> : <div className="min-h-[32rem]" aria-busy="true" />
+      ) : rows.length === 0 ? (
         <Empty
           title="No assessments yet"
-          hint="Until one exists, a student has nothing to sit — the stage reader shows the material and no check. Create one from a blueprint."
-          action={<Button onClick={() => setCreating(true)}>Create the first one</Button>}
+          hint="Until one exists, a student has nothing to sit: the stage reader shows the material and no check. Create one from a blueprint."
+          action={<Button onClick={startCreate}>Create the first one</Button>}
         />
       ) : (
-        /*
-          A TABLE, not a card list — the fourth of these to be converted and the
-          last one in the console.
-
-          `/audit` went 109px -> 41px per entry, `/items` 122px -> 72px, and
-          `/submissions` 3,436px -> 1,219px (DESIGN-REVIEW-01 D-4). This page had
-          the same shape for the same reason: two fixture rows look fine as
-          cards, and the real page is one assessment per gradeable chapter plus
-          finals, which is a scroll.
-
-          Every field the cards carried is still here. The one thing dropped is
-          the REPEATED TITLE: each card printed `a.title` in the heading and
-          `a.blueprintName` underneath, and for every fixture row those are the
-          same string, so the second line said nothing twice.
-        */
-        <div className="table-scroll rounded-lg border border-line bg-surface-1">
-          <Table>
-            <THead>
-              <TR>
-                <TH>Status</TH>
-                <TH>Assessment</TH>
-                <TH>Scope</TH>
-                <TH className="text-right">Items</TH>
-                <TH className="text-right">Attempts</TH>
-                <TH>Section</TH>
-                <TH>Window</TH>
-                <TH aria-label="Set window" />
-                <TH className="text-right">Submitted</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {data.assessments.map((a) => {
-                const closed = a.closesAt ? new Date(a.closesAt) < new Date() : false;
-                const pending = a.opensAt ? new Date(a.opensAt) > new Date() : false;
-                return (
-                  <TR key={a.id}>
-                    <TD className="whitespace-nowrap">
-                      {closed ? (
-                        <Badge tone="locked">closed</Badge>
-                      ) : pending ? (
-                        <Badge tone="info">not open yet</Badge>
-                      ) : (
-                        <Badge tone="success">open</Badge>
-                      )}
-                    </TD>
-                    <TD className="font-medium text-ink">
-                      {a.title}
-                      {/*
-                        Only when it differs. On the fixtures it never does, and
-                        printing it anyway is what made the card's second line
-                        redundant.
-                      */}
-                      {a.blueprintName && a.blueprintName !== a.title ? (
-                        <div className="text-xs font-normal text-ink-faint">{a.blueprintName}</div>
-                      ) : null}
-                    </TD>
-                    <TD className="whitespace-nowrap">
-                      <Badge tone="neutral">
-                        {a.scope === "stage" ? `stage ${a.stageId}` : "final"}
-                      </Badge>
-                    </TD>
-                    <TD className="num text-right">{a.totalItems}</TD>
-                    <TD className="num whitespace-nowrap text-right">{a.attemptsAllowed}</TD>
-                    <TD className="whitespace-nowrap text-xs text-ink-muted">
-                      {a.sectionCode ?? "every section"}
-                    </TD>
-                    <TD className="whitespace-nowrap text-xs text-ink-muted">
-                      {a.opensAt || a.closesAt ? (
-                        <span className="flex items-center gap-1.5">
-                          <CalendarClock className="h-3 w-3 shrink-0" aria-hidden="true" />
-                          {a.opensAt ? `opens ${shortDate(a.opensAt)}` : "open now"}
-                          {a.closesAt ? ` · closes ${shortDate(a.closesAt)}` : ""}
-                        </span>
-                      ) : (
-                        <span className="text-ink-faint">no window</span>
-                      )}
-                    </TD>
-                    <TD className="num whitespace-nowrap text-right">
-                      {a.submitted}/{a.attempts}
-                    </TD>
-                    {/*
-                      The window is the one property of a live assessment a
-                      teacher genuinely needs to change. Until this existed the
-                      PATCH route had no caller, and an exam seeded without dates
-                      was open forever with no way to close it.
-                    */}
-                    <TD className="whitespace-nowrap text-right">
-                      <Button size="sm" variant="outline" onClick={() => setEditing(a)}>
-                        Set window
-                      </Button>
-                    </TD>
-                  </TR>
-                );
-              })}
-            </TBody>
-          </Table>
-        </div>
-      )}
-
-      <WindowDialog
-        assessment={editing}
-        onClose={() => setEditing(null)}
-        onSaved={() => {
-          setEditing(null);
-          reload();
-        }}
-      />
-
-      {creating && (
-        <CreateDialog
-          blueprints={data.blueprints}
-          onClose={() => setCreating(false)}
-          onCreated={reload}
-        />
-      )}
-    </>
-  );
-}
-
-function CreateDialog({
-  blueprints, onClose, onCreated,
-}: { blueprints: Blueprint[]; onClose: () => void; onCreated: () => void }) {
-  const [blueprintId, setBlueprintId] = useState(blueprints[0]?.id ?? "");
-  const [title, setTitle] = useState(blueprints[0]?.name ?? "");
-  const [attempts, setAttempts] = useState(5);
-  const [opensAt, setOpensAt] = useState("");
-  const [closesAt, setClosesAt] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const feas = useAsync<Feasibility | null>(
-    () => (blueprintId ? api.blueprintFeasibility(blueprintId) : Promise.resolve(null)),
-    [blueprintId],
-  );
-
-  async function create() {
-    setBusy(true);
-    setErr(null);
-    try {
-      await api.createAssessment({
-        blueprintId,
-        title: title.trim(),
-        attemptsAllowed: attempts,
-        ...(opensAt ? { opensAt: new Date(opensAt).toISOString() } : {}),
-        ...(closesAt ? { closesAt: new Date(closesAt).toISOString() } : {}),
-      });
-      onCreated();
-      onClose();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "That was not created.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const f = feas.data;
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <DialogTitle>New assessment</DialogTitle>
-          <DialogDescription>
-            Every student gets a different paper from the same blueprint — same shape, same
-            difficulty, different numbers.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Label htmlFor="bp">Blueprint</Label>
-        <select
-          id="bp"
-          className="mb-4 h-9 w-full rounded-md border border-line bg-surface-0 px-2 text-sm text-ink"
-          value={blueprintId}
-          onChange={(e) => {
-            setBlueprintId(e.target.value);
-            const b = blueprints.find((x) => x.id === e.target.value);
-            if (b) setTitle(b.name);
-          }}
-        >
-          {blueprints.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name} — {b.totalItems} items
-              {b.stageId ? ` · stage ${b.stageId}` : ""}
-            </option>
-          ))}
-        </select>
-
-        {/*
-         * The feasibility check, before anything is created. A blueprint that
-         * cannot be filled fails at Start otherwise -- in front of the class.
-         */}
-        {feas.loading ? (
-          <p className="mb-4 text-xs text-ink-muted">Checking the bank…</p>
-        ) : f ? (
-          <div
-            className={
-              "mb-4 rounded-md border px-3 py-2.5 text-sm " +
-              (f.satisfiable
-                ? "border-success bg-success-bg text-success"
-                : "border-danger bg-danger-bg text-danger")
-            }
-          >
-            {f.satisfiable ? (
-              <p className="flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                The bank can fill this. <span className="num">{f.poolSize}</span> live items
-                available for <span className="num">{f.totalItems}</span> needed.
+        <>
+          {short > 0 ? (
+            <div className="assess-banner" data-bank-banner="">
+              <AlertTriangle className="assess-banner-icon h-4 w-4 shrink-0" aria-hidden="true" />
+              <p className="min-w-0 text-sm text-ink">
+                <strong>
+                  <span className="num">{short}</span> of <span className="num">{reachable}</span>
+                </strong>{" "}
+                assessments students can reach cannot be filled from the live bank. Pressing Start on one
+                gives a student an error, not a paper. Items are approved on the{" "}
+                <Link to="/items" className="assess-link">
+                  Items
+                </Link>{" "}
+                page.
               </p>
-            ) : (
-              <>
-                <p className="mb-1 flex items-center gap-1.5 font-medium">
-                  <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
-                  This blueprint cannot be filled yet.
-                </p>
-                {!f.enoughItems && (
-                  <p className="text-xs">
-                    Only <span className="num">{f.poolSize}</span> live items exist and{" "}
-                    <span className="num">{f.totalItems}</span> are needed.
-                  </p>
-                )}
-                {f.shortfalls.length > 0 && (
-                  <ul className="mt-1 space-y-0.5 text-xs">
-                    {f.shortfalls.map((s) => (
-                      <li key={`${s.dimension}-${s.cell}`}>
-                        <span className="num">{s.dimension}</span> · {s.cell}: needs{" "}
-                        <span className="num">{s.need}</span>, bank has{" "}
-                        <span className="num">{s.have}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p className="mt-1.5 text-xs">
-                  You can still create it — but it will fail when a student presses Start, which
-                  is a worse place to find out.
-                </p>
-              </>
-            )}
-          </div>
-        ) : null}
+            </div>
+          ) : null}
 
-        <Label htmlFor="t">Title, as the student sees it</Label>
-        <Input id="t" className="mb-4" value={title} onChange={(e) => setTitle(e.target.value)} />
+          {list.error ? (
+            <div role="alert" className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-danger bg-danger-bg px-3 py-2">
+              <p className="min-w-0 flex-1 text-xs text-ink">Refreshing failed: {list.error}</p>
+              <Button size="sm" variant="outline" onClick={list.reload}>
+                Try again
+              </Button>
+            </div>
+          ) : null}
 
-        <div className="mb-4 grid gap-3 sm:grid-cols-3">
-          <div>
-            <Label htmlFor="n">Attempts allowed</Label>
-            <Input
-              id="n"
-              type="number"
-              min={1}
-              max={10}
-              value={attempts}
-              onChange={(e) => setAttempts(Number(e.target.value))}
-            />
-          </div>
-          <div>
-            <Label htmlFor="o">Opens (optional)</Label>
-            <Input id="o" type="datetime-local" value={opensAt} onChange={(e) => setOpensAt(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="c">Closes (optional)</Label>
-            <Input id="c" type="datetime-local" value={closesAt} onChange={(e) => setClosesAt(e.target.value)} />
-          </div>
-        </div>
+          <section className="assess-card" aria-label="Assessments">
+            {wide ? <AssessTable rows={rows} on={on} /> : <AssessList rows={rows} on={on} />}
+          </section>
+        </>
+      )}
 
-        {err ? (
-          <p className="mb-2 text-sm text-danger" role="alert">
-            {err}
-          </p>
-        ) : null}
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button disabled={busy || !title.trim() || !blueprintId} onClick={() => void create()}>
-            {busy ? "Creating…" : "Create"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {data ? (
+        <CreateDialog
+          open={creating}
+          blueprints={data.blueprints}
+          sections={data.sections ?? []}
+          onClose={() => setCreating(false)}
+          onCreated={list.reload}
+          returnFocus={() => opener.current}
+        />
+      ) : null}
+      <WindowDialog assessment={windowFor} onClose={() => setWindowFor(null)} onDone={list.reload} returnFocus={() => opener.current} />
+      <RotateDialog assessment={rotateFor} onClose={() => setRotateFor(null)} onDone={list.reload} returnFocus={() => opener.current} />
+      <BankDialog assessment={bankFor} onClose={() => setBankFor(null)} returnFocus={() => opener.current} />
+    </div>
   );
 }
 
-/* ------------------------------------------------------------- window */
-
-/**
- * Setting the exam window on an assessment that already exists.
- *
- * Until this dialog there was no caller for `PATCH .../assessments/:id`, and
- * before that route there was no way at all: an assessment seeded without dates
- * was open forever, and one created with them could never be extended. The
- * route file's own comment said "closing it is a `closes_at` in the past; that
- * is the supported way to end one" while offering only GET and POST.
- *
- * THE REASON IS REQUIRED, and that is not ceremony. Moving an exam window
- * changes what students can do, so it lands in `audit_log` with both the before
- * and the after — and an audit entry nobody can interpret six weeks later is not
- * worth writing.
- *
- * `datetime-local` gives a value with no zone. It is read as the browser's local
- * time and converted to an ISO instant on the way out, because the server stores
- * `timestamptz` and an exam that opens at "08:00" means 08:00 where the class is.
- */
-function WindowDialog({
-  assessment, onClose, onSaved,
-}: { assessment: Assessment | null; onClose: () => void; onSaved: () => void }) {
-  const [opensAt, setOpensAt] = useState("");
-  const [closesAt, setClosesAt] = useState("");
-  const [attempts, setAttempts] = useState(5);
-  const [reason, setReason] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [loadedFor, setLoadedFor] = useState<string | null>(null);
-
-  if (!assessment) return null;
-
-  // Seed the fields from the assessment the first time it opens.
-  if (loadedFor !== assessment.id) {
-    setLoadedFor(assessment.id);
-    setOpensAt(toLocalInput(assessment.opensAt));
-    setClosesAt(toLocalInput(assessment.closesAt));
-    setAttempts(assessment.attemptsAllowed);
-    setReason("");
-    setErr(null);
-  }
-
-  async function save() {
-    if (!assessment) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      await api.setAssessmentWindow(assessment.id, {
-        // "" means the teacher cleared the field, which is null, not "unchanged".
-        opensAt: opensAt ? new Date(opensAt).toISOString() : null,
-        closesAt: closesAt ? new Date(closesAt).toISOString() : null,
-        attemptsAllowed: attempts,
-        reason: reason.trim(),
-      });
-      onSaved();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "That change was not saved.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const nothingSet = !opensAt && !closesAt;
-
+/** The table's shape, before the table: same row height, ten columns. */
+function AssessSkeleton({ wide, slow }: { wide: boolean; slow: boolean }) {
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{assessment.title}</DialogTitle>
-          <DialogDescription>
-            When students may sit this, and how many times. Leave a date empty for no bound.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="mb-3 grid gap-3 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="opens-at">Opens</Label>
-            <Input
-              id="opens-at"
-              type="datetime-local"
-              value={opensAt}
-              onChange={(e) => setOpensAt(e.target.value)}
-            />
+    <div data-skeleton="" aria-busy="true" aria-label="Loading the assessments" className="assess-card min-h-[32rem]">
+      {slow ? (
+        <p role="status" className="px-4 pt-3 text-sm text-ink-muted">
+          Still loading. If the API has been asleep it can take up to a minute to wake.
+        </p>
+      ) : null}
+      <div className="p-3">
+        {Array.from({ length: 10 }, (_, r) => (
+          <div key={r} className={wide ? "assess-skel-row" : "assess-skel-row assess-skel-narrow"}>
+            {wide
+              ? Array.from({ length: 10 }, (_, col) => <span key={col} className="skeleton-bar" />)
+              : <span className="skeleton-bar" />}
           </div>
-          <div>
-            <Label htmlFor="closes-at">Closes</Label>
-            <Input
-              id="closes-at"
-              type="datetime-local"
-              value={closesAt}
-              onChange={(e) => setClosesAt(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="mb-3">
-          <Label htmlFor="attempts-allowed">Attempts allowed</Label>
-          <Input
-            id="attempts-allowed"
-            type="number"
-            min={1}
-            max={10}
-            value={attempts}
-            onChange={(e) => setAttempts(Number(e.target.value))}
-          />
-          <p className="mt-1 text-xs text-ink-muted">
-            Each attempt is a different paper from the same blueprint, generated from the
-            student&apos;s own seed. It cannot go below a sitting that has already happened.
-          </p>
-        </div>
-
-        {/*
-          Said plainly rather than left to be discovered. A NULL bound is no
-          bound, and `engine-repo.ts` enforces exactly that — so an assessment
-          with neither date is open to every student right now.
-        */}
-        {nothingSet ? (
-          <p className="mb-3 rounded-md border border-warning bg-warning-bg px-3 py-2 text-xs text-warning">
-            With no dates set, this assessment is <strong>open now</strong> and stays open.
-          </p>
-        ) : null}
-
-        <div className="mb-3">
-          <Label htmlFor="window-reason">Reason</Label>
-          <Input
-            id="window-reason"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Prelim week, per the department calendar"
-          />
-          <p className="mt-1 text-xs text-ink-muted">
-            Recorded in the audit log with the old and new window.
-          </p>
-        </div>
-
-        {err ? (
-          <p className="mb-2 text-sm text-danger" role="alert">
-            {err}
-          </p>
-        ) : null}
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button disabled={busy || reason.trim().length < 3} onClick={() => void save()}>
-            Save window
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        ))}
+      </div>
+    </div>
   );
-}
-
-/** An ISO instant as a `datetime-local` value in the browser's own zone. */
-function toLocalInput(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
