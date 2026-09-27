@@ -21,107 +21,115 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: `/students/:userId`
+## 1. Start here — the next session: `/assessments`
 
-*Rewritten 27 Sep 2026 by the `/students` session, the fourth console route
-through the gate, which also built the three instructor-approved roster
-features (row-by-row import preview, deactivate as a real lock-out, bulk section
-move) and moved the import route out of `routes/auth.ts`, where it had been a
-404 on the local stack. Phase at handover: **R3 live at 45 / 72 (63%)**; all
-tracks **132 done · 78 to-do (210 items, 63%)**. `pnpm phase` is the count,
+*Rewritten 27 Sep 2026 by the `/students/:userId` session, the fifth console
+route through the gate, which also moved the roster's deactivate and section
+move onto the record (reused, not copied), withheld the key on in-progress and
+abandoned papers (instructor ruling), and gave `GET /console/students/:userId`
+its first denial tests. Phase at handover: **R3 live at 46 / 72 (64%)**; all
+tracks **133 done · 77 to-do (210 items, 63%)**. `pnpm phase` is the count,
 not this line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
 > full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md`
-> §0a, §0b, §0c and §0d** (what the `/items`, `/signin`, `/locks` and
-> `/students` sessions parked). Do not re-derive what those carry.
+> §0a to §0e** (what the `/items`, `/signin`, `/locks`, `/students` and
+> `/students/:userId` sessions parked). Do not re-derive what those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
 > checking the five conditions in `CLAUDE.md` rather than remembering them.
-> (On 25 Sep it was NOT: locally all 96 act-1 items sat at `review`, 0 live;
-> the DEPLOYMENT had 21 public tables with `submissions` missing, and **0
-> items and 0 content blocks for stages 00-04**, measured read-only over
-> `SUPABASE_DB_SESSION` (§0d.1); and stage 01 is closed for every demo
-> student because §3a is decided but not built.)
+> (On 27 Sep it was NOT: locally all 96 act-1 items sat at `review`, 0 live, so
+> no paper can be filled and every Start answers 500 (§0e.1); the DEPLOYMENT
+> could not be measured, a read-only connection hung for ten minutes (§0e.6),
+> and on 25 Sep it had 0 items and 0 content blocks for stages 00-04 (§0d.1);
+> and stage 01 is closed for every demo student because §3a is decided but not
+> built.)
 >
 > **Confirm the finished routes are still green before touching anything**,
 > with `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` set to `http://localhost:5184`:
-> `npx playwright test design/specs/console-*.spec.ts` gave **234 passed,
-> 42 skipped, 0 failed**
-> on 27 Sep. The skips are width-specific by design.
-> `console-students.spec.ts` alone is 44 passed / 2 skipped. If anything is
-> red, that is this session's work.
+> `npx playwright test design/specs/console-*.spec.ts` gave **274 passed,
+> 42 skipped, 0 failed** on 27 Sep. **Read the skips**: most are
+> width-specific by design, but one is `console-student-detail.spec.ts`'
+> real-attempt test, which skips because no paper can be filled (§0e.2).
+> `console-student-detail.spec.ts` alone is 40 passed / 2 skipped. If
+> anything is red, that is this session's work.
 >
-> **THIS SESSION IS ONLY FOR `apps/console` `/students/:userId` (one student's
-> record). NOTHING ELSE.** Not the roster, not `/attempts/:attemptId` (it is
-> last, and it is the only place a key is shown), not the student app. If you
-> find a defect on another page, write it down in `docs/NEXT-SESSION.md` and
-> leave it. The last thing this session does is rewrite this prompt for the
-> next one.
+> **THIS SESSION IS ONLY FOR `apps/console` `/assessments`. NOTHING ELSE.**
+> Not `/attempts/:attemptId` (it is last; see §0e.3 on the key), not
+> `/submissions`, not the student app, and not §0e.1's 500 on Start, which is
+> `routes/attempts.ts` work. If you find a defect on another page, write it
+> down in `docs/NEXT-SESSION.md` and leave it. The last thing this session
+> does is rewrite this prompt for the next one.
 >
-> 1. Bring the local stack up: **`docker ps` first** (Docker Desktop stopped
->    between the last two sessions and took the API and console with it),
+> 1. Bring the local stack up: **`docker ps` first** (Docker Desktop has now
+>    stopped THREE times, once mid-session, taking the console with it),
 >    `pnpm db:up`, then **`pnpm db:reset && node scripts/db-demo.mjs`**,
 >    `pnpm dev:api` on 8090, console on **5184**
 >    (`pnpm --filter @octa/console dev --port 5184 --strictPort`), and
 >    `pnpm dev:token` for a session. 5173 and 5174 belong to other projects. If
 >    8090 or 5184 already answer, confirm they are OURS (the process command
 >    line, and the page title "OCTA Console") before trusting them.
->    **`pnpm db:reset` can kill the dev API** (§0c.1). After EVERY reset,
->    `curl localhost:8090/healthz`. A red run whose screenshot says "Failed to
->    fetch" is a dead API, not a broken page. **After ANY API test run, reset,
->    do not just re-demo**: the API suite wipes the seed.
-> 2. **Capture the reference.** `TEMPLATE-LINKS.md`'s `/console/students/:id`
->    row names TanStack Table's expanding-rows example,
->    https://tanstack.com/table/latest/docs/framework/react/examples/expanding
->    (it renders inside an embedded sandbox; capture the example itself, and if
->    it will not render, find a replacement and record why). The page also
->    needs a record header (who, section, registration, deactivated or not):
->    shadcn-admin has no user-detail page, so look for one. Capture into
->    `design/templates/console/students-detail/` (the folder exists and is
->    EMPTY) at 1440 and 380, **dismiss any popover**, **open the PNGs and
->    look**, and write `SOURCE.md` and `SPEC.md`. Put the URLs in
->    `TEMPLATE-LINKS.md`. Colours and fonts are ours.
-> 3. **Audit against `PAGE-SPECS.md` §`/console/students/:id`** before
->    building: every attempt; expand a row to see **the exact variant that
->    student saw**, regenerated from their stored seed (their numbers, their
->    options in their order, their answer, the correct answer, the rationale
->    they were shown, time on item). Read `StudentDetailPage.tsx`, the API's
->    `GET /console/students/:userId`, and `console-student-detail.spec.ts`
->    (it already starts and submits a real attempt through the API, because
->    the seed has none). Say which parts exist. Name each missing one, plan it,
->    **and ask before building it**. Things the roster now gives this page for
->    free, if the instructor wants them here too: deactivate / reactivate
->    (`pages/students/StatusDialog.tsx`) and move to section
->    (`MoveDialog.tsx`). Reuse them; do not build a second copy.
->    **Hard rule 1 applies:** this page shows a correct answer. Say out loud
->    why that is allowed here (staff only, submitted attempts only, the console
->    bundle profile in `scripts/scan-bundle.mjs`) and test the denial: a
->    student token gets nothing from the endpoint.
-> 4. **Specs.** Extend `console-student-detail.spec.ts`, never replace it; the
->    six go there, importing `design/specs/_gate.ts`, with assertion 6's
->    **positive control** (see `console-students.spec.ts`). Where the seed
->    lacks a state (a deactivated student, several attempts, an in-progress
->    one), **patch the real response** as `_students-fixture.ts` does.
->    **Intercept every write.** **Watch them fail first**, and check the API is
+>    **`/healthz` does not touch the database** (§0e.7): after a reset or an
+>    outage, prove the API with a real query (a staff GET), not `/healthz`.
+>    A red run whose screenshot says "Failed to fetch" is a dead API, not a
+>    broken page. **After ANY API test run, reset, do not just re-demo**: the
+>    API suite wipes the seed.
+> 2. **Capture the reference.** `TEMPLATE-LINKS.md`'s `/console/assessments`
+>    row says only "shadcn Blocks — multi-step form". That is a lead, and
+>    probably a dead one: `/students`' `SOURCE.md` found the Blocks index lists
+>    dashboard, sidebar, login and signup only. Find a real create-and-preview
+>    form (the route needs a blueprint picked, a section scope, an open/close
+>    window, attempts allowed, and a **feasibility panel** that is bespoke), and
+>    record every rejected link and why. Capture into
+>    `design/templates/console/assessments/` (the folder exists and is EMPTY)
+>    at 1440 and 380, **dismiss any popover**, **open the PNGs and look**, and
+>    write `SOURCE.md` and `SPEC.md`. Put the URLs in `TEMPLATE-LINKS.md`.
+>    Colours and fonts are ours. If the example runs in an embedded sandbox,
+>    lift its iframe to fill the viewport (the `/students/:userId` session did
+>    this for TanStack's WebContainer; see its `SOURCE.md`).
+> 3. **Audit against `PAGE-SPECS.md` §`/console/assessments`** before
+>    building: *create from a blueprint, scope to a section, set open/close
+>    window and attempts allowed, rotate `exam_salt` between terms*, plus
+>    `apps/console/CLAUDE.md`'s row (creating one mints the exam salt; the
+>    feasibility check names the shortfall cell before a student presses
+>    Start). Read `AssessmentsPage.tsx` (505 lines), its API routes, and
+>    **`console-assessment-window.spec.ts`**, the existing spec, which you
+>    extend. Say which parts exist. Name each missing one (salt rotation may
+>    be one), plan it, **and ask before building it**. With 0 live items
+>    locally, **every blueprint is infeasible**: that is a real state to show
+>    and test, not a broken page. The exam salt is server-only:
+>    `scan-bundle.mjs` forbids `exam_salt` in BOTH bundles, so the page may say
+>    a salt exists or was rotated, and never show it.
+> 4. **Specs.** Extend `console-assessment-window.spec.ts`, never replace it;
+>    the six go there, importing `design/specs/_gate.ts`, with assertion 6's
+>    **positive control**. Where the seed lacks a state (a feasible blueprint,
+>    an open window, a closed one), **patch the real response** as
+>    `_student-detail-fixture.ts` does, and where a real engine call can make
+>    the fixture real (that fixture resolves real bank items through `/items`'
+>    preview endpoint), prefer it. **Intercept every write**: creating an
+>    assessment mints a salt. **Watch them fail first**, and check the API is
 >    alive when they do.
 > 5. **Rebuild the page.** Not improve: rebuild. Toasts, loading states and
 >    transitions per `.claude/rules/design.md`. A dialog opened from state
->    returns focus only through `onCloseAutoFocus` and a remembered opener
->    (`StatusDialog.tsx` does it). A row menu is
->    `components/ui/dropdown-menu.tsx`, `modal={false}` (§0d.6).
+>    returns focus only through `onCloseAutoFocus` and a remembered opener. A
+>    menu is `components/ui/dropdown-menu.tsx`, `modal={false}`. Numbers,
+>    counts and dates in mono.
 > 6. Green on all six, both widths, plus the route's own structure tests.
 >    Capture `current.png` and `current-380.png` against seeded fixture data
 >    only, full page on a viewport tall enough not to resize, and **state shots
->    (an expanded row, a dialog) on a normal-height window opened at that
->    size**: a 380x3400 viewport made the `/students` dialog shots unreadable.
->    **Open every one and look.** Write `motion.md`. Run every console spec
->    before committing, then `git checkout -- design/item-review/`.
-> 7. Tick **`/students/:userId`** under the R3 "Console revamp" box in the same
+>    on a normal-height window opened at that size**. **Open every one and
+>    look**: the last session's screenshots found option letters stripped by
+>    Tailwind's preflight and machine values in Inter, both under a green
+>    spec. Write `motion.md`. Run every console spec before committing.
+>    `console-assessment-window.spec.ts` rewrites
+>    `design/item-review/assessment-window.png`: this time that route IS the
+>    work, so decide deliberately whether that PNG changes; restore
+>    `send-back-panel.png` either way (`git checkout --` it).
+> 7. Tick **`/assessments`** under the R3 "Console revamp" box in the same
 >    commit as the work. Commit with explicit paths. Commit and push.
 > 8. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
->    (`/assessments`, #5 in `CONSOLE-REVAMP.md` §3), carrying forward what this
+>    (`/submissions`, #6 in `CONSOLE-REVAMP.md` §3), carrying forward what this
 >    session learned. Update the phase figures. Commit and push that too.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
@@ -129,33 +137,35 @@ not this line.*
 > one fenced code block, plain text with no `> ` markers, ready to copy and
 > paste**. Then **stop**. Do not start the next route.
 
-**What the `/students` session learned that every later route needs:**
+**What the `/students/:userId` session learned that every later route needs:**
 
-- **Check that a route is MOUNTED before believing its page.** The roster
-  import lived in `registerAuthRoutes`, which mounts only with a Supabase
-  admin client, so locally the Import button hit a 404 for as long as it
-  existed. `curl` the endpoint; a 401 means it is there, a 404 means it is not.
-- **A "lock-out" is only as good as the path it closes.** `deleted_at` blocked
-  sign-in by student ID, but the student app sends an email straight to
-  Supabase. The real lock-out went into `identityFrom()`, which every route
-  calls. Trace every way in before calling a thing closed.
-- **The console's spacing scale is the token scale** (§0d.5): `pl-8` is 64px.
-  Only the screenshot saw it.
-- **Text nodes inside a `Button` are flex children**, so "(4)" built from text
-  plus a span renders as "( 4 )". Wrap each run in its own element.
-- **A dry run can go to the real API; a write cannot.** The `/students` spec
-  lets the import's dry run through (the API suite proves it writes nothing)
-  and answers every write itself. The preview is then tested against the real
-  plan, not a guess at one.
-- **Ask with the finding, not before it.** The deactivate question was only
-  answerable once the email path was known; asking first would have produced
-  a lock-out with a hole in it.
-- Still true from `/locks`, `/signin` and `/items`: a spec that seeds through
-  an API checks the response; pivot rather than scroll sideways, on the page's
-  own width; only the checked radio is in the Tab order, so use pressed
-  buttons; the six are the floor, not the spec; bring an unplanned feature to
-  the instructor; read the *skipped* count; look at the picture, even when
-  green.
+- **A skip can hide a test that never runs.** The detail spec's real-attempt
+  test skipped on every local run for as long as no item was live, and was
+  counted among "skips by design". Read each skip's reason (Playwright's JSON
+  reporter prints it) before calling a run green.
+- **Build the fixture from the real engine when you can.** No attempt can be
+  made locally, but `/items`' preview endpoint resolves real bank items
+  through the same `resolveItem()` a paper uses, so the fixture's papers carry
+  real stems, options, keys and rationales. Only the attempt around them is
+  invented.
+- **Tailwind's preflight strips list markers** (§0e.4) and **ICU's en-GB
+  writes "Sept"** (§0e.5). One was caught by a screenshot, one by a unit test;
+  neither by the gate.
+- **Watch a denial fail by removing the check, then restore it.** The record's
+  route had `requireStaff()` but no test; removing it for one run showed a
+  student reading any record with a 200.
+- **Reuse a dialog through an adapter, not a copy.** `asRosterRow()` hands
+  `StatusDialog` and `MoveDialog` the record as a roster row; neither file
+  changed.
+- **Ask with the finding.** "Show the key on an in-progress paper?" was only
+  answerable after reading that `ai_after_submit` grants staff every status.
+- Still true from `/students`, `/locks`, `/signin` and `/items`: check a route
+  is mounted before believing its page; trace every way in before calling a
+  thing closed; the console's spacing scale is the token scale; a dry run can
+  go to the API, a write cannot; a spec that seeds through an API checks the
+  response; pivot rather than scroll sideways, on the page's own width; only
+  the checked radio is in the Tab order; the six are the floor, not the spec;
+  look at the picture, even when green.
 
 ---
 
