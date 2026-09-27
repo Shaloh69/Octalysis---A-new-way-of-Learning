@@ -748,7 +748,52 @@ thesis deliverable, and right now no phase is accountable for it.
         by deliverable and search; save and advance. **Void is not built, by
         decision.** `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`,
         `current-380.png` and ten state shots per width
-  - [ ] `/gradebook`
+  - [x] `/gradebook` — **28 Sep 2026.** Three sources disagreed on the
+        reference ("KPI cards + chart", "data table + export", "per-stage
+        mastery + final score"); all three were captured and combined:
+        shadcn-admin's **Dashboard** for the frame, shadcn.io's **heatmap
+        table** for the grid (its total column = *Final so far*, its total row
+        = *Class average*; its shading rejected), shadcn-admin's Tasks for the
+        toolbar; four other table blocks rejected, each recorded. Six
+        assertions green at 1440 and 380 (`console-gradebook.spec.ts`: 52
+        passed / 2 skipped, both 1440-only by design), plus the route's own:
+        the syllabus's weights in order, a final that says how much of the
+        grade it covers, "not sat" never 0 and a real 0 still 0, a class
+        average row in both views, every chart value printed as text in mono,
+        filter, record link, no ID or number broken across lines, density,
+        table at 1440 / list at 380, the export's toast clear of its button, a
+        failed export that stays, failed / slow / empty states, and **no
+        Recharts module loaded, the gradebook chunk not in the first load**.
+        **The 40% is in the gradebook now**: labs, the project and
+        participation are read from `submissions`, graded rows only,
+        normalised by `max_score`; major exams from final-scope attempts.
+        **Instructor decisions, built:** fixed syllabus weights
+        (`GRADE_WEIGHTS` in `packages/contracts`), a final SO FAR rescaled
+        over what has marks with its coverage stated, CSV with the weight in
+        each column name, an empty cell for a check not sat. One pure
+        `computeGradebook()` behind both `GET /console/gradebook` (new; its
+        denial tests watched failing at 404) and the CSV, 15 unit tests.
+        **Not built, by decision:** weighting configuration; XLSX and "the
+        university's format" (undefined; waits for a sample grade sheet). The
+        chart is HTML, so the gradebook chunk fell from ~105 KB gz to 4.3 KB.
+        `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`,
+        `current-380.png` and eight state shots per width
+  - [ ] **The console shell: sidebar, nav, account block, 380 top bar** —
+        **added 28 Sep 2026 at the instructor's request** ("update the nav bar
+        also, sidebar, everything"), and ordered **next, before `/content`**
+        (instructor, 28 Sep 2026) so every route after it is captured with the
+        final shell. What the instructor's screenshot shows: a plain text
+        brand block, eleven flat nav items with no grouping, the account,
+        theme `<select>` and Sign out stacked straight under the nav with an
+        empty column below them, and at 380 a bare "OCTA Console" bar with a
+        hamburger. Reference to capture first: shadcn-admin's own sidebar
+        (grouped nav, the account menu pinned to the foot; visible in
+        `design/templates/console/gradebook/template.png`). Carries the two
+        shell defects parked in `NEXT-SESSION.md` §0b.2 (signing out confirms
+        nothing) and §0b.3 ("Checking your access…" flashes with no 400ms rule).
+        Gate: `design/specs/console-shell.spec.ts`, six assertions at 1440
+        and 380, and every console spec re-run, because every route's
+        screenshot changes
   - [ ] `/content`
   - [ ] `/audit`
   - [ ] `/system`

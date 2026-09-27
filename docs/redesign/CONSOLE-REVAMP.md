@@ -92,8 +92,9 @@ Worst-first, then by how often an instructor touches it.
 | 4 | `/students`, `/students/:id` | shadcn-admin table + TanStack expanding rows | Roster and per-student detail |
 | 5 | `/assessments` | shadcn Blocks — form + preview | The route that made the engine reachable; the feasibility panel is bespoke |
 | 6 | `/submissions` | marking-queue list | 40% of the grade goes through it |
-| 7 | `/gradebook` | KPI cards + chart | Lazy-loaded Recharts; do not let this pull weight into the initial bundle |
-| 8 | `/content`, `/audit`, `/system`, `/feedback`, `/live` | per `TEMPLATE-LINKS.md` | Lower traffic |
+| 7 | `/gradebook` | KPI cards + chart | **Done 28 Sep 2026.** The chart is HTML now and the route imports no Recharts; it stays lazy |
+| 8 | **the shell**: sidebar, nav, account block, 380 top bar | shadcn-admin's sidebar | **Added 28 Sep 2026 at the instructor's request, ordered next.** It is in every route's screenshot, so it lands before the routes that remain; carries §0b.2 and §0b.3 of `NEXT-SESSION.md` |
+| 9 | `/content`, `/audit`, `/system`, `/feedback`, `/live` | per `TEMPLATE-LINKS.md` | Lower traffic |
 
 `/attempts/:attemptId` is last and is handled with care: it is the **only** place
 an answer key is shown, and hard rule 1 governs it.

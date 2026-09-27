@@ -29,6 +29,12 @@ import { ResetPasswordPage } from "./pages/ResetPasswordPage";
  *
  * Splitting it here costs one Suspense boundary and takes the initial bundle
  * from 208 KB to well under half that.
+ *
+ * Since the 28 Sep 2026 rebuild the gradebook draws its chart in HTML and
+ * imports no Recharts at all (`design/templates/console/gradebook/SPEC.md`):
+ * every value is text the gate can measure. It stays lazy anyway; it is the
+ * page nobody opens mid-class, and `console-gradebook.spec.ts` asserts that
+ * no Recharts module loads and that this chunk is not in the first load.
  */
 const GradebookPage = lazy(() =>
   import("./pages/GradebookPage").then((m) => ({ default: m.GradebookPage })),

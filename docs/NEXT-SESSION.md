@@ -334,6 +334,62 @@ feasibility cap) are untouched.
 
 ---
 
+## 0h. Parked by the `/gradebook` revamp — 28 Sep 2026
+
+Found while rebuilding `/gradebook` and deliberately **not** fixed there.
+§0a to §0g still stand; §0e.1 (the 500 on Start), §0f.1 (the feasibility
+cap) and §0g.1 (the database-deep freeze) are untouched.
+
+1. **The deployment answered this time, and it is empty.** A read-only
+   query over `SUPABASE_DB_SESSION` (15s connect timeout) returned **0
+   `content_blocks` for stages 00-04 and 0 items in total** on 28 Sep. §0e.6's
+   hang did not recur. The Prelim sentence is false there on conditions 1-4,
+   not only on "96 at review".
+2. **Class participation has no teacher-side entry.** Participation is a
+   `submissions` row with `kind = 'participation'`, and only a STUDENT can
+   create one (`sub_own_insert`); staff can only mark what a student hands in.
+   The syllabus's 10% is "seatwork, assignment", which a teacher usually
+   records rather than a student submits. Until something writes these rows,
+   the gradebook's Participation column stays "no marks yet". Instructor's
+   call: a staff write (reason, audit row), or a student deliverable.
+3. **Only two of the four major exams exist.** `sync-assessments` creates the
+   Prelim and Midterm (final-scope blueprints by act); there is no Semi-finals
+   or Finals blueprint. The gradebook orders exams by the blueprint's
+   `by_act` key and counts whichever have been sat, so it will work, but the
+   Major exams component cannot reach its four periods until those two exist.
+4. **Quizzes are best-of.** A stage check's score is `stage_progress.mastery`,
+   which the grading service writes as `greatest()` across attempts (up to
+   `attempts_allowed`, 5). The syllabus does not say best, latest or mean.
+   Recorded as the rule the gradebook inherits, not a decision anyone made.
+5. **The seed says every demo student SAT stages 01-07 while stage 01 is
+   closed for all of them** (§0c.3). `stage_progress` is seeded directly. The
+   gradebook reads it faithfully; the demo is inconsistent, not the page.
+6. **XLSX and "the university's format" wait for a sample grade sheet.**
+   `PAGE-SPECS.md` and `MASTER-PLAN.md` §6.7 name it and nothing defines it.
+   When one arrives, it is an export shape over the same `computeGradebook()`,
+   and an XLSX writer is a new dependency to approve first.
+7. **The console's main chunk is 560 KB (167 KB gz)** and Vite warns past
+   500 KB. The gradebook chunk fell to 4.3 KB gz this session (no Recharts);
+   the main chunk was not touched and its size was not measured before, so no
+   claim is made about when it grew. The shell session (next) is the natural
+   place to look, since the shell is in it.
+8. **`getClientRects().length > 1` is not "broken across lines".** JSX writes
+   `{weight}%` as two text nodes, which is two rects on ONE line. The
+   gradebook's check counts distinct line tops instead. Any spec counting
+   rects to find a wrap will fire on every `{n}%`.
+9. **Recharts is now imported by no console page.** It stays in
+   `apps/console/package.json` (`apps/console/CLAUDE.md` still names it as
+   the chart library), tree-shaken out of every chunk. Remove the dependency,
+   or keep it for `/console/analytics`: a decision, not a defect.
+
+**Available to every route from now on:** `_gradebook-fixture.ts` shows how
+to patch a computed response and **recompute** what the patch touches, so a
+fixture screenshot never shows a total that disagrees with its own row; and
+`node --experimental-strip-types` runs a capture script that imports a spec
+fixture directly, so `current*.png` show exactly the data the spec tested.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

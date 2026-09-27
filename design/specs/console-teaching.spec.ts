@@ -177,6 +177,10 @@ test.describe("/gradebook — mastery per stage", () => {
 
     await expect(page.getByRole("button", { name: /download|export|csv/i })).toBeVisible();
 
+    // Since the 28 Sep 2026 rebuild the default view is the final grade, and
+    // the chapters are one press away (`console-gradebook.spec.ts` owns both).
+    await page.getByRole("button", { name: "Stage checks", exact: true }).click();
+
     // One column per gradeable chapter, 01-18. Stage 00 is not gradeable.
     const heads = (await page.locator("thead th").allInnerTexts()).join(" ");
     for (const stage of ["01", "09", "18"]) {

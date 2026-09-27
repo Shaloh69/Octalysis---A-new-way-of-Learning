@@ -1,5 +1,5 @@
 import type {
-  ItemBulkStatusRequest, ItemBulkStatusResult, ItemExportRequest, ItemFile,
+  Gradebook, ItemBulkStatusRequest, ItemBulkStatusResult, ItemExportRequest, ItemFile,
   ItemImportRequest, ItemImportResult,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
@@ -529,6 +529,9 @@ export const api = {
     request<{ results: InvariantResult[]; failing: number; ranAt: string }>(
       "/api/v1/console/audit/system",
     ),
+
+  /** The page. The CSV below comes from the same computation, on the server. */
+  gradebook: () => request<Gradebook>("/api/v1/console/gradebook"),
 
   gradebookCsv: () => requestText("/api/v1/console/gradebook.csv"),
 
