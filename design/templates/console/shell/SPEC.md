@@ -15,6 +15,13 @@ since every route renders inside it.
   *Records*: Audit log, System health, Feedback. **Live moves up** beside
   Locks: they are the two pages opened mid-class. Every route is still
   offered; none is added or removed.
+- **The sidebar is only as tall as what it holds** ("nav bar should not be
+  this long", after the first build). The template's full-height column with
+  the account pinned to the window's foot left an empty column between
+  Feedback and the account on every screen. The sidebar now ends under the
+  account (733px at 1440), hangs from the top and stays there while the page
+  scrolls; it scrolls inside itself only in a window shorter than the nav.
+  The same for the 380 sheet.
 - **No collapse control.** At 1440 it would change nothing a teacher can see
   (main keeps 70rem; the widest route needs 66rem), and a rail of eleven
   icons is not legible. Recorded as a deliberate absence.
@@ -44,17 +51,19 @@ groups; the collapse rail (ruling above); a header bar inside the content column
 ```
 <div shell>                                   flex row
   <a skip link>
-  <aside id=console-nav data-shell>           16rem, sticky top-0, h-screen, border-r, surface-1
+  <aside id=console-nav data-shell>           16rem, sticky top-0, CONTENT height (max 100vh),
+                                              border-r and -b, rounded bottom-right, surface-1
     brand                                     /icon.svg mark · "OCTA" over "CPE 412 · Teacher console"
-    <nav aria-label="Console sections">       scrolls on its own if the window is short
+    <nav aria-label="Console sections">       scrolls on its own only if the window is short
       group × 4: label (xs, muted) + <ul aria-labelledby>
-    account (pinned to the foot)              DropdownMenuTrigger: initials, name, email · chevrons
+    account (directly under the nav)          DropdownMenuTrigger: initials, name, email · chevrons
   <main id=main>                              min-w-0 flex-1, unchanged padding
 ```
 
-- The sidebar **stays**. It is `position: sticky` with its own height, so on
-  `/gradebook` (2285px tall) the nav and the account stay beside the page
-  instead of scrolling away over an empty column.
+- The sidebar **stays**. It is `position: sticky`, so on `/gradebook`
+  (2285px tall) the nav and the account stay beside the page instead of
+  scrolling away. It is as tall as its content, so there is no empty column
+  under the nav either (the ruling above).
 - **Width unchanged: 16rem.** `<main>`'s content box stays **70rem at 1440**,
   measured before and after on `/locks`, `/assessments`, `/submissions` and
   `/gradebook`. Those routes need 62, 64, 62 and 66rem.

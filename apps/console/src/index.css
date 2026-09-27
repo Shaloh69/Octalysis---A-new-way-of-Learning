@@ -1677,8 +1677,11 @@
   }
   .shell-side-open {
     position: fixed;
-    inset-block: 0;
+    top: 0;
     left: 0;
+    max-height: 100vh;
+    border-bottom: var(--border-hair) solid var(--line);
+    border-bottom-right-radius: var(--radius-lg);
     z-index: var(--z-sheet);
     width: 18rem;
     max-width: calc(100vw - var(--space-7));
@@ -1690,7 +1693,7 @@
   .shell-mark { width: var(--size-8); height: var(--size-8); flex-shrink: 0; }
 
   .shell-nav {
-    flex: 1;
+    flex: 0 1 auto;
     min-height: 0;
     overflow-y: auto;
     display: flex;
@@ -1760,11 +1763,21 @@
 
   @media (min-width: 1024px) {
     .shell { flex-direction: row; }
+    /*
+     * As tall as its content, not as tall as the window (instructor, 28 Sep
+     * 2026: "nav bar should not be this long"). It hangs from the top and
+     * stays there while the page scrolls; only a window shorter than the nav
+     * makes the nav scroll inside it.
+     */
     .shell-side,
     .shell-side-open {
       position: sticky;
       top: 0;
-      height: 100vh;
+      align-self: flex-start;
+      height: auto;
+      max-height: 100vh;
+      border-bottom: var(--border-hair) solid var(--line);
+      border-bottom-right-radius: var(--radius-lg);
       width: 16rem;
       max-width: none;
       flex-shrink: 0;

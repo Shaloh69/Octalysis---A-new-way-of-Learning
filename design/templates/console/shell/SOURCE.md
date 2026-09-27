@@ -26,6 +26,11 @@ hidden before capture.
 Measured in the page: sidebar `[left 0, width 256]`, content `[256, 1176]` at
 1440; the sheet `[0, 288]` at 380; the rail `64` collapsed.
 
+**Taken, then reversed by the instructor the same day:** the full-height
+column with the account pinned to the window's foot. On a 900px window it left
+~200px of empty sidebar between Feedback and the account, and on a tall one far
+more ("nav bar should not be this long"). Ours is as tall as its content.
+
 ## Alternative kept: `sidebar-with-toggle-theme`
 
 | | |
