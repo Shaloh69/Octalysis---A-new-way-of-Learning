@@ -403,3 +403,235 @@ describe("the exam window can be changed, by staff, with a reason", () => {
     expect(up.statusCode).toBe(200);
   });
 });
+
+/**
+ * ROTATING THE EXAM SALT BETWEEN TERMS.
+ *
+ * `PAGE-SPECS.md` §/console/assessments has always asked for it, and nothing
+ * did it: a salt was minted once, at creation, and lived forever. Reusing an
+ * assessment next term would hand next term's students the papers this term's
+ * students already sat.
+ *
+ * Led by the denials (hard rule 8). The salt is the one value in the system
+ * worse to leak than a key, so the tests also prove it appears in no response
+ * and in no audit row, before and after a rotation.
+ */
+describe("the exam salt can be rotated, by staff, with a reason", () => {
+  let target: string;
+  const saltOf = async (id: string) =>
+    (
+      await pool.query(
+        "select exam_salt, rotated_at from assessment_secrets where assessment_id = $1",
+        [id],
+      )
+    ).rows[0] as { exam_salt: string; rotated_at: Date };
+
+  beforeAll(async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/assessments",
+      headers: auth(teacherToken),
+      payload: { blueprintId, title: "Salt under test", attemptsAllowed: 5 },
+    });
+    expect(res.statusCode).toBe(201);
+    target = res.json().id as string;
+  });
+
+  it("DENIES a student, and the salt does not change", async () => {
+    const before = await saltOf(target);
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/v1/console/assessments/${target}/rotate-salt`,
+      headers: auth(studentToken),
+      payload: { reason: "I would like different questions" },
+    });
+    expect(res.statusCode).toBe(403);
+    expect((await saltOf(target)).exam_salt).toBe(before.exam_salt);
+  });
+
+  it("DENIES an anonymous caller", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/v1/console/assessments/${target}/rotate-salt`,
+      payload: { reason: "no token at all" },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("requires a reason", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/v1/console/assessments/${target}/rotate-salt`,
+      headers: auth(teacherToken),
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("answers 404 for an assessment that does not exist", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/console/assessments/00000000-0000-4000-8000-000000000000/rotate-salt",
+      headers: auth(teacherToken),
+      payload: { reason: "nothing here" },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it("rotates for staff, leaves a paper already started exactly as it was, and audits without the salt", async () => {
+    // A sitting that began under the old salt. Its seed is stored on the row,
+    // so a rotation must not change a single question of it.
+    const first = await app.inject({
+      method: "POST", url: "/api/v1/attempts",
+      headers: auth(studentToken),
+      payload: { assessmentId: target },
+    });
+    expect([200, 201]).toContain(first.statusCode);
+
+    const before = await saltOf(target);
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/v1/console/assessments/${target}/rotate-salt`,
+      headers: auth(teacherToken),
+      payload: { reason: "Second semester, 2026-2027" },
+    });
+    expect(res.statusCode).toBe(200);
+    const after = await saltOf(target);
+    expect(after.exam_salt).toMatch(/^[0-9a-f]{64}$/);
+    expect(after.exam_salt).not.toBe(before.exam_salt);
+    expect(after.rotated_at.getTime()).toBeGreaterThan(before.rotated_at.getTime());
+
+    // Neither salt is in the response.
+    expect(res.body).not.toContain(before.exam_salt);
+    expect(res.body).not.toContain(after.exam_salt);
+
+    // Resuming the in-progress sitting returns the identical paper.
+    const resumed = await app.inject({
+      method: "POST", url: "/api/v1/attempts",
+      headers: auth(studentToken),
+      payload: { assessmentId: target },
+    });
+    expect(resumed.json().resumed).toBe(true);
+    expect(resumed.json().attemptId).toBe(first.json().attemptId);
+    expect(JSON.stringify(resumed.json().items)).toBe(JSON.stringify(first.json().items));
+
+    const audit = await pool.query(
+      `select actor_id, payload from audit_log
+        where action = 'assessment.salt_rotate' and target_id = $1`,
+      [target],
+    );
+    expect(audit.rowCount).toBe(1);
+    expect(audit.rows[0]!.actor_id).toBe(w.teacher);
+    expect(audit.rows[0]!.payload.reason).toBe("Second semester, 2026-2027");
+    const raw = JSON.stringify(audit.rows[0]!.payload);
+    expect(raw).not.toContain(before.exam_salt);
+    expect(raw).not.toContain(after.exam_salt);
+  });
+
+  it("the list says when the salt was set and rotated, and never what it is", async () => {
+    const { exam_salt } = await saltOf(target);
+    const list = await app.inject({
+      method: "GET", url: "/api/v1/console/assessments", headers: auth(teacherToken),
+    });
+    expect(list.statusCode).toBe(200);
+    const row = list.json().assessments.find((a: { id: string }) => a.id === target);
+    expect(row.saltSetAt).toBeTruthy();
+    expect(row.saltRotatedAt).toBeTruthy();
+    expect(list.body).not.toContain(exam_salt);
+    expect(list.body).not.toContain("exam_salt");
+    expect(list.body).not.toContain("examSalt");
+  });
+});
+
+/**
+ * AN ASSESSMENT SCOPED TO A SECTION IS FOR THAT SECTION.
+ *
+ * The stage reader and RLS both honoured `assessments.section_id`, but
+ * `POST /attempts` loaded an assessment by id and never asked. A student in
+ * another section who had the id could sit it. Now they are told it does not
+ * exist, which is exactly what RLS already shows them.
+ */
+describe("a section-scoped assessment", () => {
+  it("the list carries the sections a teacher can scope to", async () => {
+    const list = await app.inject({
+      method: "GET", url: "/api/v1/console/assessments", headers: auth(teacherToken),
+    });
+    const sections = list.json().sections as Array<{ id: string; code: string }>;
+    expect(sections.some((s) => s.id === w.sectionId)).toBe(true);
+  });
+
+  it("DENIES a student of another section at Start, and writes no attempt", async () => {
+    const other = await pool.query(
+      "insert into sections (code, term) values ('BSCPE-OTHER','2026-1') returning id",
+    );
+    const made = await app.inject({
+      method: "POST", url: "/api/v1/console/assessments",
+      headers: auth(teacherToken),
+      payload: {
+        blueprintId, title: "Another section's check", attemptsAllowed: 5,
+        sectionId: other.rows[0]!.id,
+      },
+    });
+    expect(made.statusCode).toBe(201);
+    const id = made.json().id as string;
+
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/attempts",
+      headers: auth(studentToken),
+      payload: { assessmentId: id },
+    });
+    expect(res.statusCode).toBe(404);
+    const { rows } = await pool.query(
+      "select count(*)::int as n from attempts where assessment_id = $1",
+      [id],
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  it("lets a student of THAT section start it", async () => {
+    const made = await app.inject({
+      method: "POST", url: "/api/v1/console/assessments",
+      headers: auth(teacherToken),
+      payload: { blueprintId, title: "Own section's check", attemptsAllowed: 5, sectionId: w.sectionId },
+    });
+    expect(made.statusCode).toBe(201);
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/attempts",
+      headers: auth(studentToken),
+      payload: { assessmentId: made.json().id },
+    });
+    expect([200, 201]).toContain(res.statusCode);
+  });
+});
+
+describe("the list answers 'can the bank fill it?' for every row", () => {
+  it("each row's bank is exactly the feasibility endpoint's answer for its blueprint", async () => {
+    const list = await app.inject({
+      method: "GET", url: "/api/v1/console/assessments", headers: auth(teacherToken),
+    });
+    const rows = list.json().assessments as Array<{ blueprintId: string; bank: Record<string, unknown> }>;
+    expect(rows.length).toBeGreaterThan(0);
+    for (const r of rows) {
+      const f = await app.inject({
+        method: "GET",
+        url: `/api/v1/console/blueprints/${r.blueprintId}/feasibility`,
+        headers: auth(teacherToken),
+      });
+      const { blueprintId: _id, name: _name, ...answer } = f.json();
+      // Two places, one answer: the create form and the row can never disagree.
+      expect(r.bank).toEqual(answer);
+    }
+  });
+
+  it("refuses to scope an assessment to a section that does not exist", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/assessments",
+      headers: auth(teacherToken),
+      payload: {
+        blueprintId, title: "Nowhere section", attemptsAllowed: 1,
+        sectionId: "00000000-0000-4000-8000-000000000000",
+      },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});

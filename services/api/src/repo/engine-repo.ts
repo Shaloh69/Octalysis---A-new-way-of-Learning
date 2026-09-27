@@ -152,11 +152,20 @@ export async function startAttempt(
     }
 
     const { rows: assessRows } = await client.query(
-      `select attempts_allowed, opens_at, closes_at from assessments where id = $1`,
-      [opts.assessmentId],
+      `select a.attempts_allowed, a.opens_at, a.closes_at,
+              (a.section_id is null
+                 or a.section_id = (select p.section_id from profiles p where p.id = $2))
+                as in_section
+         from assessments a where a.id = $1`,
+      [opts.assessmentId, opts.userId],
     );
     const assessment = assessRows[0];
-    if (!assessment) throw errors.notFound("That assessment does not exist.");
+    // An assessment scoped to another section answers exactly as a missing one
+    // does, because that is what RLS (`as_read`) already shows this student.
+    // Before this check, having the id was enough to sit another section's paper.
+    if (!assessment || assessment.in_section !== true) {
+      throw errors.notFound("That assessment does not exist.");
+    }
 
     const now = Date.now();
     if (assessment.opens_at && now < new Date(assessment.opens_at).getTime()) {
