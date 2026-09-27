@@ -21,151 +21,150 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: `/assessments`
+## 1. Start here — the next session: `/submissions`
 
-*Rewritten 27 Sep 2026 by the `/students/:userId` session, the fifth console
-route through the gate, which also moved the roster's deactivate and section
-move onto the record (reused, not copied), withheld the key on in-progress and
-abandoned papers (instructor ruling), and gave `GET /console/students/:userId`
-its first denial tests. Phase at handover: **R3 live at 46 / 72 (64%)**; all
-tracks **133 done · 77 to-do (210 items, 63%)**. `pnpm phase` is the count,
-not this line.*
+*Rewritten 27 Sep 2026 by the `/assessments` session, the sixth console route
+through the gate, which also built two instructor-approved features: section
+scope on create (and `POST /attempts` now refuses a student of another
+section), and rotating the exam salt between terms. Phase at handover: **R3
+live at 47 / 72 (65%)**; all tracks **134 done · 76 to-do (210 items, 64%)**.
+`pnpm phase` is the count, not this line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
 > full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md`
-> §0a to §0e** (what the `/items`, `/signin`, `/locks`, `/students` and
-> `/students/:userId` sessions parked). Do not re-derive what those carry.
+> §0a to §0f** (what the `/items`, `/signin`, `/locks`, `/students`,
+> `/students/:userId` and `/assessments` sessions parked). Do not re-derive
+> what those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
 > checking the five conditions in `CLAUDE.md` rather than remembering them.
-> (On 27 Sep it was NOT: locally all 96 act-1 items sat at `review`, 0 live, so
-> no paper can be filled and every Start answers 500 (§0e.1); the DEPLOYMENT
-> could not be measured, a read-only connection hung for ten minutes (§0e.6),
-> and on 25 Sep it had 0 items and 0 content blocks for stages 00-04 (§0d.1);
-> and stage 01 is closed for every demo student because §3a is decided but not
-> built.)
+> (On 27 Sep it was NOT: locally stages 00-04 had 112 content blocks but all
+> 96 act-1 items sat at `review`, 0 live, so no paper can be filled and every
+> Start answers 500 (§0e.1); `/assessments` now says so on every row. Stage 01
+> was open for 0 of 24 demo students, because §3a is decided but not
+> built. The DEPLOYMENT was not re-measured; on 25 Sep it
+> had 0 items and 0 content blocks for stages 00-04 (§0d.1), and a read-only
+> connection hung on 27 Sep (§0e.6).)
 >
 > **Confirm the finished routes are still green before touching anything**,
 > with `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` set to `http://localhost:5184`:
-> `npx playwright test design/specs/console-*.spec.ts` gave **274 passed,
-> 42 skipped, 0 failed** on 27 Sep. **Read the skips**: most are
-> width-specific by design, but one is `console-student-detail.spec.ts`'
-> real-attempt test, which skips because no paper can be filled (§0e.2).
-> `console-student-detail.spec.ts` alone is 40 passed / 2 skipped. If
-> anything is red, that is this session's work.
+> `npx playwright test design/specs/console-*.spec.ts` gave **320 passed,
+> 42 skipped, 0 failed** on 27 Sep. **Read the skips**: they are the same 42
+> as before `/assessments`, width-specific by design, except
+> `console-student-detail.spec.ts`' real-attempt test, which skips because no
+> paper can be filled (§0e.2). `console-assessment-window.spec.ts` alone is 54
+> tests at two widths, 0 skipped. If anything is red, that is this session's
+> work.
 >
-> **THIS SESSION IS ONLY FOR `apps/console` `/assessments`. NOTHING ELSE.**
-> Not `/attempts/:attemptId` (it is last; see §0e.3 on the key), not
-> `/submissions`, not the student app, and not §0e.1's 500 on Start, which is
-> `routes/attempts.ts` work. If you find a defect on another page, write it
-> down in `docs/NEXT-SESSION.md` and leave it. The last thing this session
-> does is rewrite this prompt for the next one.
+> **THIS SESSION IS ONLY FOR `apps/console` `/submissions`. NOTHING ELSE.**
+> Not `/gradebook` (next), not `/attempts/:attemptId` (last; §0e.3), not the
+> student app's `/app/work`, not §0e.1's 500 on Start, not §0f.1's
+> feasibility cap. If you find a defect on another page, write it down in
+> `docs/NEXT-SESSION.md` and leave it. The last thing this session does is
+> rewrite this prompt for the next one.
 >
-> 1. Bring the local stack up: **`docker ps` first** (Docker Desktop has now
->    stopped THREE times, once mid-session, taking the console with it),
->    `pnpm db:up`, then **`pnpm db:reset && node scripts/db-demo.mjs`**,
->    `pnpm dev:api` on 8090, console on **5184**
->    (`pnpm --filter @octa/console dev --port 5184 --strictPort`), and
->    `pnpm dev:token` for a session. 5173 and 5174 belong to other projects. If
->    8090 or 5184 already answer, confirm they are OURS (the process command
->    line, and the page title "OCTA Console") before trusting them.
->    **`/healthz` does not touch the database** (§0e.7): after a reset or an
->    outage, prove the API with a real query (a staff GET), not `/healthz`.
->    A red run whose screenshot says "Failed to fetch" is a dead API, not a
->    broken page. **After ANY API test run, reset, do not just re-demo**: the
->    API suite wipes the seed.
-> 2. **Capture the reference.** `TEMPLATE-LINKS.md`'s `/console/assessments`
->    row says only "shadcn Blocks — multi-step form". That is a lead, and
->    probably a dead one: `/students`' `SOURCE.md` found the Blocks index lists
->    dashboard, sidebar, login and signup only. Find a real create-and-preview
->    form (the route needs a blueprint picked, a section scope, an open/close
->    window, attempts allowed, and a **feasibility panel** that is bespoke), and
->    record every rejected link and why. Capture into
->    `design/templates/console/assessments/` (the folder exists and is EMPTY)
->    at 1440 and 380, **dismiss any popover**, **open the PNGs and look**, and
->    write `SOURCE.md` and `SPEC.md`. Put the URLs in `TEMPLATE-LINKS.md`.
->    Colours and fonts are ours. If the example runs in an embedded sandbox,
->    lift its iframe to fill the viewport (the `/students/:userId` session did
->    this for TanStack's WebContainer; see its `SOURCE.md`).
-> 3. **Audit against `PAGE-SPECS.md` §`/console/assessments`** before
->    building: *create from a blueprint, scope to a section, set open/close
->    window and attempts allowed, rotate `exam_salt` between terms*, plus
->    `apps/console/CLAUDE.md`'s row (creating one mints the exam salt; the
->    feasibility check names the shortfall cell before a student presses
->    Start). Read `AssessmentsPage.tsx` (505 lines), its API routes, and
->    **`console-assessment-window.spec.ts`**, the existing spec, which you
->    extend. Say which parts exist. Name each missing one (salt rotation may
->    be one), plan it, **and ask before building it**. With 0 live items
->    locally, **every blueprint is infeasible**: that is a real state to show
->    and test, not a broken page. The exam salt is server-only:
->    `scan-bundle.mjs` forbids `exam_salt` in BOTH bundles, so the page may say
->    a salt exists or was rotated, and never show it.
-> 4. **Specs.** Extend `console-assessment-window.spec.ts`, never replace it;
->    the six go there, importing `design/specs/_gate.ts`, with assertion 6's
->    **positive control**. Where the seed lacks a state (a feasible blueprint,
->    an open window, a closed one), **patch the real response** as
->    `_student-detail-fixture.ts` does, and where a real engine call can make
->    the fixture real (that fixture resolves real bank items through `/items`'
->    preview endpoint), prefer it. **Intercept every write**: creating an
->    assessment mints a salt. **Watch them fail first**, and check the API is
->    alive when they do.
+> 1. Bring the local stack up: **`docker ps` first** (Docker Desktop has
+>    stopped three times), `pnpm db:up`, then
+>    **`pnpm db:reset && node scripts/db-demo.mjs`**, `pnpm dev:api` on 8090,
+>    console on **5184** (`pnpm --filter @octa/console dev --port 5184
+>    --strictPort`), `pnpm dev:token` for a session. 5173 and 5174 belong to
+>    other projects. If 8090 or 5184 already answer, confirm they are OURS (the
+>    process command line, and the page title "OCTA Console"). **Prove the API
+>    with a staff GET, not `/healthz`** (§0e.7). **After ANY API test run,
+>    reset and re-demo**: the API suite wipes the seed. The seed has 61
+>    submissions (30 graded, 21 submitted, 10 draft); count them again rather
+>    than trusting this line.
+> 2. **Capture the reference.** `TEMPLATE-LINKS.md`'s `/console/submissions`
+>    row names shadcn-admin's Tasks page (https://shadcn-admin.netlify.app/tasks),
+>    the same dense-table reference `/items` used, and says **`is_late` must be
+>    a visible column, not inferred** (DESIGN-REVIEW-01 D-4). Capture it anyway
+>    into `design/templates/console/submissions/` (the folder exists and is
+>    EMPTY) at 1440 and 380: the grading panel (score, rubric, feedback, the
+>    audited return) has no stock template, so find one for a
+>    review-and-mark detail and record every rejected link and why. **Dismiss
+>    any popover or floating site control** (shadcn.io's preview pages float a
+>    theme switcher; hide it). **A centred template can clip itself at 380x900**:
+>    `/assessments`' did, its heading at -46px; capture on a taller viewport
+>    and say so. Open the PNGs and look; write `SOURCE.md` and `SPEC.md`; put
+>    the URLs in `TEMPLATE-LINKS.md`. Colours and fonts are ours.
+> 3. **Audit before building. `PAGE-SPECS.md` has NO `/console/submissions`
+>    row** (grepped 27 Sep): its requirements live in `apps/console/CLAUDE.md`
+>    ("a graded submission's content freezes; regrade is an explicit, audited
+>    unlock"), `TEMPLATE-LINKS.md` (is_late visible), `docs/LAB-MANUAL.md` and
+>    `db/addendum-submissions.sql` (labs, project and participation: 40% of
+>    the grade). Read `SubmissionsPage.tsx` (308 lines), its API routes and
+>    their tests. Say which parts exist. Name each missing one, plan it, **and
+>    ask before building it**. There is **no route spec yet**: only
+>    `console-gate.spec.ts` lists the route and `console-teaching.spec.ts`
+>    mentions its old density fix. You are the session that writes
+>    `design/specs/console-submissions.spec.ts`, and it keeps D-4's density
+>    and the frozen-after-grading rule as tests.
+> 4. **Specs.** The six from `design/specs/_gate.ts`, with assertion 6's
+>    **positive control**. Patch the real response for states the seed lacks
+>    (`_assessments-fixture.ts` is the newest pattern: real rows, patched by
+>    title, every write intercepted, a `fail` option for error paths).
+>    Grading and returning are writes to 40% of the grade: **intercept every
+>    one**. Watch the specs fail first, and check the API is alive when they do.
+>    Any API change leads with its denial test, watched failing.
 > 5. **Rebuild the page.** Not improve: rebuild. Toasts, loading states and
 >    transitions per `.claude/rules/design.md`. A dialog opened from state
->    returns focus only through `onCloseAutoFocus` and a remembered opener. A
->    menu is `components/ui/dropdown-menu.tsx`, `modal={false}`. Numbers,
->    counts and dates in mono.
+>    returns focus through `onCloseAutoFocus` and a remembered opener. A menu
+>    is `components/ui/dropdown-menu.tsx`, `modal={false}`. Numbers, counts and
+>    dates in mono, and **never inside a native `<option>`**, which cannot be
+>    mono (§0f.5). A toast raised over an open dialog is outside the dialog:
+>    **make sure it does not cover the dialog's own button** (§0f.3).
 > 6. Green on all six, both widths, plus the route's own structure tests.
 >    Capture `current.png` and `current-380.png` against seeded fixture data
->    only, full page on a viewport tall enough not to resize, and **state shots
->    on a normal-height window opened at that size**. **Open every one and
->    look**: the last session's screenshots found option letters stripped by
->    Tailwind's preflight and machine values in Inter, both under a green
->    spec. Write `motion.md`. Run every console spec before committing.
->    `console-assessment-window.spec.ts` rewrites
->    `design/item-review/assessment-window.png`: this time that route IS the
->    work, so decide deliberately whether that PNG changes; restore
->    `send-back-panel.png` either way (`git checkout --` it).
-> 7. Tick **`/assessments`** under the R3 "Console revamp" box in the same
+>    only, full page on a viewport tall enough not to resize, and state shots
+>    on a normal-height window. **Open every one and look**: this session's
+>    screenshots found a scope badge breaking "stage 01" across two lines,
+>    window dates wrapping, a datetime field cutting off "PM", a dialog
+>    repeating its own heading, and a toast over the Create button, **all
+>    under a green gate**. Each became a test, watched failing. Write
+>    `motion.md`. Run every console spec before committing, then
+>    `git checkout -- design/item-review/` unless that PNG is the route.
+> 7. Tick **`/submissions`** under the R3 "Console revamp" box in the same
 >    commit as the work. Commit with explicit paths. Commit and push.
 > 8. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
->    (`/submissions`, #6 in `CONSOLE-REVAMP.md` §3), carrying forward what this
->    session learned. Update the phase figures. Commit and push that too.
+>    (`/gradebook`, #7 in `CONSOLE-REVAMP.md` §3: Recharts stays lazy-loaded),
+>    carrying forward what this session learned. Update the phase figures.
+>    Commit and push that too.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
 > versus assumed, and **end your last message with the rewritten §1 prompt in
 > one fenced code block, plain text with no `> ` markers, ready to copy and
 > paste**. Then **stop**. Do not start the next route.
 
-**What the `/students/:userId` session learned that every later route needs:**
+**What the `/assessments` session learned that every later route needs:**
 
-- **A skip can hide a test that never runs.** The detail spec's real-attempt
-  test skipped on every local run for as long as no item was live, and was
-  counted among "skips by design". Read each skip's reason (Playwright's JSON
-  reporter prints it) before calling a run green.
-- **Build the fixture from the real engine when you can.** No attempt can be
-  made locally, but `/items`' preview endpoint resolves real bank items
-  through the same `resolveItem()` a paper uses, so the fixture's papers carry
-  real stems, options, keys and rationales. Only the attempt around them is
-  invented.
-- **Tailwind's preflight strips list markers** (§0e.4) and **ICU's en-GB
-  writes "Sept"** (§0e.5). One was caught by a screenshot, one by a unit test;
-  neither by the gate.
-- **Watch a denial fail by removing the check, then restore it.** The record's
-  route had `requireStaff()` but no test; removing it for one run showed a
-  student reading any record with a 200.
-- **Reuse a dialog through an adapter, not a copy.** `asRosterRow()` hands
-  `StatusDialog` and `MoveDialog` the record as a roster row; neither file
-  changed.
-- **Ask with the finding.** "Show the key on an in-progress paper?" was only
-  answerable after reading that `ai_after_submit` grants staff every status.
-- Still true from `/students`, `/locks`, `/signin` and `/items`: check a route
-  is mounted before believing its page; trace every way in before calling a
-  thing closed; the console's spacing scale is the token scale; a dry run can
-  go to the API, a write cannot; a spec that seeds through an API checks the
-  response; pivot rather than scroll sideways, on the page's own width; only
-  the checked radio is in the Tab order; the six are the floor, not the spec;
-  look at the picture, even when green.
+- **The gate is the floor, and five defects lived above it.** A badge
+  breaking its number, dates wrapping, a native input cutting its value, a
+  duplicated heading and a toast over a button were all found by opening the
+  PNG, with every assertion green. Each is now a test that was watched
+  failing before its fix, the only proof a new assertion can see anything.
+- **A test that cannot fail is not a test.** The first date-width assertion
+  passed on the broken dialog because `getComputedStyle(input).font` is `""`
+  in Chromium and the probe measured in the wrong font. Break the page on
+  purpose, see red, restore it.
+- **Put the honest answer on every row, not only in the form.** The old page
+  said `open` in green on ten assessments no student could start. The list's
+  GET now runs the same feasibility function as the create form, so the two
+  cannot disagree.
+- **An API enforcing half a rule is a hole.** Section scope was honoured by
+  RLS and the stage reader and ignored by `POST /attempts`; the denial test
+  answered 200. Trace every way in.
+- **Ask with the plan.** Salt rotation and section scope were approved in one
+  question each because each came with the route, the tests and what it
+  could not break (a started paper stores its seed).
+- **Modal dialogs hide toasts from assistive technology** (§0f.2); give every
+  dialog its own `role=alert` for a failed write.
+- Still true from `/students/:userId`, `/students`, `/locks`, `/signin` and
+  `/items`: a skip can hide a test that never runs; build fixtures from real
+  responses; preflight strips list markers; ICU writes "Sept"; the console's
+  spacing scale is the token scale; only the checked radio is in the Tab
+  order; reuse a dialog through an adapter; look at the picture, even when
+  green.
 
 ---
 
