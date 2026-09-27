@@ -11,18 +11,43 @@
 //   node scripts/sync-content.mjs              apply to $DATABASE_URL
 //   node scripts/sync-content.mjs --check      report drift, change nothing
 //   node scripts/sync-content.mjs --verify     check quoted spans against the decks
+//   node scripts/sync-content.mjs --pull       also write console edits back into the files
+//   node scripts/sync-content.mjs --take-file  resolve a conflict: the file's text wins
 //
 // A block only bumps its version when its BODY changed. Version churn on every
-// run would make `content_blocks.version` meaningless as an edit record.
+// run would make `content_blocks.version` meaningless as an edit record. The
+// bump itself, and the copy of the text it replaced, are the archive trigger's
+// job (db/schema.sql `archive_content_block`), so sync, the console editor and
+// a direct write all keep history the same way.
+//
+// THE CONSOLE CAN EDIT A BLOCK TOO (instructor ruling, 28 Sep 2026), so this
+// script no longer assumes the database only ever holds what it last wrote:
+//
+//   file unchanged, console edited   KEEP the console text; list it. `--pull`
+//                                    writes it into the file, so it reaches git
+//                                    and `--verify`
+//   file changed, console edited     CONFLICT: keep the console text, report
+//                                    both. `--take-file` lets the file win
+//   file changed, console untouched  the file wins, as it always has
+//
+// "File unchanged" means: the .md body hashes to `source_hash`, the hash of
+// the body this script last wrote.
+//
+// PLANET SUMMARIES are no longer approved here. Each `summary:` is written to
+// `stage_summaries` as a draft and approved on /content, bound to its text; a
+// changed draft withdraws its approval. A `summary_status:` line is refused.
 
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const STAGE_DIR = resolve(ROOT, "content/stages");
+// OCTA_STAGE_DIR is for the API's test suite, which syncs a temporary copy.
+const STAGE_DIR = process.env.OCTA_STAGE_DIR
+  ? resolve(process.env.OCTA_STAGE_DIR)
+  : resolve(ROOT, "content/stages");
 
 const c = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
@@ -44,7 +69,7 @@ function parseFrontMatter(raw) {
   if (!m) throw new Error("missing front matter");
   const body = text.slice(m[0].length);
 
-  const fm = { objectives: [] };
+  const fm = { objectives: [], _raw: m[0] };
   const lines = m[1].split("\n");
   let i = 0;
 
@@ -100,12 +125,29 @@ function parseBlocks(body) {
   }
   for (let i = 0; i < marks.length; i++) {
     const mark = marks[i];
-    const text = body.slice(mark.end, i + 1 < marks.length ? marks[i + 1].start : body.length);
+    const end = i + 1 < marks.length ? marks[i + 1].start : body.length;
+    const text = body.slice(mark.end, end);
     const meta = {};
     for (const a of mark.attrs.matchAll(/(\w+)="([^"]*)"/g)) meta[a[1]] = a[2];
-    blocks.push({ kind: mark.kind, body: text.trim(), meta });
+    // `span` is where the block's text sits in `body`, so --pull can put a
+    // console edit back exactly there, whitespace around it untouched.
+    blocks.push({ kind: mark.kind, body: text.trim(), meta, span: { start: mark.end, end } });
   }
   return blocks;
+}
+
+/** The file's text with some blocks' bodies replaced; `edits` maps block index to new body. */
+function rewriteBlocks(stage, edits) {
+  let body = stage.body;
+  const order = [...edits.keys()].sort((a, b) => b - a); // last first: earlier offsets stay valid
+  for (const i of order) {
+    const { start, end } = stage.blocks[i].span;
+    const raw = body.slice(start, end);
+    const lead = raw.match(/^\s*/)[0];
+    const trail = raw.match(/\s*$/)[0];
+    body = body.slice(0, start) + lead + edits.get(i) + trail + body.slice(end);
+  }
+  return stage.frontMatter + body;
 }
 
 const hash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 16);
@@ -118,7 +160,21 @@ async function loadStageFiles() {
     const { fm, body } = parseFrontMatter(raw);
     const blocks = parseBlocks(body);
     if (blocks.length === 0) throw new Error(`${name}: no blocks found`);
-    out.push({ file: name, stageId: fm.stage ?? name.slice(0, 2), fm, blocks });
+    if ("summary_status" in fm) {
+      throw new Error(
+        `${name}: summary_status is no longer read. A summary is approved on the console's ` +
+          `/content page, bound to its exact text (28 Sep 2026). Delete the line.`,
+      );
+    }
+    out.push({
+      file: name,
+      path: resolve(STAGE_DIR, name),
+      stageId: fm.stage ?? name.slice(0, 2),
+      fm,
+      blocks,
+      body,
+      frontMatter: fm._raw,
+    });
   }
   return out;
 }
@@ -248,9 +304,13 @@ async function verifyAgainstSource(stages) {
 }
 
 /* ---------- apply ---------- */
-async function sync(client, stages, { dryRun }) {
+async function sync(client, stages, { dryRun, pull = false, takeFile = false }) {
   let inserted = 0, updated = 0, unchanged = 0, removed = 0, objectives = 0;
   let summariesLive = 0, summariesPending = 0;
+  const summariesWithdrawn = [], kept = [], conflicts = [], pulled = [], filesToWrite = [];
+
+  // Every block this run replaces is archived as a SYNC change, not 'direct'.
+  await client.query("select set_config('app.edit_via', 'sync', true)");
 
   for (const stage of stages) {
     const { rows: stageRows } = await client.query("select id, title from stages where id = $1", [
@@ -285,17 +345,49 @@ async function sync(client, stages, { dryRun }) {
     // Instructor ruling, 25 Sep 2026: summaries may be DRAFTED from each
     // stage's own authored brief and objectives, as a narrow exception to hard
     // rule 5, because the instructor reviews every one before students see it.
-    // That review is the whole safeguard, so the gate is here: a summary reaches
-    // `stages.summary` only when its front matter says `summary_status:
-    // approved`. A draft actively CLEARS the column, so moving a summary back to
-    // draft takes it off students' screens on the next sync rather than leaving
-    // an unreviewed version live. Until then the sidebar shows the objectives.
-    const approved = stage.fm.summary_status === "approved";
-    const summary = approved && stage.fm.summary ? String(stage.fm.summary) : null;
-    if (stage.fm.summary && !approved) summariesPending++;
-    if (summary) summariesLive++;
-    if (!dryRun) {
-      await client.query("update stages set summary = $2 where id = $1", [stage.stageId, summary]);
+    //
+    // Ruling of 28 Sep 2026: that review happens on /content, in the database,
+    // and an approval is of ONE text. So this script writes the draft to
+    // `stage_summaries` and never approves anything. If the draft's text has
+    // changed, its status goes back to draft and `stages.summary` is cleared:
+    // a revised summary is unreviewed until someone reads it again. A trigger
+    // on `stages` refuses any summary that is not the approved text.
+    const draft = stage.fm.summary ? String(stage.fm.summary).trim() : "";
+    const { rows: sumRows } = await client.query(
+      "select draft_hash, status from stage_summaries where stage_id = $1",
+      [stage.stageId],
+    );
+    const had = sumRows[0];
+    if (!draft) {
+      if (had && !dryRun) {
+        await client.query("update stages set summary = null where id = $1", [stage.stageId]);
+        await client.query("delete from stage_summaries where stage_id = $1", [stage.stageId]);
+      }
+    } else if (!had) {
+      summariesPending++;
+      if (!dryRun) {
+        await client.query(
+          "insert into stage_summaries (stage_id, draft, draft_hash) values ($1, $2, $3)",
+          [stage.stageId, draft, hash(draft)],
+        );
+      }
+    } else if (had.draft_hash !== hash(draft)) {
+      summariesPending++;
+      if (had.status === "approved") summariesWithdrawn.push(stage.stageId);
+      if (!dryRun) {
+        await client.query("update stages set summary = null where id = $1", [stage.stageId]);
+        await client.query(
+          `update stage_summaries
+              set draft = $2, draft_hash = $3, status = 'draft', approved_hash = null,
+                  note = null, reviewed_by = null, reviewed_at = null, updated_at = now()
+            where stage_id = $1`,
+          [stage.stageId, draft, hash(draft)],
+        );
+      }
+    } else if (had.status === "approved") {
+      summariesLive++;
+    } else {
+      summariesPending++;
     }
 
     // Objectives
@@ -316,50 +408,90 @@ async function sync(client, stages, { dryRun }) {
 
     // Blocks
     const { rows: existing } = await client.query(
-      "select ordinal, kind, body_md, meta, version from content_blocks where stage_id = $1",
+      `select ordinal, kind, body_md, meta, version, source_hash, console_edited
+         from content_blocks where stage_id = $1`,
       [stage.stageId],
     );
     const byOrdinal = new Map(existing.map((r) => [Number(r.ordinal), r]));
+    const pullEdits = new Map(); // block index -> console text, for --pull
 
     for (let i = 0; i < stage.blocks.length; i++) {
       const ordinal = i + 1;
       const b = stage.blocks[i];
+      const fileHash = hash(b.body);
       const prev = byOrdinal.get(ordinal);
+      const where = `${stage.file} block ${ordinal}`;
 
       if (!prev) {
         inserted++;
         if (!dryRun) {
           await client.query(
-            `insert into content_blocks (stage_id, ordinal, kind, body_md, meta, version)
-             values ($1, $2, $3, $4, $5, 1)`,
-            [stage.stageId, ordinal, b.kind, b.body, JSON.stringify(b.meta)],
+            `insert into content_blocks (stage_id, ordinal, kind, body_md, meta, version, source_hash)
+             values ($1, $2, $3, $4, $5, 1, $6)`,
+            [stage.stageId, ordinal, b.kind, b.body, JSON.stringify(b.meta), fileHash],
           );
         }
         continue;
       }
 
-      // Only the BODY and KIND decide whether this is an edit. Bumping the
-      // version on every run would make it useless as an edit record.
-      if (prev.body_md === b.body && prev.kind === b.kind) {
+      // A CONSOLE EDIT is never overwritten silently.
+      if (prev.console_edited) {
+        const fileUnchanged = prev.source_hash === fileHash;
+        if (fileUnchanged && pull) {
+          pullEdits.set(i, prev.body_md);
+          pulled.push(where);
+          if (!dryRun) {
+            // The text does not change, so the trigger records no new version.
+            await client.query(
+              `update content_blocks set source_hash = $3, console_edited = false
+                where stage_id = $1 and ordinal = $2`,
+              [stage.stageId, ordinal, hash(prev.body_md)],
+            );
+          }
+          continue;
+        }
+        if (fileUnchanged) {
+          kept.push(where);
+          continue;
+        }
+        if (!takeFile) {
+          conflicts.push(where);
+          continue;
+        }
+        // --take-file: the file wins, and the console text goes to history.
+      } else if (prev.body_md === b.body && prev.kind === b.kind) {
+        // Only the BODY and KIND decide whether this is an edit. Bumping the
+        // version on every run would make it useless as an edit record.
         unchanged++;
+        if (prev.source_hash !== fileHash && !dryRun) {
+          await client.query(
+            "update content_blocks set source_hash = $3 where stage_id = $1 and ordinal = $2",
+            [stage.stageId, ordinal, fileHash],
+          );
+        }
         continue;
       }
 
       updated++;
       if (!dryRun) {
+        // The archive trigger bumps `version` and keeps the replaced text.
         await client.query(
           `update content_blocks
-              set kind = $3, body_md = $4, meta = $5,
-                  version = version + 1, updated_at = now()
+              set kind = $3, body_md = $4, meta = $5, source_hash = $6, console_edited = false
             where stage_id = $1 and ordinal = $2`,
-          [stage.stageId, ordinal, b.kind, b.body, JSON.stringify(b.meta)],
+          [stage.stageId, ordinal, b.kind, b.body, JSON.stringify(b.meta), fileHash],
         );
       }
     }
 
-    // Blocks deleted from the file
-    for (const [ordinal] of byOrdinal) {
+    // Blocks deleted from the file. A console edit is kept even here: removing
+    // it would lose text nobody has put in git.
+    for (const [ordinal, prev] of byOrdinal) {
       if (ordinal > stage.blocks.length) {
+        if (prev.console_edited && !takeFile) {
+          conflicts.push(`${stage.file} block ${ordinal} (gone from the file)`);
+          continue;
+        }
         removed++;
         if (!dryRun) {
           await client.query(
@@ -369,15 +501,22 @@ async function sync(client, stages, { dryRun }) {
         }
       }
     }
+
+    if (pullEdits.size > 0) filesToWrite.push({ path: stage.path, text: rewriteBlocks(stage, pullEdits) });
   }
 
-  return { inserted, updated, unchanged, removed, objectives, summariesLive, summariesPending };
+  return {
+    inserted, updated, unchanged, removed, objectives, summariesLive, summariesPending,
+    summariesWithdrawn, kept, conflicts, pulled, filesToWrite,
+  };
 }
 
 async function main() {
   const args = new Set(process.argv.slice(2));
   const dryRun = args.has("--check");
   const verifyOnly = args.has("--verify");
+  const pull = args.has("--pull");
+  const takeFile = args.has("--take-file");
 
   console.log(c.bold("\nOCTA -- content sync\n"));
 
@@ -429,9 +568,15 @@ async function main() {
 
   try {
     await client.query("begin");
-    const s = await sync(client, stages, { dryRun });
+    const s = await sync(client, stages, { dryRun, pull, takeFile });
     if (dryRun) await client.query("rollback");
     else await client.query("commit");
+
+    // Files are written only after the database committed, so a failed sync
+    // never leaves a file claiming an edit the database does not hold.
+    if (!dryRun) {
+      for (const f of s.filesToWrite) await writeFile(f.path, f.text, "utf8");
+    }
 
     console.log("");
     console.log(`  ${c.green(String(s.inserted))} inserted   ${c.yellow(String(s.updated))} updated   ` +
@@ -439,13 +584,29 @@ async function main() {
     console.log(c.dim(`  ${s.objectives} objective(s) upserted`));
     console.log(
       c.dim(
-        `  planet summaries: ${s.summariesLive} live, ${s.summariesPending} awaiting the instructor's approval`,
+        `  planet summaries: ${s.summariesLive} approved, ${s.summariesPending} to review on /content`,
       ),
     );
+    for (const id of s.summariesWithdrawn) {
+      console.log(c.yellow(`  stage ${id}: its summary changed, so its approval was withdrawn. Review it again.`));
+    }
+    if (s.pulled.length > 0) {
+      console.log(c.green(`\n  ${s.pulled.length} console edit(s) ${dryRun ? "would be" : ""} written into the files:`));
+      for (const w of s.pulled) console.log(`    ${w}`);
+    }
+    if (s.kept.length > 0) {
+      console.log(c.yellow(`\n  ${s.kept.length} console edit(s) kept, not yet in the files. Run with --pull:`));
+      for (const w of s.kept) console.log(`    ${w}`);
+    }
+    if (s.conflicts.length > 0) {
+      console.log(c.red(`\n  ${s.conflicts.length} conflict(s): edited in the console AND changed in the file.`));
+      console.log(c.red("  The console text was kept. Merge by hand, or run with --take-file to let the file win:"));
+      for (const w of s.conflicts) console.log(`    ${w}`);
+    }
 
     if (dryRun) {
       console.log(c.dim("\n  --check: rolled back, nothing written.\n"));
-    } else if (s.inserted === 0 && s.updated === 0 && s.removed === 0) {
+    } else if (s.inserted === 0 && s.updated === 0 && s.removed === 0 && s.pulled.length === 0) {
       console.log(c.green("\n  Idempotent: a second run changed nothing.\n"));
     } else {
       console.log(c.green("\n  Content synced.\n"));

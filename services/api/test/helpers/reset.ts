@@ -19,6 +19,22 @@ export async function resetAll(): Promise<void> {
   await setup(`
     alter table responses disable trigger responses_no_update;
     alter table responses disable trigger responses_no_delete;
+    -- Content history is append-only, and the archive trigger writes it on
+    -- every block delete: both are suspended here, like the responses triggers.
+    alter table content_blocks disable trigger content_blocks_archive;
+    alter table content_block_versions disable trigger cbv_no_update;
+    alter table content_block_versions disable trigger cbv_no_delete;
+    delete from content_block_versions where true;
+    -- Before auth.users (reviewed_by) and stage 99 (stage_id).
+    delete from stage_summaries    where true;
+    -- Content history is append-only and the archive trigger writes it on every
+    -- block delete: both are suspended here, like the responses triggers.
+    alter table content_blocks disable trigger content_blocks_archive;
+    alter table content_block_versions disable trigger cbv_no_update;
+    alter table content_block_versions disable trigger cbv_no_delete;
+    delete from content_block_versions where true;
+    -- Before auth.users (reviewed_by) and stage 99 (stage_id).
+    delete from stage_summaries    where true;
 
     -- feedback FIRST: feedback.item_id references items(id) with no cascade,
     -- so once any suite files a content report, every later reset fails on
@@ -67,5 +83,11 @@ export async function resetAll(): Promise<void> {
 
     alter table responses enable trigger responses_no_update;
     alter table responses enable trigger responses_no_delete;
+    alter table content_blocks enable trigger content_blocks_archive;
+    alter table content_block_versions enable trigger cbv_no_update;
+    alter table content_block_versions enable trigger cbv_no_delete;
+    alter table content_blocks enable trigger content_blocks_archive;
+    alter table content_block_versions enable trigger cbv_no_update;
+    alter table content_block_versions enable trigger cbv_no_delete;
   `);
 }

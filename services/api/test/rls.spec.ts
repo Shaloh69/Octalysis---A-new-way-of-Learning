@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   runAs,
+  runAsSteps,
   setup,
   anon,
   authenticated,
@@ -397,5 +398,116 @@ describe("V-20 — soft delete", () => {
       w.inProgressAttemptId,
     ]);
     expect(res.error?.message).toMatch(/append-only/i);
+  });
+});
+
+/* ============================================================
+ * Content review — /content, 28 Sep 2026
+ *
+ * A draft summary is UNREVIEWED text. `stages` is readable by every student
+ * for a published stage, and RLS is per row, not per column, so a draft kept
+ * on `stages` would be a draft any student can read through supabase-js. It
+ * lives in `stage_summaries`, staff-only, and reaches `stages.summary` only
+ * once approved, which a trigger enforces for every role.
+ *
+ * Every denial asserts the OUTCOME, not just `wasDenied()`: that helper counts
+ * any error as a denial, "relation does not exist" included, so a denial test
+ * on a table that does not exist yet would pass. Each has a positive control.
+ * ========================================================== */
+describe("content review — drafts and history are staff-only", () => {
+  const DRAFT = "An unreviewed draft summary of orientation.";
+
+  beforeAll(async () => {
+    await setup(
+      `insert into stage_summaries (stage_id, draft, draft_hash)
+       values ('00', $1, 'hash-of-draft-00')
+       on conflict (stage_id) do update
+         set draft = excluded.draft, draft_hash = excluded.draft_hash,
+             status = 'draft', approved_hash = null, note = null`,
+      [DRAFT],
+    );
+    // A superuser write, as sync makes: the archive trigger must fire for it too.
+    await setup(
+      "update content_blocks set body_md = 'Welcome to the boot sequence, revised.' where stage_id = '00' and ordinal = 1",
+    );
+  });
+
+  it("a student cannot read a draft summary", async () => {
+    const res = await runAs<{ draft: string }>(studentA, "select draft from stage_summaries");
+    expect(res.error, `expected a silent RLS filter, got ${denialReason(res)}`).toBeNull();
+    expect(res.rowCount).toBe(0);
+  });
+
+  it("POSITIVE CONTROL: a teacher can read it", async () => {
+    const res = await runAs<{ draft: string }>(teacher, "select draft from stage_summaries where stage_id = '00'");
+    expect(res.error).toBeNull();
+    expect(res.rows.map((r) => r.draft)).toEqual([DRAFT]);
+  });
+
+  it("a student cannot read the versions a block replaced", async () => {
+    const res = await runAs(studentA, "select body_md from content_block_versions where stage_id = '00'");
+    expect(res.error, `expected a silent RLS filter, got ${denialReason(res)}`).toBeNull();
+    expect(res.rowCount).toBe(0);
+  });
+
+  it("POSITIVE CONTROL: a teacher can, and the superuser write above was archived", async () => {
+    const res = await runAs<{ body_md: string; replaced_via: string }>(
+      teacher,
+      "select body_md, replaced_via from content_block_versions where stage_id = '00' and ordinal = 1",
+    );
+    expect(res.error).toBeNull();
+    expect(res.rows).toEqual([{ body_md: "Welcome to the boot sequence.", replaced_via: "direct" }]);
+  });
+
+  it("a teacher cannot approve a summary behind the API's back", async () => {
+    const res = await runAs(
+      teacher,
+      "update stage_summaries set status = 'approved', approved_hash = draft_hash where stage_id = '00'",
+    );
+    expect(res.error, denialReason(res)).toBeNull();
+    expect(res.rowCount, "an approval with no audit row got through").toBe(0);
+  });
+
+  it("no role can put an unreviewed summary in front of students — service_role included", async () => {
+    for (const actor of [teacher, service]) {
+      const res = await runAs(actor, "update stages set summary = $1 where id = '00'", [DRAFT]);
+      expect(res.error?.message, `${actor.label} wrote an unreviewed summary`).toMatch(/not been approved/i);
+    }
+  });
+
+  it("POSITIVE CONTROL: the approved text itself is allowed onto stages", async () => {
+    const res = await runAsSteps(service, [
+      ["update stage_summaries set status = 'approved', approved_hash = draft_hash where stage_id = '00'"],
+      ["update stages set summary = $1 where id = '00'", [DRAFT]],
+    ]);
+    expect(res.error, denialReason(res)).toBeNull();
+  });
+
+  it("clearing a summary is always allowed: withdrawing must never be blocked", async () => {
+    const res = await runAs(teacher, "update stages set summary = null where id = '00'");
+    expect(res.error, denialReason(res)).toBeNull();
+  });
+
+  it("a block's history is append-only, for service_role too", async () => {
+    const upd = await runAs(service, "update content_block_versions set body_md = 'rewritten' where stage_id = '00'");
+    expect(upd.error?.message).toMatch(/append-only/i);
+    const del = await runAs(service, "delete from content_block_versions where stage_id = '00'");
+    expect(del.error?.message).toMatch(/append-only/i);
+  });
+
+  it("a staff write straight to content_blocks keeps the text it replaced, and bumps the version", async () => {
+    const res = await runAsSteps(teacher, [
+      ["update content_blocks set body_md = 'A direct edit.' where stage_id = '00' and ordinal = 1"],
+      [`select v.body_md, v.version, v.replaced_via,
+                (select version from content_blocks where stage_id = '00' and ordinal = 1) as now_version
+           from content_block_versions v
+          where v.stage_id = '00' and v.ordinal = 1
+          order by v.version desc limit 1`],
+    ]);
+    expect(res.error, denialReason(res)).toBeNull();
+    const row = res.rows[0] as unknown as { body_md: string; version: number; replaced_via: string; now_version: number };
+    expect(row.body_md).toBe("Welcome to the boot sequence, revised.");
+    expect(row.replaced_via).toBe("direct");
+    expect(Number(row.now_version)).toBe(Number(row.version) + 1);
   });
 });

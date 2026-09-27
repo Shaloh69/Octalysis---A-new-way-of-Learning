@@ -112,7 +112,64 @@ create table content_blocks (
   meta       jsonb not null default '{}',
   version    int  not null default 1,
   updated_at timestamptz not null default now(),
+  -- The console's block editor (28 Sep 2026). `content/stages/NN.md` is the
+  -- authoring source and `sync-content` the bridge, so sync has to be able to
+  -- tell "the file changed" from "someone fixed a typo in the console":
+  --   source_hash     the hash of the .md body sync last wrote here (null
+  --                   until the first sync that knows about it)
+  --   console_edited  the body was last written by the console editor and is
+  --                   not yet in the .md. Sync never overwrites it; `--pull`
+  --                   writes it back into the file and clears this.
+  source_hash    text,
+  console_edited boolean not null default false,
   unique (stage_id, ordinal)
+);
+
+-- ---------- every version a block replaced -------------------
+-- History is an ARCHIVE: no foreign keys, so it outlives a block sync removes
+-- and a stage the fixtures delete, and it is append-only (trigger below), for
+-- the service role too. A correction is a new edit; history is never rewritten.
+-- Rows are written by a trigger on content_blocks, not by the API, so a staff
+-- client writing straight through supabase-js is archived as well ('direct').
+create table content_block_versions (
+  id           bigserial primary key,
+  block_id     uuid not null,
+  stage_id     text not null,
+  ordinal      int  not null,
+  version      int  not null,                  -- the version this row WAS
+  kind         text not null,
+  body_md      text,
+  meta         jsonb not null default '{}',
+  replaced_via text not null check (replaced_via in ('sync','console','direct')),
+  replaced_by  uuid,                           -- the actor, when the API names one
+  reason       text,
+  replaced_at  timestamptz not null default now(),
+  unique (block_id, version)
+);
+create index on content_block_versions (stage_id, ordinal);
+
+-- ---------- planet summaries, and their review ---------------
+-- Instructor ruling, 28 Sep 2026: a summary is approved IN THE DATABASE, bound
+-- to its exact text. The draft cannot live on `stages`: that table is readable
+-- by every student for a published stage, and RLS is per row, not per column.
+-- So the draft is here, staff-only, and reaches `stages.summary` only once
+-- approved -- a trigger on `stages` enforces that for every role.
+create table stage_summaries (
+  stage_id      text primary key references stages(id) on delete cascade,
+  draft         text not null check (length(trim(draft)) > 0),
+  draft_hash    text not null,
+  status        text not null default 'draft'
+                  check (status in ('draft','approved','sent_back')),
+  approved_hash text,
+  note          text,                          -- the send-back reason
+  reviewed_by   uuid references auth.users(id),
+  reviewed_at   timestamptz,
+  updated_at    timestamptz not null default now(),
+  -- An approval is of ONE text. If sync writes a new draft, the approval goes.
+  constraint ss_approved_is_this_text
+    check (status <> 'approved' or approved_hash = draft_hash),
+  constraint ss_sent_back_says_why
+    check (status <> 'sent_back' or length(trim(coalesce(note, ''))) >= 3)
 );
 
 -- ---------- item bank ---------------------------------------
@@ -445,6 +502,74 @@ create trigger responses_no_update before update on responses
 create trigger responses_no_delete before delete on responses
   for each row execute function deny_mutation();
 
+-- ---------- content history: every replaced version is kept ----------
+-- Fires for sync, for the API, and for a staff client writing directly. The
+-- API names the edit with three transaction-local settings, the same explicit
+-- signal V-21 chose over the connection's identity:
+--   set local app.edit_via = 'console'; app.actor_id = <uuid>; app.edit_reason = <text>
+-- Unset, the write is recorded as 'direct' with no actor. SECURITY DEFINER so a
+-- staff client (which may not insert history itself) is still archived.
+create or replace function archive_content_block() returns trigger
+language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  via   text := coalesce(nullif(current_setting('app.edit_via', true), ''), 'direct');
+  actor uuid := nullif(current_setting('app.actor_id', true), '')::uuid;
+  why   text := nullif(current_setting('app.edit_reason', true), '');
+begin
+  if tg_op = 'UPDATE' then
+    -- Bookkeeping only (source_hash, console_edited, meta): not a new version.
+    if new.body_md is not distinct from old.body_md and new.kind = old.kind then
+      return new;
+    end if;
+    new.version    := old.version + 1;
+    new.updated_at := now();
+  end if;
+  insert into content_block_versions
+    (block_id, stage_id, ordinal, version, kind, body_md, meta, replaced_via, replaced_by, reason)
+  values
+    (old.id, old.stage_id, old.ordinal, old.version, old.kind, old.body_md, old.meta, via, actor, why)
+  on conflict (block_id, version) do nothing;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end $$;
+
+create trigger content_blocks_archive before update or delete on content_blocks
+  for each row execute function archive_content_block();
+
+create or replace function deny_history_mutation() returns trigger
+language plpgsql as $$
+begin
+  raise exception 'content history is append-only'
+    using hint = 'a correction is a new edit of the block; history is never rewritten';
+end $$;
+
+create trigger cbv_no_update before update on content_block_versions
+  for each row execute function deny_history_mutation();
+create trigger cbv_no_delete before delete on content_block_versions
+  for each row execute function deny_history_mutation();
+
+-- ---------- a summary reaches students only once approved ----------
+-- For every role, the service role included: `st_staff` lets any staff token
+-- update `stages`, and without this a staff client could put an unreviewed
+-- summary on the map with no approval and no audit row. Clearing is always
+-- allowed, so withdrawing a summary can never be blocked.
+create or replace function summary_must_be_approved() returns trigger
+language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if new.summary is not null and new.summary is distinct from old.summary
+     and not exists (
+       select 1 from stage_summaries ss
+        where ss.stage_id = new.id and ss.status = 'approved' and ss.draft = new.summary
+     ) then
+    raise exception 'stage % summary has not been approved', new.id
+      using hint = 'approve it on /content; the approved text is what reaches students';
+  end if;
+  return new;
+end $$;
+
+create trigger stages_summary_approved before update of summary on stages
+  for each row execute function summary_must_be_approved();
+
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- Every policy below carries an explicit TO clause. A policy with no TO clause
@@ -457,6 +582,8 @@ alter table sections           enable row level security;
 alter table stages             enable row level security;
 alter table objectives         enable row level security;
 alter table content_blocks     enable row level security;
+alter table content_block_versions enable row level security;
+alter table stage_summaries    enable row level security;
 alter table items              enable row level security;
 alter table item_stats         enable row level security;
 alter table blueprints         enable row level security;
@@ -510,6 +637,14 @@ create policy cb_read  on content_blocks for select to authenticated using (
 );
 create policy cb_staff on content_blocks for all to authenticated
   using (is_staff()) with check (is_staff());
+-- Content review (28 Sep 2026): staff may READ drafts and history; nobody
+-- writes them through a client. A draft is written by sync, an approval by the
+-- API with an audit row, and history by the archive trigger. No write policy,
+-- so a staff token approving behind the API's back matches nothing.
+create policy cbv_staff_read on content_block_versions for select to authenticated
+  using (is_staff());
+create policy ss_staff_read  on stage_summaries        for select to authenticated
+  using (is_staff());
 
 -- ITEM BANK: staff only. Students never read `items` directly -- the API
 -- serves them a stripped paper. This is the fix for shipping the answer key.

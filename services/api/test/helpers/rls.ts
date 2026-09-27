@@ -121,6 +121,41 @@ export async function runAs<T = Record<string, unknown>>(
 }
 
 /**
+ * Several statements as one actor, in ONE transaction, always rolled back.
+ * Returns the last statement's result, or the first error.
+ *
+ * For a test whose second statement must see the first one's write (a trigger
+ * that reads another table, say). One multi-statement string will not do:
+ * `pg` answers it with an ARRAY of results, and `runAs` would read `rows` off
+ * the array.
+ */
+export async function runAsSteps<T = Record<string, unknown>>(
+  actor: Actor,
+  steps: Array<[string, unknown[]?]>,
+): Promise<QueryResult<T>> {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query(`set local role ${actor.dbRole}`);
+    await client.query("select set_config('request.jwt.claims', $1, true)", [claimsFor(actor)]);
+    let last: QueryResult<T> = { rows: [], rowCount: 0, error: null };
+    for (const [sql, params] of steps) {
+      try {
+        const res = await client.query(sql, params ?? []);
+        last = { rows: res.rows as T[], rowCount: res.rowCount ?? res.rows.length, error: null };
+      } catch (err) {
+        const e = err as { code?: string; message: string };
+        return { rows: [], rowCount: 0, error: { code: e.code, message: e.message } };
+      }
+    }
+    return last;
+  } finally {
+    await client.query("rollback").catch(() => {});
+    client.release();
+  }
+}
+
+/**
  * Run privileged setup that COMMITS. Used only by fixtures.
  * Runs as the connection owner (superuser), which bypasses RLS — appropriate for
  * seeding, and never used by a test assertion.
