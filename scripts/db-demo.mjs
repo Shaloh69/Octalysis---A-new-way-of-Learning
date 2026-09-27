@@ -236,6 +236,23 @@ ${err.stderr || err.message}
     process.exit(1);
   }
 
+  process.stdout.write("  demo-audit          ... ");
+  try {
+    /*
+     * A history for /audit, consistent with the state above. AFTER the item
+     * and assessment syncs, because it refers to both. Without it /audit
+     * opened on "Nothing recorded yet" (28 Sep 2026).
+     */
+    await psqlFile("db/demo-audit.sql");
+    console.log(c.green("ok"));
+  } catch (err) {
+    console.log(c.red("FAILED"));
+    console.error(c.red(`
+${err.stderr || err.message}
+`));
+    process.exit(1);
+  }
+
   /*
    * Counted, not assumed. The failure this script exists to prevent is SILENT:
    * a seeded database with 4 objectives looks fine until the map is empty, so
@@ -254,6 +271,7 @@ ${err.stderr || err.message}
     count("items (review)", "select count(*) from items where status = 'review'"),
     count("assessments", "select count(*) from assessments"),
     count("flagged items", "select count(*) from item_stats where flagged"),
+    count("audit entries", "select count(*) from audit_log"),
   ]);
 
   console.log("");
