@@ -434,6 +434,23 @@ and §0h.2 (participation entry) are untouched.
 7. **`apps/console/test-results/`** sits untracked at the repo root of the
    console (it was there before this session). Playwright writes it when a
    spec runs from that directory. Add it to `.gitignore` or stop producing it.
+8. **At lg and up the DOCUMENT no longer scrolls; `<main>` does** (instructor
+   ruling, the template's frame). Every console spec passed unchanged (no spec
+   or page scrolled `window`), but from now on: scroll `main`, not `window`;
+   `position: sticky` inside a page sticks to `main`; and a full-page capture
+   at 1440 needs a viewport as tall as main's CONTENT (measure its children,
+   not `main`). Two traps met on the way, both in the SPEC: `.shell` must
+   not clip (the gate then read everything below main's fold as "cut off",
+   seven routes red at once, a false alarm), and `main` must be
+   `position: relative` (absolute sr-only text escaped it and grew the
+   document to 2223px).
+9. **Two reds seen once, in one full run, not since.** In the run where the
+   clipping false alarm fired: `console-assessment-window.spec.ts` "status
+   is a word decided by the window" (1440) and `console-submissions.spec.ts`
+   "a project takes a score out of a maximum" (380, "Response has been
+   disposed" while the context closed). Both passed in the next two runs
+   (targeted and full). Probably load under that run's seven failures; a red
+   that returns is real.
 
 ---
 

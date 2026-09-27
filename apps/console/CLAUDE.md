@@ -42,9 +42,12 @@ change nothing a teacher can see.
 
 The sidebar is sticky and **16rem, and must stay 16rem**: `<main>` is 70rem at 1440 with it, and
 `/gradebook` (66rem), `/assessments` (64), `/locks` and `/submissions` (62) choose their table
-layout on their own width. A wider sidebar pushes all four to their lists. It is **only as tall as
-its content** (instructor, 28 Sep 2026: "nav bar should not be this long"), not a full-height
-column. The theme and Sign out live in the account menu directly under the nav; every sign-out goes through one handler and says so in a
+layout on their own width. A wider sidebar pushes all four to their lists. At lg and up the
+frame is the window, as in the template (instructor, 28 Sep 2026): the sidebar runs the full
+height with the account at its foot and never moves, and **`<main>` is the only scroller**; the
+document does not scroll. So a page that wants to scroll something scrolls `main`, not `window`,
+and a full-page capture at 1440 needs a viewport as tall as main's content. The theme and Sign out
+live in the account menu at the foot; every sign-out goes through one handler and says so in a
 toast. At 380 the same `<aside>` is a sheet: a disclosure, never a modal, closed by Escape, the
 scrim, any route change or Tab into the page, with focus back on its button.
 

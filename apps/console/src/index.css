@@ -1643,8 +1643,8 @@
  * ------------------------------------------------------------ the shell
  *
  * `design/templates/console/shell/SPEC.md`: shadcn-admin's sidebar. At lg and
- * up a 16rem sidebar that STAYS (sticky, its own height), so a long page
- * never scrolls the nav and the account away. Below lg, a bar that names the
+ * up a full-height 16rem sidebar that never moves; only <main> scrolls, so a long
+ * page never takes the nav and the account with it. Below lg, a bar that names the
  * page, and the same <aside> as an 18rem sheet from the left over the scrim.
  *
  * 16rem, not wider: <main>'s content box is 70rem at 1440 with it, measured
@@ -1677,11 +1677,8 @@
   }
   .shell-side-open {
     position: fixed;
-    top: 0;
+    inset-block: 0;
     left: 0;
-    max-height: 100vh;
-    border-bottom: var(--border-hair) solid var(--line);
-    border-bottom-right-radius: var(--radius-lg);
     z-index: var(--z-sheet);
     width: 18rem;
     max-width: calc(100vw - var(--space-7));
@@ -1693,7 +1690,7 @@
   .shell-mark { width: var(--size-8); height: var(--size-8); flex-shrink: 0; }
 
   .shell-nav {
-    flex: 0 1 auto;
+    flex: 1;
     min-height: 0;
     overflow-y: auto;
     display: flex;
@@ -1761,30 +1758,32 @@
 
   .shell-skel-link { height: var(--space-5); margin: var(--space-1) var(--space-3); }
 
+  /*
+   * At lg and up the frame is the window, as in the template: the sidebar
+   * runs its full height with the account at its foot, and it never moves.
+   * ONLY <main> scrolls (instructor, 28 Sep 2026: "make the inner page itself
+   * scrollable, not the sidebar"). The document itself does not scroll, so a
+   * full-page capture at 1440 needs a viewport taller than the page.
+   */
   @media (min-width: 1024px) {
-    .shell { flex-direction: row; }
-    /*
-     * As tall as its content, not as tall as the window (instructor, 28 Sep
-     * 2026: "nav bar should not be this long"). It hangs from the top and
-     * stays there while the page scrolls; only a window shorter than the nav
-     * makes the nav scroll inside it.
-     */
+    /* No overflow: hidden here. The frame is exactly the window, <main> takes
+       every overflow, and a clipping .shell would make the gate read everything
+       below main's fold as cut off rather than scrolled. */
+    .shell { flex-direction: row; height: 100vh; }
     .shell-side,
     .shell-side-open {
-      position: sticky;
-      top: 0;
-      align-self: flex-start;
-      height: auto;
-      max-height: 100vh;
-      border-bottom: var(--border-hair) solid var(--line);
-      border-bottom-right-radius: var(--radius-lg);
+      position: static;
+      height: 100vh;
       width: 16rem;
       max-width: none;
       flex-shrink: 0;
       box-shadow: none;
       animation: none;
     }
-    .shell-main { padding: var(--space-6); }
+    /* position: relative makes <main> the containing block of every absolutely
+       positioned descendant (sr-only text among them). Without it they escape
+       the scroller and the DOCUMENT grows to 2223px on /gradebook. */
+    .shell-main { position: relative; height: 100vh; overflow-y: auto; padding: var(--space-6); }
   }
 
   /* Below lg the bar is sticky: a control scrolled into view must not park under it. */

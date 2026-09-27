@@ -263,7 +263,7 @@ test.describe("the shell — what it owes every route", () => {
     expect(await page.evaluate(() => localStorage.getItem("octa:dev-token"))).toBeNull();
   });
 
-  test("1440: the sidebar stays beside a long page, and main keeps its 70rem", async ({ page }, testInfo) => {
+  test("1440: only <main> scrolls; the sidebar runs the window's height and never moves", async ({ page }, testInfo) => {
     test.skip(narrow(testInfo), "the sidebar is a sheet below lg");
     await open(page, "/gradebook");
     await page.locator("[data-student]").first().waitFor({ timeout: 15_000 });
@@ -277,13 +277,33 @@ test.describe("the shell — what it owes every route", () => {
     });
     expect(content, "main's content box at 1440").toBeGreaterThanOrEqual(70 * 16);
 
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    /*
+     * Instructor, 28 Sep 2026: the template's layout, "make the inner page
+     * itself scrollable, not the sidebar". The DOCUMENT does not scroll;
+     * <main> does, and /gradebook is long enough that it must.
+     */
+    const scroll = await page.evaluate(() => {
+      const d = document.documentElement;
+      const m = document.querySelector("main")!;
+      return { doc: d.scrollHeight - d.clientHeight, main: m.scrollHeight - m.clientHeight };
+    });
+    expect(scroll.doc, "the window itself must not scroll").toBeLessThanOrEqual(0);
+    expect(scroll.main, "a long route scrolls inside <main>").toBeGreaterThan(0);
+
+    const footBefore = await accountButton(page).boundingBox();
+    await page.locator("main").evaluate((m) => m.scrollTo(0, m.scrollHeight));
     await page.waitForTimeout(200);
+    expect(await page.locator("main").evaluate((m) => m.scrollTop), "main scrolled").toBeGreaterThan(0);
+
+    // The account sits at the window's foot, and did not move.
     const box = await accountButton(page).boundingBox();
-    expect(box, "the account block is still on screen at the foot of the page").not.toBeNull();
+    expect(box).not.toBeNull();
     expect(box!.y + box!.height).toBeLessThanOrEqual(900);
-    expect(box!.y).toBeGreaterThan(0);
+    expect(box!.y + box!.height, "pinned to the foot of the window").toBeGreaterThan(900 - 80);
+    expect(box!.y).toBe(footBefore!.y);
     await expect(page.getByRole("link", { name: "Locks" })).toBeInViewport();
+    const side = await page.locator("#console-nav").boundingBox();
+    expect(side!.height, "the sidebar runs the window's full height").toBeGreaterThanOrEqual(899);
   });
 
   test("380: the bar names the page you are on", async ({ page }, testInfo) => {
@@ -299,6 +319,8 @@ test.describe("the shell — what it owes every route", () => {
     await open(page);
     await openMenu(page);
     await expect(menuButton(page)).toHaveAttribute("aria-expanded", "true");
+    // The template's sheet: the window's full height, the account at its foot.
+    expect((await page.locator("#console-nav").boundingBox())!.height).toBeGreaterThanOrEqual(843);
     await page.getByRole("link", { name: "Locks" }).focus();
     await page.keyboard.press("Escape");
     await expect(page.locator("#console-nav")).toBeHidden();

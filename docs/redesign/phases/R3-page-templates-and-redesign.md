@@ -790,10 +790,11 @@ thesis deliverable, and right now no phase is accountable for it.
         **four groups by job** (In class: Locks, Live · Students: Students,
         Submissions, Gradebook · Course: Assessments, Items, Content ·
         Records: Audit log, System health, Feedback), and **no collapse
-        control**, and, after the first build, **a sidebar only as tall as its
-        content** ("nav bar should not be this long"). The sidebar is
-        **sticky** (it used to scroll away over an empty column on long
-        pages), still 16rem, so `<main>` keeps **70rem at
+        control**, and, after two looks at the build, **the template's frame
+        with only the page scrolling**: the sidebar runs the window's height
+        with the account at its foot and never moves, and `<main>` is the
+        only scroller (it used to scroll away with the page over an empty
+        column). Still 16rem, so `<main>` keeps **70rem at
         1440**, measured before and after on `/locks`, `/assessments`,
         `/submissions`, `/gradebook`. The account menu at the foot holds the
         theme (three radio items) and Sign out. At 380 a sticky bar names the

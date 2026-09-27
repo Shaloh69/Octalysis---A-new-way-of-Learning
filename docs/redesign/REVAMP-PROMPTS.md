@@ -58,8 +58,9 @@ at handover: **R3 live at 50 / 73 (68%)**; all tracks **137 done · 74 to-do
 > 165 lines, reading `GET /api/v1/console/content` in
 > `services/api/src/routes/console.ts`). NOTHING ELSE. Not `/audit`,
 > `/system`, `/feedback` or `/live` (next, one per session), not
-> `/attempts/:attemptId` (last; §0e.3), not the shell (done and green; the
-> shell is 16rem, content-height and sticky, and must stay that way), not the
+> `/attempts/:attemptId` (last; §0e.3), not the shell (done and green: the
+> template's frame, a full-height 16rem sidebar that never moves, and
+> `<main>` the ONLY scroller at 1440; it must stay that way), not the
 > student app, not §0e.1's 500 on Start, §0f.1, §0g.1 or §0h.2. If you find a
 > defect on another page, write it down in `docs/NEXT-SESSION.md` and leave
 > it. The last thing this session does is rewrite this prompt for the next one.
@@ -115,8 +116,10 @@ at handover: **R3 live at 50 / 73 (68%)**; all tracks **137 done · 74 to-do
 >    under 400ms, a skeleton after, words after 3s), transitions per
 >    `.claude/rules/design.md`. `<main>` is **70rem** at 1440 under the
 >    shell; choose any table/list breakpoint from what the widest view needs.
-> 6. Capture `current.png` (1440, on a viewport TALLER than the page, so
->    nothing sticky is stitched) and `current-380.png`, against seeded data,
+> 6. Capture `current.png` and `current-380.png` against seeded data. At
+>    1440 the DOCUMENT does not scroll, `<main>` does (§0i.8): a full-page
+>    shot shows one screen unless the viewport is as tall as main's CONTENT
+>    (measure main's children, not main itself, which is the viewport's height),
 >    and **open every one and look**. Write `motion.md`. Run EVERY console
 >    spec. Then `git checkout -- design/item-review/`.
 > 7. Tick `/content` under the R3 "Console revamp" box in the same commit as
@@ -132,17 +135,24 @@ at handover: **R3 live at 50 / 73 (68%)**; all tracks **137 done · 74 to-do
 
 **What the shell session learned that every later route needs:**
 
-- **The instructor will look at the picture and overrule the template.** The
-  shell took shadcn-admin's full-height sidebar with the account pinned to the
-  window's foot; the instructor's first look was "nav bar should not be this
-  long". A template is a lead, not a ruling. Show the picture early.
+- **Show the picture early; the instructor rules on it.** The first build let
+  the sidebar stretch down the whole scrolling page ("nav bar should not be
+  this long"); a content-height sidebar looked worse; the ruling was the
+  template's own frame with only the page scrolling. Three passes in one
+  session, each settled by a screenshot, none by a spec.
+- **At 1440 `<main>` is the page's scroller now.** Scroll `main`, not
+  `window`. Two traps are in the shell's SPEC: a clipping ancestor above a
+  scroller makes the gate call everything below the fold "cut off" (seven
+  routes red at once, a false alarm), and a scroller that is not
+  `position: relative` lets absolute sr-only text escape and grow the page.
 - **Ask with a preview.** Grouping the nav and a collapse control were put as
   two questions, each with a recommended option and an ASCII preview of the
   result, and both came back in one round.
-- **A full-page screenshot of a sticky element lies.** Stitching a page
-  taller than the viewport draws a `100vh` sidebar ending mid-page. Capture on
-  a viewport taller than the page, and add a normal-height shot scrolled to
-  the foot when stickiness is the claim.
+- **A full-page screenshot of a fixed frame lies.** Stitching a page taller
+  than the viewport draws a `100vh` sidebar ending mid-page, and with
+  `<main>` scrolling there is nothing to stitch at all. Size the viewport to
+  the content, and add a normal-height shot scrolled to the end when "it
+  stays put" is the claim.
 - **The motion recorder only sees surfaces it names.** `_gate.ts` now records
   `menu` (`[role=menu]`) and `shell` (`[data-shell]`) as well as `main`,
   `dialog` and `toast`. Motion outside those is invisible to assertion 6.

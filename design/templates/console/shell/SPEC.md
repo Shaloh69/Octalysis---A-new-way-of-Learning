@@ -15,13 +15,15 @@ since every route renders inside it.
   *Records*: Audit log, System health, Feedback. **Live moves up** beside
   Locks: they are the two pages opened mid-class. Every route is still
   offered; none is added or removed.
-- **The sidebar is only as tall as what it holds** ("nav bar should not be
-  this long", after the first build). The template's full-height column with
-  the account pinned to the window's foot left an empty column between
-  Feedback and the account on every screen. The sidebar now ends under the
-  account (733px at 1440), hangs from the top and stays there while the page
-  scrolls; it scrolls inside itself only in a window shorter than the nav.
-  The same for the 380 sheet.
+- **The template's layout, and only the page scrolls.** After the first
+  build ("nav bar should not be this long", when the sidebar was stretched
+  down a whole scrolling page), a content-height sidebar was tried and
+  rejected the same day: "It looks bad just make the layout of it the same
+  as the templates just make the inner page itself scrollable not the
+  sidebar". So at lg and up the frame is the window: the sidebar runs the
+  window's full height with the account at its foot and never moves, and
+  **`<main>` is the only scroller**; the document itself does not scroll. At
+  380 the sheet is full height, account at its foot, as in the template.
 - **No collapse control.** At 1440 it would change nothing a teacher can see
   (main keeps 70rem; the widest route needs 66rem), and a rail of eleven
   icons is not legible. Recorded as a deliberate absence.
@@ -51,19 +53,28 @@ groups; the collapse rail (ruling above); a header bar inside the content column
 ```
 <div shell>                                   flex row
   <a skip link>
-  <aside id=console-nav data-shell>           16rem, sticky top-0, CONTENT height (max 100vh),
-                                              border-r and -b, rounded bottom-right, surface-1
+<div shell>                                   height 100vh, NOT overflow: hidden (see below)
+  <aside id=console-nav data-shell>           16rem, 100vh, border-r, surface-1; never moves
     brand                                     /icon.svg mark · "OCTA" over "CPE 412 · Teacher console"
-    <nav aria-label="Console sections">       scrolls on its own only if the window is short
+    <nav aria-label="Console sections">       flex: 1; scrolls on its own only if the window is short
       group × 4: label (xs, muted) + <ul aria-labelledby>
-    account (directly under the nav)          DropdownMenuTrigger: initials, name, email · chevrons
-  <main id=main>                              min-w-0 flex-1, unchanged padding
+    account (pinned to the foot)              DropdownMenuTrigger: initials, name, email · chevrons
+  <main id=main>                              100vh, overflow-y: auto, position: relative; unchanged padding
 ```
 
-- The sidebar **stays**. It is `position: sticky`, so on `/gradebook`
-  (2285px tall) the nav and the account stay beside the page instead of
-  scrolling away. It is as tall as its content, so there is no empty column
-  under the nav either (the ruling above).
+- **Only `<main>` scrolls.** On `/gradebook` (2285px of content) the nav and
+  the account stay exactly where they are; `console-shell.spec.ts` asserts
+  the document does not scroll, `<main>` does, and the account's position is
+  unchanged after scrolling it to the end.
+- `<main>` is `position: relative`, so every absolutely positioned
+  descendant (sr-only text among them) belongs to its scroll box. Without it
+  they escaped, and the DOCUMENT grew to 2223px on `/gradebook`.
+- `.shell` must NOT be `overflow: hidden`. The gate's clipping check walks
+  up from each element; past `<main>` (a vertical scroller, allowed) it would
+  reach a clipping `.shell` and report everything below the fold as cut off.
+  That failed seven routes' assertion 1 at once, and was a false alarm.
+- A full-page capture at 1440 now needs a viewport as tall as `<main>`'s
+  CONTENT (measure its children, not `<main>`, which is the viewport's height).
 - **Width unchanged: 16rem.** `<main>`'s content box stays **70rem at 1440**,
   measured before and after on `/locks`, `/assessments`, `/submissions` and
   `/gradebook`. Those routes need 62, 64, 62 and 66rem.
