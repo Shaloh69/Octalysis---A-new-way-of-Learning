@@ -6,6 +6,8 @@ import { errors } from "../errors.js";
 import { withTransaction } from "../db.js";
 import { loadAttempt, loadResolvedPaper } from "../repo/engine-repo.js";
 import type { Env } from "../env.js";
+import { computeGradebook, toCsv } from "../gradebook/compute.js";
+import { loadGradebookInput } from "../gradebook/load.js";
 
 /**
  * The teacher console API.
@@ -866,49 +868,25 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
   });
 
   /* ----------------------------------------------------------
-   * GET /api/v1/console/gradebook.csv
+   * GET /api/v1/console/gradebook      -- the page
+   * GET /api/v1/console/gradebook.csv  -- the export
+   *
+   * Both come from ONE computation (`gradebook/compute.ts`), so the page and
+   * the file a teacher hands the registrar cannot disagree.
    * -------------------------------------------------------- */
+  app.get("/api/v1/console/gradebook", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    return reply.send(computeGradebook(await loadGradebookInput(app.db)));
+  });
+
   app.get("/api/v1/console/gradebook.csv", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
-
-    const stages = await app.db.query(
-      "select id from stages where gradeable order by ordinal",
-    );
-    const stageIds = stages.rows.map((s) => s.id as string);
-
-    const { rows } = await app.db.query(
-      `select p.student_id, p.full_name, sp.stage_id, sp.mastery
-         from profiles p
-         left join stage_progress sp on sp.user_id = p.id
-        where p.student_id is not null and p.deleted_at is null
-        order by p.student_id`,
-    );
-
-    const byStudent = new Map<string, { name: string; mastery: Map<string, number> }>();
-    for (const r of rows) {
-      const entry = byStudent.get(r.student_id) ?? { name: r.full_name, mastery: new Map() };
-      if (r.stage_id) entry.mastery.set(r.stage_id, Number(r.mastery));
-      byStudent.set(r.student_id, entry);
-    }
-
-    const escape = (v: string): string =>
-      /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-
-    const lines = [["student_id", "full_name", ...stageIds.map((s) => `stage_${s}`)].join(",")];
-    for (const [studentId, entry] of byStudent) {
-      lines.push(
-        [
-          escape(studentId),
-          escape(entry.name),
-          ...stageIds.map((s) => String(Math.round((entry.mastery.get(s) ?? 0) * 100))),
-        ].join(","),
-      );
-    }
-
+    const csv = toCsv(computeGradebook(await loadGradebookInput(app.db)));
     return reply
       .header("content-type", "text/csv; charset=utf-8")
       .header("content-disposition", 'attachment; filename="octa-gradebook.csv"')
-      .send(lines.join("\n"));
+      .send(csv);
   });
 }

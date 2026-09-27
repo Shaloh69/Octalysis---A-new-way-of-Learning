@@ -309,3 +309,81 @@ export const ItemExportRequest = z.object({
   ids: z.array(z.string().uuid()).min(1).max(2000),
 });
 export type ItemExportRequest = z.infer<typeof ItemExportRequest>;
+
+/* ============================================================
+ * Gradebook
+ * ========================================================== */
+
+/**
+ * The syllabus's five grade components, in the syllabus's order
+ * (`docs/CPE412-CURRICULUM.md` §1.1).
+ *
+ * The weights are FIXED, by instructor decision on 28 Sep 2026: they are the
+ * syllabus's, and changing them mid-term is a grading-policy change, not a
+ * setting. `PAGE-SPECS.md`'s "weighting configuration" is deferred on purpose
+ * and says so in `design/templates/console/gradebook/SPEC.md`.
+ */
+export const GradeComponent = z.enum(["project", "quizzes", "exams", "labs", "participation"]);
+export type GradeComponent = z.infer<typeof GradeComponent>;
+
+export const GRADE_WEIGHTS: Readonly<Record<GradeComponent, number>> = {
+  project: 20,
+  quizzes: 30,
+  exams: 30,
+  labs: 10,
+  participation: 10,
+};
+
+export const GRADE_COMPONENT_LABELS: Readonly<Record<GradeComponent, string>> = {
+  project: "Project",
+  quizzes: "Quizzes",
+  exams: "Major exams",
+  labs: "Laboratory exercises",
+  participation: "Class participation",
+};
+
+/** A percentage, 0-100, or null: nothing to count yet. */
+const Pct = z.number().min(0).max(100).nullable();
+
+export const GradebookStudent = z.object({
+  userId: z.string().uuid(),
+  studentId: z.string(),
+  fullName: z.string(),
+  section: z.string().nullable(),
+  /** Best stage-check score per gradeable stage. null = NOT SAT, which is not 0. */
+  checks: z.record(z.string(), Pct),
+  /** Per component. null = nothing of this student's counts yet. */
+  components: z.record(GradeComponent, Pct),
+  /** Handed in and not yet counted: submitted, or returned for revision. */
+  unmarked: z.number().int().min(0),
+  /** Weighted over the components the class has marks in; null when none do. */
+  final: Pct,
+});
+export type GradebookStudent = z.infer<typeof GradebookStudent>;
+
+export const GradebookComponentInfo = z.object({
+  key: GradeComponent,
+  label: z.string(),
+  weight: z.number(),
+  /** The class has at least one mark in it, so it counts toward the final. */
+  covered: z.boolean(),
+  /** What it is made of so far: the stage checks, exams or deliverables with marks. */
+  counted: z.array(z.object({ id: z.string(), title: z.string() })),
+});
+export type GradebookComponentInfo = z.infer<typeof GradebookComponentInfo>;
+
+export const Gradebook = z.object({
+  components: z.array(GradebookComponentInfo),
+  /** Share of the grade, in percent, that the final so far is computed over. */
+  coverage: z.number().min(0).max(100),
+  stages: z.array(z.object({ id: z.string(), title: z.string() })),
+  students: z.array(GradebookStudent),
+  classAverage: z.object({
+    checks: z.record(z.string(), Pct),
+    components: z.record(GradeComponent, Pct),
+    final: Pct,
+  }),
+  /** Handed in across the class and waiting on a mark (status = submitted). */
+  awaitingMarking: z.number().int().min(0),
+});
+export type Gradebook = z.infer<typeof Gradebook>;

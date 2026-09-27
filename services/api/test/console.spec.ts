@@ -5,6 +5,7 @@ import { buildServer } from "../src/server.js";
 import { loadEnv } from "../src/env.js";
 import { pool, closePool } from "./helpers/rls.js";
 import { seedItemBank, type BankWorld } from "./helpers/bank.js";
+import { Gradebook } from "@octa/contracts";
 
 const JWT_SECRET = "test-secret-at-least-32-characters-long-000000";
 
@@ -55,6 +56,7 @@ describe("console is staff-only", () => {
     "/api/v1/console/audit",
     "/api/v1/console/audit/system",
     "/api/v1/console/gradebook.csv",
+    "/api/v1/console/gradebook",
   ];
 
   it("refuses a student token on every console route", async () => {
@@ -502,10 +504,52 @@ describe("gradebook export", () => {
     const lines = res.body.trim().split("\n");
     const header = lines[0] ?? "";
     const rows = lines.slice(1);
-    expect(header).toMatch(/^student_id,full_name,stage_01/);
-    // 17 gradeable stages: 00 is orientation and excluded.
-    expect(header.split(",")).toHaveLength(2 + 18);  // id, name, then one per gradeable chapter
+    expect(header).toMatch(/^student_id,full_name,section,stage_01/);
+    // 18 gradeable stages: 00 is orientation and excluded. Then the five
+    // components, each named with its syllabus weight, the final so far, and
+    // how much of the grade that final covers (instructor, 28 Sep 2026).
+    expect(header.split(",")).toHaveLength(3 + 18 + 5 + 2);
+    expect(header).toContain("project_20,quizzes_30,exams_30,labs_10,participation_10,final_so_far,grade_covered_pct");
     expect(rows.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("serves the page the same computation, in the shared contract", async () => {
+    const res = await app.inject({
+      method: "GET", url: "/api/v1/console/gradebook", headers: auth(teacherToken),
+    });
+    expect(res.statusCode).toBe(200);
+    const g = Gradebook.parse(res.json());
+    expect(g.stages.map((s) => s.id)).not.toContain("00");
+    expect(g.stages).toHaveLength(18);
+    expect(g.components.reduce((a, c) => a + c.weight, 0)).toBe(100);
+  });
+
+  it("counts a GRADED lab by its own maximum, and never a returned one", async () => {
+    /*
+     * NEXT-SESSION §0g.2: a returned row keeps its old score. §0g.3: the seed's
+     * labs are out of 100 and the console marks out of 4. Both at once, in the
+     * database, so the SQL half is held as well as the arithmetic.
+     */
+    await pool.query("delete from submissions where slug = 'lab-gb'");
+    await pool.query(
+      `insert into submissions (user_id, kind, slug, title, status, submitted_at, score, max_score, graded_by, graded_at)
+       values ($1, 'lab', 'lab-gb', 'Gradebook lab', 'graded',   now(), 75, 100, $3, now()),
+              ($2, 'lab', 'lab-gb', 'Gradebook lab', 'returned', now(),  4,   4, $3, now())`,
+      [w.studentA, w.studentB, w.teacher],
+    );
+    try {
+      const res = await app.inject({
+        method: "GET", url: "/api/v1/console/gradebook", headers: auth(teacherToken),
+      });
+      const g = Gradebook.parse(res.json());
+      const a = g.students.find((s) => s.userId === w.studentA)!;
+      const b = g.students.find((s) => s.userId === w.studentB)!;
+      expect(a.components.labs).toBe(75);
+      expect(b.components.labs, "a returned lab scored").toBeNull();
+      expect(b.unmarked).toBeGreaterThanOrEqual(1);
+    } finally {
+      await pool.query("delete from submissions where slug = 'lab-gb'");
+    }
   });
 
   it("escapes a name containing a comma", async () => {
