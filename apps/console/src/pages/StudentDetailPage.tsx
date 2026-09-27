@@ -1,276 +1,251 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api } from "@/lib/api";
+import { ArrowLeft, ChevronDown } from "lucide-react";
+import { api, type AttemptDetail, type RosterRow } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
-import { cn, pct, shortDate } from "@/lib/utils";
+import { useDelayed } from "@/lib/useDelayed";
+import { pct } from "@/lib/utils";
+import { asRosterRow, dayDate } from "@/lib/record-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Fragment, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import type { AttemptDetail } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { Empty, ErrorNote, Loading } from "@/components/ui/empty";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { StatusDialog } from "./students/StatusDialog";
+import { MoveDialog } from "./students/MoveDialog";
+import { AttemptList, AttemptTable, type PaperState } from "./record/Attempts";
 
 /**
- * One student: progress per stage, and every attempt they have made.
+ * `/students/:userId`: one student's record. Rebuilt 27 Sep 2026 against
+ * `design/templates/console/students-detail/SPEC.md`; gated by
+ * `design/specs/console-student-detail.spec.ts`.
  *
- * The attempt link is the point of this page. `apps/console/CLAUDE.md` puts it
- * first in the list of pages by real use, because "what did this student
- * actually see?" is the question a grade dispute turns on -- and OCTA can answer
- * it exactly, months later, from the stored seed.
+ * The question this page answers is "what did this student actually see?",
+ * which is what a grade dispute turns on. Every attempt is listed, and opening
+ * one regenerates the exact paper from the stored seed, in place, so a teacher
+ * keeps their place in the list (TanStack's sub-component row).
+ *
+ * The header is Primer's record header: back to the list, who, their state in
+ * a word, the facts in one line, and one Actions menu holding the roster's own
+ * section move and deactivation, reused rather than copied.
  */
-/**
- * One attempt's regenerated paper, revealed in place.
- *
- * `CONSOLE-DATA-AND-TEMPLATES.md` §2 asks for TanStack's expanding-rows pattern
- * here, "for the attempt-history table where expanding a row reveals the
- * regenerated exact variant". The point is not the widget — it is that a
- * teacher marking a class scans the list, checks one paper, and carries on.
- * Navigating to `/attempts/:id` answers the same question and costs them their
- * place in the list, which for the page `STATUS.md` calls "the page you'll use
- * most" is the wrong trade.
- *
- * So this is a SUMMARY, not a second copy of `AttemptPage`. Per item: ordinal,
- * the stem, what the student answered, and the key. The full page still exists
- * and is still linked, because a disputed mark deserves the whole thing.
- *
- * IT SHOWS THE ANSWER KEY, and that is allowed here for the same reason it is
- * allowed on `AttemptPage`: this is the console, the reader is staff, and
- * `ai_after_submit` grants that read at the database level once the attempt is
- * submitted. This file must never be imported by `apps/web` —
- * `scripts/scan-bundle.mjs` searches the student bundle for exactly these field
- * names, with a live value from the database so the check cannot pass
- * vacuously.
- */
-function PaperSummary({ paper }: { paper: AttemptDetail }): JSX.Element {
-  return (
-    <ol className="m-0 list-none space-y-2 p-0">
-      {paper.items.map((item) => (
-        <li key={item.ordinal} className="rounded-sm border border-line bg-surface-2 p-2">
-          <div className="flex items-baseline gap-2">
-            <span className="num text-xs text-ink-faint">{item.ordinal}</span>
-            <span className="text-sm">{item.stem}</span>
-          </div>
-          <dl className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-xs">
-            <div className="flex gap-1">
-              <dt className="text-ink-faint">Answered</dt>
-              {/*
-                Neutral, never red. Root CLAUDE.md: an incorrect answer gets a
-                neutral response, and that rule does not stop applying because
-                a teacher is the one reading it -- these screens get projected.
-              */}
-              <dd className={cn("num", item.isCorrect === false && "text-ink-muted")}>
-                {item.studentAnswer ?? "—"}
-              </dd>
-            </div>
-            <div className="flex gap-1">
-              <dt className="text-ink-faint">Key</dt>
-              <dd className="num text-success">{item.correctValue}</dd>
-            </div>
-            <div className="flex gap-1">
-              <dt className="text-ink-faint">Stage</dt>
-              <dd className="num">{item.stageId}</dd>
-            </div>
-          </dl>
-        </li>
-      ))}
-    </ol>
-  );
-}
+
+/** Below this much of its OWN width six columns do not fit: a list instead. */
+const TABLE_PX = 640; // 40rem
 
 export function StudentDetailPage() {
-  /*
-   * One open at a time. A teacher compares a paper against the roster, not two
-   * papers against each other -- and stacking several open papers turns a scan
-   * list into a scroll.
-   */
-  const [openAttempt, setOpenAttempt] = useState<string | null>(null);
+  const { userId = "" } = useParams();
+  const record = useAsync(() => api.student(userId), [userId]);
+  const data = record.data;
+  const firstLoad = record.loading && !data;
+  const showSkeleton = useDelayed(firstLoad, 400);
+  const slow = useDelayed(firstLoad, 3000);
+
+  /* ---- one paper open at a time, each fetched once and kept ---- */
+  const [open, setOpen] = useState<string | null>(null);
   const [papers, setPapers] = useState<Record<string, AttemptDetail>>({});
   const [loadingPaper, setLoadingPaper] = useState<string | null>(null);
   const [paperError, setPaperError] = useState<string | null>(null);
 
-  async function toggleAttempt(attemptId: string): Promise<void> {
-    if (openAttempt === attemptId) {
-      setOpenAttempt(null);
+  async function toggle(attemptId: string): Promise<void> {
+    if (open === attemptId) {
+      setOpen(null);
       return;
     }
-    setOpenAttempt(attemptId);
+    setOpen(attemptId);
     setPaperError(null);
-    if (papers[attemptId]) return; // fetched once, kept
-
+    if (papers[attemptId]) return;
     setLoadingPaper(attemptId);
     try {
       const paper = await api.attempt(attemptId);
       setPapers((prev) => ({ ...prev, [attemptId]: paper }));
     } catch {
-      // Says what happened and what to do, per the gate's error-copy rule.
-      setPaperError("That paper could not be loaded. Open it on its own page instead.");
+      setPaperError("This paper could not be loaded. Close it and open it again, or open it on its own page.");
     } finally {
       setLoadingPaper(null);
     }
   }
+  const paperState: PaperState = {
+    open, papers, loading: loadingPaper, error: paperError, toggle: (id) => void toggle(id),
+  };
 
-  const { userId = "" } = useParams();
-  const { data, error, loading } = useAsync(() => api.student(userId), [userId]);
+  /* ---- the attempts' own width decides table or list ---- */
+  const box = useRef<HTMLElement>(null);
+  const [wide, setWide] = useState(true);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setWide(el.getBoundingClientRect().width >= TABLE_PX);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [data !== null]);
 
-  if (loading) return <Loading what="this student" />;
-  if (error) return <ErrorNote message={error} />;
-  if (!data) return null;
+  /* ---- the roster's dialogs, opened from the Actions menu ---- */
+  const [statusFor, setStatusFor] = useState<RosterRow | null>(null);
+  const [moving, setMoving] = useState<RosterRow[] | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+
+  if (record.error && !data) {
+    return (
+      <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-bg px-4 py-3">
+        <p className="min-w-0 flex-1 text-sm text-ink">
+          This record could not be loaded. <span className="text-ink-muted">{record.error}</span>
+        </p>
+        <Button size="sm" variant="outline" onClick={record.reload}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  if (firstLoad || !data) {
+    return showSkeleton ? <RecordSkeleton slow={slow} /> : <div className="min-h-[32rem]" aria-busy="true" />;
+  }
 
   const { student, attempts, progress } = data;
-  const submitted = attempts.filter((a) => a.status === "submitted");
+  const row = asRosterRow(data);
+  const registered = dayDate(student.claimedAt);
 
   return (
-    <>
-      <header className="mb-5">
-        <Link to="/students" className="text-xs text-ink-muted hover:text-accent">
-          &larr; All students
+    <div className="record">
+      <header className="record-head">
+        <Link to="/students" className="record-back">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Students
         </Link>
-        <h1 className="mt-1 font-display text-2xl">{student.fullName}</h1>
-        <p className="text-sm text-ink-muted">
-          <span className="num">{student.studentId}</span>
-          {student.sectionCode ? <> &middot; {student.sectionCode}</> : null}
-          {student.deactivated ? <> &middot; <Badge tone="danger">Deactivated</Badge></> : null}
+        <div className="record-title">
+          <h1 className="font-display text-2xl text-ink">{student.fullName}</h1>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button ref={trigger} variant="outline" size="sm" aria-label={`Actions for ${student.fullName}`}>
+                Actions <ChevronDown className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setMoving([row])}>Move to section…</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {student.deactivated ? (
+                <DropdownMenuItem onSelect={() => setStatusFor(row)}>Reactivate…</DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem tone="danger" onSelect={() => setStatusFor(row)}>
+                  Deactivate…
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <p className="record-facts" data-record-facts="">
+          <Badge tone={student.deactivated ? "neutral" : "success"} data-record-state="">
+            {student.deactivated ? "Deactivated" : "Registered"}
+          </Badge>
+          <span className="num text-ink">{student.studentId}</span>
+          <span aria-hidden="true">·</span>
+          <span>{student.sectionCode ?? "no section"}</span>
+          <span aria-hidden="true">·</span>
+          <span>{registered ? `registered ${registered}` : "registration date not recorded"}</span>
         </p>
+        {student.deactivated ? (
+          <p className="text-sm text-ink-muted">
+            Refused on every request until reactivated. Their attempts and grades below are kept.
+          </p>
+        ) : null}
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Progress by stage</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {progress.length === 0 ? (
-              <p className="text-sm text-ink-muted">
-                Nothing recorded yet. Progress appears once this student opens a stage.
-              </p>
-            ) : (
-              <ul className="space-y-1.5">
-                {progress.map((p) => (
-                  <li key={p.stageId} className="flex items-center gap-3">
-                    <span className="num w-6 text-xs text-ink-faint">{p.stageId}</span>
-                    <div
-                      className="h-2 flex-1 overflow-hidden rounded-full bg-surface-3"
-                      role="img"
-                      aria-label={`Stage ${p.stageId}: ${pct(p.mastery)} mastery`}
-                    >
-                      <div
-                        className="h-full rounded-full bg-accent"
-                        style={{ width: `${Math.round(p.mastery * 100)}%` }}
-                      />
-                    </div>
-                    <span className="num w-10 text-right text-xs text-ink-muted">
-                      {pct(p.mastery)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+      {record.error ? (
+        <div role="alert" className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-danger bg-danger-bg px-3 py-2">
+          <p className="min-w-0 flex-1 text-xs text-ink">Refreshing failed: {record.error}</p>
+          <Button size="sm" variant="outline" onClick={record.reload}>
+            Try again
+          </Button>
+        </div>
+      ) : null}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Attempts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {attempts.length === 0 ? (
-              <Empty title="No attempts yet" hint="Assessments this student has started will appear here." />
-            ) : (
-              <div className="table-scroll">
-                <Table>
-                  <THead>
-                    <TR>
-                      <TH>Assessment</TH>
-                      <TH>#</TH>
-                      <TH>Score</TH>
-                      <TH>Status</TH>
-                      <TH>Submitted</TH>
-                      <TH aria-label="Open" />
-                    </TR>
-                  </THead>
-                  <TBody>
-                    {attempts.map((a) => {
-                      const open = openAttempt === a.attemptId;
-                      const rowId = `paper-${a.attemptId}`;
-                      return (
-                      <Fragment key={a.attemptId}>
-                      <TR>
-                        <TD>
-                          <button
-                            type="button"
-                            className="-my-1 inline-flex h-8 items-center gap-1 text-left hover:text-ink"
-                            aria-expanded={open}
-                            aria-controls={rowId}
-                            onClick={() => void toggleAttempt(a.attemptId)}
-                          >
-                            {open ? (
-                              <ChevronDown className="h-3 w-3 shrink-0" aria-hidden="true" />
-                            ) : (
-                              <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
-                            )}
-                            {a.assessmentTitle}
-                          </button>
-                        </TD>
-                        <TD><span className="num">{a.attemptNo}</span></TD>
-                        <TD>
-                          <span className="num">
-                            {a.score === null ? "—" : `${a.score}/${a.maxScore ?? "?"}`}
-                          </span>
-                        </TD>
-                        <TD>
-                          {a.status === "submitted" ? (
-                            <Badge tone="success">Submitted</Badge>
-                          ) : a.status === "in_progress" ? (
-                            <Badge tone="info">In progress</Badge>
-                          ) : a.status === "voided" ? (
-                            <Badge tone="danger">Voided</Badge>
-                          ) : (
-                            <Badge tone="neutral">Abandoned</Badge>
-                          )}
-                        </TD>
-                        <TD className="text-xs text-ink-muted">{shortDate(a.submittedAt)}</TD>
-                        <TD>
-                          <Button asChild size="sm" variant="outline">
-                            <Link to={`/attempts/${a.attemptId}`}>Open paper</Link>
-                          </Button>
-                        </TD>
-                      </TR>
-                      {open && (
-                        <TR id={rowId}>
-                          {/*
-                            `colSpan` spans the whole table: this is one
-                            attempt's detail, not another row of the same shape,
-                            and a screen reader reading it as six empty cells
-                            plus one full one would be a lie about the structure.
-                          */}
-                          <TD colSpan={6} className="bg-surface-1 p-3">
-                            {loadingPaper === a.attemptId ? (
-                              <p className="text-xs text-ink-muted">Regenerating this paper…</p>
-                            ) : paperError ? (
-                              <p className="text-xs text-ink-muted">{paperError}</p>
-                            ) : papers[a.attemptId] ? (
-                              <PaperSummary paper={papers[a.attemptId]!} />
-                            ) : null}
-                          </TD>
-                        </TR>
-                      )}
-                      </Fragment>
-                      );
-                    })}
-                  </TBody>
-                </Table>
-              </div>
-            )}
-            {submitted.length > 0 ? (
-              <p className="mt-3 text-xs text-ink-faint">
-                Opening a paper regenerates it from this student&apos;s stored seed — the exact
-                variant they sat, not a fresh one.
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
+      <div className="record-body">
+        <section ref={box} className="record-card" aria-labelledby="attempts-h" data-attempts="">
+          <div className="record-card-head">
+            <h2 id="attempts-h" className="font-display text-lg text-ink">Attempts</h2>
+            <p className="text-xs text-ink-muted">
+              Opening one regenerates the exact paper they sat from their stored seed, not a fresh one.
+            </p>
+          </div>
+          {attempts.length === 0 ? (
+            <p className="px-4 pb-4 text-sm text-ink-muted">
+              No attempts yet. An assessment appears here once this student presses Start.
+            </p>
+          ) : wide ? (
+            <AttemptTable attempts={attempts} p={paperState} />
+          ) : (
+            <AttemptList attempts={attempts} p={paperState} />
+          )}
+        </section>
+
+        <section className="record-card" aria-labelledby="progress-h">
+          <div className="record-card-head">
+            <h2 id="progress-h" className="font-display text-lg text-ink">Progress by stage</h2>
+          </div>
+          {progress.length === 0 ? (
+            <p className="px-4 pb-4 text-sm text-ink-muted">
+              Nothing recorded yet. Progress appears once this student opens a stage.
+            </p>
+          ) : (
+            <ul className="record-progress">
+              {progress.map((p) => (
+                <li key={p.stageId}>
+                  <span className="num text-xs text-ink-muted">{p.stageId}</span>
+                  <span className="record-bar" role="img" aria-label={`Stage ${p.stageId}: ${pct(p.mastery)} mastery`}>
+                    <span style={{ width: `${Math.round(p.mastery * 100)}%` }} />
+                  </span>
+                  <span className="num text-xs text-ink">{pct(p.mastery)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-    </>
+
+      <StatusDialog
+        student={statusFor}
+        onClose={() => setStatusFor(null)}
+        onDone={record.reload}
+        returnFocus={() => trigger.current}
+      />
+      <MoveDialog
+        students={moving}
+        sections={data.sections ?? []}
+        onClose={() => setMoving(null)}
+        onDone={record.reload}
+        returnFocus={() => trigger.current}
+      />
+    </div>
+  );
+}
+
+/** The page's shape before the page: a header, then attempt rows beside a progress column. */
+function RecordSkeleton({ slow }: { slow: boolean }) {
+  return (
+    <div data-skeleton="" aria-busy="true" aria-label="Loading this student" className="record min-h-[32rem]">
+      {slow ? (
+        <p role="status" className="mb-3 text-sm text-ink-muted">
+          Still loading. If the API has been asleep it can take up to a minute to wake.
+        </p>
+      ) : null}
+      <div className="record-head">
+        <span className="skeleton-bar record-skel-back" />
+        <span className="skeleton-bar record-skel-title" />
+        <span className="skeleton-bar record-skel-facts" />
+      </div>
+      <div className="record-body">
+        <div className="record-card p-4">
+          {Array.from({ length: 5 }, (_, r) => (
+            <div key={r} className="record-skel-row"><span className="skeleton-bar" /></div>
+          ))}
+        </div>
+        <div className="record-card p-4">
+          {Array.from({ length: 7 }, (_, r) => (
+            <div key={r} className="record-skel-row"><span className="skeleton-bar" /></div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

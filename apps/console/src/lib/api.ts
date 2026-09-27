@@ -190,9 +190,14 @@ export interface StudentDetail {
     userId: string;
     studentId: string;
     fullName: string;
+    sectionId: string | null;
     sectionCode: string | null;
+    /** When they claimed their student ID. Null only for a record older than the directory. */
+    claimedAt: string | null;
     deactivated: boolean;
   };
+  /** For "Move to section…", the same list the roster reads. */
+  sections: RosterSection[];
   attempts: Array<{
     attemptId: string;
     attemptNo: number;

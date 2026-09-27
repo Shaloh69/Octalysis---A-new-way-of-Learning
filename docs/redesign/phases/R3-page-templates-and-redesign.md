@@ -693,7 +693,23 @@ thesis deliverable, and right now no phase is accountable for it.
         import route had lived in `registerAuthRoutes` and was a 404 without a
         Supabase admin. `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`,
         `current-380.png`
-  - [ ] `/students/:userId`
+  - [x] `/students/:userId` — 27 Sep 2026. Rebuilt against TanStack Table's
+        sub-component row (the named `expanding` example nests same-shape rows;
+        a paper is a different shape) and GitHub Primer's `PageHeader` for the
+        record header (shadcn-admin has no record page; Polaris's pattern page
+        redirects away). Six assertions green at 1440 and 380
+        (`console-student-detail.spec.ts`: 40 passed / 2 skipped, both the
+        original real-attempt test, which cannot fill a paper while no item is
+        live), plus every attempt in words, each paper's options in the order
+        the student saw them, their answer, the key, the verdict in words, the
+        rationale they were shown and time on item. **Instructor-approved,
+        built:** the roster's deactivate / reactivate and section move from an
+        Actions menu, reusing `StatusDialog` and `MoveDialog`; and **the key
+        withheld on an in-progress or abandoned paper** (render-side; the API
+        still sends it to staff). API: `GET /console/students/:userId` adds
+        registration, `sectionId` and the sections, answers only for students,
+        and now has its denial tests (watched failing). `SOURCE.md`, `SPEC.md`,
+        `motion.md`, `current.png`, `current-380.png`
   - [ ] `/assessments`
   - [ ] `/submissions`
   - [ ] `/gradebook`

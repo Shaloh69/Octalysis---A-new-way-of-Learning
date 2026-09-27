@@ -202,6 +202,53 @@ Found while rebuilding `/students` and deliberately **not** fixed there. §0a,
 
 ---
 
+## 0e. Parked by the `/students/:userId` revamp — 27 Sep 2026
+
+Found while rebuilding the student record and deliberately **not** fixed there.
+§0a to §0d still stand.
+
+1. **Starting an attempt that cannot be filled answers 500.**
+   `POST /api/v1/attempts` lets `BlueprintUnsatisfiable` (engine/blueprint.ts)
+   escape unmapped, so a student pressing Start on a paper the bank cannot
+   fill sees "Something went wrong on our side", not a sentence. Locally that
+   is **every** Start: all 96 act-1 items sit at `review`, 0 live. It should be
+   a 4xx naming the shortfall, as `/assessments`' feasibility panel already
+   does for staff. `services/api/src/routes/attempts.ts`, plus a test.
+2. **A spec that drives a real attempt has been skipping, not passing.**
+   `console-student-detail.spec.ts`' original test ("expanding an attempt
+   shows the regenerated variant in place") skipped at 1440 on EVERY local run,
+   inside the "42 skipped, width-specific by design". It was not by design;
+   it was item 1. Its message now says so, and 40 fixture-backed tests cover the
+   route meanwhile. **`design/specs/attempt-runner.spec.ts` (apps/web) also
+   starts real attempts**: check it before believing a green run of it while
+   no item is live.
+3. **"/attempts/:attemptId is the only place a key is shown" was never true.**
+   `/students/:userId` has shown keys since P4, and still does for handed-in
+   papers. `CONSOLE-REVAMP.md` §3, the R3 box and `apps/console/CLAUDE.md`'s
+   `/attempts` row all say "only". When `/attempts/:attemptId` is rebuilt
+   (last), decide whether it withholds the key on an in-progress paper the way
+   this page now does (instructor, 27 Sep 2026: render-side here; the
+   API-side option was offered and not chosen).
+4. **Tailwind's preflight strips every list marker.** `<ol type="A">` drew no
+   letters until `.record-options` set `list-style-type` itself. A green spec
+   did not see it; the screenshot did, and a test now asserts it. Any page
+   relying on `type=` or on a browser-default marker is unlettered the same way.
+5. **`toLocaleDateString("en-GB")` is not one format**: ICU writes "Sept".
+   `lib/record-view.ts` `dayDate()` builds the date by hand, and a unit test
+   caught the difference.
+6. **The deployment was NOT measured on 27 Sep.** A read-only connection over
+   `SUPABASE_DB_SESSION` hung for ten minutes without a single row, so the
+   Prelim sentence's deployment half rests on 25 Sep's figures (§0d.1). A
+   Supabase Free project pauses after 7 days idle, which would explain it. Look
+   at the dashboard before the next deploy session.
+7. **Docker Desktop stopped a THIRD time mid-session** (§0b.6, §0d.7), and
+   took the console dev server with it; the dev API outlived it but had no
+   database. `curl localhost:8090/healthz` still answered 200, because
+   `/healthz` does not touch the database. **After any outage, prove the API
+   with a real query**, not `/healthz`.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```
@@ -212,9 +259,9 @@ pnpm phase --open   # every open R-phase box, with its section
 **Show it at the start and again before you finish.** Root `CLAUDE.md` requires
 it, because a remembered figure is how this project lost track twice.
 
-Current, counted 25 Sep 2026 after `/locks`:
-`R0 28/28 · R1 36/36 · R2 21/21 · R3 44/72 · R4 2/29 · R5 0/24`
-— **131 done · 79 to-do (210 items, 62%)**, live phase **R3** (R4 also open).
+Current, counted 27 Sep 2026 after `/students/:userId`:
+`R0 28/28 · R1 36/36 · R2 21/21 · R3 46/72 · R4 2/29 · R5 0/24`
+— **133 done · 77 to-do (210 items, 63%)**, live phase **R3** (R4 also open).
 The denominator grew from 171 when R3 gained one box per console route and R4
 gained the moon and minigame scope; the percentage fell because work was
 *found*, not lost.

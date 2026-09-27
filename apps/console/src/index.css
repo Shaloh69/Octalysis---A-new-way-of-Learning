@@ -845,6 +845,218 @@
 }
 
 /*
+ * One student's record. `design/templates/console/students-detail/SPEC.md`.
+ * Primer's record header, then the attempts (TanStack's sub-component row) and
+ * progress. The attempts choose table or list on their OWN width
+ * (`StudentDetailPage`, a ResizeObserver), like /locks and /students:
+ *
+ *   - 40rem and up: a six-column table, `table-layout: fixed`, exactly as wide
+ *     as its card. The open paper is one cell spanning all six.
+ *   - Below: a list, one attempt per item, the paper under it.
+ */
+@layer components {
+  .record { container-type: inline-size; }
+
+  /* ---- the header ---- */
+  .record-head { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+  .record-back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    align-self: flex-start;
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+    text-underline-offset: 2px;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .record-back:hover { color: var(--accent); text-decoration: underline; }
+  .record-title { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+  .record-title h1 { min-width: 0; overflow-wrap: anywhere; }
+  .record-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+  }
+
+  /* ---- the body: attempts, and progress beside them when there is room ---- */
+  .record-body { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); align-items: start; }
+  @container (min-width: 64rem) {
+    .record-body { grid-template-columns: minmax(0, 1fr) 18rem; }
+  }
+  .record-card {
+    min-width: 0;
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+  }
+  .record-card-head { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) var(--space-4) var(--space-3); }
+
+  /* ---- the attempt toggle: the assessment's name, with a chevron that turns ---- */
+  .record-toggle {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--space-1);
+    min-height: var(--control-h-sm);
+    padding: var(--space-1) 0;
+    text-align: left;
+    color: var(--ink);
+    font-weight: 500;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .record-toggle:hover { color: var(--accent); }
+  .record-toggle .record-chevron { margin-top: 2px; transition: rotate var(--dur-fast) var(--ease-out); }
+  .record-toggle[aria-expanded="true"] .record-chevron { rotate: 90deg; }
+  @media (pointer: coarse) { .record-toggle { min-height: 44px; } }
+
+  /* ---- 40rem and up: the table ---- */
+  .record-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  .record-table col.c-no     { width: 3rem; }
+  .record-table col.c-score  { width: 5rem; }
+  .record-table col.c-status { width: 8rem; }
+  .record-table col.c-when   { width: 9rem; }
+  .record-table col.c-took   { width: 7.5rem; }
+  .record-table th,
+  .record-table td { padding: var(--space-2) var(--space-3); text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+  .record-table th:first-child,
+  .record-table td:first-child { padding-left: var(--space-4); }
+  .record-table th:last-child,
+  .record-table td:last-child { padding-right: var(--space-4); }
+  .record-table th {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--ink-muted);
+    border-top: var(--border-hair) solid var(--line);
+    border-bottom: var(--border-hair) solid var(--line-strong);
+    white-space: nowrap;
+  }
+  .record-table .num-col { text-align: right; }
+  .record-table tbody tr { border-bottom: var(--border-hair) solid var(--line); }
+  .record-table tbody tr:last-child { border-bottom: 0; }
+  .record-table tbody tr[data-attempt] { transition: background-color var(--dur-fast) var(--ease-out); }
+  .record-table tbody tr[data-attempt]:hover,
+  .record-table tbody tr[data-open] { background: var(--surface-2); }
+  .record-table tr.record-paper-row > td { padding: 0; background: var(--surface-0); }
+
+  /* ---- below 40rem: the list ---- */
+  .record-list { margin: 0; padding: 0; list-style: none; border-top: var(--border-hair) solid var(--line); }
+  .record-list > li { padding: var(--space-2) var(--space-4) var(--space-3); border-bottom: var(--border-hair) solid var(--line); }
+  .record-list > li:last-child { border-bottom: 0; }
+  .record-list > li[data-open] { background: var(--surface-2); }
+  .record-list-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    padding-left: calc(1rem + var(--space-1));
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+  .record-list .record-paper-row {
+    margin: var(--space-3) calc(-1 * var(--space-4)) calc(-1 * var(--space-3));
+    background: var(--surface-0);
+    border-top: var(--border-hair) solid var(--line);
+  }
+
+  /* ---- the paper, opened under its row: it eases in, and reduced motion cuts it ---- */
+  .record-paper { padding: var(--space-4); animation: octa-rise-in var(--dur-base) var(--ease-out); }
+  .record-paper-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+  .record-paper-note { padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--ink-muted); }
+  .record-paper .record-paper-note {
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-left: var(--border-thick) solid var(--line-strong);
+    background: var(--surface-1);
+  }
+  .record-link {
+    font-size: var(--text-sm);
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .record-link:hover { color: var(--ink); }
+
+  .record-items { display: flex; flex-direction: column; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+  .record-item {
+    padding: var(--space-3);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    overflow-wrap: anywhere;
+  }
+  .record-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+  /* Neutral, never red: an incorrect answer is a word, not a colour. */
+  .record-verdict {
+    margin-left: auto;
+    padding: 0 var(--space-2);
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-full);
+    color: var(--ink);
+  }
+  .record-verdict[data-correct] { border-color: var(--success); }
+  .record-stem { margin: var(--space-2) 0; font-size: var(--text-sm); color: var(--ink); }
+  .record-sub { margin: var(--space-2) 0 var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); }
+  .record-options { margin: 0; padding-left: var(--space-5); font-size: var(--text-sm); color: var(--ink); }
+  /* Preflight strips list-style from every <ol>; these lists are lettered and numbered on purpose. */
+  .record-options > li { list-style-type: upper-alpha; }
+  .record-seq > li { list-style-type: decimal; }
+  .record-option-text[data-machine] { font-family: var(--font-mono); }
+  .record-options > li { padding: var(--space-1) 0; }
+  .record-options > li::marker { font-family: var(--font-mono); color: var(--ink-muted); }
+  .record-options > li[data-picked] .record-option-text { font-weight: 600; }
+  .record-mark {
+    display: inline-block;
+    margin-left: var(--space-2);
+    padding: 0 var(--space-1);
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--ink);
+  }
+  .record-mark-key { border-color: var(--accent); color: var(--accent); }
+  .record-sequences { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
+  .record-seq { margin: 0; padding-left: var(--space-5); font-size: var(--text-sm); color: var(--ink); }
+  .record-seq > li::marker { font-family: var(--font-mono); color: var(--ink-muted); }
+  .record-rationale { margin-top: var(--space-2); padding-top: var(--space-2); border-top: var(--border-hair) solid var(--line); }
+
+  /* ---- progress ---- */
+  .record-progress { margin: 0; padding: 0 var(--space-4) var(--space-4); list-style: none; }
+  .record-progress li {
+    display: grid;
+    grid-template-columns: 1.75rem minmax(0, 1fr) 2.75rem;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+  }
+  .record-progress li > :last-child { text-align: right; }
+  .record-bar { display: block; height: var(--space-2); border-radius: var(--radius-full); background: var(--surface-3); overflow: hidden; }
+  .record-bar > span { display: block; height: 100%; border-radius: var(--radius-full); background: var(--accent); }
+
+  /* ---- the skeleton ---- */
+  .record-skel-back { width: 6rem; }
+  .record-skel-title { width: 16rem; max-width: 100%; height: var(--space-5); }
+  .record-skel-facts { width: 20rem; max-width: 100%; }
+  .record-skel-row { display: flex; align-items: center; height: 2.6rem; }
+  .record-skel-row > .skeleton-bar { flex: 1; }
+}
+
+/*
  * The shared dialog's scrim. `bg-surface-0/80` emitted NO CSS -- Tailwind 3
  * cannot apply an opacity modifier to a `var()` colour -- so every console
  * dialog opened over an undimmed page (NEXT-SESSION.md §0a.1). Fixed from the
