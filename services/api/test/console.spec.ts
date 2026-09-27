@@ -54,6 +54,7 @@ describe("console is staff-only", () => {
     "/api/v1/console/roster",
     "/api/v1/console/locks",
     "/api/v1/console/audit",
+    "/api/v1/console/audit.csv",
     "/api/v1/console/audit/system",
     "/api/v1/console/gradebook.csv",
     "/api/v1/console/gradebook",
@@ -822,5 +823,173 @@ describe("roster writes — /students", () => {
       expect(a.map((r) => r.target_id)).toEqual(["21-0003", "21-0004"]);
       expect(a[0].payload).toMatchObject({ reason: "Section split for the lab schedule", from: "BSCPE-2A", to: "BSCPE-2B" });
     });
+  });
+});
+
+/* ============================================================
+ * /audit — the whole log, filtered on the server, and exported
+ *
+ * PAGE-SPECS.md §/console/audit: "filterable, exportable. If a grade is ever
+ * challenged, this is the evidence." Until 28 Sep 2026 the GET returned the
+ * newest 100 (500 at most) and nothing older, and the page filtered only what
+ * it had loaded. Instructor rulings of that day: filters on the server, 100 a
+ * page with a keyset cursor, and a CSV of every match.
+ *
+ * Every fixture row is dated 2025, so a date filter isolates them from the
+ * rows the rest of this file writes "now".
+ * ========================================================== */
+describe("the audit log: every entry, filtered on the server, and exported", () => {
+  const RANGE = "from=2025-01-01T00:00:00Z&to=2026-01-01T00:00:00Z";
+  const BLOCK = "0b10c000-0000-4000-8000-000000000007";
+  const FILLER = 120;
+  /** Read, not assumed: the roster tests above rename Student A, and the log must name them as they are now. */
+  let nameA = "";
+
+  beforeAll(async () => {
+    nameA = (await pool.query("select full_name from profiles where id = $1", [w.studentA])).rows[0].full_name;
+    const rows: Array<[string | null, string, string, string, unknown, string]> = [
+      [w.teacher, "lock.set", "stage", "07",
+        { scope: "user", userId: w.studentA, stageId: "07", state: "unlocked", reason: "Makeup exam after the typhoon" },
+        "2025-10-02T02:00:00Z"],
+      [w.teacher, "summary.approve", "stage", "07",
+        { hash: "f".repeat(64), text: "Measuring a computer is choosing what to measure." },
+        "2025-10-05T03:00:00Z"],
+      [w.teacher, "summary.send_back", "stage", "07",
+        { reason: "Too long for the sidebar", wasLive: true },
+        "2025-10-06T03:00:00Z"],
+      [w.teacher, "content.edit", "content_block", BLOCK,
+        { stageId: "07", ordinal: 3, version: 2, previousVersion: 1, reason: "Fix a typo in the cycle-time formula" },
+        "2025-10-07T03:00:00Z"],
+      [null, "lock.window", "stage", "07",
+        { lock_id: 1, scope: "global", state: "unlocked", unlock_at: "2025-10-08T00:00:00Z", lock_at: null },
+        "2025-10-08T00:00:01Z"],
+      [w.teacher, "roster.section", "student", "21-0002",
+        { reason: "Moved to the evening section", from: "BSCPE-2A", to: "BSCPE-2B" },
+        "2025-10-09T03:00:00Z"],
+    ];
+    for (const [actor, action, tt, tid, payload, at] of rows) {
+      await pool.query(
+        `insert into audit_log (actor_id, action, target_type, target_id, payload, at) values ($1,$2,$3,$4,$5,$6)`,
+        [actor, action, tt, tid, JSON.stringify(payload), at],
+      );
+    }
+    await pool.query(
+      `insert into audit_log (actor_id, action, target_type, target_id, payload, at)
+       select $1, 'item.status', 'item', gen_random_uuid()::text,
+              '{"from":"draft","to":"review","reason":null}'::jsonb,
+              timestamptz '2025-03-01T00:00:00Z' + g * interval '1 minute'
+         from generate_series(1, $2::int) g`,
+      [w.teacher, FILLER],
+    );
+  });
+
+  type Entry = {
+    id: string; at: string; action: string; family: string | null; what: string; reason: string | null;
+    actor: { id: string; name: string | null } | null;
+    subject: { name: string; studentId: string | null } | null;
+    target: { type: string; id: string | null; label: string } | null;
+  };
+  const get = async (qs: string) => {
+    const res = await app.inject({ method: "GET", url: `/api/v1/console/audit?${qs}`, headers: auth(teacherToken) });
+    expect(res.statusCode, res.body).toBe(200);
+    return res.json() as {
+      entries: Entry[]; next: string | null; total: number; actors: Array<{ id: string | null; name: string }>;
+    };
+  };
+
+  it("reaches past the newest page: 100 at a time, then Load older, with nothing repeated", async () => {
+    const first = await get(RANGE);
+    expect(first.total).toBe(FILLER + 6);
+    expect(first.entries).toHaveLength(100);
+    expect(first.next).not.toBeNull();
+
+    const second = await get(`${RANGE}&before=${first.next}`);
+    expect(second.entries).toHaveLength(FILLER + 6 - 100);
+    expect(second.next).toBeNull();
+    expect(second.total, "total counts the filter, not what is left").toBe(FILLER + 6);
+
+    const all = [...first.entries, ...second.entries];
+    expect(new Set(all.map((e) => e.id)).size).toBe(all.length);
+    const at = all.map((e) => Date.parse(e.at));
+    expect(at).toEqual([...at].sort((a, b) => b - a));
+  });
+
+  it("filters by family, by who, and by the system", async () => {
+    expect((await get(`${RANGE}&family=content`)).total).toBe(3);
+    expect((await get(`${RANGE}&family=locks`)).total).toBe(2);
+    const system = await get(`${RANGE}&actor=system`);
+    expect(system.entries.map((e) => e.action)).toEqual(["lock.window"]);
+    expect(system.entries[0]!.actor).toBeNull();
+    expect((await get(`${RANGE}&actor=${w.teacher}`)).total).toBe(FILLER + 5);
+    const { actors } = await get(RANGE);
+    expect(actors.map((a) => a.name)).toEqual(expect.arrayContaining(["Instructor"]));
+  });
+
+  it("finds everything about a student, by name or ID, including a lock that names them only in its payload", async () => {
+    const byName = await get(`${RANGE}&q=${encodeURIComponent(nameA)}`);
+    expect(byName.entries.map((e) => e.action)).toEqual(["lock.set"]);
+    expect(byName.entries[0]!.subject).toMatchObject({ name: nameA, studentId: "21-0001" });
+
+    const byId = await get(`${RANGE}&q=21-0002`);
+    expect(byId.entries.map((e) => e.action)).toEqual(["roster.section"]);
+    expect(byId.entries[0]!.subject).toMatchObject({ name: "Student B", studentId: "21-0002" });
+
+    expect((await get(`${RANGE}&q=typhoon`)).total, "the reason is searched too").toBe(1);
+  });
+
+  it("the date range is inclusive of from, exclusive of to", async () => {
+    const day = await get("from=2025-10-05T03:00:00Z&to=2025-10-06T03:00:00Z");
+    expect(day.entries.map((e) => e.action)).toEqual(["summary.approve"]);
+  });
+
+  it("each entry says what happened in words, with a readable target", async () => {
+    const { entries } = await get(`${RANGE}&limit=6`);
+    const by = (a: string) => entries.find((e) => e.action === a)!;
+    expect(by("lock.set").what).toBe(`Opened stage 07 for ${nameA}`);
+    expect(by("lock.set").reason).toBe("Makeup exam after the typhoon");
+    expect(by("summary.approve").what).toBe("Approved the summary for stage 07");
+    expect(by("summary.send_back").what).toBe(
+      "Sent back the summary for stage 07, taking it off students' screens",
+    );
+    expect(by("content.edit").what).toBe("Edited block 3 of stage 07 (version 1 to 2)");
+    expect(by("content.edit").target).toMatchObject({ type: "content_block", label: "Stage 07, block 3" });
+    expect(by("lock.window").what).toBe("Opened stage 07 for everyone, on its schedule");
+    expect(by("roster.section").what).toBe("Moved Student B from BSCPE-2A to BSCPE-2B");
+    expect(by("roster.section").family).toBe("roster");
+  });
+
+  it("refuses a malformed filter in words, never a 500", async () => {
+    for (const qs of ["family=nope", "from=yesterday", "limit=0", "before=abc", "actor=someone"]) {
+      const res = await app.inject({ method: "GET", url: `/api/v1/console/audit?${qs}`, headers: auth(teacherToken) });
+      expect(res.statusCode, qs).toBe(400);
+      expect(res.json().error.message, qs).toMatch(/\w/);
+    }
+  });
+
+  it("exports every match as CSV, not only the loaded page", async () => {
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/audit.csv?${RANGE}`, headers: auth(teacherToken),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/text\/csv/);
+    expect(res.headers["content-disposition"]).toMatch(/attachment; filename="octa-audit.*\.csv"/);
+    const lines = res.body.trimEnd().split("\n");
+    expect(lines[0]).toBe(
+      "at,action,what,who,who_id,about,about_student_id,target_type,target_id,target,reason,payload",
+    );
+    expect(lines).toHaveLength(FILLER + 6 + 1);
+    expect(res.body).toContain(`Opened stage 07 for ${nameA.replace(/"/g, '""')}`);
+  });
+
+  it("a reason that looks like a formula is exported as text", async () => {
+    await pool.query(
+      `insert into audit_log (actor_id, action, target_type, target_id, payload, at)
+       values ($1, 'lock.set', 'stage', '06', $2, '2025-12-31T00:00:00Z')`,
+      [w.teacher, JSON.stringify({ scope: "global", stageId: "06", state: "locked", reason: '=HYPERLINK("http://x")' })],
+    );
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/audit.csv?${RANGE}&q=HYPERLINK`, headers: auth(teacherToken),
+    });
+    expect(res.body.split("\n")[1]).toContain(`"'=HYPERLINK(""http://x"")"`);
   });
 });

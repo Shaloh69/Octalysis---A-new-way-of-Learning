@@ -387,3 +387,92 @@ export const Gradebook = z.object({
   awaitingMarking: z.number().int().min(0),
 });
 export type Gradebook = z.infer<typeof Gradebook>;
+
+/* ============================================================
+ * Audit log
+ * ========================================================== */
+
+/**
+ * What the course audits, by family: an action's key before the dot. The
+ * `/audit` Action filter and the CSV both use these, so the page and the file
+ * cannot group an entry differently.
+ */
+export const AuditFamily = z.enum([
+  "locks", "roster", "items", "assessments", "submissions", "content", "accounts", "feedback",
+]);
+export type AuditFamily = z.infer<typeof AuditFamily>;
+
+export const AUDIT_FAMILY_PREFIXES: Readonly<Record<AuditFamily, readonly string[]>> = {
+  locks: ["lock"],
+  roster: ["roster", "auth"],
+  items: ["item"],
+  assessments: ["assessment"],
+  submissions: ["submission"],
+  content: ["content", "summary"],
+  accounts: ["account", "admin"],
+  feedback: ["feedback"],
+};
+
+export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
+  locks: "Locks",
+  roster: "Roster",
+  items: "Items",
+  assessments: "Assessments",
+  submissions: "Submissions",
+  content: "Content & summaries",
+  accounts: "Accounts",
+  feedback: "Feedback",
+};
+
+/**
+ * `GET /console/audit` and `/console/audit.csv`. Every filter runs on the
+ * server over the whole log (instructor, 28 Sep 2026): before that the page
+ * filtered only the newest few hundred rows it had loaded.
+ */
+export const AuditQuery = z
+  .object({
+    family: AuditFamily.optional(),
+    /** A user id, or `system`: the entries no person made (the pg_cron lock windows). */
+    actor: z.union([z.string().uuid(), z.literal("system")]).optional(),
+    /** About whom or what: a student's name or ID, a target and its label, or words of the reason. */
+    q: z.string().trim().min(1).max(100).optional(),
+    /** Inclusive. The console sends the teacher's local midnight. */
+    from: z.string().datetime({ offset: true }).optional(),
+    /** Exclusive. */
+    to: z.string().datetime({ offset: true }).optional(),
+    /** The keyset cursor: entries older than this entry id. */
+    before: z.string().regex(/^\d{1,19}$/).optional(),
+    limit: z.coerce.number().int().min(1).max(500).default(100),
+  })
+  .refine((v) => !v.from || !v.to || Date.parse(v.from) < Date.parse(v.to), {
+    message: "The start of the range must be before its end.",
+  });
+export type AuditQuery = z.infer<typeof AuditQuery>;
+
+export const AuditEntry = z.object({
+  id: z.string(),
+  at: z.string(),
+  action: z.string(),
+  family: AuditFamily.nullable(),
+  /** One sentence, written by the API so the page and the CSV cannot disagree. */
+  what: z.string(),
+  /** null: no person did it (a scheduled lock window). */
+  actor: z.object({ id: z.string(), name: z.string().nullable() }).nullable(),
+  /** The student the entry is about, when it is about one. */
+  subject: z.object({ userId: z.string().nullable(), name: z.string(), studentId: z.string().nullable() }).nullable(),
+  target: z.object({ type: z.string(), id: z.string().nullable(), label: z.string() }).nullable(),
+  reason: z.string().nullable(),
+  payload: z.record(z.string(), z.unknown()),
+});
+export type AuditEntry = z.infer<typeof AuditEntry>;
+
+export const AuditPage = z.object({
+  entries: z.array(AuditEntry),
+  /** Pass as `before` for the next, older page; null when nothing older matches. */
+  next: z.string().nullable(),
+  /** Every entry the filter matches, whatever the cursor. */
+  total: z.number().int().min(0),
+  /** Everyone who appears in the log, for the Who filter; `id: null` is the scheduler. */
+  actors: z.array(z.object({ id: z.string().nullable(), name: z.string() })),
+});
+export type AuditPage = z.infer<typeof AuditPage>;

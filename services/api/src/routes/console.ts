@@ -8,6 +8,8 @@ import { loadAttempt, loadResolvedPaper } from "../repo/engine-repo.js";
 import type { Env } from "../env.js";
 import { computeGradebook, toCsv } from "../gradebook/compute.js";
 import { loadGradebookInput } from "../gradebook/load.js";
+import { AuditQuery } from "@octa/contracts";
+import { AUDIT_EXPORT_MAX, loadAuditExport, loadAuditPage, toAuditCsv } from "../audit/log.js";
 
 /**
  * The teacher console API.
@@ -738,24 +740,47 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
   // beside the block editor and summary review it now serves.
 
   /* ----------------------------------------------------------
-   * GET /api/v1/console/audit
+   * GET /api/v1/console/audit       -- the page: 100 at a time, newest first
+   * GET /api/v1/console/audit.csv   -- every match, the same filters
+   *
+   * Filters run here over the whole log, and `before` extends it backwards
+   * (instructor, 28 Sep 2026). Until then this returned the newest 100, 500
+   * at most, and nothing older: the evidence for an October dispute had left
+   * the page by December. `audit/log.ts` writes each entry's sentence, so the
+   * page and the file cannot disagree.
    * -------------------------------------------------------- */
+  function auditQuery(raw: unknown): AuditQuery {
+    const parsed = AuditQuery.safeParse(raw);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const field = issue?.path[0];
+      throw errors.badRequest(
+        field ? `The ${String(field)} filter is not valid: ${issue.message}` : (issue?.message ?? "That filter is not valid."),
+      );
+    }
+    return parsed.data;
+  }
+
   app.get("/api/v1/console/audit", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
-    const limit = Math.min(Number((req.query as { limit?: string }).limit ?? 100), 500);
+    return reply.send(await loadAuditPage(app.db, auditQuery(req.query)));
+  });
 
-    const { rows } = await app.db.query(
-      `select l.id, l.action, l.target_type, l.target_id, l.payload, l.at,
-              p.full_name as actor_name
-         from audit_log l
-         left join profiles p on p.id = l.actor_id
-        order by l.at desc
-        limit $1`,
-      [limit],
-    );
-
-    return reply.send({ entries: rows });
+  app.get("/api/v1/console/audit.csv", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const { entries, total } = await loadAuditExport(app.db, auditQuery(req.query));
+    if (total > AUDIT_EXPORT_MAX) {
+      throw errors.badRequest(
+        `${total.toLocaleString("en-US")} entries match, and an export holds ${AUDIT_EXPORT_MAX.toLocaleString("en-US")} at most. Narrow the dates and export again.`,
+      );
+    }
+    const day = new Date().toISOString().slice(0, 10);
+    return reply
+      .header("content-type", "text/csv; charset=utf-8")
+      .header("content-disposition", `attachment; filename="octa-audit-${day}.csv"`)
+      .send(toAuditCsv(entries));
   });
 
   /* ----------------------------------------------------------
