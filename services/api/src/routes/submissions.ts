@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { identityFrom, requireStaff } from "../auth.js";
-import { errors } from "../errors.js";
+import { AppError, errors } from "../errors.js";
 import type { Env } from "../env.js";
 
 /**
@@ -186,6 +186,9 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
     return reply.send({
       submissions: rows.map((r) => ({
         ...toStudentShape(r),
+        // A draft is listed, never read (instructor, 27 Sep 2026). Withheld
+        // here rather than in the page, so no future component can show one.
+        ...(r.status === "draft" ? { bodyMd: null, attachments: [], payload: {} } : {}),
         studentName: r.full_name,
         studentId: r.student_id,
         graderName: r.grader_name,
@@ -210,15 +213,25 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
       throw errors.badRequest(`A score of ${g.score} is above the maximum of ${g.maxScore}.`);
     }
 
+    // NOT 'graded'. A mark is re-made only after a return, which needs a reason
+    // and is audited: "regrade is an explicit, audited unlock". Until 27 Sep
+    // this list included 'graded', so any staff token re-marked in place.
     const { rowCount } = await app.db.query(
       `update submissions
           set status = 'graded', score = $2, max_score = $3,
               rubric = $4, feedback_md = coalesce($5, feedback_md),
               graded_by = $6, graded_at = now()
-        where id = $1 and status in ('submitted','returned','graded')`,
+        where id = $1 and status in ('submitted','returned')`,
       [subId, g.score, g.maxScore, jsonParam(g.rubric ?? {}), g.feedbackMd ?? null, id!.userId],
     );
     if (rowCount === 0) {
+      const { rows } = await app.db.query("select status from submissions where id = $1", [subId]);
+      if (rows[0]?.status === "graded") {
+        throw new AppError(
+          "conflict",
+          "This has already been marked. To change the mark, return it first, with a reason.",
+        );
+      }
       throw errors.notFound("No such submission, or it has not been handed in yet.");
     }
 
@@ -250,16 +263,49 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
       throw errors.badRequest("Returning a submission needs a reason of at least 3 characters.");
     }
 
-    const { rowCount } = await app.db.query(
-      `update submissions set status = 'returned', feedback_md = $2 where id = $1`,
+    // Only a GRADED row is returned: a return is the unlock for a mark, and
+    // there is nothing to unlock on a draft or on work nobody has marked. The
+    // CTE reads the row as it was, so the audit keeps what the return replaces:
+    // `feedback_md` is overwritten with the reason, which is what the student
+    // is shown, and before 27 Sep the grader's feedback was then gone for good.
+    const { rows } = await app.db.query(
+      `with before as (
+         select id, score, max_score, rubric, feedback_md
+           from submissions where id = $1 and status = 'graded' for update
+       )
+       update submissions s
+          set status = 'returned', feedback_md = $2
+         from before
+        where s.id = before.id
+       returning before.score, before.max_score, before.rubric, before.feedback_md`,
       [subId, parsed.data.reason],
     );
-    if (rowCount === 0) throw errors.notFound("No such submission.");
+    if (rows.length === 0) {
+      const exists = await app.db.query("select status from submissions where id = $1", [subId]);
+      if (exists.rowCount === 0) throw errors.notFound("No such submission.");
+      throw new AppError(
+        "conflict",
+        "Only a graded submission can be returned. This one has not been marked.",
+      );
+    }
+    const b = rows[0]!;
 
     await app.db.query(
       `insert into audit_log (actor_id, action, target_type, target_id, payload)
        values ($1,'submission.return','submission',$2,$3)`,
-      [id!.userId, subId, JSON.stringify({ reason: parsed.data.reason })],
+      [
+        id!.userId,
+        subId,
+        JSON.stringify({
+          reason: parsed.data.reason,
+          previous: {
+            score: b.score === null ? null : Number(b.score),
+            maxScore: b.max_score === null ? null : Number(b.max_score),
+            rubric: b.rubric ?? {},
+            feedbackMd: b.feedback_md,
+          },
+        }),
+      ],
     );
 
     return reply.send({ ok: true });

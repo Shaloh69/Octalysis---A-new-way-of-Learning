@@ -216,6 +216,141 @@ describe("a graded submission is frozen", () => {
   });
 });
 
+/* ------------------------------------------- the freeze binds staff too */
+
+/**
+ * "Regrade is an explicit, audited unlock" (`apps/console/CLAUDE.md`). Until 27
+ * Sep 2026 it was not: the grade route accepted a GRADED row and re-marked it in
+ * place, with no return and no reason, so the unlock existed only on the page.
+ * And a return overwrote the grader's feedback with its reason while neither
+ * audit row kept the feedback, so returning a mark destroyed the history of it.
+ * Approved by the instructor, 27 Sep 2026, with these tests leading.
+ */
+describe("a regrade is an explicit, audited unlock, for staff as well", () => {
+  let subId: string;
+
+  beforeAll(async () => {
+    const put = await app.inject({
+      method: "PUT", url: "/api/v1/submissions/LAB-06",
+      headers: auth(studentBToken),
+      payload: { ...LAB, slug: "LAB-06", title: "LAB 06", stageId: "06" },
+    });
+    expect(put.statusCode).toBe(200);
+    subId = put.json().id;
+
+    const graded = await app.inject({
+      method: "POST", url: `/api/v1/console/submissions/${subId}/grade`,
+      headers: auth(teacherToken),
+      payload: {
+        score: 2, maxScore: 4, rubric: { band: 2 },
+        feedbackMd: "Show the tag split before the line count.",
+      },
+    });
+    expect(graded.statusCode).toBe(200);
+  });
+
+  it("REFUSES to re-mark a graded submission that has not been returned", async () => {
+    const res = await app.inject({
+      method: "POST", url: `/api/v1/console/submissions/${subId}/grade`,
+      headers: auth(teacherToken),
+      payload: { score: 4, maxScore: 4, rubric: { band: 4 } },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.message).toMatch(/return it/i);
+
+    const { rows } = await pool.query("select score from submissions where id = $1", [subId]);
+    expect(Number(rows[0]!.score)).toBe(2);
+  });
+
+  it("REFUSES to return a submission nobody has graded", async () => {
+    const put = await app.inject({
+      method: "PUT", url: "/api/v1/submissions/LAB-09",
+      headers: auth(studentBToken),
+      payload: { ...LAB, slug: "LAB-09", title: "LAB 09", stageId: "09" },
+    });
+    const waiting = put.json().id as string;
+    const res = await app.inject({
+      method: "POST", url: `/api/v1/console/submissions/${waiting}/return`,
+      headers: auth(teacherToken),
+      payload: { reason: "Returning something never marked." },
+    });
+    expect(res.statusCode).toBe(409);
+
+    const { rows } = await pool.query("select status from submissions where id = $1", [waiting]);
+    expect(rows[0]!.status).toBe("submitted");
+  });
+
+  it("REFUSES to return a draft", async () => {
+    const { rows } = await pool.query(
+      "select id from submissions where user_id = $1 and slug = 'LAB-05'",
+      [w.studentA],
+    );
+    const res = await app.inject({
+      method: "POST", url: `/api/v1/console/submissions/${rows[0]!.id}/return`,
+      headers: auth(teacherToken),
+      payload: { reason: "A draft is not handed in." },
+    });
+    expect(res.statusCode).toBe(409);
+  });
+
+  it("the return's audit row keeps the mark and the feedback it replaced", async () => {
+    const ret = await app.inject({
+      method: "POST", url: `/api/v1/console/submissions/${subId}/return`,
+      headers: auth(teacherToken),
+      payload: { reason: "Band applied to the wrong part; re-marking." },
+    });
+    expect(ret.statusCode).toBe(200);
+
+    const { rows } = await pool.query(
+      `select payload from audit_log
+        where action = 'submission.return' and target_id = $1
+        order by at desc limit 1`,
+      [subId],
+    );
+    const p = rows[0]!.payload;
+    expect(p.reason).toMatch(/wrong part/i);
+    expect(p.previous).toMatchObject({
+      score: 2, maxScore: 4, rubric: { band: 2 },
+      feedbackMd: "Show the tag split before the line count.",
+    });
+  });
+
+  it("once returned, it can be marked again", async () => {
+    const res = await app.inject({
+      method: "POST", url: `/api/v1/console/submissions/${subId}/grade`,
+      headers: auth(teacherToken),
+      payload: { score: 3, maxScore: 4, rubric: { band: 3 } },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+});
+
+/* ---------------------------------------------------- drafts stay private */
+
+describe("a draft is not the grader's to read", () => {
+  it("the console list names a draft but WITHHOLDS its body", async () => {
+    // Instructor, 27 Sep 2026: drafts are listed with their content hidden.
+    // Hidden in the payload, not the render, so no future page can show one.
+    const list = await app.inject({
+      method: "GET", url: "/api/v1/console/submissions", headers: auth(teacherToken),
+    });
+    expect(list.statusCode).toBe(200);
+    const draft = (list.json().submissions as Array<{ slug: string; status: string; bodyMd: unknown }>)
+      .find((s) => s.slug === "LAB-05" && s.status === "draft");
+    expect(draft).toBeDefined();
+    expect(draft!.bodyMd).toBeNull();
+  });
+
+  it("the student still reads their own draft", async () => {
+    const mine = await app.inject({
+      method: "GET", url: "/api/v1/submissions", headers: auth(studentAToken),
+    });
+    const draft = (mine.json().submissions as Array<{ slug: string; bodyMd: string }>)
+      .find((s) => s.slug === "LAB-05");
+    expect(draft?.bodyMd).toBe("wip");
+  });
+});
+
 /* -------------------------------------------------------------- integrity */
 
 describe("grading integrity", () => {
