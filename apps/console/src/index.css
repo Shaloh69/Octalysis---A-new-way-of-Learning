@@ -621,6 +621,230 @@
 }
 
 /*
+ * --------------------------------------------------------------- /students
+ *
+ * The roster. `design/templates/console/students/SPEC.md`. Two layouts, chosen
+ * on the page's OWN width by `StudentsPage` (a ResizeObserver), like /locks:
+ *
+ *   - 56rem and up: an eight-column table, `table-layout: fixed`, exactly as
+ *     wide as its card. It never scrolls sideways.
+ *   - Below: a list, one student per item, every value in words.
+ */
+@layer components {
+  .roster-card {
+    position: relative; /* an sr-only child resolves here, not at the document */
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+  }
+
+  /* ---- toolbar: search, registration filters, section ---- */
+  .roster-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+  .roster-search { position: relative; flex: 1 1 14rem; max-width: 20rem; min-width: 0; }
+  .roster-search-icon {
+    position: absolute;
+    top: 50%;
+    left: var(--space-2);
+    translate: 0 -50%;
+    color: var(--ink-muted);
+    pointer-events: none;
+  }
+  /* Icon inset + icon (1rem) + a gap. `pl-8` is 64px on the console's token scale. */
+  .roster-search .roster-search-input { padding-left: calc(var(--space-2) * 2 + 1rem); }
+  .roster-filters { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .roster-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: var(--control-h-sm);
+    padding: 0 var(--space-3);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+    background: var(--surface-1);
+    transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out);
+  }
+  .roster-filter:hover { color: var(--ink); background: var(--surface-2); }
+  .roster-filter[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); background: var(--accent-muted); }
+  @media (pointer: coarse) { .roster-filter { min-height: 44px; } }
+  .roster-section-filter { display: flex; align-items: center; gap: var(--space-2); }
+  .roster-select {
+    height: var(--control-h-md);
+    padding: 0 var(--space-2);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface-0);
+    color: var(--ink);
+    font-size: var(--text-sm);
+  }
+
+  /* ---- the bulk bar, pinned while the list scrolls ---- */
+  .roster-bulk {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    border-bottom: var(--border-hair) solid var(--accent);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--surface-2);
+  }
+
+  .roster-check { width: 1.125rem; height: 1.125rem; accent-color: var(--accent); }
+  .roster-name {
+    color: var(--ink);
+    text-underline-offset: 2px;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  a.roster-name:hover { color: var(--accent); text-decoration: underline; }
+  [data-state="deactivated"] .roster-name { color: var(--ink-muted); text-decoration: line-through; }
+  [data-state="deactivated"] a.roster-name:hover { text-decoration: line-through underline; }
+
+  .roster-menu-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--control-h-sm);
+    height: var(--control-h-sm);
+    border-radius: var(--radius-sm);
+    color: var(--ink-muted);
+    transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .roster-menu-trigger:hover,
+  .roster-menu-trigger[data-state="open"] { background: var(--surface-2); color: var(--ink); }
+  @media (pointer: coarse) { .roster-menu-trigger { width: 44px; height: 44px; } }
+
+  /* ---- 56rem and up: the table ---- */
+  .roster-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  .roster-table col.c-check   { width: 2.75rem; }
+  .roster-table col.c-id      { width: 7.5rem; }
+  .roster-table col.c-section { width: 8.5rem; }
+  .roster-table col.c-state   { width: 9rem; }
+  .roster-table col.c-num     { width: 7rem; }
+  .roster-table col.c-menu    { width: 3.25rem; }
+  .roster-table th,
+  .roster-table td {
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    vertical-align: middle;
+    overflow-wrap: anywhere;
+  }
+  .roster-table th:first-child,
+  .roster-table td:first-child { padding-left: var(--space-4); padding-right: 0; }
+  .roster-table th {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--ink-muted);
+    border-bottom: var(--border-hair) solid var(--line-strong);
+    white-space: nowrap;
+  }
+  .roster-table .num-col { text-align: right; }
+  .roster-table th.num-col .roster-sort { justify-content: flex-end; }
+  .roster-table tbody tr {
+    border-bottom: var(--border-hair) solid var(--line);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .roster-table tbody tr:last-child { border-bottom: 0; }
+  .roster-table tbody tr:hover { background: var(--surface-2); }
+  .roster-table tbody tr[data-selected] { background: var(--accent-muted); }
+  .roster-table td.c-menu-cell { padding: 0 var(--space-2); text-align: right; }
+  .roster-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    width: 100%;
+    height: var(--control-h-sm);
+    margin: calc(-1 * var(--space-1)) 0;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .roster-sort:hover { color: var(--ink); }
+
+  /* ---- below 56rem: the list ---- */
+  .roster-list-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: var(--border-hair) solid var(--line-strong);
+  }
+  .roster-list { margin: 0; padding: 0; list-style: none; }
+  .roster-list li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
+    border-bottom: var(--border-hair) solid var(--line);
+    overflow-wrap: anywhere;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .roster-list li:last-child { border-bottom: 0; }
+  .roster-list li[data-selected] { background: var(--accent-muted); }
+  .roster-list li > .roster-check { margin-top: 2px; }
+  .roster-list-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    margin-top: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+
+  /* ---- the import plan: every row, its outcome in words ---- */
+  .roster-plan {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 22rem;
+    overflow-y: auto;
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-md);
+  }
+  .roster-plan li {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: var(--border-hair) solid var(--line);
+    overflow-wrap: anywhere;
+  }
+  .roster-plan li:last-child { border-bottom: 0; }
+  .roster-plan-detail { grid-column: 2 / -1; }
+  /* A dialog is not a size container, so this one follows the viewport. */
+  @media (max-width: 36rem) {
+    .roster-plan li { grid-template-columns: minmax(0, 1fr) auto; }
+    .roster-plan li > :first-child { grid-column: 1 / -1; }
+    .roster-plan-detail { grid-column: 1 / -1; }
+  }
+
+  /* ---- the skeleton: the table's shape, before the table ---- */
+  .roster-skel-row {
+    display: grid;
+    grid-template-columns: 1.5rem 6.5rem minmax(0, 1fr) 7.5rem 8rem 6rem 6rem 2rem;
+    align-items: center;
+    gap: var(--space-3);
+    height: 2.6rem;
+  }
+  .roster-skel-narrow { grid-template-columns: minmax(0, 1fr); height: 4.75rem; }
+
+  /* ---- the row menu fades in; reduced motion cuts it ---- */
+  .ease-menu[data-state="open"] { animation: octa-fade-in var(--dur-fast) var(--ease-out); }
+}
+
+/*
  * The shared dialog's scrim. `bg-surface-0/80` emitted NO CSS -- Tailwind 3
  * cannot apply an opacity modifier to a `var()` colour -- so every console
  * dialog opened over an undimmed page (NEXT-SESSION.md §0a.1). Fixed from the

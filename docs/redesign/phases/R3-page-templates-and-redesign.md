@@ -678,7 +678,21 @@ thesis deliverable, and right now no phase is accountable for it.
         shared dialog scrim (NEXT-SESSION §0a.1), every console spec re-run
         green. `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`,
         `current-380.png`
-  - [ ] `/students`
+  - [x] `/students` — 25-27 Sep 2026. Rebuilt against shadcn-admin's Users
+        table (selection, row menu), with the import preview from
+        react-spreadsheet-import's validation step. Six assertions green at
+        1440 and 380 (`console-students.spec.ts`: 44 passed / 2
+        skipped-by-design), plus claim status in words, pressed filters with
+        counts, a list at 380, toasts, skeleton, error-with-retry.
+        **Instructor-approved, built:** a row-by-row import preview (new /
+        unchanged / will change / not imported, and why), deactivate as a real
+        lock-out (`identityFrom()` refuses a deactivated student on every route;
+        reason plus typed ID; reactivate undoes it), and the bulk section move
+        (directory row and profile, one audit row each). **Resend invite: not
+        built, by decision**; nothing is ever sent. **Also fixed here:** the
+        import route had lived in `registerAuthRoutes` and was a 404 without a
+        Supabase admin. `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`,
+        `current-380.png`
   - [ ] `/students/:userId`
   - [ ] `/assessments`
   - [ ] `/submissions`

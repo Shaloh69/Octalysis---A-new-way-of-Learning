@@ -117,11 +117,26 @@ export interface RosterRow {
   studentId: string;
   fullName: string;
   status: "unclaimed" | "claimed" | "disabled";
+  claimedAt: string | null;
+  sectionId: string | null;
   sectionCode: string | null;
+  /** Set once the student has registered: the link to their record. */
   userId: string | null;
+  /** Registered and soft-deleted, or never registered and disabled. */
   deactivated: boolean;
   attempts: number;
   avgMastery: number | null;
+}
+
+export interface RosterSection {
+  id: string;
+  code: string;
+  term: string;
+}
+
+export interface Roster {
+  students: RosterRow[];
+  sections: RosterSection[];
 }
 
 export interface LockStage {
@@ -238,14 +253,20 @@ export interface InvariantResult {
   sample: unknown;
 }
 
+/** One pasted line, as the server will treat it. See routes/console.ts. */
+export interface RosterPlanRow {
+  studentId: string;
+  fullName: string;
+  sectionCode: string;
+  action: "insert" | "update" | "unchanged" | "conflict";
+  why?: "registered" | "duplicate" | "unknown-section";
+  current: { fullName: string; sectionCode: string | null; status: RosterRow["status"] } | null;
+}
+
 export interface RosterImportPlan {
   dryRun: boolean;
-  summary: { insert: number; update: number; skipped: number };
-  plan?: Array<{
-    studentId: string;
-    fullName: string;
-    action: "insert" | "update" | "skip-claimed";
-  }>;
+  summary: { insert: number; update: number; unchanged: number; conflict: number };
+  plan?: RosterPlanRow[];
 }
 
 export interface ContentStage {
@@ -428,15 +449,29 @@ export interface SetLockInput {
 /* --------------------------------------------------------------- client */
 
 export const api = {
-  roster: () => request<{ students: RosterRow[] }>("/api/v1/console/roster"),
+  roster: () => request<Roster>("/api/v1/console/roster"),
 
   importRoster: (input: {
     sectionCode: string;
     term: string;
-    rows: Array<{ studentId: string; fullName: string }>;
+    rows: Array<{ studentId: string; fullName: string; sectionCode?: string }>;
     apply: boolean;
   }) =>
     request<RosterImportPlan>("/api/v1/console/roster/import", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  /** Deactivate or reactivate. Reason required, both ways; audited. */
+  setRosterStatus: (input: { studentId: string; active: boolean; reason: string }) =>
+    request<{ ok: true; active: boolean }>("/api/v1/console/roster/status", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  /** All or nothing; one audit row per student. */
+  moveSection: (input: { studentIds: string[]; sectionId: string; reason: string }) =>
+    request<{ ok: true; moved: number; sectionCode: string }>("/api/v1/console/roster/section", {
       method: "POST",
       body: JSON.stringify(input),
     }),

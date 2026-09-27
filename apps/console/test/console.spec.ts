@@ -13,6 +13,10 @@ import {
   LINK_EXPIRED,
 } from "../src/lib/session";
 import { newPasswordState } from "../src/lib/password";
+import {
+  importToast, needsLook, planOutcome, rosterCounts, rosterMatches, rosterState,
+} from "../src/lib/roster-view";
+import type { RosterPlanRow, RosterRow } from "../src/lib/api";
 
 /**
  * The console's pure logic.
@@ -409,5 +413,90 @@ describe("the new-password rule — shared by the credential screen and /reset-p
 
   it("says nothing about an empty field -- a hint before typing is noise", () => {
     expect(newPasswordState("", "")).toEqual({ tooShort: false, mismatch: false, ready: false });
+  });
+});
+
+/* ------------------------------------------------------------ /students */
+
+const row = (o: Partial<RosterRow>): RosterRow => ({
+  studentId: "232129001", fullName: "Juan Miguel Dela Cruz", status: "claimed", claimedAt: null,
+  sectionId: "s1", sectionCode: "BSCPE - 4", userId: "u1", deactivated: false, attempts: 0, avgMastery: null,
+  ...o,
+});
+
+describe("roster state: three words, never a colour", () => {
+  it("registered, not registered, deactivated -- and deactivated wins", () => {
+    expect(rosterState(row({}))).toBe("registered");
+    expect(rosterState(row({ status: "unclaimed", userId: null }))).toBe("not-registered");
+    expect(rosterState(row({ deactivated: true }))).toBe("deactivated");
+    expect(rosterState(row({ status: "disabled", userId: null, deactivated: true }))).toBe("deactivated");
+  });
+
+  it("counts each state once", () => {
+    const rows = [row({}), row({ deactivated: true }), row({ status: "unclaimed", userId: null })];
+    expect(rosterCounts(rows)).toEqual({ all: 3, registered: 1, "not-registered": 1, deactivated: 1 });
+  });
+
+  it("finds a student by any part of the name, the ID, or the section, ignoring case and accents", () => {
+    const r = row({ fullName: "Andrea Nicole Osmeña" });
+    expect(rosterMatches(r, "osmena")).toBe(true);
+    expect(rosterMatches(r, "2321290")).toBe(true);
+    expect(rosterMatches(r, "bscpe")).toBe(true);
+    expect(rosterMatches(r, "santos")).toBe(false);
+    expect(rosterMatches(r, "  ")).toBe(true);
+  });
+});
+
+const planRow = (o: Partial<RosterPlanRow>): RosterPlanRow => ({
+  studentId: "232129022", fullName: "Osmeña, Andrea Nicole", sectionCode: "BSCPE - 4",
+  action: "insert", current: null, ...o,
+});
+
+describe("the import preview says every row's outcome in words", () => {
+  it("new and unchanged need no look", () => {
+    expect(planOutcome(planRow({}))).toEqual({ label: "New", detail: null });
+    expect(needsLook(planRow({}))).toBe(false);
+    const same = planRow({
+      action: "unchanged", current: { fullName: "x", sectionCode: "BSCPE - 4", status: "claimed" },
+    });
+    expect(planOutcome(same).label).toBe("Unchanged");
+    expect(needsLook(same)).toBe(false);
+  });
+
+  it("a change names what changes, old beside new", () => {
+    const p = planRow({
+      action: "update",
+      current: { fullName: "Andrea Nicole Osmeña", sectionCode: "BSCPE - 4", status: "unclaimed" },
+    });
+    expect(planOutcome(p)).toEqual({
+      label: "Will change", detail: "Name: Andrea Nicole Osmeña → Osmeña, Andrea Nicole",
+    });
+    expect(needsLook(p)).toBe(true);
+    const moved = planRow({
+      action: "update", fullName: "Andrea Nicole Osmeña", sectionCode: "BSCPE-2B",
+      current: { fullName: "Andrea Nicole Osmeña", sectionCode: "BSCPE - 4", status: "unclaimed" },
+    });
+    expect(planOutcome(moved).detail).toBe("Section: BSCPE - 4 → BSCPE-2B");
+  });
+
+  it("every conflict says why it is not imported, and what to do instead", () => {
+    const current = { fullName: "Juan Miguel Dela Cruz", sectionCode: "BSCPE - 4", status: "claimed" as const };
+    expect(planOutcome(planRow({ action: "conflict", why: "registered", current })).detail)
+      .toMatch(/Already registered.*Move to section/);
+    expect(planOutcome(planRow({ action: "conflict", why: "duplicate" })).detail).toMatch(/twice/);
+    expect(planOutcome(planRow({ action: "conflict", why: "unknown-section", sectionCode: "NOPE" })).detail)
+      .toMatch(/No section called NOPE/);
+    expect(planOutcome(planRow({ action: "conflict", why: "duplicate" })).label).toBe("Not imported");
+  });
+});
+
+describe("the import toast says what happened to what", () => {
+  it("names both counts and the section, and never says Success", () => {
+    expect(importToast({ insert: 1, update: 1, unchanged: 1, conflict: 3 }, "BSCPE - 4"))
+      .toBe("1 added and 1 updated in BSCPE - 4");
+    expect(importToast({ insert: 3, update: 0, unchanged: 0, conflict: 0 }, "BSCPE - 4"))
+      .toBe("3 students added to BSCPE - 4");
+    expect(importToast({ insert: 0, update: 2, unchanged: 0, conflict: 0 }, "BSCPE - 4"))
+      .toBe("2 students updated in BSCPE - 4");
   });
 });

@@ -156,6 +156,52 @@ real rows, and only the states the seed lacks are added.
 
 ---
 
+## 0d. Parked by the `/students` revamp — 25-27 Sep 2026
+
+Found while rebuilding `/students` and deliberately **not** fixed there. §0a,
+§0b and §0c still stand.
+
+1. **Live Supabase is emptier than 25 Sep's note said.** Measured 25 Sep with
+   a read-only query over `SUPABASE_DB_SESSION`: 21 public tables (the missing
+   one is `submissions`, i.e. `addendum-submissions.sql` never ran there), **0
+   items and 0 `content_blocks` for stages 00-04**. The Prelim sentence is
+   false on the deployment for more reasons than "96 at review". Nothing in a
+   route session can fix it; it is a deploy session (`DELIVERY.md`, and §3b
+   here on `--reset`).
+2. **The student app has no screen for "you have been deactivated".** Since
+   this session, `identityFrom()` answers every request from a deactivated
+   student with 403 *"This account has been deactivated. Ask your
+   instructor."* The student app shows whatever its generic error path shows.
+   It should say that sentence once, plainly, and sign out. `apps/web` work.
+3. **Deactivation is not a Supabase ban.** A deactivated student can still
+   complete a Supabase sign-in with their email; every API call after it is
+   refused, and the app reads nothing except through the API, so they see
+   nothing. If a hard stop at sign-in is ever wanted, it is the Supabase admin
+   API's `ban_duration`, set and cleared by the same route. Not built; say so
+   if asked.
+4. **`identityFrom()` now costs one primary-key lookup per STUDENT request**
+   (`profiles.deleted_at`). Cheap, but it is a query on every call on Render's
+   free tier. Staff requests skip it.
+5. **The console's Tailwind spacing scale is the token scale, not Tailwind's.**
+   `pl-8` rendered as 64px, not 32px, and floated `/students`' search
+   placeholder away from its icon. A green spec did not see it; the screenshot
+   did. Any page reaching for a Tailwind spacing number from memory will be
+   wrong the same way.
+6. **A Radix menu item that opens a dialog:** `components/ui/dropdown-menu.tsx`
+   defaults `modal={false}`, because a modal menu locks `<body>` pointer events
+   and the dialog it opens can inherit the lock. Focus return goes through the
+   remembered menu button, as §0c.4 describes. Reuse it; do not add another
+   menu.
+7. **Docker Desktop stopped again between sessions** (§0b.6). The first sign
+   was the dev API and console both gone. `docker ps` first, always.
+8. **Deploy skew.** The import's response changed (`summary.skipped` became
+   `unchanged` and `conflict`). The API and the console were pushed in the same
+   push, but Render and Vercel finish at different times; for a few minutes
+   the deployed console can show the new API an old dialog. Harmless (a dry run
+   writes nothing), and gone once both deploys finish.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```
