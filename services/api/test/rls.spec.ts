@@ -511,3 +511,67 @@ describe("content review — drafts and history are staff-only", () => {
     expect(Number(row.now_version)).toBe(Number(row.version) + 1);
   });
 });
+
+/* ============================================================
+ * The audit log is the evidence — append-only, for every role
+ *
+ * PAGE-SPECS.md §/console/audit: "Immutable ... If a grade is ever challenged,
+ * this is the evidence." Until 28 Sep 2026 only RLS stood behind that: staff
+ * could SELECT and nobody else could do anything, but service_role, the API's
+ * own connection and a dashboard SQL editor could rewrite or delete any row.
+ * The same triggers as `responses` now refuse it (instructor, 28 Sep 2026).
+ * ========================================================== */
+describe("the audit log is append-only, for service_role too", () => {
+  let rowId: string;
+
+  beforeAll(async () => {
+    const { rows } = await setup(
+      `insert into audit_log (actor_id, action, target_type, target_id, payload)
+       values ($1, 'lock.set', 'stage', '05', '{"reason":"the evidence under test"}'::jsonb)
+       returning id`,
+      [w.teacher],
+    );
+    rowId = String(rows[0].id);
+  });
+
+  it("POSITIVE CONTROL: service_role can still append", async () => {
+    const res = await runAs(
+      service,
+      `insert into audit_log (action, target_type, target_id) values ('lock.window', 'stage', '06') returning id`,
+    );
+    expect(res.error, denialReason(res)).toBeNull();
+    expect(res.rowCount).toBe(1);
+  });
+
+  it("service_role cannot UPDATE an entry", async () => {
+    const res = await runAs(service, "update audit_log set payload = '{}'::jsonb where id = $1 returning id", [rowId]);
+    expect(res.error?.message, denialReason(res)).toMatch(/append-only/i);
+  });
+
+  it("service_role cannot DELETE an entry", async () => {
+    const res = await runAs(service, "delete from audit_log where id = $1 returning id", [rowId]);
+    expect(res.error?.message, denialReason(res)).toMatch(/append-only/i);
+  });
+
+  it("service_role cannot TRUNCATE the log", async () => {
+    const res = await runAs(service, "truncate audit_log");
+    expect(res.error?.message, denialReason(res)).toMatch(/append-only/i);
+  });
+
+  it("a teacher can read it and change nothing", async () => {
+    const read = await runAs(teacher, "select id from audit_log where id = $1", [rowId]);
+    expect(read.rowCount, "POSITIVE CONTROL: staff read the log").toBe(1);
+
+    await runAs(teacher, "update audit_log set payload = '{}'::jsonb where id = $1", [rowId]);
+    await runAs(teacher, "delete from audit_log where id = $1", [rowId]);
+    const { rows } = await setup("select payload->>'reason' as reason from audit_log where id = $1", [rowId]);
+    expect(rows[0]?.reason, "the entry survived a teacher's update and delete, unchanged").toBe(
+      "the evidence under test",
+    );
+  });
+
+  it("a student cannot read it", async () => {
+    const res = await runAs(studentA, "select id from audit_log where id = $1", [rowId]);
+    expect(wasDenied(res), denialReason(res)).toBe(true);
+  });
+});

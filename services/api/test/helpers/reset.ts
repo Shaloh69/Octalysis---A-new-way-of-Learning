@@ -61,7 +61,10 @@ export async function resetAll(): Promise<void> {
     delete from stage_progress     where true;
     delete from level_progress     where true;
     delete from objectives         where true;
+    -- Append-only since 28 Sep 2026; suspended by name like the responses triggers.
+    alter table audit_log disable trigger audit_log_no_delete;
     delete from audit_log          where true;
+    alter table audit_log enable trigger audit_log_no_delete;
     delete from profiles           where true;
     delete from student_directory  where true;
     delete from sections           where true;

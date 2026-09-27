@@ -53,5 +53,7 @@ guarantees.
 - Disable RLS "temporarily" to debug. Use the service role in a scratch branch instead.
 - Add an UPDATE or DELETE path to `responses`. Corrections void an attempt; they never edit
   history.
+- Add an UPDATE, DELETE or TRUNCATE path to `audit_log` (append-only since 28 Sep 2026). A
+  correction is a new entry. Fixtures suspend `audit_log_no_delete` by name, as the owner.
 - Add a client INSERT policy to `responses` or `attempt_items`.
 - Drop an item row. Retire it.

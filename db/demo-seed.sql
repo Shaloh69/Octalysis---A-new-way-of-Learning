@@ -49,7 +49,12 @@ delete from submissions     where user_id::text like 'dddddddd-%';
 delete from stage_progress  where user_id::text like 'dddddddd-%';
 delete from level_progress  where user_id::text like 'dddddddd-%';
 delete from attempts        where user_id::text like 'dddddddd-%';
+-- audit_log is append-only for every role (schema.sql, 28 Sep 2026). The demo
+-- teacher's own rows must go before auth.users can, so the trigger is
+-- suspended by name, as the table owner, for this one scoped delete.
+alter table audit_log disable trigger audit_log_no_delete;
 delete from audit_log       where actor_id::text like 'dddddddd-%';
+alter table audit_log enable trigger audit_log_no_delete;
 delete from stage_locks     where scope_user_id::text like 'dddddddd-%';
 delete from profiles        where id::text like 'dddddddd-%';
 delete from student_directory where student_id like '232129%';

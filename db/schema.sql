@@ -359,6 +359,27 @@ create table audit_log (
 create index on audit_log (at desc);
 create index on audit_log (target_type, target_id);
 
+-- The audit log is the evidence (PAGE-SPECS.md §/console/audit: "Immutable ...
+-- if a grade is ever challenged, this is the evidence"). Until 28 Sep 2026
+-- only RLS stood behind that, which left service_role, the API's own
+-- connection and a dashboard SQL editor free to rewrite it. Append-only for
+-- every role now, like `responses`: a correction is a new entry. The test
+-- reset and the demo seed suspend these by name as the table owner, which
+-- service_role on Supabase is not. Instructor ruling, 28 Sep 2026.
+create or replace function deny_audit_mutation() returns trigger
+language plpgsql as $$
+begin
+  raise exception 'audit_log is append-only'
+    using hint = 'a correction is a new entry; the log is never rewritten';
+end $$;
+
+create trigger audit_log_no_update before update on audit_log
+  for each row execute function deny_audit_mutation();
+create trigger audit_log_no_delete before delete on audit_log
+  for each row execute function deny_audit_mutation();
+create trigger audit_log_no_truncate before truncate on audit_log
+  for each statement execute function deny_audit_mutation();
+
 -- ============================================================
 -- FUNCTIONS
 -- ============================================================
