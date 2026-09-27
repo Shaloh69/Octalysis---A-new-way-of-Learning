@@ -393,8 +393,16 @@ test.describe("marking: the lab bands, a stated score, save and advance", () => 
     await expect(p.locator("[data-score-problem]")).toContainText("above the maximum of 20");
     await expect(p.getByRole("button", { name: "Save grade" })).toBeDisabled();
     await p.getByLabel("Score").fill("18");
+    // A saved mark reloads the queue (SubmissionsPage's `list.reload()`). Ending
+    // the test before that reload lands closed the context under the fixture's
+    // `route.fetch()`, and "Response has been disposed" failed a test whose
+    // assertions had all passed: red three times, 27 and 28 Sep. Wait for it.
+    const reloaded = page.waitForResponse(
+      (r) => r.request().method() === "GET" && /\/api\/v1\/console\/submissions(\?|$)/.test(r.url()),
+    );
     await p.getByRole("button", { name: "Save grade" }).click();
     await expect(page.getByRole("status").filter({ hasText: /Graded 18\/20/ })).toBeVisible();
+    await reloaded;
     expect(fx.writes.grade).toHaveLength(1);
     expect(fx.writes.grade[0]!.body.score).toBe(18);
     expect(fx.writes.grade[0]!.body.maxScore).toBe(20);
@@ -473,9 +481,15 @@ test.describe("frozen after grading; a regrade is an explicit, audited unlock", 
     const confirm = dialog.getByRole("button", { name: `Return to ${FIX.banded.name}` });
     await expect(confirm).toBeDisabled();
     await dialog.getByLabel("Reason (required)").fill("Band applied to the wrong part.");
+    // A return reloads the queue too (`onDone={list.reload}`): the same race as
+    // the project test above, so wait for the reload before the test ends.
+    const reloaded = page.waitForResponse(
+      (r) => r.request().method() === "GET" && /\/api\/v1\/console\/submissions(\?|$)/.test(r.url()),
+    );
     await confirm.click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByRole("status").filter({ hasText: /Returned to/ })).toContainText(FIX.banded.name);
+    await reloaded;
     expect(fx.writes.ret).toEqual([{ id: expect.any(String), body: { reason: "Band applied to the wrong part." } }]);
     expect(fx.writes.grade).toHaveLength(0);
   });
