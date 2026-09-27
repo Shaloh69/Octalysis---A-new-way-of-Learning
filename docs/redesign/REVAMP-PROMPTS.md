@@ -121,7 +121,8 @@ live at 47 / 72 (65%)**; all tracks **134 done · 76 to-do (210 items, 64%)**.
 >    screenshots found a scope badge breaking "stage 01" across two lines,
 >    window dates wrapping, a datetime field cutting off "PM", a dialog
 >    repeating its own heading, and a toast over the Create button, **all
->    under a green gate**. Each became a test, watched failing. Write
+>    under a green gate**. Four became tests, each watched failing; the
+>    repeated heading was fixed without one. Write
 >    `motion.md`. Run every console spec before committing, then
 >    `git checkout -- design/item-review/` unless that PNG is the route.
 > 7. Tick **`/submissions`** under the R3 "Console revamp" box in the same
@@ -141,8 +142,10 @@ live at 47 / 72 (65%)**; all tracks **134 done · 76 to-do (210 items, 64%)**.
 - **The gate is the floor, and five defects lived above it.** A badge
   breaking its number, dates wrapping, a native input cutting its value, a
   duplicated heading and a toast over a button were all found by opening the
-  PNG, with every assertion green. Each is now a test that was watched
-  failing before its fix, the only proof a new assertion can see anything.
+  PNG, with every assertion green. Four are now tests, each watched failing
+  before its fix, the only proof a new assertion can see anything; the
+  duplicated heading was fixed with no test (the second commit's message
+  says five, which is wrong).
 - **A test that cannot fail is not a test.** The first date-width assertion
   passed on the broken dialog because `getComputedStyle(input).font` is `""`
   in Chromium and the probe measured in the wrong font. Break the page on
