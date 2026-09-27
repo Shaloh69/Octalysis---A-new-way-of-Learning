@@ -94,7 +94,7 @@ Worst-first, then by how often an instructor touches it.
 | 6 | `/submissions` | marking-queue list | 40% of the grade goes through it |
 | 7 | `/gradebook` | KPI cards + chart | **Done 28 Sep 2026.** The chart is HTML now and the route imports no Recharts; it stays lazy |
 | 8 | **the shell**: sidebar, nav, account block, 380 top bar | shadcn-admin's sidebar | **Done 28 Sep 2026.** Four nav groups by job and no collapse control (instructor rulings); sticky, still 16rem, so every route keeps its 70rem at 1440. §0b.2 and §0b.3 of `NEXT-SESSION.md` fixed |
-| 9 | `/content`, `/audit`, `/system`, `/feedback`, `/live` | per `TEMPLATE-LINKS.md` | Lower traffic |
+| 9 | `/content`, `/audit`, `/system`, `/feedback`, `/live` | per `TEMPLATE-LINKS.md` | Lower traffic. **`/content` done 28 Sep 2026**: summary review and the block editor it had been planned to carry, both on instructor rulings of that day |
 
 `/attempts/:attemptId` is last and is handled with care: it is the **only** place
 an answer key is shown, and hard rule 1 governs it.
@@ -143,6 +143,19 @@ so "the port is up" proves nothing. Use 5183/5184 and pass
 title and refuses a run pointed at a stranger's app.
 
 **`pnpm verify` empties the seeded database.** Reseed before any capture.
+
+**Run the full gate against a BUILD, not the dev server** (28 Sep 2026,
+`NEXT-SESSION.md` §0j.2). At 4 workers the Vite dev server drops module
+requests and a different 3-4 pages come up blank on every full run:
+
+```bash
+pnpm --filter @octa/console build
+(cd apps/console && npx vite preview --port 5185 --strictPort)   # in the background
+OCTA_WEB_URL=http://localhost:5185 OCTA_CONSOLE_URL=http://localhost:5185 \
+  npx playwright test design/specs/console-*.spec.ts
+```
+
+`vite preview` indexes `dist/` when it starts: rebuild, then restart it.
 
 ---
 

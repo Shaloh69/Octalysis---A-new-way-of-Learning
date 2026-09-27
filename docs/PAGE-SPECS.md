@@ -204,6 +204,12 @@ manually unlocked / manually locked. Every toggle opens a short **reason prompt*
 Edit `content_blocks` with live preview. Versioned. **A typo fix must never require a redeploy** —
 that's the whole reason content lives in the database.
 
+**Built 28 Sep 2026** as `/content/:stageId` (`design/templates/console/content/SPEC.md`): one block
+at a time beside a preview drawn by the student reader's rules; a save needs a reason and the
+version it opened; every replaced version is kept by a trigger. Quotes from the book stay
+read-only (edited in the `.md`, where `--verify` checks them), and `sync-content` never
+overwrites a console edit (`--pull` writes it back). Summary review lives on `/content` too.
+
 ### `/console/items` — Question bank
 Browse by stage / objective / type / status. Inline stats: p-value, discrimination, exposures.
 Review queue of flagged items. **"Preview instance" panel with a re-roll button** so the teacher

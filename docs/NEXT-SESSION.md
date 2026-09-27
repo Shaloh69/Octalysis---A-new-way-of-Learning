@@ -454,6 +454,75 @@ and §0h.2 (participation entry) are untouched.
 
 ---
 
+## 0j. Parked by the `/content` revamp — 28 Sep 2026
+
+Found while rebuilding `/content` (and building its summary review and block
+editor, instructor rulings of 28 Sep) and deliberately **not** fixed there.
+§0a to §0i still stand; §0e.1, §0f.1, §0g.1 and §0h.2 are untouched.
+
+1. **THE DEPLOYED `/content` WILL ANSWER 500 until the schema is pushed.**
+   Render builds the API from `main`, and `GET /console/content` now joins
+   `stage_summaries`, which the deployed Supabase does not have (it predates
+   even `submissions`, §0d.1, and was empty on 28 Sep, §0h.1). The fix is §3b's
+   `db-push-supabase.mjs --reset` then the sync scripts: the instructor's call,
+   and it was already needed for every other reason. `schema.sql` carries the
+   new tables, so no seventh file joins the apply order.
+2. **The full console suite is unreliable against the DEV server; run it
+   against a build.** Three full runs at 4 workers against `:5184` (Vite dev)
+   failed a *different* 3-4 tests each time, every one passing alone. The
+   traces show why: 12 of 85 module requests never completed (`-1`), then one
+   pre-bundled dep (`tailwind-merge.js`) on a 2-worker run, and the app never
+   boots, so the page is blank. Against `vite build` + `vite preview --port
+   5185 --strictPort` (5185 is already in the API's CORS list) the blank pages
+   stopped. **Gate runs from now on:** build, preview on 5185, and
+   `OCTA_CONSOLE_URL=http://localhost:5185`. The dev server is for looking,
+   not for a 560-test run. `CONSOLE-REVAMP.md` §5 now says so (updated this session).
+3. **The student reader shows raw markdown students were never meant to see.**
+   `StageReader.tsx`'s `Paragraphs` has no heading branch, so every `## The
+   problem, stated as a trade` in stages 01-07 reads to students with its two
+   hashes. And a list whose items wrap onto a second line is not a list (every
+   line must start with `-`), so stage 04's "Temporal locality … Spatial
+   locality" is one run-on paragraph with literal dashes. `/content`'s preview
+   mirrors the reader exactly, so both are visible there now. `quote` blocks
+   have no branch either (drawn as prose), and a `brief` nests `<p>` inside
+   `<p>`. `apps/web` work: `WEB-REVAMP.md` route #2, the reader.
+4. **`console-teaching.spec.ts`' `/assessments` empty-state test failed once**
+   in a combined run (content + teaching, 70 tests) and not in 12 repeats
+   alone. It is a count-then-skip that counts "no assessments yet" the moment
+   the page opens: §0a.2's race, which that section said this file did not
+   have. Not `/content`'s spec. Make it wait for the page to decide, in the
+   `/assessments` or a spec-hygiene session.
+5. **Any fixture that `route.fetch()`es can fail the NEXT test in its worker.**
+   `_content-fixture.ts` did, twice, on `/signin` (fixed: a read that outlives
+   its test is dropped). `/submissions`' two tests were fixed by waiting for the
+   reload (this session's first commit). `_assessments-fixture.ts` (126, 134)
+   and `_gradebook-fixture.ts` (125) have the same shape and are unchanged; not
+   seen red. If one goes red with "Test ended" at a `route.fetch`, that is it.
+6. **A direct staff write to `content_blocks` is archived but not flagged.**
+   The trigger keeps the text it replaced (`replaced_via = 'direct'`), but only
+   the API sets `console_edited`, so sync treats a direct write as "file
+   unchanged, database differs" and **the file wins** on the next sync. Nothing
+   is lost (history has it) and no client does this today; `cb_staff` still
+   grants it. Tightening it (a trigger setting `console_edited` on any
+   non-sync write, or dropping `cb_staff`'s write) is schema work.
+7. **`st_staff` still lets any staff token write every other column of
+   `stages`** (published, prereq, title). Only `summary` is now guarded. Same
+   shape as §0g.1: API-deep elsewhere, database-deep only where a trigger says.
+8. **Reviewing a summary is not the same as approving 19 of them.** All 19 are
+   `draft`, 0 approved, so students see no summaries; `WEB-REVAMP.md` §3.1
+   already says the sidebar line is simply absent until then. The R3 box
+   "Planet summaries approved" stays open and is the instructor's.
+
+**Available to every route from now on:** `runAsSteps()` in
+`services/api/test/helpers/rls.ts` (several statements as one actor in one
+rolled-back transaction; one multi-statement string returns an ARRAY from `pg`
+and `runAs` reads `rows` off it), and the note that **`wasDenied()` counts any
+error as a denial**, "relation does not exist" included: a denial test on a new
+table must assert the outcome, with a positive control, or it passes before
+the table exists.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

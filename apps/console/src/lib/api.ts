@@ -290,6 +290,69 @@ export interface ContentStage {
   draftItems: number;
   /** `planned` is not a bug -- see the note in pages/ContentPage.tsx. */
   authoring: "authored" | "planned" | "empty";
+  /** Blocks edited in the console and not yet written back into the .md. */
+  consoleEdited: number;
+  summaryStatus: SummaryStatus | null;
+}
+
+export type SummaryStatus = "draft" | "approved" | "sent_back";
+
+/** A planet summary under review. The draft is staff-only: see db/schema.sql `stage_summaries`. */
+export interface StageSummary {
+  stageId: string;
+  title: string;
+  act: number;
+  draft: string;
+  /** What an approval names: the approval is of THIS text. */
+  hash: string;
+  status: SummaryStatus;
+  note: string | null;
+  reviewer: string | null;
+  reviewedAt: string | null;
+  updatedAt: string;
+}
+
+export type EditVia = "sync" | "console" | "direct";
+
+export interface ContentBlock {
+  id: string;
+  ordinal: number;
+  kind: string;
+  body: string;
+  meta: Record<string, string>;
+  version: number;
+  updatedAt: string;
+  consoleEdited: boolean;
+  /** False for a quote from the book (`meta.source`), which is edited in its .md file. */
+  editable: boolean;
+  source: string | null;
+  historyCount: number;
+  lastEdit: { via: EditVia; at: string; reason: string | null; editor: string | null } | null;
+}
+
+export interface ChapterDetail {
+  stage: {
+    id: string;
+    title: string;
+    act: number;
+    archetype: string;
+    levels: number[];
+    gradeable: boolean;
+    published: boolean;
+    authoring: "authored" | "planned" | "empty";
+  };
+  blocks: ContentBlock[];
+  summary: StageSummary | null;
+}
+
+export interface BlockVersion {
+  version: number;
+  kind: string;
+  body: string;
+  via: EditVia;
+  replacedAt: string;
+  reason: string | null;
+  editor: string | null;
 }
 
 export interface ContentStatus {
@@ -302,6 +365,8 @@ export interface ContentStatus {
     objectives: number;
     liveItems: number;
     itemTarget: number;
+    consoleEdited: number;
+    summaries: { draft: number; approved: number; sentBack: number; none: number };
   };
 }
 
@@ -541,6 +606,33 @@ export const api = {
     }>("/api/v1/stages"),
 
   content: () => request<ContentStatus>("/api/v1/console/content"),
+
+  contentSummaries: () => request<{ summaries: StageSummary[] }>("/api/v1/console/content/summaries"),
+
+  contentChapter: (stageId: string) =>
+    request<ChapterDetail>(`/api/v1/console/content/${encodeURIComponent(stageId)}`),
+
+  contentHistory: (blockId: string) =>
+    request<{ versions: BlockVersion[] }>(`/api/v1/console/content/blocks/${encodeURIComponent(blockId)}/history`),
+
+  /** Changes what students read, now. The version is the one the editor opened. */
+  saveBlock: (blockId: string, input: { body: string; version: number; reason: string }) =>
+    request<{ block: ContentBlock }>(`/api/v1/console/content/blocks/${encodeURIComponent(blockId)}`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+
+  approveSummary: (stageId: string, hash: string) =>
+    request<{ ok: true; alreadyApproved: boolean }>(
+      `/api/v1/console/content/summaries/${encodeURIComponent(stageId)}/approve`,
+      { method: "POST", body: JSON.stringify({ hash }) },
+    ),
+
+  sendBackSummary: (stageId: string, reason: string) =>
+    request<{ ok: true }>(
+      `/api/v1/console/content/summaries/${encodeURIComponent(stageId)}/send-back`,
+      { method: "POST", body: JSON.stringify({ reason }) },
+    ),
 
   feedback: (status?: string) =>
     request<{ entries: FeedbackEntry[]; sus: { mean: number | null; n: number } }>(

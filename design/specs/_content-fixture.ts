@@ -120,8 +120,22 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
       });
     }
 
-    const res = await route.fetch();
-    const json = (await res.json()) as Record<string, unknown>;
+    /*
+     * Approve, send back and save each RELOAD the page's data. A test that ends
+     * on its toast can close the page under that reload, and a throw here then
+     * surfaces as a failure of the NEXT test in the worker (seen 28 Sep 2026:
+     * two /signin tests failed at this line). A read that outlives its test
+     * proves nothing either way, so it is dropped.
+     */
+    let res: Awaited<ReturnType<Route["fetch"]>>;
+    let json: Record<string, unknown>;
+    try {
+      res = await route.fetch();
+      json = (await res.json()) as Record<string, unknown>;
+    } catch (e) {
+      if (/Test ended|closed|disposed/i.test(String(e))) return;
+      throw e;
+    }
 
     if (path === "" || path === "/") {
       const stages = json.stages as Array<{ id: string; summaryStatus: string | null; consoleEdited: number }>;
@@ -136,9 +150,12 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
     } else if (/^\/\d\d$/.test(path)) {
       json.blocks = (json.blocks as Block[]).map((b) => applyBlock(b, writes));
       if (json.summary) json.summary = applySummary(json.summary as Summary, writes);
-      if (opts.history) json.blocks = (json.blocks as Block[]).map((b) => ({ ...b, historyCount: Math.max(2, b.historyCount) }));
+      // Two replaced versions (2 and 1) means the block is now at version 3.
+      if (opts.history) json.blocks = (json.blocks as Block[]).map((b) => ({ ...b, version: b.version + 2, historyCount: Math.max(2, b.historyCount) }));
     }
-    return route.fulfill({ response: res, json });
+    return route.fulfill({ response: res, json }).catch((e: unknown) => {
+      if (!/Test ended|closed|disposed/i.test(String(e))) throw e;
+    });
   });
 
   return { writes };

@@ -54,17 +54,20 @@ template pass, and most have not.
 `/` is currently `<Navigate to="/app">`. **The public marketing site does not
 exist**, and no phase owns it — `PROGRESS.md` carries this as a blocker.
 
-**`apps/console` — 15**
+**`apps/console` — 16**
 `/signin` · `/` · `/locks` · `/live` · `/students` · `/students/:userId` ·
 `/attempts/:attemptId` · `/gradebook` · `/assessments` · `/items` ·
-`/submissions` · `/content` · `/audit` · `/system` · `/feedback` · `*`
+`/submissions` · `/content` · `/content/:stageId` (the block editor, 28 Sep 2026) ·
+`/audit` · `/system` · `/feedback` · `*`
 
 ---
 
 ## Services
 
-**`services/api` — 10 route modules**: `assessments` `attempts` `auth` `console`
-`cosmetics` `feedback` `items` `live` `stages` `submissions`.
+**`services/api` — 11 route modules**: `assessments` `attempts` `auth` `console`
+`content` `cosmetics` `feedback` `items` `live` `stages` `submissions`.
+`content` (28 Sep 2026) took over `GET /console/content` and added a chapter's
+blocks, a block's history, `PUT` a block, and summary approve / send back.
 `items` gained `POST /console/items/bulk-status` (drafts into review only),
 `/import` (dry run first; drafts only; never a live item) and `/export` on
 25 Sep 2026, with the pure planner in `src/items/import-plan.ts`.

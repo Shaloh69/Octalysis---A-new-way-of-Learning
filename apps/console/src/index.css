@@ -1796,3 +1796,163 @@
   from { translate: -100% 0; }
   to   { translate: 0 0; }
 }
+
+/*
+ * ------------------------------------------------------------ /content
+ *
+ * `design/templates/console/content/SPEC.md`: shadcn-admin's Tasks table for
+ * the chapter list, Decap's split editor with Dillinger's mono source pane for
+ * `/content/:stageId`. Each page chooses on its OWN width (a ResizeObserver):
+ * the chapter table at 56rem and up, a list below; the editor beside its
+ * preview at 62rem and up, one at a time below.
+ */
+@layer components {
+  .ct { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-4); }
+  .ct-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+  .ct-card {
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    min-width: 0;
+  }
+  .ct-h2 { font-family: var(--font-display); font-size: var(--text-base); color: var(--ink); }
+  .ct-caption { font-size: var(--text-xs); color: var(--ink-muted); max-width: 48rem; }
+  .ct-faint { font-size: var(--text-xs); color: var(--ink-muted); }
+  .ct-muted { color: var(--ink-muted); }
+  .ct-link {
+    color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent);
+    text-underline-offset: 2px; border-radius: var(--radius-sm);
+    background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  }
+  .ct-link:hover { text-decoration-thickness: 2px; }
+  .ct-back {
+    display: inline-flex; align-items: center; gap: var(--space-1); align-self: flex-start;
+    font-size: var(--text-sm); color: var(--ink-muted); border-radius: var(--radius-sm);
+  }
+  .ct-back:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+  .ct-views { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .ct-schedule { font-size: var(--text-sm); color: var(--ink-muted); max-width: 60rem; }
+
+  /* ---- KPI row ---- */
+  .ct-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+  @container (max-width: 48rem) { .ct-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @container (max-width: 30rem) { .ct-kpis { grid-template-columns: minmax(0, 1fr); } }
+  .ct-kpi { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); }
+  .ct-kpi-label { font-size: var(--text-sm); font-weight: 500; color: var(--ink); }
+  .ct-kpi-value { font-size: var(--text-2xl); line-height: var(--lh-2xl); color: var(--ink); }
+  .ct-kpi-value .num { font-weight: 600; }
+  .ct-kpi-note { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+
+  /* ---- chapters, wide ---- */
+  .ct-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); }
+  .ct-table col.c-id { width: 4rem; }
+  .ct-table col.c-period { width: 6.5rem; }
+  .ct-table col.c-type { width: 6.5rem; }
+  .ct-table col.c-state { width: 7rem; }
+  .ct-table col.c-num { width: 6rem; }
+  .ct-table col.c-blocks { width: 8.5rem; }
+  .ct-table col.c-live { width: 8.5rem; }
+  .ct-table th, .ct-table td { padding: var(--space-2) var(--space-2); text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+  .ct-table th:first-child, .ct-table td:first-child { padding-left: var(--space-4); }
+  .ct-table th:last-child, .ct-table td:last-child { padding-right: var(--space-4); }
+  .ct-table thead th {
+    font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted);
+    border-bottom: var(--border-hair) solid var(--line-strong); vertical-align: bottom;
+  }
+  .ct-table tbody tr { border-bottom: var(--border-hair) solid var(--line); transition: background-color var(--dur-fast) var(--ease-out); }
+  .ct-table tbody tr:last-child { border-bottom: 0; }
+  .ct-table tbody tr:hover { background: var(--surface-2); }
+  .ct-table td { color: var(--ink); }
+  .ct-row-title { font-weight: 400; color: var(--ink); }
+  .ct-chapter-link { font-weight: 500; text-decoration-color: transparent; }
+  .ct-chapter-link:hover, .ct-chapter-link:focus-visible { text-decoration-color: var(--accent); }
+
+  /* ---- chapters, narrow ---- */
+  .ct-list { margin: 0; padding: 0; list-style: none; }
+  .ct-item { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .ct-item:last-child { border-bottom: 0; }
+  .ct-item-head { display: flex; align-items: flex-start; gap: var(--space-3); }
+  .ct-item-id { font-size: var(--text-sm); color: var(--ink-muted); padding-top: 1px; }
+  .ct-item-title { font-size: var(--text-sm); color: var(--ink); overflow-wrap: anywhere; }
+  .ct-item-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .ct-facts { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); margin: 0; font-size: var(--text-xs); }
+  .ct-fact { display: flex; justify-content: space-between; gap: var(--space-2); min-width: 0; }
+  .ct-fact dt { color: var(--ink-muted); }
+  .ct-fact dd { margin: 0; color: var(--ink); text-align: right; min-width: 0; overflow-wrap: anywhere; }
+
+  /* ---- summaries ---- */
+  .ct-groups { display: flex; flex-direction: column; gap: var(--space-3); }
+  .ct-group > .ct-h2 { padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .ct-group-empty { padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--ink-muted); }
+  .ct-summary { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .ct-summary:last-child { border-bottom: 0; }
+  .ct-summary-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+  .ct-summary-title { font-size: var(--text-sm); font-weight: 600; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+  .ct-summary-title .num { color: var(--ink-muted); font-weight: 500; }
+  .ct-summary-draft { font-size: var(--text-sm); line-height: var(--lh-base); color: var(--ink); max-width: 72ch; }
+  .ct-summary-note { font-size: var(--text-sm); color: var(--ink-muted); max-width: 72ch; }
+  .ct-summary-meta { font-size: var(--text-xs); color: var(--ink-muted); }
+  .ct-summary-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+  /* ---- one chapter ---- */
+  .ct-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+  /* Beside the blocks, the preview stays in view and scrolls on its own, as Decap's does. */
+  .ct-split .ct-preview { position: sticky; top: var(--space-2); max-height: calc(100vh - var(--space-4)); overflow-y: auto; }
+  .ct-pane-head { padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .ct-block-list { margin: 0; padding: 0; list-style: none; }
+  .ct-block { padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .ct-block:last-child { border-bottom: 0; }
+  .ct-block[data-open] { background: var(--surface-2); }
+  .ct-block-head { display: flex; align-items: flex-start; gap: var(--space-3); }
+  .ct-block-n { font-size: var(--text-xs); color: var(--ink-muted); min-width: 1.5rem; padding-top: 2px; }
+  .ct-block-kind { font-size: var(--text-xs); color: var(--ink-muted); }
+  .ct-block-flag { color: var(--ink); font-weight: 500; }
+  .ct-block-excerpt { font-size: var(--text-sm); color: var(--ink); overflow-wrap: anywhere; }
+  .ct-block-note { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .ct-block-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-1); flex-shrink: 0; }
+  /* Narrow: the controls go under the text, so an excerpt keeps the width of the card. */
+  @container (max-width: 36rem) {
+    .ct-block-head { flex-wrap: wrap; }
+    .ct-block-actions { flex-basis: 100%; justify-content: flex-start; padding-left: calc(1.5rem + var(--space-3)); }
+  }
+  .ct-editor { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+  .ct-source { font-family: var(--font-mono); font-size: var(--text-sm); line-height: var(--lh-base); resize: vertical; min-height: 8rem; }
+  .ct-editor-reason { display: flex; flex-direction: column; gap: var(--space-1); }
+  .ct-editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .ct-history { margin-top: var(--space-3); padding-left: var(--space-3); border-left: var(--border-hair) solid var(--line-strong); }
+  .ct-versions { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
+  .ct-version { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+  .ct-version-head { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .ct-version-body {
+    align-self: stretch; margin: 0; padding: var(--space-2);
+    font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink);
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+  }
+
+  /* ---- the preview: the student reader's shapes, in the console's tokens ---- */
+  .pv-body { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); font-size: var(--text-sm); line-height: var(--lh-base); color: var(--ink); }
+  .pv-block { border-radius: var(--radius-md); overflow-wrap: anywhere; }
+  .pv-block p + p, .pv-block p + ul, .pv-block ul + p { margin-top: var(--space-2); }
+  /* Tailwind's preflight strips every marker (NEXT-SESSION 0e.4): say it. */
+  .pv-block ul { list-style-type: disc; padding-left: var(--space-5); }
+  .pv-block[data-editing] { outline: 2px solid var(--accent); outline-offset: 4px; background: var(--surface-2); }
+  .pv-editing-tag { margin-bottom: var(--space-1); font-size: var(--text-xs); font-weight: 600; color: var(--ink); }
+  .pv-brief { font-size: var(--text-base); color: var(--ink); }
+  .pv-callout { padding: var(--space-3); background: var(--surface-2); border-left: 3px solid var(--accent); border-radius: var(--radius-sm); }
+  .pv-planned { padding: var(--space-3); background: var(--surface-2); border: var(--border-hair) dashed var(--line-strong); border-radius: var(--radius-md); }
+  .pv-planned-tag { margin-bottom: var(--space-1); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); }
+  /* Wrapped, never a sideways scroller: the gate counts that as clipping. */
+  .pv-code pre {
+    margin: 0; padding: var(--space-3);
+    font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--lh-sm);
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+  }
+  .pv-code figcaption { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); }
+
+  /* ---- loading ---- */
+  .ct-skel { animation: octa-shimmer calc(var(--dur-base) * 6) ease-in-out infinite; background: var(--surface-2); }
+  .ct-skel-kpi { min-height: 7rem; }
+  .ct-skel-table { min-height: 36rem; margin-top: var(--space-4); }
+}

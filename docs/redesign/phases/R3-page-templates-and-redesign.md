@@ -809,7 +809,24 @@ thesis deliverable, and right now no phase is accountable for it.
         51 skipped, 0 failed. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png`,
         and `/gradebook`'s and `/submissions`' `current*.png` re-captured
         under the new shell
-  - [ ] `/content`
+  - [x] `/content` — **28 Sep 2026** (`design/templates/console/content/SPEC.md`),
+        against Decap CMS's split editor/preview (the shape `TEMPLATE-LINKS.md`
+        names), Dillinger's mono source pane and shadcn-admin's Tasks table;
+        Decap's collection cards and workflow board captured and rejected.
+        **Instructor rulings, built:** summaries approved in the database and
+        bound to their exact text; **the block editor** `PAGE-SPECS.md` planned
+        (`/content/:stageId`, a live preview by the student reader's own rules,
+        reason and opened version required, every replaced version kept by a
+        trigger); sync **keeps, reports and pulls back** console edits
+        (`--pull`, `--take-file`); quote blocks read-only; review in a
+        Summaries view and on each chapter. KPI row, Chapters / Summaries in the
+        address, a table at 56rem of its own width, a list below (the old 380
+        table cut Status, Blocks and Live items off every row). Gate:
+        `design/specs/console-content.spec.ts`, 53 passed + 1 width-specific
+        skip, watched failing on the old page; API 537 passed; denials watched
+        failing twice (missing tables, then a leaking policy and a disabled
+        trigger). `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and six
+        state shots per width
   - [ ] `/audit`
   - [ ] `/system`
   - [ ] `/feedback`
@@ -829,10 +846,14 @@ thesis deliverable, and right now no phase is accountable for it.
       and updates the sidebar; **the sidebar wears the planet's biome, the map canvas never does**;
       the flat map opens the same sidebar in place
 - [ ] **Planet summaries approved** — all 19 drafted 25 Sep 2026 in
-      `content/stages/NN.md` as `summary_status: draft`; each goes live only
-      when the instructor sets it to `approved` (`WEB-REVAMP.md` §3.8)
-- [ ] **Summary review in the console** — approve or send back a summary on
-      `/content`, instead of editing a file by hand
+      `content/stages/NN.md`; since 28 Sep each is approved on `/content`,
+      bound to its text (`WEB-REVAMP.md` §3.8). 0 of 19 approved: the
+      instructor's to read
+- [x] **Summary review in the console** — approve or send back a summary on
+      `/content`, instead of editing a file by hand. **Built 28 Sep 2026** with
+      the `/content` revamp: `stage_summaries` (staff-only), approval by the
+      draft's hash, send back with a reason, audit rows, and a trigger that
+      refuses an unapproved `stages.summary` for every role
 - [ ] **Planet selection and zoom** (`WEB-REVAMP.md` §3) — select by click AND
       keyboard, camera easing with nodes pinned and no force simulation, Escape
       returns focus to the selected planet, flat map carries the same selection

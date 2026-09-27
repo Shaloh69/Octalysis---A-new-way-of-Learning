@@ -237,19 +237,21 @@ reason moon mastery has to come from the moons' own journeys.
 
 **Instructor ruling, 25 Sep 2026:** summaries may be drafted, because the
 instructor reviews every one before a student sees it. All 19 are written in
-`content/stages/NN.md` as `summary:` with `summary_status: draft`, grounded in
+`content/stages/NN.md` as `summary:` (then with `summary_status: draft`), grounded in
 each stage's own authored brief (00 to 07) and its syllabus objectives (08 to
 18). `.claude/rules/content.md` already allows original prose organised around
 the objectives; these define nothing, so no definition is paraphrased.
 
-`sync-content.mjs` writes a summary to `stages.summary` **only when its status
-is `approved`**, and a draft actively clears the column, so un-approving takes a
-summary back off students' screens. Verified: 19 drafts gave 0 live; approving
-one gave 1 live; moving it back to draft gave 0 live.
-
-Approving one today means editing its status line and re-syncing. **Reviewing
-them in the console is a missing feature.** It belongs on `/content` and arrives
-with that route's revamp.
+**Superseded 28 Sep 2026 (instructor ruling): review is on `/content`, in the
+database.** `sync-content.mjs` writes each `summary:` to `stage_summaries` as a
+draft and never approves anything; the `summary_status:` lines are gone and the
+key is refused. On `/content` (Summaries view, or the chapter's own page) a
+teacher approves one, which copies **that exact text** to `stages.summary`, or
+sends it back with a reason. A draft whose text later changes loses its
+approval and leaves students' screens on the next sync. The draft never sits on
+`stages` (readable by every student for a published stage); a trigger refuses
+any `stages.summary` that is not the approved text, for every role.
+`services/api/test/content.spec.ts`, `content-sync.spec.ts`, `rls.spec.ts`.
 
 ### 3.9 Motion, fallbacks and accessibility
 

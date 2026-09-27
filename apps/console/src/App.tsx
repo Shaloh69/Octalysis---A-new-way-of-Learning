@@ -7,6 +7,7 @@ import { StudentsPage } from "./pages/StudentsPage";
 import { StudentDetailPage } from "./pages/StudentDetailPage";
 import { AttemptPage } from "./pages/AttemptPage";
 import { ContentPage } from "./pages/ContentPage";
+import { ContentChapterPage } from "./pages/ContentChapterPage";
 import { ItemsPage } from "./pages/ItemsPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { LivePage } from "./pages/LivePage";
@@ -75,6 +76,7 @@ export function App() {
           <Route path="/items" element={<ItemsPage />} />
           <Route path="/submissions" element={<SubmissionsPage />} />
           <Route path="/content" element={<ContentPage />} />
+          <Route path="/content/:stageId" element={<ContentChapterPage />} />
           <Route path="/audit" element={<AuditPage />} />
           <Route path="/system" element={<SystemPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />

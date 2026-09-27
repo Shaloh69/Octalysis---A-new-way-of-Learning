@@ -1,165 +1,197 @@
-import { api } from "@/lib/api";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { api, type StageSummary } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { ErrorNote, Loading } from "@/components/ui/empty";
+import { useDelayed } from "@/lib/useDelayed";
+import { Button } from "@/components/ui/button";
+import { ChapterList, ChapterTable } from "./content/Chapters";
+import { SendBackDialog, SummaryGroups, useFocusNext, useSummaryActions } from "./content/Summaries";
 
 /**
- * Content status — the honest answer to "is the course ready?"
+ * `/content`: where each chapter stands, and the planet summaries waiting for
+ * review. Rebuilt 28 Sep 2026 against `design/templates/console/content/SPEC.md`;
+ * gated by `design/specs/console-content.spec.ts`. The editor for one chapter
+ * is `ContentChapterPage`.
  *
- * The answer is per-chapter, and an aggregate hides it. A progress bar reading
- * "72% complete" would be true and useless; what a teacher needs before Monday
- * is *which chapter* has no teaching text yet.
- *
- * Three states, and they are genuinely different things:
+ * The answer to "is the course ready?" is per chapter, and an aggregate hides
+ * it. Three authoring states, and they are genuinely different things:
  *
  *   authored  real prose exists, written from the chapter's references
  *   planned   objectives and the syllabus topic outline, no teaching text yet
  *   empty     nothing synced at all
  *
  * **Planned is not a bug.** `scripts/gen-stages.mjs` transcribes what the
- * syllabus contains and refuses to invent the rest — hard rule 5, and
- * `content/stages/README.md` explains why. A stage that shows its shape is
- * honest; a stage filled with plausible-sounding paragraphs nobody vetted is
- * how a wrong definition reaches a student with the platform's authority
- * behind it.
+ * syllabus contains and refuses to invent the rest (hard rule 5). A stage that
+ * shows its shape is honest; one filled with plausible paragraphs nobody
+ * vetted is how a wrong definition reaches a student with the platform's
+ * authority behind it.
  */
-const ACT_NAMES = ["", "Prelim", "Midterm", "Semi-finals", "Finals"];
+
+/** Below this much of its own width the nine columns do not fit, so the chapters are a list. */
+const WIDE_PX = 896; // 56rem
+
+type View = "chapters" | "summaries";
 
 export function ContentPage() {
-  const { data, error, loading } = useAsync(() => api.content(), []);
+  const [params, setParams] = useSearchParams();
+  const view: View = params.get("view") === "summaries" ? "summaries" : "chapters";
+  const setView = (v: View) => setParams(v === "chapters" ? {} : { view: v }, { replace: false });
 
-  if (loading) return <Loading what="content status" />;
-  if (error) return <ErrorNote message={error} />;
-  if (!data) return null;
+  const status = useAsync(() => api.content(), []);
+  const sums = useAsync(() => api.contentSummaries(), []);
+  const data = status.data;
+  const firstLoad = status.loading && !data;
+  const showSkeleton = useDelayed(firstLoad, 400);
+  const slow = useDelayed(firstLoad, 3000);
 
-  const { stages, summary } = data;
-  const itemPct =
-    summary.itemTarget === 0 ? 0 : Math.round((summary.liveItems / summary.itemTarget) * 100);
+  const box = useRef<HTMLDivElement>(null);
+  const [wide, setWide] = useState(true);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setWide(el.getBoundingClientRect().width >= WIDE_PX);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const reloadAll = () => {
+    status.reload();
+    sums.reload();
+  };
+  const { busy, approve, focusAfter } = useSummaryActions(reloadAll);
+  useFocusNext(focusAfter, sums.data);
+
+  const [sendBack, setSendBack] = useState<StageSummary | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const afterSendBack = (s: StageSummary) => {
+    focusAfter.current = sums.data?.summaries.find((x) => x.status === "draft" && x.stageId !== s.stageId)?.stageId ?? null;
+    reloadAll();
+  };
+
+  const s = data?.summary;
+  const toReview = s?.summaries.draft ?? 0;
 
   return (
-    <>
-      <header className="mb-4">
-        <h1 className="mb-1 font-display text-2xl">Content</h1>
-        <p className="max-w-2xl text-sm text-ink-muted">
-          Where each chapter stands. Objectives come from the syllabus; teaching text is written
-          from the references in <span className="num">docs/CPE412-CURRICULUM.md</span> §4.
-        </p>
+    <div ref={box} className="ct">
+      <header className="ct-head">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl text-ink" tabIndex={-1}>Content</h1>
+          <p className="max-w-2xl text-sm text-ink-muted">
+            Where each chapter stands, and the planet summaries waiting for review. Open a chapter to fix its text.
+          </p>
+        </div>
       </header>
 
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Chapters authored" value={`${summary.authored}/${summary.total}`}
-              note={summary.authored === 0 ? "None yet" : undefined} />
-        <Stat label="Planned" value={String(summary.planned)}
-              note="Objectives and outline ready; prose to come" />
-        <Stat label="Objectives" value={String(summary.objectives)}
-              note="Transcribed from the syllabus" />
-        <Stat
-          label="Live items"
-          value={`${summary.liveItems}/${summary.itemTarget}`}
-          note={`${itemPct}% of the target bank`}
-          tone={itemPct < 25 ? "warning" : undefined}
-        />
-      </div>
-
-      <Card className="mb-5">
-        <CardHeader>
-          <CardTitle>The item bank is the schedule</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-ink-muted">
-            The target is roughly 40 live items per gradeable chapter — about{" "}
-            <span className="num">{summary.itemTarget}</span> in total. Code is finite; the bank is
-            continuous, and no amount of code substitutes for it. Author eight to ten per chapter by
-            hand to set the style, then draft the rest with assistance and approve every one before
-            it goes live. A wrong answer key in a live bank is a grading incident, not a bug.
+      {status.error && !data ? (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-bg px-4 py-3">
+          <p className="min-w-0 flex-1 text-sm text-ink">
+            The content status could not be loaded. <span className="text-ink-muted">{status.error}</span>
           </p>
-        </CardContent>
-      </Card>
+          <Button size="sm" variant="outline" onClick={reloadAll}>Try again</Button>
+        </div>
+      ) : firstLoad || !data || !s ? (
+        showSkeleton ? <Skeleton slow={slow} /> : <div className="min-h-[40rem]" aria-busy="true" />
+      ) : (
+        <>
+          <div className="ct-kpis">
+            <Kpi id="authored" label="Chapters authored" value={<><span className="num">{s.authored}/{s.total}</span></>}
+                 note={<><span className="num">{s.planned}</span> planned: objectives and outline, prose to come</>} />
+            <Kpi id="summaries" label="Summaries approved" value={<span className="num">{s.summaries.approved}/{s.total}</span>}
+                 note={toReview > 0
+                   ? <button type="button" className="ct-link" onClick={() => setView("summaries")}><span className="num">{toReview}</span> to review</button>
+                   : "none waiting for review"} />
+            <Kpi id="edits" label="Edits not in git" value={<span className="num">{s.consoleEdited}</span>}
+                 note={s.consoleEdited > 0
+                   ? <>made in the console; run <span className="num">sync-content --pull</span> to write them into the files</>
+                   : "every edit is in the files"} />
+            <Kpi id="items" label="Live items" value={<span className="num">{s.liveItems}/{s.itemTarget}</span>}
+                 note={<><span className="num">{s.itemTarget === 0 ? 0 : Math.round((s.liveItems / s.itemTarget) * 100)}%</span> of the target bank</>} />
+          </div>
 
-      <div className="table-scroll rounded-lg border border-line bg-surface-1">
-        <Table>
-          <caption className="sr-only">Authoring status for every stage</caption>
-          <THead>
-            <TR>
-              <TH>Stage</TH>
-              <TH>Chapter</TH>
-              <TH>Period</TH>
-              <TH>Type</TH>
-              <TH>Status</TH>
-              <TH>Objectives</TH>
-              <TH>Blocks</TH>
-              <TH>Live items</TH>
-            </TR>
-          </THead>
-          <TBody>
-            {stages.map((s) => (
-              <TR key={s.id}>
-                <TD><span className="num text-xs">{s.id}</span></TD>
-                <TD>
-                  {s.title}
-                  {!s.gradeable ? (
-                    <span className="ml-2 text-xs text-ink-faint">not graded</span>
-                  ) : null}
-                </TD>
-                <TD className="text-xs text-ink-muted">{ACT_NAMES[s.act] ?? s.act}</TD>
-                <TD>
-                  <span className="num text-xs" title={archetypeName(s.archetype)}>
-                    {s.archetype}
-                  </span>
-                  <span className="num ml-2 text-xs text-ink-faint">
-                    L{s.levels.join(",")}
-                  </span>
-                </TD>
-                <TD>
-                  {s.authoring === "authored" ? (
-                    <Badge tone="success">Authored</Badge>
-                  ) : s.authoring === "planned" ? (
-                    <Badge tone="info">Planned</Badge>
-                  ) : (
-                    <Badge tone="neutral">Empty</Badge>
-                  )}
-                </TD>
-                <TD><span className="num">{s.objectives}</span></TD>
-                <TD><span className="num">{s.blocks}</span></TD>
-                <TD>
-                  <span className={s.liveItems === 0 ? "num text-ink-faint" : "num"}>
-                    {s.liveItems}
-                  </span>
-                  {s.draftItems > 0 ? (
-                    <span className="num ml-1 text-xs text-ink-faint">+{s.draftItems} draft</span>
-                  ) : null}
-                </TD>
-              </TR>
-            ))}
-          </TBody>
-        </Table>
-      </div>
+          <p className="ct-schedule">
+            <span className="font-medium text-ink">The item bank is the schedule.</span> The target is about 40 live
+            items per gradeable chapter, <span className="num">{s.itemTarget}</span> in all, and no amount of code
+            substitutes for it. Every item is approved by hand on Items before a student can draw it.
+          </p>
 
-      <p className="mt-3 max-w-2xl text-xs text-ink-faint">
-        Editing content needs no redeploy — the database is the runtime source of truth. The
-        markdown under <span className="num">content/stages/</span> is the authoring source, so
-        changes stay reviewable in git.
-      </p>
-    </>
+          <div className="ct-views" role="group" aria-label="Show">
+            <Button size="sm" variant={view === "chapters" ? "default" : "outline"} aria-pressed={view === "chapters"} onClick={() => setView("chapters")}>
+              Chapters
+            </Button>
+            <Button size="sm" variant={view === "summaries" ? "default" : "outline"} aria-pressed={view === "summaries"} onClick={() => setView("summaries")}>
+              Summaries · <span className="num">{toReview}</span> to review
+            </Button>
+          </div>
+
+          {view === "chapters" ? (
+            <section className="ct-card" aria-label="Chapters">
+              {wide ? <ChapterTable stages={data.stages} /> : <ChapterList stages={data.stages} />}
+            </section>
+          ) : sums.error && !sums.data ? (
+            <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-bg px-4 py-3">
+              <p className="min-w-0 flex-1 text-sm text-ink">
+                The summaries could not be loaded. <span className="text-ink-muted">{sums.error}</span>
+              </p>
+              <Button size="sm" variant="outline" onClick={sums.reload}>Try again</Button>
+            </div>
+          ) : !sums.data ? (
+            <div className="ct-card ct-skel" data-skeleton aria-busy="true" />
+          ) : (
+            <>
+              <p className="ct-caption">
+                An approval is of the exact words shown: if the draft in its file changes, it comes back here to be read
+                again. Drafts are written in <span className="num">content/stages/NN.md</span>.
+              </p>
+              <SummaryGroups
+                summaries={sums.data.summaries}
+                busy={busy}
+                onApprove={(x, all) => void approve(x, all)}
+                onSendBack={(x, el) => {
+                  opener.current = el;
+                  setSendBack(x);
+                }}
+              />
+            </>
+          )}
+
+          <p className="ct-caption">
+            Text is written in <span className="num">content/stages/NN.md</span> and synced; a fix made here reaches
+            students at once and is kept with its reason. Quotes from the book are edited in the file, where they are
+            checked against it.
+          </p>
+        </>
+      )}
+
+      <SendBackDialog
+        summary={sendBack}
+        onClose={() => setSendBack(null)}
+        onDone={afterSendBack}
+        returnFocus={() => opener.current}
+      />
+    </div>
   );
 }
 
-function archetypeName(a: string): string {
-  return a === "A" ? "concept" : a === "B" ? "computation" : a === "C" ? "artifact" : "simulator";
+function Kpi({ id, label, value, note }: { id: string; label: string; value: React.ReactNode; note: React.ReactNode }) {
+  return (
+    <div className="ct-card ct-kpi" data-kpi={id}>
+      <p className="ct-kpi-label">{label}</p>
+      <p className="ct-kpi-value">{value}</p>
+      <p className="ct-kpi-note">{note}</p>
+    </div>
+  );
 }
 
-function Stat({
-  label, value, note, tone,
-}: { label: string; value: string; note?: string | undefined; tone?: "warning" | undefined }) {
+function Skeleton({ slow }: { slow: boolean }) {
   return (
-    <div className="rounded-lg border border-line bg-surface-1 p-4">
-      <p className="text-xs uppercase tracking-wide text-ink-muted">{label}</p>
-      <p className={tone === "warning" ? "num text-2xl text-warning" : "num text-2xl text-ink"}>
-        {value}
-      </p>
-      {note ? <p className="mt-0.5 text-xs text-ink-faint">{note}</p> : null}
+    <div data-skeleton aria-busy="true" aria-label="Loading the content status">
+      <div className="ct-kpis">
+        {[0, 1, 2, 3].map((i) => <div key={i} className="ct-card ct-skel ct-skel-kpi" />)}
+      </div>
+      <div className="ct-card ct-skel ct-skel-table" />
+      {slow ? <p className="ct-caption">Still loading. The server may be waking up; this can take up to a minute.</p> : null}
     </div>
   );
 }
