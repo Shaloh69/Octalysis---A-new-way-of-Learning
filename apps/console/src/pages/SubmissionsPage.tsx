@@ -1,308 +1,299 @@
-import { useState } from "react";
-import { FileText, Clock } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Check, ChevronDown, Search } from "lucide-react";
 import { api, type Submission } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
-import { shortDate } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Empty, ErrorNote, Loading } from "@/components/ui/empty";
+import { useDelayed } from "@/lib/useDelayed";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+  KIND_WORD, counts, deliverables, isWaiting, matches, matchesScope, nextToMark,
+  type Filter, type StatusFilter,
+} from "@/lib/submissions-view";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Empty } from "@/components/ui/empty";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { QueueList, QueueSkeleton, QueueTable } from "./submissions/Queue";
+import { Pane } from "./submissions/Pane";
+import { ReturnDialog } from "./submissions/ReturnDialog";
 
 /**
- * Grading labs, the project, and participation — 40% of the final grade, and
- * until now there was nowhere to record any of it.
+ * `/submissions`: labs, the project and participation, 40% of the final grade.
+ * Rebuilt 27 Sep 2026 against `design/templates/console/submissions/SPEC.md`
+ * (shadcn-admin's Inbox: the queue beside a reading pane); gated by
+ * `design/specs/console-submissions.spec.ts`.
  *
- * THE RUBRIC IS THE PAGE. `LAB-MANUAL.md` §0.3 gives every lab the same
- * four-point rubric so students learn it once, and puts **a full point on stated
- * reasoning** — a right answer with no explanation caps at 3. So the grader sees
- * the four bands, in the manual's own words, and picks one. Typing a bare number
- * into a box would let that rule quietly lapse.
- *
- * A GRADED SUBMISSION IS FROZEN. Correcting one means *returning* it with a
- * reason, which the student sees and the audit log keeps. There is no edit path,
- * here or in the API, and the database refuses it besides.
+ * It owns two writes, both audited by the API: a mark, and a return. A GRADED
+ * submission is frozen: the API answers 409 to a mark on one, and the only way
+ * to change it is a return with a reason, whose audit row keeps the mark and
+ * feedback it replaces. A draft is listed and never read: the API withholds
+ * its body.
  */
 
-const BANDS = [
-  { score: 4, label: "Correct, complete, and the reasoning is stated" },
-  { score: 3, label: "Correct and complete; reasoning thin or missing" },
-  { score: 2, label: "Partially correct, or complete with a conceptual error" },
-  { score: 1, label: "Attempted, substantially incorrect" },
-  { score: 0, label: "Not submitted" },
-] as const;
+/** Below this much AVAILABLE width the queue and the pane do not both fit. */
+const WIDE_PX = 992; // 62rem
 
-const STATUS_TONE = {
-  draft: "neutral",
-  submitted: "warning",
-  returned: "info",
-  graded: "success",
-  voided: "locked",
-} as const;
+const STATUS_BUTTONS: Array<[StatusFilter, string, keyof ReturnType<typeof counts>]> = [
+  ["submitted", "To mark", "submitted"],
+  ["returned", "Returned", "returned"],
+  ["graded", "Graded", "graded"],
+  ["draft", "Drafts", "draft"],
+  ["all", "All", "all"],
+];
 
 export function SubmissionsPage() {
-  const [status, setStatus] = useState<string | null>("submitted");
-  const { data, error, loading, reload } = useAsync(
-    () => api.submissions(status ?? undefined),
-    [status],
-  );
-  const [open, setOpen] = useState<Submission | null>(null);
+  const list = useAsync(() => api.submissions(), []);
+  const all = useMemo(() => list.data?.submissions ?? [], [list.data]);
+  const firstLoad = list.loading && !list.data;
+  const showSkeleton = useDelayed(firstLoad, 400);
+  const slow = useDelayed(firstLoad, 3000);
 
-  if (loading) return <Loading what="submissions" />;
-  if (error) return <ErrorNote message={error} />;
-  if (!data) return null;
+  const box = useRef<HTMLDivElement>(null);
+  const [wide, setWide] = useState(true);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setWide(el.getBoundingClientRect().width >= WIDE_PX);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-  const s = data.summary;
-  const waiting = s.submitted ?? 0;
+  const [filter, setFilter] = useState<Filter>({ status: "submitted", deliverable: null, q: "" });
+  const scoped = all.filter((s) => matchesScope(s, filter));
+  const rows = all.filter((s) => matches(s, filter));
+  const c = counts(all);
+  const cScoped = counts(scoped);
+  const groups = deliverables(all);
+
+  /* The open submission lives in the address, so Back and a reload keep it. */
+  const [params, setParams] = useSearchParams();
+  const openId = params.get("open");
+  const open = all.find((s) => s.id === openId) ?? null;
+
+  const heading = useRef<HTMLHeadingElement>(null);
+  const focusPane = useRef(false);
+  /** The row to send focus back to when the pane closes at 380. */
+  const cameFrom = useRef<string | null>(null);
+
+  function setOpen(id: string | null, focus: boolean) {
+    focusPane.current = focus && id !== null;
+    setParams(
+      (p) => {
+        const next = new URLSearchParams(p);
+        if (id) next.set("open", id);
+        else next.delete("open");
+        return next;
+      },
+      { replace: wide },
+    );
+  }
+
+  useEffect(() => {
+    if (focusPane.current && open) {
+      focusPane.current = false;
+      heading.current?.focus();
+    }
+  }, [open?.id, open]);
+
+  useEffect(() => {
+    if (open || !cameFrom.current || wide) return;
+    const el = document.querySelector<HTMLElement>(`[data-submission="${cameFrom.current}"] [data-open]`);
+    cameFrom.current = null;
+    el?.focus();
+  }, [open, wide]);
+
+  const opener = useRef<HTMLElement | null>(null);
+  const [returning, setReturning] = useState<Submission | null>(null);
+
+  function onGraded(s: Submission) {
+    // Save and advance: the next to mark in the view the teacher is looking at.
+    const next = nextToMark(rows, s.id);
+    setOpen(next, true);
+    list.reload();
+  }
+
+  const oldest = rows.find(isWaiting) ?? null;
+  const deliverableLabel = !filter.deliverable
+    ? "every deliverable"
+    : filter.deliverable.startsWith("kind:")
+      ? KIND_WORD[filter.deliverable.slice(5) as Submission["kind"]]
+      : filter.deliverable;
+
+  const queueVisible = wide || !open;
 
   return (
-    <>
+    <div ref={box} className="subs">
       <header className="mb-4">
-        <h1 className="mb-1 font-display text-2xl">Submissions</h1>
+        <h1 className="font-display text-2xl text-ink">Submissions</h1>
         <p className="max-w-2xl text-sm text-ink-muted">
-          Labs, the project, and participation — <strong>40% of the final grade</strong>.{" "}
-          {waiting > 0 ? (
-            <>
-              <span className="num text-warning">{waiting}</span> waiting to be marked.
-            </>
-          ) : (
-            <>Nothing is waiting.</>
-          )}
+          Labs, the project and participation: <strong className="text-ink">40% of the final grade</strong>.
         </p>
+        {list.data ? (
+          <p className="mt-1 text-xs text-ink-muted" data-counts="">
+            <span className="num text-ink">{c.all}</span> submissions · <span className="num text-ink">{c.submitted}</span> to
+            mark · <span className="num text-ink">{c.graded}</span> graded · <span className="num text-ink">{c.returned}</span>{" "}
+            returned · <span className="num text-ink">{c.draft}</span> drafts
+          </p>
+        ) : null}
       </header>
 
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        <Button size="sm" variant={status === null ? "default" : "outline"} onClick={() => setStatus(null)}>
-          All
-        </Button>
-        {(["submitted", "returned", "graded", "draft"] as const).map((st) => (
-          <Button key={st} size="sm" variant={status === st ? "default" : "outline"} onClick={() => setStatus(st)}>
-            {st} {s[st] ? <span className="num ml-1">{s[st]}</span> : null}
+      {list.error && !list.data ? (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-bg px-4 py-3">
+          <p className="min-w-0 flex-1 text-sm text-ink">
+            The submissions could not be loaded. <span className="text-ink-muted">{list.error}</span>
+          </p>
+          <Button size="sm" variant="outline" onClick={list.reload}>
+            Try again
           </Button>
-        ))}
-      </div>
-
-      {data.submissions.length === 0 ? (
+        </div>
+      ) : firstLoad || !list.data ? (
+        showSkeleton ? <QueueSkeleton wide={wide} slow={slow} /> : <div className="min-h-[32rem]" aria-busy="true" />
+      ) : all.length === 0 ? (
         <Empty
-          title={status === "submitted" ? "Nothing waiting to be marked" : "Nothing here"}
-          hint="Submissions appear as students hand them in. Drafts stay private until then."
+          title="Nothing handed in yet"
+          hint="Labs, the project and participation appear here as students hand them in."
         />
       ) : (
-        /*
-         * DENSE ROWS, not cards. `DESIGN-REVIEW-01` D-4, finally fixed.
-         *
-         * The queue was ~155px per item for four stacked lines, so 21 items to
-         * mark ran to a 3,400px page — "too sparse to mark from" was the
-         * finding, and it was left deliberately unfixed pending a pass against
-         * a reference rather than by taste. The reference is the one
-         * `CONSOLE-DATA-AND-TEMPLATES.md` §2 names: shadcn-admin's own Tasks
-         * page, the densest table in the template this console already uses.
-         *
-         * WHAT CAME OUT: the two-line body preview. A teacher triaging 21
-         * submissions needs who, which lab, whether it was late, and the way
-         * in. The prose is what they read AFTER opening one, and it is right
-         * there in the detail panel. Removing it is most of the height.
-         *
-         * WHAT STAYED: everything that changes what a teacher does first.
-         * `is_late` especially — it is a generated column and D-4's other half
-         * was that it did not appear at all.
-         */
-        <ul className="divide-y divide-line rounded-md border border-line">
-          {data.submissions.map((sub) => (
-            <li key={sub.id}>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 hover:bg-surface-2">
-                <Badge tone={STATUS_TONE[sub.status]}>{sub.status}</Badge>
-                <span className="num text-xs text-ink-faint">{sub.slug}</span>
-
-                <span className="min-w-0 flex-1 truncate text-sm text-ink">
-                  <span className="font-medium">{sub.studentName}</span>
-                  <span className="num ml-2 text-xs text-ink-faint">{sub.studentId}</span>
-                  <span className="mx-2 text-ink-faint">·</span>
-                  <span className="text-ink-muted">{sub.title}</span>
-                </span>
-
-                {sub.isLate && (
-                  <Badge tone="warning" title="Recorded, not penalised. That is your call.">
-                    <Clock className="mr-1 h-3 w-3" aria-hidden="true" /> late
-                  </Badge>
-                )}
-
-                <span className="num whitespace-nowrap text-xs text-ink-faint">
-                  {shortDate(sub.submittedAt)}
-                </span>
-
-                {sub.score !== null && (
-                  <span className="num w-16 text-right text-sm">
-                    {sub.score}/{sub.maxScore}
-                  </span>
-                )}
-
-                <Button size="sm" variant="outline" onClick={() => setOpen(sub)}>
-                  {sub.status === "graded" ? "Review" : "Mark"}
-                </Button>
+        <>
+          {queueVisible ? (
+            <div className="subs-toolbar">
+              <div className="subs-search">
+                <Search className="h-4 w-4" aria-hidden="true" />
+                <Input
+                  className="pl-6"
+                  aria-label="Search by name or student ID"
+                  placeholder="Name or student ID"
+                  value={filter.q}
+                  onChange={(e) => setFilter((f) => ({ ...f, q: e.target.value }))}
+                />
               </div>
-            </li>
-          ))}
-        </ul>
+              <div className="subs-filters" role="group" aria-label="Show">
+                {STATUS_BUTTONS.map(([st, word, key]) => (
+                  <Button
+                    key={st}
+                    size="sm"
+                    variant={filter.status === st ? "default" : "outline"}
+                    aria-pressed={filter.status === st}
+                    className="subs-filter"
+                    onClick={() => setFilter((f) => ({ ...f, status: st }))}
+                  >
+                    {word}{" "}
+                    <span className="num">{cScoped[key]}</span>
+                  </Button>
+                ))}
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    Deliverable:{" "}
+                    <span className={filter.deliverable && !filter.deliverable.startsWith("kind:") ? "num" : undefined}>
+                      {deliverableLabel}
+                    </span>
+                    <ChevronDown className="h-3 w-3" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="max-h-[60vh] overflow-y-auto">
+                  <DropdownMenuItem onSelect={() => setFilter((f) => ({ ...f, deliverable: null }))}>
+                    <Tick on={!filter.deliverable} /> Every deliverable <span className="num ml-auto">{all.length}</span>
+                  </DropdownMenuItem>
+                  {groups.map((g) => (
+                    <div key={g.kind}>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={() => setFilter((f) => ({ ...f, deliverable: `kind:${g.kind}` }))}>
+                        <Tick on={filter.deliverable === `kind:${g.kind}`} />
+                        <span className="font-medium">{KIND_WORD[g.kind]}</span>
+                        <span className="num ml-auto">{g.n}</span>
+                      </DropdownMenuItem>
+                      {g.slugs.map((d) => (
+                        <DropdownMenuItem key={d.slug} onSelect={() => setFilter((f) => ({ ...f, deliverable: d.slug }))}>
+                          <Tick on={filter.deliverable === d.slug} />
+                          <span className="num">{d.slug}</span>
+                          <span className="num ml-auto">{d.n}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : null}
+
+          {list.error ? (
+            <div role="alert" className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-danger bg-danger-bg px-3 py-2">
+              <p className="min-w-0 flex-1 text-xs text-ink">Refreshing failed: {list.error}</p>
+              <Button size="sm" variant="outline" onClick={list.reload}>
+                Try again
+              </Button>
+            </div>
+          ) : null}
+
+          <div className="subs-split" data-wide={wide ? "" : undefined}>
+            {queueVisible ? (
+              <section className="subs-card" aria-label="The queue">
+                {rows.length === 0 ? (
+                  <p className="px-4 py-6 text-sm text-ink-muted">Nothing here with these filters.</p>
+                ) : wide ? (
+                  <QueueTable rows={rows} openId={openId} onOpen={(s) => setOpen(s.id, true)} />
+                ) : (
+                  <QueueList
+                    rows={rows}
+                    openId={openId}
+                    onOpen={(s) => {
+                      cameFrom.current = s.id;
+                      setOpen(s.id, true);
+                    }}
+                  />
+                )}
+              </section>
+            ) : null}
+
+            {open ? (
+              <div className="subs-card subs-pane-box">
+                <Pane
+                  ref={heading}
+                  s={open}
+                  onBack={wide ? null : () => setOpen(null, false)}
+                  onGraded={onGraded}
+                  onReturn={(s, from) => {
+                    opener.current = from;
+                    setReturning(s);
+                  }}
+                />
+              </div>
+            ) : wide ? (
+              <div className="subs-card subs-pane-box">
+                <div className="subs-empty" data-pane-empty="">
+                  {oldest ? (
+                    <>
+                      <p>
+                        <span className="num text-ink">{rows.filter(isWaiting).length}</span> waiting to be marked in
+                        this view. Choose one from the queue, or start with the oldest.
+                      </p>
+                      <Button onClick={() => setOpen(oldest.id, true)}>Open the oldest waiting</Button>
+                    </>
+                  ) : (
+                    <p>Nothing is waiting to be marked in this view. Choose any submission to read it.</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </>
       )}
 
-      <GradeDialog submission={open} onClose={() => setOpen(null)} onChanged={reload} />
-    </>
+      <ReturnDialog
+        submission={returning}
+        onClose={() => setReturning(null)}
+        onDone={list.reload}
+        returnFocus={() => opener.current}
+      />
+    </div>
   );
 }
 
-function GradeDialog({
-  submission, onClose, onChanged,
-}: { submission: Submission | null; onClose: () => void; onChanged: () => void }) {
-  const [band, setBand] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState("");
-  const [reason, setReason] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  if (!submission) return null;
-  const isGraded = submission.status === "graded";
-
-  async function grade() {
-    if (band === null || !submission) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      await api.gradeSubmission(submission.id, {
-        score: band,
-        maxScore: 4,
-        rubric: { band, criterion: BANDS.find((b) => b.score === band)?.label },
-        feedbackMd: feedback.trim() || undefined,
-      });
-      onChanged();
-      onClose();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "That grade was not saved.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function ret() {
-    if (!submission) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      await api.returnSubmission(submission.id, reason.trim());
-      onChanged();
-      onClose();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "That was not returned.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{submission.title}</DialogTitle>
-          <DialogDescription>
-            {submission.studentName} · <span className="num">{submission.slug}</span>
-            {submission.isLate && " · handed in late"}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="mb-4 max-h-64 overflow-y-auto rounded-md border border-line bg-surface-0 p-3">
-          <p className="mb-1 flex items-center gap-1.5 text-xs uppercase tracking-wide text-ink-muted">
-            <FileText className="h-3 w-3" aria-hidden="true" /> What they wrote
-          </p>
-          <p className="whitespace-pre-wrap text-sm text-ink">{submission.bodyMd}</p>
-        </div>
-
-        {isGraded ? (
-          <>
-            <p className="mb-3 rounded-md border border-info bg-info-bg px-3 py-2 text-sm text-info">
-              Already marked <span className="num">{submission.score}/{submission.maxScore}</span>.
-              A graded submission is frozen — the student cannot change it, and neither can this
-              page. To let them revise it, return it with a reason.
-            </p>
-            <Label htmlFor="ret-reason">Reason for returning (required)</Label>
-            <Textarea
-              id="ret-reason"
-              rows={3}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Rubric applied to the wrong section; rework part 2."
-            />
-            <p className="mt-1.5 text-xs text-ink-faint">
-              The student sees this, and it goes to the audit log.
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="mb-2 text-xs uppercase tracking-wide text-ink-muted">
-              Rubric — one band, out of 4
-            </p>
-            <div className="mb-4 space-y-1">
-              {BANDS.map((b) => (
-                <label
-                  key={b.score}
-                  className={
-                    "flex cursor-pointer items-start gap-3 rounded-md border p-2.5 text-sm " +
-                    (band === b.score
-                      ? "border-accent bg-accent-muted"
-                      : "border-line hover:bg-surface-2")
-                  }
-                >
-                  <input
-                    type="radio"
-                    name="band"
-                    className="mt-0.5"
-                    checked={band === b.score}
-                    onChange={() => setBand(b.score)}
-                  />
-                  <span className="num font-semibold">{b.score}</span>
-                  <span className="flex-1">{b.label}</span>
-                </label>
-              ))}
-            </div>
-            <p className="mb-3 text-xs text-ink-faint">
-              Reasoning is worth a full point on every lab. A correct answer with no explanation
-              caps at 3 — that line is what separates a lab from a quiz.
-            </p>
-
-            <Label htmlFor="fb">Feedback</Label>
-            <Textarea
-              id="fb"
-              rows={3}
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder="What would move this up a band?"
-            />
-          </>
-        )}
-
-        {err ? (
-          <p className="mt-3 text-sm text-danger" role="alert">
-            {err}
-          </p>
-        ) : null}
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Close
-          </Button>
-          {isGraded ? (
-            <Button variant="danger" disabled={busy || reason.trim().length < 3} onClick={() => void ret()}>
-              Return for revision
-            </Button>
-          ) : (
-            <Button disabled={busy || band === null} onClick={() => void grade()}>
-              {busy ? "Saving…" : "Save grade"}
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+function Tick({ on }: { on: boolean }) {
+  return <Check className={on ? "h-3 w-3" : "h-3 w-3 opacity-0"} aria-hidden="true" />;
 }

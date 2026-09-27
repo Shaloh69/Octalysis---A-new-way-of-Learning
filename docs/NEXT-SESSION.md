@@ -289,6 +289,51 @@ Found while rebuilding `/assessments` and deliberately **not** fixed there.
 
 ---
 
+## 0g. Parked by the `/submissions` revamp — 27 Sep 2026
+
+Found while rebuilding `/submissions` and deliberately **not** fixed there.
+§0a to §0f still stand; §0e.1 (the 500 on an unfillable Start) and §0f.1 (the
+feasibility cap) are untouched.
+
+1. **The freeze on a MARK is API-deep, not database-deep.** Since this
+   session `POST /grade` answers 409 on a graded row. But the trigger
+   `submissions_freeze_when_graded` freezes only `body_md`, `payload` and
+   `attachments`, and `sub_staff_all` lets any staff JWT update any column
+   straight through Supabase. A staff client that bypasses the API can still
+   change a graded row's score with no return and no audit row. The fix is the
+   trigger also refusing `score`, `max_score` and `rubric` on a graded row
+   unless the row is being returned: schema work, `VERIFICATION.md` first,
+   denial test first.
+2. **A returned row keeps its old score.** `POST /return` sets the status and
+   the reason and leaves `score`, `max_score` and `graded_by` in place, and
+   INV-31 only looks at graded rows. Nothing reads submissions into the
+   gradebook yet, but when `/gradebook` does (the 40%), it must count
+   `status = 'graded'` only, or a returned lab still scores.
+3. **The seed's graded labs are out of 100 with an empty rubric**, while the
+   console marks a lab 0-4 against the manual's bands. When the gradebook
+   reads submissions it meets both scales; normalise by `max_score`, never
+   assume 4. Seeding lab grades out of 4 with a band would make the demo
+   honest; `scripts/demo-seed.sql` is where they come from.
+4. **The student app says nothing about a return.** `/app/work`
+   (`SubmitPage.tsx`) shows `feedbackMd`, which after a return IS the return
+   reason, under the same heading as feedback. It should say "Returned for
+   revision" and invite a resubmission. `apps/web` work (`WEB-REVAMP.md` #5).
+5. **Attachments are names only.** `attachments[].path` is a storage path and
+   no storage bucket exists, so the pane lists file names with no download.
+   Nothing seeds an attachment; the spec patches one in.
+6. **A toast over a form at the foot of a 380 page (§0f.3) had a second
+   cause:** the page was already scrolled to its end, so the refused Save
+   could not be lifted clear. `/submissions` reserves room under its pane at
+   380 and scrolls the action row up with a `scroll-margin-bottom`. Any other
+   page whose last control is a submit at 380 is unchecked.
+7. **The gate's positive control raced** (`console-students.spec.ts` went red
+   in a full run, 6 of 6 alone). `_gate.ts` now has `motionStarted()`, which
+   waits for the entrance to be recorded; the five specs with the same read
+   use it. **New specs: use `motionStarted`, not a one-shot
+   `recordedMotion`.**
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

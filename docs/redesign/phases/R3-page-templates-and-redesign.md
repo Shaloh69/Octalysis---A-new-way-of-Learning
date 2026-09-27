@@ -727,7 +727,27 @@ thesis deliverable, and right now no phase is accountable for it.
         proven unchanged). The list's GET answers feasibility per row through
         the same `feasibilityOf()` as the create form. `SOURCE.md`, `SPEC.md`,
         `motion.md`, `current.png`, `current-380.png`
-  - [ ] `/submissions`
+  - [x] `/submissions` — **27 Sep 2026.** Rebuilt against shadcn-admin's
+        **Inbox** (the queue beside a reading pane, one pane at a time at
+        380), with its **Tasks** page (the named lead) for density; four
+        `crud-*` blocks on shadcn.io and the removed shadcn/ui mail example
+        rejected, each recorded. Six assertions green at 1440 and 380
+        (`console-submissions.spec.ts`: 54 passed / 2 skipped, both
+        width-specific), plus the route's own: **Late a visible column** in
+        words on every row (D-4), the density bound, no name cut (the old 380
+        lost every final-project name), counts that agree, filters, mono
+        numbers and no `<option>`, the four bands as pressed buttons, save and
+        advance, a stated score for a project, the frozen record, the audited
+        return, drafts listed and never read, no badge or slug broken across
+        lines (watched failing). **Instructor-approved, built:** the API
+        answers 409 to a mark on a GRADED row (it re-marked in place) and to a
+        return of anything not graded, and the return's audit row keeps the
+        score, rubric and feedback it replaces (denials watched failing at
+        200); labs use the manual's bands, a project or participation a score
+        out of a stated maximum; drafts are withheld in the payload; filters
+        by deliverable and search; save and advance. **Void is not built, by
+        decision.** `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`,
+        `current-380.png` and ten state shots per width
   - [ ] `/gradebook`
   - [ ] `/content`
   - [ ] `/audit`

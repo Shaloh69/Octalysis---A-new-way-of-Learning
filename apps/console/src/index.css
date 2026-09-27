@@ -1265,6 +1265,177 @@
 }
 
 /*
+ * ------------------------------------------------------------ /submissions
+ *
+ * `design/templates/console/submissions/SPEC.md`: shadcn-admin's Inbox, the
+ * queue beside a reading pane, with its Tasks page for density. The page
+ * chooses on its OWN width (`SubmissionsPage`, a ResizeObserver):
+ *
+ *   - 62rem and up: the queue as a five-column table, `table-layout: fixed`,
+ *     beside the pane, which sticks and scrolls on its own.
+ *   - Below: one pane at a time, the queue as a list, then the submission
+ *     full width with Back to the queue.
+ */
+@layer components {
+  .subs { container-type: inline-size; }
+  .subs-card {
+    position: relative;
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+  }
+
+  /* ---- toolbar ---- */
+  .subs-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+  .subs-search { position: relative; flex: 1 1 14rem; min-width: 0; max-width: 20rem; }
+  .subs-search > svg { position: absolute; left: var(--space-2); top: 50%; translate: 0 -50%; color: var(--ink-muted); pointer-events: none; }
+  .subs-filters { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .subs-filter .num { margin-left: var(--space-1); }
+
+  /* ---- the two panes ---- */
+  .subs-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+  .subs-split[data-wide] { grid-template-columns: minmax(0, 40rem) minmax(0, 1fr); }
+
+  /* ---- the queue, wide ---- */
+  .subs-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); }
+  .subs-table col.c-deliverable { width: 7.25rem; }
+  .subs-table col.c-handed      { width: 6.25rem; }
+  .subs-table col.c-late        { width: 6.5rem; }
+  .subs-table col.c-mark        { width: 6.75rem; }
+  .subs-table th,
+  .subs-table td { padding: var(--space-2); text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+  .subs-table td { padding-block: calc(var(--space-1) * 1.5); }
+  .subs-table th:first-child,
+  .subs-table td:first-child { padding-left: var(--space-4); }
+  .subs-table th:last-child,
+  .subs-table td:last-child { padding-right: var(--space-4); text-align: right; }
+  .subs-table th {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--ink-muted);
+    border-bottom: var(--border-hair) solid var(--line-strong);
+    white-space: nowrap;
+  }
+  .subs-table tbody tr {
+    border-bottom: var(--border-hair) solid var(--line);
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .subs-table tbody tr:last-child { border-bottom: 0; }
+  .subs-table tbody tr:hover { background: var(--surface-2); }
+  .subs-table tbody tr[aria-current="true"] { background: var(--accent-muted); }
+  .subs-table tbody tr[aria-current="true"] td:first-child { box-shadow: inset var(--border-thick) 0 0 var(--accent); }
+
+  .subs-name {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+  }
+  .subs-name:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .subs-student { display: block; min-width: 0; overflow-wrap: anywhere; }
+  .subs-id { display: block; font-size: var(--text-xs); color: var(--ink-muted); }
+  .subs-cell-xs { font-size: var(--text-xs); color: var(--ink-muted); }
+  .subs-late { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); }
+  .subs-late[data-is-late] { color: var(--ink); font-weight: 600; }
+  .subs-late[data-is-late] > svg { color: var(--warning); flex-shrink: 0; }
+
+  /* ---- the queue, narrow ---- */
+  .subs-list { margin: 0; padding: 0; list-style: none; }
+  .subs-list > li { border-bottom: var(--border-hair) solid var(--line); }
+  .subs-list > li:last-child { border-bottom: 0; }
+  .subs-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 0;
+    background: none;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .subs-item:hover { background: var(--surface-2); }
+  .subs-item-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); width: 100%; }
+  .subs-item-head .subs-student { font-weight: 500; }
+  .subs-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); font-size: var(--text-xs); color: var(--ink-muted); }
+
+  /* ---- the pane ---- */
+  .subs-pane { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4); min-width: 0; }
+  .subs-split[data-wide] .subs-pane-box {
+    position: sticky;
+    top: var(--space-4);
+    max-height: calc(100vh - 2 * var(--space-4));
+    overflow-y: auto;
+  }
+  .subs-pane-head h2 { font-family: var(--font-display); font-size: var(--text-lg); color: var(--ink); overflow-wrap: anywhere; }
+  .subs-pane-head h2:focus { outline: none; }
+  .subs-pane-head h2:focus-visible { outline: var(--border-thick) solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+  .subs-pane-sub { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .subs-back { align-self: flex-start; margin-bottom: var(--space-2); }
+
+  .subs-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-4); margin: 0; padding: var(--space-3); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); font-size: var(--text-sm); }
+  .subs-facts dt { color: var(--ink-muted); }
+  .subs-facts dd { margin: 0; color: var(--ink); text-align: right; overflow-wrap: anywhere; }
+  .subs-facts dd .subs-note { display: block; font-size: var(--text-xs); color: var(--ink-muted); }
+
+  .subs-h3 { margin-bottom: var(--space-1); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted); }
+  .subs-body { padding: var(--space-3); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); background: var(--surface-0); font-size: var(--text-sm); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .subs-files { margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); color: var(--ink); }
+  .subs-files li { display: flex; align-items: center; gap: var(--space-2); overflow-wrap: anywhere; }
+  .subs-files svg { color: var(--ink-muted); flex-shrink: 0; }
+
+  .subs-callout { padding: var(--space-2) var(--space-3); border: var(--border-hair) solid var(--line-strong); border-left-width: var(--border-thick); border-radius: var(--radius-md); background: var(--surface-2); font-size: var(--text-sm); color: var(--ink); }
+  .subs-callout[data-tone="info"] { border-color: var(--info); background: var(--info-bg); }
+
+  .subs-bands { display: flex; flex-direction: column; gap: var(--space-1); }
+  .subs-band {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    color: var(--ink);
+    font-size: var(--text-sm);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  }
+  .subs-band:hover { background: var(--surface-2); }
+  .subs-band[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-muted); }
+  .subs-band .num { font-weight: 700; min-width: 1ch; }
+  .subs-score { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+  .subs-score > div { display: flex; flex-direction: column; gap: var(--space-1); width: 7rem; }
+  .subs-hint { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); }
+  .subs-problem { font-size: var(--text-xs); color: var(--ink); }
+  .subs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  /* 380: the toaster is full width at the foot; keep Save above it (§0f.3). */
+  .subs-split:not([data-wide]) .subs-pane { padding-bottom: var(--space-9); }
+  .subs-split:not([data-wide]) .subs-actions { scroll-margin-bottom: 9rem; }
+
+  .subs-record { display: flex; flex-direction: column; gap: var(--space-2); }
+  .subs-mark { font-size: var(--text-2xl); font-weight: 700; color: var(--ink); }
+
+  .subs-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); padding: var(--space-6) var(--space-4); font-size: var(--text-sm); color: var(--ink-muted); }
+
+  /* ---- the skeleton ---- */
+  .subs-skel-row { display: grid; grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr)); gap: var(--space-3); align-items: center; height: 3.25rem; padding: 0 var(--space-4); }
+  .subs-skel-narrow { grid-template-columns: minmax(0, 1fr); height: 4.5rem; }
+}
+
+
+/*
  * The shared dialog's scrim. `bg-surface-0/80` emitted NO CSS -- Tailwind 3
  * cannot apply an opacity modifier to a `var()` colour -- so every console
  * dialog opened over an undimmed page (NEXT-SESSION.md §0a.1). Fixed from the

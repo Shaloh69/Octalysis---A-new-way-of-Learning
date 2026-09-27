@@ -374,7 +374,8 @@ export interface Submission {
   stageId: string | null;
   slug: string;
   title: string;
-  bodyMd: string;
+  /** Null on a draft: the console list withholds it (instructor, 27 Sep 2026). */
+  bodyMd: string | null;
   attachments: Array<{ name: string; path: string }>;
   payload: Record<string, unknown>;
   status: "draft" | "submitted" | "returned" | "graded" | "voided";
