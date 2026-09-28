@@ -50,7 +50,19 @@ export interface PaperItem {
   correctValue: string; rationale: string | null;
   studentAnswer: string | null; isCorrect: boolean | null; timeMs: number | null;
 }
-export interface Paper { attemptId: string; status: string; engineVersion: string; items: PaperItem[] }
+/**
+ * `GET /console/attempts/:id`'s real shape. Since 29 Sep 2026 it also says
+ * whose paper it is and when (`/attempts/:attemptId`'s SPEC, decision 2).
+ */
+export interface Paper {
+  attemptId: string; status: string; engineVersion: string;
+  student: { userId: string; studentId: string; fullName: string };
+  assessmentTitle: string; scope: string; attemptNo: number;
+  startedAt: string; submittedAt: string | null;
+  score: number | null; maxScore: number | null;
+  items: PaperItem[];
+}
+export type PaperStudent = Paper["student"];
 
 /** Valid uuids, so nothing on the page trips over their shape. */
 export const ATTEMPT = {
@@ -128,12 +140,16 @@ export async function realItems(
  * One paper per fixture attempt. Answers alternate right and wrong so both
  * verdicts are on the page; the in-progress and abandoned papers stop half way.
  */
-export function papersFrom(items: NonNullable<typeof resolved>): Record<string, Paper> {
+export function papersFrom(
+  items: NonNullable<typeof resolved>,
+  // The record's spec never reads the student off a paper; `/attempts`' spec passes the REAL one (`realStudent`).
+  student: PaperStudent = { userId: STUDENT_SUB, studentId: STUDENT_ID, fullName: "" },
+): Record<string, Paper> {
   const wrong = (i: (typeof items)[number]) =>
     i.type === "G" ? [...i.correctValue.split(" | ")].reverse().join(" | ") : i.options.find((o) => o !== i.correctValue) ?? "0";
-  const build = (attemptId: string, status: string, answered: number, rightEvery: number): Paper => ({
-    attemptId, status, engineVersion: "1.0.0",
-    items: items.map((i, n) => {
+  const build = (attemptId: string, status: string, answered: number, rightEvery: number): Paper => {
+    const a = ATTEMPTS.find((x) => x.attemptId === attemptId)!;
+    const paperItems = items.map((i, n) => {
       const has = n < answered;
       const right = has && n % rightEvery === 0;
       return {
@@ -142,12 +158,32 @@ export function papersFrom(items: NonNullable<typeof resolved>): Record<string, 
         isCorrect: has ? right : null,
         timeMs: has ? 31_000 + n * 7_250 : null,
       };
-    }),
-  });
+    });
+    // The score is RECOMPUTED from the paper (§0h's rule), so a capture never
+    // shows a score its own questions contradict. ATTEMPTS' 5/8 is the record
+    // list's, and `console-student-detail.spec.ts` asserts it.
+    const handedIn = a.submittedAt !== null;
+    return {
+      attemptId, status, engineVersion: "1.0.0", student,
+      assessmentTitle: a.assessmentTitle, scope: a.scope, attemptNo: a.attemptNo,
+      startedAt: a.startedAt, submittedAt: a.submittedAt,
+      score: handedIn ? paperItems.filter((i) => i.isCorrect === true).length : null,
+      maxScore: handedIn ? paperItems.length : null,
+      items: paperItems,
+    };
+  };
   return {
     [ATTEMPT.submitted]: build(ATTEMPT.submitted, "submitted", items.length - 1, 2),
     [ATTEMPT.inProgress]: build(ATTEMPT.inProgress, "in_progress", 3, 2),
     [ATTEMPT.voided]: build(ATTEMPT.voided, "voided", items.length, 3),
     [ATTEMPT.abandoned]: build(ATTEMPT.abandoned, "abandoned", 2, 2),
   };
+}
+
+/** The seeded student as the real API names them, for a paper's header. */
+export async function realStudent(request: APIRequestContext, api: string, token: string): Promise<PaperStudent> {
+  const res = await request.get(`${api}/api/v1/console/students/${STUDENT_SUB}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok()) throw new Error(`the record answered ${res.status()}; is the demo seeded?`);
+  const d = (await res.json()) as StudentDetail;
+  return { userId: d.student.userId, studentId: d.student.studentId, fullName: d.student.fullName };
 }
