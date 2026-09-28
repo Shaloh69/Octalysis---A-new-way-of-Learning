@@ -434,6 +434,35 @@ describe("student drill-down regenerates the exact paper from the seed", () => {
     }
   });
 
+  it("says whose paper it is, which assessment, and when (instructor, 29 Sep 2026)", async () => {
+    const start = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(studentToken),
+      payload: { assessmentId: w.stageAssessmentId },
+    });
+    expect(start.statusCode).toBe(200);
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/attempts/${start.json().attemptId}`, headers: auth(teacherToken),
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    // A paper opened from a link must say whose it is: /attempts/:id is addressable.
+    expect(body.student).toEqual({ userId: w.studentA, studentId: "21-0001", fullName: expect.any(String) });
+    expect(body.assessmentTitle).toEqual(expect.any(String));
+    expect(body.attemptNo).toBeGreaterThanOrEqual(1);
+    expect(Number.isNaN(Date.parse(body.startedAt))).toBe(false);
+    expect(body.submittedAt).toBeNull();
+    expect(body.score).toBeNull();
+    expect(body.status).toBe("in_progress");
+  });
+
+  it("a malformed attempt id is 404, not a 500 that invites a retry", async () => {
+    const res = await app.inject({
+      method: "GET", url: "/api/v1/console/attempts/not-a-uuid", headers: auth(teacherToken),
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().error.message).toBe("No such attempt.");
+  });
+
   it("a student cannot read the drill-down of their own attempt", async () => {
     const start = await app.inject({
       method: "POST", url: "/api/v1/attempts", headers: auth(studentToken),

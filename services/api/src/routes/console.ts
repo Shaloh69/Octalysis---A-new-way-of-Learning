@@ -689,14 +689,34 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
    * Regenerate the exact paper from the stored seed. This is why the seed is
    * stored at all: months later, from `seed` plus `engine_version`, the paper
    * the student actually sat is reconstructed byte for byte.
+   *
+   * The key comes back for EVERY status, to staff only. The console withholds
+   * it on a paper that was never handed in, render-side (`showsKey()`,
+   * instructor 27 and 29 Sep 2026); the API-side option was offered and not
+   * chosen.
    * -------------------------------------------------------- */
   app.get("/api/v1/console/attempts/:attemptId", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
     const attemptId = (req.params as { attemptId: string }).attemptId;
+    // A malformed id is "no such attempt", not a 500 that invites a retry.
+    if (!z.string().uuid().safeParse(attemptId).success) throw errors.notFound("No such attempt.");
 
     const attempt = await loadAttempt(app.db, attemptId);
     if (!attempt) throw errors.notFound("No such attempt.");
+
+    // Whose paper, which assessment, when (instructor, 29 Sep 2026): the page is
+    // addressable, so it must say this without the record around it.
+    const about = await app.db.query(
+      `select a.started_at, a.submitted_at, a.score, a.max_score,
+              s.title as assessment_title, p.id as user_id, p.student_id, p.full_name
+         from attempts a
+         join assessments s on s.id = a.assessment_id
+         join profiles    p on p.id = a.user_id
+        where a.id = $1`,
+      [attemptId],
+    );
+    const meta = about.rows[0];
 
     const items = await loadResolvedPaper(
       app.db,
@@ -715,6 +735,14 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
       attemptId,
       status: attempt.status,
       engineVersion: attempt.engineVersion,
+      student: { userId: meta.user_id, studentId: meta.student_id, fullName: meta.full_name },
+      assessmentTitle: meta.assessment_title,
+      scope: attempt.blueprintScope,
+      attemptNo: attempt.attemptNo,
+      startedAt: meta.started_at,
+      submittedAt: meta.submitted_at,
+      score: meta.score === null ? null : Number(meta.score),
+      maxScore: meta.max_score === null ? null : Number(meta.max_score),
       // Staff see the key. That is the whole point of the drill-down, and
       // `ai_after_submit` grants staff the same read at the database level.
       items: items.map((i) => {
