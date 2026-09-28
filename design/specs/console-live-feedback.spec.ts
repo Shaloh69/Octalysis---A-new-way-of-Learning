@@ -187,6 +187,9 @@ test.describe("/feedback — the triage queue", () => {
     test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
 
     await open(page, "/feedback");
+    // Wait for the page to decide (§0a.2): since the 29 Sep rebuild the heading
+    // renders before the queue, so the h1 alone no longer means the rows are in.
+    await page.locator("[data-group]").first().waitFor({ timeout: 15_000 });
     expect(await page.locator("table").count(), "still a card list").toBeGreaterThan(0);
 
     /*
@@ -217,6 +220,9 @@ test.describe("/feedback — the triage queue", () => {
      * variant is rendered.
      */
     await open(page, "/feedback");
+    // Wait for the page to decide (§0a.2): since the 29 Sep rebuild the heading
+    // renders before the queue, so the h1 alone no longer means the rows are in.
+    await page.locator("[data-group]").first().waitFor({ timeout: 15_000 });
 
     const before = await page.locator("tbody tr").count();
     const triage = page.getByRole("button", { name: /^triage$/i }).first();
@@ -246,6 +252,9 @@ test.describe("/feedback — the triage queue", () => {
      * not been shown yet, and names the rule that governs when it will be.
      */
     await open(page, "/feedback");
+    // Wait for the page to decide (§0a.2): since the 29 Sep rebuild the heading
+    // renders before the queue, so the h1 alone no longer means the rows are in.
+    await page.locator("[data-group]").first().waitFor({ timeout: 15_000 });
     const sus = page.locator("text=/usability \\(sus\\)/i").locator("xpath=ancestor::*[3]");
     const text = await sus.first().innerText().catch(() => "");
     const body = text || (await page.locator("main").innerText());
