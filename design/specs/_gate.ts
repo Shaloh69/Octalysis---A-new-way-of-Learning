@@ -169,8 +169,23 @@ export async function unreachableByKeyboard(page: Page, scope = "main"): Promise
   }
 
   return page.evaluate((got) => {
+    /*
+     * A native radio group is ONE Tab stop: Tab reaches it, arrow keys move
+     * within it (the platform's pattern, and WAI-ARIA's). So a radio counts as
+     * reached when another radio of its group was. Added 29 Sep 2026 for the
+     * attempt runner, whose options are radios on purpose: "choose one" is a
+     * radio group's meaning, and `web-stage-check.spec.ts` separately proves
+     * arrowing through them selects without recording. §0c.5 met the same
+     * shape on /locks and swapped radios for pressed buttons; that stays the
+     * better call for a two- or three-way toggle, not for an answer's options.
+     */
+    const radioGroups = new Set<string>();
+    document.querySelectorAll<HTMLInputElement>("input[type=radio][data-kb]").forEach((el) => {
+      if (el.name && got.includes(el.getAttribute("data-kb")!)) radioGroups.add(el.name);
+    });
     const missed: string[] = [];
     document.querySelectorAll<HTMLElement>("[data-kb]").forEach((el) => {
+      if (el instanceof HTMLInputElement && el.type === "radio" && el.name && radioGroups.has(el.name)) return;
       if (!got.includes(el.getAttribute("data-kb")!)) {
         missed.push(
           `<${el.tagName.toLowerCase()}> "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40)}"`,

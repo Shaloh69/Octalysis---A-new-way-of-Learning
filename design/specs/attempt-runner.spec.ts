@@ -134,6 +134,17 @@ async function startCheck(page: Page): Promise<void> {
   await expect(page.getByText(/Question \d+ of \d+/i)).toBeVisible({ timeout: 15_000 });
 }
 
+/**
+ * Choose, then Record, on whatever question the paper opened on (29 Sep 2026:
+ * a click only selects; a resumed paper opens on its first UNRECORDED
+ * question, which may be the ordering item, recordable as it arrives).
+ */
+async function chooseAndRecord(page: Page): Promise<void> {
+  const radio = page.locator('input[type="radio"]:not([disabled])').first();
+  if ((await radio.count()) > 0) await radio.click();
+  await page.getByRole("button", { name: /^Record (answer|this order)$/ }).click();
+}
+
 /*
  * SERIAL, and it has to be.
  *
@@ -205,6 +216,25 @@ test.describe("the attempt runner", () => {
       /"correct_?option"/i,
       /"correct_?index"/i,
     ];
+    /*
+     * Since 29 Sep 2026 a RESUMED paper carries the student's own recorded
+     * answers and, on a stage check, the verdicts they were already shown
+     * (`answered[].verdict`, instructor ruling). That is the one place a key
+     * may be, and only for an ordinal in that list: a recorded question. It is
+     * cut out before the scan, so the scan still proves nothing ELSE carries a
+     * key, and `recordedOnly` below proves the list names recorded questions
+     * only. On a clean fixture the list is empty and nothing is cut.
+     */
+    for (const s of seen) {
+      try {
+        const j = JSON.parse(s.body) as { answered?: Array<{ ordinal: number; verdict?: unknown }> };
+        if (Array.isArray(j.answered)) {
+          s.body = JSON.stringify({ ...j, answered: j.answered.map(({ verdict: _v, ...rest }) => rest) });
+        }
+      } catch {
+        /* not JSON; scanned as it is */
+      }
+    }
     for (const { url, body } of seen) {
       for (const pattern of forbidden) {
         expect(
@@ -255,7 +285,8 @@ test.describe("the attempt runner", () => {
     await startCheck(page);
 
     const main = page.locator("main");
-    await expect(main).toContainText(/\d+\s*\/\s*\d+\s*answered/i);
+    // "N of M recorded" since the 29 Sep 2026 rebuild ("N / M answered" before it).
+    await expect(main).toContainText(/\d+\s*\/\s*\d+\s*answered|\d+ of \d+ recorded/i);
     await expect(main).toContainText(/unanswered/i);
     await expect(main, "the warning should name the cost, not just warn").toContainText(
       /score zero|scores? zero|no marks|zero/i,
@@ -307,8 +338,20 @@ test.describe("the attempt runner", () => {
     await signIn(page);
     await startCheck(page);
 
-    await page.locator('input[type="radio"]').first().click();
-    await expect(page.locator("main")).toContainText(/[1-9]\d*\s*\/\s*\d+\s*answered/i, {
+    /*
+     * Choose, then Record (instructor, 29 Sep 2026): a click only selects.
+     * A resumed paper opens on its first UNRECORDED question, so this is
+     * always an open one while the paper has any left.
+     *
+     * Wait for the ANSWER's response, not for the count: on a paper already
+     * resumed with answers, "N of M recorded" is true before this one lands,
+     * and the check below then read an empty list (seen 29 Sep 2026).
+     */
+    await Promise.all([
+      page.waitForResponse((r) => r.url().endsWith("/answer"), { timeout: 15_000 }),
+      chooseAndRecord(page),
+    ]);
+    await expect(page.locator("main")).toContainText(/[1-9]\d* of \d+ recorded/i, {
       timeout: 10_000,
     });
 
@@ -319,6 +362,46 @@ test.describe("the attempt runner", () => {
       `the answer was rejected: ${last.body.slice(0, 120)}`,
     ).toBe(200);
     expect(JSON.parse(last.body).recorded, "the server did not record the answer").toBe(true);
+
+    /*
+     * HARD RULE 1, after a Record (29 Sep 2026, the resume ruling). Reload: the
+     * paper resumes WITH the recorded answer, through the real API, and the key
+     * may ride along for recorded questions only, never in the paper itself.
+     * On a reload, not a new test: POST /attempts allows 10 a minute, and a
+     * fifth entry in this file tripped it ("Too many attempts").
+     */
+    const starts: string[] = [];
+    page.on("response", async (r) => {
+      if (!/\/api\/v1\/attempts$/.test(r.url()) || r.request().method() !== "POST") return;
+      try {
+        starts.push(await r.text());
+      } catch {
+        /* unreadable */
+      }
+    });
+    await page.reload({ waitUntil: "networkidle" });
+    await expect(page.getByText(/Question \d+ of \d+/i).first()).toBeVisible({ timeout: 15_000 });
+
+    expect(starts.length, "no start response captured").toBeGreaterThan(0);
+    const body = JSON.parse(starts[starts.length - 1]!) as {
+      items: Array<Record<string, unknown>>;
+      answered: Array<{ ordinal: number; verdict?: { correctValue?: string } }>;
+    };
+    expect(body.answered.length, "the recorded answer did not come back on resume").toBeGreaterThan(0);
+    for (const it of body.items) {
+      for (const k of ["correctValue", "correctIndex", "rationale", "isCorrect", "resolvedParams"]) {
+        expect(it, `question ${String(it.ordinal)} carries ${k} in the paper itself`).not.toHaveProperty(k);
+      }
+    }
+    const paper = new Set(body.items.map((i) => Number(i.ordinal)));
+    for (const a of body.answered) {
+      expect(paper.has(a.ordinal)).toBe(true);
+      // A stage check reveals as it goes: the verdict is there, for this one.
+      expect(typeof a.verdict?.correctValue).toBe("string");
+    }
+    await expect(page.locator("main")).toContainText(
+      new RegExp(`${body.answered.length} of ${body.items.length} recorded`),
+    );
   });
 
   test("SAVING: says it is saving, and says plainly when it did not", async ({
@@ -347,13 +430,13 @@ test.describe("the attempt runner", () => {
 
     // ---- the failure half, first: hold the request, then fail it -----------
     await page.route("**/answer", (r) => r.abort("failed"));
-    await page.locator('input[type="radio"]').first().click();
+    await chooseAndRecord(page);
 
     const main = page.locator("main");
     await expect(
       main,
       "a failed save must SAY so — the answer stays selected either way, so silence reads as success",
-    ).toContainText(/did not save|could not|not saved|reconnect/i, { timeout: 15_000 });
+    ).toContainText(/did not save|could not|not saved|not recorded|reconnect/i, { timeout: 15_000 });
 
     // And it must not strand the student: the copy says what happens next.
     await expect(main).toContainText(/connection|reconnect|try again/i);
@@ -375,7 +458,8 @@ test.describe("the attempt runner", () => {
     );
     expect(overflow, "the attempt runner scrolls sideways at 380px").toBeLessThanOrEqual(1);
 
-    const options = page.locator('input[type="radio"], [role="radio"], .option');
+    // An ordering question has rows, not radios; a resumed paper can open on one.
+    const options = page.locator('input[type="radio"], [role="radio"], .option, [data-order-row]');
     expect(await options.count(), "no options are reachable at 380px").toBeGreaterThan(0);
   });
 });
