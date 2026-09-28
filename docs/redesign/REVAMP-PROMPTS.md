@@ -21,31 +21,34 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: `/system`
+## 1. Start here — the next session: `/feedback`
 
-*Rewritten 28 Sep 2026 by the `/audit` session, which rebuilt `/audit` with
-server filters over the whole log, Load older, a CSV export, and made
-`audit_log` append-only in the database, on the instructor's rulings of that
-day. Phase at handover: **R3 live at 53 / 73 (73%)**; all tracks **140 done ·
-71 to-do (211 items, 66%)**. `pnpm phase` is the count, not this line.*
+*Rewritten 28 Sep 2026 by the `/system` session, which rebuilt `/system` as
+every invariant named with what it protects, counts and never a verdict, a
+notice only when the table a check reads is empty, and the nightly runs read
+back, on the instructor's rulings of that day. Phase at handover: **R3 live at
+54 / 73 (74%)**; all tracks **141 done · 70 to-do (211 items, 67%)**.
+`pnpm phase` is the count, not this line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
 > full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md`
-> §0a to §0k** (what the `/items`, `/signin`, `/locks`, `/students`,
+> §0a to §0l** (what the `/items`, `/signin`, `/locks`, `/students`,
 > `/students/:userId`, `/assessments`, `/submissions`, `/gradebook`, shell,
-> `/content` and `/audit` sessions parked). Do not re-derive what those carry.
+> `/content`, `/audit` and `/system` sessions parked). Do not re-derive what
+> those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
 > checking the five conditions in `CLAUDE.md` rather than remembering them.
 > (On 28 Sep it was NOT. Locally: stages 00-04 had 112 content blocks, but all
 > 96 act-1 items sat at `review`, 0 live, so no paper can be filled and every
-> Start answers 500 (§0e.1); stage 01 was open for 0 of 24 demo students (§3a
-> decided, not built); `run_invariants()` had 0 failing (4 warn-level with
-> offenders); 0 of 19 planet summaries approved. The DEPLOYMENT was last
-> measured on 28 Sep: **0 content blocks for 00-04 and 0 items at all**
-> (§0h.1), and its `/content` AND `/audit` now answer 500 until the schema is
-> pushed (§0j.1, §0k.1).)
+> Start answers 500 (§0e.1); `/system` now says so itself: INV-18 is a
+> WARNING, 0 of 40 live items for the Prelim and the Midterm. Stage 01 was open
+> for 0 of 24 demo students (§3a decided, not built); `run_invariants()` had 0
+> failing and 4 warnings (INV-18, 25, 27, 29); 0 of 19 planet summaries
+> approved. The DEPLOYMENT was last measured on 28 Sep: **0 content blocks for
+> 00-04 and 0 items at all** (§0h.1), and its `/content` AND `/audit` answer
+> 500 until the schema is pushed (§0j.1, §0k.1); `/system` should not (§0l.5).)
 >
 > **Confirm the finished routes are still green before touching anything,
 > AGAINST A BUILD, not the dev server** (§0j.2). `pnpm --filter @octa/console
@@ -53,119 +56,134 @@ day. Phase at handover: **R3 live at 53 / 73 (73%)**; all tracks **140 done ·
 > in the background (a running preview indexes `dist/` at start, so rebuild
 > AND restart it after a change), then `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` =
 > `http://localhost:5185` and `npx playwright test design/specs/console-*.spec.ts`.
-> On 28 Sep that gave **553 passed, 53 skipped, 0 failed** (606 tests). **Read
-> the skips**: they are width-specific by design (including
-> `console-student-detail.spec.ts`' real-attempt test, which skips because no
-> paper can be filled, §0e.2). If anything is red, that is this session's
-> work, and a red is real until proven otherwise.
+> On 28 Sep that gave **611 passed, 55 skipped, 0 failed** (666 tests). **Read
+> the skips** with a JSON reporter: they are width-specific by design
+> (including `console-student-detail.spec.ts`' real-attempt test, which skips
+> because no paper can be filled, §0e.2), and a skip count that MOVES is a
+> finding (§0l.6). **A full run writes to the database: reset and re-demo
+> before running it again** (§0l.6). If anything is red, that is this
+> session's work, and a red is real until proven otherwise.
 >
-> **THIS SESSION IS ONLY FOR `/system`** (`apps/console/src/pages/SystemPage.tsx`,
-> 122 lines, reading `GET /api/v1/console/audit/system` in
-> `services/api/src/routes/console.ts`, which runs `run_invariants()` live
-> (28 checks) and relabels four bank-health checks as notices on an unseeded
-> database). NOTHING ELSE. Not `/feedback` or `/live` (next, one per session),
-> not `/attempts/:attemptId` (last; §0e.3), not the shell, `/content` or
-> `/audit` (done), not the student app, not §0e.1, §0f.1, §0g.1, §0h.2,
-> §0j.3-7 or §0k.3-4. If you find a defect on another page, write it down in
-> `docs/NEXT-SESSION.md` and leave it. The last thing this session does is
-> rewrite this prompt for the next one.
+> **THIS SESSION IS ONLY FOR `/feedback`** (`apps/console/src/pages/FeedbackPage.tsx`,
+> 299 lines, reading `GET /api/v1/console/feedback` and triaging through
+> `PATCH /api/v1/console/feedback/:id`, both in `services/api/src/routes/feedback.ts`;
+> the GET takes `status` and `channel`, is capped at **300 rows**, and returns
+> only a SUS mean). NOTHING ELSE. Not `/live` (next), not `/attempts/:attemptId`
+> (last; §0e.3), not the shell or any finished route, not the student app
+> (its `FeedbackWidget.tsx` included), not §0e.1, §0f.1, §0g.1, §0h.2,
+> §0j.3-7, §0k.3-4 or §0l.1-4. If you find a defect on another page, write it
+> down in `docs/NEXT-SESSION.md` and leave it. The last thing this session
+> does is rewrite this prompt for the next one.
 >
 > 1. Bring the local stack up: **`docker ps` first**, `pnpm db:up`, then
->    **`pnpm db:reset && node scripts/db-demo.mjs`** (it now also seeds 151
->    audit entries), `pnpm dev:api` on 8090, `pnpm dev:token` for a session;
->    the dev console on 5184 is for LOOKING. 5173 and 5174 belong to other
->    projects. If 8090, 5184 or 5185 already answer, confirm they are OURS
->    (the process command line, and the page title "OCTA Console"). A reset
->    can kill the dev API (§0c.1): **prove it with a staff GET, not
->    `/healthz`** (§0e.7). **After ANY API test run, reset and re-demo.**
-> 2. **Audit against the plan FIRST.** `PAGE-SPECS.md` has **no
->    `/console/system` section at all**; the nearest is `/console/settings`,
->    which lists "API health". `TEMPLATE-LINKS.md`'s row is the plan that
->    exists: *"a list of named checks, each pass/fail, with a timestamp and a
->    way to see the detail of a failure ... never an aggregate 'all good'
->    badge that hides one failing invariant."* Also read `db/CLAUDE.md`'s
->    Invariants section and `db/addendum-audit.sql`. Things to decide rather
->    than assume: **`audit_runs` exists and has 0 rows** (nothing in the API
->    writes it, so there is no history of past runs, only "run now"); whether
->    the page should say what each check PROTECTS and what to do when it
->    fails; whether "API health" belongs here or on `/settings`; and §0k.3
->    (no invariant checks that the append-only triggers exist) is schema work
->    parked for its own session. Say what is missing and name the document.
->    **Plan what is missing and ask before building it**, with a recommended
->    option and what each costs. Read-only stays binding: this page runs a
->    check, it never fixes data.
-> 3. **Capture the reference** into `design/templates/console/system/` (exists,
->    empty). `TEMPLATE-LINKS.md` names a DevOps status-page pattern
->    (`https://shadcnspace.com/admin-dashboard` and the adminlte listing);
->    look for a purpose-built status or health-check page too. Capture at 1440
->    and 380, **open every PNG** (a 200 and a PNG prove nothing: shadcn.io
->    centres its blocks, so at 900px a tall one overflows UPWARD and loses its
->    heading, §0k.7; take those at 1440×1500 and 380×1900), and write
->    `SOURCE.md` and `SPEC.md`; update the `TEMPLATE-LINKS.md` row.
-> 4. **Specs.** There is **no `console-system.spec.ts`**; this session writes
->    it. The six from `_gate.ts` at 1440 and 380, assertion 6's positive
->    control through `motionStarted()`, and what the approved plan owes. A
->    fixture that patches the REAL response (the `_audit-fixture.ts` pattern)
->    for the states the seed lacks: a failing invariant, a warning with a
->    sample. If anything new reaches the API, a **denial test first** (a
->    student token refused), watched failing. Use `getByLabel(…, { exact:
->    true })` (§0k.6). Watch the spec fail before the rebuild.
-> 5. **Rebuild the page.** Not improve: rebuild. Toasts, loading (nothing
->    under 400ms, a skeleton after, words after 3s, at the TOP of the
->    skeleton so 380 sees them), transitions per `.claude/rules/design.md`.
->    `<main>` is **70rem** at 1440; choose any table/list breakpoint on the
->    page's own width.
+>    **`pnpm db:reset && node scripts/db-demo.mjs`**, `pnpm dev:api` on 8090,
+>    `pnpm dev:token` for a session; the dev console on 5184 is for LOOKING.
+>    5173 and 5174 belong to other projects. If 8090, 5184 or 5185 already
+>    answer, confirm they are OURS (the process command line, and the page
+>    title "OCTA Console"). A reset KILLS the dev API (§0c.1, seen three times
+>    on 28 Sep): **prove it with a staff GET, not `/healthz`** (§0e.7), and
+>    restart it. **After ANY API test run, reset and re-demo.**
+> 2. **Audit against the plan FIRST.** `PAGE-SPECS.md` **§4.4** is the plan:
+>    two tabs, **"My feedback"** (what this teacher submitted, with a status and
+>    a "Released in" badge) and **"All feedback"** (admin only: triage `new →
+>    triaged → in progress → shipped | won't fix`, auto-dedupe by route and
+>    text, severity, filters by channel, route, role and version, a **SUS
+>    trend**, **Export CSV**). §4.1 (the console's contextual flag, "present on
+>    every page") and §4.2 (the inline content report, which "routes straight
+>    into the `/console/items` review queue") say where rows come from; check
+>    whether the console flag exists at all (on 28 Sep `"flag"` appeared in
+>    `apps/console/src/lib/api.ts` and in the STUDENT app's `FeedbackWidget.tsx`,
+>    and nowhere in the console's shell). `TEMPLATE-LINKS.md`'s row says only
+>    "Two-tab layout, standard; shadcn-admin's tabs pattern". The seed has **11
+>    rows: 4 flags (triaged), 5 content reports (new), 2 CSAT (shipped), 0 SUS**,
+>    and **all 5 content reports lack their item or variant: they are INV-25's
+>    offenders**, so the page's promise, "the exact instance the student saw",
+>    has never been seen on real seeded data. Things to decide rather than
+>    assume: the 300-row cap (the `/audit` session replaced the same cap with
+>    server filters and Load older); what "admin only" means when the console
+>    has teachers; whether dedupe, severity and "Released in" are wanted now;
+>    SUS with 0 responses (§4.3: aim for 20, and say n plainly). **Plan what is
+>    missing and ask before building it**, with a recommended option and what
+>    each costs. Triage is a write: every status change writes `audit_log`
+>    with an actor (check that the PATCH does).
+> 3. **Capture the reference** into `design/templates/console/feedback/`
+>    (exists, empty). Look for a purpose-built feedback inbox or triage block
+>    as well as shadcn-admin's tabs. shadcn.io's `/view/...` previews open a
+>    **guided tour whose scrim greys the block under a 200: click "Skip tour"**
+>    (§0l.7), and they centre tall blocks, so capture at **1440×1500 and
+>    380×1900** (§0k.7). **Open every PNG.** Write `SOURCE.md` and `SPEC.md`;
+>    update the `TEMPLATE-LINKS.md` row.
+> 4. **Specs.** `design/specs/console-live-feedback.spec.ts` already covers
+>    `/feedback` AND `/live` (258 lines): **extend, never overwrite**, and
+>    leave its `/live` tests alone. Put `/feedback`'s six gate assertions at
+>    1440 and 380 (assertion 6's positive control through `motionStarted()`)
+>    and what the approved plan owes in a new `console-feedback.spec.ts`. A
+>    fixture that patches the REAL response for the states the seed lacks (a
+>    content report WITH its resolved variant, a SUS response); build a patched
+>    state with the API's own function where one exists, as
+>    `_system-fixture.ts` does (§0l). If anything new reaches the API, a
+>    **denial test first** (a student token refused), watched failing; an RLS
+>    denial watched failing by breaking the policy, as `rls.spec.ts`' header
+>    says. Use `getByLabel(…, { exact: true })` (§0k.6). Watch the spec fail
+>    before the rebuild.
+> 5. **Rebuild the page.** Not improve: rebuild. Toasts (a triage change is a
+>    server write: one toast, what happened to what), loading (nothing under
+>    400ms, a skeleton after, words after 3s at the TOP of the skeleton),
+>    transitions per `.claude/rules/design.md`. `<main>` is **70rem** at 1440;
+>    choose any table/list breakpoint on the page's own width. **A sideways
+>    scroller counts as clipping** (`_gate.ts`): a wide table becomes a list,
+>    it does not scroll.
 > 6. Capture `current.png`, `current-380.png` and state shots against seeded
 >    data (a capture script under `node --experimental-strip-types` can
->    import the spec's fixture by `file:///` URL). At 1440 `<main>` scrolls,
->    not the document (§0i.8): size the viewport to main's CONTENT for a
->    full-page shot. **Open every one and look.** Write `motion.md`. Run EVERY
->    console spec against the build, and the whole API suite if the API
->    changed. Then `git checkout -- design/item-review/`.
-> 7. Tick `/system` under the R3 "Console revamp" box in the same commit as
+>    import the spec's fixture by `file:///` URL; import `.ts` files with
+>    their extension so it loads). At 1440 `<main>` scrolls, not the document
+>    (§0i.8): size the viewport to main's CONTENT. A 380 page thousands of
+>    pixels tall cannot be read in one view: **crop it into slices and read
+>    them**. **Open every one and look.** Write `motion.md`. Run EVERY console
+>    spec against the build, and the whole API suite if the API changed. Then
+>    `git checkout -- design/item-review/`.
+> 7. Tick `/feedback` under the R3 "Console revamp" box in the same commit as
 >    the work. Commit with explicit paths, messages from a file (`git commit
->    -F`; a `$'\n'` inside double quotes is committed literally). Commit and
->    push.
+>    -F`). Commit and push.
 > 8. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
->    (`/feedback`), carrying forward what this session learned. Update the
->    phase figures. Commit and push that too.
+>    (`/live`), carrying forward what this session learned. Update the phase
+>    figures. Commit and push that too.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
 > versus assumed, and **end your last message with the rewritten §1 prompt in
 > one fenced code block, plain text with no `> ` markers, ready to copy and
 > paste**. Then **stop**. Do not start the next route.
 
-**What the `/audit` session learned that every later route needs:**
+**What the `/system` session learned that every later route needs:**
 
-- **A page's own sentence can be false in the database.** `/audit` said
-  entries "cannot be edited or removed, by anyone"; only RLS stood behind it
-  and `service_role` could rewrite the log. Check what a page CLAIMS against
-  the schema, not only what it renders. The fix (a trigger, like
-  `responses`) was the instructor's call and was asked, with its cost.
-- **Put the sentence in the API when a file will carry it too.** The audit
-  entry's words are written once in `services/api/src/audit/log.ts`, so the
-  page and the CSV cannot disagree; the console only lays them out.
-- **Read the names at read time, and say so.** A join resolves the student an
-  entry is about, which is why search works, and why a renamed student shows
-  under the new name (§0k.4). A test that hard-codes a fixture's name will
-  meet a suite that renamed it; read it from the database.
-- **Seed only what the demo state agrees with.** A demo audit row claiming a
-  window "changed" from nothing to nothing was misleading evidence, found by
-  looking at the Details panel, and rewritten as the change that actually
-  explains the seed. Rows the seed cannot honestly hold go in a spec fixture.
-- **Never slice a patched first page back to its limit**: the dropped real
-  rows are exactly the ones the API's own cursor will never return (§0k).
-- **`getByLabel()` is substring and counts aria-labels** (§0k.6); a Details
-  button whose label carries its row's sentence also trips any name-based
-  "no destructive control" check, so exclude disclosures by name.
-- **The "still loading" words were below the fold at 380** under ten skeleton
-  rows. A green spec (`toContainText`) did not see it; the screenshot did.
+- **A page can hide the most important fact it has.** `/system` filed "the
+  Prelim has 0 of 40 live items" under *notices, expected while the bank is
+  authored*, because the API relabelled four checks whenever they had
+  offenders. Measure what the page says on the seeded data, not what its
+  comment says it does. The same unconditional rule lives on in the nightly
+  cron and `db-invariants.mjs` (§0l.1).
+- **Words about the data belong in ONE place the API owns, kept complete by a
+  test.** The 28 check descriptions are a catalogue in
+  `services/api/src/audit/invariants.ts`; `console.spec.ts` fails if
+  `run_invariants()` returns an id it does not describe.
+- **A test that pinned the old lie goes red when the lie is removed.** "Zero
+  structural failures" had passed only because INV-28 was relabelled; the fix
+  was to state the fixture's truth, not to restore the relabel (§0l.2).
+- **Watch a denial fail even when the guard already exists**: remove
+  `requireStaff` for one run, or break the policy and reset, then restore.
+  A stub of the OLD behaviour makes new tests fail on their assertions, not
+  on a missing module.
+- **jsonb reorders keys** (by length): a sample's columns are not in the
+  function's order (§0l.3). Assert sets, not orders, of anything through jsonb.
+- **A verdict word can be a legitimate word.** The "no aggregate verdict"
+  check first banned "score", and INV-24 protects the usability score. Ban
+  the verdict's phrasing, not the noun.
 - Still true from every earlier route: show the picture early; at 1440
   `<main>` is the scroller; read the API behind a page; a fixture uses the
-  seed's real states; a red only a full run shows is still red; a test that
-  cannot fail is not a test; `wasDenied()` counts any error, so assert the
-  outcome; the console's spacing scale is the token scale; look at the
-  picture, even when green.
+  seed's real states; never slice a patched page back to its limit; a red
+  only a full run shows is still red; a test that cannot fail is not a test;
+  `wasDenied()` counts any error, so assert the outcome; the console's
+  spacing scale is the token scale; look at the picture, even when green.
 
 ---
 
