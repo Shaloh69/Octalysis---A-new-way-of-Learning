@@ -349,6 +349,8 @@ export interface AnswerOutcome {
   /** Whether the verdict may be shown now. Withheld mid-exam on a final. */
   readonly revealVerdict: boolean;
   readonly alreadyAnswered: boolean;
+  /** The answer that COUNTS: this one, or the one recorded before it. */
+  readonly recordedAnswer: unknown;
 }
 
 export async function recordAnswer(
@@ -394,12 +396,53 @@ export async function recordAnswer(
     ],
   );
 
+  if (inserted.rowCount === 0) {
+    /*
+     * Already recorded. The verdict must describe the answer that COUNTS, not
+     * the one just sent: grading the new answer told a student "Correct." about
+     * a click the paper never kept (found 29 Sep 2026, the runner revamp). The
+     * stored verdict is the one the grading service wrote at the time.
+     */
+    const { rows } = await db.query(
+      `select raw_answer, is_correct, points from responses where attempt_id = $1 and ordinal = $2`,
+      [opts.attempt.attemptId, opts.ordinal],
+    );
+    const stored = rows[0] as { raw_answer: unknown; is_correct: boolean; points: string | number } | undefined;
+    if (stored) {
+      return {
+        result: { ...result, isCorrect: stored.is_correct, points: Number(stored.points) },
+        item,
+        revealVerdict,
+        alreadyAnswered: true,
+        recordedAnswer: stored.raw_answer,
+      };
+    }
+  }
+
   return {
     result,
     item,
     revealVerdict,
     alreadyAnswered: inserted.rowCount === 0,
+    recordedAnswer: opts.rawAnswer,
   };
+}
+
+/** Every answer recorded on a paper, in order: what a resumed paper restores. */
+export async function loadRecordedAnswers(
+  db: Db,
+  attemptId: string,
+): Promise<Array<{ ordinal: number; rawAnswer: unknown; isCorrect: boolean; points: number }>> {
+  const { rows } = await db.query(
+    `select ordinal, raw_answer, is_correct, points from responses where attempt_id = $1 order by ordinal`,
+    [attemptId],
+  );
+  return rows.map((r) => ({
+    ordinal: Number(r.ordinal),
+    rawAnswer: r.raw_answer,
+    isCorrect: Boolean(r.is_correct),
+    points: Number(r.points),
+  }));
 }
 
 /* ============================================================

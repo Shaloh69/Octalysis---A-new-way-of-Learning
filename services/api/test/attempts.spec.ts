@@ -218,6 +218,107 @@ describe("POST /api/v1/attempts/:id/answer", () => {
     });
     expect(res.statusCode).toBe(404);
   });
+
+  /*
+   * Instructor ruling, 29 Sep 2026 (the /app/stage/:id/check revamp).
+   *
+   * `responses` is first-write-wins, and the verdict used to grade the NEW
+   * answer anyway: a student who clicked a second option on a recorded
+   * question was told "Correct." about an answer the paper never kept. The
+   * verdict must describe the answer that COUNTS, and say which one that is.
+   */
+  it("a repeated answer is told the verdict of the RECORDED answer, and which answer that is", async () => {
+    const ord = items[1]!.ordinal; // recorded as { index: 0 } above
+    const { rows } = await pool.query(
+      "select is_correct, raw_answer from responses where attempt_id = $1 and ordinal = $2",
+      [attemptId, ord],
+    );
+    const recorded = rows[0] as { is_correct: boolean; raw_answer: unknown };
+
+    // Every other option, so at least one of them grades differently from index 0.
+    for (let k = 1; k < items[1]!.options.length; k++) {
+      const res = await app.inject({
+        method: "POST", url: `/api/v1/attempts/${attemptId}/answer`, headers: auth(tokenA),
+        payload: { ordinal: ord, answer: { index: k } },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.alreadyAnswered).toBe(true);
+      expect(body.isCorrect, `option ${k}: the verdict described the new click`).toBe(recorded.is_correct);
+      expect(body.answer).toEqual({ index: 0 });
+    }
+    expect(recorded.raw_answer).toEqual({ index: 0 });
+  });
+
+  it("a first answer says what was recorded", async () => {
+    const ord = items[2]!.ordinal;
+    const res = await app.inject({
+      method: "POST", url: `/api/v1/attempts/${attemptId}/answer`, headers: auth(tokenA),
+      payload: { ordinal: ord, answer: { index: 1 } },
+    });
+    expect(res.json().alreadyAnswered).toBe(false);
+    expect(res.json().answer).toEqual({ index: 1 });
+  });
+});
+
+describe("a resumed paper carries the student's own recorded answers", () => {
+  /*
+   * Instructor ruling, 29 Sep 2026: a reopened paper shows what the student
+   * recorded and, on a stage check, the verdicts they were already shown. It
+   * used to come back blank -- "0 / 8 answered" over a paper with answers --
+   * which invited exactly the re-answer the test above is about.
+   *
+   * Runs after the answer block: student A has recorded ordinals 1-3 of this
+   * stage paper.
+   */
+  it("on a stage check: each recorded answer, with its verdict, and nothing for the rest", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(tokenA),
+      payload: { assessmentId: w.stageAssessmentId },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      resumed: boolean; attemptId: string;
+      answered: Array<{ ordinal: number; answer: unknown; verdict?: { isCorrect: boolean; correctValue: string; rationale: string } }>;
+    };
+    expect(body.resumed).toBe(true);
+
+    const { rows } = await pool.query(
+      "select ordinal, raw_answer, is_correct from responses where attempt_id = $1 order by ordinal",
+      [body.attemptId],
+    );
+    expect(rows.length).toBeGreaterThanOrEqual(3);
+    expect(body.answered.map((a) => a.ordinal)).toEqual(rows.map((r) => Number(r.ordinal)));
+    for (const [i, a] of body.answered.entries()) {
+      expect(a.answer).toEqual(rows[i].raw_answer);
+      expect(a.verdict?.isCorrect).toBe(rows[i].is_correct);
+      expect(typeof a.verdict?.correctValue).toBe("string");
+    }
+
+    // The key appears ONLY inside a recorded answer's verdict.
+    const { answered: _answered, ...rest } = body;
+    expect(JSON.stringify(rest)).not.toContain("correctValue");
+    expect(JSON.stringify(rest)).not.toContain("rationale");
+  });
+
+  it("another student's paper carries none of them", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(tokenB),
+      payload: { assessmentId: w.stageAssessmentId },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().answered).toEqual([]);
+    expect(res.body).not.toContain("correctValue");
+  });
+
+  it("a fresh paper carries an empty list, not a missing field", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(tokenB),
+      payload: { assessmentId: w.finalAssessmentId },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.json().answered)).toBe(true);
+  });
 });
 
 describe("final-scope assessments withhold the verdict until submit", () => {
@@ -240,6 +341,17 @@ describe("final-scope assessments withhold the verdict until submit", () => {
     expect(body).not.toHaveProperty("correctValue");
     expect(body).not.toHaveProperty("isCorrect");
     expect(body).not.toHaveProperty("rationale");
+
+    // Resumed mid-exam: the student's own answer comes back, the verdict does not.
+    const resumed = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(tokenB),
+      payload: { assessmentId: w.finalAssessmentId },
+    });
+    const again = resumed.json() as { answered: Array<Record<string, unknown>> };
+    expect(again.answered).toEqual([{ ordinal: first.ordinal, answer: { index: 0 } }]);
+    expect(resumed.body).not.toContain("correctValue");
+    expect(resumed.body).not.toContain("isCorrect");
+    expect(resumed.body).not.toContain("rationale");
   });
 });
 
@@ -315,6 +427,11 @@ describe("no answer key in ANY student-facing response body", () => {
       (await app.inject({
         method: "POST", url: `/api/v1/attempts/${attemptId}/answer`, headers: auth(tokenB),
         payload: { ordinal: 1, answer: { index: 0 } },
+      })).body,
+      // A resume, now that one answer is recorded (29 Sep 2026: it carries answers).
+      (await app.inject({
+        method: "POST", url: "/api/v1/attempts", headers: auth(tokenB),
+        payload: { assessmentId: w.finalAssessmentId },
       })).body,
     ];
 

@@ -72,6 +72,61 @@ export function toStudentVerdict(
 }
 
 /**
+ * A student's own recorded answer, in the shape they sent it.
+ *
+ * `raw_answer` is whatever the grading service stored, so it is rebuilt here
+ * key by key rather than forwarded: the same allow-list rule as the paper.
+ * Anything that is not an index, a value or an order is dropped, not passed on.
+ */
+export type StudentAnswer = { index: number } | { value: string | number } | { order: string[] };
+
+export function toStudentAnswer(raw: unknown): StudentAnswer | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.index === "number") return { index: r.index };
+  if (typeof r.value === "string" || typeof r.value === "number") return { value: r.value };
+  if (Array.isArray(r.order) && r.order.every((o) => typeof o === "string")) {
+    return { order: [...(r.order as string[])] };
+  }
+  return null;
+}
+
+/**
+ * What a RESUMED paper says about the questions already recorded (instructor
+ * ruling, 29 Sep 2026): each one's own answer, and, only where the assessment
+ * reveals verdicts as it goes (a stage check, never a final), the verdict the
+ * student was already shown when they recorded it.
+ *
+ * Built from the stored responses, so it names only recorded ordinals. A key
+ * for a question the student has not recorded cannot reach this list, because
+ * nothing here starts from the paper.
+ */
+export interface StudentRecorded {
+  readonly ordinal: number;
+  readonly answer: StudentAnswer | null;
+  readonly verdict?: StudentVerdict;
+}
+
+export function toStudentRecorded(
+  items: readonly ResolvedItem[],
+  responses: ReadonlyArray<{ ordinal: number; rawAnswer: unknown; isCorrect: boolean; points: number }>,
+  revealVerdict: boolean,
+): StudentRecorded[] {
+  const out: StudentRecorded[] = [];
+  for (const r of responses) {
+    const item = items.find((i) => i.ordinal === r.ordinal);
+    if (!item) continue;
+    const answer = toStudentAnswer(r.rawAnswer);
+    out.push(
+      revealVerdict
+        ? { ordinal: r.ordinal, answer, verdict: toStudentVerdict(item, { isCorrect: r.isCorrect, points: r.points }) }
+        : { ordinal: r.ordinal, answer },
+    );
+  }
+  return out;
+}
+
+/**
  * Belt-and-braces check used by tests and by the audit route: does this payload
  * contain anything from the answer key?
  *

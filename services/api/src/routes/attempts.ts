@@ -6,12 +6,18 @@ import { BlueprintUnsatisfiable } from "../engine/blueprint.js";
 import {
   startAttempt,
   loadAttempt,
+  loadRecordedAnswers,
   loadResolvedPaper,
   recordAnswer,
   submitAttempt,
   updateStageProgress,
 } from "../repo/engine-repo.js";
-import { toStudentPaper, toStudentVerdict } from "../serialize/student.js";
+import {
+  toStudentAnswer,
+  toStudentPaper,
+  toStudentRecorded,
+  toStudentVerdict,
+} from "../serialize/student.js";
 import type { Env } from "../env.js";
 
 /**
@@ -59,6 +65,11 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
           engineVersion: env.ENGINE_VERSION,
         });
 
+        // A resumed paper restores what the student already recorded (instructor
+        // ruling, 29 Sep 2026): their own answers, and the verdicts they were
+        // already shown -- on a stage check only; a final withholds them.
+        const recorded = resumed ? await loadRecordedAnswers(app.db, attempt.attemptId) : [];
+
         return reply.send({
           attemptId: attempt.attemptId,
           attemptNo: attempt.attemptNo,
@@ -66,6 +77,7 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
           totalItems: items.length,
           // The ONE serializer. Never `items` directly.
           items: toStudentPaper(items),
+          answered: toStudentRecorded(items, recorded, attempt.blueprintScope !== "final"),
         });
       } catch (err) {
         if (err instanceof BlueprintUnsatisfiable) {
@@ -111,12 +123,16 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
           ordinal: body.data.ordinal,
           recorded: true,
           verdictWithheld: true,
+          alreadyAnswered: outcome.alreadyAnswered,
+          answer: toStudentAnswer(outcome.recordedAnswer),
         });
       }
 
       return reply.send({
         recorded: true,
         alreadyAnswered: outcome.alreadyAnswered,
+        // The answer that COUNTS, which after a repeat is not the one just sent.
+        answer: toStudentAnswer(outcome.recordedAnswer),
         // Spread last: the verdict carries its own `ordinal`, and it is the
         // authoritative one because it came from the resolved item.
         ...toStudentVerdict(outcome.item, outcome.result),
