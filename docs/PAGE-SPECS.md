@@ -194,6 +194,12 @@ stored seed: their numbers, their options in their order, their answer, the corr
 rationale they were shown, and time on item. This is what makes a grade dispute a 30-second
 conversation.
 
+**The same paper on its own page: `/console/attempts/:attemptId`** (the console's
+`/attempts/:attemptId`), rebuilt 29 Sep 2026 (`design/templates/console/attempts-detail/SPEC.md`).
+Addressable, so it says whose paper it is, which assessment and attempt, and when. Both pages
+withhold the key, verdicts and rationales on an in-progress or abandoned paper, render-side
+(instructor, 27 and 29 Sep 2026).
+
 ### `/console/locks` — Lock Matrix
 Students × stages grid. Click a cell to toggle. Shift-click for bulk. Three visual states: auto /
 manually unlocked / manually locked. Every toggle opens a short **reason prompt** and writes to

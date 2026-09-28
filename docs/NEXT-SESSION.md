@@ -776,6 +776,61 @@ real stage titles, nothing invented.
 
 ---
 
+## 0o. Parked by the `/attempts/:attemptId` revamp — 29 Sep 2026
+
+Found while rebuilding the last console route and deliberately **not** fixed
+there. §0a to §0n still stand; §0e.1, §0f.1, §0g.1, §0h.2, §0j.3-7, §0k.3-4,
+§0l.1-4, §0m.2-8 and §0n.2-9 are untouched. **§0e.3 is resolved**: every doc
+that called `/attempts` "the only place a key is shown" now says otherwise, and
+both pages withhold the key the same way, through one `showsKey()`.
+
+1. **A real paper has never been seen on this page.** No paper can be filled
+   locally (0 live items, §0e.1), so every capture and every assertion is the
+   record's fixture: real bank items resolved by the real engine, the real
+   seeded student, an invented attempt around them. The API half IS real
+   (`console.spec.ts` starts a real attempt and reads it back, header fields
+   included). Once items go live, open one real submitted paper and one in
+   progress, at 1440 and 380, and look.
+2. **The fixture's attempt list and its papers disagree on the score.**
+   `_student-detail-fixture.ts`' `ATTEMPTS` says the submitted attempt scored
+   5/8 (and `console-student-detail.spec.ts` asserts that "5/8"), while the
+   paper it builds has 4 correct. This session made the PAPER's header score
+   recomputed from its questions (§0h's rule), so `/attempts`' captures agree
+   with themselves; the record's list still shows 5/8 over a paper with 4.
+   Fixture-only, the record's spec: make `ATTEMPTS` derive from `papersFrom`,
+   and change that one assertion.
+3. **The console's main chunk: 711.11 KB** after this session (built 29 Sep),
+   **705.23 KB (203.13 KB gz)** at the start of it, against §0i.3's 566.38 KB
+   on 28 Sep. `/attempts` costs about 6 KB (it was in the main chunk before
+   and still is). What added ~139 KB between the shell session and this one
+   was not measured; `/content`, `/audit`, `/system`, `/feedback` and `/live`
+   all landed in between. §0h.7 stands, and is now worth a session.
+4. **No nav item is current on `/attempts/:id`**, and the 380 top bar reads
+   "Attempt" (`AppShell.tsx` `pageName()` names it on purpose). A paper
+   belongs to Students: `/students/:userId` marks Students current, because
+   `NavLink` matches by prefix, and `/attempts/` does not start with
+   `/students`. Marking it current here is a shell change.
+5. **No Zod contract for `GET /console/attempts/:id`.** The shape is still a
+   TypeScript interface in `apps/console/src/lib/api.ts`, with the new header
+   fields. Root `CLAUDE.md` wants Zod at every API boundary; the console's
+   older reads were moved to `packages/contracts` one route at a time.
+6. **The deployed page will work without the schema push**, unlike `/content`,
+   `/audit` and `/live` (§0j.1, §0k.1, §0n.1): the GET now joins `attempts`,
+   `assessments` and `profiles`, all in the old schema. Not verified there,
+   and the deployment has no attempts to open anyway (§0h.1).
+7. **MoodleDocs could not be captured.** Both `docs.moodle.org` pages timed
+   out at `networkidle`, twice (a bot challenge, by the look of it). Moodle's
+   staff-side *Review attempt* page is the closest analogue there is; if a
+   capture of it is ever wanted, a Moodle sandbox with its published demo
+   login is the route, not the docs.
+
+**Available to every route from now on:** `realStudent()` and the widened
+`Paper` in `_student-detail-fixture.ts` (a paper's header, recomputed from its
+own questions), and `lib/paper-view.ts` (`dayTime`, `paramsLine`,
+`statusNote`, the index's marks), tested in `apps/console/test/paper-view.spec.ts`.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

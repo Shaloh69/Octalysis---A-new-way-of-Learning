@@ -68,6 +68,9 @@ const item = (o: Partial<AttemptDetail["items"][number]>): AttemptDetail["items"
 describe("paperSummary", () => {
   const paper: AttemptDetail = {
     attemptId: "x", status: "submitted", engineVersion: "1.0.0",
+    student: { userId: "u", studentId: "232129006", fullName: "A" },
+    assessmentTitle: "Stage 01 Check", scope: "stage", attemptNo: 1,
+    startedAt: "2026-09-24T08:00:00Z", submittedAt: "2026-09-24T08:14:32Z", score: 1, maxScore: 3,
     items: [
       item({ studentAnswer: "a", isCorrect: true, timeMs: 30_000 }),
       item({ ordinal: 2, studentAnswer: "b", isCorrect: false, timeMs: 45_000 }),

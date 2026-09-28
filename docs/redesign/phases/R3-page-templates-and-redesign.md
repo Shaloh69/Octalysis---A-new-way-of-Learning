@@ -635,7 +635,7 @@ thesis deliverable, and right now no phase is accountable for it.
       expected outcome for all five while chapters 08–18 are scaffolds — that
       is a real answer, not a slip, and it is not a reversal of R0.1b's approval
 - [ ] `design/templates/` fully populated and committed
-- [ ] **Console revamp** (`CONSOLE-REVAMP.md`) — every console route has
+- [x] **Console revamp** (`CONSOLE-REVAMP.md`) — every console route has
       `template.png` + `SOURCE.md` + `SPEC.md` captured and VERIFIED BY OPENING
       IT, and its `design/specs/console-<route>.spec.ts` green on all six
       assertions at 1440 and 380
@@ -914,7 +914,29 @@ thesis deliverable, and right now no phase is accountable for it.
         skipped, 0 failed against a build; API 619 passed; 12 RLS denials and
         4 staff-only refusals watched failing. `SOURCE.md`, `SPEC.md`,
         `motion.md`, `current*.png` and sixteen state shots per width
-  - [ ] `/attempts/:attemptId` — last, and with care: the only place a key is shown
+  - [x] `/attempts/:attemptId` — **29 Sep 2026** (`design/templates/console/attempts-detail/SPEC.md`),
+        against **Canvas's quiz results page** (a real graded paper, from
+        Instructure's own guide), replacing 2 Sep's "no template, deliberately".
+        The old page showed the key, verdict and rationale on EVERY status, so
+        the record's "Open paper on its own page" undid the 27 Sep ruling in one
+        click; an ordering item showed no key and no order; it could not say
+        whose paper it was ("Paper" over a UUID, Back was `history.back()`);
+        a malformed id answered 500. **Instructor rulings, built:** withheld on
+        an in-progress or abandoned paper **render-side**, by the record's own
+        `showsKey()` (the API-side option offered again and not chosen); the
+        GET says who, which assessment, which attempt, when and the score, and a
+        malformed id is 404. A voided paper shows everything and says it no
+        longer counts. Gate: `design/specs/console-attempts-detail.spec.ts`,
+        six assertions at 1440 and 380 plus the plan (38 of 40 red on the old
+        page; the two green were the real-API student refusal, already
+        enforced), 40 passed; the student refusal watched failing (200 with
+        `requireStaff` removed); every console spec 756 passed, 58 skipped, 0
+        failed against a build; API 621 passed. `SOURCE.md`, `SPEC.md`,
+        `motion.md`, `current*.png` and eight state shots.
+        **With this box every console route is done**, so the parent box is
+        ticked in the same commit: seventeen template folders, each with
+        `template*.png`, `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`
+        and `current-380.png`, counted on 29 Sep 2026
 - [ ] **Student app revamp** (`WEB-REVAMP.md`) — same, for `apps/web`, second,
       and REDONE rather than improved per root `CLAUDE.md`
 - [ ] **Toasts, loading states and transitions** on every revamped route per

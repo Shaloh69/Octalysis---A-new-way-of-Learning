@@ -96,8 +96,15 @@ Worst-first, then by how often an instructor touches it.
 | 8 | **the shell**: sidebar, nav, account block, 380 top bar | shadcn-admin's sidebar | **Done 28 Sep 2026.** Four nav groups by job and no collapse control (instructor rulings); sticky, still 16rem, so every route keeps its 70rem at 1440. §0b.2 and §0b.3 of `NEXT-SESSION.md` fixed |
 | 9 | `/content`, `/audit`, `/system`, `/feedback`, `/live` | per `TEMPLATE-LINKS.md` | Lower traffic. **`/content` done 28 Sep 2026**: summary review and the block editor it had been planned to carry, both on instructor rulings of that day. **`/audit` done 28 Sep 2026**: server filters over the whole log, Load older, a CSV of every match, and append-only in the database, on instructor rulings of that day. **`/system` done 28 Sep 2026**: every check named with what it protects, counts and never a verdict, a notice only on an empty table, and the nightly runs read back, on instructor rulings of that day. **`/feedback` done 29 Sep 2026**: one queue, exact repeats grouped and triaged together, severity and released in, server filters with Load older and a CSV, SUS by role, on instructor rulings of that day. **`/live` done 29 Sep 2026**: the server and console half of push (one question at a time, a live item only, started and ended with a reason, audited; students cannot answer until `/app/live`), the projector its own route `/live/present`, small groups withheld by the server, on instructor rulings of that day |
 
-`/attempts/:attemptId` is last and is handled with care: it is the **only** place
-an answer key is shown, and hard rule 1 governs it.
+`/attempts/:attemptId` is last and is handled with care: hard rule 1 governs it.
+**Done 29 Sep 2026** (`design/templates/console/attempts-detail/SPEC.md`), against
+Canvas's quiz results page, on the instructor's rulings of that day: the key,
+verdicts and rationales withheld on an in-progress or abandoned paper,
+render-side, by the record's own `showsKey()`; a GET that says whose paper it is
+and which attempt; a malformed id 404, not 500. It was never the *only* place a
+key is shown: `/students/:userId` opens the same paper in place
+(`NEXT-SESSION.md` §0e.3). **With it, every console route in this table is
+done**, and the student app (`WEB-REVAMP.md` §6) is next.
 
 ---
 

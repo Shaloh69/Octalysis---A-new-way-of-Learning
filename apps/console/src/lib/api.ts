@@ -237,6 +237,15 @@ export interface AttemptDetail {
   attemptId: string;
   status: string;
   engineVersion: string;
+  /** Whose paper, which assessment, when (29 Sep 2026): `/attempts/:id` is addressable on its own. */
+  student: { userId: string; studentId: string; fullName: string };
+  assessmentTitle: string;
+  scope: string;
+  attemptNo: number;
+  startedAt: string;
+  submittedAt: string | null;
+  score: number | null;
+  maxScore: number | null;
   items: Array<{
     ordinal: number;
     type: "S" | "P" | "G";

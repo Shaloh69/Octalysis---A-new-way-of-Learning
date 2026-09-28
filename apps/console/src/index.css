@@ -2626,3 +2626,150 @@
     .lv-p-held { grid-column: 1 / -1; }
   }
 }
+
+/*
+ * ------------------------------------------------------------ /attempts/:attemptId
+ *
+ * `design/templates/console/attempts-detail/SPEC.md`. A document, not a
+ * dashboard: the questions in the order sat, and the facts beside them. The
+ * aside joins at 60rem of the page's OWN width (a container query, as on
+ * /live); below it the facts come first and the paper follows. Nothing
+ * scrolls sideways: long stems and options wrap.
+ */
+@layer components {
+  .pp { container-type: inline-size; }
+  .pp[data-paper] { animation: octa-rise-in var(--dur-base) var(--ease-out); }
+
+  .pp-head { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+  .pp-head h1 { min-width: 0; overflow-wrap: anywhere; }
+  .pp-note {
+    max-width: 48rem;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    font-size: var(--text-sm);
+    color: var(--ink);
+  }
+  .pp-provenance { max-width: 48rem; font-size: var(--text-xs); color: var(--ink-muted); }
+
+  .pp-body { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .pp-aside { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+  @container (min-width: 60rem) {
+    .pp-body { grid-template-columns: minmax(0, 1fr) 17rem; }
+    .pp-aside { grid-column: 2; grid-row: 1; position: sticky; top: 0; }
+    .pp-questions { grid-column: 1; grid-row: 1; }
+  }
+
+  .pp-card {
+    min-width: 0;
+    padding: var(--space-4);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+  }
+  .pp-h2 { margin-bottom: var(--space-3); font-family: var(--font-display); font-size: var(--text-base); color: var(--ink); }
+  .pp-facts {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--space-1) var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .pp-facts dt { color: var(--ink-muted); }
+  .pp-facts dd { min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
+  .pp-link {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 2px;
+    transition: text-decoration-color var(--dur-fast) var(--ease-out);
+  }
+  .pp-link:hover { text-decoration-color: var(--accent); }
+  .pp-audit { display: inline-block; margin-top: var(--space-3); font-size: var(--text-sm); }
+
+  /* ---- the question index: a number and a shape each, never colour alone ---- */
+  .pp-index {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .pp-index a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-height: 2.25rem;
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    color: var(--ink);
+    text-decoration: none;
+    transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  }
+  .pp-index a:hover { background: var(--surface-2); border-color: var(--line-strong); }
+  .pp-index a[data-mark="correct"] { border-color: var(--success); }
+  .pp-glyph { color: var(--ink-muted); }
+  @media (pointer: coarse) { .pp-index a { min-height: 44px; } }
+  .pp-legend { margin-top: var(--space-2); font-size: var(--text-xs); color: var(--ink-muted); }
+
+  /* ---- the paper ---- */
+  .pp-questions { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; margin: 0; padding: 0; list-style: none; }
+  .pp-q {
+    min-width: 0;
+    padding: var(--space-4);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    scroll-margin-top: var(--space-4);
+  }
+  .pp-q:target { border-color: var(--accent); }
+  .pp-q-skel { display: flex; flex-direction: column; gap: var(--space-3); }
+  .pp-q-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .pp-q-title { font-family: var(--font-display); font-size: var(--text-base); color: var(--ink); }
+  /* Neutral, never red: an incorrect answer is a word, not a colour. */
+  .pp-verdict {
+    padding: 0 var(--space-2);
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    color: var(--ink);
+  }
+  .pp-verdict[data-correct] { border-color: var(--success); }
+  .pp-q-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    margin-top: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+  .pp-stem { max-width: 65ch; margin: var(--space-3) 0; font-size: var(--text-sm); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .pp-sub { margin: var(--space-2) 0 var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .pp-params { color: var(--ink); }
+  /* Preflight strips list-style from every <ol>; these are lettered and numbered on purpose (§0e.4). */
+  .pp-options { margin: 0; padding-left: var(--space-5); font-size: var(--text-sm); color: var(--ink); }
+  .pp-options > li { padding: var(--space-1) 0; list-style-type: upper-alpha; overflow-wrap: anywhere; }
+  .pp-options > li::marker { font-family: var(--font-mono); color: var(--ink-muted); }
+  .pp-options > li[data-picked] .paper-option-text { font-weight: 600; }
+  .paper-option-text[data-machine] { font-family: var(--font-mono); }
+  .pp-mark {
+    display: inline-block;
+    margin-left: var(--space-2);
+    padding: 0 var(--space-1);
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--ink);
+  }
+  .pp-mark-key { border-color: var(--accent); color: var(--accent); }
+  .pp-seqs { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+  .pp-seq { margin: 0; padding-left: var(--space-5); font-size: var(--text-sm); color: var(--ink); }
+  .pp-seq > li { list-style-type: decimal; overflow-wrap: anywhere; }
+  .pp-seq > li::marker { font-family: var(--font-mono); color: var(--ink-muted); }
+  .pp-rationale { max-width: 65ch; margin-top: var(--space-3); padding-top: var(--space-2); border-top: var(--border-hair) solid var(--line); }
+
+  .pp-missing { display: flex; flex-direction: column; gap: var(--space-2); max-width: 40rem; }
+}
