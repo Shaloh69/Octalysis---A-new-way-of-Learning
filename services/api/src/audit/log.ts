@@ -296,6 +296,14 @@ export function describe(r: Row, p: Record<string, unknown>): string {
       return `Sent back the summary for stage ${stage}${p.wasLive === true ? ", taking it off students' screens" : ""}`;
     case "feedback.triage":
       return `Marked a feedback report ${FEEDBACK_STATE[str(p.status) ?? ""] ?? "as reviewed"}`;
+    case "live.start":
+      return `Put ${item ?? "a question"} to the room, ${
+        str(p.sectionId) ? `for section ${r.section_code ?? str(p.section) ?? "(a section)"}` : "for everyone"
+      }`;
+    case "live.end": {
+      const n = num(p.answered);
+      return `Ended ${item ?? "a question"}${n !== null ? ` after ${n} ${n === 1 ? "answer" : "answers"}` : ""}`;
+    }
     default:
       return `${r.action}${r.target_type ? ` on ${r.target_type} ${r.target_id ?? ""}`.trimEnd() : ""}`;
   }

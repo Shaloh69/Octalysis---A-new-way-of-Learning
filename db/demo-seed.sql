@@ -44,8 +44,18 @@ begin;
 -- ---------------------------------------------------------------
 set local octa.allow_regrade = 'on';
 
+-- Lecture Mode (29 Sep 2026): a question started from the dev console points at
+-- the demo teacher and the demo section, and both tables refuse a delete for
+-- every role. Suspended by name, like audit_log below, for these scoped deletes.
+alter table live_responses disable trigger live_responses_no_delete;
+alter table live_sessions  disable trigger live_sessions_no_delete;
+delete from live_responses  where user_id::text like 'dddddddd-%'
+   or session_id in (select id from live_sessions where started_by::text like 'dddddddd-%');
+delete from live_sessions   where started_by::text like 'dddddddd-%' or ended_by::text like 'dddddddd-%';
+alter table live_responses enable trigger live_responses_no_delete;
+alter table live_sessions  enable trigger live_sessions_no_delete;
 delete from feedback        where user_id::text like 'dddddddd-%';
-delete from submissions     where user_id::text like 'dddddddd-%';
+delete from submissions    where user_id::text like 'dddddddd-%';
 delete from stage_progress  where user_id::text like 'dddddddd-%';
 delete from level_progress  where user_id::text like 'dddddddd-%';
 delete from attempts        where user_id::text like 'dddddddd-%';

@@ -1,97 +1,305 @@
 import type { FastifyInstance } from "fastify";
+import type pg from "pg";
+import { z } from "zod";
+import {
+  LIVE_MIN_COHORT,
+  LiveEndBody,
+  LiveOptions,
+  LiveSnapshot,
+  LiveStartBody,
+  type LiveSession,
+} from "@octa/contracts";
 import { identityFrom, requireStaff } from "../auth.js";
-import { errors } from "../errors.js";
+import { AppError, errors } from "../errors.js";
+import { withTransaction, type Db } from "../db.js";
 import type { Env } from "../env.js";
 
 /**
- * Lecture Mode — the aggregate a teacher puts on the projector.
+ * Lecture Mode — the aggregate a teacher puts on the projector, and the one
+ * question put to the room.
  *
  * **NO NAMES, EVER.** `apps/console/CLAUDE.md` states it as a hard rule and this
  * route is where it has to be true, because a UI promise is only as good as the
  * payload behind it. Nothing here selects `full_name`, `student_id`, or
- * `user_id` — not filtered out at the edge, never fetched. A field that is never
- * loaded cannot leak through a logging change or a careless spread.
+ * `user_id` — not filtered out at the edge, never fetched. Not even the teacher
+ * who started a question: that is in `/audit`, and the projector reads this.
  *
- * **SMALL GROUPS ARE SUPPRESSED.** With four students in a room, "3 of 4 chose
- * B" plus one visible face is not anonymous. Under `MIN_COHORT` the endpoint
- * returns counts as null and says why, rather than returning numbers that
- * identify people to everyone watching.
+ * **SMALL GROUPS ARE WITHHELD.** With four students in a room, "3 of 4 got it"
+ * plus one visible face is not anonymous. Below `MIN_COHORT` the server sends
+ * null in place of the figure, for a stage's average as much as for a
+ * question's split, rather than a number the page declines to draw.
+ *
+ * **ONE QUESTION AT A TIME** (instructor, 29 Sep 2026: the server and console
+ * half of "push an item" first). Starting and ending one are audited with the
+ * actor and a reason. Nothing writes `live_responses` yet: the student half,
+ * `/app/live`, reading the question through the one student serializer and
+ * answering it through the grading service, is not built.
  *
  * This is polled rather than pushed. `PAGE-SPECS.md` names Supabase Realtime,
  * and Realtime on the free tier is one more thing to fail in front of forty
  * students -- a five-second poll of a cheap aggregate degrades to "slightly
- * stale" instead of "blank screen mid-lecture".
+ * stale" instead of "blank screen mid-lecture". The local stack has no
+ * Realtime at all, so a pushed version could not be tested here either.
  */
 
 /** Below this, an aggregate identifies individuals. */
-const MIN_COHORT = 5;
+const MIN_COHORT = LIVE_MIN_COHORT;
+
+/*
+ * Working now: a paper started OR answered in the last 20 minutes. Long enough
+ * to survive a student reading a question, short enough that yesterday's
+ * lecture is not still on the board. Until 29 Sep 2026 only the start counted,
+ * so a student 25 minutes into a paper dropped out of the count.
+ */
+const ACTIVE_ATTEMPT = `
+  a.status = 'in_progress'
+  and (a.started_at > now() - interval '20 minutes'
+       or exists (select 1 from responses r
+                   where r.attempt_id = a.id
+                     and r.answered_at > now() - interval '20 minutes'))`;
+
+type Queryable = Pick<pg.PoolClient, "query"> | Db;
+
+/** The one open question, in the words the projector may show. */
+async function openSession(db: Queryable): Promise<LiveSession | null> {
+  const { rows } = await db.query(
+    `select s.id::text as id, s.started_at, i.slug, i.type::text as type, i.stage_id,
+            st.title as stage_title, o.description as objective, sec.code as section,
+            (select count(*)::int from live_responses r where r.session_id = s.id) as answered,
+            (select count(*)::int from live_responses r
+              where r.session_id = s.id and r.is_correct) as correct
+       from live_sessions s
+       join items i       on i.id = s.item_id
+       join stages st     on st.id = i.stage_id
+       left join objectives o on o.id = i.objective_id
+       left join sections sec on sec.id = s.section_id
+      where s.ended_at is null`,
+  );
+  const r = rows[0];
+  if (!r) return null;
+  const answered = Number(r.answered);
+  return {
+    id: r.id,
+    itemSlug: r.slug,
+    itemType: r.type,
+    stageId: r.stage_id,
+    stageTitle: r.stage_title,
+    objective: r.objective ?? null,
+    section: r.section ?? null,
+    startedAt: new Date(r.started_at).toISOString(),
+    answered,
+    // With four answers, the split says how each of them did.
+    correct: answered < MIN_COHORT ? null : Number(r.correct),
+  };
+}
+
+const conflict = (message: string) => new AppError("conflict", message);
 
 export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
   /* ----------------------------------------------------------
    * GET /api/v1/console/live
    *
-   * What the room is doing right now, in aggregate.
+   * What the room is doing right now, in aggregate. Also the projector's read.
    * -------------------------------------------------------- */
   app.get("/api/v1/console/live", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
 
-    // Active = an attempt touched in the last 20 minutes. Long enough to
-    // survive a student reading a question, short enough that yesterday's
-    // lecture is not still on the board.
-    const active = await app.db.query(
-      `select count(distinct a.user_id)::int as n
-         from attempts a
-        where a.status = 'in_progress'
-          and a.started_at > now() - interval '20 minutes'`,
-    );
+    const [active, perStage, session] = await Promise.all([
+      app.db.query(`select count(distinct a.user_id)::int as n from attempts a where ${ACTIVE_ATTEMPT}`),
+      // The whole class so far, by stage: every student's best mastery to date,
+      // not only the people in the room. The page says so.
+      app.db.query(
+        `select sp.stage_id, st.title, count(*)::int as n,
+                round(avg(sp.mastery) * 100)::int as avg_mastery
+           from stage_progress sp
+           join profiles p on p.id = sp.user_id and p.deleted_at is null and p.role = 'student'
+           join stages st  on st.id = sp.stage_id
+          group by sp.stage_id, st.title
+          order by sp.stage_id`,
+      ),
+      openSession(app.db),
+    ]);
 
-    const perStage = await app.db.query(
-      `select sp.stage_id, count(*)::int as n, round(avg(sp.mastery) * 100)::int as avg_mastery
-         from stage_progress sp
-         join profiles p on p.id = sp.user_id and p.deleted_at is null
-        group by sp.stage_id
-        order by sp.stage_id`,
-    );
-
-    // The distribution for whatever is being answered right now, by ORDINAL.
-    // No item text, because a projector showing the stem alongside the split
-    // hands the answer to anyone who has not answered yet.
-    const spread = await app.db.query(
-      `select r.ordinal,
-              count(*)::int as answered,
-              count(*) filter (where r.is_correct)::int as correct
-         from responses r
-         join attempts a on a.id = r.attempt_id
-        where a.status = 'in_progress'
-          and r.answered_at > now() - interval '20 minutes'
-        group by r.ordinal
-        order by r.ordinal`,
-    );
-
-    const cohort = Number(active.rows[0]?.n ?? 0);
-    const suppressed = cohort > 0 && cohort < MIN_COHORT;
-
-    return reply.send({
-      cohort,
-      // Below the threshold the numbers ARE the identification, so they are not
-      // sent at all rather than sent and hidden by CSS.
-      suppressed,
+    const body: LiveSnapshot = {
+      cohort: Number(active.rows[0]?.n ?? 0),
       minCohort: MIN_COHORT,
-      stages: perStage.rows.map((r) => ({
-        stageId: r.stage_id,
-        students: Number(r.n),
-        avgMastery: Number(r.avg_mastery ?? 0),
-      })),
-      spread: suppressed
-        ? []
-        : spread.rows.map((r) => ({
-            ordinal: Number(r.ordinal),
-            answered: Number(r.answered),
-            correct: Number(r.correct),
-          })),
+      stages: perStage.rows.map((r) => {
+        const students = Number(r.n);
+        return {
+          stageId: r.stage_id,
+          title: r.title,
+          students,
+          // Four students on a stage and "05 · 90%" is each of their scores.
+          avgMastery: students < MIN_COHORT ? null : Number(r.avg_mastery ?? 0),
+        };
+      }),
+      session,
       at: new Date().toISOString(),
+    };
+    return reply.send(LiveSnapshot.parse(body));
+  });
+
+  /* ----------------------------------------------------------
+   * GET /api/v1/console/live/options
+   *
+   * What a question can be started with: LIVE items only (an item at draft or
+   * review has not been approved for any student), and the sections.
+   * -------------------------------------------------------- */
+  app.get("/api/v1/console/live/options", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+
+    const [items, sections] = await Promise.all([
+      app.db.query(
+        `select i.id::text as id, i.slug, i.type::text as type, i.stage_id,
+                st.title as stage_title, o.description as objective
+           from items i
+           join stages st on st.id = i.stage_id
+           left join objectives o on o.id = i.objective_id
+          where i.status = 'live'
+          order by i.stage_id, i.slug`,
+      ),
+      app.db.query(`select id::text as id, code from sections order by code`),
+    ]);
+    const body: LiveOptions = {
+      items: items.rows.map((r) => ({
+        id: r.id,
+        slug: r.slug,
+        type: r.type,
+        stageId: r.stage_id,
+        stageTitle: r.stage_title,
+        objective: r.objective ?? null,
+      })),
+      sections: sections.rows.map((r) => ({ id: r.id, code: r.code })),
+    };
+    return reply.send(LiveOptions.parse(body));
+  });
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/console/live/sessions
+   *
+   * Put one live item to the room. Audited with the actor and a reason: it
+   * changes what students may answer.
+   * -------------------------------------------------------- */
+  app.post("/api/v1/console/live/sessions", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+
+    const parsed = LiveStartBody.safeParse(req.body);
+    if (!parsed.success) {
+      throw errors.badRequest("A question needs a live item, who may answer it, and a reason: say why, in a few words.");
+    }
+    const b = parsed.data;
+
+    const session = await withTransaction(app.db, async (client) => {
+      const item = await client.query(
+        `select id::text as id, slug, status::text as status, stage_id from items where id = $1`,
+        [b.itemId],
+      );
+      const it = item.rows[0];
+      if (!it) throw errors.notFound("No such item.");
+      if (it.status !== "live") {
+        throw conflict(
+          `Only a live item can be put to the room. ${it.slug} is at ${it.status}; an item reaches live on Items.`,
+        );
+      }
+
+      let sectionCode: string | null = null;
+      if (b.sectionId) {
+        const sec = await client.query(`select code from sections where id = $1`, [b.sectionId]);
+        if (!sec.rows[0]) throw errors.notFound("No such section.");
+        sectionCode = sec.rows[0].code as string;
+      }
+
+      const running = await openSession(client);
+      if (running) {
+        throw conflict(`A question is already running (${running.itemSlug}). End it before starting another.`);
+      }
+
+      let sessionId: string;
+      try {
+        const ins = await client.query(
+          `insert into live_sessions (item_id, section_id, started_by)
+           values ($1, $2, $3) returning id::text as id`,
+          [b.itemId, b.sectionId, id!.userId],
+        );
+        sessionId = ins.rows[0].id as string;
+      } catch (e) {
+        // Two teachers pressing Start in the same second: the index decides.
+        if ((e as { code?: string }).code === "23505") {
+          throw conflict("A question was started a moment ago. End it before starting another.");
+        }
+        throw e;
+      }
+
+      await client.query(
+        `insert into audit_log (actor_id, action, target_type, target_id, payload)
+         values ($1, 'live.start', 'item', $2, $3)`,
+        [
+          id!.userId,
+          it.id,
+          JSON.stringify({
+            sessionId,
+            slug: it.slug,
+            stageId: it.stage_id,
+            sectionId: b.sectionId,
+            section: sectionCode,
+            reason: b.reason,
+          }),
+        ],
+      );
+      return openSession(client);
     });
+
+    return reply.status(201).send({ session });
+  });
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/console/live/sessions/:id/end
+   *
+   * An ended session is a record: the database refuses any later change.
+   * -------------------------------------------------------- */
+  app.post("/api/v1/console/live/sessions/:id/end", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+
+    const sessionId = (req.params as { id: string }).id;
+    if (!z.string().uuid().safeParse(sessionId).success) throw errors.notFound("No such question.");
+    const parsed = LiveEndBody.safeParse(req.body);
+    if (!parsed.success) throw errors.badRequest("Say why you are ending it, in a few words.");
+
+    const endedAt = await withTransaction(app.db, async (client) => {
+      const cur = await client.query(
+        `select s.ended_at, s.item_id::text as item_id, i.slug,
+                (select count(*)::int from live_responses r where r.session_id = s.id) as answered
+           from live_sessions s join items i on i.id = s.item_id
+          where s.id = $1
+          for update of s`,
+        [sessionId],
+      );
+      const s = cur.rows[0];
+      if (!s) throw errors.notFound("No such question.");
+      if (s.ended_at) throw conflict(`${s.slug} has already ended.`);
+
+      const { rows } = await client.query(
+        `update live_sessions set ended_at = clock_timestamp(), ended_by = $2
+          where id = $1 returning ended_at`,
+        [sessionId, id!.userId],
+      );
+      await client.query(
+        `insert into audit_log (actor_id, action, target_type, target_id, payload)
+         values ($1, 'live.end', 'item', $2, $3)`,
+        [
+          id!.userId,
+          s.item_id,
+          JSON.stringify({ sessionId, slug: s.slug, answered: Number(s.answered), reason: parsed.data.reason }),
+        ],
+      );
+      return rows[0]!.ended_at as Date;
+    });
+
+    return reply.send({ ok: true, endedAt });
   });
 
   /* ----------------------------------------------------------
@@ -106,9 +314,7 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
 
     const { rows } = await app.db.query(
       `select
-         (select count(*)::int from attempts
-           where status = 'in_progress'
-             and started_at > now() - interval '20 minutes')   as in_progress,
+         (select count(*)::int from attempts a where ${ACTIVE_ATTEMPT})   as in_progress,
          (select count(*)::int from attempts
            where submitted_at > now() - interval '20 minutes') as submitted_recently,
          (select count(*)::int from feedback
@@ -128,17 +334,15 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
    * GET /api/v1/live      (STUDENT view of the same aggregate)
    *
    * A student sees the class distribution AFTER they have answered, and never
-   * before -- otherwise the projector becomes a way to copy the room.
+   * before -- otherwise the projector becomes a way to copy the room. The
+   * question itself is not served here yet: that is `/app/live`'s half.
    * -------------------------------------------------------- */
   app.get("/api/v1/live", async (req, reply) => {
     const id = await identityFrom(req, env);
     if (!id) throw errors.unauthorized("Sign in first.");
 
     const { rows } = await app.db.query(
-      `select count(distinct a.user_id)::int as cohort
-         from attempts a
-        where a.status = 'in_progress'
-          and a.started_at > now() - interval '20 minutes'`,
+      `select count(distinct a.user_id)::int as cohort from attempts a where ${ACTIVE_ATTEMPT}`,
     );
     const cohort = Number(rows[0]?.cohort ?? 0);
 

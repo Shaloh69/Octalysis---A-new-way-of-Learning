@@ -398,7 +398,7 @@ export type Gradebook = z.infer<typeof Gradebook>;
  * cannot group an entry differently.
  */
 export const AuditFamily = z.enum([
-  "locks", "roster", "items", "assessments", "submissions", "content", "accounts", "feedback",
+  "locks", "roster", "items", "assessments", "submissions", "content", "accounts", "feedback", "live",
 ]);
 export type AuditFamily = z.infer<typeof AuditFamily>;
 
@@ -411,6 +411,7 @@ export const AUDIT_FAMILY_PREFIXES: Readonly<Record<AuditFamily, readonly string
   content: ["content", "summary"],
   accounts: ["account", "admin"],
   feedback: ["feedback"],
+  live: ["live"],
 };
 
 export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
@@ -422,6 +423,7 @@ export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
   content: "Content & summaries",
   accounts: "Accounts",
   feedback: "Feedback",
+  live: "Lecture Mode",
 };
 
 /**
@@ -647,3 +649,90 @@ export const FeedbackBulkTriage = z
   })
   .strict();
 export type FeedbackBulkTriage = z.infer<typeof FeedbackBulkTriage>;
+
+/* ------------------------------------------------------------------ Lecture Mode */
+
+/**
+ * Below this many people, an aggregate names them. With four students in a
+ * room, "3 of 4 got it" plus one visible face is not anonymous, so the server
+ * sends no figure at all rather than one the page declines to draw.
+ */
+export const LIVE_MIN_COHORT = 5;
+
+/**
+ * `GET /console/live`: what the room is doing, in aggregate. It is also what the
+ * projector reads, so NOTHING here identifies a person: no name, student ID or
+ * user ID is selected for it, and not even the teacher who started a question
+ * (that is in `/audit`).
+ */
+export const LiveStage = z.object({
+  stageId: z.string(),
+  title: z.string(),
+  /** Students with any progress on this stage: a count of people, never who. */
+  students: z.number().int().min(0),
+  /** Their average best mastery, 0-100. null: fewer than LIVE_MIN_COHORT, withheld by the server. */
+  avgMastery: z.number().int().min(0).max(100).nullable(),
+});
+export type LiveStage = z.infer<typeof LiveStage>;
+
+export const LiveSession = z.object({
+  id: z.string().uuid(),
+  itemSlug: z.string(),
+  itemType: z.enum(["S", "P", "G"]),
+  stageId: z.string(),
+  stageTitle: z.string(),
+  /** The objective's own wording. Never the stem: a stem beside the split hands the answer out. */
+  objective: z.string().nullable(),
+  /** Who may answer it: a section code, or null for everyone. */
+  section: z.string().nullable(),
+  startedAt: z.string(),
+  answered: z.number().int().min(0),
+  /** How many answered correctly. null: fewer than LIVE_MIN_COHORT have answered, withheld. */
+  correct: z.number().int().min(0).nullable(),
+});
+export type LiveSession = z.infer<typeof LiveSession>;
+
+export const LiveSnapshot = z.object({
+  /** Students with a paper started or answered in the last 20 minutes. */
+  cohort: z.number().int().min(0),
+  minCohort: z.number().int().min(1),
+  stages: z.array(LiveStage),
+  /** The one question running, or null. One at a time: a lecture hall has one projector. */
+  session: LiveSession.nullable(),
+  at: z.string(),
+});
+export type LiveSnapshot = z.infer<typeof LiveSnapshot>;
+
+/** `GET /console/live/options`: what a question can be started with. */
+export const LiveOptions = z.object({
+  /** LIVE items only. An item at draft or review has not been approved for any student. */
+  items: z.array(
+    z.object({
+      id: z.string().uuid(),
+      slug: z.string(),
+      type: z.enum(["S", "P", "G"]),
+      stageId: z.string(),
+      stageTitle: z.string(),
+      objective: z.string().nullable(),
+    }),
+  ),
+  sections: z.array(z.object({ id: z.string().uuid(), code: z.string() })),
+});
+export type LiveOptions = z.infer<typeof LiveOptions>;
+
+const LiveReason = z.string().trim().min(3, "Say why, in a few words.").max(500);
+
+/** `POST /console/live/sessions`. Starting changes what students may answer, so it is audited with a reason. */
+export const LiveStartBody = z
+  .object({
+    itemId: z.string().uuid(),
+    /** null: everyone may answer. */
+    sectionId: z.string().uuid().nullable(),
+    reason: LiveReason,
+  })
+  .strict();
+export type LiveStartBody = z.infer<typeof LiveStartBody>;
+
+/** `POST /console/live/sessions/:id/end`. */
+export const LiveEndBody = z.object({ reason: LiveReason }).strict();
+export type LiveEndBody = z.infer<typeof LiveEndBody>;

@@ -380,6 +380,93 @@ create trigger audit_log_no_delete before delete on audit_log
 create trigger audit_log_no_truncate before truncate on audit_log
   for each statement execute function deny_audit_mutation();
 
+-- ---------- Lecture Mode: one question put to the room ----------
+-- PAGE-SPECS.md §/console/live: "Push an item to all connected students."
+-- Instructor ruling, 29 Sep 2026: the server and console half is built first;
+-- the student half (`/app/live`, reading the question and answering it) is
+-- not, so nothing writes `live_responses` yet. Both tables are staff-read,
+-- client-write-never: a session is started and ended by the API with an
+-- audit row, and an answer will be written by the grading service alone, as
+-- `responses` is.
+--
+-- ONE question runs at a time, course-wide: a lecture hall has one projector.
+-- `section_id` says who may answer it (null: everyone), not which room.
+create table live_sessions (
+  id          uuid primary key default gen_random_uuid(),
+  item_id     uuid not null references items(id),
+  section_id  uuid references sections(id),
+  started_by  uuid not null references auth.users(id),
+  started_at  timestamptz not null default now(),
+  ended_by    uuid references auth.users(id),
+  ended_at    timestamptz,
+  constraint ls_ended_by_someone check ((ended_at is null) = (ended_by is null)),
+  constraint ls_ends_after_it_starts check (ended_at is null or ended_at >= started_at)
+);
+create unique index live_sessions_one_open on live_sessions ((true)) where ended_at is null;
+
+-- An ended session is a record: nothing about it changes, and it is never
+-- deleted. The only update is the one that ends an open session.
+create or replace function guard_live_session() returns trigger
+language plpgsql as $$
+begin
+  if tg_op <> 'UPDATE' then
+    raise exception 'live_sessions are never deleted'
+      using hint = 'end the session; an ended session is the record of it';
+  end if;
+  if old.ended_at is not null then
+    raise exception 'an ended live session cannot change';
+  end if;
+  if new.item_id is distinct from old.item_id
+     or new.section_id is distinct from old.section_id
+     or new.started_by is distinct from old.started_by
+     or new.started_at is distinct from old.started_at then
+    raise exception 'a live session can only be ended, not edited'
+      using hint = 'end it and start another';
+  end if;
+  return new;
+end $$;
+
+create trigger live_sessions_guard_update before update on live_sessions
+  for each row execute function guard_live_session();
+create trigger live_sessions_no_delete before delete on live_sessions
+  for each row execute function guard_live_session();
+create trigger live_sessions_no_truncate before truncate on live_sessions
+  for each statement execute function guard_live_session();
+
+-- One answer per student per question, first write wins, as in `responses`.
+create table live_responses (
+  session_id  uuid not null references live_sessions(id),
+  user_id     uuid not null references auth.users(id),
+  raw_answer  jsonb not null,
+  is_correct  boolean not null,
+  answered_at timestamptz not null default now(),
+  primary key (session_id, user_id)
+);
+
+create or replace function guard_live_response() returns trigger
+language plpgsql as $$
+begin
+  if tg_op = 'INSERT' then
+    if not exists (select 1 from live_sessions s
+                    where s.id = new.session_id and s.ended_at is null) then
+      raise exception 'this live question has ended'
+        using hint = 'an answer is accepted only while its session is open';
+    end if;
+    return new;
+  end if;
+  raise exception 'live_responses are append-only'
+    using hint = 'an answer is never rewritten';
+end $$;
+
+create trigger live_responses_open_only before insert on live_responses
+  for each row execute function guard_live_response();
+create trigger live_responses_no_update before update on live_responses
+  for each row execute function guard_live_response();
+create trigger live_responses_no_delete before delete on live_responses
+  for each row execute function guard_live_response();
+create trigger live_responses_no_truncate before truncate on live_responses
+  for each statement execute function guard_live_response();
+
 -- ============================================================
 -- FUNCTIONS
 -- ============================================================
@@ -617,6 +704,8 @@ alter table stage_progress     enable row level security;
 alter table level_progress     enable row level security;
 alter table stage_locks        enable row level security;
 alter table audit_log          enable row level security;
+alter table live_sessions      enable row level security;
+alter table live_responses     enable row level security;
 
 -- profiles: read own, staff read all, nobody self-promotes (trigger), soft-deleted are out
 create policy p_self   on profiles for select to authenticated
@@ -739,6 +828,15 @@ create policy sl_staff on stage_locks for all to authenticated
   using (is_staff()) with check (is_staff());
 
 create policy al_staff on audit_log for select to authenticated using (is_staff());
+
+-- Lecture Mode (29 Sep 2026): staff may READ; nobody writes through a client.
+-- A session is started and ended by the API with an audit row; an answer will
+-- be written by the grading service. No write policy, so a staff token
+-- starting a session behind the API's back matches nothing, and a student
+-- reads neither table: what a student may see of a question reaches them
+-- through the API's one serializer, never from here.
+create policy ls_staff_read on live_sessions  for select to authenticated using (is_staff());
+create policy lr_staff_read on live_responses for select to authenticated using (is_staff());
 
 -- ============================================================
 -- COLUMN PRIVILEGES

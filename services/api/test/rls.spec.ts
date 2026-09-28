@@ -617,3 +617,155 @@ describe("the nightly invariant record is staff-only", () => {
     expect(wasDenied(res), denialReason(res)).toBe(true);
   });
 });
+
+/*
+ * Lecture Mode — /live, 29 Sep 2026
+ *
+ * A session is started and ended by the API with an audit row, and an answer
+ * will be written by the grading service alone, as `responses` is. So both
+ * tables are staff-READ and client-write-never, and neither is readable by a
+ * student: what a student may see of a question reaches them through the API's
+ * one serializer. An ended session is a record, and answers are append-only,
+ * for service_role too.
+ *
+ * Every denial asserts the OUTCOME and has a positive control: `wasDenied()`
+ * counts "relation does not exist" as a denial.
+ */
+describe("Lecture Mode — sessions and answers are staff-read, client-write-never", () => {
+  let sessionId: string;
+
+  beforeAll(async () => {
+    const { rows } = await setup(
+      `insert into live_sessions (item_id, section_id, started_by)
+       values ($1, $2, $3) returning id::text as id`,
+      [w.itemId, w.sectionId, w.teacher],
+    );
+    sessionId = rows[0].id as string;
+    await setup(
+      `insert into live_responses (session_id, user_id, raw_answer, is_correct)
+       values ($1, $2, '"B"'::jsonb, true)`,
+      [sessionId, w.studentB],
+    );
+  });
+
+  it("a student cannot read a session", async () => {
+    const res = await runAs(studentA, "select id from live_sessions");
+    expect(res.error, `expected a silent RLS filter, got ${denialReason(res)}`).toBeNull();
+    expect(res.rowCount).toBe(0);
+  });
+
+  it("a student cannot read anyone's answer, their classmate's included", async () => {
+    const res = await runAs(studentA, "select user_id from live_responses");
+    expect(res.error, `expected a silent RLS filter, got ${denialReason(res)}`).toBeNull();
+    expect(res.rowCount).toBe(0);
+  });
+
+  it("POSITIVE CONTROL: a teacher reads both", async () => {
+    const s = await runAs(teacher, "select id from live_sessions where id = $1", [sessionId]);
+    expect(s.error, denialReason(s)).toBeNull();
+    expect(s.rowCount).toBe(1);
+    const r = await runAs(teacher, "select user_id from live_responses where session_id = $1", [sessionId]);
+    expect(r.error, denialReason(r)).toBeNull();
+    expect(r.rowCount).toBe(1);
+  });
+
+  it("a student cannot write an answer, not even their own", async () => {
+    const res = await runAs(
+      studentA,
+      `insert into live_responses (session_id, user_id, raw_answer, is_correct)
+       values ($1, $2, '"A"'::jsonb, true)`,
+      [sessionId, w.studentA],
+    );
+    expect(wasDenied(res), "a student wrote their own verdict").toBe(true);
+    const { rows } = await setup("select count(*)::int as n from live_responses where user_id = $1", [w.studentA]);
+    expect(rows[0].n, "the student's row is in the table").toBe(0);
+  });
+
+  it("a teacher cannot start or end a session behind the API's back", async () => {
+    const ins = await runAs(
+      teacher,
+      "insert into live_sessions (item_id, started_by) values ($1, $2)",
+      [w.itemId, w.teacher],
+    );
+    expect(wasDenied(ins), "a session started with no audit row").toBe(true);
+
+    const end = await runAs(
+      teacher,
+      "update live_sessions set ended_at = now(), ended_by = $2 where id = $1",
+      [sessionId, w.teacher],
+    );
+    expect(end.error, denialReason(end)).toBeNull();
+    expect(end.rowCount, "a session ended with no audit row").toBe(0);
+  });
+
+  it("POSITIVE CONTROL: the grading service can append an answer while the session is open", async () => {
+    const res = await runAs(
+      service,
+      `insert into live_responses (session_id, user_id, raw_answer, is_correct)
+       values ($1, $2, '"C"'::jsonb, false)`,
+      [sessionId, w.studentA],
+    );
+    expect(res.error, denialReason(res)).toBeNull();
+    expect(res.rowCount).toBe(1);
+  });
+
+  it("an answer is never rewritten or removed, for service_role too", async () => {
+    const upd = await runAs(service, "update live_responses set is_correct = true where session_id = $1", [sessionId]);
+    expect(upd.error?.message, denialReason(upd)).toMatch(/append-only/i);
+    const del = await runAs(service, "delete from live_responses where session_id = $1", [sessionId]);
+    expect(del.error?.message, denialReason(del)).toMatch(/append-only/i);
+    const tru = await runAs(service, "truncate live_responses");
+    expect(tru.error?.message, denialReason(tru)).toMatch(/append-only/i);
+  });
+
+  it("a session is never deleted, and only ever ended", async () => {
+    const del = await runAs(service, "delete from live_sessions where id = $1", [sessionId]);
+    expect(del.error?.message, denialReason(del)).toMatch(/never deleted/i);
+    const edit = await runAs(service, "update live_sessions set item_id = item_id, section_id = null where id = $1", [
+      sessionId,
+    ]);
+    expect(edit.error?.message, denialReason(edit)).toMatch(/only be ended/i);
+  });
+
+  it("only one question runs at a time", async () => {
+    const res = await runAs(service, "insert into live_sessions (item_id, started_by) values ($1, $2)", [
+      w.itemId,
+      w.teacher,
+    ]);
+    expect(res.error?.message, denialReason(res)).toMatch(/live_sessions_one_open/);
+  });
+
+  it("POSITIVE CONTROL: ending is the one update allowed", async () => {
+    const end = await runAs(service, "update live_sessions set ended_at = now(), ended_by = $2 where id = $1", [
+      sessionId,
+      w.teacher,
+    ]);
+    expect(end.error, denialReason(end)).toBeNull();
+    expect(end.rowCount).toBe(1);
+  });
+
+  // runAs rolls every call back, so an end and what follows it must share one
+  // transaction: the first draft ended the session in one call and answered it
+  // in the next, by which time the end had been undone.
+  const ENDED: [string, unknown[]?] = ["update live_sessions set ended_at = now(), ended_by = $2 where id = $1"];
+
+  it("an ended session takes no more answers", async () => {
+    const late = await runAsSteps(service, [
+      [ENDED[0], [sessionId, w.teacher]],
+      [
+        `insert into live_responses (session_id, user_id, raw_answer, is_correct)
+         values ($1, $2, '"A"'::jsonb, true)`,
+        [sessionId, w.teacher],
+      ],
+    ]);
+    expect(late.error?.message, denialReason(late)).toMatch(/has ended/i);
+  });
+
+  it("an ended session cannot change, not even to reopen it", async () => {
+    const reopen = await runAsSteps(service, [
+      [ENDED[0], [sessionId, w.teacher]],
+      ["update live_sessions set ended_at = null, ended_by = null where id = $1", [sessionId]],
+    ]);
+    expect(reopen.error?.message, denialReason(reopen)).toMatch(/cannot change/i);
+  });
+});

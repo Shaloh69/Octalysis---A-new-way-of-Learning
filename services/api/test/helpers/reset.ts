@@ -41,6 +41,14 @@ export async function resetAll(): Promise<void> {
     -- "update or delete on table items violates foreign key constraint
     -- feedback_item_id_fkey". That is correct FK behaviour -- production never
     -- deletes an item, it retires one (hard rule 6) -- but the fixtures do.
+    -- Lecture Mode (29 Sep 2026): both tables refuse a delete for every role,
+    -- and both point at items and auth.users. Suspended by name, as audit_log is.
+    alter table live_responses disable trigger live_responses_no_delete;
+    alter table live_sessions  disable trigger live_sessions_no_delete;
+    delete from live_responses     where true;
+    delete from live_sessions      where true;
+    alter table live_responses enable trigger live_responses_no_delete;
+    alter table live_sessions  enable trigger live_sessions_no_delete;
     delete from feedback           where true;
     delete from feedback_prompts   where true;
     -- Submissions reference auth.users and stages. Same lesson as V-52: adding
