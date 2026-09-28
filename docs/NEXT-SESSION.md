@@ -581,6 +581,32 @@ cursor, would never fetch.
 
 ---
 
+## 0m. Parked by the `/feedback` revamp — 29 Sep 2026
+
+Found while working `/feedback` and deliberately **not** fixed there, except
+item 1, which was the session's baseline red and so its work. §0a to §0l still
+stand.
+
+1. **FIXED here, because the baseline gate went red on it: `/assessments`'
+   create dialog lost Create after a refusal.** `console-assessment-window.spec.ts`
+   "a refused create … raises an error that stays" failed at 1440 on the first
+   full run of 29 Sep, and 5 of 5 alone, after passing on 28 Sep. Nothing had
+   changed but timing: the default blueprint is the Final Examination, whose
+   13 shortfall rows overflow the dialog, and the WHOLE dialog was the
+   scroller. When a teacher pressed Create before the bank's verdict landed,
+   the refusal came first and the rows arrived after it, pushing Create under
+   the error toast (1440) or off the dialog entirely (380, where the old
+   box-overlap check could not see it, because the hidden button's box never
+   met the toast). `CreateDialog.tsx` is now a column whose BODY scrolls, with
+   the refusal and the footer pinned; the test runs both orders at both widths
+   and asserts Create is in the viewport (`bankDelayMs` in
+   `_assessments-fixture.ts`). Watched failing: 1440 in the full run and 5
+   repeats, 380 in 4 of 4. **Any other dialog whose content can arrive after a
+   refusal has the same shape** (`/items`' import preview, `/students`' import;
+   §0f.3 already named both as unchecked).
+
+---
+
 ## 0l. Parked by the `/system` revamp — 28 Sep 2026
 
 Found while rebuilding `/system` (and building its catalogue, the "notice only

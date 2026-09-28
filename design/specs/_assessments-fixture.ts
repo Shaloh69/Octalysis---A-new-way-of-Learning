@@ -104,7 +104,13 @@ export interface Writes {
  */
 export async function useFixture(
   page: Page,
-  opts: { fail?: "create" | "rotate" | "window"; delayMs?: number; listStatus?: number } = {},
+  opts: {
+    fail?: "create" | "rotate" | "window";
+    delayMs?: number;
+    listStatus?: number;
+    /** Hold the bank's verdict back, so a teacher can press Create before it lands. */
+    bankDelayMs?: number;
+  } = {},
 ): Promise<{ writes: Writes; list: () => List | null }> {
   const writes: Writes = { create: [], window: [], rotate: [] };
   let last: List | null = null;
@@ -131,7 +137,9 @@ export async function useFixture(
   });
 
   await page.route("**/api/v1/console/blueprints/*/feasibility", async (route: Route) => {
-    const res = await route.fetch();
+    if (opts.bankDelayMs) await new Promise((r) => setTimeout(r, opts.bankDelayMs));
+    const res = await route.fetch().catch(() => null);
+    if (!res) return;
     const body = (await res.json()) as Bank & { blueprintId: string; name: string };
     if (fillsBlueprint && body.blueprintId === fillsBlueprint) {
       return route.fulfill({ response: res, json: { ...body, ...filled(body.totalItems) } });

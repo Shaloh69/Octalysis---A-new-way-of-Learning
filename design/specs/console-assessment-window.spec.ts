@@ -513,22 +513,36 @@ test.describe("the rebuilt /assessments", () => {
       await expect(newButton).toBeFocused();
     });
 
-    test("a refused create keeps the dialog, says why, and raises an error that stays", async ({ page }) => {
-      await openPage(page, { fail: "create" });
-      const dialog = await openCreate(page);
-      await dialog.getByRole("button", { name: "Create assessment" }).click();
-      await expect(dialog.getByRole("alert")).toContainText(/after the opening time/i);
-      // The toast sits outside the modal, which Radix hides from the a11y tree
-      // while it is open; the dialog's own alert is what a screen reader hears.
-      const toast = page.locator("[data-toaster]").getByText(/was not created/i);
-      await expect(toast).toBeVisible();
-      // design.md: a toast never covers the control that triggered it.
-      const a = await toast.boundingBox();
-      const b = await dialog.getByRole("button", { name: "Create assessment" }).boundingBox();
-      const overlaps = !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-      expect(overlaps, "the error toast covers Create assessment").toBe(false);
-      await expect(dialog).toBeVisible();
-    });
+    /*
+     * design.md: a toast never covers the control that triggered it. The
+     * default blueprint is the Final Examination, whose 13 shortfall rows
+     * overflow the dialog. Until 29 Sep the footer scrolled WITH them: when a
+     * teacher pressed Create before the bank's verdict landed, the refusal
+     * came first, the rows arrived after, and Create was pushed under the
+     * error toast. The test clicked straight away and so passed or failed on
+     * which fetch won (NEXT-SESSION.md §0m.1). Both orders, pinned.
+     */
+    for (const order of ["the bank lands first", "Create is pressed before the bank lands"] as const) {
+      test(`a refused create keeps the dialog, says why, and raises an error that stays: ${order}`, async ({ page }) => {
+        await openPage(page, { fail: "create", bankDelayMs: order === "the bank lands first" ? 0 : 1_500 });
+        const dialog = await openCreate(page);
+        if (order === "the bank lands first") await expect(dialog.locator("[data-shortfall]").first()).toBeVisible();
+        await dialog.getByRole("button", { name: "Create assessment" }).click();
+        await expect(dialog.getByRole("alert")).toContainText(/after the opening time/i);
+        // The toast sits outside the modal, which Radix hides from the a11y tree
+        // while it is open; the dialog's own alert is what a screen reader hears.
+        const toast = page.locator("[data-toaster]").getByText(/was not created/i);
+        await expect(toast).toBeVisible();
+        await expect(dialog.locator("[data-shortfall]").first()).toBeVisible({ timeout: 5_000 });
+        const create = dialog.getByRole("button", { name: "Create assessment" });
+        await expect(create, "Create is still on screen, not scrolled away").toBeInViewport();
+        const a = await toast.boundingBox();
+        const b = await create.boundingBox();
+        const overlaps = !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+        expect(overlaps, "the error toast covers Create assessment").toBe(false);
+        await expect(dialog).toBeVisible();
+      });
+    }
   });
 
   test.describe("the row's ⋯ menu: the bank, and the salt", () => {

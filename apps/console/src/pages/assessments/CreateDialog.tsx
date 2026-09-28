@@ -115,9 +115,13 @@ export function CreateDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}>
       {/* Shorter than the shared 85vh: a toast raised while it is open lands
-          bottom-right and must not cover Create (design.md). */}
+          bottom-right and must not cover Create (design.md). A column whose
+          BODY scrolls: the header, a refusal and the footer stay on screen.
+          When the whole dialog scrolled, a refusal (or the bank's rows landing
+          after one) pushed Create out of view, under the toast at 1440 and off
+          the dialog at 380 (NEXT-SESSION.md §0m.1). */}
       <DialogContent
-        className="ease-dialog assess-create max-h-[calc(100vh-12rem)] max-w-[60rem] max-sm:top-3 max-sm:translate-y-0"
+        className="ease-dialog assess-create flex max-h-[calc(100vh-12rem)] max-w-[60rem] flex-col max-sm:top-3 max-sm:translate-y-0"
         onCloseAutoFocus={(e) => {
           const el = returnFocus();
           if (el && el.isConnected) {
@@ -134,6 +138,7 @@ export function CreateDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="-mx-5 min-h-0 flex-1 overflow-y-auto px-5" data-create-body="">
         <div className="assess-split">
           {/* ---- the form ---- */}
           <div className="assess-half">
@@ -245,6 +250,7 @@ export function CreateDialog({
               page can say when it was set, never what it is.
             </p>
           </div>
+        </div>
         </div>
 
         {error ? (
