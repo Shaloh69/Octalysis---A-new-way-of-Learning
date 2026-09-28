@@ -117,9 +117,9 @@ export function CheckPage(): JSX.Element {
 
   return (
     <AttemptRunner
+      stageId={id}
       assessmentId={assessmentId}
       title={title}
-      onFinished={() => {}}
       onLeave={() => nav(`/app/stage/${id}`)}
     />
   );

@@ -37,6 +37,10 @@ missing across both apps.
 library is installed in either app, `useFormation.ts` only describes toasts in
 comments, and `AppShell.tsx` reserves a `z-toast` layer that nothing renders
 into. The design system booked the z-index and the component was never built.
+**Since built, in both apps, with no library:** the console's
+`components/ui/toast.tsx` (25 Sep 2026) and apps/web's `lib/toast.ts` +
+`components/Toaster.tsx` (29 Sep 2026, the same API). Each is mounted once at
+its app's root; import it, never build another.
 
 Every action that changes server state confirms itself. Rules:
 

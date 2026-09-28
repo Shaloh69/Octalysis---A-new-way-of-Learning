@@ -939,6 +939,44 @@ thesis deliverable, and right now no phase is accountable for it.
         and `current-380.png`, counted on 29 Sep 2026
 - [ ] **Student app revamp** (`WEB-REVAMP.md`) — same, for `apps/web`, second,
       and REDONE rather than improved per root `CLAUDE.md`
+
+      One box per route, in `WEB-REVAMP.md` §6 order, ticked in the commit that
+      turns that route's `design/specs/web-<route>.spec.ts` green. Added 29 Sep
+      2026, the way the console box gained its children on 25 Sep.
+
+  - [x] `/app/stage/:id/check` — **29 Sep 2026** (`design/templates/web/stage-check/SPEC.md`),
+        against **Professor Layton's puzzle screen** (a status strip over one
+        puzzle, an explicit Submit; Wikipedia's file page). The named lead, Game
+        UI Database, answered 403 behind Cloudflare; Interface In Game had no
+        question screen; Fandom 403, each recorded. The old runner recorded an
+        answer on a radio's change event, so **arrowing through the options
+        recorded the first one landed on**; a recorded question still took
+        clicks and the page then said **"Correct." over an answer the paper
+        marked wrong** (the API graded the new click); a resumed paper read
+        `0 / 8 answered`. **Instructor rulings, built:** choose, then **Record
+        answer**, said up front; a **resume returns the student's own recorded
+        answers** (and, on a stage check only, the verdicts already shown)
+        through the one serializer, and a repeated answer gets the RECORDED
+        answer's verdict (API, 6 tests watched failing); one confirmation
+        before Submit; the Register Bar's **PC is the question**; **toasts in
+        apps/web** (the console's, ported, no library); flag for review, per
+        device, never sent. Gate: `design/specs/web-stage-check.spec.ts`, six
+        assertions at 1440 and 380 plus the plan, on a key-free fixture built by
+        the API's own grader and serializer (`_stage-check-fixture.ts`); every
+        test but gates 1-2 watched red on the old page; `attempt-runner.spec.ts`
+        extended, **run against the REAL API with stage 07's items approved
+        locally only, then reset**: 45 passed, 13 width skips, both files.
+        Whole web suite 231 passed, 83 skipped, 0 failed; every console spec
+        755 passed, 58 skipped, 1 load race (§0p) that passed 3 of 3 alone; API
+        626 passed. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and
+        fifteen state shots per width
+  - [ ] `/app/stage/:id` — the reader (§0j.3's raw `##` and broken lists; no
+        control to leave or finish a stage)
+  - [ ] `/app/map` — the flat map; its real-DOM keyboard path must not regress
+  - [ ] `/app` — the 3D map: §3 selection and zoom, §4 orbital motion
+  - [ ] `/app/work` — submissions, 40% of the grade (§0g.4's return)
+  - [ ] `/login`, `/claim` — first contact
+  - [ ] `/app/progress`, `/app/settings` — lower traffic
 - [ ] **Toasts, loading states and transitions** on every revamped route per
       `.claude/rules/design.md` — no toast library is installed in either app
       today, exactly one route in `apps/web` has a loading state, and the

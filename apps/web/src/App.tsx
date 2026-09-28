@@ -14,6 +14,7 @@ import { RegisterBar } from "./components/RegisterBar";
 import { DepthGauge } from "./components/DepthGauge";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { SusSurvey } from "./components/SusSurvey";
+import { Toaster } from "./components/Toaster";
 import { LoginPage, RegisterPage } from "./pages/AuthPages";
 import {
   CheckPage,
@@ -251,6 +252,8 @@ export default function App(): JSX.Element {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      {/* One toaster for every route, as the console mounts its own (29 Sep 2026). */}
+      <Toaster />
     </Router>
   );
 }

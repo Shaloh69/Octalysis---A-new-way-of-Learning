@@ -72,9 +72,14 @@ it is done when it does these things.
 
 | Feature | State |
 |---|---|
-| Ordering items answerable | **fixed this cycle** (`da5831b`) — was unanswerable and graded wrong every time |
-| Tell the student the first answer is final | **missing** — `responses` is first-write-wins for every item type and nothing says so |
-| Per-question time, flag-for-review, resume | partial |
+| Ordering items answerable | **fixed this cycle** (`da5831b`) — was unanswerable and graded wrong every time. Recordable as it arrives since 29 Sep |
+| Tell the student the first answer is final | **done 29 Sep 2026**: choose, then **Record answer**; said before the first question. An arrow key used to record an answer |
+| Resume | **done 29 Sep 2026**: the start returns the student's own recorded answers (and on a stage check the verdicts already shown); opens on the first unrecorded question |
+| Flag for review | **done 29 Sep 2026**: per device, never sent, unrecorded questions only, named in the Submit confirmation |
+| Per-question time | summed across visits, sent with the Record (it used to reset on every visit) |
+| The Register Bar's PC during a paper | **done 29 Sep 2026** (`lib/registers.ts`) |
+| One confirmation before Submit, toasts | **done 29 Sep 2026**. apps/web has toasts now (`lib/toast.ts`) |
+| Hint tokens, re-roll, sounds, `/results/:attemptId` | **deferred**, `NEXT-SESSION.md` §0p.14 |
 
 ### `/app/progress`, `/app/work`, `/app/settings`
 

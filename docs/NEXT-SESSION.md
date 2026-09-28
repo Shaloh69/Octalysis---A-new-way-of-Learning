@@ -831,6 +831,103 @@ own questions), and `lib/paper-view.ts` (`dayTime`, `paramsLine`,
 
 ---
 
+## 0p. Parked by the `/app/stage/:id/check` revamp — 29 Sep 2026
+
+The first student route (`design/templates/web/stage-check/SPEC.md`). Found
+while rebuilding the runner and deliberately **not** fixed there. §0a to §0o
+still stand; §0e.1 (the 500 on an unfillable Start) is untouched: the runner now
+shows the API's sentence under "Your paper did not open" with Try again, which
+cannot help while the bank cannot fill. Items 1-5 are **shell** (`App.tsx`,
+`styles.css`), one session, every route.
+
+1. **`--bg` is defined nowhere.** `styles.css` sets `html, body { background:
+   var(--bg) }` and no file declares `--bg`, so every apps/web page stands on
+   the browser's own canvas, not a token. The gate's contrast check measured
+   the old runner at **1.28:1** on blueprint because of it. The runner now
+   paints its own `--surface-0` ground; every other route still does not.
+   Declare it (probably `var(--surface-0)`) in a shell session and re-run
+   every web spec.
+2. **The shell's nav is INSIDE `<main>`** (`App.tsx`), and on `/app/stage/*`
+   its background is a translucent `color-mix` the token gate rejects. The
+   console's gate scopes to `main` because its shell sits outside; this route's
+   spec scopes its surface checks to `[data-runner]` for that reason
+   (`web-stage-check.spec.ts`, `ROUTE`). Keyboard reachability still walks all
+   of `main`. Moving the nav out of `<main>` is a landmark fix as well.
+3. **The Register Bar at 380:** each idle `----` wraps one dash per line (IR,
+   MAR, MBR, ACC; see any `current*-380.png` here). `nowrap` alone would push
+   the bar past 380 into a sideways scroll, so it needs a decision: fewer
+   registers at 380, or a second row. PC, when live, fits.
+4. **An empty ~45px band above the Register Bar** at every width, on every
+   route (visible in every capture here). Source not traced.
+5. **The Register Bar and "Report a problem" stay above a modal's scrim**: the
+   runner's Submit confirmation dims the page but not those two, and the
+   feedback button stays clickable behind a modal. z-index in the shell.
+6. **The offline banner promises a queue** ("saved locally and will send when
+   you reconnect"). Only the runner keeps it now (a failed Record retries once
+   on `online`); nothing else queues.
+7. **`console-audit.spec.ts` "export … and a toast" failed once at 380** in the
+   full console run after this session (755 passed, 58 skipped, 1 failed): the
+   CSV arrived, the 4s success toast had already left. 48 of 48 alone, three
+   times. A load race, like §0i.9; a red that returns is real.
+8. **The local live slice, for the next session that needs a real paper.**
+   Stage 07, not act 1: stage 01 is closed for every demo student (§0c.3) and
+   `232129004` is the one student with a check they can open. As the demo
+   teacher, `PATCH /api/v1/console/items/:id/status` `{"status":"live","reason":"LOCAL ONLY …"}`
+   for each of stage 07's 20 items (the author may not review their own; the
+   demo teacher is not the author), then `pnpm db:reset && node scripts/db-demo.mjs`
+   after. A Stage 07 check fills (8 items) and `attempt-runner.spec.ts` stops
+   skipping. **Never against the deployment.**
+9. **Run the real-API specs against a BUILD.** The dev server's React
+   StrictMode starts every paper twice, and `POST /attempts` allows 10 a
+   minute: five entries in `attempt-runner.spec.ts` tripped it on the dev
+   server ("Too many attempts"). The file now enters four times.
+10. **`_gate.ts` now counts a native radio group as one Tab stop** (arrow keys
+    move within it). §0c.5's advice stands for two- or three-way toggles; a
+    question's options are a radio group by meaning.
+11. **No Zod contract for the attempt routes.** `apps/web/src/lib/api.ts`
+    mirrors `serialize/student.ts` by hand (`PaperItem`, `Verdict`,
+    `RecordedAnswer`, `AnswerOutcome`); `answered` and `answer` are new. Same
+    shape of debt as §0o.5.
+12. **Two documents disagree on a correct answer's flash.** `.claude/rules/design.md`
+    says "a 120ms accent flash"; `apps/web/CLAUDE.md` says accent may never
+    mark correct/incorrect. The runner follows the second (words only;
+    `motion.md`). Reconcile the rule text; the instructor's call if it matters.
+13. **A selected, not yet recorded, option wears the student's accent**, and a
+    seeded hue can be red: `232129006`'s is a pink-red, so a plain selection
+    reads warm. Allowed (the accent may mark the student's own place); once
+    recorded the choice goes neutral, which the spec asserts. If the
+    instructor wants selection neutral too, it is one CSS rule.
+14. **Not built, by deferral:** hint tokens and the "try a similar one" re-roll
+    (practice; they belong to a moon's journey, `WEB-REVAMP.md` §3.2); the
+    two-tone sounds (P9); `/app/stage/:id/results/:attemptId` (the result shows
+    in place and has no address); matching and diagram-label items (the
+    engine has S, P and G only).
+15. **A real paper was seen through the rebuilt runner only locally, on the
+    stage 07 slice.** On the deployment there are no items at all (§0h.1).
+16. **`pnpm scan:bundle` FAILS, on the CONSOLE bundle, and not from this
+    session.** Two findings in `apps/console/dist/assets/index-*.js`:
+    `SERVICE_ROLE` and `EXAM_SALT_SECRET`. They are **names, not values**: the
+    API's environment schema (`EXAM_SALT_SECRET: z.string().min(32, …)`,
+    `SUPABASE_SERVICE_ROLE_KEY: …optional()`) from `packages/contracts/src/index.ts`,
+    where it has lived since P0 (`bbc78d7`), compiled into the console because
+    the console imports that package and the schema is not tree-shaken. The
+    console build of this morning (unchanged since `d80f3cf`) has the same
+    hash and the same findings. **The student bundle scans clean** against
+    141 answer values. No secret ships, but the scan is a gate and it is red:
+    move the env schema out of the shared entry (an `@octa/contracts/env`
+    subpath the API alone imports), rebuild, re-scan. Its own session.
+
+**Available to every route from now on (apps/web):** `lib/toast.ts` +
+`components/Toaster.tsx` (mounted once in `App.tsx`; `toast.success` leaves
+after 4s, `toast.error` stays), `lib/useDelayed.ts` (the 400ms / 3s rule),
+`lib/registers.ts` (`useRegister("PC", …)` for anything the Register Bar
+should show), and `_stage-check-fixture.ts`' rule: **build the fixture from
+the API's own functions** (`gradeResponse`, `toStudentPaper`,
+`toStudentVerdict`), imported with their `.ts` extension, so a fixture cannot
+send a shape the API never would.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

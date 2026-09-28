@@ -37,8 +37,8 @@ and R3's denominator had grown. Count, do not copy.
 | R0 scope and guardrails | ✅ 28 / 28 |
 | R1 solar system foundation | ✅ 36 / 36 |
 | R2 per-student cosmetics | ✅ **21 / 21** — closed 7 Sep, and closing it found **F-40** |
-| **R3 page templates** | **42 / 72** ← live (14 per-route console boxes added 25 Sep; `pnpm phase` is the count) |
-| R4 moons and subtopics | ▫️ 0 / 13 |
+| **R3 page templates** | **59 / 80** ← live, counted 29 Sep 2026 (every console route done; 7 per-route student-app boxes added 29 Sep, `/app/stage/:id/check` ticked; `pnpm phase` is the count) |
+| R4 moons and subtopics | 2 / 29, counted 29 Sep 2026 |
 | R5 testing and sign-off | ▫️ 0 / 24 |
 
 **Gates, last run — 8 Sep 2026. All green.**

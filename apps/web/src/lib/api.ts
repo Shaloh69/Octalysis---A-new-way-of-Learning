@@ -178,20 +178,16 @@ export const api = {
       attemptNo: number;
       resumed: boolean;
       totalItems: number;
-      items: Array<{ ordinal: number; type: string; stem: string; options: string[]; points: number; unit?: string }>;
+      items: PaperItem[];
+      /** Since 29 Sep 2026: the student's own recorded answers on a resume. */
+      answered?: RecordedAnswer[];
     }>("/api/v1/attempts", {
       method: "POST",
       body: JSON.stringify({ assessmentId }),
     }),
 
   answer: (attemptId: string, ordinal: number, answer: unknown, timeMs?: number) =>
-    request<{
-      recorded: boolean;
-      verdictWithheld?: boolean;
-      isCorrect?: boolean;
-      correctValue?: string;
-      rationale?: string;
-    }>(`/api/v1/attempts/${attemptId}/answer`, {
+    request<AnswerOutcome>(`/api/v1/attempts/${attemptId}/answer`, {
       method: "POST",
       body: JSON.stringify({ ordinal, answer, ...(timeMs !== undefined ? { timeMs } : {}) }),
     }),
@@ -240,11 +236,48 @@ export const api = {
     }),
 
   submit: (attemptId: string) =>
-    request<{
-      score: number;
-      maxScore: number;
-      mastery: number;
-      byObjective: Record<string, { correct: number; total: number }>;
-      review: Array<{ ordinal: number; isCorrect: boolean; correctValue: string; rationale: string }>;
-    }>(`/api/v1/attempts/${attemptId}/submit`, { method: "POST" }),
+    request<SubmitResult>(`/api/v1/attempts/${attemptId}/submit`, { method: "POST" }),
 };
+
+/* ---- the paper: shapes from services/api/src/serialize/student.ts, the ONE serializer ---- */
+
+/** One question as a student may see it while the paper is open. No key, by construction. */
+export interface PaperItem {
+  ordinal: number;
+  type: string;
+  stem: string;
+  options: string[];
+  points: number;
+  unit?: string;
+}
+
+/** An answer in the shape the grading service takes and stores. */
+export type StudentAnswer = { index: number } | { value: string | number } | { order: string[] };
+
+/** A verdict: only ever for a question the student has recorded. */
+export interface Verdict {
+  ordinal: number;
+  isCorrect: boolean;
+  points: number;
+  correctValue: string;
+  rationale: string;
+}
+
+/** On a resume: what was recorded, and on a stage check, the verdict already shown. */
+export interface RecordedAnswer {
+  ordinal: number;
+  answer: StudentAnswer | null;
+  verdict?: Verdict;
+}
+
+export type AnswerOutcome =
+  | ({ recorded: true; alreadyAnswered: boolean; answer: StudentAnswer | null; verdictWithheld?: undefined } & Verdict)
+  | { recorded: true; verdictWithheld: true; alreadyAnswered: boolean; answer: StudentAnswer | null; ordinal: number };
+
+export interface SubmitResult {
+  score: number;
+  maxScore: number;
+  mastery: number;
+  byObjective: Record<string, { correct: number; total: number }>;
+  review: Verdict[];
+}
