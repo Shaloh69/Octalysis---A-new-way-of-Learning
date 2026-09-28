@@ -57,6 +57,9 @@ async function open(page: Page, route: string): Promise<void> {
   // NOT networkidle -- see the header. /live never goes idle.
   await page.goto(`${CONSOLE_URL}${route}`, { waitUntil: "domcontentloaded" });
   await page.locator("h1").first().waitFor({ timeout: 15_000 });
+  // §0m.5: since 29 Sep 2026 /live shows its heading at once, above a skeleton.
+  // An <h1> is no longer a sign that the room has been read.
+  if (route.startsWith("/live")) await page.locator("[data-ready]").first().waitFor({ timeout: 15_000 });
 }
 
 test.describe("/live — anonymity is a property of the payload", () => {
@@ -105,13 +108,22 @@ test.describe("/live — anonymity is a property of the payload", () => {
     });
     const json = (await res.json()) as Record<string, unknown>;
 
-    const suppressed =
-      json.suppressed === true ||
-      JSON.stringify(json).toLowerCase().includes("suppress");
-
-    if (!suppressed) {
-      test.skip(true, "five or more students are working; the threshold is not active");
-      return;
+    /*
+     * Until 29 Sep 2026 this test ran only when the payload said "suppress", and
+     * skipped otherwise. The rebuilt payload withholds a figure by sending null
+     * in its place (a stage's average below five students, a question's split
+     * below five answers), so the rule is checked on every row, every run.
+     */
+    const min = json.minCohort as number;
+    expect(min, "the threshold is in the payload").toBe(5);
+    for (const st of json.stages as Array<{ stageId: string; students: number; avgMastery: number | null }>) {
+      if (st.students < min) {
+        expect(st.avgMastery, `stage ${st.stageId} has ${st.students} students and its average was sent`).toBeNull();
+      }
+    }
+    const session = json.session as { answered: number; correct: number | null } | null;
+    if (session && session.answered < min) {
+      expect(session.correct, "a split below five answers was sent").toBeNull();
     }
 
     /*
@@ -165,17 +177,14 @@ test.describe("/live — anonymity is a property of the payload", () => {
      * explain themselves — a dashboard that silently shows nothing and a
      * dashboard that silently shows everything are equally hard to trust.
      */
-    const text = await main.innerText();
-    if (/suppress/i.test(text)) {
-      await expect(main).toContainText(/fewer than \d+ people/i);
-      await expect(main, "the page should say the SERVER withholds it").toContainText(
-        /server withholds/i,
-      );
-    } else {
-      await expect(main, "showing a breakdown without saying it is safe to").toContainText(
-        /safe to show/i,
-      );
-    }
+    /*
+     * 29 Sep 2026: the rule is now stated unconditionally, beside the figures
+     * it governs, rather than as one of two branches; and the "safe to show"
+     * branch is gone, because the old page printed it with nobody working.
+     */
+    await expect(main).toContainText(/fewer than \d+ students/i);
+    await expect(main, "the page should say the SERVER withholds it").toContainText(/server (does not|never) send/i);
+    await expect(main).not.toContainText(/safe to show/i);
 
     // Unconditional in both states: the claim that makes the page trustworthy.
     await expect(main).toContainText(/not loaded cannot leak/i);
