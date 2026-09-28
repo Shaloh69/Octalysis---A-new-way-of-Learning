@@ -4,6 +4,11 @@ import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
 import { loadAttempt, loadResolvedPaper } from "../repo/engine-repo.js";
 import type { Env } from "../env.js";
+import { withTransaction } from "../db.js";
+import { FeedbackBulkTriage, FeedbackQuery } from "@octa/contracts";
+import {
+  FEEDBACK_EXPORT_MAX, loadFeedbackCsv, loadFeedbackQueue, triageFeedback,
+} from "../feedback/queue.js";
 
 /**
  * P8 — feedback: the flag, the content report, and the SUS survey.
@@ -215,58 +220,57 @@ export function registerFeedbackRoutes(app: FastifyInstance, env: Env): void {
   });
 
   /* ----------------------------------------------------------
-   * GET /api/v1/console/feedback    (staff)
+   * GET /api/v1/console/feedback       (staff) -- the triage queue
+   * GET /api/v1/console/feedback.csv   (staff) -- every matching report
+   * PATCH /api/v1/console/feedback     (staff) -- one decision for a group
+   *
+   * Rebuilt 29 Sep 2026 (instructor rulings): exact repeats grouped and
+   * triaged together, status and kind filtered here with a cursor instead of
+   * a silent 300-row cap, a CSV of every match, SUS by role. The reads and
+   * the write live in `feedback/queue.ts`.
    * -------------------------------------------------------- */
+  function feedbackQuery(raw: unknown): FeedbackQuery {
+    const parsed = FeedbackQuery.safeParse(raw);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const field = issue?.path[0];
+      throw errors.badRequest(
+        field ? `The ${String(field)} filter is not valid: ${issue.message}` : (issue?.message ?? "That filter is not valid."),
+      );
+    }
+    return parsed.data;
+  }
+
   app.get("/api/v1/console/feedback", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    return reply.send(await loadFeedbackQueue(app.db, feedbackQuery(req.query)));
+  });
 
-    const q = req.query as { status?: string; channel?: string };
+  app.get("/api/v1/console/feedback.csv", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const { csv, total } = await loadFeedbackCsv(app.db, feedbackQuery(req.query));
+    if (total > FEEDBACK_EXPORT_MAX) {
+      throw errors.badRequest(
+        `More than ${FEEDBACK_EXPORT_MAX.toLocaleString("en-US")} reports match, and an export holds that many at most. Filter by status or kind and export again.`,
+      );
+    }
+    const day = new Date().toISOString().slice(0, 10);
+    return reply
+      .header("content-type", "text/csv; charset=utf-8")
+      .header("content-disposition", `attachment; filename="octa-feedback-${day}.csv"`)
+      .send(csv);
+  });
 
-    const { rows } = await app.db.query(
-      `select f.id, f.channel, f.category, f.body, f.rating, f.route, f.status,
-              f.severity, f.sus_score, f.item_id, f.resolved_variant, f.created_at,
-              f.role, p.full_name as reporter_name, i.slug as item_slug
-         from feedback f
-         left join profiles p on p.id = f.user_id
-         left join items i    on i.id = f.item_id
-        where ($1::text is null or f.status  = $1::feedback_status)
-          and ($2::text is null or f.channel = $2::feedback_channel)
-        order by f.created_at desc
-        limit 300`,
-      [q.status ?? null, q.channel ?? null],
-    );
-
-    // The SUS headline. A single number is what makes it comparable to the
-    // published benchmark (68 = average); the raw answers stay in the rows.
-    const sus = await app.db.query(
-      `select round(avg(sus_score), 1) as mean, count(*)::int as n
-         from feedback where channel = 'sus' and sus_score is not null`,
-    );
-
-    return reply.send({
-      entries: rows.map((r) => ({
-        id: r.id,
-        channel: r.channel,
-        category: r.category,
-        body: r.body,
-        rating: r.rating === null ? null : Number(r.rating),
-        route: r.route,
-        status: r.status,
-        severity: r.severity,
-        susScore: r.sus_score === null ? null : Number(r.sus_score),
-        itemId: r.item_id,
-        itemSlug: r.item_slug,
-        resolvedVariant: r.resolved_variant,
-        reporterName: r.reporter_name,
-        role: r.role,
-        createdAt: r.created_at,
-      })),
-      sus: {
-        mean: sus.rows[0]?.mean === null ? null : Number(sus.rows[0]?.mean ?? 0),
-        n: Number(sus.rows[0]?.n ?? 0),
-      },
-    });
+  app.patch("/api/v1/console/feedback", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const parsed = FeedbackBulkTriage.safeParse(req.body);
+    if (!parsed.success) throw errors.badRequest("That triage update could not be read.");
+    const result = await withTransaction(app.db, (client) => triageFeedback(client, id.userId, parsed.data));
+    if (!result) throw errors.notFound("One of those reports no longer exists. Nothing was changed; reload and try again.");
+    return reply.send(result);
   });
 
   /* ----------------------------------------------------------

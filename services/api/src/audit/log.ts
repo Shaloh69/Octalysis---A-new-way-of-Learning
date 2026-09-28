@@ -5,6 +5,7 @@ import {
   type AuditPage,
   type AuditQuery,
 } from "@octa/contracts";
+import { csvCell } from "../csv.js";
 import type { Db } from "../db.js";
 
 /**
@@ -308,16 +309,11 @@ export const AUDIT_CSV_COLUMNS = [
 ] as const;
 
 /**
- * A cell a spreadsheet would run as a formula (`=`, `+`, `-`, `@`, or a
- * leading tab or return) is prefixed with `'`. A reason is typed by a person,
- * and this file is opened in Excel by someone else: the log must never be the
- * thing that executes.
+ * A reason is typed by a person, and this file is opened in Excel by someone
+ * else: the log must never be the thing that executes. The guard is shared with
+ * `/feedback`'s export (`csv.ts`).
  */
-function cell(v: string | null | undefined): string {
-  let s = v ?? "";
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
+const cell = csvCell;
 
 export function toAuditCsv(entries: AuditEntry[]): string {
   const lines = [AUDIT_CSV_COLUMNS.join(",")];

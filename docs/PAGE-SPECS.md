@@ -317,6 +317,13 @@ Add a **CSAT** one-liner after specific completed workflows ("How was importing 
 for a tool a course mandates, and a panel will ask why you used it.
 
 ### 4.4 `/console/feedback`
+**Built 29 Sep 2026 as ONE queue** (`design/templates/console/feedback/SPEC.md`, instructor
+ruling): "My feedback" is deferred until the console can send feedback (4.1 exists only in the
+student app), and teacher and admin are one role (D4). Built: triage with severity and released
+in; exact repeats grouped and triaged together; status and kind filters on the server with Load
+older; Export CSV; SUS by role with its n. Not built, recorded there: filters by route, role and
+version, a SUS trend (SUS rows carry no release), fuzzy dedupe.
+
 Two tabs.
 
 **"My feedback"** — everything this teacher submitted, with a **status** and, when shipped, a

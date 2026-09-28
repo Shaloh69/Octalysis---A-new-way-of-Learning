@@ -661,6 +661,42 @@ stand.
    repeats, 380 in 4 of 4. **Any other dialog whose content can arrive after a
    refusal has the same shape** (`/items`' import preview, `/students`' import;
    §0f.3 already named both as unchecked).
+2. **The console cannot send feedback.** `PAGE-SPECS.md` §4.1's flag ("present on
+   every page") exists only in the student app (`FeedbackWidget.tsx`), so a
+   teacher has never been able to report anything, and §4.4's "My feedback"
+   tab could only ever be empty. Deferred by the instructor (29 Sep 2026) until
+   the flag exists; it is **shell work**, touching every route, for its own
+   session. When it lands, "My feedback" is `?reporter=me` over the same queue.
+3. **`/items` has no address for one item.** A question report shows its item's
+   slug in mono and cannot link to it: `/items` reads no item from the URL, so a
+   link would drop the teacher at the top of 183 items. §4.2's "routes straight
+   into the `/console/items` review queue" is not built either: `/items` shows
+   no reports. Both are `/items` work.
+4. **The demo cannot show a variant.** All 5 seeded question reports lack an
+   item and a variant (INV-25), and the seed cannot honestly hold one: a variant
+   is rebuilt from an attempt, and no paper can be filled while 0 items are live
+   (§0e.1). `console-feedback.spec.ts` patches one in (`_feedback-fixture.ts`).
+   Once items go live, seed a real content report through `POST /feedback` with
+   an attempt, and the fixture's patch can go.
+5. **A spec that waits for `<h1>` is not waiting for data on a rebuilt page.**
+   `console-live-feedback.spec.ts`' `open()` waited for the heading, which the
+   OLD `/feedback` rendered only with its rows; the rebuilt page shows its
+   heading at once, above a skeleton, so two old tests counted rows before any
+   existed. They now wait for `[data-group]` (§0a.2's rule). `/live`'s tests in
+   the same file use the same `open()`: check them when `/live` is rebuilt.
+6. **Bulk triage writes one audit row per report.** Moving a group of 40
+   identical reports is 40 `feedback.triage` entries in `/audit`, each worded
+   "Marked a feedback report as …". Correct as evidence, noisy to read; if it
+   matters, `/audit` could say "one of N in a group" from `payload.groupSize`.
+7. **The single-report `PATCH /console/feedback/:id` still exists**, and the
+   console no longer calls it (every triage is the bulk PATCH, even for a group
+   of one). Kept because `feedback.spec.ts` tests it and nothing is gained by
+   removing a working, staff-only route; delete it deliberately or keep it.
+8. **SUS rows carry no release** (`POST /feedback/sus` writes no `app_version`),
+   so §4.4's SUS trend has nothing to plot. The trend waits for that, and for
+   responses: 0 on the seed.
+9. **Docker Desktop stopped a fourth time** between sessions (§0b.6, §0d.7,
+   §0e.7). `docker ps` first; Docker Desktop can be started from its `.exe`.
 
 ---
 

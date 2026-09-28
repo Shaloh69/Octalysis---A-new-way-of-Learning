@@ -2252,3 +2252,173 @@
   .sy-skel-text { height: 2.25rem; }
   .sy-skel-note { margin: 0; }
 }
+
+/*
+ * ------------------------------------------------------------ /feedback
+ *
+ * `design/templates/console/feedback/SPEC.md`: shadcn.io's Account Feedback
+ * History for the frame (counts per status that are also the filter, a kind
+ * filter, a result count, a row per report opening in place), shadcn-admin's
+ * Tasks for the dense row (status and severity each a shape and a word). The
+ * page chooses on its OWN width (`FeedbackPage`, a ResizeObserver): a table at
+ * 52rem and up, cards below. Nothing scrolls sideways; a sideways scroller
+ * counts as clipping (`_gate.ts`).
+ */
+@layer components {
+  .fb { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-4); }
+  .fb-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+  .fb-card {
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    min-width: 0;
+  }
+  .fb-faint { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .fb-label { font-size: var(--text-xs); font-weight: 500; color: var(--ink-muted); }
+  .fb-link {
+    color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent);
+    text-underline-offset: 2px; background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  }
+  .fb-mark { width: 0.875rem; height: 0.875rem; flex: none; color: var(--ink-muted); }
+
+  /* ---- SUS ---- */
+  .fb-sus { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); }
+  .fb-sus-title { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+  .fb-sus-figures { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); }
+  .fb-sus-figure { display: flex; flex-direction: column; gap: 2px; min-width: 10rem; }
+  .fb-sus-mean { font-size: var(--text-2xl); color: var(--ink); }
+
+  /* ---- filters ---- */
+  .fb-tools { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+  .fb-statuses { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .fb-statuses .num { color: inherit; margin-left: var(--space-1); }
+  .fb-field { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .fb-select, .fb-input {
+    height: var(--control-h-md); min-width: 12rem; max-width: 100%;
+    padding: 0 var(--space-2); font-size: var(--text-sm); color: var(--ink);
+    background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+  }
+  .fb-input { min-width: 0; width: 10rem; }
+
+  .fb-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+  .fb-result { flex: 1 1 18rem; font-size: var(--text-sm); color: var(--ink); min-width: 0; }
+
+  /* ---- a status, a severity, a kind: a shape and a word ---- */
+  .fb-status, .fb-sev { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ink); white-space: nowrap; }
+  .fb-kind { display: flex; flex-direction: column; gap: 1px; color: var(--ink); }
+  .fb-kind.is-inline { flex-direction: row; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: baseline; }
+  .fb-about { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+
+  /* ---- table ---- */
+  .fb-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); line-height: var(--lh-sm); }
+  .fb-table col.c-status { width: 8rem; }
+  .fb-table col.c-kind { width: 9.5rem; }
+  .fb-table col.c-about { width: 10rem; }
+  .fb-table col.c-sev { width: 6.5rem; }
+  .fb-table col.c-last { width: 7rem; }
+  .fb-table col.c-more { width: 6.5rem; }
+  .fb-table th, .fb-table td { padding: var(--space-2); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+  .fb-table th:first-child, .fb-table td:first-child { padding-left: var(--space-4); }
+  .fb-table th:last-child, .fb-table td:last-child { padding-right: var(--space-4); }
+  .fb-table thead th {
+    font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted);
+    border-bottom: var(--border-hair) solid var(--line-strong); vertical-align: bottom;
+  }
+  .fb-table tbody tr { border-bottom: var(--border-hair) solid var(--line); transition: background-color var(--dur-fast) var(--ease-out); }
+  .fb-table tbody tr:last-child { border-bottom: 0; }
+  .fb-table tbody tr[data-group]:hover, .fb-table tbody tr.is-open { background: var(--surface-2); }
+  .fb-detail-row > td { padding-top: 0; }
+  .fb-when { font-size: var(--text-xs); color: var(--ink-muted); white-space: nowrap; }
+  .fb-more-cell { text-align: right; }
+  .fb-body {
+    color: var(--ink); overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  }
+  .fb-body.is-full { display: block; -webkit-line-clamp: unset; overflow: visible; }
+  .fb-repeats { font-size: var(--text-xs); color: var(--ink-muted); margin-top: 2px; }
+
+  .fb-toggle {
+    display: inline-flex; align-items: center; gap: var(--space-1);
+    height: var(--control-h-sm); padding: 0 var(--space-2);
+    font-size: var(--text-xs); color: var(--ink); background: none;
+    border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .fb-toggle:hover { background: var(--surface-1); }
+  .fb-chevron { transition: rotate var(--dur-fast) var(--ease-out); }
+  .fb-chevron.is-open { rotate: 180deg; }
+
+  /* ---- cards (narrow) ---- */
+  .fb-list { margin: 0; padding: 0; list-style: none; }
+  .fb-item { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); min-width: 0; }
+  .fb-item:last-child { border-bottom: 0; }
+  .fb-item.is-open { background: var(--surface-2); }
+  .fb-item-top { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); align-items: baseline; font-size: var(--text-sm); }
+  .fb-item-kind { font-size: var(--text-sm); }
+  .fb-item-meta { font-size: var(--text-xs); color: var(--ink-muted); }
+  .fb-item .fb-body { font-size: var(--text-sm); }
+
+  [data-new] { animation: octa-fade-in var(--dur-base) var(--ease-out); }
+
+  /* ---- detail ---- */
+  .fb-detail {
+    display: flex; flex-direction: column; gap: var(--space-3);
+    margin-top: var(--space-2); padding: var(--space-3) var(--space-4);
+    background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+    animation: octa-rise-in var(--dur-fast) var(--ease-out);
+    min-width: 0;
+  }
+  .fb-quote {
+    margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--accent);
+    font-size: var(--text-sm); color: var(--ink); overflow-wrap: anywhere; max-width: 72ch; white-space: pre-wrap;
+  }
+  .fb-note { font-size: var(--text-sm); color: var(--ink); padding-left: var(--space-3); border-left: 2px solid var(--line-strong); max-width: 72ch; }
+  .fb-reports { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
+  .fb-report { display: flex; flex-direction: column; gap: var(--space-2); padding-bottom: var(--space-3); border-bottom: var(--border-hair) solid var(--line); min-width: 0; }
+  .fb-report:last-child { border-bottom: 0; padding-bottom: 0; }
+  .fb-report-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-3); font-size: var(--text-sm); color: var(--ink); }
+
+  .fb-variant { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); background: var(--surface-1); }
+  .fb-variant-stem { font-size: var(--text-sm); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; max-width: 72ch; }
+  .fb-options { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: var(--text-sm); color: var(--ink); }
+  .fb-letter { display: inline-block; width: 1.5rem; color: var(--ink-muted); }
+  .fb-params { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-xs); color: var(--ink); }
+
+  .fb-attached { display: grid; gap: 2px; margin: 0; font-size: var(--text-xs); }
+  .fb-pair { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--space-3); min-width: 0; }
+  .fb-pair dt { color: var(--ink-muted); overflow-wrap: anywhere; }
+  .fb-pair dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+
+  /* ---- triage ---- */
+  .fb-triage { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-3); border-top: var(--border-hair) solid var(--line); }
+  .fb-choices { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+  .fb-choices > .fb-label { width: 5.5rem; }
+  .fb-release { flex-direction: row; align-items: center; gap: var(--space-2); }
+  .fb-release > .fb-label { width: 5.5rem; }
+  .fb-refusal { font-size: var(--text-sm); color: var(--ink); padding: var(--space-2) var(--space-3); border: var(--border-hair) solid var(--danger); background: var(--danger-bg); border-radius: var(--radius-md); }
+  .fb-save { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+
+  @container (max-width: 40rem) {
+    .fb-choices > .fb-label, .fb-release > .fb-label { width: 100%; }
+    .fb-release { flex-wrap: wrap; }
+    .fb-pair { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .fb-select { min-width: 0; width: 100%; }
+    .fb-tools > .fb-field { width: 100%; }
+  }
+
+  .fb-foot { display: flex; justify-content: center; padding: var(--space-2) 0; }
+  .fb-empty { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4); }
+
+  /* ---- loading ---- */
+  .fb-reserve { min-height: 40rem; }
+  .fb-skeleton { display: flex; flex-direction: column; gap: var(--space-4); min-height: 40rem; }
+  .fb-skel { animation: octa-shimmer calc(var(--dur-base) * 6) ease-in-out infinite; background: var(--surface-2); border-radius: var(--radius-sm); }
+  .fb-skel-sus { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); }
+  .fb-skel-line { height: 1rem; width: 40%; }
+  .fb-skel-line.is-short { width: 25%; }
+  .fb-skel-tools { height: var(--control-h-sm); width: 60%; }
+  .fb-skel-row { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .fb-skel-row:last-child { border-bottom: 0; }
+  .fb-skel-row > .fb-skel { height: 2.25rem; }
+  .fb-skel-row > .fb-skel:first-child { height: 1rem; }
+}

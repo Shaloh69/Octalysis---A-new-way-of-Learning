@@ -868,7 +868,29 @@ thesis deliverable, and right now no phase is accountable for it.
         passed; the student refusal and the `audit_runs` RLS denial watched
         failing. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and ten
         state shots per width
-  - [ ] `/feedback`
+  - [x] `/feedback` — **29 Sep 2026** (`design/templates/console/feedback/SPEC.md`),
+        against shadcn.io's **Account Feedback History** (counts per status
+        that are also the filter, a kind filter, a result count, a row opening
+        in place), shadcn-admin's Tasks for the dense row and shadcn.io's
+        Customer Feedback for a score beside its n. The named tabs lead was
+        rejected on the ruling of one queue. **Instructor rulings, built:** one
+        queue for all staff, "My feedback" deferred until the console has its
+        own flag (§4.1); **exact repeats grouped** and triaged together
+        (`PATCH /console/feedback`, one transaction, one audit row per report);
+        **status, severity and released in**; status and kind filtered **on
+        the server**, in the address, "Showing N of M", **Load older** on a
+        keyset cursor instead of a silent 300-row cap, **Export CSV** of every
+        match (formula-guarded, the guard now shared with `/audit`); **SUS by
+        role** with its n and "not yet reliable" below 20. Each report shows
+        who, when, the variant it saw (or says none was attached, INV-25) and
+        what was attached automatically. A table at 52rem of its own width,
+        cards below. Gate: `design/specs/console-feedback.spec.ts`, 54 on
+        both widths (52 passed + 2 width-specific skips; all 54 watched failing
+        on the old page), with `console-live-feedback.spec.ts`' three older
+        tests kept and made to wait for rows; every console spec 667 passed,
+        57 skipped, 0 failed against a build; API 588 passed; both new
+        endpoints' student refusals watched failing. `SOURCE.md`, `SPEC.md`,
+        `motion.md`, `current*.png` and eleven state shots per width
   - [ ] `/live`
   - [ ] `/attempts/:attemptId` — last, and with care: the only place a key is shown
 - [ ] **Student app revamp** (`WEB-REVAMP.md`) — same, for `apps/web`, second,

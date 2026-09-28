@@ -544,3 +544,106 @@ export const SystemAudit = z.object({
   runs: z.array(InvariantRun),
 });
 export type SystemAudit = z.infer<typeof SystemAudit>;
+
+/* ============================================================
+ * Feedback: the staff triage queue
+ * ========================================================== */
+
+export const FeedbackStatus = z.enum(["new", "triaged", "in_progress", "shipped", "wont_fix"]);
+export type FeedbackStatus = z.infer<typeof FeedbackStatus>;
+
+export const FEEDBACK_STATUS_LABELS: Readonly<Record<FeedbackStatus, string>> = {
+  new: "New",
+  triaged: "Triaged",
+  in_progress: "In progress",
+  shipped: "Shipped",
+  wont_fix: "Won't fix",
+};
+
+/** What the queue holds. SUS responses are not reports; they are the panel. */
+export const FeedbackKind = z.enum(["flag", "content_report", "csat"]);
+export type FeedbackKind = z.infer<typeof FeedbackKind>;
+
+export const FEEDBACK_KIND_LABELS: Readonly<Record<FeedbackKind, string>> = {
+  flag: "Flag",
+  content_report: "Question report",
+  csat: "Satisfaction (CSAT)",
+};
+
+export const FeedbackSeverity = z.enum(["low", "medium", "high"]);
+export type FeedbackSeverity = z.infer<typeof FeedbackSeverity>;
+
+export const FeedbackQuery = z
+  .object({
+    status: FeedbackStatus.optional(),
+    kind: FeedbackKind.optional(),
+    /** A group cursor from `next`: groups last reported before it. */
+    before: z.string().min(1).max(200).optional(),
+    limit: z.coerce.number().int().min(1).max(200).default(100),
+  })
+  .strict();
+export type FeedbackQuery = z.infer<typeof FeedbackQuery>;
+
+export const FeedbackReport = z.object({
+  id: z.string(),
+  reporterName: z.string().nullable(),
+  role: z.string(),
+  createdAt: z.string(),
+  route: z.string().nullable(),
+  appVersion: z.string().nullable(),
+  category: z.string().nullable(),
+  /** CSAT, 1-5. */
+  rating: z.number().int().nullable(),
+  /** What the client attached automatically: viewport, user agent, last events. */
+  context: z.record(z.string(), z.unknown()),
+  /** The exact instance a question report was about, rebuilt by the server. */
+  resolvedVariant: z.unknown().nullable(),
+});
+export type FeedbackReport = z.infer<typeof FeedbackReport>;
+
+/** Exact repeats: the same kind, item, route, status and text (trimmed, case folded). */
+export const FeedbackGroup = z.object({
+  key: z.string(),
+  status: FeedbackStatus,
+  kind: FeedbackKind,
+  category: z.string().nullable(),
+  body: z.string().nullable(),
+  severity: FeedbackSeverity.nullable(),
+  releasedIn: z.string().nullable(),
+  item: z.object({ id: z.string(), slug: z.string().nullable() }).nullable(),
+  route: z.string().nullable(),
+  count: z.number().int().min(1),
+  firstAt: z.string(),
+  lastAt: z.string(),
+  triagedBy: z.object({ id: z.string(), name: z.string().nullable() }).nullable(),
+  triagedAt: z.string().nullable(),
+  /** Newest first. */
+  reports: z.array(FeedbackReport),
+});
+export type FeedbackGroup = z.infer<typeof FeedbackGroup>;
+
+const SusFigure = z.object({ n: z.number().int().min(0), mean: z.number().nullable() });
+
+export const FeedbackQueue = z.object({
+  groups: z.array(FeedbackGroup),
+  /** Pass as `before` for the next, older page; null when nothing older matches. */
+  next: z.string().nullable(),
+  /** Everything the filter matches, cursor aside. */
+  total: z.object({ groups: z.number().int().min(0), reports: z.number().int().min(0) }),
+  /** Reports per status for the current kind, status filter aside: the filter's own counts. */
+  counts: z.record(FeedbackStatus, z.number().int().min(0)),
+  /** PAGE-SPECS.md 4.3: students and staff reported separately, each with its n. */
+  sus: z.object({ student: SusFigure, staff: SusFigure }),
+});
+export type FeedbackQueue = z.infer<typeof FeedbackQueue>;
+
+export const FeedbackBulkTriage = z
+  .object({
+    ids: z.array(z.string().uuid()).min(1).max(500),
+    status: FeedbackStatus,
+    /** null clears it; absent leaves it. */
+    severity: FeedbackSeverity.nullable().optional(),
+    releasedIn: z.string().trim().max(50).nullable().optional(),
+  })
+  .strict();
+export type FeedbackBulkTriage = z.infer<typeof FeedbackBulkTriage>;

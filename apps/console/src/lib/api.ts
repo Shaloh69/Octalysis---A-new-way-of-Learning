@@ -1,7 +1,7 @@
 import type {
   AuditPage, Gradebook, ItemBulkStatusRequest, ItemBulkStatusResult, ItemExportRequest, ItemFile,
   ItemImportRequest, ItemImportResult,
-  SystemAudit,
+  SystemAudit, FeedbackBulkTriage, FeedbackQueue,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -366,25 +366,6 @@ export interface ContentStatus {
   };
 }
 
-export interface FeedbackEntry {
-  id: string;
-  channel: "flag" | "content_report" | "sus" | "csat";
-  category: string | null;
-  body: string | null;
-  rating: number | null;
-  route: string | null;
-  status: "new" | "triaged" | "in_progress" | "shipped" | "wont_fix";
-  severity: string | null;
-  susScore: number | null;
-  itemId: string | null;
-  itemSlug: string | null;
-  /** The exact resolved instance the reporter saw. Server-reconstructed. */
-  resolvedVariant: unknown;
-  reporterName: string | null;
-  role: string;
-  createdAt: string;
-}
-
 export interface BankItem {
   id: string;
   familyId: string;
@@ -630,15 +611,18 @@ export const api = {
       { method: "POST", body: JSON.stringify({ reason }) },
     ),
 
-  feedback: (status?: string) =>
-    request<{ entries: FeedbackEntry[]; sus: { mean: number | null; n: number } }>(
-      `/api/v1/console/feedback${status ? `?status=${encodeURIComponent(status)}` : ""}`,
-    ),
+  /** The triage queue: groups of exact repeats, filtered on the server, a page at a time. */
+  feedback: (params: URLSearchParams) =>
+    request<FeedbackQueue>(`/api/v1/console/feedback?${params}`),
 
-  triageFeedback: (id: string, input: { status: string; severity?: string; releasedIn?: string }) =>
-    request<{ ok: true }>(`/api/v1/console/feedback/${encodeURIComponent(id)}`, {
+  /** Every report the filter matches, as the server writes it. */
+  feedbackCsv: (params: URLSearchParams) => requestText(`/api/v1/console/feedback.csv?${params}`),
+
+  /** One decision for every report in a group; one audit row each. */
+  triageFeedback: (body: FeedbackBulkTriage) =>
+    request<{ updated: number }>("/api/v1/console/feedback", {
       method: "PATCH",
-      body: JSON.stringify(input),
+      body: JSON.stringify(body),
     }),
 
   items: (filter: {
