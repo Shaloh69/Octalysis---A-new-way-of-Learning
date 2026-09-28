@@ -21,22 +21,21 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: `/live`
+## 1. Start here — the next session: `/attempts/:attemptId`
 
-*Rewritten 29 Sep 2026 by the `/feedback` session, which rebuilt `/feedback`
-as one staff queue with exact repeats grouped and triaged together, severity
-and released in, server filters with Load older and a CSV, and SUS by role,
-on the instructor's rulings of that day; and which fixed the baseline red it
-found on `/assessments` (§0m.1). Phase at handover: **R3 live at 55 / 73
-(75%)**; all tracks **142 done · 69 to-do (211 items, 67%)**. `pnpm phase` is
-the count, not this line.*
+*Rewritten 29 Sep 2026 by the `/live` session, which rebuilt `/live` and made
+the projector its own route `/live/present`, and built the server and console
+half of "push an item" (sessions audited with a reason, small groups withheld
+by the server) on the instructor's rulings of that day. Phase at handover:
+**R3 live at 56 / 73 (77%)**; all tracks **143 done · 68 to-do (211 items,
+68%)**. `pnpm phase` is the count, not this line.*
 
 > Read `docs/redesign/CONSOLE-REVAMP.md` and `docs/redesign/WEB-REVAMP.md` in
 > full, then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md`
-> §0a to §0m** (what the `/items`, `/signin`, `/locks`, `/students`,
+> §0a to §0n** (what the `/items`, `/signin`, `/locks`, `/students`,
 > `/students/:userId`, `/assessments`, `/submissions`, `/gradebook`, shell,
-> `/content`, `/audit`, `/system` and `/feedback` sessions parked). Do not
-> re-derive what those carry.
+> `/content`, `/audit`, `/system`, `/feedback` and `/live` sessions parked).
+> Do not re-derive what those carry.
 >
 > Run `pnpm phase`. Show the table, say the percentage, name the live phase.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
@@ -45,10 +44,11 @@ the count, not this line.*
 > 96 act-1 items sat at `review`, 0 live, so no paper can be filled and every
 > Start answers 500 (§0e.1); `/system` says so itself (INV-18, a warning).
 > Stage 01 was open for 0 of 24 demo students (§3a decided, not built);
-> `run_invariants()` had 0 failing and 4 warnings; 0 of 19 planet summaries
-> approved. The DEPLOYMENT was last measured on 28 Sep: **0 content blocks for
-> 00-04 and 0 items at all** (§0h.1), and its `/content` AND `/audit` answer
-> 500 until the schema is pushed (§0j.1, §0k.1).)
+> `run_invariants()` had 0 failing and 4 warnings (INV-18, 25, 27, 29); 0 of
+> 19 planet summaries approved. The DEPLOYMENT was last measured on 28 Sep:
+> **0 content blocks for 00-04 and 0 items at all** (§0h.1), and its
+> `/content`, `/audit` AND NOW `/live` answer 500 until the schema is pushed
+> (§0j.1, §0k.1, §0n.1).)
 >
 > **Confirm the finished routes are still green before touching anything,
 > AGAINST A BUILD, not the dev server** (§0j.2). `pnpm --filter @octa/console
@@ -56,140 +56,123 @@ the count, not this line.*
 > in the background (a running preview indexes `dist/` at start, so rebuild
 > AND restart it after a change), then `OCTA_WEB_URL` and `OCTA_CONSOLE_URL` =
 > `http://localhost:5185` and `npx playwright test design/specs/console-*.spec.ts`.
-> On 29 Sep that gave **667 passed, 57 skipped, 0 failed** (724 tests). **Read
+> On 29 Sep that gave **716 passed, 58 skipped, 0 failed** (774 tests). **Read
 > the skips** with a JSON reporter: they are width-specific by design
 > (including `console-student-detail.spec.ts`' real-attempt test, which skips
-> because no paper can be filled, §0e.2), and a skip count that MOVES is a
-> finding (§0l.6). **A full run writes to the database: reset and re-demo
-> before running it again.** If anything is red, that is this session's work,
-> and a red is real until proven otherwise: on 29 Sep the baseline found a
-> timing race on `/assessments` that had passed the day before (§0m.1).
+> because no paper can be filled, §0e.2, and `console-live.spec.ts`' cadence
+> test at 380), and a skip count that MOVES is a finding (§0l.6). **A full run
+> writes to the database: reset and re-demo before running it again.** If
+> anything is red, that is this session's work, and a red is real until proven
+> otherwise (§0m.1).
 >
-> **THIS SESSION IS ONLY FOR `/live`** (`apps/console/src/pages/LivePage.tsx`,
-> 209 lines, polling `GET /api/v1/console/live` in
-> `services/api/src/routes/live.ts`, 151 lines, with `/live/health` and the
-> student's `GET /api/v1/live`). The projector view is **`/live?present=1`**,
-> not a route: `App.tsx` routes only `/live`, although `PAGE-SPECS.md` and
-> `apps/console/CLAUDE.md` both name `/console/live/present`. NOTHING ELSE.
-> Not `/attempts/:attemptId` (last; §0e.3), not the shell or any finished
-> route, not the student app's `/app/live`, not §0e.1, §0f.1, §0g.1, §0h.2,
-> §0j.3-7, §0k.3-4, §0l.1-4 or §0m.2-8. If you find a defect on another page,
-> write it down in `docs/NEXT-SESSION.md` and leave it. The last thing this
-> session does is rewrite this prompt for the next one.
+> **THIS SESSION IS ONLY FOR `/attempts/:attemptId`**, the last console route
+> (`apps/console/src/pages/AttemptPage.tsx`, 171 lines, reading
+> `GET /api/v1/console/attempts/:attemptId` in `services/api/src/routes/console.ts`;
+> opened from the student record's **Open paper**, `pages/record/Paper.tsx`).
+> It is where an answer key is shown, and hard rule 1 governs it. NOTHING
+> ELSE. Not the shell or any finished route, not the student app, not §0e.1,
+> §0f.1, §0g.1, §0h.2, §0j.3-7, §0k.3-4, §0l.1-4, §0m.2-8 or §0n.2-9. If you
+> find a defect on another page, write it down in `docs/NEXT-SESSION.md` and
+> leave it. The last thing this session does is rewrite this prompt for the
+> next one.
 >
-> 1. Bring the local stack up: **`docker ps` first** (Docker Desktop stopped a
->    fourth time on 29 Sep; start it from its `.exe`), `pnpm db:up`, then
+> 1. Bring the local stack up: **`docker ps` first** (Docker Desktop has
+>    stopped four times; start it from its `.exe`), `pnpm db:up`, then
 >    **`pnpm db:reset && node scripts/db-demo.mjs`**, `pnpm dev:api` on 8090,
 >    `pnpm dev:token` for a session; the dev console on 5184 is for LOOKING.
 >    5173 and 5174 belong to other projects. If 8090, 5184 or 5185 already
 >    answer, confirm they are OURS (the process command line, and the page
->    title "OCTA Console"). A reset KILLS the dev API (§0c.1): **prove it with
->    a staff GET, not `/healthz`** (§0e.7), and restart it. **After ANY API
->    test run, reset and re-demo.**
-> 2. **Audit against the plan FIRST.** `PAGE-SPECS.md` §`/console/live`:
->    "Push an item to all connected students. Live aggregate distribution via
->    Supabase Realtime. Separate projector view ... large type, high contrast,
->    **no names**. Timer for collective timed challenges (framed as a class
->    effort, not individual pressure)." `TEMPLATE-LINKS.md`'s row says
->    "Custom — see `DESIGN-MANDATE-V2.md`", **a file that does not exist**
->    (only `DESIGN-MANDATE.md` does): find what the row meant, or say it is
->    gone. What exists polls (`POLL_MS`), it does not use Realtime; say whether
->    that matters. The two rules that bind are already in the code and must
->    survive the rebuild: **no name, student ID or user ID is ever fetched**
->    for this view, and **below `MIN_COHORT = 5` the server withholds the
->    spread** (`apps/console/CLAUDE.md` Rules; `console-live-feedback.spec.ts`
->    asserts both against the PAYLOAD). With 0 live items, check what "push an
->    item" can push at all. Things to decide rather than assume: whether the
->    projector view becomes its own route; the timer; what the page shows with
->    no session running. **Plan what is missing and ask before building it**,
->    with a recommended option and what each costs. Starting or ending a
->    session changes what students see: it writes `audit_log` with an actor.
-> 3. **Capture the reference** into `design/templates/console/live/` (exists,
->    empty). Look for a purpose-built live-poll / audience-response presenter
->    (a question with a live bar spread, a projector-sized view) as well as a
->    control panel. shadcn.io's `/view/...` previews open a **guided tour whose
->    scrim greys the block under a 200: click "Skip tour"** (§0l.7), and they
->    centre tall blocks, so capture at **1440×1500 and 380×1900** (§0k.7).
->    **Open every PNG** (a contact sheet of many is fine; a 380 page thousands
->    of pixels tall must be read in slices). Write `SOURCE.md` and `SPEC.md`;
+>    title "OCTA Console"). A reset CAN kill the dev API, and sometimes does
+>    not (§0c.1, §0n.8): **prove it with a staff GET, not `/healthz`**
+>    (§0e.7), and check who owns 8090 before starting a second one. **After
+>    ANY API test run, reset and re-demo.**
+> 2. **Audit against the plan FIRST.** `PAGE-SPECS.md` and `MASTER-PLAN.md`
+>    §6.3 (the exact variant regenerated from the seed, the student's answer,
+>    the key, time on item, the rationale they were shown),
+>    `apps/console/CLAUDE.md`'s `/attempts/:id` row ("the only place the key is
+>    shown", which **§0e.3 found was never true**: `/students/:userId` shows
+>    keys too, and withholds them on an in-progress or abandoned paper,
+>    render-side, instructor 27 Sep 2026). Decide rather than assume, and
+>    **ask**: does this page withhold the key on an in-progress paper the same
+>    way (render-side, as the record does), or in the API (the option offered
+>    and not chosen on 27 Sep)? Say what the page does for a `voided` attempt.
+>    **No paper can be filled locally** (0 live items): the page has only ever
+>    been seen through a fixture (`console-student-detail.spec.ts` patches
+>    `**/api/v1/console/attempts/*`). Plan what is missing, with a recommended
+>    option and its cost, and ask before building it.
+> 3. **The reference.** `TEMPLATE-LINKS.md` says "No template, deliberately"
+>    (a printed exam paper, not a dashboard), and root `CLAUDE.md` says a
+>    template is an ARTIFACT, never a reason. Resolve it: capture a real
+>    printed-exam / answer-key / graded-paper reference (a university's
+>    published sample answer key, an exam review page) into
+>    `design/templates/console/attempts-detail/` (exists, empty), or record in
+>    `SOURCE.md` why nothing capturable exists, with what was tried. shadcn.io
+>    previews: click **Skip tour** (§0l.7), capture at **1440×1500 and
+>    380×1900** (§0k.7). **Open every PNG.** Write `SOURCE.md` and `SPEC.md`;
 >    update the `TEMPLATE-LINKS.md` row.
-> 4. **Specs.** `design/specs/console-live-feedback.spec.ts` covers `/live`'s
->    anonymity and suppression **against the payload** (and `/feedback`'s
->    older tests): **extend, never overwrite**; its `open()` waits only for the
->    `<h1>`, which is not waiting for data once a rebuilt page shows its
->    heading first (§0m.5). Put `/live`'s six gate assertions at 1440 and 380
->    (assertion 6's positive control through `motionStarted()`) and what the
->    approved plan owes in a new `console-live.spec.ts`. **`/live` never goes
->    network-idle**: wait on `domcontentloaded` and explicit locators. A
->    fixture that patches the REAL response for the states the seed lacks (a
->    session running, a cohort at and below 5), built with the API's own
->    function where one exists (`_system-fixture.ts`); intercept every write
->    (`_feedback-fixture.ts`). If anything new reaches the API, a **denial
->    test first** (a student token refused), watched failing (remove
->    `requireStaff` for one run). Use `getByLabel(…, { exact: true })`
+> 4. **Specs.** Six gate assertions at 1440 and 380 (assertion 6's positive
+>    control through `motionStarted()`) and what the approved plan owes, in a
+>    new `console-attempts-detail.spec.ts`; **extend, never overwrite**
+>    `console-student-detail.spec.ts`. A fixture that patches the REAL response
+>    shape (the student record's fixture, `_student-detail-fixture.ts`, already
+>    builds papers: reuse it, do not invent a second shape). The key is the
+>    thing to test by DENIAL: a student token refused on
+>    `GET /console/attempts/:id` (watched failing with `requireStaff` removed
+>    for one run), and whatever the in-progress decision is, asserted. Wait for
+>    data, never for the `<h1>` (§0m.5). `getByLabel(…, { exact: true })`
 >    (§0k.6). Watch the spec fail before the rebuild.
-> 5. **Rebuild the page.** Not improve: rebuild. Toasts (starting or ending a
->    session is a server write), loading (nothing under 400ms, a skeleton
->    after, words after 3s at the TOP of the skeleton), transitions per
->    `.claude/rules/design.md`. `<main>` is **70rem** at 1440; choose any
->    layout breakpoint on the page's own width. **A sideways scroller counts
->    as clipping.** The projector view is read from the back of a room: its
->    contrast is computed like every other state, on all three themes.
-> 6. Capture `current.png`, `current-380.png` and state shots against seeded
->    data (a capture script under `node --experimental-strip-types` can import
->    the spec's fixture by `file:///` URL; import `.ts` files with their
->    extension). At 1440 `<main>` scrolls, not the document (§0i.8): size the
->    viewport to main's CONTENT. At 380, scroll to the top before a full-page
->    shot or the sticky bar is photographed mid-page. **Open every one and
->    look.** Write `motion.md`. Run EVERY console spec against the build, and
->    the whole API suite if the API changed. Then `git checkout --
->    design/item-review/`.
-> 7. Tick `/live` under the R3 "Console revamp" box in the same commit as the
->    work. Commit with explicit paths, messages from a file (`git commit -F`;
->    write long text with the Write tool, since a long heredoc in this shell
->    can fail to parse and run nothing). Commit and push.
-> 8. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session**
->    (`/attempts/:attemptId`, the last console route; §0e.3), carrying forward
->    what this session learned. Update the phase figures. Commit and push that
->    too.
+> 5. **Rebuild the page.** Not improve: rebuild. Loading (nothing under 400ms,
+>    a skeleton after, words after 3s at the TOP of the skeleton), a failed
+>    read with Try again, transitions per `.claude/rules/design.md`. Every
+>    number, answer and key in mono; **an incorrect answer is never red**
+>    (neutral, in words). `<main>` is **70rem** at 1440; choose breakpoints on
+>    the page's own width (container queries work: `/live` uses them). **A
+>    sideways scroller counts as clipping.**
+> 6. Capture `current.png`, `current-380.png` and state shots with a script
+>    under `node --experimental-strip-types` that imports the spec's fixture by
+>    `file:///` URL. At 1440 `<main>` scrolls (§0i.8): size the viewport to
+>    main's CONTENT. **At 380, do not trust `fullPage`** (§0n.4): size the
+>    viewport to `scrollHeight` until it stops changing, then shoot, and read a
+>    tall page in slices. **Open every one and look.** Write `motion.md`. Run
+>    EVERY console spec against the build, and the whole API suite if the API
+>    changed. Then `git checkout -- design/item-review/`.
+> 7. Tick `/attempts/:attemptId` under the R3 "Console revamp" box in the same
+>    commit as the work. Commit with explicit paths, messages from a file
+>    (`git commit -F`; write long text with the Write tool: a long heredoc in
+>    this shell fails to parse and runs nothing, and there is no Python, use
+>    Node for scripted edits). Commit and push.
+> 8. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md` for the next session.**
+>    This is the LAST console route: with it green, CONSOLE-REVAMP.md is done,
+>    and the next session is the student app, `WEB-REVAMP.md` §6 route 1,
+>    `/app/stage/:id/check`. Say so, carry forward what this session learned,
+>    update the phase figures, commit and push.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
 > versus assumed, and **end your last message with the rewritten §1 prompt in
 > one fenced code block, plain text with no `> ` markers, ready to copy and
 > paste**. Then **stop**. Do not start the next route.
 
-**What the `/feedback` session learned that every later route needs:**
+**What the `/live` session learned that every later route needs:**
 
-- **A baseline red can be a race the previous run won.** `/assessments`'
-  refused-create test passed on 28 Sep and failed 5 of 5 on 29 Sep with
-  nothing changed but which fetch landed first. The fix was the page (the
-  dialog's BODY scrolls, its footer is pinned), and the test now runs both
-  orders (§0m.1). When a test clicks straight after opening, ask what could
-  still be arriving.
-- **A rebuilt page that shows its heading first breaks every spec that waited
-  for the heading.** Wait for the data (`[data-group]`, a row), never for the
-  `<h1>` (§0m.5).
-- **Group on the server, page by the group, and say both counts.** Exact
-  repeats are one key (`md5` of kind, item, route, status and folded text);
-  the cursor is `<microseconds>.<key>`, because an ISO string drops the
-  microseconds Postgres keeps and two groups can tie.
-- **One decision for many rows is one transaction with one audit row each**,
-  and a missing id means nothing is written (404). The page sends the whole
-  group's ids, even for a group of one.
-- **A fixture's second page must agree with its first.** Patched totals are
-  recomputed in one function for both pages, or "Showing N of M" contradicts
-  itself after Load older (§0h's rule).
-- **Share the guard, don't copy it.** The CSV formula guard is
-  `services/api/src/csv.ts`, used by `/audit` and `/feedback`.
-- Still true from every earlier route: show the picture early; at 1440
-  `<main>` is the scroller; read the API behind a page; a fixture uses the
-  seed's real states and never slices a patched page back to its limit; a red
-  only a full run shows is still red; a test that cannot fail is not a test;
-  `wasDenied()` counts any error, so assert the outcome; watch a denial fail
-  even when the guard already exists; the console's spacing scale is the
-  token scale; look at the picture, even when green.
-
----
+- **Measure the network, not only the page.** `/live` looked fine and fired
+  2,467 requests in 10 seconds: an effect that depended on the state its own
+  fetch set. A probe counting `page.on("request")` found it in one run. Any
+  poll schedules its next read only after the last one settles
+  (`lib/useLiveRoom.ts`).
+- **An overlay is not a route.** A fixed full-screen div over the shell leaves
+  the shell in the Tab order behind it. `<AppShell bare />` gives a route the
+  staff guard with no frame.
+- **A "not built" half must be said on the page, not only in the SPEC.** The
+  console can now start a question students cannot answer; every place that
+  offers Start says so in words.
+- **A test that gates on a word the rebuild removes starts skipping.**
+  `console-live-feedback.spec.ts` gated on "suppress"; kept as it was, it
+  would have moved the skip count. Assert the rule on every row instead.
+- **`fullPage` at 380 re-lays the page out mid-shot** (§0n.4). The PNG was
+  the right height and still missing its last line.
+- **The first draft of an RLS test can pass or fail for the harness's
+  reason.** `runAs` rolls back each call, so "end, then answer" must be one
+  `runAsSteps` transaction (§0j's `wasDenied()` note has a sibling here).
 
 ## 2. Continue — every session after the first
 
