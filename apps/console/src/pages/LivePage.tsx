@@ -1,209 +1,333 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Monitor, Users, AlertTriangle } from "lucide-react";
-import { api, type LiveSnapshot } from "@/lib/api";
-import { Badge } from "@/components/ui/badge";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Monitor } from "lucide-react";
+import type { LiveHealth, LiveOptions, LiveSession, LiveSnapshot } from "@/lib/api";
+import { api } from "@/lib/api";
+import { TYPE_LABEL } from "@/lib/items-view";
+import { clockTime, resultWords, share, whoMayAnswer } from "@/lib/live-view";
+import { useDelayed } from "@/lib/useDelayed";
+import { useLiveRoom } from "@/lib/useLiveRoom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ErrorNote } from "@/components/ui/empty";
+import { EndDialog, StartDialog } from "./live/SessionDialogs";
 
 /**
- * Lecture Mode.
+ * Lecture Mode — rebuilt 29 Sep 2026 (`design/templates/console/live/SPEC.md`).
  *
  * **NO NAMES, EVER** — `apps/console/CLAUDE.md`, and it is enforced where it
- * has to be: the API never selects a name, a student id, or a user id for this
- * view. This page could not show one if it tried, which is the only version of
- * that promise worth making.
+ * has to be: `routes/live.ts` never selects a name, a student id or a user id
+ * for this view, not even the teacher who started a question. This page could
+ * not show one if it tried, which is the only version of that promise worth
+ * making.
  *
- * **SMALL GROUPS ARE SUPPRESSED.** With four students in a room, "3 of 4 chose
- * B" plus one visible face is not anonymous. Under five active students the
- * server sends no distribution at all and this page says so plainly, rather
- * than drawing a chart that identifies people to everyone watching.
+ * **SMALL GROUPS ARE WITHHELD BY THE SERVER.** A stage's average below five
+ * students and a question's split below five answers arrive as null. The page
+ * says so in words; it never decides it.
  *
- * **IT DEGRADES QUIETLY.** `PAGE-SPECS.md` §5 calls a Supabase hiccup in front
- * of forty students the worst failure mode in the app. A failed poll keeps the
- * last good snapshot and shows a stale marker; it never blanks the projector.
+ * **ONE QUESTION AT A TIME, AND STUDENTS CANNOT ANSWER IT YET.** The instructor
+ * chose the server and console half of "push an item" (29 Sep 2026). The
+ * student half, `/app/live`, is not built, and every place a question can be
+ * started says so.
+ *
+ * The projector is its own route, `/live/present`. `?present=1` still lands
+ * there, so an old bookmark works.
  */
-
-const POLL_MS = 5000;
-
 export function LivePage() {
   const [params] = useSearchParams();
-  const present = params.get("present") === "1";
+  if (params.get("present") === "1") return <Navigate to="/live/present" replace />;
+  return <LiveControl />;
+}
 
-  const [snap, setSnap] = useState<LiveSnapshot | null>(null);
-  const [stale, setStale] = useState(false);
-  const [fatal, setFatal] = useState<string | null>(null);
+function LiveControl() {
+  const { snap, setSnap, health, error, stale, refresh } = useLiveRoom(true);
+  const [options, setOptions] = useState<LiveOptions | null>(null);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
+  const [optionsTick, setOptionsTick] = useState(0);
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
 
   useEffect(() => {
-    let live = true;
-    const tick = () => {
-      void api
-        .live()
-        .then((s) => {
-          if (!live) return;
-          setSnap(s);
-          setStale(false);
-          setFatal(null);
-        })
-        .catch((e) => {
-          if (!live) return;
-          // Keep the last good snapshot. A blank projector mid-lecture is worse
-          // than a five-second-old number.
-          if (snap) setStale(true);
-          else setFatal(e instanceof Error ? e.message : "Could not reach the server.");
-        });
-    };
-    tick();
-    const h = window.setInterval(tick, POLL_MS);
+    let alive = true;
+    setOptionsError(null);
+    api
+      .liveOptions()
+      .then((o) => alive && setOptions(o))
+      .catch((e) => alive && setOptionsError(e instanceof Error ? e.message : "The server did not answer."));
     return () => {
-      live = false;
-      clearInterval(h);
+      alive = false;
     };
-  }, [snap]);
+  }, [optionsTick]);
 
-  if (fatal && !snap) return <ErrorNote message={fatal} />;
-  if (!snap) return <p className="p-8 text-sm text-ink-muted">Reading the room…</p>;
+  const firstLoad = !snap && !error;
+  const showSkeleton = useDelayed(firstLoad, 400);
+  const slow = useDelayed(firstLoad, 3000);
 
-  const busiest = [...snap.stages].sort((a, b) => b.students - a.students).slice(0, 8);
-
-  /* --------------------------------------------------- projector view */
-  if (present) {
-    return (
-      <div className="fixed inset-0 z-dialog flex flex-col justify-center bg-surface-0 p-8">
-        {stale && (
-          <p className="absolute right-6 top-6 text-xs text-warning">Showing the last reading</p>
-        )}
-
-        <p className="mb-2 text-center text-sm uppercase tracking-[0.2em] text-accent">
-          CPE 412 · live
-        </p>
-
-        <p className="num mb-2 text-center text-[12vw] font-bold leading-none text-ink">
-          {snap.cohort}
-        </p>
-        <p className="mb-12 text-center text-2xl text-ink-muted">
-          {snap.cohort === 1 ? "person working" : "people working"}
-        </p>
-
-        {snap.suppressed ? (
-          <p className="mx-auto max-w-2xl text-center text-xl text-ink-muted">
-            Too few people for an anonymous breakdown. With fewer than {snap.minCohort} it would
-            say who did what.
-          </p>
-        ) : (
-          <div className="mx-auto w-full max-w-4xl">
-            <p className="mb-4 text-center text-lg text-ink-muted">Where the room is</p>
-            <ul className="flex flex-col gap-3">
-              {busiest.map((s) => (
-                <li key={s.stageId} className="flex items-center gap-5">
-                  <span className="num w-14 text-2xl text-ink-faint">{s.stageId}</span>
-                  <div className="h-6 flex-1 overflow-hidden rounded-full bg-surface-2">
-                    <div
-                      className="h-full rounded-full bg-accent"
-                      style={{ width: `${s.avgMastery}%` }}
-                    />
-                  </div>
-                  <span className="num w-20 text-right text-2xl">{s.avgMastery}%</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <p className="mt-12 text-center text-sm text-ink-faint">No names are shown here, ever.</p>
-      </div>
-    );
+  function started(session: LiveSession) {
+    setSnap((s) => (s ? { ...s, session } : s));
+    refresh();
+  }
+  function ended() {
+    setSnap((s) => (s ? { ...s, session: null } : s));
+    refresh();
   }
 
-  /* ------------------------------------------------------ control view */
   return (
-    <>
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
+    <div className="lv" data-ready={snap ? "" : undefined}>
+      <header className="lv-head">
+        <div className="min-w-0">
           <h1 className="mb-1 font-display text-2xl">Live</h1>
-          <p className="text-sm text-ink-muted">
-            What the room is doing, in aggregate. Refreshes every {POLL_MS / 1000} seconds.
+          <p className="max-w-2xl text-sm text-ink-muted">
+            Lecture Mode: what the room is doing, in aggregate, and one question put to it. No name is
+            loaded for this page, and nothing here says how any one student did.
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link to="/live?present=1">
-            <Monitor className="h-4 w-4" aria-hidden="true" /> Projector view
+          <Link to="/live/present" target="_blank" rel="noopener noreferrer">
+            <Monitor className="h-4 w-4" aria-hidden="true" /> Open the projector view
+            <span className="lv-faint">in a new window</span>
           </Link>
         </Button>
       </header>
 
-      {stale && (
-        <p className="mb-4 rounded-md border border-warning bg-warning-bg px-4 py-2 text-sm text-warning">
-          The last refresh did not come back. These numbers are the previous reading.
-        </p>
-      )}
-
-      <div className="mb-5 grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="pt-5">
-            <p className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-muted">
-              <Users className="h-3.5 w-3.5" aria-hidden="true" /> Working now
-            </p>
-            <p className="num text-3xl">{snap.cohort}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-xs uppercase tracking-wide text-ink-muted">Stages in play</p>
-            <p className="num text-3xl">{snap.stages.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-xs uppercase tracking-wide text-ink-muted">Anonymity</p>
-            <p className="mt-1">
-              {snap.suppressed ? (
-                <Badge tone="warning">
-                  <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" /> suppressed
-                </Badge>
-              ) : (
-                <Badge tone="success">safe to show</Badge>
-              )}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {snap.suppressed ? (
-        <p className="rounded-md border border-warning bg-warning-bg px-4 py-3 text-sm text-warning">
-          Fewer than {snap.minCohort} people are working, so no breakdown is sent. With a handful
-          of students in a room, an aggregate plus one visible face is not anonymous — and the
-          server withholds the numbers rather than this page hiding them.
-        </p>
+      {error && !snap ? (
+        <div role="alert" className="lv-alert">
+          <p className="min-w-0 flex-1 text-sm text-ink">
+            The room could not be read. <span className="text-ink-muted">{error}</span>
+          </p>
+          <Button size="sm" variant="outline" onClick={refresh}>
+            Try again
+          </Button>
+        </div>
+      ) : !snap ? (
+        showSkeleton ? <Skeleton slow={slow} /> : <div className="lv-reserve" aria-busy="true" />
       ) : (
-        <Card>
-          <CardContent className="pt-5">
-            <p className="mb-3 text-xs uppercase tracking-wide text-ink-muted">
-              Average mastery, by stage
+        <>
+          <p data-updated className="lv-faint">
+            Read at <span className="num">{clockTime(snap.at)}</span> · every 5 seconds
+          </p>
+          {stale ? (
+            <p data-stale role="status" className="lv-stale">
+              The last read did not come back. These numbers are the previous reading, from{" "}
+              <span className="num">{clockTime(snap.at)}</span>.
             </p>
-            <ul className="flex flex-col gap-2">
-              {busiest.map((s) => (
-                <li key={s.stageId} className="flex items-center gap-3">
-                  <span className="num w-8 text-xs text-ink-faint">{s.stageId}</span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-2">
-                    <div className="h-full rounded-full bg-accent" style={{ width: `${s.avgMastery}%` }} />
-                  </div>
-                  <span className="num w-12 text-right text-xs text-ink-muted">{s.avgMastery}%</span>
-                  <span className="w-20 text-right text-xs text-ink-faint">
-                    {s.students} {s.students === 1 ? "student" : "students"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+          ) : null}
 
-      <p className="mt-4 text-xs text-ink-faint">
-        No name, student ID, or user ID is ever loaded for this view — not filtered out here,
-        never fetched. A field that is not loaded cannot leak.
+          <Question
+            snap={snap}
+            options={options}
+            optionsError={optionsError}
+            onRetryOptions={() => setOptionsTick((t) => t + 1)}
+            onStart={() => setStartOpen(true)}
+            onEnd={() => setEndOpen(true)}
+          />
+          <Room snap={snap} health={health} />
+          <Stages snap={snap} />
+
+          <p className="lv-faint">
+            No name, student ID, or user ID is ever loaded for this view — not filtered out here, never
+            fetched. A field that is not loaded cannot leak.
+          </p>
+
+          {options ? (
+            <StartDialog open={startOpen} onOpenChange={setStartOpen} options={options} onStarted={started} />
+          ) : null}
+          {snap.session ? (
+            <EndDialog
+              open={endOpen}
+              onOpenChange={setEndOpen}
+              session={snap.session}
+              onEnded={ended}
+            />
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ the question */
+
+function Question({
+  snap, options, optionsError, onRetryOptions, onStart, onEnd,
+}: {
+  snap: LiveSnapshot;
+  options: LiveOptions | null;
+  optionsError: string | null;
+  onRetryOptions: () => void;
+  onStart: () => void;
+  onEnd: () => void;
+}) {
+  const s = snap.session;
+  const cannotAnswer = (
+    <p className="lv-note">
+      <strong className="font-semibold text-ink">Students cannot answer yet:</strong> the student side of
+      Lecture Mode is not built. A question started here is recorded, shown here and on the projector, and
+      written to the audit log.
+    </p>
+  );
+
+  if (!s) {
+    const noLive = options !== null && options.items.length === 0;
+    return (
+      <section data-question data-state="none" aria-labelledby="lv-q-title" className="lv-card lv-question">
+        <div className="lv-q-main">
+          <h2 id="lv-q-title" className="lv-h2">No question is running</h2>
+          <p className="text-sm text-ink-muted">
+            Put one live item to the room. Students answer it, and this page and the projector show how many
+            have, and how the class did once {snap.minCohort} have.
+          </p>
+          {cannotAnswer}
+        </div>
+        <div className="lv-q-side">
+          <Button data-question-action onClick={onStart} disabled={!options || noLive}>
+            Start a question
+          </Button>
+          {noLive ? (
+            <p className="lv-faint">
+              No item is live yet, so there is nothing to put to the room. An item reaches live on{" "}
+              <Link to="/items" className="lv-link">Items</Link>.
+            </p>
+          ) : optionsError ? (
+            <p className="lv-faint">
+              The items that could be started did not load.{" "}
+              <button type="button" className="lv-link" onClick={onRetryOptions}>Try again</button>
+            </p>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+
+  const pct = share(s.correct, s.answered);
+  return (
+    <section data-question data-state="running" aria-labelledby="lv-q-title" className="lv-card lv-question">
+      <div className="lv-q-main">
+        <h2 id="lv-q-title" className="lv-h2">
+          Question running <span className="lv-faint">since <span className="num">{clockTime(s.startedAt)}</span></span>
+        </h2>
+        <p className="lv-slug num">{s.itemSlug}</p>
+        <p className="text-sm text-ink">
+          {TYPE_LABEL[s.itemType][0]!.toUpperCase() + TYPE_LABEL[s.itemType].slice(1)} · Stage{" "}
+          <span className="num">{s.stageId}</span> · {s.stageTitle}
+        </p>
+        {s.objective ? <p className="lv-objective">{s.objective}</p> : null}
+        <p className="text-sm text-ink-muted">
+          Who may answer: <span className="text-ink">{whoMayAnswer(s.section)}</span>
+        </p>
+        {cannotAnswer}
+      </div>
+      <div className="lv-q-side">
+        <dl className="lv-figures">
+          <div data-figure="answered">
+            <dt>Answered</dt>
+            <dd className="num">{s.answered}</dd>
+          </div>
+          <div data-figure="correct">
+            <dt>Correct</dt>
+            <dd className={s.correct === null ? "lv-held" : "num"}>{s.correct === null ? "held back" : s.correct}</dd>
+          </div>
+        </dl>
+        {pct !== null ? (
+          <div className="lv-track" aria-hidden="true">
+            <div data-bar className="lv-fill" style={{ width: `${pct}%` }} />
+          </div>
+        ) : null}
+        <p className="text-sm text-ink">{resultWords(s, snap.minCohort)}</p>
+        <Button data-question-action variant="outline" onClick={onEnd}>
+          End question
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ the room */
+
+function Room({ snap, health }: { snap: LiveSnapshot; health: LiveHealth | null }) {
+  const n = (v: number | undefined) => (v === undefined ? "—" : String(v));
+  const reports = health?.reportsRecently;
+  return (
+    <section data-room aria-labelledby="lv-room-title" className="lv-card lv-room">
+      <h2 id="lv-room-title" className="lv-h2">The room, in the last 20 minutes</h2>
+      <dl className="lv-counts">
+        <div data-count="working" className="lv-count">
+          <dt>Working now</dt>
+          <dd className="num">{snap.cohort}</dd>
+          <p className="lv-faint">students with a paper started or answered</p>
+        </div>
+        <div data-count="open" className="lv-count">
+          <dt>Papers open</dt>
+          <dd className="num">{n(health?.inProgress)}</dd>
+          <p className="lv-faint">not yet handed in</p>
+        </div>
+        <div data-count="handed-in" className="lv-count">
+          <dt>Handed in</dt>
+          <dd className="num">{n(health?.submittedRecently)}</dd>
+          <p className="lv-faint">papers submitted</p>
+        </div>
+        <div data-count="reports" className="lv-count">
+          <dt>Reports</dt>
+          <dd className="num">{n(reports)}</dd>
+          {reports ? (
+            <p className="lv-faint">
+              <Link to="/feedback" className="lv-link">Read them on Feedback</Link>: a spike usually means one
+              broken item
+            </p>
+          ) : (
+            <p className="lv-faint">problems students flagged</p>
+          )}
+        </div>
+      </dl>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ the class so far */
+
+function Stages({ snap }: { snap: LiveSnapshot }) {
+  return (
+    <section aria-labelledby="lv-stages-title" className="lv-card lv-stages-card">
+      <h2 id="lv-stages-title" className="lv-h2">The class so far, by stage</h2>
+      <p className="lv-faint">
+        Each student&apos;s best stage-check mastery to date: the whole class, not only the people in the room.
+        A stage with fewer than {snap.minCohort} students shows no average, because the server does not send
+        one.
       </p>
-    </>
+      {snap.stages.length === 0 ? (
+        <p className="text-sm text-ink-muted">No student has progress on any stage yet.</p>
+      ) : (
+        <ul className="lv-stages">
+          {snap.stages.map((st) => (
+            <li key={st.stageId} data-stage-row={st.stageId} data-withheld={st.avgMastery === null ? "true" : "false"} className="lv-stage">
+              <span className="lv-stage-name">
+                <span className="num text-ink-muted">{st.stageId}</span> <span className="text-ink">{st.title}</span>
+              </span>
+              {st.avgMastery === null ? (
+                <span className="lv-held lv-stage-bar">fewer than {snap.minCohort}, not sent</span>
+              ) : (
+                <span className="lv-track lv-stage-bar" aria-hidden="true">
+                  <span data-bar className="lv-fill" style={{ width: `${st.avgMastery}%` }} />
+                </span>
+              )}
+              <span className="lv-stage-value num">{st.avgMastery === null ? "" : `${st.avgMastery}%`}</span>
+              <span className="lv-stage-n">
+                <span className="num">{st.students}</span> {st.students === 1 ? "student" : "students"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function Skeleton({ slow }: { slow: boolean }) {
+  return (
+    <div data-skeleton aria-busy="true" aria-label="Reading the room" className="lv-skeleton">
+      {/* First, not last: at 380 a sentence below the fold says nothing. */}
+      {slow ? <p className="lv-faint">Still waiting for the server. It may be waking up; this can take up to a minute.</p> : null}
+      <div className="lv-card lv-skel-question"><div className="lv-skel lv-skel-line" /><div className="lv-skel lv-skel-line is-short" /></div>
+      <div className="lv-skel-counts">{Array.from({ length: 4 }, (_, i) => <div key={i} className="lv-card lv-skel lv-skel-count" />)}</div>
+      <div className="lv-card lv-skel-rows">{Array.from({ length: 7 }, (_, i) => <div key={i} className="lv-skel lv-skel-row" />)}</div>
+    </div>
   );
 }

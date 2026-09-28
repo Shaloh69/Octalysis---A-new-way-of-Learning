@@ -700,6 +700,82 @@ stand.
 
 ---
 
+## 0n. Parked by the `/live` revamp — 29 Sep 2026
+
+Found while rebuilding `/live` (and building the server and console half of
+"push an item", the projector as `/live/present`, and the small-cell rule,
+instructor rulings of 29 Sep) and deliberately **not** fixed there. §0a to §0m
+still stand; §0e.1, §0f.1, §0g.1, §0h.2, §0j.3-7, §0k.3-4, §0l.1-4 and
+§0m.2-8 are untouched.
+
+1. **THE DEPLOYED `/live` WILL ANSWER 500 until the schema is pushed**, like
+   `/content` and `/audit` (§0j.1, §0k.1). `GET /console/live` now reads
+   `live_sessions` and `live_responses`, which `schema.sql` carries and the
+   deployed Supabase does not have. The same `db-push-supabase.mjs --reset`
+   fixes all three; no seventh file joins the apply order.
+2. **Students cannot answer a question yet, and the page says so.** The
+   student half is `/app/live` (`WEB-REVAMP.md` work, and PAGE-SPECS' "Lecture
+   Mode, student view"). What it owes, decided or open:
+   - read the open session through **the one student serializer**
+     (`services/api/src/serialize/student.ts`), never a new strip-the-key path;
+     scoped by `section_id` (null: everyone)
+   - **one variant for the room, or one per student?** Options are shuffled
+     per student today, so a shared discussion ("who chose B?") needs a
+     session seed; per-student variants keep copying hard. Instructor's call
+   - answer through the grading service into `live_responses` (the trigger
+     refuses an answer once the session has ended; first write wins, PK
+     `(session_id, user_id)`); **never a grade**, `GAME-LAYER.md` Petal 6
+   - the split shown to a student only **after** they answer, and only at
+     five answers or more (the console already withholds below five)
+   - a per-option distribution needs a canonical answer key per option, which
+     the shuffle hides; the console shows correct / not correct until then
+   - `AUDITS.md`'s "< 1.5 s fanout to 40 clients" is this half's target, and
+     the reason Realtime may come back. The local stack has no Realtime, so
+     polling is what can be tested here
+   - the timer (deferred with this half, instructor 29 Sep 2026)
+3. **The cadence test was never seen red on its COUNT.** Against the old page
+   it failed at its `[data-ready]` wait, before counting. The loop itself was
+   measured by a probe with the same counting method (2,467 reads of
+   `/console/live` in 10 s). If `useLiveRoom` is ever touched, break it on
+   purpose once (an effect depending on the snapshot) and watch
+   `console-live.spec.ts` "one read, then one per five seconds" go red.
+4. **A full-page Playwright shot at 380 can re-lay the page out mid-capture
+   and cut the last line off.** `/live`'s first `current-380.png` ended at
+   "…cannot" while the page itself measured whole (1847px, the line at 1831):
+   during `fullPage` the page re-wrapped (the Windows scrollbar leaves) and the
+   PNG kept the pre-capture height. Captured instead by sizing the viewport to
+   `scrollHeight` until it stops changing, then a plain shot. `/feedback`'s
+   380 shot was checked and is whole; the other routes' were not. A 380
+   capture whose last line looks cut is this, until the page measures cut.
+5. **`/audit`'s family filter gained "Lecture Mode".** `AuditFamily` in
+   `packages/contracts` now has `live` (`live.start`, `live.end`, each worded
+   by `audit/log.ts`). A finished route's options changed through data;
+   `console-audit.spec.ts` stayed green (in the 716).
+6. **A stage under five students still shows its COUNT** ("08 · 3 students ·
+   fewer than 5, not sent"): the average is withheld, the presence is not. If
+   the instructor wants the count withheld too, it is one line in
+   `routes/live.ts` and one assertion in `live.spec.ts`.
+7. **`live_sessions.section_id` references `sections`.** Any fixture that
+   deletes sections, users or items must clear both live tables first, with
+   their delete triggers suspended by name (`resetAll()` and
+   `db/demo-seed.sql` do; §0k.2's rule).
+8. **§0c.1 is intermittent.** This session's first `db:reset` killed the dev
+   API ("Failed to fetch" on a probe); two later resets did not, and `tsx`
+   reloaded new code into the survivor, so a second `pnpm dev:api` hit
+   EADDRINUSE. Prove the API with a staff GET after every reset, and check
+   which process owns 8090 before starting another.
+9. **Root `CLAUDE.md` still says 16 console routes** (a dated measurement of
+   25 Sep). `docs/IMPLEMENTED.md` now says 17, with `/live/present`.
+
+**Available to every route from now on:** `<AppShell bare />` (the staff
+guard with no frame, for any full-screen console view); `lib/useLiveRoom.ts`'s
+rule for any poll, **schedule the next read only after the last one settles**;
+and `_live-fixture.ts`' way of standing in for data the seed cannot hold
+honestly: real review items from `GET /console/items` offered as live ones,
+real stage titles, nothing invented.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

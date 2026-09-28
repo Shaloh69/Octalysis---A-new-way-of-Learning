@@ -600,7 +600,7 @@ that claims completion, not scheduled work. Worth raising on its own.
 | `/console/roster` | The whole page. CSV import with a **dry-run preview modal** — `PAGE-SPECS.md` §3 calls this out specifically |
 | `/console/analytics` | The whole page. The cohort mastery heatmap, which `CONSOLE-DATA-AND-TEMPLATES.md` §1 calls "the single highest-value chart on the whole console" |
 | `/console/items/:id/edit` | The whole page, including the mandatory confirm dialog whose copy is specified word-for-word |
-| `/console/live/present` | The projector view. **No names, ever** |
+| `/console/live/present` | **Built 29 Sep 2026 as `/live/present`**, its own route outside the shell's nav (`design/templates/console/live/SPEC.md`). **No names, ever** |
 | `/console/settings` | The whole page |
 
 ### No phase owns these at all — needs a P-number
@@ -891,7 +891,29 @@ thesis deliverable, and right now no phase is accountable for it.
         57 skipped, 0 failed against a build; API 588 passed; both new
         endpoints' student refusals watched failing. `SOURCE.md`, `SPEC.md`,
         `motion.md`, `current*.png` and eleven state shots per width
-  - [ ] `/live`
+  - [x] `/live` — **29 Sep 2026** (`design/templates/console/live/SPEC.md`), against
+        shadcn.io's **Session Analytics** (four counts, then labelled bars with
+        the value printed), **Awards Vote Results** for the projector and
+        **Quick Poll** for starting a question. The old page polled in a tight
+        loop (**2,467 requests in 10 seconds**, measured), its projector was an
+        overlay with the nav tabbable behind it and no exit, and it read "safe
+        to show" with nobody working. **Instructor rulings, built:** the server
+        and console half of "push an item" (`live_sessions` and
+        `live_responses`, staff-read and client-write-never, one open question,
+        an ended one frozen, answers append-only; start and end with a reason,
+        audited; a LIVE item only; the split withheld below five answers); the
+        projector as its own route `/live/present` (`<AppShell bare />`,
+        Exit and Escape, `?present=1` redirects); a stage's average withheld
+        below five students; the `/live/health` strip; "working now" by
+        activity; honest labels and stage titles. **Deferred, recorded:** the
+        student half (`/app/live`), per-option distribution, the timer,
+        Realtime. Gate: `design/specs/console-live.spec.ts`, six assertions
+        at 1440 and 380 plus the plan (50 of 62 red on the old page, the rest
+        API-only or width skips), with `console-live-feedback.spec.ts`' payload
+        tests kept and made unable to skip; every console spec 716 passed, 58
+        skipped, 0 failed against a build; API 619 passed; 12 RLS denials and
+        4 staff-only refusals watched failing. `SOURCE.md`, `SPEC.md`,
+        `motion.md`, `current*.png` and sixteen state shots per width
   - [ ] `/attempts/:attemptId` — last, and with care: the only place a key is shown
 - [ ] **Student app revamp** (`WEB-REVAMP.md`) — same, for `apps/web`, second,
       and REDONE rather than improved per root `CLAUDE.md`

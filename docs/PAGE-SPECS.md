@@ -233,6 +233,13 @@ Per-stage mastery + final score. Weighting configuration. CSV / XLSX export shap
 university's format.
 
 ### `/console/live` — Lecture Mode control
+**Built 29 Sep 2026: the server and console half** (`design/templates/console/live/SPEC.md`,
+instructor rulings). One question at a time, a LIVE item only, started and ended with a reason and
+audited; the projector is `/live/present`, its own route. **Students cannot answer yet**: the
+student half (`/app/live`) is not built, so nothing writes `live_responses`. Still polled every 5
+seconds, not Realtime (the local stack has none; the < 1.5 s fanout target belongs to the student
+half). Deferred, recorded there: the student half, a per-option distribution, the timer.
+
 Push an item to all connected students. Live aggregate distribution via Supabase Realtime.
 Separate **projector view** at `/console/live/present` — large type, high contrast, **no names**.
 Timer for collective timed challenges (framed as a class effort, not individual pressure).

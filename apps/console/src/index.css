@@ -2422,3 +2422,207 @@
   .fb-skel-row > .fb-skel { height: 2.25rem; }
   .fb-skel-row > .fb-skel:first-child { height: 1rem; }
 }
+
+/*
+ * ------------------------------------------------------------ /live and /live/present
+ *
+ * `design/templates/console/live/SPEC.md`: shadcn.io's Session Analytics for
+ * the control view (four counts in a row, then labelled bars with the value
+ * printed), Awards Vote Results for the projector (a total at the top, one bar
+ * per row with its number). The control view lays out on its OWN width
+ * (container queries on `.lv`): the question's figures beside its words at
+ * 44rem and up, four counts in a row at 40rem, a stage row on one line at
+ * 30rem. Nothing scrolls sideways. Text is `--ink` or `--ink-muted`, never
+ * `--ink-faint`: a projector washes contrast out.
+ */
+@layer components {
+  .lv { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-4); }
+  .lv-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+  .lv-head a { flex-wrap: wrap; height: auto; min-height: var(--control-h-md); padding-block: var(--space-1); }
+  .lv-faint { font-size: var(--text-xs); line-height: var(--lh-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .lv-card {
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    padding: var(--space-4);
+    min-width: 0;
+  }
+  .lv-h2 { font-size: var(--text-base); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+  .lv-link {
+    color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent);
+    text-underline-offset: 2px; background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  }
+  .lv-alert {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3);
+    border: var(--border-hair) solid var(--danger); border-radius: var(--radius-lg);
+    background: var(--danger-bg); padding: var(--space-3) var(--space-4);
+  }
+  .lv-stale {
+    border: var(--border-hair) solid var(--warning); border-radius: var(--radius-md);
+    background: var(--warning-bg); color: var(--ink); padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+  }
+  .lv-reserve { min-height: 40rem; }
+
+  /* ---- the question ---- */
+  .lv-question { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+  .lv-q-main { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .lv-q-side { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); min-width: 0; }
+  .lv-note {
+    font-size: var(--text-sm); color: var(--ink-muted);
+    border-left: var(--border-thick) solid var(--line-strong); padding-left: var(--space-3);
+  }
+  .lv-slug { font-size: var(--text-lg); color: var(--ink); overflow-wrap: anywhere; }
+  .lv-objective { font-size: var(--text-sm); color: var(--ink); }
+  .lv-figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); width: 100%; margin: 0; }
+  .lv-figures dt, .lv-count dt { font-size: var(--text-xs); color: var(--ink-muted); }
+  .lv-figures dd, .lv-count dd { margin: 0; font-size: var(--text-3xl); line-height: var(--lh-3xl); color: var(--ink); }
+  .lv-figures dd.lv-held { font-size: var(--text-sm); line-height: var(--lh-sm); padding-top: var(--space-2); }
+  .lv-held { font-size: var(--text-sm); color: var(--ink-muted); }
+  .lv-track {
+    display: block; width: 100%; height: 0.5rem; overflow: hidden;
+    border-radius: var(--radius-full); background: var(--surface-2);
+  }
+  .lv-fill {
+    display: block; height: 100%; border-radius: var(--radius-full); background: var(--accent);
+    transition: width var(--dur-base) var(--ease-out);
+  }
+  @container (min-width: 44rem) {
+    .lv-question { grid-template-columns: minmax(0, 1fr) 18rem; gap: var(--space-6); }
+  }
+
+  /* ---- the room ---- */
+  .lv-room { display: flex; flex-direction: column; gap: var(--space-3); }
+  .lv-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }
+  .lv-count { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  @container (min-width: 40rem) {
+    .lv-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  /* ---- the class so far ---- */
+  .lv-stages-card { display: flex; flex-direction: column; gap: var(--space-3); }
+  .lv-stages { display: flex; flex-direction: column; }
+  .lv-stage {
+    display: grid; align-items: center; gap: var(--space-1) var(--space-3);
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name n" "bar value";
+    padding: var(--space-2) 0; border-bottom: var(--border-hair) solid var(--line);
+    font-size: var(--text-sm);
+  }
+  .lv-stage:last-child { border-bottom: 0; }
+  .lv-stage-name { grid-area: name; min-width: 0; overflow-wrap: anywhere; }
+  .lv-stage-bar { grid-area: bar; }
+  .lv-stage-value { grid-area: value; text-align: right; color: var(--ink); min-width: 3rem; }
+  .lv-stage-n { grid-area: n; text-align: right; font-size: var(--text-xs); color: var(--ink-muted); white-space: nowrap; }
+  @container (min-width: 30rem) {
+    .lv-stage {
+      grid-template-columns: minmax(0, 16rem) minmax(0, 1fr) 3.5rem 6.5rem;
+      grid-template-areas: "name bar value n";
+    }
+  }
+
+  /* ---- the Start dialog ---- */
+  .lv-start-grid { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--space-6); }
+  .lv-start-col { min-width: 0; }
+  @media (min-width: 64rem) {
+    .lv-start-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+  }
+  .lv-field { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); min-width: 0; }
+  .lv-label { font-size: var(--text-sm); font-weight: 500; color: var(--ink); }
+  .lv-pills { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  .lv-choices { display: flex; flex-direction: column; gap: var(--space-1); }
+  .lv-choice {
+    display: flex; flex-direction: column; gap: 2px; width: 100%; min-height: var(--control-h-md);
+    padding: var(--space-2) var(--space-3); text-align: left;
+    border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-md);
+    background: var(--surface-1); color: var(--ink); font-size: var(--text-sm);
+    transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  }
+  .lv-choice:hover { background: var(--surface-2); }
+  .lv-choice[aria-pressed="true"] { border-color: var(--accent); background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--accent); }
+  .lv-choice-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); min-width: 0; }
+  .lv-choice-top > .num { overflow-wrap: anywhere; min-width: 0; }
+  .lv-choice-objective { font-size: var(--text-xs); color: var(--ink-muted); }
+  @media (pointer: coarse) { .lv-choice { min-height: 44px; } }
+
+  /* ---- skeleton ---- */
+  .lv-skeleton { display: flex; flex-direction: column; gap: var(--space-4); }
+  .lv-skel { animation: octa-shimmer calc(var(--dur-base) * 6) ease-in-out infinite; background: var(--surface-2); border-radius: var(--radius-sm); }
+  .lv-skel-question { display: flex; flex-direction: column; gap: var(--space-2); min-height: 9rem; }
+  .lv-skel-line { height: 1rem; width: 40%; }
+  .lv-skel-line.is-short { width: 25%; }
+  .lv-skel-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .lv-skel-count { height: 6rem; }
+  .lv-skel-rows { display: flex; flex-direction: column; gap: var(--space-3); }
+  .lv-skel-row { height: 1.25rem; }
+  @container (min-width: 40rem) { .lv-skel-counts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+  /* ---- the projector ---- */
+  .lv-present {
+    position: relative;
+    display: flex; flex-direction: column; gap: var(--space-6);
+    min-height: 100dvh; padding: clamp(var(--space-4), 3vw, var(--space-7));
+    background: var(--surface-0); color: var(--ink);
+  }
+  .lv-p-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+  .lv-p-title { font-family: var(--font-display); font-size: var(--text-lg); color: var(--ink-muted); letter-spacing: var(--tracking-display); }
+  .lv-p-top-right { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+  .lv-p-stale {
+    font-size: var(--text-sm); color: var(--ink); background: var(--warning-bg);
+    border: var(--border-hair) solid var(--warning); border-radius: var(--radius-md); padding: var(--space-1) var(--space-3);
+  }
+  .lv-p-exit {
+    display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-h-md);
+    padding: 0 var(--space-3); border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-md);
+    color: var(--ink); font-size: var(--text-sm); text-decoration: none;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .lv-p-exit:hover { background: var(--surface-2); }
+  .lv-p-exit kbd {
+    font-size: var(--text-xs); color: var(--ink-muted);
+    border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-sm); padding: 0 var(--space-1);
+  }
+  .lv-p-body {
+    flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--space-5);
+    width: 100%; max-width: 70rem; margin-inline: auto; min-width: 0;
+  }
+  .lv-p-center { align-items: center; text-align: center; }
+  .lv-p-eyebrow { font-size: clamp(var(--text-base), 1.6vw, var(--text-xl)); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .lv-p-objective {
+    font-family: var(--font-display); font-size: clamp(var(--text-xl), 3.2vw, var(--text-4xl));
+    line-height: 1.2; color: var(--ink); overflow-wrap: anywhere;
+  }
+  .lv-p-result { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); min-width: 0; }
+  .lv-p-figure { font-size: clamp(var(--text-4xl), 16vh, calc(var(--text-4xl) * 3.5)); line-height: 1; font-weight: 700; color: var(--ink); }
+  .lv-p-unit, .lv-p-line { font-size: clamp(var(--text-lg), 2.4vw, var(--text-3xl)); line-height: 1.25; color: var(--ink-muted); overflow-wrap: anywhere; }
+  .lv-p-share { display: flex; flex-direction: column; gap: var(--space-3); }
+  .lv-p-sub { font-size: clamp(var(--text-base), 1.8vw, var(--text-xl)); color: var(--ink-muted); }
+  .lv-p-track {
+    display: block; width: 100%; height: clamp(0.75rem, 2.2vh, 1.75rem); overflow: hidden;
+    border-radius: var(--radius-full); background: var(--surface-2);
+  }
+  /* The projector's one moment: a bar grows from its baseline when a figure lands. Cut under reduced motion. */
+  .lv-p-fill {
+    display: block; height: 100%; border-radius: var(--radius-full); background: var(--accent);
+    transform-origin: left center; animation: octa-grow var(--dur-trace) var(--ease-out);
+    transition: width var(--dur-base) var(--ease-out);
+  }
+  .lv-p-stages { display: flex; flex-direction: column; gap: var(--space-3); }
+  .lv-p-stages ul { display: flex; flex-direction: column; gap: var(--space-3); }
+  .lv-p-h2 { font-family: var(--font-display); font-size: clamp(var(--text-lg), 2vw, var(--text-2xl)); color: var(--ink-muted); }
+  .lv-p-stage {
+    display: grid; align-items: center; gap: var(--space-1) var(--space-5);
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr) 5.5rem;
+    font-size: clamp(var(--text-base), 1.7vw, var(--text-2xl));
+  }
+  .lv-p-stage-name { min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
+  .lv-p-stage-name .num { color: var(--ink-muted); }
+  .lv-p-value { text-align: right; color: var(--ink); }
+  .lv-p-held { grid-column: 2 / -1; color: var(--ink-muted); }
+  .lv-p-foot { font-size: var(--text-sm); color: var(--ink-muted); text-align: center; }
+  @media (max-width: 40rem) {
+    .lv-p-stage { grid-template-columns: minmax(0, 1fr) auto; }
+    .lv-p-stage-name { grid-column: 1 / -1; }
+    .lv-p-held { grid-column: 1 / -1; }
+  }
+}

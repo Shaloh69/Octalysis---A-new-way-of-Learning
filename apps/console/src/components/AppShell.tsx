@@ -83,7 +83,12 @@ function initials(identity: Identity): string {
   return ((words[0]?.[0] ?? "") + (words[1]?.[0] ?? "")).toUpperCase() || "?";
 }
 
-export function AppShell() {
+/**
+ * `bare`: the same guard, no frame. For `/live/present` (29 Sep 2026), the
+ * projector view: it must be staff-only like every console route, and it must
+ * not carry the nav, which as an overlay it once hid but left in the Tab order.
+ */
+export function AppShell({ bare = false }: { bare?: boolean }) {
   const [identity, setIdentity] = useState<Identity | null | undefined>(undefined);
   const navigate = useNavigate();
 
@@ -171,6 +176,7 @@ export function AppShell() {
     return <ChangeCredentialsScreen identity={identity} onSignOut={() => void leave(identity)} />;
   }
 
+  if (bare) return <Outlet />;
   return <Shell identity={identity} onSignOut={() => void leave(identity)} />;
 }
 

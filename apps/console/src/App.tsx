@@ -11,6 +11,7 @@ import { ContentChapterPage } from "./pages/ContentChapterPage";
 import { ItemsPage } from "./pages/ItemsPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { LivePage } from "./pages/LivePage";
+import { LivePresentPage } from "./pages/LivePresentPage";
 import { AssessmentsPage } from "./pages/AssessmentsPage";
 import { AuditPage } from "./pages/AuditPage";
 import { SystemPage } from "./pages/SystemPage";
@@ -55,6 +56,12 @@ export function App() {
             whoever needs it is, by definition, not signed in. */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        {/* The projector: staff-only like every console route, with no frame
+            around it, so the nav is not on a screen the whole class reads. */}
+        <Route element={<AppShell bare />}>
+          <Route path="/live/present" element={<LivePresentPage />} />
+        </Route>
 
         <Route element={<AppShell />}>
           {/* Locks first: it is the page a teacher opens mid-class. */}

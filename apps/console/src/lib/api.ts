@@ -2,6 +2,7 @@ import type {
   AuditPage, Gradebook, ItemBulkStatusRequest, ItemBulkStatusResult, ItemExportRequest, ItemFile,
   ItemImportRequest, ItemImportResult,
   SystemAudit, FeedbackBulkTriage, FeedbackQueue,
+  LiveOptions, LiveSession, LiveSnapshot, LiveStartBody,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -435,14 +436,14 @@ export interface Submission {
   graderName: string | null;
 }
 
-export interface LiveSnapshot {
-  cohort: number;
-  /** True when the cohort is too small for an aggregate to stay anonymous. */
-  suppressed: boolean;
-  minCohort: number;
-  stages: Array<{ stageId: string; students: number; avgMastery: number }>;
-  spread: Array<{ ordinal: number; answered: number; correct: number }>;
-  at: string;
+/** Lecture Mode's shapes live in `@octa/contracts` (29 Sep 2026); re-exported for the pages. */
+export type { LiveOptions, LiveSession, LiveSnapshot } from "@octa/contracts";
+
+/** `GET /console/live/health`: what a teacher needs mid-lecture that is not about students. */
+export interface LiveHealth {
+  inProgress: number;
+  submittedRecently: number;
+  reportsRecently: number;
 }
 
 export interface Blueprint {
@@ -650,6 +651,18 @@ export const api = {
 
   /** Lecture Mode. Carries NO name, student id, or user id -- by construction. */
   live: () => request<LiveSnapshot>("/api/v1/console/live"),
+  liveHealth: () => request<LiveHealth>("/api/v1/console/live/health"),
+  /** Live items only, and the sections: what a question can be started with. */
+  liveOptions: () => request<LiveOptions>("/api/v1/console/live/options"),
+  /** Put one live item to the room. Staff only, reason required, audited. */
+  liveStart: (body: LiveStartBody) =>
+    request<{ session: LiveSession }>("/api/v1/console/live/sessions", { method: "POST", body: JSON.stringify(body) }),
+  /** End it. Reason required, audited; an ended question is a record. */
+  liveEnd: (id: string, reason: string) =>
+    request<{ ok: true; endedAt: string }>(`/api/v1/console/live/sessions/${encodeURIComponent(id)}/end`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
 
   assessments: () =>
     request<{ assessments: Assessment[]; blueprints: Blueprint[]; sections: Section[] }>(

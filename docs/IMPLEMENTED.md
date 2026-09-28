@@ -54,8 +54,8 @@ template pass, and most have not.
 `/` is currently `<Navigate to="/app">`. **The public marketing site does not
 exist**, and no phase owns it — `PROGRESS.md` carries this as a blocker.
 
-**`apps/console` — 16**
-`/signin` · `/` · `/locks` · `/live` · `/students` · `/students/:userId` ·
+**`apps/console` — 17**
+`/signin` · `/` · `/locks` · `/live` · `/live/present` (29 Sep 2026) · `/students` · `/students/:userId` ·
 `/attempts/:attemptId` · `/gradebook` · `/assessments` · `/items` ·
 `/submissions` · `/content` · `/content/:stageId` (the block editor, 28 Sep 2026) ·
 `/audit` · `/system` · `/feedback` · `*`
