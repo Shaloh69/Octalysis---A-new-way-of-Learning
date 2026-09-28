@@ -21,176 +21,190 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: `/app/stage/:id/check`, the first student route
+## 1. Start here — the next session: `/app/stage/:id`, the reader
 
-*Rewritten 29 Sep 2026 by the `/attempts/:attemptId` session, which rebuilt the
-LAST console route: with it, every route in `CONSOLE-REVAMP.md` §3 is through
-the gate and the parent "Console revamp" box under R3 is ticked. The student
-app is next, `WEB-REVAMP.md` §6 in order, and its first route is the attempt
-runner, because it grades. Phase at handover: **R3 live at 58 / 73 (79%)**;
-all tracks **145 done · 66 to-do (211 items, 69%)**. `pnpm phase` is the
-count, not this line.*
+*Rewritten 29 Sep 2026 by the `/app/stage/:id/check` session, which rebuilt
+the FIRST student route (the attempt runner) and gave R3's "Student app
+revamp" box one child per `WEB-REVAMP.md` §6 route. The reader is next.
+Phase at handover: **R3 live at 59 / 80 (74%)**, R4 2 / 29; all tracks
+**146 done · 72 to-do (218 items, 67%)**. `pnpm phase` is the count, not
+this line.*
 
-> Read `docs/redesign/WEB-REVAMP.md` and `docs/redesign/CONSOLE-REVAMP.md` in
-> full (the console is DONE; read it for the method and §8, the student-app
-> order), then root `CLAUDE.md`'s revamp rules, then **`docs/NEXT-SESSION.md`
-> §0a to §0o** (what the fourteen console sessions parked; §0o is the last).
-> Do not re-derive what those carry.
+> Read docs/redesign/WEB-REVAMP.md in full (§2's reader rows, §3.4-§3.5 on
+> where a biome belongs, §6 the order) and CONSOLE-REVAMP.md §2 and §5 for the
+> method, then root CLAUDE.md's revamp rules, then docs/NEXT-SESSION.md §0a to
+> §0p (§0p is the first student route's; its items 1-5 are SHELL defects every
+> student route stands on). Do not re-derive what those carry.
 >
-> Run `pnpm phase`. Show the table, say the percentage, name the live phase.
+> Run pnpm phase. Show the table, say the percentage, name the live phase.
 > Then state plainly whether Prelim-worth of data is okay to run on students,
-> checking the five conditions in `CLAUDE.md` rather than remembering them.
-> (On 29 Sep it was NOT. Locally: stages 00-04 had 112 content blocks, but all
-> 96 act-1 items sat at `review`, 0 live, so no paper can be filled and every
-> Start answers 500 (§0e.1); stage 01 was open for 0 of 21 demo students (§3a
-> decided, not built); `run_invariants()` had 0 failing and 4 warnings
-> (INV-18, 25, 27, 29); 0 of 19 planet summaries approved. The DEPLOYMENT was
-> last measured on 28 Sep: **0 content blocks for 00-04 and 0 items at all**
-> (§0h.1), and its console `/content`, `/audit` and `/live` answer 500 until
-> the schema is pushed (§0j.1, §0k.1, §0n.1).)
+> checking the five conditions in CLAUDE.md rather than remembering them.
+> (On 29 Sep it was NOT. Locally: stages 00-04 had 112 content blocks, all 96
+> act-1 items at review, 0 live, so no paper fills and every Start answers 500
+> (§0e.1); stage 01 open for 0 of 21 demo students (§3a decided, not built);
+> run_invariants() 0 failing, 4 warnings (INV-18, 25, 27, 29); 0 of 19 planet
+> summaries approved. The DEPLOYMENT, last measured 28 Sep: 0 content blocks for
+> 00-04 and 0 items at all (§0h.1); its console /content, /audit and /live
+> answer 500 until the schema is pushed (§0j.1, §0k.1, §0n.1).)
 >
-> **Confirm the console is still green before touching anything, AGAINST A
-> BUILD** (§0j.2): `pnpm --filter @octa/console build`, then
-> `npx vite preview --port 5185 --strictPort` from `apps/console` in the
-> background (rebuild AND restart it after a change), then `OCTA_WEB_URL` and
-> `OCTA_CONSOLE_URL` = `http://localhost:5185` and
-> `npx playwright test design/specs/console-*.spec.ts`. On 29 Sep that gave
-> **756 passed, 58 skipped, 0 failed** (814 tests). Read the skips with a JSON
-> reporter; they are width-specific by design, and a skip count that MOVES is
-> a finding (§0l.6). **A full run writes to the database: reset and re-demo
-> before running it again.** If anything is red, that is this session's work.
+> Confirm the last route is still green before touching anything, AGAINST
+> BUILDS (§0j.2, §0p.9). The student app: pnpm --filter @octa/web build, then
+> npx vite preview --port 5185 --strictPort from apps/web in the background
+> (rebuild AND restart it after any change), OCTA_WEB_URL and OCTA_CONSOLE_URL
+> = http://localhost:5185, and npx playwright test
+> design/specs/web-stage-check.spec.ts design/specs/attempt-runner.spec.ts. On
+> 29 Sep, with stage 07 approved locally (§0p.8), that gave 45 passed, 13
+> skipped, 0 failed; without the slice attempt-runner.spec.ts SKIPS its
+> real-API tests (§0e.2), so say which you ran. The whole web suite (every
+> design/specs/*.spec.ts but console-*) gave 231 passed, 83 skipped, 0 failed.
+> The console: build it, preview it on 5184, and run console-*.spec.ts: 755
+> passed, 58 skipped, 1 failed, a load race in console-audit's export toast that
+> passed 48 of 48 alone three times (§0p.7). Read the skips with a JSON
+> reporter; a skip count that MOVES is a finding (§0l.6). A full run writes to
+> the database: reset and re-demo before the next one. If anything is red, that
+> is this session's work.
 >
-> **THIS SESSION IS ONLY FOR `/app/stage/:id/check`**, the attempt runner in
-> `apps/web` (`CheckPage` in `apps/web/src/pages/StudentPages.tsx`, which
-> mounts `components/AttemptRunner.tsx`, 601 lines; it reads the paper from
-> `POST /api/v1/attempts` through the ONE student serializer,
-> `services/api/src/serialize/student.ts`). It grades, and hard rule 1 governs
-> it from the other side: **the key must reach neither the network nor the
-> DOM** until the paper is submitted. NOTHING ELSE: not the console, not the
-> reader or the maps, not §0e.1 (the 500 on an unfillable Start) or any other
-> parked item unless it blocks this route. Write a defect on another page into
-> `docs/NEXT-SESSION.md` and leave it. The last thing this session does is
-> rewrite this prompt for the next one (`/app/stage/:id`, the reader).
+> THIS SESSION IS ONLY FOR /app/stage/:id, the stage reader in apps/web
+> (StagePage in apps/web/src/pages/StudentPages.tsx, which mounts
+> components/StageReader.tsx, 391 lines; it reads GET /api/v1/stages/:id,
+> content_blocks RLS-denied for a locked or unpublished stage, hard rule 5: the
+> prose comes from the database and is never invented). NOTHING ELSE: not the
+> runner, not the maps, not the shell's defects in §0p.1-5 unless one blocks
+> this route, and then say so and ask before touching the shell. Write a defect
+> on another page into docs/NEXT-SESSION.md and leave it. The last thing this
+> session does is rewrite this prompt for the next one (/app/map, the flat map).
 >
-> 1. Bring the local stack up: **`docker ps` first** (Docker Desktop has
->    stopped four times; start it from its `.exe`), `pnpm db:up`, then
->    **`pnpm db:reset && node scripts/db-demo.mjs`**, `pnpm dev:api` on 8090,
->    and **`pnpm dev:token student`** for a student session (seeded student
->    232129006). The student app's dev server is for LOOKING, on **5183**
->    (5173 and 5174 belong to other projects; the API's CORS allows 5173,
->    5174, 5183, 5184 and 5185 only, `scripts/dev-api.mjs` `WEB_PORTS`, so a
->    web BUILD preview needs one of those: stop the console preview and use
->    5185, or add a port there and say so). Confirm every port is OURS (the
+> 1. Bring the local stack up: docker ps first (Docker Desktop has stopped four
+>    times; start it from its .exe), pnpm db:up, then pnpm db:reset && node
+>    scripts/db-demo.mjs, pnpm dev:api on 8090, pnpm dev:token student (seeded
+>    student 232129006). Look at the dev server on 5183; gate against the build
+>    on 5185 (5173 and 5174 belong to other projects; the API's CORS allows
+>    5173, 5174, 5183, 5184 and 5185 only). Confirm every port is OURS (the
 >    process command line and the page title). A reset CAN kill the dev API
->    (§0c.1, §0n.8): **prove it with a real GET, not `/healthz`** (§0e.7).
->    **After ANY API test run, reset and re-demo.**
-> 2. **Audit against the plan FIRST.** `PAGE-SPECS.md`
->    §`/app/stage/:id/check` (autosave, resume, one question at a time),
->    `WEB-REVAMP.md` §2's runner rows (**"the first answer is final" is said
->    nowhere**: `responses` is first-write-wins for every type; per-question
->    time, flag-for-review, resume are partial), `LESSON-PLAN-AND-LEVELS.md`
->    and `GAME-DESIGN.md` where they own the CHECK beat, and root `CLAUDE.md`'s
->    rules: an incorrect answer is never red, never a buzzer, never a shake;
->    `aria-live` on answer feedback; the Register Bar's PC is the question
->    index during an assessment (`.claude/rules/design.md`). Then compare with
->    what `AttemptRunner.tsx` does. The gap is the finding. **Plan what is
->    missing, with a recommended option and its cost, and ASK before
->    building it.** Anything that changes what a student sees or how a paper
->    is graded is the instructor's call.
-> 3. **THE HARD PART: no paper can be filled locally** (0 live items, §0e.1),
->    so the runner cannot be reached through the real API on this stack.
->    `design/specs/attempt-runner.spec.ts` already starts real attempts and
->    SKIPS when it cannot (§0e.2): check what it actually runs today before
->    believing any green. Options to weigh and put to the instructor: approve
->    a slice of act 1 LOCALLY ONLY for the session (through `/items`, then
->    reset), or a fixture in the console's pattern (`_student-detail-fixture.ts`
->    resolves real bank items through the real engine; the runner's fixture
->    must carry NO key, or it tests a shape the API never sends). The key-leak
->    test must hit the REAL API, whichever is chosen.
-> 4. **The reference.** `TEMPLATE-LINKS.md`'s runner row names **Game UI
->    Database, Dialogue/HUD** (`GAME-DESIGN.md` §4.3: one item per screen
->    under a persistent status strip, "game UI references, not SaaS quiz-app
->    patterns"). It is a lead, not a template: capture a real screen into
->    `design/templates/web/stage-check/` (`design/templates/web/` does not
->    exist yet; this route creates it) with `template.png` and `SOURCE.md`
->    (URL, date, HTTP status, what rendered). If the lead cannot be captured,
->    find a replacement BEFORE building and record why; the `/attempts`
->    session's `SOURCE.md` is a worked example of rejecting leads with reasons.
->    shadcn.io previews: click **Skip tour** (§0l.7), capture at
->    **1440×1500 and 380×1900** (§0k.7). **Open every PNG.** Write `SPEC.md`:
->    the controls and which of the four tests each passes
->    (`DESIGN-MANDATE.md` §1).
-> 5. **Specs.** Six gate assertions at 1440 and 380 (`design/specs/_gate.ts`;
->    assertion 6's positive control through `motionStarted()`), plus what the
->    approved plan owes, in `design/specs/web-stage-check.spec.ts`. **Extend,
->    never overwrite** `attempt-runner.spec.ts` (its hard-rule-1 test is the
->    most valuable one in the student suite). Check `_gate.ts`' `SURFACES` and
->    motion recorder against `apps/web`'s markup before trusting them: they
->    were written for the console. Wait for data, never for the `<h1>`
->    (§0m.5). `getByLabel(…, { exact: true })` (§0k.6). **Watch it fail
->    before the rebuild.**
-> 6. **Rebuild the page.** REDO, not improve: `apps/web` is hand-written CSS
->    over `packages/tokens`, no Tailwind, no shadcn, and **`styles.css` has no
->    base `a { }` rule** (links render browser-default purple outside
->    `.app-nav` and `.encounter`). Loading (nothing under 400ms, a skeleton
->    after, words after 3s at its TOP), a failed read with Try again, a toast
->    per action that changes server state (`apps/web` has no toast component:
->    say how this route gets one before building one), transitions per
->    `.claude/rules/design.md`. Every number, register value and computed
->    answer in mono. **An ordering item must stay answerable** (`da5831b`: it
->    once rendered as radio buttons and was graded wrong every time). 380 with
->    no sideways scroll; **a sideways scroller counts as clipping**.
-> 7. Capture `current.png`, `current-380.png` and state shots (a question, an
->    answer saved, a save that failed, submitted, resumed after reload) with a
->    script under `node --experimental-strip-types` that imports the spec's
->    fixture by `file:///` URL. **Size the viewport to the content** and, at
->    380, to `scrollHeight` until it stops changing; never trust `fullPage`
->    (§0n.4). Read tall shots in slices. **Open every one and look.** Write
->    `motion.md`. Run the whole web suite and every console spec against
+>    (§0c.1, §0n.8, and again on 29 Sep): prove it with a real GET, not
+>    /healthz (§0e.7). After ANY API test run, reset and re-demo.
+> 2. Audit against the plan FIRST. PAGE-SPECS.md §/app/stage/:id (content left;
+>    a right rail at 1440 and a bottom sheet at 380 with the objectives
+>    checklist, glossary terms, add to notebook and section progress; a
+>    full-page lock card naming the prerequisite and the current mastery; figures
+>    as mono code blocks, verbatim), WEB-REVAMP.md §2's reader rows (no control
+>    to LEAVE or FINISH a stage; no reverse travel transition; mark a block read
+>    and resume; the Bring-Up moment not visible), §1's evidence (stages 00 and
+>    01 disagree about the theme, a pixelated biome that fights the text, a
+>    clipped strip on the right edge), §0j.3 (every "## heading" in stages 01-07
+>    reads to students with its hashes; a list whose items wrap is one run-on
+>    paragraph with literal dashes; quote blocks drawn as prose; a brief nests p
+>    in p; /content's preview mirrors the reader exactly, so it shows the same
+>    defects), LESSON-PLAN-AND-LEVELS.md for the beat sequence per archetype
+>    (apps/web/CLAUDE.md: never add a beat an archetype does not declare), and
+>    BIOME-AND-LOADING-SPEC.md, which owns the biome page background and AA over
+>    it. Then compare with what StageReader.tsx does. The gap is the finding.
+>    Plan what is missing, with a recommended option and its cost, and ASK
+>    before building it. What a student sees, what marks a stage finished, and
+>    anything that touches stage_progress or a lock is the instructor's call
+>    (hard rule 4: a lock is is_stage_unlocked()'s, never the client's).
+> 3. The reference. TEMPLATE-LINKS.md's reader row names "shadcn Blocks,
+>    article/reader layout" at https://ui.shadcn.com/blocks (a content rail
+>    plus a right objectives sidebar, a docs-reader pattern). It is a lead, not
+>    a template: ui.shadcn.com/blocks had NO form block for /assessments
+>    (§0f), so check it holds a reader before trusting it. Capture a real screen
+>    into design/templates/web/stage/ with template.png and SOURCE.md (URL,
+>    date, HTTP status, what rendered). If the lead cannot be captured, find a
+>    replacement BEFORE building and record why (design/templates/web/stage-check/SOURCE.md
+>    rejected three leads with reasons: two 403s behind Cloudflare, one library
+>    with no screen of the right shape). shadcn.io previews: click Skip tour
+>    (§0l.7), capture at 1440x1500 and 380x1900 (§0k.7). Open every PNG. Write
+>    SPEC.md: the controls and which of the four tests each passes
+>    (DESIGN-MANDATE.md §1; "A Start button on a stage page" is on its list of
+>    things the rule kills: "arriving IS starting").
+> 4. Specs. Six gate assertions at 1440 and 380 (design/specs/_gate.ts;
+>    assertion 6's positive control through motionStarted()) plus what the
+>    approved plan owes, in design/specs/web-stage.spec.ts. Scope the surface
+>    checks to the route's own content, as web-stage-check.spec.ts' ROUTE does
+>    (§0p.2: the shell's nav is inside <main>). Wait for the student's seeded
+>    look (the /api/v1/cosmetics response) before measuring colour, or every
+>    colour reads mid-transition. Extend, never overwrite, arrival.spec.ts,
+>    student-states.spec.ts, r3-gate.spec.ts and biomes.spec.ts where they cover
+>    this route. Wait for data, never for the <h1> (§0m.5).
+>    getByLabel(..., { exact: true }) (§0k.6). Watch it fail before the rebuild,
+>    against the old page, and do not edit the page while that red run is going:
+>    the dev server hot-reloads and the run is then half old, half new.
+> 5. Rebuild the page. REDO, not improve: hand-written CSS over packages/tokens,
+>    no Tailwind, no shadcn. Available since 29 Sep, use them rather than
+>    building again: lib/toast.ts with components/Toaster.tsx (mounted once in
+>    App.tsx), lib/useDelayed.ts (400ms / 3s), lib/registers.ts (the Register
+>    Bar), and the rule that a route stands on its own token ground because
+>    var(--bg) is defined nowhere (§0p.1). Loading (nothing under 400ms, a
+>    skeleton after, words after 3s at its TOP), a failed read with Try again, a
+>    toast per action that changes server state, transitions per
+>    .claude/rules/design.md (the reverse travel transition, with its
+>    reduced-motion cut). Mono for every number, register value and listing,
+>    and only for those: a sentence in mono is a bug (the runner's result
+>    rendered prose keys in bold mono until its screenshot was read). The
+>    student's seeded accent can be RED (232129006's is pink-red), so never let
+>    accent carry a meaning that red would change. 380 with no sideways scroll;
+>    a sideways scroller counts as clipping.
+> 6. Capture current.png, current-380.png and state shots (a long stage read to
+>    its end, locked, loading, a failed read, the leave or finish control, and
+>    the markdown fixes on a real ## and a real wrapped list) with a script under
+>    node --experimental-strip-types that imports the spec's fixture by file:///
+>    URL (and @playwright/test from the repo's node_modules by file:/// URL:
+>    a script in the scratchpad cannot resolve the bare name). Size the viewport
+>    to the content, at 380 to scrollHeight until it stops changing; never trust
+>    fullPage (§0n.4). Read tall shots in slices. Open every one and look.
+>    Write motion.md. Run the whole web suite and every console spec against
 >    builds, and the whole API suite if the API changed. Then
->    `git checkout -- design/item-review/`.
-> 8. Tick the route in R3 (the "Student app revamp" box has no per-route
->    children yet: add them, one per `WEB-REVAMP.md` §6 route, as the console
->    box did on 25 Sep, and tick this one) in the same commit as the work.
->    Commit with explicit paths, messages from a file (`git commit -F`; write
->    long text with the Write tool: a long heredoc in this shell can fail to
->    parse, and there is no Python, use Node for scripted edits). Commit and
->    push.
-> 9. **Rewrite §1 of `docs/redesign/REVAMP-PROMPTS.md`** for the next session
->    (`/app/stage/:id`, the reader: §0j.3's raw `##` and broken lists, the
->    missing leave/finish control), carry forward what this session learned,
->    update the phase figures, commit and push.
+>    git checkout -- design/item-review/.
+> 7. pnpm typecheck and pnpm lint must be clean. pnpm scan:bundle is RED today
+>    on the CONSOLE bundle for env-var NAMES from packages/contracts (§0p.16,
+>    not values, not this route's); the student bundle must stay clean, and say
+>    what the scan printed.
+> 8. Tick /app/stage/:id under "Student app revamp" in R3 (its per-route
+>    children exist since 29 Sep) in the same commit as the work. Commit with
+>    explicit paths, messages from a file (git commit -F; write long text with
+>    the Write tool: a long heredoc in this shell fails to parse, and there is
+>    no Python; the repo mixes CRLF and LF, so a Node string replace that
+>    assumes \n silently finds nothing; use the Edit tool for CRLF files).
+>    Commit and push.
+> 9. Rewrite §1 of docs/redesign/REVAMP-PROMPTS.md for the next session
+>    (/app/map, the flat map: it is real DOM and keyboard-correct, and that must
+>    not regress), carry forward what this session learned, update the phase
+>    figures, commit and push.
 >
 > Show me the screenshots and the spec output, say which assertions you ran
-> versus assumed, and **end your last message with the rewritten §1 prompt in
-> one fenced code block, plain text with no `> ` markers, ready to copy and
-> paste**. Then **stop**. Do not start the next route.
+> versus assumed, and end your last message with the rewritten §1 prompt in one
+> fenced code block, plain text with no > markers, ready to copy and paste.
+> Then stop. Do not start the next route.
 
-**What the `/attempts/:attemptId` session learned that every later route needs:**
+**What the `/app/stage/:id/check` session learned that every later route needs:**
 
-- **"No template, deliberately" was findable in ten minutes.** A vendor's own
-  help guide carries real screenshots of the real product and answers 200
-  without a login; the figure's `src` is fetchable directly. Capture the page
-  AND the figure, and say which leads were rejected and why.
-- **A link between two pages can undo a ruling made on one of them.** The
-  record withheld the key on a live paper; its "Open paper on its own page"
-  led to a page that showed it. When a rule lives on one page, grep for every
-  route that renders the same data, and make both call ONE function
-  (`showsKey()`).
-- **A route that can be opened from a link must say what it is without the
-  page that linked to it.** `/attempts` said "Paper" over a UUID; the API
-  owed the owner and the context, not the page.
-- **A malformed id is a 404, not a 500.** A 500 says "try again" about
-  something that can never work. Validate the shape before the query.
-- **A new check can catch the harness's own furniture.** The sideways-scroller
-  check first flagged the shell's 1px `.sr-only` boxes; `_gate.ts` exempts
-  them for a reason, and so must any new check.
-- **The shell's nav is in the page at 1440.** `getByRole("link", { name:
-  /audit log/i })` matched the nav's "Audit log" at 1440 and not at 380, where
-  the nav is a closed sheet. Use the exact name.
-- **A fixture's derived number must be recomputed from what it shows** (§0h's
-  rule, again): the record's fixture says 5/8 over a paper with 4 correct
-  (§0o.2).
+- **Build a fixture from the API's own functions.** `_stage-check-fixture.ts`
+  imports `gradeResponse`, `toStudentPaper`, `toStudentVerdict` and
+  `toStudentRecorded` by their `.ts` paths (they import types only), so the
+  page is served exactly the shape the API sends, and grading in the fixture
+  is the real grader. A hand-written fixture can drift into a shape the API
+  never sends.
+- **Read the API behind a control before trusting the control.** The old
+  runner's bug was half in the API: a repeated answer was graded on the new
+  click while the first one was kept, so the page could say "Correct." over a
+  wrong mark. No UI test could have seen it; reading `recordAnswer()` did.
+- **An arrow key changes a radio.** Anything that commits on a radio's change
+  event commits whatever a keyboard user browses to. Select, then commit.
+- **apps/web is not the console.** Its shell's nav is inside `<main>`, its page
+  background is an undefined `var(--bg)`, and the student's seeded theme and
+  accent land from `/api/v1/cosmetics` AFTER first paint and ease every
+  colour: measured before that, the token gate reads mid-transition `oklab()`
+  values. Scope the gate to the route; wait for the cosmetics response.
+- **The student's accent is seeded and can be red.** A recorded wrong answer
+  wore the accent (pink-red for `232129006`) until the screenshot showed it.
+- **Mono is for machine values.** A prose answer key rendered in bold mono
+  across a whole paragraph; only the tall screenshot, read in slices, showed it.
+- **A red run against the dev server while you edit is half old page, half
+  new.** The first "watched failing" run overlapped the rewrite by a few
+  seconds; the timestamps in the JSON report said which tests were clean.
+- **The real API can be reached locally**: approve one stage's items as the
+  demo teacher, run, reset (§0p.8). Against the dev server, StrictMode doubles
+  every start and the 10-a-minute limit trips (§0p.9).
 
 ## 2. Continue — every session after the first
 
