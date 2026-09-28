@@ -476,3 +476,71 @@ export const AuditPage = z.object({
   actors: z.array(z.object({ id: z.string().nullable(), name: z.string() })),
 });
 export type AuditPage = z.infer<typeof AuditPage>;
+
+/* ============================================================
+ * System health: `run_invariants()`, live, plus the nightly record
+ * ========================================================== */
+
+/** The areas of `db/addendum-audit.sql`, in the order the page shows them. */
+export const InvariantArea = z.enum([
+  "security", "accounts", "papers", "bank", "curriculum", "content", "feedback",
+]);
+export type InvariantArea = z.infer<typeof InvariantArea>;
+
+export const INVARIANT_AREA_LABELS: Readonly<Record<InvariantArea, string>> = {
+  security: "Security",
+  accounts: "Accounts",
+  papers: "Papers and grading",
+  bank: "Item bank",
+  curriculum: "Curriculum and map",
+  content: "Content and locks",
+  feedback: "Feedback",
+};
+
+export const InvariantSeverity = z.enum(["fail", "warn", "notice"]);
+export type InvariantSeverity = z.infer<typeof InvariantSeverity>;
+
+export const InvariantResult = z.object({
+  id: z.string(),
+  /** The database function, e.g. `inv_18_bank_starvation`. */
+  name: z.string(),
+  /** As presented: `notice` only when the table the check reads is empty. */
+  severity: InvariantSeverity,
+  /** As `run_invariants()` gave it. */
+  dbSeverity: z.enum(["fail", "warn"]),
+  offendingCount: z.number().int().min(0),
+  /** The first five offending rows, every column the function returns. */
+  sample: z.array(z.record(z.string(), z.unknown())),
+  area: InvariantArea,
+  title: z.string(),
+  checks: z.string(),
+  protects: z.string(),
+  action: z.string(),
+  /** Why a check with offenders is a notice rather than its own severity. */
+  noticeReason: z.string().nullable(),
+});
+export type InvariantResult = z.infer<typeof InvariantResult>;
+
+/** One row of `audit_runs`, written nightly by pg_cron's `run_invariants_nightly()`. */
+export const InvariantRun = z.object({
+  id: z.string(),
+  startedAt: z.string(),
+  finishedAt: z.string().nullable(),
+  /** 'cron' | 'deploy' | a staff member's uuid. */
+  triggeredBy: z.string(),
+  /** Ids with offenders at `fail`, counted from the run's own stored results. */
+  failing: z.array(z.string()),
+  warning: z.array(z.string()),
+  checks: z.number().int().min(0),
+});
+export type InvariantRun = z.infer<typeof InvariantRun>;
+
+export const SystemAudit = z.object({
+  results: z.array(InvariantResult),
+  failing: z.number().int().min(0),
+  ranAt: z.string(),
+  tookMs: z.number().int().min(0),
+  /** The last 14 nightly runs, newest first. */
+  runs: z.array(InvariantRun),
+});
+export type SystemAudit = z.infer<typeof SystemAudit>;

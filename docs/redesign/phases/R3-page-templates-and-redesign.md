@@ -848,7 +848,26 @@ thesis deliverable, and right now no phase is accountable for it.
         trigger's denials and the student refusal of `/audit.csv` watched
         failing. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and six
         state shots per width
-  - [ ] `/system`
+  - [x] `/system` — **28 Sep 2026** (`design/templates/console/system/SPEC.md`),
+        against shadcn.io's **Health Checks** block (counts per state, one
+        action, a row per check with its detail opening under it), its Status
+        Page (what needs attention named first) and Shadcn UI Blocks' Component
+        Status List (a description line, an absolute time). The named lead,
+        shadcnspace, has no status view and was rejected. **No aggregate
+        verdict**: counts per state, zero included, and all 28 checks visible,
+        grouped by the schema's areas. **Instructor rulings, built:** a check is
+        a **notice only when the table it reads is empty** (the relabel had been
+        filing the Prelim's 0-of-40 live items as expected); **every check says
+        what it checks, protects and what to do**, from one API catalogue a test
+        keeps complete; the **nightly runs** (`audit_runs`) read back, read-only;
+        API health stays on `/settings`. A failing check opens on arrival; its
+        rows are a table that fits at 40rem of the page's own width and a list
+        per row below. Gate: `design/specs/console-system.spec.ts`, 58 passed +
+        2 width-specific skips (all 60 watched failing on the old page); every
+        console spec 611 passed, 55 skipped, 0 failed against a build; API 576
+        passed; the student refusal and the `audit_runs` RLS denial watched
+        failing. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and ten
+        state shots per width
   - [ ] `/feedback`
   - [ ] `/live`
   - [ ] `/attempts/:attemptId` — last, and with care: the only place a key is shown

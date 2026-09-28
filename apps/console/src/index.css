@@ -2098,3 +2098,157 @@
   .au-skel-row { height: 2.25rem; }
   .au-skel-note { margin-bottom: var(--space-2); }
 }
+
+/*
+ * ------------------------------------------------------------ /system
+ *
+ * `design/templates/console/system/SPEC.md`: shadcn.io's Health Checks for the
+ * frame (counts per state, one action, one row per check with a disclosure that
+ * opens its detail under it), its Status Page for naming what needs attention
+ * first. The page chooses on its OWN width: at 40rem and up a check is one row
+ * and a failure's sample is a table that fits; below, each stacks. A sideways
+ * scroller counts as clipping (`_gate.ts`), so nothing here scrolls sideways
+ * and nothing is truncated.
+ */
+@layer components {
+  .sy { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-5); }
+  .sy-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+  .sy-card {
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    min-width: 0;
+  }
+  .sy-faint { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .sy-sep { color: var(--ink-muted); padding: 0 var(--space-1); }
+
+  /* ---- the run ---- */
+  .sy-summary { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); }
+  .sy-runline { font-size: var(--text-sm); color: var(--ink-muted); }
+  .sy-runline time { color: var(--ink); }
+  .sy-stale { font-size: var(--text-sm); color: var(--ink); padding-left: var(--space-3); border-left: 2px solid var(--warning); }
+  .sy-counts { display: flex; flex-wrap: wrap; align-items: baseline; font-size: var(--text-base); color: var(--ink); }
+  .sy-count { white-space: nowrap; }
+
+  .sy-attention { display: flex; flex-direction: column; gap: var(--space-1); padding-top: var(--space-2); border-top: var(--border-hair) solid var(--line); }
+  .sy-attention-head { font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); }
+  .sy-attention-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); }
+  .sy-attention-link {
+    display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2);
+    font-size: var(--text-sm); color: var(--ink); text-decoration: none; border-radius: var(--radius-sm);
+  }
+  .sy-attention-title { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 2px; overflow-wrap: anywhere; }
+  .sy-attention-link:hover .sy-attention-title { text-decoration-thickness: 2px; }
+  .sy-attention-meta { color: var(--ink-muted); }
+
+  /* ---- a state: a shape and a word, never colour alone ---- */
+  .sy-mark { width: 0.875rem; height: 0.875rem; flex: none; align-self: center; }
+  .sy-mark.is-failing, .sy-state.is-failing { color: var(--danger); }
+  .sy-mark.is-warning, .sy-state.is-warning { color: var(--warning); }
+  .sy-mark.is-notice, .sy-state.is-notice { color: var(--info); }
+  .sy-mark.is-passing, .sy-state.is-passing { color: var(--ink-muted); }
+
+  /* ---- areas and checks ---- */
+  .sy-area { display: flex; flex-direction: column; gap: var(--space-2); }
+  .sy-area-head { font-family: var(--font-display); font-size: var(--text-lg); color: var(--ink); }
+  .sy-checks { margin: 0; padding: 0; list-style: none; }
+  .sy-check { border-bottom: var(--border-hair) solid var(--line); scroll-margin-top: var(--space-4); }
+  .sy-check:last-child { border-bottom: 0; }
+  .sy-check.is-open { background: var(--surface-2); }
+  .sy-row {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr) 5.5rem auto;
+    grid-template-areas: "state name found details";
+    align-items: start; gap: var(--space-1) var(--space-4);
+    padding: var(--space-2) var(--space-4);
+  }
+  .sy-state { grid-area: state; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); font-weight: 600; line-height: var(--lh-sm); }
+  .sy-name { grid-area: name; min-width: 0; }
+  .sy-title-line { font-size: var(--text-sm); line-height: var(--lh-sm); color: var(--ink); overflow-wrap: anywhere; }
+  .sy-id { color: var(--ink-muted); margin-right: var(--space-1); }
+  .sy-protects { font-size: var(--text-xs); line-height: var(--lh-sm); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .sy-found { grid-area: found; font-size: var(--text-sm); line-height: var(--lh-sm); color: var(--ink); text-align: right; white-space: nowrap; }
+  .sy-details-btn {
+    grid-area: details;
+    display: inline-flex; align-items: center; gap: var(--space-1);
+    height: var(--control-h-sm); padding: 0 var(--space-2);
+    font-size: var(--text-xs); color: var(--ink); background: none;
+    border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .sy-details-btn:hover { background: var(--surface-1); }
+  .sy-chevron { transition: rotate var(--dur-fast) var(--ease-out); }
+  .sy-chevron.is-open { rotate: 180deg; }
+
+  @container (max-width: 40rem) {
+    .sy-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: "state details" "name name" "found found";
+    }
+    .sy-found { text-align: left; }
+  }
+
+  /* ---- details ---- */
+  .sy-details {
+    display: flex; flex-direction: column; gap: var(--space-3);
+    margin: 0 var(--space-4) var(--space-3); padding: var(--space-3) var(--space-4);
+    background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+    animation: octa-rise-in var(--dur-fast) var(--ease-out);
+  }
+  .sy-fields { display: grid; gap: var(--space-2); margin: 0; font-size: var(--text-sm); }
+  .sy-field { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--space-3); min-width: 0; }
+  .sy-field dt { color: var(--ink-muted); font-size: var(--text-xs); padding-top: 2px; }
+  .sy-field dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; max-width: 72ch; }
+  @container (max-width: 40rem) { .sy-field { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+
+  .sy-sample { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .sy-sample-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-xs); line-height: var(--lh-sm); }
+  .sy-sample-table th, .sy-sample-table td { padding: var(--space-1) var(--space-2); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+  .sy-sample-table th { font-weight: 600; color: var(--ink-muted); border-bottom: var(--border-hair) solid var(--line-strong); }
+  .sy-sample-table td { color: var(--ink); border-bottom: var(--border-hair) solid var(--line); }
+  .sy-sample-table tr:last-child td { border-bottom: 0; }
+  .sy-sample-rows { display: none; margin: 0; padding: 0; list-style: none; }
+  @container (max-width: 40rem) {
+    .sy-sample-table { display: none; }
+    .sy-sample-rows { display: flex; flex-direction: column; gap: var(--space-2); }
+  }
+  .sy-sample-row { margin: 0; padding: var(--space-2); display: grid; gap: var(--space-1); font-size: var(--text-xs); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); }
+  .sy-sample-pair { display: grid; grid-template-columns: minmax(0, 7rem) minmax(0, 1fr); gap: var(--space-2); }
+  .sy-sample-pair dt { color: var(--ink-muted); overflow-wrap: anywhere; }
+  .sy-sample-pair dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+  .sy-terms { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .sy-terms .num { color: var(--ink); }
+
+  /* ---- nightly runs ---- */
+  .sy-runs-note { max-width: 72ch; }
+  .sy-runs-empty { padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--ink); }
+  .sy-runs { margin: 0; padding: 0; list-style: none; }
+  .sy-run {
+    display: grid; grid-template-columns: 12rem 7rem minmax(0, 1fr); gap: var(--space-1) var(--space-4);
+    padding: var(--space-2) var(--space-4); font-size: var(--text-sm); border-bottom: var(--border-hair) solid var(--line);
+  }
+  .sy-run:last-child { border-bottom: 0; }
+  .sy-run-when { color: var(--ink); white-space: nowrap; }
+  .sy-run-by { color: var(--ink-muted); }
+  .sy-run-found { color: var(--ink); overflow-wrap: anywhere; }
+  .sy-run-found.is-failing { color: var(--danger); }
+  @container (max-width: 40rem) {
+    .sy-run { grid-template-columns: minmax(0, 1fr) auto; }
+    .sy-run-found { grid-column: 1 / -1; }
+  }
+
+  /* ---- loading ---- */
+  .sy-reserve { min-height: 40rem; }
+  .sy-skeleton { display: flex; flex-direction: column; gap: var(--space-4); min-height: 40rem; }
+  .sy-skel { animation: octa-shimmer calc(var(--dur-base) * 6) ease-in-out infinite; background: var(--surface-2); border-radius: var(--radius-sm); }
+  .sy-skel-summary { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4); }
+  .sy-skel-line { height: 1rem; width: 50%; }
+  .sy-skel-line.is-short { width: 30%; }
+  .sy-skel-group { display: flex; flex-direction: column; gap: var(--space-2); }
+  .sy-skel-head { height: 1.25rem; width: 10rem; }
+  .sy-skel-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .sy-skel-row:last-child { border-bottom: 0; }
+  .sy-skel-state { height: 1rem; }
+  .sy-skel-text { height: 2.25rem; }
+  .sy-skel-note { margin: 0; }
+}

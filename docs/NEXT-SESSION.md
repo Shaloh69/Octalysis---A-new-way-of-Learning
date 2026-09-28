@@ -581,6 +581,63 @@ cursor, would never fetch.
 
 ---
 
+## 0l. Parked by the `/system` revamp — 28 Sep 2026
+
+Found while rebuilding `/system` (and building its catalogue, the "notice only
+when empty" rule and the nightly-run history, instructor rulings of 28 Sep) and
+deliberately **not** fixed there. §0a to §0k still stand; §0e.1, §0f.1, §0g.1,
+§0h.2, §0j.3-7 and §0k.3-4 are untouched.
+
+1. **Two other places still relabel INV-18/27/28/29 unconditionally.**
+   `run_invariants_nightly()` (`db/addendum-cron.sql`) leaves all four out of
+   `audit_runs.passed` whatever the database holds, and `scripts/db-invariants.mjs`
+   (`EXPECTED_EMPTY_DB`, what `db:reset` and `pnpm verify` print) calls them
+   "expected on an unseeded database" on a seeded one too. So the nightly would
+   record a run as passed while the Prelim cannot be filled. The API now relabels
+   only when the table a check reads is empty (`services/api/src/audit/invariants.ts`),
+   and `/system` counts a run from its stored results, never from `passed`. Aligning
+   the cron is schema work; the script is a small change. Both should call one rule.
+2. **The API test world makes INV-28 true.** `seedItemBank()` publishes graded
+   stages it gives no objectives, so with the relabel gone INV-28 fails there, and
+   `console.spec.ts`' "zero structural failures" now pins exactly that (INV-28 only,
+   every row "stage has no objectives"). If the fixture gains objectives, that test
+   must change with it; that is the test working, not breaking.
+3. **A failing check's sample columns are in jsonb's order, not the function's.**
+   `run_invariants()` builds `sample` with `jsonb_agg`, and jsonb stores keys by
+   length then bytes, so INV-18 reads `bucket, needed, available, dimension,
+   assessment_id`. Harmless; `json_agg` would keep the function's order, and it is
+   a schema change.
+4. **No console control releases a claimed roster row.** INV-06 (a claimed row
+   with no account) can only say "the claim has to be corrected by staff", because
+   `/students` offers no way to do it. If INV-06 ever fires, a teacher has nowhere
+   to go. `/students` work, or a decision that it is SQL-only.
+5. **The deployed `/system` should work without the schema push**, unlike `/content`
+   and `/audit` (§0j.1, §0k.1): its GET reads `run_invariants()`, `items`,
+   `content_blocks`, `objectives` and `audit_runs`, all in the old schema. Not
+   verified on the deployment. Whether the deployment's `octa-invariants` pg_cron
+   job exists, and so whether any nightly run will ever appear, is also unverified.
+6. **A full console run is not re-runnable on the same database.** This session's
+   second full run, straight after the first, went 3 red (two `/items` tables
+   that never loaded, one `net::ERR_NETWORK_CHANGED`, a Windows network event);
+   `console-items.spec.ts` passed 29 of 29 alone after a reset. The first run was
+   552 passed and 54 skipped, one more skip than 28 Sep's 53, and the second 53:
+   a count-then-skip somewhere moved once (§0a.2, §0j.4). **Reset and re-demo
+   between full runs**, and a skip count that moves is a finding.
+7. **shadcn.io's `/view/...` previews open a guided tour** ("Switch views, Step 1
+   of 4") whose scrim greys the whole block; every first capture answered 200 under
+   it. Click **Skip tour** before capturing (`design/templates/console/system/SOURCE.md`).
+8. **The catalogue's 28 descriptions were drafted from the SQL**, not taken from a
+   course document: they describe the database, not course content, so rule 5 does
+   not bind them. They are for the instructor to read in the screenshots, and to
+   correct in `services/api/src/audit/invariants.ts` if any says too much.
+
+**Available to every route from now on:** `_system-fixture.ts` imports a pure API
+function (`presentInvariant`) so a patched state is worded by the API, not copied
+(import it with its `.ts` extension, so a `node --experimental-strip-types`
+capture script can load the fixture too).
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

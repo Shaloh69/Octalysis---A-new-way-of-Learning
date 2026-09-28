@@ -1,6 +1,7 @@
 import type {
   AuditPage, Gradebook, ItemBulkStatusRequest, ItemBulkStatusResult, ItemExportRequest, ItemFile,
   ItemImportRequest, ItemImportResult,
+  SystemAudit,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -252,14 +253,6 @@ export interface AttemptDetail {
 }
 
 export type { AuditEntry, AuditPage } from "@octa/contracts";
-
-export interface InvariantResult {
-  id: string;
-  name: string;
-  severity: "fail" | "warn" | "notice";
-  offendingCount: number;
-  sample: unknown;
-}
 
 /** One pasted line, as the server will treat it. See routes/console.ts. */
 export interface RosterPlanRow {
@@ -596,9 +589,7 @@ export const api = {
   auditCsv: (params: URLSearchParams) => requestText(`/api/v1/console/audit.csv?${params}`),
 
   systemAudit: () =>
-    request<{ results: InvariantResult[]; failing: number; ranAt: string }>(
-      "/api/v1/console/audit/system",
-    ),
+    request<SystemAudit>("/api/v1/console/audit/system"),
 
   /** The page. The CSV below comes from the same computation, on the server. */
   gradebook: () => request<Gradebook>("/api/v1/console/gradebook"),

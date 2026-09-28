@@ -248,9 +248,16 @@ append-only trigger for every role), filterable on the server over the whole log
 about whom or what, a date range) with Load older instead of a newest-500 cap, and exportable as
 a CSV of every match.
 
+### `/console/system`
+No section here until 28 Sep 2026; `TEMPLATE-LINKS.md` row 77 was the plan. **Built 28 Sep 2026**
+(`design/templates/console/system/SPEC.md`): `run_invariants()` live, every check named with what
+it protects and what to do, counts per state and never a verdict, a failure's rows under it, a
+notice only when the table a check reads is empty, and the nightly runs read back. Read-only.
+
 ### `/console/settings`
 Section config, curriculum policy defaults (the mastery threshold for auto-unlock), notification
-prefs, API health.
+prefs, API health. **API health stays here** (instructor, 28 Sep 2026), not on `/system`; this
+route is not built.
 
 ---
 

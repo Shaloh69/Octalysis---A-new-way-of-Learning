@@ -8,7 +8,8 @@ import { loadAttempt, loadResolvedPaper } from "../repo/engine-repo.js";
 import type { Env } from "../env.js";
 import { computeGradebook, toCsv } from "../gradebook/compute.js";
 import { loadGradebookInput } from "../gradebook/load.js";
-import { AuditQuery } from "@octa/contracts";
+import { AuditQuery, type SystemAudit } from "@octa/contracts";
+import { presentInvariant, summariseRun, type InvariantRow } from "../audit/invariants.js";
 import { AUDIT_EXPORT_MAX, loadAuditExport, loadAuditPage, toAuditCsv } from "../audit/log.js";
 
 /**
@@ -790,26 +791,48 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
     const id = await identityFrom(req, env);
     requireStaff(id);
 
-    const { rows } = await app.db.query(
+    const ranAt = new Date();
+    const started = performance.now();
+    const { rows } = await app.db.query<InvariantRow>(
       "select id, name, severity, offending_count, sample from run_invariants() order by id",
     );
+    const tookMs = Math.round(performance.now() - started);
 
-    // On an unseeded database the bank-health checks legitimately have nothing
-    // to check. They are notices, not failures.
-    const EXPECTED_EMPTY = new Set(["INV-18", "INV-27", "INV-28", "INV-29"]);
-    const results = rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      severity: EXPECTED_EMPTY.has(r.id) && Number(r.offending_count) > 0 ? "notice" : r.severity,
-      offendingCount: Number(r.offending_count),
-      sample: r.sample,
-    }));
+    // A bank-health check is a notice only when the table it reads is truly
+    // empty (instructor ruling, 28 Sep 2026). Before, INV-18/27/28/29 were
+    // notices whenever they had offenders, "the Prelim has 0 of 40 live items"
+    // included. `audit/invariants.ts` holds the rule and the reasons.
+    const { rows: [e] } = await app.db.query<{ items: boolean; blocks: boolean; objectives: boolean }>(
+      `select not exists (select 1 from items)          as items,
+              not exists (select 1 from content_blocks) as blocks,
+              not exists (select 1 from objectives)     as objectives`,
+    );
+    const results = rows.map((r) =>
+      presentInvariant(r, { items: e!.items, contentBlocks: e!.blocks, objectives: e!.objectives }),
+    );
+
+    // The nightly record, written by pg_cron's run_invariants_nightly() where
+    // pg_cron exists (Supabase; never a local database). Read-only.
+    const { rows: runRows } = await app.db.query<{
+      id: string; started_at: Date; finished_at: Date | null; triggered_by: string; results: unknown;
+    }>(
+      `select id::text as id, started_at, finished_at, triggered_by, results
+         from audit_runs order by started_at desc, id desc limit 14`,
+    );
 
     return reply.send({
       results,
       failing: results.filter((r) => r.severity === "fail" && r.offendingCount > 0).length,
-      ranAt: new Date().toISOString(),
-    });
+      ranAt: ranAt.toISOString(),
+      tookMs,
+      runs: runRows.map((r) => ({
+        id: r.id,
+        startedAt: r.started_at.toISOString(),
+        finishedAt: r.finished_at ? r.finished_at.toISOString() : null,
+        triggeredBy: r.triggered_by,
+        ...summariseRun(r.results),
+      })),
+    } satisfies SystemAudit);
   });
 
   /* ----------------------------------------------------------
