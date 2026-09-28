@@ -5,7 +5,8 @@ import { buildServer } from "../src/server.js";
 import { loadEnv } from "../src/env.js";
 import { pool, closePool } from "./helpers/rls.js";
 import { seedItemBank, type BankWorld } from "./helpers/bank.js";
-import { Gradebook } from "@octa/contracts";
+import { Gradebook, SystemAudit } from "@octa/contracts";
+import { INVARIANT_CATALOGUE } from "../src/audit/invariants.js";
 
 const JWT_SECRET = "test-secret-at-least-32-characters-long-000000";
 
@@ -573,9 +574,88 @@ describe("the system audit page", () => {
     const res = await app.inject({
       method: "GET", url: "/api/v1/console/audit/system", headers: auth(teacherToken),
     });
-    const body = res.json();
+    const body = res.json() as SystemAudit;
     expect(body.results.length).toBeGreaterThanOrEqual(20);
-    expect(body.failing, JSON.stringify(body.results.filter((r: { severity: string; offendingCount: number }) => r.severity === "fail" && r.offendingCount > 0))).toBe(0);
+    // The test world publishes graded stages it gives no objectives (it seeds
+    // 07.3's and little else), so INV-28 is TRUE of it and now says so: until
+    // 28 Sep the API relabelled INV-28 a notice whenever it had offenders, which
+    // is what kept this assertion at 0. Nothing else may fail here.
+    const failing = body.results.filter((r) => r.severity === "fail" && r.offendingCount > 0);
+    expect(failing.map((r) => r.id), JSON.stringify(failing)).toEqual(["INV-28"]);
+    expect(new Set(failing[0]!.sample.map((s) => s.problem))).toEqual(new Set(["stage has no objectives"]));
+  });
+
+  /*
+   * `/system` rebuild, 28 Sep 2026 (instructor rulings): every check described
+   * from one catalogue, a notice only on an empty table, and the nightly
+   * record read back. `audit_runs` is new to the API; a student must get none
+   * of it.
+   */
+  it("a student is refused, and the refusal carries no checks and no nightly runs", async () => {
+    const res = await app.inject({
+      method: "GET", url: "/api/v1/console/audit/system", headers: auth(studentToken),
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.body).not.toContain("results");
+    expect(res.body).not.toContain("runs");
+  });
+
+  it("answers in the SystemAudit contract", async () => {
+    const res = await app.inject({
+      method: "GET", url: "/api/v1/console/audit/system", headers: auth(teacherToken),
+    });
+    const parsed = SystemAudit.safeParse(res.json());
+    expect(parsed.success, parsed.success ? "" : JSON.stringify(parsed.error.issues.slice(0, 3))).toBe(true);
+  });
+
+  it("every check run_invariants() returns is in the catalogue: none ships undescribed", async () => {
+    const { rows } = await pool.query<{ id: string }>("select id from run_invariants()");
+    const missing = rows.map((r) => r.id).filter((id) => !(id in INVARIANT_CATALOGUE));
+    expect(missing).toEqual([]);
+    expect(rows.length).toBe(Object.keys(INVARIANT_CATALOGUE).length);
+  });
+
+  it("the bank has items here, so INV-18 is never dressed as a notice", async () => {
+    const { rows } = await pool.query<{ n: string }>("select count(*) n from items");
+    expect(Number(rows[0]!.n)).toBeGreaterThan(0);
+    const res = await app.inject({
+      method: "GET", url: "/api/v1/console/audit/system", headers: auth(teacherToken),
+    });
+    const inv18 = (res.json() as SystemAudit).results.find((r) => r.id === "INV-18")!;
+    expect(inv18.severity).toBe(inv18.dbSeverity);
+    expect(inv18.noticeReason).toBeNull();
+  });
+
+  it("reads the last 14 nightly runs, newest first, counted from each run's own results", async () => {
+    const results = (failing: string[]) =>
+      JSON.stringify([
+        { id: "INV-01", name: "inv_01_rls_enabled", severity: "fail", offending_count: 0, sample: [] },
+        ...failing.map((id) => ({ id, name: id, severity: "fail", offending_count: 3, sample: [] })),
+        { id: "INV-25", name: "inv_25_content_reports_complete", severity: "warn", offending_count: 5, sample: [] },
+      ]);
+    await pool.query("delete from audit_runs");
+    try {
+      for (let d = 20; d >= 1; d--) {
+        // `passed` is true on every row on purpose: the page must not trust it (the nightly's
+        // own exclusion of INV-18/27/28/29 is unconditional, addendum-cron.sql).
+        await pool.query(
+          `insert into audit_runs (started_at, finished_at, triggered_by, results, passed)
+           values (now() - make_interval(days => $1::int), now() - make_interval(days => $1::int) + interval '2 seconds', 'cron', $2::jsonb, true)`,
+          [d, results(d === 1 ? ["INV-28"] : [])],
+        );
+      }
+      const res = await app.inject({
+        method: "GET", url: "/api/v1/console/audit/system", headers: auth(teacherToken),
+      });
+      const { runs } = res.json() as SystemAudit;
+      expect(runs.length).toBe(14);
+      const times = runs.map((r) => Date.parse(r.startedAt));
+      expect(times).toEqual([...times].sort((a, b) => b - a));
+      expect(runs[0]).toMatchObject({ triggeredBy: "cron", failing: ["INV-28"], warning: ["INV-25"], checks: 3 });
+      expect(runs[1]).toMatchObject({ failing: [], warning: ["INV-25"] });
+    } finally {
+      await pool.query("delete from audit_runs");
+    }
   });
 });
 

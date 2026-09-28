@@ -575,3 +575,45 @@ describe("the audit log is append-only, for service_role too", () => {
     expect(wasDenied(res), denialReason(res)).toBe(true);
   });
 });
+
+/*
+ * `/system` reads `audit_runs` from 28 Sep 2026: the nightly invariant record,
+ * whose samples carry student ids and item slugs. Staff only (`ar_admin`). The
+ * table existed before this and had no denial test.
+ *
+ * Watched failing: with `ar_admin` changed to `using (true)` and the database
+ * reset, the first test went red (a student read the row).
+ */
+describe("the nightly invariant record is staff-only", () => {
+  let runId: string;
+
+  beforeAll(async () => {
+    const { rows } = await setup(
+      `insert into audit_runs (finished_at, triggered_by, results, passed)
+       values (now(), 'cron', '[{"id":"INV-05","severity":"fail","offending_count":1,"sample":[{"student_id":"21-0001"}]}]', false)
+       returning id::text as id`,
+    );
+    runId = rows[0].id as string;
+  });
+
+  afterAll(async () => {
+    await setup("delete from audit_runs where id = $1::bigint", [runId]);
+  });
+
+  it("a student cannot read a nightly run", async () => {
+    const res = await runAs(studentA, "select id from audit_runs where id = $1::bigint", [runId]);
+    expect(res.error, `expected a silent RLS filter, got ${denialReason(res)}`).toBeNull();
+    expect(res.rowCount, "a student read the invariant record").toBe(0);
+  });
+
+  it("POSITIVE CONTROL: a teacher can", async () => {
+    const res = await runAs(teacher, "select id from audit_runs where id = $1::bigint", [runId]);
+    expect(res.error).toBeNull();
+    expect(res.rowCount).toBe(1);
+  });
+
+  it("a teacher cannot write one: the record is the scheduler's", async () => {
+    const res = await runAs(teacher, "insert into audit_runs (triggered_by) values ('forged') returning id");
+    expect(wasDenied(res), denialReason(res)).toBe(true);
+  });
+});
