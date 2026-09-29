@@ -1,0 +1,112 @@
+/* ============================================================
+   /app/progress — Starfield's character menu (WEB-REMAKE.md §8 row 7)
+   The depth emblem and the survey, then the 21 cells as three panels
+   of labelled meters. Every meter prints its number.
+   ============================================================ */
+
+.prog { display: grid; gap: var(--space-5); min-width: 0; }
+.prog-head { display: grid; gap: var(--space-1); }
+.prog-title {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-3xl);
+  line-height: var(--lh-3xl);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+}
+.prog-sub { margin: 0; color: var(--ink-muted); }
+
+.prog-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--ink);
+  background: var(--surface-1);
+  border-left: var(--border-thick) solid var(--accent);
+}
+
+/* ---- the hub: the depth emblem and the survey ---- */
+.prog-hub {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+@media (min-width: 760px) {
+  .prog-hub { grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr); }
+}
+
+.prog-depth { margin: 0; display: grid; justify-items: center; gap: var(--space-3); text-align: center; }
+.prog-rings { width: min(15rem, 70vw); height: auto; }
+.prog-rings circle { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.prog-rings circle.is-reached { stroke: var(--frame-corner); stroke-width: 3; }
+.prog-rings .prog-core { fill: var(--accent); stroke: none; }
+.prog-depth-caption { display: grid; gap: var(--space-1); }
+.prog-depth-label {
+  font-family: var(--font-hud);
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+}
+.prog-depth-name { color: var(--ink); }
+.prog-depth-note { font-size: var(--text-sm); color: var(--ink-muted); max-width: 22rem; }
+
+/* ---- meters: Starfield's, a label, its number, a thin rule of fill ---- */
+.prog-meters { display: grid; gap: var(--space-3); margin: 0; padding: var(--space-4); list-style: none; }
+.prog-meter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "label value" "track track";
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+.prog-meter-label {
+  grid-area: label;
+  min-width: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.prog-meter-label .mono { color: var(--ink-muted); letter-spacing: 0; }
+.prog-meter-value { grid-area: value; font-size: var(--text-sm); color: var(--ink); }
+.prog-meter-track { grid-area: track; display: block; height: 4px; background: var(--meter-track); }
+.prog-meter-track > span { display: block; height: 100%; background: var(--meter-fill); }
+/* A cell no objective reaches: shown, and honestly empty. */
+.prog-meter.is-none .prog-meter-value { font-size: var(--text-xs); color: var(--ink-muted); }
+.prog-meter.is-none .prog-meter-track { background: none; border-top: var(--border-hair) dashed var(--line-strong); height: 0; }
+.prog-note { margin: 0; padding: 0 var(--space-4) var(--space-4); font-size: var(--text-sm); color: var(--ink-muted); }
+.prog-note .mono { color: var(--ink); }
+
+/* ---- the three competencies ---- */
+.prog-comps { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) {
+  .prog-comps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.prog-comp { min-width: 0; }
+.prog-meaning { margin: 0; padding: var(--space-3) var(--space-4) 0; font-size: var(--text-sm); color: var(--ink-muted); }
+
+/* ---- loading ---- */
+.prog-slow {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  max-width: 62ch;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  background: var(--info-bg);
+  border-left: var(--border-thick) solid var(--info);
+}
+.prog-skel { display: block; background: var(--surface-2); }
+.prog-skel-ring { width: 15rem; max-width: 70vw; aspect-ratio: 1; border-radius: var(--radius-full); justify-self: center; }
+.prog-skel-panel { height: 14rem; }
+.prog-skel-comp { height: 24rem; }
+
+@media (max-width: 640px) {
+  .prog-title { font-size: var(--text-2xl); line-height: var(--lh-2xl); }
+}

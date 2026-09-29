@@ -10,6 +10,7 @@ import "./styles/map.css";
 import "./styles/reader.css";
 import "./styles/runner.css";
 import "./styles/stages.css";
+import "./styles/progress.css";
 
 applyStoredAccent();
 setTokenProvider(getAccessToken);

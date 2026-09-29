@@ -2,7 +2,8 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { StarMap } from "../map/StarMap";
 import { useShellData } from "../shell/ShellData";
 import { StageReader } from "../components/StageReader";
-import { ProgressGrid } from "../components/ProgressGrid";
+import { ProgressGrid, ProgressSkeleton } from "../components/ProgressGrid";
+import { useDelayed } from "../lib/useDelayed";
 import { AttemptRunner } from "../components/AttemptRunner";
 
 /**
@@ -71,10 +72,15 @@ export function CheckPage(): JSX.Element {
 }
 
 export function ProgressPage(): JSX.Element {
-  const { grid, error, reload } = useShellData();
+  const { map, grid, error, reload } = useShellData();
+  const loading = !error && (!grid || !map);
+  const skeleton = useDelayed(loading, 400);
+  const slow = useDelayed(loading, 3000);
   if (error) return <ErrorState message={error} onRetry={() => void reload()} />;
-  if (!grid) return <MapSkeleton />;
-  return <ProgressGrid data={grid} />;
+  if (!grid || !map) {
+    return skeleton ? <ProgressSkeleton slow={slow} /> : <section className="prog" data-progress="loading" aria-busy="true" />;
+  }
+  return <ProgressGrid data={grid} nodes={map.nodes} />;
 }
 
 /* ---------------------------------------------------------------- states */
