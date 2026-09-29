@@ -76,3 +76,11 @@ export function setAccentHue(hue: number): void {
     localStorage.setItem("octa:accent-hue", String(clamped));
   } catch { /* not persistable here */ }
 }
+
+/** Back to the seeded accent: forget the choice and paint the seed's hue. */
+export function clearAccentChoice(seededHue: number): void {
+  try {
+    localStorage.removeItem("octa:accent-hue");
+  } catch { /* nothing was stored */ }
+  document.documentElement.style.setProperty("--accent-hue", String(seededHue));
+}

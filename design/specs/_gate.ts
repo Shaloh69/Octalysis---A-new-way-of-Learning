@@ -420,6 +420,9 @@ export async function offTokenStyles(page: Page, scope = SURFACES): Promise<stri
         if (el instanceof SVGElement) continue;
         const r = el.getBoundingClientRect();
         if (r.width === 0 || r.height === 0 || srOnly(el)) continue;
+        // An accent swatch (Settings) is a preset derived in packages/tokens from its
+        // own hue: a token by derivation, and deliberately not the current one.
+        if (el.closest("[data-swatch]")) continue;
         const cls = typeof el.className === "string" ? el.className : "";
         if (PALETTE.test(cls)) out.push(`${tag(el)} uses a palette utility: ${cls.match(PALETTE)![0].trim()}`);
         if (LITERAL.test(el.getAttribute("style") ?? "")) out.push(`${tag(el)} has a literal colour inline`);

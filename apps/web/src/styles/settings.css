@@ -1,0 +1,122 @@
+/* ============================================================
+   /app/settings — the star HUD's panels (WEB-REMAKE.md §8 row 9)
+   Accent, your system, keyboard, motion. No theme picker.
+   ============================================================ */
+
+.set { display: grid; gap: var(--space-4); min-width: 0; }
+.set-head { display: grid; gap: var(--space-1); }
+.set-title {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-3xl);
+  line-height: var(--lh-3xl);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+}
+.set-sub { margin: 0; color: var(--ink-muted); }
+
+.set-grid { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 900px) {
+  .set-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .set-accent { grid-column: 1 / -1; }
+}
+.set-panel { min-width: 0; }
+.set-body { display: grid; gap: var(--space-3); padding: var(--space-4); }
+.set-note { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); max-width: 62ch; }
+
+/* ---- accent: twelve named presets ---- */
+.set-accents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.set-accent-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: var(--border-hair) solid var(--line);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.set-accent-opt:hover { background: var(--surface-3); }
+.set-accent-opt:has(input:checked) { background: var(--lit-bg); color: var(--lit-ink); border-color: var(--lit-bg); }
+.set-accent-opt:has(input:focus-visible) { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+.set-swatch { width: 1.25rem; height: 1.25rem; flex: none; border-radius: var(--radius-full); }
+.set-accent-name {
+  font-family: var(--font-hud);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+}
+
+/* ---- your system ---- */
+.set-callsign { margin: 0; font-size: var(--text-2xl); color: var(--ink); }
+
+/* ---- keyboard: a switch ---- */
+.set-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  cursor: pointer;
+}
+.set-switch-track {
+  position: relative;
+  width: 2.75rem;
+  height: 1.5rem;
+  flex: none;
+  background: var(--surface-3);
+  border: var(--border-hair) solid var(--line-strong);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.set-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.5rem - 6px);
+  height: calc(1.5rem - 6px);
+  background: var(--ink-muted);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.set-switch input:checked + .set-switch-track { background: var(--lit-bg); border-color: var(--lit-bg); }
+.set-switch input:checked + .set-switch-track::after { transform: translateX(1.25rem); background: var(--lit-ink); }
+.set-switch input:focus-visible + .set-switch-track { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+.set-switch-name {
+  font-family: var(--font-hud);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.set-switch-state { margin-left: auto; font-size: var(--text-sm); color: var(--ink-muted); }
+
+.set-keys { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); color: var(--ink); }
+.set-keys li { display: flex; align-items: center; gap: var(--space-3); }
+
+/* ---- motion ---- */
+.set-state {
+  margin: 0;
+  font-family: var(--font-hud);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  .set-title { font-size: var(--text-2xl); line-height: var(--lh-2xl); }
+  .set-accents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .set-accent-opt { gap: var(--space-2); padding: var(--space-2); }
+  .set-swatch { width: 1rem; height: 1rem; }
+  .set-accent-name { font-size: var(--text-xs); }
+}

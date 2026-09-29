@@ -580,3 +580,13 @@
   /* A cut, never slower: no transition runs, no ambient loop moves. */
   [data-realm] *, [data-paper] * { transition: none !important; animation: none !important; }
 }
+
+/* ============================================================
+   ACCENT SWATCHES — Settings shows every preset in the star set's own
+   accent lightness and chroma, so a swatch is exactly the accent that
+   choosing it would give. Each element carries its preset's hue as
+   --swatch-hue (a number from accents.ts, never a colour).
+   ============================================================ */
+[data-realm="star"] [data-swatch] {
+  background: oklch(0.76 0.140 var(--swatch-hue));
+}

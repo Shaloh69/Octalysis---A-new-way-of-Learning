@@ -1,148 +1,187 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ACCENTS } from "@octa/tokens/accents";
-import { setAccentHue } from "../lib/session";
-import { setShortcutsOn, useShortcutsOn } from "../shell/keyHints";
+import { clearAccentChoice, hasChosen, setAccentHue } from "../lib/session";
+import { toast } from "../lib/toast";
+import { setShortcutsOn, useAllKeyHints, useShortcutsOn } from "../shell/keyHints";
 import { useCosmetics } from "../solar-system/cosmetic-seed";
 
 /**
- * Settings.
+ * `/app/settings`, remade in the star HUD's panels (WEB-REMAKE.md §8 row 9).
  *
  * `DESIGN-MANDATE.md` §1: a control exists only if pressing it changes what the
- * student knows, can do, or can see. If it only changes a number, delete it.
- * Every control here changes what they can SEE, and two of them change what
- * they can READ:
+ * student knows, can do, or can see. Two controls survive:
  *
- *   Theme        Phosphor is high-contrast and genuinely useful for low vision,
- *                not a novelty skin.
- *   Accent       A HUE, never a hex. Lightness and chroma are fixed per theme in
- *                packages/tokens, which is what holds contrast constant across
- *                every choice -- a stored hex would let a student make their own
- *                progress UI unreadable.
- *   Motion       Reads the OS setting; stated here so a student knows why the
- *                map is still rather than thinking it is broken.
+ *   Accent      A HUE, never a hex: twelve named presets, each checked for AA
+ *               in the star set and all seven biomes. Choosing one repaints
+ *               the HUD at once, which is the preview
+ *   Shortcuts   The single-key shortcuts on or off (WCAG 2.1.4); every one is
+ *               also a button
  *
- * There is no "sound" control yet because there is no sound. Shipping a slider
- * that moves a number nothing listens to is exactly what the mandate forbids.
+ * No theme picker: ruling 2 removed the variants (one star HUD, a biome per
+ * planet). Motion follows the device and is stated, not toggled. The callsign
+ * is shown, read-only.
  */
 
-function readHue(): number {
+/** The student's explicit pick, or null while the seed decides. */
+function readChoice(): number | null {
+  if (!hasChosen("accent-hue")) return null;
   try {
     const h = Number(localStorage.getItem("octa:accent-hue"));
-    return Number.isFinite(h) ? h : 45;
+    return Number.isFinite(h) ? h : null;
   } catch {
-    return 45;
+    return null;
   }
+}
+
+function useReduced(): boolean {
+  const q = "(prefers-reduced-motion: reduce)";
+  const [r, setR] = useState(() => typeof window !== "undefined" && window.matchMedia(q).matches);
+  useEffect(() => {
+    const m = window.matchMedia(q);
+    const f = () => setR(m.matches);
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, []);
+  return r;
 }
 
 export function SettingsPage(): JSX.Element {
   const shortcuts = useShortcutsOn();
-  const [hue, setHue] = useState<number>(readHue);
-
-  const reduced =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  // Read-only: the callsign is seeded server-side from student_id and is not
-  // something the student can change. Nothing here writes it back.
+  const hints = useAllKeyHints();
+  const [hue, setHue] = useState<number | null>(readChoice);
+  const reduced = useReduced();
   const { cosmetics } = useCosmetics();
 
   return (
-    <section className="settings" aria-labelledby="settings-title">
-      <p className="reader-eyebrow">Settings</p>
-      <h1 id="settings-title">How this looks</h1>
+    <section className="set" data-settings="" aria-labelledby="set-title">
+      <header className="set-head">
+        <h1 id="set-title" className="set-title">
+          Settings
+        </h1>
+        <p className="set-sub">How the star system looks and answers you. Inside a planet, the planet decides.</p>
+      </header>
 
-      {/*
-        The system callsign (SOLAR-SYSTEM-SPEC.md §3).
+      <div className="set-grid">
+        <section className="hud-panel set-panel set-accent" aria-labelledby="set-accent-title">
+          <h2 id="set-accent-title" className="hud-caption">
+            Accent
+          </h2>
+          <div className="set-body">
+            <p className="set-note">
+              Your own colour: it marks where you are and what is yours, never a right or wrong answer. Each of the
+              twelve, and your seeded hue, is checked in the star system and every biome.
+            </p>
+            <fieldset className="set-accents">
+              <legend className="sr-only">Accent colour</legend>
+              <label className="set-accent-opt" title="The hue your system was seeded with, from your student ID">
+                <input
+                  type="radio"
+                  name="accent"
+                  className="sr-only"
+                  checked={hue === null}
+                  onChange={() => {
+                    clearAccentChoice(cosmetics.accentHue);
+                    setHue(null);
+                    toast.success("Accent set back to your seeded hue");
+                  }}
+                />
+                <span className="set-swatch" data-swatch="" style={{ ["--swatch-hue" as string]: cosmetics.accentHue }} aria-hidden="true" />
+                <span className="set-accent-name">Seeded</span>
+              </label>
+              {ACCENTS.map((a) => (
+                <label key={a.id} className="set-accent-opt" title={a.blurb}>
+                  <input
+                    type="radio"
+                    name="accent"
+                    className="sr-only"
+                    value={a.hue}
+                    checked={hue === a.hue}
+                    onChange={() => {
+                      setAccentHue(a.hue);
+                      setHue(a.hue);
+                      toast.success(`Accent set to ${a.name}`);
+                    }}
+                  />
+                  {/* The swatch is decorative; the NAME is the control (WCAG 1.4.1). */}
+                  <span className="set-swatch" data-swatch="" style={{ ["--swatch-hue" as string]: a.hue }} aria-hidden="true" />
+                  <span className="set-accent-name">{a.name}</span>
+                </label>
+              ))}
+            </fieldset>
+          </div>
+        </section>
 
-        Shown here and nowhere else, deliberately. It is a NAME, not an
-        identifier: the spec is explicit that it must never be usable anywhere
-        it could collide with a real one, which is why it is a word plus two hex
-        characters and a student number is nine digits — the two namespaces
-        cannot overlap.
+        <section className="hud-panel set-panel" aria-labelledby="set-system-title">
+          <h2 id="set-system-title" className="hud-caption">
+            Your system
+          </h2>
+          <div className="set-body">
+            {cosmetics.callsign ? (
+              <p className="set-callsign mono" data-callsign="">
+                {cosmetics.callsign}
+              </p>
+            ) : (
+              <p className="set-note">Your system&apos;s registry name is still loading.</p>
+            )}
+            <p className="set-note">
+              Your system&apos;s registry name, derived from your student ID, so it is yours and does not change. A name
+              only: nothing is graded on it and nothing looks you up by it.
+            </p>
+          </div>
+        </section>
 
-        It is on the settings page rather than the map because it answers "what
-        is mine" rather than "where am I", and because it is the one cosmetic a
-        student might reasonably want to look up rather than just see.
+        <section className="hud-panel set-panel" aria-labelledby="set-keys-title">
+          <h2 id="set-keys-title" className="hud-caption">
+            Keyboard
+          </h2>
+          <div className="set-body">
+            <label className="set-switch">
+              <input
+                type="checkbox"
+                className="sr-only"
+                role="switch"
+                checked={shortcuts}
+                onChange={(e) => {
+                  setShortcutsOn(e.target.checked);
+                  toast.success(e.target.checked ? "Single-key shortcuts on" : "Single-key shortcuts off");
+                }}
+              />
+              <span className="set-switch-track" aria-hidden="true" />
+              <span className="set-switch-name">Single-key shortcuts</span>
+              <span className="set-switch-state">{shortcuts ? "On" : "Off"}</span>
+            </label>
+            <p className="set-note">
+              Turn them off if they get in the way of a screen reader or a switch device. Every shortcut is also a button.
+            </p>
+            {hints.length > 0 && (
+              <ul className="set-keys" aria-label="Shortcuts on this page">
+                {hints.map((h) => (
+                  <li key={h.key}>
+                    <span className="keyhint-cap">{h.cap}</span>
+                    <span>{h.label}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
 
-        Mono, like every other machine-side value in this app.
-      */}
-      <h2>Your system</h2>
-      {cosmetics.callsign ? (
-        <p className="settings-callsign">
-          <span className="mono">{cosmetics.callsign}</span>
-          <span className="settings-note">
-            {" "}
-            — your system's registry name. Derived from your student ID, so it is
-            yours and it does not change. It is a name only: nothing is graded on
-            it and nothing looks you up by it.
-          </span>
-        </p>
-      ) : (
-        <p className="settings-note">Your system's registry name is still loading.</p>
-      )}
-
-      <h2>Accent</h2>
-      <p className="settings-note">
-        Your own colour: it marks where you are and what is yours, never a state. Twelve hues,
-        each checked in the star system and every biome, so every one stays readable.
-      </p>
-      <div className="settings-accents" role="radiogroup" aria-label="Accent colour">
-        {ACCENTS.map((a) => (
-          <label
-            key={a.id}
-            className={"settings-accent" + (hue === a.hue ? " is-on" : "")}
-            title={a.blurb}
-          >
-            <input
-              type="radio"
-              name="accent"
-              value={a.hue}
-              checked={hue === a.hue}
-              onChange={() => {
-                setAccentHue(a.hue);
-                setHue(a.hue);
-              }}
-            />
-            {/*
-             * The swatch is decorative -- the NAME is the control. A student
-             * who cannot distinguish two swatches can still pick by name, which
-             * is WCAG 1.4.1 and the reason there are names at all.
-             */}
-            <span
-              className="settings-swatch"
-              aria-hidden="true"
-              style={{ background: `oklch(0.72 0.15 ${a.hue})` }}
-            />
-            <span className="settings-accent-name">{a.name}</span>
-          </label>
-        ))}
+        <section className="hud-panel set-panel" aria-labelledby="set-motion-title">
+          <h2 id="set-motion-title" className="hud-caption">
+            Motion
+          </h2>
+          <div className="set-body">
+            <p className="set-state" data-motion={reduced ? "reduced" : "on"}>
+              {reduced ? "Reduced: your device asks for it" : "On"}
+            </p>
+            <p className="set-note">
+              {reduced
+                ? "Every animation is switched off: the map and the warps arrive finished. That is not a fault."
+                : "To turn animation off, use your device's reduce-motion setting. This app follows it, so you set it once."}
+            </p>
+          </div>
+        </section>
       </div>
-
-      <h2>Keyboard shortcuts</h2>
-      <p className="settings-note">
-        Single keys such as M for the map and F to report a problem. Turn them off if they get in the way
-        of a screen reader or a switch device; every shortcut is also a button.
-      </p>
-      <label className="settings-theme">
-        <input type="checkbox" checked={shortcuts} onChange={(e) => setShortcutsOn(e.target.checked)} />
-        <span className="settings-theme-name">Single-key shortcuts</span>
-        <span className="settings-theme-blurb">{shortcuts ? "On" : "Off"}</span>
-      </label>
-
-      <h2>Motion</h2>
-      <p className="settings-note">
-        {reduced ? (
-          <>
-            Your device asks for reduced motion, so every animation here is switched off. That is
-            not a fault — the map and the boot sequence still work, they simply arrive finished.
-          </>
-        ) : (
-          <>
-            Animation is on. To turn it off, use your device&apos;s <em>reduce motion</em> setting —
-            this app follows it, so you set it once and every app respects it.
-          </>
-        )}
-      </p>
     </section>
   );
 }
