@@ -1,0 +1,316 @@
+/* ============================================================
+   /app/stage/:id/check — the runner, remade (WEB-REMAKE.md §4)
+   The chrome is the planet's: the biome shell above and behind, and the
+   question list as a sprite SIDE BAR. The PAPER is everyone's: the
+   header, the question card, Record, every verdict and Submit sit on
+   [data-paper], one neutral set identical for every student in every
+   biome. Nothing on the paper uses the seeded accent (it differs per
+   student); the paper's own --lit tokens mark a choice and the primary
+   action, so two students comparing screens see the same exercise.
+   ============================================================ */
+
+.check { max-width: 76rem; margin: 0 auto; color: var(--ink); }
+.check h1 { font-size: var(--text-3xl); line-height: var(--lh-3xl); margin: 0 0 var(--space-3); }
+.check-eyebrow {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.check-head { margin-bottom: var(--space-5); padding-bottom: var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+.check-rule { color: var(--ink-muted); max-width: 62ch; margin: 0; }
+.check-rule strong { color: var(--ink); }
+.check-resumed {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  max-width: 62ch;
+  background: var(--info-bg);
+  color: var(--ink);
+  border-left: var(--border-thick) solid var(--info);
+  font-size: var(--text-sm);
+}
+.check-quiet { color: var(--ink-muted); font-size: var(--text-sm); margin: 0; }
+.check-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+
+/* ---- the frame: the planet's side bar, and the paper ---- */
+.check-body {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .check-body { grid-template-columns: 15rem minmax(0, 1fr); }
+  .check-palette { position: sticky; top: 6.5rem; }
+}
+
+/* The paper: a plain card, framed in its own ink, the same everywhere. */
+.check-paper,
+.check-state,
+.check-result {
+  min-width: 0;
+  padding: var(--space-6);
+  background: var(--surface-0);
+  border: var(--border-thick) solid var(--frame-shade);
+  box-shadow: var(--shadow-2);
+}
+.check-paper {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+}
+@media (min-width: 1280px) {
+  .check-paper {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    grid-template-areas: "head head" "question actions";
+    align-items: start;
+  }
+  .check-head { grid-area: head; margin-bottom: 0; }
+  .check-question { grid-area: question; }
+  .check-actions { grid-area: actions; }
+}
+
+/* ---- the question list: the planet's side bar ---- */
+.check-palette { padding: var(--space-4); }
+.check-count { font-size: var(--text-sm); color: var(--ink); margin: 0 0 var(--space-3); }
+.check-pips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, 44px); gap: var(--space-2); }
+.check-pip {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--ink);
+  border: var(--border-hair) solid var(--line-strong);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.check-pip:hover { background: var(--surface-3); }
+.check-pip.is-recorded { background: var(--surface-3); }
+/* The current question is the student's own place: the accent, and a thick edge. */
+.check-pip.is-current { border: var(--border-thick) solid var(--accent); font-weight: 700; }
+.check-pip-mark { position: absolute; top: 1px; right: 4px; font-size: var(--text-xs); line-height: 1; color: var(--ink); }
+.check-legend { font-size: var(--text-xs); color: var(--ink-muted); margin: var(--space-3) 0 0; }
+
+/* ---- one question ---- */
+.check-question { min-width: 0; animation: check-enter var(--dur-fast) var(--ease-out); }
+@keyframes check-enter { from { opacity: 0; } to { opacity: 1; } }
+.check-question-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-3); }
+.check-question-no { font-size: var(--text-sm); font-weight: 500; color: var(--ink-muted); margin: 0; }
+.check-question-no:focus { outline: none; }
+.check-question-no:focus-visible { outline: var(--border-thick) solid var(--lit-bg); outline-offset: 3px; }
+.check-worth { color: var(--ink-muted); }
+.check-flag {
+  min-height: 44px;
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  color: var(--ink);
+  border: var(--border-hair) solid var(--line-strong);
+  font-size: var(--text-sm);
+}
+.check-flag:hover { background: var(--surface-2); }
+.check-flag.is-on { background: var(--surface-3); border-color: var(--lit-bg); }
+.check-stem { font-size: var(--text-lg); line-height: var(--lh-lg); margin: 0 0 var(--space-5); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.check-options { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.check-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2) var(--space-3);
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-1);
+  color: var(--ink);
+  border: var(--border-hair) solid var(--line-strong);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.check-option:hover { background: var(--surface-2); }
+.check-option.is-chosen { border: var(--border-thick) solid var(--lit-bg); background: var(--surface-2); }
+.check-options:disabled .check-option { cursor: default; }
+.check-options:disabled .check-option:hover { background: var(--surface-1); }
+/* Recorded: the choice goes plain. A verdict is words, never a colour. */
+.check-options:disabled .check-option.is-chosen,
+.check-options:disabled .check-option.is-chosen:hover { border: var(--border-hair) solid var(--line-strong); background: var(--surface-3); }
+.check-option input { color: var(--ink); accent-color: var(--lit-bg); margin: 3px 0 0; width: 1.1rem; height: 1.1rem; flex: none; }
+.check-letter { color: var(--ink-muted); font-size: var(--text-sm); line-height: var(--lh-base); flex: none; }
+.check-option-text { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+.check-tag {
+  margin-left: auto;
+  align-self: center;
+  padding: 0 var(--space-2);
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--lit-ink);
+  background: var(--lit-bg);
+}
+.check-tag-line { font-size: var(--text-sm); color: var(--ink-muted); margin: var(--space-2) 0 0; }
+
+.check-ordering-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.check-ordering-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-1);
+  border: var(--border-hair) solid var(--line-strong);
+}
+.check-ordering-pos { color: var(--ink-muted); font-size: var(--text-sm); min-width: 1.5rem; }
+.check-ordering-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.check-ordering-moves { display: flex; gap: var(--space-1); flex: none; }
+.check-ordering-moves button {
+  width: 44px;
+  height: 44px;
+  background: var(--surface-2);
+  color: var(--ink);
+  border: var(--border-hair) solid var(--line-strong);
+}
+.check-ordering-moves button:hover:not(:disabled) { background: var(--surface-3); }
+.check-ordering-moves button:disabled { opacity: 0.4; cursor: default; }
+
+.check-entry label { display: block; font-size: var(--text-sm); color: var(--ink-muted); margin-bottom: var(--space-2); }
+.check-entry-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.check-entry input {
+  width: 14rem;
+  max-width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-lg);
+  background: var(--surface-1);
+  color: var(--ink);
+  border: var(--border-hair) solid var(--line-strong);
+}
+.check-entry input:focus-visible { outline: var(--border-thick) solid var(--lit-bg); outline-offset: 1px; }
+.check-entry input[readonly] { background: var(--surface-3); }
+.check-unit { color: var(--ink-muted); }
+
+.check-record { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-top: var(--space-5); }
+.check-failed {
+  margin-top: var(--space-5);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background: var(--warning-bg);
+  color: var(--ink);
+  border-left: var(--border-thick) solid var(--warning);
+}
+.check-failed p { margin: 0; }
+.check-verdict { margin-top: var(--space-4); min-height: 1.5rem; }
+.check-verdict:not(:empty) { border-left: var(--border-thick) solid var(--line-strong); padding-left: var(--space-3); }
+.check-verdict p { margin: 0 0 var(--space-2); }
+.check-verdict-word { font-weight: 600; }
+.check-why { color: var(--ink-muted); font-size: var(--text-sm); }
+.check-step { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-5); padding-top: var(--space-4); border-top: var(--border-hair) solid var(--line); }
+
+.check-actions { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); }
+.check-actions .check-quiet { margin-bottom: var(--space-3); }
+.check-submit, .check-leave { width: 100%; }
+
+/* The paper's buttons: plain and the same for everyone, never a sprite. */
+.check-btn {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-hud);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-hud);
+  background: var(--surface-2);
+  color: var(--ink);
+  border: var(--border-hair) solid var(--line-strong);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.check-btn:hover:not(:disabled) { background: var(--surface-3); }
+.check-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.check-btn-primary { background: var(--lit-bg); color: var(--lit-ink); border-color: var(--lit-bg); }
+.check-btn-primary:hover:not(:disabled) { background: var(--lit-bg); text-decoration: underline; }
+
+/* ---- states ---- */
+.check-state { max-width: 42rem; margin: 0 auto; }
+.check-state [role="alert"] { margin: 0 0 var(--space-2); }
+.check-slow {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  max-width: 62ch;
+  background: var(--info-bg);
+  color: var(--ink);
+  border-left: var(--border-thick) solid var(--info);
+}
+.check-skeleton .skel { background: var(--surface-3); }
+.check-skel-title { height: 2.5rem; width: 40%; margin-bottom: var(--space-3); }
+.check-skel-line { height: 1rem; width: 70%; margin-bottom: var(--space-5); }
+.check-skel-body { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr); }
+.check-skel-pips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.check-skel-pip { width: 44px; height: 44px; }
+.check-skel-card { background: var(--surface-1); border: var(--border-hair) solid var(--line); padding: var(--space-5); }
+.check-skel-stem { height: 3.5rem; margin-bottom: var(--space-5); }
+.check-skel-option { height: 44px; margin-bottom: var(--space-2); }
+@media (min-width: 1024px) {
+  .check-skel-body { grid-template-columns: 15rem minmax(0, 1fr); }
+}
+
+/* ---- the one confirmation ---- */
+.check-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: color-mix(in oklab, var(--frame-shade) 72%, transparent);
+}
+.check-dialog {
+  width: 100%;
+  max-width: 30rem;
+  padding: var(--space-5);
+  color: var(--ink);
+  border: var(--border-thick) solid var(--frame-shade);
+  box-shadow: var(--shadow-2);
+  animation: check-rise var(--dur-fast) var(--ease-out);
+}
+.check-dialog h2 { font-size: var(--text-xl); margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
+.check-dialog p { margin: 0 0 var(--space-2); }
+@keyframes check-rise { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- the result ---- */
+.check-result { max-width: 52rem; margin: 0 auto; }
+.check-score { font-size: var(--text-3xl); font-weight: 700; margin: var(--space-2) 0 var(--space-5); }
+.check-score-pct { font-size: var(--text-xl); color: var(--ink-muted); font-weight: 500; }
+.check-result h2 { font-size: var(--text-xl); margin: var(--space-6) 0 var(--space-3); }
+.check-objectives { list-style: none; margin: 0 0 var(--space-5); padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.check-objectives li {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-hair) solid var(--line);
+}
+.check-obj-id { color: var(--ink-muted); font-size: var(--text-sm); }
+.check-obj-frac { font-size: var(--text-sm); white-space: nowrap; }
+.check-missed { list-style: none; padding-left: 0; margin: 0 0 var(--space-6); }
+.check-value { font-weight: 600; }
+.check-missed li { margin-bottom: var(--space-5); }
+.check-missed p { margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
+.check-missed-stem { font-weight: 500; }
+
+@media (max-width: 640px) {
+  .check h1 { font-size: var(--text-2xl); line-height: var(--lh-2xl); }
+  .check-paper, .check-state, .check-result { padding: var(--space-4); }
+  .check-option { padding: var(--space-3); }
+  .check-step .check-btn { flex: 1 1 8rem; }
+}
+
+/* The confirmation is modal: while it is open the page's main rises over the
+   shell's own bars, so the scrim dims them too and nothing behind it reads
+   as live. */
+.biome-main:has(.check-scrim) { z-index: 30; }

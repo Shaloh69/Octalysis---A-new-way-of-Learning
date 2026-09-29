@@ -558,3 +558,13 @@
 .feedback-cat-label { font-weight: 600; }
 .feedback-cat-hint { font-size: var(--text-sm); color: var(--ink-muted); }
 .feedback .button { margin-top: var(--space-3); }
+
+/* ------------------------------------------------ toasts above the bars */
+
+/* A toast never covers the shell's own bottom bars (the key hints, the
+   readout, a phone's tab bar): it lands above them, in both realms. */
+[data-realm="star"] .toaster { bottom: 4.5rem; }
+[data-realm="biome"] .toaster { bottom: 5rem; }
+@media (max-width: 899px) {
+  [data-realm="biome"] .toaster { bottom: 4.75rem; }
+}

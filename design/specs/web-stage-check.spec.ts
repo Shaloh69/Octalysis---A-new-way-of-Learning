@@ -9,10 +9,9 @@ import {
   offTokenStyles,
   recordMotion,
   recordedMotion,
-  setTheme,
-  THEMES,
   unreachableByKeyboard,
 } from "./_gate.ts";
+import { forcePlanetBiome } from "./_realm-fixture.ts";
 import {
   answerFor,
   checkUrl,
@@ -22,6 +21,7 @@ import {
   signIn,
   type PaperOptions,
   type Served,
+  STAGE,
 } from "./_stage-check-fixture.ts";
 
 /**
@@ -47,6 +47,9 @@ const wide = (t: TestInfo) => t.project.name === "desktop-1440";
  * (NEXT-SESSION.md §0p). Keyboard reachability still walks all of `main`.
  */
 const ROUTE = "[data-runner], [role=alertdialog], [data-toaster]";
+
+/** Every biome a planet can wear (WEB-REMAKE.md §3). */
+const BIOMES = ["neutral", "jungle", "desert", "arctic", "city", "cave", "ocean"] as const;
 
 let items: ResolvedItem[];
 let assessment: { id: string; title: string };
@@ -110,13 +113,16 @@ test.describe("the gate", () => {
     expect(await unreachableByKeyboard(page, "main")).toEqual([]);
   });
 
-  test("4. AA contrast, computed, on all three themes", async ({ page }) => {
-    await open(page, { recorded: TWO_RECORDED() });
-    // A wrong verdict on screen: the neutral response is text that must read.
-    await page.getByRole("button", { name: /^Question 2\b/ }).click();
-    for (const theme of THEMES) {
-      await setTheme(page, theme);
-      expect(await contrastFailures(page, ROUTE), theme).toEqual([]);
+  test("4. AA contrast, computed, in all seven biomes: the side bar and the paper", async ({ browser }, info) => {
+    for (const biome of BIOMES) {
+      const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL });
+      const p = await ctx.newPage();
+      await forcePlanetBiome(p, STAGE, biome);
+      await open(p, { recorded: TWO_RECORDED() });
+      // A wrong verdict on screen: the neutral response is text that must read.
+      await p.getByRole("button", { name: /^Question 2\b/ }).click();
+      expect(await contrastFailures(p, ROUTE), biome).toEqual([]);
+      await ctx.close();
     }
   });
 
@@ -147,6 +153,50 @@ test.describe("the gate", () => {
     const long = (await recordedMotion(calm)).filter((m) => m.ms > 1);
     expect(long, JSON.stringify(long)).toEqual([]);
     await calm.close();
+  });
+});
+
+/* ============================================= biome chrome, neutral paper */
+
+test.describe("the paper is everyone's (WEB-REMAKE.md §4)", () => {
+  /** What the paper looks like, element by element: colour, fill, edge, face. */
+  const paperLook = (p: Page) =>
+    p.locator("[data-runner=sitting] [data-paper]").evaluate((root) =>
+      [root, ...root.querySelectorAll("*")].map((e) => {
+        const cs = getComputedStyle(e);
+        return [e.tagName, cs.color, cs.backgroundColor, cs.borderTopColor, cs.fontFamily].join(" ");
+      }),
+    );
+
+  test("two biomes, one paper: every computed colour on it is identical", async ({ browser }, info) => {
+    test.skip(!wide(info), "one width");
+    const looks: string[][] = [];
+    const chrome: string[] = [];
+    for (const biome of ["jungle", "cave"]) {
+      const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL });
+      const p = await ctx.newPage();
+      await forcePlanetBiome(p, STAGE, biome);
+      await open(p);
+      await expect(p.locator("html")).toHaveAttribute("data-biome", biome);
+      looks.push(await paperLook(p));
+      chrome.push(await p.locator(".check-palette").evaluate((e) => getComputedStyle(e).borderImageSource));
+      await ctx.close();
+    }
+    expect(looks[0]!.length).toBeGreaterThan(10);
+    expect(looks[1], "the paper changed with the planet").toEqual(looks[0]);
+    // The control: the side bar around it DID change, so the comparison can fail.
+    expect(chrome[0], "the side bar is not a sprite").toMatch(/url\(/);
+    expect(chrome[1], "the side bar wore the same sprite in two biomes").not.toEqual(chrome[0]);
+  });
+
+  test("nothing on the paper is a sprite", async ({ page }) => {
+    await open(page);
+    const sprites = await page.locator("[data-runner=sitting] [data-paper]").evaluate((root) =>
+      [root, ...root.querySelectorAll("*")]
+        .filter((e) => getComputedStyle(e).borderImageSource !== "none" || /url\(/.test(getComputedStyle(e).backgroundImage))
+        .map((e) => String(e.className)),
+    );
+    expect(sprites).toEqual([]);
   });
 });
 

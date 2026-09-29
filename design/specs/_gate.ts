@@ -368,6 +368,21 @@ export async function offTokenStyles(page: Page, scope = SURFACES): Promise<stri
       probe.style.color = `var(--${t})`;
       colors.add(getComputedStyle(probe).color);
     }
+    /*
+     * apps/web's neutral paper (looks.css [data-paper], WEB-REMAKE.md §4) is
+     * its own token set, scoped to the element that carries it: a check's
+     * question card reads the paper's --ink, not the biome's. Read it back
+     * through a probe that carries the attribute. Nothing matches it in the
+     * console, where it adds only the values already read above.
+     */
+    const paper = document.createElement("div");
+    paper.setAttribute("data-paper", "");
+    document.body.appendChild(paper);
+    for (const t of COLOR_TOKENS) {
+      paper.style.color = `var(--${t})`;
+      colors.add(getComputedStyle(paper).color);
+    }
+    paper.remove();
     const fonts = new Set<string>();
     for (const t of ["font-body", "font-display", "font-mono"]) {
       probe.style.fontFamily = `var(--${t})`;

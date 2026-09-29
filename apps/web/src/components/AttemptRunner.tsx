@@ -314,7 +314,7 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
 
   if (phase === "error") {
     return (
-      <section className="check check-state" data-runner="error" aria-labelledby="check-title">
+      <section className="check check-state" data-runner="error" data-paper="" aria-labelledby="check-title">
         <p className="check-eyebrow">{title}</p>
         <h1 id="check-title">Your paper did not open</h1>
         <p role="alert">{startError}</p>
@@ -337,7 +337,7 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
 
   if (!item) {
     return (
-      <section className="check check-state" data-runner="empty" aria-labelledby="check-title">
+      <section className="check check-state" data-runner="empty" data-paper="" aria-labelledby="check-title">
         <h1 id="check-title">{title}</h1>
         <p>This paper has no questions. Tell your instructor; nothing has been recorded.</p>
         <button type="button" className="check-btn" onClick={onLeave}>
@@ -359,22 +359,14 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
 
   return (
     <section className="check" data-runner="sitting" aria-labelledby="check-title">
-      <header className="check-head">
-        <p className="check-eyebrow">Stage check</p>
-        <h1 id="check-title">{title}</h1>
-        <p className="check-rule">
-          Work each answer out, then press <strong>Record answer</strong>. Your first recorded answer to
-          each question is final.
-        </p>
-        {resumed && (
-          <p className="check-resumed" role="status">
-            Picking up where you left off. Your recorded answers are shown as you left them.
-          </p>
-        )}
-      </header>
-
       <div className="check-body">
-        <nav className="check-palette" aria-label="Questions">
+        {/*
+          The paper (WEB-REMAKE.md §4): the header, the question card, Record,
+          every verdict and Submit sit on [data-paper], ONE neutral set identical
+          for every student whatever planet surrounds it. The question list
+          beside it is chrome, so it wears the planet's sprites.
+        */}
+        <nav className="check-palette sprite-panel" aria-label="Questions">
           <p className="check-count mono" data-recorded-count="">
             {counts.done} of {items.length} recorded
           </p>
@@ -405,6 +397,21 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
             <span aria-hidden="true">✓</span> recorded · <span aria-hidden="true">⚑</span> flagged
           </p>
         </nav>
+
+        <div className="check-paper" data-paper="">
+      <header className="check-head">
+        <p className="check-eyebrow">Stage check</p>
+        <h1 id="check-title">{title}</h1>
+        <p className="check-rule">
+          Work each answer out, then press <strong>Record answer</strong>. Your first recorded answer to
+          each question is final.
+        </p>
+        {resumed && (
+          <p className="check-resumed" role="status">
+            Picking up where you left off. Your recorded answers are shown as you left them.
+          </p>
+        )}
+      </header>
 
         <article className="check-question" key={item.ordinal} aria-labelledby="check-question-no">
           <div className="check-question-head">
@@ -567,6 +574,7 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
           </button>
           <p className="check-quiet">It stays open: recorded answers are kept, and Start resumes it.</p>
         </div>
+        </div>
       </div>
 
       {confirming && (
@@ -592,9 +600,9 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
 function Loading(): JSX.Element {
   const show = useDelayed(true, 400);
   const slow = useDelayed(true, 3_000);
-  if (!show) return <section className="check" data-runner="loading" aria-busy="true" />;
+  if (!show) return <section className="check" data-runner="loading" data-paper="" aria-busy="true" />;
   return (
-    <section className="check" data-runner="loading" aria-busy="true" aria-labelledby="check-loading">
+    <section className="check check-state" data-runner="loading" data-paper="" aria-busy="true" aria-labelledby="check-loading">
       <p id="check-loading" className={slow ? "check-slow" : "sr-only"} role="status">
         {slow
           ? "Still preparing your paper. The server may be waking up, which can take up to a minute."
@@ -777,6 +785,7 @@ function ConfirmSubmit({
     <div className="check-scrim">
       <div
         className="check-dialog"
+        data-paper=""
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
@@ -851,7 +860,7 @@ function Result({
   useEffect(() => back.current?.focus(), []);
 
   return (
-    <section className="check check-result" data-runner="done" aria-labelledby="result-title">
+    <section className="check check-result" data-runner="done" data-paper="" aria-labelledby="result-title">
       <p className="check-eyebrow">Submitted</p>
       <h1 id="result-title" tabIndex={-1} ref={back}>
         {title}
