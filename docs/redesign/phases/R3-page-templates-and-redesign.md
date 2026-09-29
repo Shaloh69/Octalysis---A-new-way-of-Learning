@@ -1000,7 +1000,34 @@ thesis deliverable, and right now no phase is accountable for it.
         console spec 756 passed, 58 skipped, 0 failed; API 629 passed.
         `SOURCE.md`, `SPEC.md`, `motion.md`, and `current*.png`: thirteen
         state shots at 1440 and fourteen at 380 (the sheet), all opened
-  - [ ] `/app/map` — the flat map; its real-DOM keyboard path must not regress
+  - [x] `/app/map` — **29-30 Sep 2026** (`design/templates/web/map/SPEC.md`),
+        against **roadmap.sh's curriculum map** (a node map whose topic opens
+        a drawer in place). The named lead, beautiful-skill-tree, has no live
+        demo (404); calisthenicsskills.com has shut down; the Borderlands tree
+        (a real beautiful-skill-tree screen) has no detail panel: each recorded.
+        The old page drew **0 of the 18 edges under "every connection below is
+        a real prerequisite"**, kept every lock reason in screen-reader text,
+        warped straight into a stage on any click, said nothing about what to do
+        next, painted STATES in the accent, invited a phone "sideways" on the
+        route chosen to be flat, and put targets **15.3px apart at 380**.
+        **Instructor rulings, built:** the planet panel lands here (§3.1 via
+        §3.9: title, summary only once approved, state and `lockReason`
+        verbatim beside a disabled Enter journey, Show Stage NN, minutes and
+        levels, objectives in words; no biome and no moon mastery, no data);
+        a **"pick up where you left off" card** (the server's states choose
+        the stage, `lib/next-stage.ts`, 5 unit tests; the device adds only the
+        reader's spot); **one flat presentation** (`FlatMap.tsx`, which `/app`
+        now mounts in place; `FlatGalaxy.tsx` deleted); the 18 edges always
+        drawn. Buttons sit on their planets at a map 560px wide or more and
+        become rows below it (a container query; one DOM, one Tab stop each);
+        the selection is `?stage=NN`, so bookmarkable and Back closes it.
+        Gate: `design/specs/web-map.spec.ts`, 60 at 1440 and 380 on the real
+        API, **60 red on the old page**, the objective-order assertion watched
+        red on the build before its fix; `solar-system.spec.ts` moved to the
+        new hooks, assertions kept. Whole web suite 336 passed, 100 skipped, 0
+        failed; every console spec 756 passed, 58 skipped, 0 failed. `SOURCE.md`,
+        `SPEC.md`, `motion.md`, `current*.png` and ten state shots per width,
+        all opened
   - [ ] `/app` — the 3D map: §3 selection and zoom, §4 orbital motion
   - [ ] `/app/work` — submissions, 40% of the grade (§0g.4's return)
   - [ ] `/login`, `/claim` — first contact

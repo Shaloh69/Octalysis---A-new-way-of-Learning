@@ -54,9 +54,13 @@ it is done when it does these things.
 | **Moons unlock the next planet** | **missing**: nothing stores mastery per objective; two decisions open (§3.7) |
 | **Minigames live in moons** | **none built**; placement proposed for approval (§3.6) |
 | Orbital motion that reads as a solar system | **wrong.** §4 |
-| "What do I do next" affordance | **missing** — the page says *0 of 19 subsystems online* over an empty starfield and a lone `?` |
-| Lock reason legible on the map itself | partial — the flat map carries it, the 3D map does not |
-| Degrade in place to the flat map | **works** — keep it |
+| "What do I do next" affordance | **done on `/app/map`, 29 Sep 2026**: *Pick up where you left off* / *Next up*, the server's states choosing the stage (`lib/next-stage.ts`). `/app` still says only *N of 19 subsystems online* |
+| Lock reason legible on the map itself | **done on the flat map, 29 Sep 2026**: in each stage's name, and printed verbatim in the panel beside a disabled Enter journey. The 3D map does not yet |
+| Degrade in place to the flat map | **works**, and since 29 Sep 2026 `/app` mounts the SAME `FlatMap.tsx` as `/app/map` (instructor ruling: one flat presentation), panel and all |
+
+### `/app/map` — the flat map
+
+**Rebuilt 29-30 Sep 2026** (`design/templates/web/map/SPEC.md`), on the instructor's rulings of 29 Sep: the planet panel of §3.1 lands here (no biome and no moon mastery yet: no data); the resume card; one flat presentation for both routes; the 18 edges always drawn. Every stage a real button in curriculum order, on its planet at a map 560px wide or more, a row below it. `NEXT-SESSION.md` §0r carries what it parked.
 
 ### `/app/stage/:id` — the reader
 

@@ -76,7 +76,10 @@ async function settle(page: Page, expectCanvas = false): Promise<void> {
   // The map HEADER, not the act list. On `/app` the list now lives inside a
   // collapsed disclosure so the solar system can be the page, so waiting for it
   // to be VISIBLE would hang forever there while passing on `/app/map`.
-  await page.locator(".map-header").waitFor();
+  //
+  // `/app/map` is its own page since 29 Sep 2026 (FlatMapPage): its data
+  // state, not StageMap's header, says it has drawn.
+  await page.locator(".map-header, [data-flatmap=\"ready\"]").first().waitFor();
   if (expectCanvas) await page.locator("canvas").waitFor();
 }
 
@@ -514,7 +517,9 @@ test.describe("loading states — the backdrop moving through them", () => {
       .catch(() => false);
 
     await hit.click();
-    const enter = page.getByRole("button", { name: /enter|open|begin|start/i }).first();
+    // The planet panel (29 Sep 2026): selecting opens it, Enter journey travels.
+    // Anchored: a stage named "Not started" matched the old /start/i.
+    const enter = page.getByRole("button", { name: /^Enter journey/ }).first();
     if (await enter.isVisible().catch(() => false)) await enter.click();
 
     expect(await sawWarp, "selecting a stage jumped instead of travelling").toBe(true);

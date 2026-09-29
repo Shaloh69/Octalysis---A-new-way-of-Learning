@@ -1010,6 +1010,73 @@ A retrying `toHaveCount(0)` waited out a whole 5s load on the first draft.
 
 ---
 
+## 0r. Parked by the `/app/map` revamp — 29-30 Sep 2026
+
+The third student route (`design/templates/web/map/SPEC.md`). Found while
+rebuilding the flat map and deliberately **not** fixed there. §0a to §0q still
+stand; §0p.1-5 and §0q.1 (the shell) are untouched, and item 2 here is one more.
+
+1. **The API sends objectives in string order: 06.1, 06.10, 06.2 ….**
+   `routes/stages.ts` orders them `order by id` (line ~119, the map's list,
+   and ~216, `GET /stages/:id`), so every objective list with ten or more
+   reads `.10` second. **The reader shows it this way today** (its rail and
+   its lock preview; stages 03, 06 and others with 10+ objectives). The map
+   sorts on the page (`byObjectiveId` in `FlatMap.tsx`, asserted in
+   `web-map.spec.ts`). The fix is a natural order in the SQL (the two numeric
+   parts of the id) and an API test; then the map's sort is harmless and the
+   reader is right. API work, one session
+2. **On `/app/map` the shell's nav marks no item current.** Its Map link is
+   `NavLink to="/app" end`, which `/app/map` does not match. PAGE-SPECS wants
+   the flat map "always in the header". Shell: either Map is current on both,
+   or the nav names the flat map. `current*.png` here show it
+3. **`/app`'s own chrome around the shared map is `/app`'s work (next session).**
+   Under reduced motion, a small screen or no WebGL, `/app` now mounts
+   `FlatMap` (panel and all, `current-app-fallback*.png`) inside `StageMap`'s
+   OLD header, with its `?` first-run replay, the rotate prompt, and its two
+   links still browser-default purple ("All 19 stages, with progress and lock
+   reasons", "Show the flat map"). The 3D path still opens `PlanetHud`, a
+   second panel: the next session should make the 3D selection open
+   `FlatMap`'s panel (one sidebar, §3.1), read `?stage=NN` the way `FlatMap`
+   does (`useMapSelection`), so Back and a bookmark work on `/app` too (§3.3)
+4. **The accent painted STATES on the old flat map** (available, in-progress
+   and mastered planets, and the sun) against `apps/web/CLAUDE.md`. Fixed on
+   the flat map; `PlanetHud.tsx` (`.hud-glyph` uses `--enc-accent`/`--accent`)
+   and the 3D scene were not checked. `/app` session: measure them the way
+   `web-map.spec.ts` "the accent is on the next stage's ring and nowhere else"
+   does
+5. **The reader's "Back to the map" goes to `/app`**, so a student who
+   entered from the flat map is returned to the 3D map (browser Back returns
+   to `/app/map?stage=NN` with the panel open, as §3.3 asks). Reader's route;
+   if it should return to where the student came from, it needs the referrer
+   (history state), not a guess
+6. **No biome on the panel and no moon mastery** (instructor ruling, 29 Sep):
+   §3.5 needs a biome per planet (seeded from student and stage; today one per
+   student) and §3.7 a mastery table. Both absent, nothing standing in. The
+   R3 box "Map sidebar and ENTER JOURNEY" stays open for them and for moons
+7. **The star field's dark rectangles were opacity, not art.** An `opacity`
+   on a `::after` carrying a long box-shadow list rasterised in 256px tiles
+   that disagreed, drawing dark bands across the picture. Dimming the stars
+   with quiet tokens (`--line-strong`, `--line`) and no opacity removed them.
+   Anything else drawing many box-shadows under an opacity layer will band
+   the same way
+8. **`pnpm db:reset` killed the dev API once more** (§0c.1), before the
+   console run. Proven with a real GET (000), restarted, proven again (200)
+9. **A test that measures a clipped box must measure the box that clips.**
+   The first draft read the title inside the 1px sr-only span (119px, its own
+   words) and went red on a correct page; and "the map did not move" compared
+   viewport boxes across a click that scrolled the page. Both corrected to
+   what they claim (the clipping box; document coordinates) before green
+
+**Available to every route from now on (apps/web):** `components/FlatMap.tsx`
+(the flat presentation, and `useMapSelection()`: a selection in `?stage=NN`,
+push to open, replace to switch, Back closes, focus to the heading and back),
+`lib/next-stage.ts` (`nextStage()`, 5 unit tests), `readPosition()` exported
+from `StageReader.tsx` (the reader's per-device spot, the one key), and
+`design/specs/_map-fixture.ts` (`openMap()`, `realMap()`: the real API as
+`232129006`, patches only for failed, slow or approved-summary reads).
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

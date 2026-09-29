@@ -5,6 +5,7 @@ import { StageMap } from "../components/StageMap";
 import { StageReader } from "../components/StageReader";
 import { ProgressGrid } from "../components/ProgressGrid";
 import { AttemptRunner } from "../components/AttemptRunner";
+import { FlatMapPage } from "./FlatMapPage";
 
 /**
  * The student's routes.
@@ -61,6 +62,13 @@ function useMap() {
 /* ------------------------------------------------------------------ pages */
 
 export function MapPage({ flat = false }: { flat?: boolean }): JSX.Element {
+  // `/app/map` is its own page since 29 Sep 2026 (FlatMapPage); `/app` mounts
+  // the same flat presentation in place when its ladder drops the canvas.
+  if (flat) return <FlatMapPage />;
+  return <GalaxyPage />;
+}
+
+function GalaxyPage(): JSX.Element {
   const { map, error, reload } = useMap();
   const nav = useNavigate();
 
@@ -69,13 +77,9 @@ export function MapPage({ flat = false }: { flat?: boolean }): JSX.Element {
 
   return (
     <>
-      <StageMap data={map} flat={flat} onOpen={(id) => nav(`/app/stage/${id}`)} />
+      <StageMap data={map} onOpen={(id) => nav(`/app/stage/${id}`)} />
       <p className="map-alt-link">
-        {flat ? (
-          <Link to="/app">Show the galaxy</Link>
-        ) : (
-          <Link to="/app/map">Show the flat map</Link>
-        )}
+        <Link to="/app/map">Show the flat map</Link>
       </p>
     </>
   );

@@ -28,7 +28,7 @@ const reduced = () =>
 
 /* The reading position, per device. Never gradeable, and the page is whole without it. */
 const storeKey = (stageId: string) => `octa:reader:${stageId}`;
-function readPosition(stageId: string): { index: number; label: string } | null {
+export function readPosition(stageId: string): { index: number; label: string } | null {
   try {
     const raw = localStorage.getItem(storeKey(stageId));
     if (!raw) return null;

@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FirstRun } from "./FirstRun";
-import { FlatGalaxy } from "./FlatGalaxy";
+import { FlatMap } from "./FlatMap";
 import { useFlatWarp } from "../solar-system/Warp";
 import { RotatePrompt } from "../solar-system/RotatePrompt";
 import type { ScreenPoint } from "../solar-system/SolarSystemCanvas";
@@ -37,18 +37,9 @@ import type { StageNode, StageMapData } from "../lib/api";
 interface Props {
   data: StageMapData;
   onOpen: (stageId: string) => void;
-  /**
-   * `/app/map` asks for the flat view BY CHOICE, not by capability.
-   *
-   * The galaxy is already suppressed automatically under reduced motion, on a
-   * small viewport, and when WebGL fails. This adds a fourth reason -- the
-   * student asked -- so the flat route is never a degraded mode. Nothing
-   * redirects, so a link into the course works on every device.
-   */
-  flat?: boolean;
 }
 
-export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
+export function StageMap({ data, onOpen }: Props): JSX.Element {
 
 
   /*
@@ -98,9 +89,6 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedId]);
 
-  // `flat` is the FOURTH reason the canvas can be absent, alongside reduced
-  // motion, a small viewport, and WebGL failing. All four are equal; none of
-  // them makes this a fallback view.
   /*
    * `enabled` is the BACKDROP's answer, and it is the only one now: it applies
    * the whole degradation ladder in one place. This component used to compute
@@ -108,10 +96,10 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
    * reduced motion after the scene moved there -- two answers, one of which
    * nothing consulted.
    *
-   * `flat` is still local: `/app/map` asks for the flat view BY CHOICE, which
-   * is a route decision rather than a capability one.
+   * `/app/map` asks for the flat view BY CHOICE and is its own page now
+   * (`FlatMapPage`); this component is `/app` only.
    */
-  const canUse3d = enabled && !flat;
+  const canUse3d = enabled;
   const showGalaxy = canUse3d;
 
   return (
@@ -180,29 +168,11 @@ export function StageMap({ data, onOpen, flat = false }: Props): JSX.Element {
           different picture of the same curriculum, so a student sent here by
           reduced motion or a slow device had to rebuild their mental model
           rather than recognise a quieter version of what they knew.
-          `FlatGalaxy` reads `computeSolarLayout`: same rings, same angles, same
-          moons, no canvas and no motion.
+          `FlatMap` reads `computeSolarLayout`: same rings, same angles, same
+          moons, no canvas and no motion. It is the SAME component `/app/map`
+          mounts (instructor ruling, 29 Sep 2026), panel and all.
         */
-        <FlatGalaxy data={data} warping={warping}>
-          {(project) => (
-            <div className="map-hit-layer">
-              {[...data.nodes]
-                .sort((a, b) => a.ordinal - b.ordinal)
-                .map((n) => {
-                  const at = project(n.id);
-                  if (!at) return null;
-                  return (
-                    <NodeButton
-                      key={n.id}
-                      node={n}
-                      onOpen={openWithWarp}
-                      style={{ left: at.left, top: at.top }}
-                    />
-                  );
-                })}
-            </div>
-          )}
-        </FlatGalaxy>
+        <FlatMap data={data} warping={warping} onEnter={openWithWarp} />
       )}
 
       {/*
@@ -385,60 +355,5 @@ function PlanetHits({
         </button>
       ))}
     </div>
-  );
-}
-
-function NodeButton({
-  node,
-  onOpen,
-  style,
-}: {
-  node: StageNode;
-  onOpen: (id: string) => void;
-  style: React.CSSProperties;
-}): JSX.Element {
-  const ref = useRef<HTMLButtonElement>(null);
-  const locked = node.state === "locked";
-
-  // The full accessible name. A locked node must say WHY and HOW FAR -- a lock
-  // that only shows an icon fails the design mandate's legibility test.
-  const label = locked
-    ? `Stage ${node.id}, ${node.title}. Locked. ${node.lockReason?.message ?? ""}`
-    : `Stage ${node.id}, ${node.title}. ${
-        node.state === "mastered"
-          ? "Mastered"
-          : node.state === "in_progress"
-            ? `In progress, ${Math.round(node.mastery * 100)} percent`
-            : "Available"
-      }. ${node.estMinutes} minutes.`;
-
-  return (
-    <button
-      ref={ref}
-      type="button"
-      className={`node-hit node-hit-${node.state}`}
-      style={style}
-      aria-label={label}
-      aria-disabled={locked}
-      onClick={() => {
-        // A locked node is still focusable and still activatable -- it opens the
-        // stage page, which explains the lock. Silently doing nothing on click
-        // is the least legible possible response.
-        onOpen(node.id);
-      }}
-    >
-      {/*
-        The id, VISIBLE, at a real font size.
-
-        It used to be SVG <text> inside the map's viewBox, which measured 6x4
-        pixels on a 1140px-wide map and would have been 4px at 380px: font size
-        in a viewBox scales with the drawing, and this drawing holds 19 planets
-        and 110 moons. Here it scales with the page instead. The full sentence
-        stays screen-reader-only -- printing "Locked. Unlocks when Stage 03
-        reaches 70%..." on nineteen planets would bury the map it describes.
-      */}
-      <span className="node-hit-id mono" aria-hidden="true">{node.id}</span>
-      <span className="sr-only">{label}</span>
-    </button>
   );
 }
