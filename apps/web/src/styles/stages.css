@@ -1,0 +1,166 @@
+/* ============================================================
+   /app/stages — No Man's Sky's discoveries (WEB-REMAKE.md §8 row 6)
+   The star HUD: systems (the four grading periods) holding planet
+   rows, and the chosen stage's card, the map's BODY card, beside them.
+   ============================================================ */
+
+.stages { display: grid; gap: var(--space-4); min-width: 0; }
+
+.stages-head { display: grid; gap: var(--space-2); }
+.stages-title {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-3xl);
+  line-height: var(--lh-3xl);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+}
+.stages-sum { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); }
+.stages-sum .mono { color: var(--ink); }
+.stages-sum-sep { margin: 0 var(--space-2); }
+.stages-meter { max-width: 24rem; }
+
+.stages-body {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .stages-body { grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem); }
+  /* Sticky, and never taller than the screen above the key-hint bar: the
+     card scrolls inside itself, so Enter journey is always reachable. */
+  .stages-card { position: sticky; top: var(--space-4); max-height: calc(100dvh - 6rem); overflow-y: auto; }
+}
+
+/* ---- the list: systems and their planets ---- */
+.stages-list { min-width: 0; }
+.stages-systems { margin: 0; padding: var(--space-3); border: 0; min-width: 0; display: grid; gap: var(--space-4); }
+.stages-system { display: grid; gap: var(--space-1); }
+.stages-system-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  background: var(--surface-3);
+}
+.stages-system-mark {
+  width: 0.6rem;
+  height: 0.6rem;
+  flex: none;
+  background: var(--frame-corner);
+  transform: rotate(45deg);
+}
+.stages-system-name {
+  font-family: var(--font-hud);
+  font-weight: 600;
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+}
+.stages-system-range { color: var(--ink-muted); }
+.stages-system-count { margin-left: auto; color: var(--ink-muted); }
+.stages-system-count .mono { color: var(--ink); }
+
+.stages-row { display: grid; gap: var(--space-1); margin-left: var(--space-4); }
+.stages-planet {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "dot id title state" ". . lock lock";
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--ink);
+  background: var(--surface-2);
+  border-left: var(--border-thick) solid transparent;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.stages-planet:hover { background: var(--surface-3); }
+/* The chosen row is lit, No Man's Sky's white bar: the HUD's --lit pair. */
+.stages-planet:has(input:checked) { background: var(--lit-bg); color: var(--lit-ink); }
+.stages-planet:has(input:checked) :is(.stages-planet-id, .stages-planet-state, .stages-planet-lock) { color: var(--lit-ink); }
+.stages-planet:has(input:focus-visible) { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+/* The student's next stage: their own place, in their accent. */
+.stages-planet.is-next { border-left-color: var(--accent); }
+
+.stages-planet-dot {
+  grid-area: dot;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: var(--radius-full);
+  background: var(--tint);
+}
+.stages-planet[data-state="locked"] .stages-planet-dot { background: transparent; border: var(--border-thick) dashed var(--locked); }
+.stages-planet[data-state="mastered"] .stages-planet-dot { box-shadow: 0 0 0 var(--border-thick) var(--frame-corner); }
+.stages-planet-id { grid-area: id; color: var(--ink-muted); font-size: var(--text-sm); }
+.stages-planet-title { grid-area: title; min-width: 0; overflow-wrap: anywhere; }
+.stages-planet-state {
+  grid-area: state;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.stages-planet-next {
+  padding: 0 var(--space-1);
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  border: var(--border-hair) solid var(--accent);
+}
+.stages-planet-lock { grid-area: lock; font-size: var(--text-sm); color: var(--ink-muted); }
+.stages-planet[data-state="locked"] .stages-planet-lock { color: var(--locked); }
+.stages-planet[data-state="locked"]:has(input:checked) .stages-planet-lock { color: var(--lit-ink); }
+
+/* ---- the card ---- */
+.stages-card { min-width: 0; }
+.stages-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--caption-bg);
+  color: var(--caption-ink);
+}
+.stages-card-head h2 { margin: 0; font-size: var(--text-xl); line-height: var(--lh-xl); overflow-wrap: anywhere; }
+.stages-card-sub { margin: 0; font-size: var(--text-sm); color: var(--caption-ink); }
+.stages-card-dot { width: 1.75rem; height: 1.75rem; flex: none; border-radius: var(--radius-full); background: var(--tint); }
+.stages-card .starmap-actions { flex-wrap: wrap; }
+.stages-card .starmap-actions .button { flex: 1 1 10rem; }
+.stages-card.is-inline { margin: 0 0 var(--space-2); }
+
+/* ---- states ---- */
+.stages-state { max-width: 36rem; }
+.stages-state-body { display: grid; gap: var(--space-3); justify-items: start; padding: var(--space-4); }
+.stages-state-body p { margin: 0; }
+.stages-slow {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  max-width: 62ch;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  background: var(--info-bg);
+  border-left: var(--border-thick) solid var(--info);
+}
+.stages-skel { display: grid; gap: var(--space-1); padding: var(--space-3); }
+.stages-skel-row { display: block; height: 44px; background: var(--surface-2); }
+.stages-skel-row:nth-child(1), .stages-skel-row:nth-child(7) { background: var(--surface-3); }
+
+@media (max-width: 640px) {
+  .stages-title { font-size: var(--text-2xl); line-height: var(--lh-2xl); }
+  .stages-systems { padding: var(--space-2); }
+  .stages-row { margin-left: 0; }
+  .stages-planet {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: "dot id title" ". . state" ". . lock";
+  }
+  .stages-system-count { margin-left: 0; }
+}

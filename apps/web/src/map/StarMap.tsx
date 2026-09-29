@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import type { StageMapData, StageNode } from "../lib/api";
-import { computeSolarLayout, LEVEL_NAMES } from "../solar-system/layout";
+import type { StageMapData } from "../lib/api";
+import { computeSolarLayout } from "../solar-system/layout";
 import { useCosmetics } from "../solar-system/cosmetic-seed";
 import { nextStage } from "../lib/next-stage";
 import { NumberedTitle } from "../shell/MissionPanel";
-import { WarpLink } from "../shell/RealmWarp";
 import { useKeyHints } from "../shell/keyHints";
-import { byObjectiveId, useSelection } from "./useSelection";
+import { useSelection } from "./useSelection";
+import { ACTS, BodyPanel, STATE_WORD, useWide } from "./body";
 import type { ScenePlanet } from "./StarMapScene";
 
 const StarMapScene = lazy(() => import("./StarMapScene"));
@@ -30,20 +30,6 @@ const StarMapScene = lazy(() => import("./StarMapScene"));
  * The selection is `?stage=NN` (useSelection). Without WebGL the scene is not
  * drawn and a line says so; the panels, and so every control, remain.
  */
-
-const ACTS: Record<number, { roman: string; name: string }> = {
-  1: { roman: "I", name: "Prelim" },
-  2: { roman: "II", name: "Midterm" },
-  3: { roman: "III", name: "Semi-finals" },
-  4: { roman: "IV", name: "Finals" },
-};
-const ARCHETYPES: Record<string, string> = { A: "Concept", B: "Computation", C: "Artifact", D: "Simulator" };
-const STATE_WORD: Record<StageNode["state"], string> = {
-  locked: "Locked",
-  available: "Open",
-  in_progress: "In progress",
-  mastered: "Mastered",
-};
 
 function detectWebGL(): boolean {
   try {
@@ -77,18 +63,6 @@ function rememberedSlow(): boolean {
   } catch {
     return false;
   }
-}
-
-function useWide(min: number): boolean {
-  const q = `(min-width: ${min}px)`;
-  const [w, setW] = useState(() => typeof window !== "undefined" && window.matchMedia(q).matches);
-  useEffect(() => {
-    const m = window.matchMedia(q);
-    const f = () => setW(m.matches);
-    m.addEventListener("change", f);
-    return () => m.removeEventListener("change", f);
-  }, [q]);
-  return w;
 }
 
 export function StarMap({ data }: { data: StageMapData }): JSX.Element {
@@ -383,113 +357,5 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
         )}
       </div>
     </section>
-  );
-}
-
-function BodyPanel({
-  node,
-  byId,
-  onShow,
-  enterTo,
-}: {
-  node: StageNode;
-  byId: Map<string, StageNode>;
-  onShow: (id: string) => void;
-  enterTo: string | null;
-}): JSX.Element {
-  const pct = Math.round(node.mastery * 100);
-  const levels = [...node.levels].sort((a, b) => a - b);
-  const lv = levels.length === 0 ? "—" : levels.length === 1 ? `L${levels[0]}` : `L${levels[0]}–L${levels[levels.length - 1]}`;
-  const blocking = node.lockReason?.blockingStages[0];
-  const moons = [...node.objectives].sort(byObjectiveId);
-  return (
-    <div className="starmap-body-main">
-      <div className="starmap-survey">
-        <span className="starmap-survey-label">
-          <span>{node.gradeable ? "Mastery" : "Not graded"}</span>
-          {node.gradeable && <span className="mono">{pct}%</span>}
-        </span>
-        {node.gradeable && (
-          <span className="starmap-meter" aria-hidden="true">
-            <span style={{ width: `${pct}%` }} />
-          </span>
-        )}
-      </div>
-
-      <dl className="starmap-stats">
-        <div>
-          <dt>State</dt>
-          <dd>
-            {node.state === "locked" && <LockGlyph />}
-            {STATE_WORD[node.state]}
-          </dd>
-        </div>
-        <div>
-          <dt>Levels</dt>
-          <dd className="mono" title={levels.map((l) => LEVEL_NAMES[l]).join(", ")}>
-            {lv}
-          </dd>
-        </div>
-        <div>
-          <dt>Kind</dt>
-          <dd>{ARCHETYPES[node.archetype] ?? node.archetype}</dd>
-        </div>
-        <div>
-          <dt>Time</dt>
-          <dd>
-            <span className="mono">{node.estMinutes}</span> min
-          </dd>
-        </div>
-        <div>
-          <dt>Check</dt>
-          <dd>{node.gradeable ? "Graded" : "Not graded"}</dd>
-        </div>
-      </dl>
-
-      {node.state === "locked" && node.lockReason && (
-        <p className="starmap-lock">
-          <LockGlyph />
-          <span>{node.lockReason.message}</span>
-        </p>
-      )}
-      {node.summary && <p className="starmap-summary">{node.summary}</p>}
-
-      <h3 className="starmap-moons-title">
-        Moons <span className="mono">({moons.length})</span>
-      </h3>
-      {moons.length > 0 ? (
-        <ul className="starmap-moons">
-          {moons.map((m) => (
-            <li key={m.id}>
-              <span className="mono">{m.id}</span>
-              <span>{m.description}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="note">No objectives are published for this stage yet.</p>
-      )}
-
-      <div className="starmap-actions">
-        {enterTo ? (
-          <WarpLink className="button hud-button button-primary" to={enterTo}>
-            Enter journey
-          </WarpLink>
-        ) : blocking && byId.has(blocking) ? (
-          <button type="button" className="button hud-button" onClick={() => onShow(blocking)}>
-            <NumberedTitle text={`Show Stage ${blocking}`} />
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function LockGlyph(): JSX.Element {
-  return (
-    <svg className="glyph" aria-hidden="true" viewBox="0 0 16 16">
-      <path d="M4 7V5a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" strokeWidth="1.6" />
-      <rect x="2.5" y="7" width="11" height="7.5" rx="1" fill="currentColor" />
-    </svg>
   );
 }
