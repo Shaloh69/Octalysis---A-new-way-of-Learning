@@ -73,6 +73,13 @@ first, and the satisfaction is *comprehension*.
    time. **No encounter theme class may appear on an assessment route**, and
    that is a test, not a request.
 
+   **Amended by the instructor, 30 Sep 2026** (`WEB-REMAKE.md` §4): inside a
+   planet, the biome may dress an assessment's CHROME (the nav, the frame, the
+   background), because the student is still on that planet. It never dresses
+   the PAPER: the question card, its options, Record, Submit and every verdict
+   sit on one neutral surface identical for every student. The runner's spec
+   proves two students with different biomes see the same paper.
+
 2. **A skin must say something true.** Stage 02's switchboard is honest because
    the deck describes literal switches. Stage 15's DOS skin is honest because the
    toolchain is 16-bit TASM. A theme chosen only because it looks different is

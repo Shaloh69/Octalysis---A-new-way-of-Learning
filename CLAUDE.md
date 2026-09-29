@@ -157,7 +157,16 @@ nine-slice panel, never a redesign. They dress the LAB beat and never an assessm
 held to the same computed AA contrast on all three base themes.
 
 Type roles: display `Space Grotesk`, body `Inter`, mono `JetBrains Mono`. All numbers, register
-values, hex, machine code, and assembly listings render in mono.
+values, hex, machine code, and assembly listings render in mono. **In `apps/web`, since 30 Sep
+2026, one game "HUD label" face** (chosen in the remake's first session) takes nav labels, titles,
+panel captions and key hints: never body text, never a number (`WEB-REMAKE.md` §6).
+
+**The student app has two realms (instructor ruling, 30 Sep 2026; `docs/redesign/WEB-REMAKE.md`).**
+In the star system (`/app`, `/app/map`, the hub routes) it wears the default game HUD, in the
+student's variant and accent. **Opening a planet or moon changes the theme: the nav and every
+design follow that planet's biome, always**, and leaving returns to the HUD. Every move between
+the two is a transition (a cut under reduced motion). In a stage check the biome dresses the
+chrome and **never the paper**: the questions sit on one neutral surface identical for everyone.
 
 Motion: one orchestrated moment per stage. Respect `prefers-reduced-motion`. Incorrect answers get
 a neutral response — never red, never a buzzer, never a shake.
@@ -459,6 +468,14 @@ Do not start the student app while a console route is unfinished. The whole
 point of the gate is that one surface reaches a known state before attention
 moves, and R3 reaching 41/49 with an empty `design/templates/` is what happens
 otherwise.
+
+**The student app is REMADE, not revamped: `docs/redesign/WEB-REMAKE.md` owns it
+since 30 Sep 2026.** The instructor ruled the first pass too bland: every
+`apps/web` route (the three rebuilt 29-30 Sep included) is rebuilt as a game
+from `design/templates/web/_direction/` (a sci-fi HUD in the star system, pixel
+frames in the planet's biome inside it), with a new nav, in `WEB-REMAKE.md` §8's
+order, starting with the look system and the shell. `WEB-REVAMP.md` still owns
+what the pages DO (§2-§4); `WEB-REMAKE.md` owns how they look and the order.
 
 ## Console revamp — one page at a time
 

@@ -1,6 +1,15 @@
 # WEB-REVAMP.md
 ### The student app, rebuilt — features it never had, and a map that behaves like a solar system
 
+> **The LOOK and the ORDER here are superseded, 30 Sep 2026: read `WEB-REMAKE.md`.**
+> The instructor ruled the student app too bland and ordered a full remake as a
+> game: a sci-fi HUD in the star system, the planet's biome (nav included)
+> inside a planet or moon, a transition every time between them. What stands
+> from this file: §2's feature list, §3 (the sidebar, moons, ENTER JOURNEY,
+> asteroids, summaries) and §4 (Kepler). What does not: §1's "polish" framing,
+> §6's route order, and the look of the three routes rebuilt 29-30 Sep, which are
+> remade.
+
 `CONSOLE-REVAMP.md` owns the teacher console and runs **first**. This is the
 second pass and it is larger, because `apps/web` is not underpolished — it is
 unfinished. Intended features are missing, layouts are wrong, and the theme is

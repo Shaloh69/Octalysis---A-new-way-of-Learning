@@ -1077,6 +1077,43 @@ from `StageReader.tsx` (the reader's per-device spot, the one key), and
 
 ---
 
+## 0s. The direction changed — 30 Sep 2026: the student app is REMADE
+
+**Instructor ruling:** the student app looks too bland. It is remade as a game,
+not improved: `docs/redesign/WEB-REMAKE.md` owns it, with the references in
+`design/templates/web/_direction/` (Starfield and No Man's Sky for a sci-fi
+HUD in the star system; Stardew Valley and Kenney's CC0 pixel packs for the
+biome inside a planet). Every `apps/web` route is rebuilt, the three finished
+on 29-30 Sep included; a new nav; **opening a planet or moon changes the theme,
+nav and all, to that planet's biome, and leaving returns to the HUD, always
+through a transition** (a cut under reduced motion). Four rulings the same day:
+a check's chrome wears the biome and its paper stays neutral; the default is
+one HUD with the three existing variants; sci-fi HUD outside, pixel frames
+inside; one new HUD label face.
+
+What this changes in the sections above:
+
+1. **§0p, §0q and §0r still stand as facts** about the code as it is. The shell
+   defects (§0p.1-5, §0q.1, §0r.2) are now the remake's shell session's work
+   (`WEB-REMAKE.md` §8 #2), not a separate shell pass
+2. **The behaviour built on 29-30 Sep carries over** into each remake: the
+   runner's Record, resume, flag and confirm; the reader's parser, resume and
+   lock card; the flat map's buttons, panel, card and `?stage=NN`. So do their
+   specs: extend them, keep every assertion, move selectors to new hooks
+3. **R3 was recounted:** 61 / 80 became 58 / 84. The three finished routes
+   became history lines; eleven remake boxes were added
+4. **Two rules were amended in writing:** `DESIGN-MANDATE.md` §1B rule 1 and
+   `BIOME-AND-LOADING-SPEC.md` §1b (the chrome may wear the biome, the paper
+   never). Root `CLAUDE.md`, `apps/web/CLAUDE.md`, `.claude/rules/design.md`,
+   `WEB-REVAMP.md` and `TEMPLATE-LINKS.md` now point at `WEB-REMAKE.md`
+5. **Not yet decided; each session asks when it reaches it:** the in-planet
+   nav's items (proposed in `WEB-REMAKE.md` §3: the planet's own tabs plus
+   Leave planet); whether moons land with `/app` or after it; the HUD face
+   (three candidates); whether the pixel frames are vendored art or CSS drawn
+   from the biome's tokens
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

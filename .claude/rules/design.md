@@ -10,6 +10,9 @@ Type roles are jobs, not decoration:
 
 - **Space Grotesk** — display, used with restraint
 - **Inter** — body
+- **A HUD label face** (`apps/web` only, added 30 Sep 2026, chosen in the remake's first
+  session; `docs/redesign/WEB-REMAKE.md` §6) — nav labels, titles, panel captions, key hints,
+  badges. Never body text, never a number, never below 12px
 - **JetBrains Mono** — ALL numbers, register values, hex, machine code, assembly listings, spec
   sheets, and every value in a parameterized question. In this app, monospace means *"this is what
   the machine sees."* That consistency is the design.

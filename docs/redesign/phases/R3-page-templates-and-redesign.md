@@ -937,14 +937,18 @@ thesis deliverable, and right now no phase is accountable for it.
         ticked in the same commit: seventeen template folders, each with
         `template*.png`, `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`
         and `current-380.png`, counted on 29 Sep 2026
-- [ ] **Student app revamp** (`WEB-REVAMP.md`) — same, for `apps/web`, second,
-      and REDONE rather than improved per root `CLAUDE.md`
+- [ ] **Student app REMAKE** (`WEB-REMAKE.md`, instructor ruling 30 Sep 2026) —
+      `apps/web` remade as a game: a sci-fi HUD in the star system, the
+      planet's biome (nav included) inside a planet or moon, a transition every
+      time between them, a new nav, every route rebuilt from
+      `design/templates/web/_direction/`. Replaces the revamp below, whose three
+      finished routes are kept as history and remade
 
       One box per route, in `WEB-REVAMP.md` §6 order, ticked in the commit that
       turns that route's `design/specs/web-<route>.spec.ts` green. Added 29 Sep
       2026, the way the console box gained its children on 25 Sep.
 
-  - [x] `/app/stage/:id/check` — **29 Sep 2026** (`design/templates/web/stage-check/SPEC.md`),
+  - *First pass, superseded 30 Sep 2026 (look remade; behaviour carried):* `/app/stage/:id/check` — **29 Sep 2026** (`design/templates/web/stage-check/SPEC.md`),
         against **Professor Layton's puzzle screen** (a status strip over one
         puzzle, an explicit Submit; Wikipedia's file page). The named lead, Game
         UI Database, answered 403 behind Cloudflare; Interface In Game had no
@@ -970,7 +974,7 @@ thesis deliverable, and right now no phase is accountable for it.
         755 passed, 58 skipped, 1 load race (§0p) that passed 3 of 3 alone; API
         626 passed. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and
         fifteen state shots per width
-  - [x] `/app/stage/:id` — **29 Sep 2026** (`design/templates/web/stage/SPEC.md`),
+  - *First pass, superseded 30 Sep 2026 (look remade; behaviour carried):* `/app/stage/:id` — **29 Sep 2026** (`design/templates/web/stage/SPEC.md`),
         against **MDN's article page** (a reading column and an "In this
         article" rail marking the sections on screen). The named lead,
         `ui.shadcn.com/blocks`, holds dashboard, sidebar, login and signup
@@ -1000,7 +1004,7 @@ thesis deliverable, and right now no phase is accountable for it.
         console spec 756 passed, 58 skipped, 0 failed; API 629 passed.
         `SOURCE.md`, `SPEC.md`, `motion.md`, and `current*.png`: thirteen
         state shots at 1440 and fourteen at 380 (the sheet), all opened
-  - [x] `/app/map` — **29-30 Sep 2026** (`design/templates/web/map/SPEC.md`),
+  - *First pass, superseded 30 Sep 2026 (look remade; behaviour carried):* `/app/map` — **29-30 Sep 2026** (`design/templates/web/map/SPEC.md`),
         against **roadmap.sh's curriculum map** (a node map whose topic opens
         a drawer in place). The named lead, beautiful-skill-tree, has no live
         demo (404); calisthenicsskills.com has shut down; the Borderlands tree
@@ -1028,10 +1032,27 @@ thesis deliverable, and right now no phase is accountable for it.
         failed; every console spec 756 passed, 58 skipped, 0 failed. `SOURCE.md`,
         `SPEC.md`, `motion.md`, `current*.png` and ten state shots per width,
         all opened
-  - [ ] `/app` — the 3D map: §3 selection and zoom, §4 orbital motion
+
+      The remake, one box per session, in `WEB-REMAKE.md` §8 order, each ticked in
+      the commit that turns its spec green:
+
+  - [ ] **The look system** — HUD tokens and three variants, a token set per
+        biome, the HUD label face, pixel frames (Kenney CC0), per-planet biome
+        seeding through `/api/v1/cosmetics`, `useRealm()`, a computed AA test
+        over every colour set, a captured look sheet
+  - [ ] **The shell** — the nav in both dresses, the mission tracker, the
+        key-hint bar, the Register Bar, the realm switch and both transitions
+        (clears §0p.1-5, §0q.1, §0r.2)
+  - [ ] `/app` — the 3D map: selection, zoom, the sidebar as the planet's
+        window, Kepler (`WEB-REVAMP.md` §3-§4)
+  - [ ] `/app/map` — the flat map, remade in the HUD
+  - [ ] `/app/stage/:id` — the reader, in the planet's biome
+  - [ ] `/app/stage/:id/check` — the runner: biome chrome, neutral paper
+  - [ ] `/app/stages` — acts as systems, stages as planets
+  - [ ] `/app/progress` — depth and the 21 competency cells as meters
   - [ ] `/app/work` — submissions, 40% of the grade (§0g.4's return)
-  - [ ] `/login`, `/claim` — first contact
-  - [ ] `/app/progress`, `/app/settings` — lower traffic
+  - [ ] `/app/settings` — the variant picker changes the HUD
+  - [ ] `/login`, `/register`, `/maintenance`, the 404 — the title screen
 - [ ] **Toasts, loading states and transitions** on every revamped route per
       `.claude/rules/design.md` — no toast library is installed in either app
       today, exactly one route in `apps/web` has a loading state, and the

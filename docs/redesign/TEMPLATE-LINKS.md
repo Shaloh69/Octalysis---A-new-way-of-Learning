@@ -25,6 +25,13 @@ same as every existing template reference in this project.
 
 ## Student app — `apps/web/app/*`
 
+> **Superseded for the look, 30 Sep 2026.** The student app is being remade as a
+> game (`WEB-REMAKE.md`). Its references are `design/templates/web/_direction/`
+> (Starfield, No Man's Sky and Stardew Valley screens, and Kenney's CC0 packs),
+> and each route's starting template is named in `WEB-REMAKE.md` §8. The rows
+> below are the history of each route's first pass and the leads it was given;
+> the shadcn and SaaS leads among them no longer apply to `apps/web`.
+
 | Route | Template | Source | What to take |
 |---|---|---|---|
 | `/app` (solar system) | See `SOLAR-SYSTEM-SPEC.md` §4 in full | — | Custom build, referenced sources listed there, not repeated here |

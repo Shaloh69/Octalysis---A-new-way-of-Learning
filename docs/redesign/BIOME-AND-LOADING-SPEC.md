@@ -35,12 +35,16 @@ background of the whole page when one is selected.**
 | A moon's journey — **after ENTER JOURNEY** on a moon | **Yes** | Same landing, entered at that subtopic's anchor |
 | A stage's activities and minigames | **Yes** | They are the planet's content, and the biome is that content's background |
 | **The map sidebar, planet or moon** | **Yes: its planet's biome** | Reversed by the instructor on 25 Sep 2026 (`WEB-REVAMP.md` §3.5): the sidebar is a window into where you are about to go. A moon's sidebar wears its planet's biome. The map canvas itself still never does. Text sits on a token surface over the biome, AA computed on all themes and biomes. Requires a biome per planet, which does not exist yet: today one biome is seeded per student |
-| `/app`, `/app/map`, hub routes | **No** | The solar system is the background there (`SOLAR-SYSTEM-SPEC.md` §1.5). Two backgrounds is two visual systems arguing |
-| **The Self-Test / any assessment** | **NEVER** | `DESIGN-MANDATE.md` §1B rule 1: theatre dresses the practice, never the assessment |
+| `/app`, `/app/map`, hub routes | **No** | The solar system is the background there (`SOLAR-SYSTEM-SPEC.md` §1.5). Two backgrounds is two visual systems arguing. Since 30 Sep 2026 these are **the star realm**: the default sci-fi HUD (`WEB-REMAKE.md` §1-§2) |
+| **The nav and every frame, inside a planet or moon** | **Yes: its planet's biome** | Instructor ruling, 30 Sep 2026 (`WEB-REMAKE.md` §1, §3): opening a planet or moon changes the theme, and the nav and the designs follow the biome, always; leaving returns to the HUD. Both ways are a transition (§5 there) |
+| **The Self-Test / any assessment: its chrome** | **Yes: its planet's biome** | Amended 30 Sep 2026 (`WEB-REMAKE.md` §4): the nav, the frame and the background keep the planet |
+| **The Self-Test / any assessment: its paper** | **NEVER** | `DESIGN-MANDATE.md` §1B rule 1 as amended: the question card, options, Record, Submit and verdicts sit on one neutral surface, identical for every student |
 
 ### What it must not do — the fairness line
 
-**A biome must never change an assessment's appearance.** §1's worked example is
+**A biome must never change an assessment's paper.** (Amended 30 Sep 2026:
+the chrome around it may wear the planet's biome, `WEB-REMAKE.md` §4; the rest
+of this section is about the paper, and stands.) §1's worked example is
 the rule: Student A lands in a jungle and Student B in a desert, and **both get
 the Pixel encounter theme** for the bit-toggle exercise, because pixel art is
 honestly what a grid of bits looks like. Encounter themes are per-STAGE and
