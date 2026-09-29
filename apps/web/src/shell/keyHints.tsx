@@ -82,7 +82,15 @@ export function KeyHintProvider({ children }: { children: ReactNode }): JSX.Elem
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      // Never while typing: a text field, a text area, a select, an editable.
+      // A radio or a checkbox takes no text, so the map's row of planets keeps
+      // Enter journey and Close.
+      const typing =
+        !!t &&
+        (t.isContentEditable ||
+          /^(TEXTAREA|SELECT)$/.test(t.tagName) ||
+          (t instanceof HTMLInputElement && !/^(radio|checkbox|button|submit|reset)$/.test(t.type)));
+      if (typing) return;
       if (t?.closest("[role=dialog], [role=radiogroup]")) return;
       const single = e.key.length === 1;
       if (single && !shortcutsOn()) return;

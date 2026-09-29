@@ -98,8 +98,12 @@
   --meter-track:  oklch(0.30 0.020 250);
   --meter-fill:   oklch(0.90 0.010 250);
 
-  /* The map's own ground and planet states, for the 3D scene. */
+  /* The 3D map's own colours (the scene reads them through the DOM, so a
+     token change repaints the sky). Decorative: every fact the scene shows
+     is also in the panels, in words. */
   --solar-ground: oklch(0.12 0.020 255);
+  --sun:          oklch(0.92 0.100 85);
+  --sun-glow:     oklch(0.80 0.140 70);
 
   --accent:       oklch(0.76 0.140 var(--accent-hue));
   --accent-hover: oklch(0.82 0.150 var(--accent-hue));

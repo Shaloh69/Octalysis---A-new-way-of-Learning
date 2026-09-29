@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "../lib/auth";
-import { SolarProvider } from "../solar-system/SolarBackdrop";
 import { FeedbackDialog } from "../components/FeedbackDialog";
 import { SusSurvey } from "../components/SusSurvey";
 import { Readout } from "./Readout";
@@ -9,7 +8,6 @@ import { MissionPanel } from "./MissionPanel";
 import { Starfield } from "./Starfield";
 import { KeyHintBar } from "./KeyHintBar";
 import { useKeyHints } from "./keyHints";
-import { useShellData } from "./ShellData";
 import { useOnline } from "./useOnline";
 
 /**
@@ -40,7 +38,6 @@ function currentTab(pathname: string): number {
 export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
   const { pathname } = useLocation();
   const nav = useNavigate();
-  const { map } = useShellData();
   const online = useOnline();
   const [reporting, setReporting] = useState(false);
   const isMap = pathname === "/app" || pathname === "/app/";
@@ -57,7 +54,6 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
   useEffect(() => setReporting(false), [pathname]);
 
   return (
-    <SolarProvider data={map} active={isMap} pathname={pathname}>
       <div className={`star-shell${isMap ? " is-map" : ""}`} data-shell>
         <a className="skip-link" href="#main">
           Skip to content
@@ -114,6 +110,5 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
         {reporting && <FeedbackDialog framed="hud-panel" onClose={() => setReporting(false)} />}
         {signedIn && <SusSurvey />}
       </div>
-    </SolarProvider>
   );
 }

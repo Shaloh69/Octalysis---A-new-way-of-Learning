@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { StageMap } from "../components/StageMap";
+import { StarMap } from "../map/StarMap";
 import { useShellData } from "../shell/ShellData";
 import { StageReader } from "../components/StageReader";
 import { ProgressGrid } from "../components/ProgressGrid";
@@ -19,12 +19,11 @@ import { AttemptRunner } from "../components/AttemptRunner";
 
 export function MapPage(): JSX.Element {
   const { map, error, reload } = useShellData();
-  const nav = useNavigate();
 
   if (error) return <ErrorState message={error} onRetry={() => void reload()} />;
   if (!map) return <MapSkeleton />;
 
-  return <StageMap data={map} onOpen={(id) => nav(`/app/stage/${id}`)} />;
+  return <StarMap data={map} />;
 }
 
 export function StagePage(): JSX.Element {

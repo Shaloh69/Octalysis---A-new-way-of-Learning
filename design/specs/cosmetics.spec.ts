@@ -67,9 +67,8 @@ async function open(page: Page, who: keyof typeof STUDENTS): Promise<void> {
   // `data-planet` appears when the cosmetics fetch lands, which is the actual
   // precondition every assertion here depends on.
   await page.locator("html[data-planet]").waitFor({ state: "attached" });
-  // The header, not the list: on `/app` the list is inside a collapsed
-  // disclosure now, so waiting for it to be visible would hang.
-  await page.locator(".map-header").waitFor();
+  // The 3D map's accessible layer (30 Sep 2026): its row of planets.
+  await page.locator(".starmap-bodies input[type=radio]").first().waitFor({ state: "attached" });
 }
 
 /** The facts a student can ACT on. These must not vary between students. */

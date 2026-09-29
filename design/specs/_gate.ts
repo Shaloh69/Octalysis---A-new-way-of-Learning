@@ -358,6 +358,8 @@ export async function offTokenStyles(page: Page, scope = SURFACES): Promise<stri
       "frame", "frame-corner", "frame-shade", "frame-light", "frame-edge", "frame-inner",
       "caption-bg", "caption-ink", "lit-bg", "lit-ink", "meter-track", "meter-fill",
       "sprite-ink", "reg-pc", "reg-ir", "reg-mar", "reg-mbr", "reg-ac", "reg-alu",
+      "biome-planet-neutral", "biome-planet-jungle", "biome-planet-desert", "biome-planet-arctic",
+      "biome-planet-city", "biome-planet-cave", "biome-planet-ocean",
     ];
     const probe = document.createElement("div");
     document.body.appendChild(probe);

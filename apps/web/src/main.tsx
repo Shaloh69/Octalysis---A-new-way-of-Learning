@@ -6,6 +6,7 @@ import { getAccessToken, applyStoredAccent } from "./lib/session";
 import "./styles.css";
 import "./styles/base.css";
 import "./styles/shell.css";
+import "./styles/map.css";
 
 applyStoredAccent();
 setTokenProvider(getAccessToken);
