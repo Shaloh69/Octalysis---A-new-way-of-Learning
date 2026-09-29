@@ -1,3 +1,5 @@
+import type { Cosmetics } from "@octa/contracts";
+
 /**
  * API client.
  *
@@ -160,20 +162,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
  * what they can do. Derived server-side from `student_id` alone; the client is
  * a thin consumer and never computes it (docs/redesign/SOLAR-SYSTEM-SPEC.md §3,
  * and `services/api/test/cosmetics.spec.ts` asserts both halves of that).
+ *
+ * The shape is the shared Zod contract now (`packages/contracts`), since the
+ * per-planet biomes of 30 Sep 2026: a hand-kept mirror is how a field goes
+ * missing on one side.
  */
-export interface Cosmetics {
-  rotationOffset: number;
-  paletteVariant: number;
-  callsign: string;
-  biomeIndex: number;
-  /** Index into `themes`. Closes F-40 — see the server's `Cosmetics`. */
-  themeIndex: number;
-  /** 0-359. A hue, never a hex: contrast is fixed per theme in the tokens. */
-  accentHue: number;
-  version: string;
-  biomes: string[];
-  themes: string[];
-}
+export type { Cosmetics };
 
 export const api = {
   stages: () => request<StageMapData>("/api/v1/stages"),

@@ -31,6 +31,7 @@ import { api, type ProgressGrid as Grid, type StageMapData } from "./lib/api";
 import { useCosmetics } from "./solar-system/cosmetic-seed";
 import { SolarProvider } from "./solar-system/SolarBackdrop";
 import { currentIdentity, onAuthChange, signOut, type Identity } from "./lib/auth";
+import { realmFor, useRealm } from "./lib/realm";
 
 /**
  * The student app.
@@ -131,7 +132,7 @@ function AppShell(): JSX.Element {
    * graded question is exactly what that rule exists to keep out -- and it
    * would be MOTION behind an assessment, which is worse than decoration.
    */
-  const onContentSurface = /^\/app\/stage\//.test(location.pathname);
+  const onContentSurface = realmFor(location.pathname).realm === "biome";
 
   /*
    * AND OFF ON `/app/map`, which is the flat view asked for BY CHOICE.
@@ -222,9 +223,21 @@ function AppShell(): JSX.Element {
   );
 }
 
+/**
+ * The realm, applied to <html> for every route (WEB-REMAKE.md §1): the star
+ * system everywhere except inside a planet, where that planet's biome holds
+ * the page. index.html paints the first frame; this keeps it right on every
+ * navigation after. Renders nothing.
+ */
+function RealmSync(): null {
+  useRealm();
+  return null;
+}
+
 export default function App(): JSX.Element {
   return (
     <Router>
+      <RealmSync />
       <Routes>
         <Route path="/" element={<Navigate to="/app" replace />} />
         <Route path="/login" element={<LoginPage />} />

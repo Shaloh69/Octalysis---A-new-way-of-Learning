@@ -11,6 +11,12 @@
  * blue at the same HSL lightness look nothing alike.
  */
 
+/* The faces, self-hosted (30 Sep 2026): until now apps/web loaded no font file
+ * at all and rendered Inter and JetBrains Mono from whatever the machine had.
+ * `looks.css`, the two realms' colour sets and frames, is NOT imported yet: it
+ * recolours every page, and the neutral-paper ruling needs the runner remade
+ * first. The shell session imports it (WEB-REMAKE.md §8 #2). */
+@import "@octa/tokens/fonts.css";
 @import "@octa/tokens/tokens.css";
 /* The shared animated backdrop -- the same file the console imports, so the two
  * apps cannot drift into looking like different products. */

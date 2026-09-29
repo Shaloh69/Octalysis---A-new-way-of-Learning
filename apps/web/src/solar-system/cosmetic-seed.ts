@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Cosmetics } from "../lib/api";
 import { hasChosen } from "../lib/session";
+import { cachePlanetBiomes } from "../lib/realm";
 
 /**
  * The client half of per-student cosmetic seeding.
@@ -39,6 +40,7 @@ const DEFAULT: Cosmetics = {
   version: "default",
   biomes: ["neutral"],
   themes: ["bare-metal"],
+  planetBiomes: {},
 };
 
 /**
@@ -51,8 +53,10 @@ const DEFAULT: Cosmetics = {
  * the wrong weight to give it.
  */
 /**
- * Called in two places on purpose: `AppShell`, so `data-biome` is set on every
- * authenticated route including the stage reader, and `StageMap`, which needs
+ * Called in two places on purpose: `AppShell`, so the seeded look and the
+ * per-planet biomes land on every authenticated route including the stage
+ * reader (the realm, `lib/realm.ts`, turns them into `data-biome`), and
+ * `StageMap`, which needs
  * the rotation and palette VALUES rather than just the attributes. The
  * attribute effect is idempotent, so both callers setting the same values is
  * harmless -- and one fetch each is cheaper than threading the result through
@@ -118,19 +122,25 @@ export function useCosmetics(): { cosmetics: Cosmetics; loaded: boolean } {
     if (typeof document === "undefined") return;
     const el = document.documentElement;
     el.setAttribute("data-planet", planetVariantAttr(cosmetics.paletteVariant));
-    el.setAttribute("data-biome", biomeAttr(cosmetics.biomeIndex, cosmetics.biomes));
     applySeededLook(cosmetics);
   }, [cosmetics]);
 
   return { cosmetics, loaded };
 }
 
-/** Put the seeded look on <html>. Callable outside React, so it can run before a render. */
+/**
+ * Put the seeded look on <html>. Callable outside React, so it can run before a render.
+ *
+ * It does NOT set `data-biome` any more (30 Sep 2026). The biome is now per
+ * PLANET and belongs to the realm (`lib/realm.ts`, WEB-REMAKE.md §1): a star
+ * route carries none, and a planet route carries that planet's. This hands the
+ * per-planet biomes to the realm, which caches them for the next first frame.
+ */
 function applyCosmeticAttributes(c: Cosmetics): void {
   if (typeof document === "undefined") return;
   const el = document.documentElement;
   el.setAttribute("data-planet", planetVariantAttr(c.paletteVariant));
-  el.setAttribute("data-biome", biomeAttr(c.biomeIndex, c.biomes));
+  cachePlanetBiomes(c.planetBiomes);
   applySeededLook(c);
 }
 

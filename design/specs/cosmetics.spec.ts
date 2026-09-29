@@ -45,11 +45,19 @@ function mintDevToken(who: { sub: string; studentId: string }): string {
   return `${header}.${payload}.${sig}`;
 }
 
+/** Each page's per-planet biomes, as the cosmetics endpoint sent them. */
+const skies = new WeakMap<Page, Record<string, string>>();
+
 async function open(page: Page, who: keyof typeof STUDENTS): Promise<void> {
   await page.addInitScript(
     ([token]) => window.localStorage.setItem("octa:dev-token", token as string),
     [mintDevToken(STUDENTS[who])],
   );
+  page.on("response", async (r) => {
+    if (!r.url().endsWith("/api/v1/cosmetics") || !r.ok()) return;
+    const body = (await r.json().catch(() => null)) as { planetBiomes?: Record<string, string> } | null;
+    if (body?.planetBiomes) skies.set(page, body.planetBiomes);
+  });
   await page.goto("/app", { waitUntil: "networkidle" });
   // Wait for the CONDITION, not for a stopwatch.
   //
@@ -75,12 +83,22 @@ async function structure(page: Page): Promise<string[]> {
 }
 
 /** The facts that are only about how it looks. These are supposed to vary. */
-async function look(page: Page): Promise<{ planet: string | null; biome: string | null }> {
+async function look(page: Page): Promise<{
+  planet: string | null;
+  realm: string | null;
+  biome: string | null;
+  sky: string;
+}> {
   // On <html>, beside data-theme -- see cosmetic-seed.ts for why.
   const el = page.locator("html");
   return {
     planet: await el.getAttribute("data-planet"),
+    realm: await el.getAttribute("data-realm"),
+    // Since 30 Sep 2026 a star route carries NO biome: the biome is the
+    // planet's, and belongs to the realm (WEB-REMAKE.md §1).
     biome: await el.getAttribute("data-biome"),
+    // The per-planet biomes, one per stage: what the look now varies by.
+    sky: JSON.stringify(skies.get(page) ?? null),
   };
 }
 
@@ -108,14 +126,20 @@ test.describe("two students, one curriculum", () => {
     // never landed and the whole feature is a no-op that still "passes".
     expect(lookA.planet).toMatch(/^v\d+$/);
     expect(lookB.planet).toMatch(/^v\d+$/);
-    expect(lookA.biome).toBeTruthy();
-    expect(lookB.biome).toBeTruthy();
+    // /app is the star system: the realm is set, and no biome is.
+    expect(lookA.realm).toBe("star");
+    expect(lookB.realm).toBe("star");
+    expect(lookA.biome).toBeNull();
+    expect(lookB.biome).toBeNull();
+    // Every planet has a biome, for both students.
+    expect(Object.keys(JSON.parse(lookA.sky) as object)).toHaveLength(19);
+    expect(Object.keys(JSON.parse(lookB.sky) as object)).toHaveLength(19);
 
-    // These two are chosen to differ on both axes.
+    // These two are chosen to differ: palette variant and the planets' biomes.
     expect(
-      `${lookA.planet}/${lookA.biome}`,
+      `${lookA.planet}/${lookA.sky}`,
       "two students got an identical look -- is the seed reaching the client?",
-    ).not.toBe(`${lookB.planet}/${lookB.biome}`);
+    ).not.toBe(`${lookB.planet}/${lookB.sky}`);
   });
 
   test("the map underneath is the same map", async ({ page, browser }, testInfo) => {
@@ -147,5 +171,58 @@ test.describe("two students, one curriculum", () => {
     // "The same reason the avatar is seeded from your ID" only works if it does
     // not change on you between sessions.
     expect(await look(page)).toEqual(first);
+  });
+
+  test("a planet wears its own biome, and the star system none", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "one run is enough for this");
+
+    await open(page, "b");
+    const sky = skies.get(page)!;
+    expect(sky, "the cosmetics response carried no planetBiomes").toBeTruthy();
+    const html = page.locator("html");
+
+    for (const stage of ["00", "04"]) {
+      await page.goto(`/app/stage/${stage}`, { waitUntil: "domcontentloaded" });
+      await expect(html).toHaveAttribute("data-realm", "biome");
+      await expect(html, `planet ${stage}`).toHaveAttribute("data-biome", sky[stage]!);
+    }
+
+    // Leaving the planet returns the star system, with no biome left behind.
+    await page.goto("/app/map", { waitUntil: "domcontentloaded" });
+    await expect(html).toHaveAttribute("data-realm", "star");
+    await expect(html).not.toHaveAttribute("data-biome", /.*/);
+  });
+
+  test("a reload into a planet paints its biome on the first frame", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-1440", "one run is enough for this");
+
+    await open(page, "b");
+    const sky = skies.get(page)!;
+    // Record <html> at the first animation frame: before the first paint, and
+    // before any bundle has fetched anything.
+    await page.addInitScript(() => {
+      requestAnimationFrame(() => {
+        const el = document.documentElement;
+        (window as unknown as { __first: unknown }).__first = {
+          realm: el.getAttribute("data-realm"),
+          biome: el.getAttribute("data-biome"),
+        };
+      });
+    });
+    await page.goto("/app/stage/04", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => (window as unknown as { __first?: unknown }).__first);
+    const first = await page.evaluate(() => (window as unknown as { __first: unknown }).__first);
+    expect(first, "the first frame showed the wrong realm or biome").toEqual({
+      realm: "biome",
+      biome: sky["04"],
+    });
+
+    // And a deep link to a star route never paints a biome, even with one cached.
+    await page.goto("/app/stages", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => (window as unknown as { __first?: unknown }).__first);
+    expect(await page.evaluate(() => (window as unknown as { __first: unknown }).__first)).toEqual({
+      realm: "star",
+      biome: null,
+    });
   });
 });

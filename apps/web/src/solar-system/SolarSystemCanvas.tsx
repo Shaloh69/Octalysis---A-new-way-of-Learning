@@ -442,11 +442,13 @@ function Planets({
   /*
    * §4.1 — the planet surface takes the student's biome tint, mixed with the
    * palette variant so both cosmetic systems are visible rather than one
-   * overriding the other. Read from the same `[data-biome]` block the landing
-   * scene uses, so the two can never disagree.
+   * overriding the other. Read from the per-biome root token the landing
+   * scene's `[data-biome]` block aliases, so the two can never disagree -- and
+   * so it resolves on the star system, where <html> carries no `data-biome`
+   * since the realms (30 Sep 2026, WEB-REMAKE.md §1).
    */
   const biomeTint = useMemo(
-    () => (biome ? tokenColor("--biome-planet", [0.6, 0.05, 0.6]) : null),
+    () => (biome ? tokenColor(`--biome-planet-${biome}`, [0.6, 0.05, 0.6]) : null),
     [biome],
   );
   /*

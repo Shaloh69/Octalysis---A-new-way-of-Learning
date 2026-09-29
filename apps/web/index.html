@@ -5,6 +5,30 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OCTA</title>
+    <!--
+      The realm on the FIRST frame (docs/redesign/WEB-REMAKE.md section 1): a
+      deep link or a reload into a planet paints its biome before any bundle
+      runs, and nothing flashes the star system first. A classic inline script,
+      because a module is deferred and the browser may paint before it runs.
+      It restates src/lib/realm.ts realmFor(); test/realm.spec.ts runs this
+      exact script against realmFor's route table, so the two cannot drift.
+    -->
+    <script data-realm-prepaint>
+      (function () {
+        var el = document.documentElement;
+        var m = /^\/app\/stage\/([^/?#]+)/.exec(location.pathname);
+        if (!m) { el.setAttribute("data-realm", "star"); return; }
+        var planet = decodeURIComponent(m[1]).split(".")[0];
+        var biomes = ["neutral", "jungle", "desert", "arctic", "city", "cave", "ocean"];
+        var biome = "neutral";
+        try {
+          var cached = JSON.parse(localStorage.getItem("octa:planet-biomes") || "{}");
+          if (cached && biomes.indexOf(cached[planet]) >= 0) biome = cached[planet];
+        } catch (e) { /* no storage: the fallback biome, the realm still right */ }
+        el.setAttribute("data-realm", "biome");
+        el.setAttribute("data-biome", biome);
+      })();
+    </script>
     <meta name="description" content="Computer Systems and Assembly Language, fourteen weeks from input to the gate." />
   </head>
   <body>

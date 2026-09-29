@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { createHmac } from "node:crypto";
+import { forcePlanetBiome } from "./_realm-fixture";
 
 /**
  * Arriving at a stage — `BIOME-AND-LOADING-SPEC.md` §4.2.
@@ -42,6 +43,10 @@ const STUDENT = studentToken();
  */
 async function arriving(page: Page, biome?: string, hold = 4_000): Promise<void> {
   await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), STUDENT);
+  // Planet 00's biome, through the realm's own input (_realm-fixture.ts):
+  // since 30 Sep 2026 a hand-written `data-biome` is overwritten when the
+  // cosmetics response lands.
+  if (biome) await forcePlanetBiome(page, "00", biome);
   await page.route("**/api/v1/stages/**", async (route) => {
     await new Promise((r) => setTimeout(r, hold));
     await route.continue();
@@ -55,7 +60,7 @@ async function arriving(page: Page, biome?: string, hold = 4_000): Promise<void>
    */
   await page.locator(ARRIVING).waitFor({ timeout: 15_000 });
   if (biome) {
-    await page.evaluate((b) => document.documentElement.setAttribute("data-biome", b), biome);
+    await page.locator(`html[data-biome="${biome}"]`).waitFor({ state: "attached" });
   }
   await page.waitForTimeout(700);
 }

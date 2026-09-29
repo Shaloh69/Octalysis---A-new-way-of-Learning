@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { createHmac } from "node:crypto";
+import { forcePlanetBiome } from "./_realm-fixture";
 
 /**
  * The seven landing biomes — captured individually, and held to §2's honesty
@@ -25,9 +26,11 @@ import { createHmac } from "node:crypto";
  * biomes draw nothing, which is a strange-looking thing to want and exactly
  * right.
  *
- * The biome is read from `<html data-biome>` (`useSeededBiome`), so it is set
- * directly here rather than by re-seeding a student — deterministic, and it does
- * not depend on which biome the cosmetic endpoint happens to give anyone.
+ * The biome is read from `<html data-biome>` (`useSeededBiome`), which the realm
+ * sets from the planet's biome (30 Sep 2026). It is forced here through the
+ * cosmetics response (`_realm-fixture.ts`) rather than by re-seeding a student
+ * — deterministic, and it does not depend on which biome the cosmetic
+ * endpoint happens to give anyone.
  */
 
 const JWT_SECRET =
@@ -78,12 +81,16 @@ const STUDENT = studentToken();
 
 async function landing(page: Page, biome: string): Promise<void> {
   await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), STUDENT);
+  /*
+   * Put planet 00 in this biome. Since 30 Sep 2026 the biome is the PLANET's,
+   * decided by the realm from the cosmetics response (lib/realm.ts), so the
+   * spec sets that input rather than writing `data-biome` by hand, which the
+   * realm would overwrite when the response lands (_realm-fixture.ts).
+   */
+  await forcePlanetBiome(page, "00", biome);
   await page.goto("/app/stage/00", { waitUntil: "domcontentloaded" });
   await page.locator("h1").first().waitFor({ timeout: 15_000 });
-
-  // Override the seeded value. `useSeededBiome` watches this attribute with a
-  // MutationObserver, so setting it re-renders the scene.
-  await page.evaluate((b) => document.documentElement.setAttribute("data-biome", b), biome);
+  await page.locator(`html[data-realm="biome"][data-biome="${biome}"]`).waitFor({ state: "attached" });
 
   /*
    * Wait for the SCENE, not for a stopwatch. This was `waitForTimeout(400)`,

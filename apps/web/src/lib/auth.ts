@@ -1,4 +1,5 @@
 import { supabase } from "./session";
+import { clearCachedPlanetBiomes } from "./realm";
 
 /**
  * Sign-in and registration, from the student's side.
@@ -116,6 +117,8 @@ export async function signOut(): Promise<void> {
   } catch {
     /* private window */
   }
+  // The next student on a shared lab PC must not paint this one's planets.
+  clearCachedPlanetBiomes();
 }
 
 export interface Identity {
