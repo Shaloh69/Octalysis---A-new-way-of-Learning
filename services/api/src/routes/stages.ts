@@ -48,6 +48,57 @@ interface StageRow {
   objectives: Array<{ id: string; level: number | null; description: string }> | null;
 }
 
+type StageState = "locked" | "available" | "in_progress" | "mastered";
+
+interface LockReason {
+  kind: string;
+  blockingStages: string[];
+  requiredMastery?: number;
+  currentMastery?: number;
+  message: string;
+}
+
+function stateOf(unlocked: boolean, mastery: number): StageState {
+  if (!unlocked) return "locked";
+  if (mastery >= MASTERY_THRESHOLD) return "mastered";
+  if (mastery > 0) return "in_progress";
+  return "available";
+}
+
+/**
+ * The lock REASON, authored here with the distance, because DESIGN-MANDATE 1
+ * requires every lock to say why and how far off. ONE author for the map and
+ * the reader (29 Sep 2026): the reader's lock card prints this verbatim, and a
+ * second wording of the same fact would drift from the first.
+ */
+function lockReasonFor(
+  prereq: string[],
+  masteryOf: (id: string) => number,
+  titleOf: (id: string) => string | undefined,
+): LockReason {
+  const short = prereq.filter((p) => masteryOf(p) < MASTERY_THRESHOLD);
+  if (short.length > 0) {
+    const worst = short.map((p) => ({ id: p, m: masteryOf(p) })).sort((a, b) => a.m - b.m)[0]!;
+    const title = titleOf(worst.id) ?? `Stage ${worst.id}`;
+    return {
+      kind: "prereq",
+      blockingStages: short,
+      requiredMastery: MASTERY_THRESHOLD,
+      currentMastery: worst.m,
+      message:
+        `Unlocks when Stage ${worst.id} (${title}) reaches ` +
+        `${Math.round(MASTERY_THRESHOLD * 100)}%. You're at ${Math.round(worst.m * 100)}%.`,
+    };
+  }
+  // Prerequisites are met, so a teacher override or a lock window is holding
+  // it. The student does not need the mechanism, only the fact.
+  return {
+    kind: "override",
+    blockingStages: [],
+    message: "Your instructor has this stage closed right now.",
+  };
+}
+
 export function registerStageRoutes(app: FastifyInstance, env: Env): void {
   /* ----------------------------------------------------------
    * GET /api/v1/stages   -- the whole map, resolved for this student
@@ -79,50 +130,15 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
 
     const nodes = rows.map((r) => {
       const mastery = Number(r.mastery ?? 0);
-      const unlocked = r.unlocked;
-
-      let state: "locked" | "available" | "in_progress" | "mastered";
-      if (!unlocked) state = "locked";
-      else if (mastery >= MASTERY_THRESHOLD) state = "mastered";
-      else if (mastery > 0) state = "in_progress";
-      else state = "available";
-
-      // The lock REASON is authored here, with the distance, because
-      // DESIGN-MANDATE 1 requires every lock to say why and how far off.
-      let lockReason: {
-        kind: string;
-        blockingStages: string[];
-        requiredMastery?: number;
-        currentMastery?: number;
-        message: string;
-      } | null = null;
-
-      if (state === "locked") {
-        const short = r.prereq.filter((p) => (masteryOf.get(p) ?? 0) < MASTERY_THRESHOLD);
-        if (short.length > 0) {
-          const worst = short
-            .map((p) => ({ id: p, m: masteryOf.get(p) ?? 0 }))
-            .sort((a, b) => a.m - b.m)[0]!;
-          const title = rows.find((x) => x.id === worst.id)?.title ?? `Stage ${worst.id}`;
-          lockReason = {
-            kind: "prereq",
-            blockingStages: short,
-            requiredMastery: MASTERY_THRESHOLD,
-            currentMastery: worst.m,
-            message:
-              `Unlocks when Stage ${worst.id} (${title}) reaches ` +
-              `${Math.round(MASTERY_THRESHOLD * 100)}%. You're at ${Math.round(worst.m * 100)}%.`,
-          };
-        } else {
-          // Prerequisites are met, so a teacher override or a lock window is
-          // holding it. The student does not need the mechanism, only the fact.
-          lockReason = {
-            kind: "override",
-            blockingStages: [],
-            message: "Your instructor has this stage closed right now.",
-          };
-        }
-      }
+      const state = stateOf(r.unlocked, mastery);
+      const lockReason =
+        state === "locked"
+          ? lockReasonFor(
+              r.prereq,
+              (p) => masteryOf.get(p) ?? 0,
+              (p) => rows.find((x) => x.id === p)?.title,
+            )
+          : null;
 
       return {
         id: r.id,
@@ -201,17 +217,38 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       [stageId],
     );
 
+    const mastery = Number(stage.mastery ?? 0);
+
     // A locked stage returns its shape -- title, objectives, why it is locked --
     // but NOT its content. The read-only preview of what is next is deliberate
     // (Petal 6: scarcity that still respects autonomy); the prose is not.
     if (!stage.unlocked && !staff) {
+      // The prerequisites' masteries and titles, read exactly as the map reads
+      // them (published stages only), so both routes print the same sentence.
+      const prereq: string[] = stage.prereq ?? [];
+      const pre = await app.db.query<{ id: string; title: string; mastery: string | null }>(
+        `select s.id, s.title, sp.mastery
+           from stages s
+           left join stage_progress sp on sp.user_id = $1 and sp.stage_id = s.id
+          where s.id = any($2) and s.published`,
+        [id.userId, prereq],
+      );
+      const known = new Map(pre.rows.map((r) => [r.id, r]));
       return reply.send({
         id: stage.id,
         title: stage.title,
         archetype: stage.archetype,
         levels: stage.levels ?? [],
         estMinutes: stage.est_minutes,
+        gradeable: stage.gradeable,
         locked: true,
+        state: "locked" satisfies StageState,
+        masteryThreshold: MASTERY_THRESHOLD,
+        lockReason: lockReasonFor(
+          prereq,
+          (p) => Number(known.get(p)?.mastery ?? 0),
+          (p) => known.get(p)?.title,
+        ),
         objectives: objectives.rows.map((o) => ({
           id: o.id,
           description: o.description,
@@ -261,8 +298,13 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       archetype: stage.archetype,
       levels: stage.levels ?? [],
       estMinutes: stage.est_minutes,
+      gradeable: stage.gradeable,
       locked: false,
-      mastery: Number(Number(stage.mastery ?? 0).toFixed(3)),
+      // Staff read a locked stage's content too; its state still says locked.
+      state: stateOf(stage.unlocked, mastery),
+      masteryThreshold: MASTERY_THRESHOLD,
+      lockReason: null,
+      mastery: Number(mastery.toFixed(3)),
       objectives: objectives.rows.map((o) => ({
         id: o.id,
         description: o.description,

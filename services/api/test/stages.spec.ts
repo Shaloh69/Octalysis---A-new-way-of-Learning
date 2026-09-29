@@ -367,6 +367,57 @@ describe("GET /api/v1/stages/:id — the reader", () => {
     expect(res.body).not.toContain("Locked content a student must not read");
   });
 
+  /*
+   * The lock card names the prerequisite and the distance (PAGE-SPECS
+   * §/app/stage/:id; instructor, 29 Sep 2026). The words are the server's, and
+   * they are the SAME words the map shows, from one function: a reader that
+   * worded its own lock would be a second author of the same fact.
+   */
+  it("a LOCKED stage says why, in the map's own words, and says it is locked", async () => {
+    const map = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
+    const node = (map.json().nodes as Array<{ id: string; lockReason: unknown }>).find((n) => n.id === "05")!;
+
+    const res = await app.inject({ method: "GET", url: "/api/v1/stages/05", headers: auth(studentToken) });
+    const body = res.json();
+    expect(body.state).toBe("locked");
+    expect(body.lockReason).toEqual(node.lockReason);
+    expect(body.lockReason.kind).toBe("prereq");
+    expect(body.lockReason.blockingStages.length).toBeGreaterThan(0);
+    expect(body.lockReason.message).toMatch(/Unlocks when Stage \d\d .* reaches \d+%\. You're at \d+%\./);
+    // Still no content: the reason is not a way round V-7.
+    expect(body.blocks).toEqual([]);
+    expect(res.body).not.toContain("Locked content a student must not read");
+  });
+
+  it("a teacher override reads as the instructor's, on the reader as on the map", async () => {
+    await pool.query(
+      `insert into stage_locks (scope, scope_user_id, stage_id, state, reason, actor_id)
+       values ('user', $1, '00', 'locked', 'held for a makeup', $2)`,
+      [studentId, teacherId],
+    );
+    try {
+      const res = await app.inject({ method: "GET", url: "/api/v1/stages/00", headers: auth(studentToken) });
+      const body = res.json();
+      expect(body.locked).toBe(true);
+      expect(body.lockReason.kind).toBe("override");
+      expect(body.lockReason.message).toBe("Your instructor has this stage closed right now.");
+      // The teacher's private reason is not the student's to read.
+      expect(res.body).not.toContain("makeup");
+    } finally {
+      await pool.query("delete from stage_locks where scope_user_id = $1", [studentId]);
+    }
+  });
+
+  it("an OPEN stage carries its state, the threshold and no lock reason", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/v1/stages/00", headers: auth(studentToken) });
+    const body = res.json();
+    expect(body.locked).toBe(false);
+    expect(["available", "in_progress", "mastered"]).toContain(body.state);
+    expect(body.lockReason).toBeNull();
+    expect(body.masteryThreshold).toBe(0.7);
+    expect(typeof body.gradeable).toBe("boolean");
+  });
+
   it("an unpublished stage is invisible to a student and visible to staff", async () => {
     await pool.query("update stages set published = false where id = '17'");
     const asStudent = await app.inject({ method: "GET", url: "/api/v1/stages/17", headers: auth(studentToken) });
