@@ -14,7 +14,7 @@ import {
 import { readPng } from "./png";
 
 /**
- * The student app's ten colour sets, held to WCAG AA by computation
+ * The student app's nine colour sets, held to WCAG AA by computation
  * (`docs/redesign/WEB-REMAKE.md` §0: "AA computed on every colour set that can
  * appear"). Three HUD variants for the star system and seven biomes for inside
  * a planet, each checked for every text/surface pair it uses, for the seeded
@@ -30,21 +30,24 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const PKG = resolve(HERE, "..");
 const CSS = readFileSync(resolve(PKG, "looks.css"), "utf8");
 
-export const HUD = ["bare-metal", "blueprint", "phosphor"] as const;
 export const BIOMES = ["neutral", "jungle", "desert", "arctic", "city", "cave", "ocean"] as const;
 const HUES = Array.from({ length: 24 }, (_, i) => i * 15);
 
-/** Merge every rule that applies to one set, in source order. */
-function setDecls(realm: "star" | "biome", name: string): Declarations {
-  const attr = realm === "star" ? `[data-theme="${name}"]` : `[data-biome="${name}"]`;
+/**
+ * Merge every rule that applies to one set, in source order.
+ *
+ * Ruling 2 (30 Sep 2026): ONE star set (`[data-realm="star"]`, the variants
+ * are removed), seven biomes, and the neutral paper (`[data-paper]`).
+ */
+function setDecls(kind: "star" | "biome" | "paper", name = ""): Declarations {
   const merged: Declarations = new Map();
   for (const rule of parseRules(CSS)) {
-    const applies = rule.selectors.some(
-      (s) =>
-        s === "[data-realm]" ||
-        s === `[data-realm="${realm}"]` ||
-        (s.includes(`[data-realm="${realm}"]`) && s.includes(attr)),
-    );
+    const applies = rule.selectors.some((s) => {
+      if (kind === "paper") return s === "[data-paper]";
+      if (s === "[data-realm]") return true;
+      if (s === `[data-realm="${kind}"]`) return true;
+      return kind === "biome" && s.includes('[data-realm="biome"]') && s.includes(`[data-biome="${name}"]`);
+    });
     if (applies) for (const [k, v] of rule.decls) merged.set(k, v);
   }
   return merged;
@@ -140,14 +143,21 @@ function measure(set: string, decls: Declarations): { results: Result[]; missing
 }
 
 const SETS: Array<{ label: string; decls: Declarations }> = [
-  ...HUD.map((t) => ({ label: `hud/${t}`, decls: setDecls("star", t) })),
+  { label: "star", decls: setDecls("star") },
   ...BIOMES.map((b) => ({ label: `biome/${b}`, decls: setDecls("biome", b) })),
+  { label: "paper", decls: setDecls("paper") },
 ];
 
-describe("looks.css — ten colour sets, AA by computation", () => {
-  it("parses ten sets, each with declarations", () => {
-    expect(SETS).toHaveLength(10);
+describe("looks.css — nine colour sets, AA by computation", () => {
+  it("parses one star set, seven biomes and the paper, each with declarations", () => {
+    expect(SETS).toHaveLength(9);
     for (const s of SETS) expect(s.decls.size, `${s.label} declares nothing`).toBeGreaterThan(20);
+  });
+
+  it("has no student variant left (ruling 2: the theme changes only by realm)", () => {
+    for (const rule of parseRules(CSS)) {
+      for (const s of rule.selectors) expect(s, "a [data-theme] set in looks.css").not.toMatch(/data-theme/);
+    }
   });
 
   for (const { label, decls } of SETS) {
@@ -164,12 +174,6 @@ describe("looks.css — ten colour sets, AA by computation", () => {
             `${r.pair.fg} on ${r.pair.bg}${r.hue === null ? "" : ` @hue ${r.hue}`}: ` +
             `${r.ratio.toFixed(2)} < ${MIN[r.pair.kind]} (${r.pair.why})`,
         );
-      // Print the worst ratio per pair, so LOOK.md can quote a measured number.
-      const worst = new Map<string, number>();
-      for (const r of results) {
-        const k = `${r.pair.fg} on ${r.pair.bg}`;
-        worst.set(k, Math.min(worst.get(k) ?? Infinity, r.ratio));
-      }
       const floor = Math.min(
         ...results.filter((r) => r.pair.kind === "text").map((r) => r.ratio),
       );
@@ -180,33 +184,38 @@ describe("looks.css — ten colour sets, AA by computation", () => {
 });
 
 /**
- * The biome frames are Kenney's CC0 sprites (instructor ruling, 30 Sep 2026),
- * so their colours are paint rather than tokens. What a test CAN hold them to:
- * each biome has one, it is the art we measured, its frame band is solid (no
- * scene showing through the frame), and the licence travels with it. The
- * edge a reader sees against the text is the --frame-inner token ring, which
- * the AA sweep above already checks on every surface.
+ * Inside a biome the nav bar, the side bars and every button are Kenney's CC0
+ * sprites (ruling 2, 30 Sep 2026), so their colours are paint rather than
+ * tokens. What a test CAN hold them to: each biome has its panel and its
+ * button (and the button's pressed twin), each is the 48 by 48 art we measured,
+ * its 6-pixel frame band is solid, and every sprite that carries WORDS (a bar,
+ * a button) has its fill decoded and checked against --sprite-ink at 4.5:1.
+ * A panel's running text sits on a token surface inside a token ring, which
+ * the sweep above already checks.
  */
-describe("looks.css — the vendored pixel frames", () => {
+describe("looks.css — the biomes' sprites", () => {
   const urls = [...CSS.matchAll(/url\("\.\/(pixel\/[\w-]+\.png)"\)/g)].map((m) => m[1]!);
+  const shared = setDecls("star");
+  const ink = toRgb(resolveToken(shared, "--sprite-ink")!, 0);
 
   it("the Kenney licence travels with the sprites", () => {
     expect(existsSync(resolve(PKG, "pixel", "LICENSE-kenney-pixel-ui-pack.txt"))).toBe(true);
   });
 
+  const spritesOf = (b: string) => [`pixel/panel-${b}.png`, `pixel/button-${b}.png`, `pixel/button-${b}-pressed.png`];
+
   for (const biome of BIOMES) {
-    it(`${biome}: a frame and a pressed frame, both referenced and both on disk`, () => {
-      for (const f of [`pixel/${biome}.png`, `pixel/${biome}-pressed.png`]) {
+    it(`${biome}: a panel, a button and a pressed button, referenced and on disk`, () => {
+      for (const f of spritesOf(biome)) {
         expect(urls, `looks.css never names ${f}`).toContain(f);
         expect(existsSync(resolve(PKG, f)), `${f} is missing`).toBe(true);
       }
     });
 
-    it(`${biome}: 48 by 48, and the 6-pixel frame band is opaque`, () => {
-      for (const f of [`pixel/${biome}.png`, `pixel/${biome}-pressed.png`]) {
+    it(`${biome}: 48 by 48, the frame band opaque, and --sprite-ink readable on the fill`, () => {
+      for (const f of spritesOf(biome)) {
         const png = readPng(readFileSync(resolve(PKG, f)));
         expect([png.width, png.height], f).toEqual([48, 48]);
-        // The four edges between the corners: every pixel the slice keeps.
         const holes: string[] = [];
         for (let i = 6; i < 42; i += 1) {
           for (let d = 0; d < 6; d += 1) {
@@ -216,14 +225,33 @@ describe("looks.css — the vendored pixel frames", () => {
           }
         }
         expect(holes, `${f} has see-through pixels in its frame`).toEqual([]);
+        // The fill: every pixel of the centre 24 by 20 the words can sit on.
+        let worst = Infinity;
+        for (let y = 12; y < 32; y += 1) {
+          for (let x = 12; x < 36; x += 1) {
+            const [r, g, b] = png.pixel(x, y);
+            worst = Math.min(worst, contrast(ink, [r / 255, g / 255, b / 255]));
+          }
+        }
+        expect(worst, `${f}: --sprite-ink on its fill`).toBeGreaterThanOrEqual(4.5);
       }
     });
   }
 
+  it("four chevron colours, left and right, on disk and named", () => {
+    for (const c of ["yellow", "green", "orange", "blue"]) {
+      for (const s of ["left", "right"]) {
+        const f = `pixel/arrow-${c}-${s}.png`;
+        expect(urls).toContain(f);
+        expect(readPng(readFileSync(resolve(PKG, f))).width).toBe(16);
+      }
+    }
+  });
+
   it("every url() in looks.css and fonts.css resolves to a file", () => {
     const fonts = readFileSync(resolve(PKG, "fonts.css"), "utf8");
     const all = [...`${CSS}\n${fonts}`.matchAll(/url\("\.\/([^"]+)"\)/g)].map((m) => m[1]!);
-    expect(all.length).toBeGreaterThan(14);
+    expect(all.length).toBeGreaterThan(20);
     for (const f of all) expect(existsSync(resolve(PKG, f)), `${f} is missing`).toBe(true);
   });
 
