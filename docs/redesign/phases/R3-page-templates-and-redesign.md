@@ -1050,19 +1050,38 @@ thesis deliverable, and right now no phase is accountable for it.
         face, the frames (vendored, against the CSS recommendation), Space
         Grotesk's retirement and the paper (follows the variant) from captures.
         No route rebuilt; the reader now wears the planet's biome
-  - [ ] **The shell** — the nav in both dresses, the mission tracker, the
-        key-hint bar, the Register Bar, the realm switch and both transitions
-        (clears §0p.1-5, §0q.1, §0r.2)
-  - [ ] `/app` — the 3D map: selection, zoom, the sidebar as the planet's
-        window, Kepler (`WEB-REVAMP.md` §3-§4)
-  - [ ] `/app/map` — the flat map, remade in the HUD
-  - [ ] `/app/stage/:id` — the reader, in the planet's biome
-  - [ ] `/app/stage/:id/check` — the runner: biome chrome, neutral paper
-  - [ ] `/app/stages` — acts as systems, stages as planets
-  - [ ] `/app/progress` — depth and the 21 competency cells as meters
-  - [ ] `/app/work` — submissions, 40% of the grade (§0g.4's return)
-  - [ ] `/app/settings` — the variant picker changes the HUD
-  - [ ] `/login`, `/register`, `/maintenance`, the 404 — the title screen
+        **Ruling 2, 30 Sep 2026** (`WEB-REMAKE.md` §0) then removed the
+        variants (one star HUD, a biome per planet, one neutral paper), put
+        sprites on every bar and button inside a biome, and removed the 2D map.
+        The boxes below are ruling 2's pieces; every commit named is on
+        `origin/main`.
+  - [x] **The shell** — `862a60e`. StarShell (readout strip, tab nav and the
+        phone's bottom bar, mission panel with the depth meter, key hints, CSS
+        star field), BiomeShell (sprite nav bar, readout and hint sprite bars),
+        RealmWarp, the key-hint registry; `web-shell.spec.ts`. Ticked late: the
+        commit that did the work left this box open
+  - [x] `/app` — the 3D map and the only map — `0d6828a`. SYSTEM and BODY
+        panels, the accessible row of planets, zoom to a measured free area,
+        Kepler (`orbit.ts`, tested), per-planet tint, the phone;
+        `web-app.spec.ts`. Ticked late, as above
+  - [x] `/app/map` — **removed by ruling 2**, not remade: it redirects to `/app`
+        (`VISUAL-SYSTEM-3D.md` §5); the map's radio row is the accessible layer
+  - [x] `/app/stage/:id` — the reader, a letter in the planet — `c50376e`;
+        `web-stage.spec.ts`, contrast over seven biomes
+  - [x] `/app/stage/:id/check` — biome chrome, neutral paper — `886007a`;
+        `web-stage-check.spec.ts` proves the paper's computed styles identical
+        in two biomes; hard rule 1 run against the real API on a LOCAL live slice
+  - [x] `/app/stages` — No Man's Sky's discoveries — `2fd1157`; `web-stages.spec.ts`
+  - [x] `/app/progress` — depth and the 21 cells as meters — `545f2a1`;
+        `web-progress.spec.ts`. Per-objective mastery, the growth curve and
+        badges are recorded as deferred: no endpoint serves them
+  - [x] `/app/work` — Starfield's inventory — `943c615`; `web-work.spec.ts`
+  - [x] `/app/settings` — the accent (no variant picker, ruling 2) — `061464c`;
+        `web-settings.spec.ts`
+  - [x] `/login`, `/register`, `/maintenance`, the 404 — the title screen —
+        `04f8ffe`; `web-title.spec.ts`
+  - [x] Cleanup — `264bc91`: 297 dead rules, dead modules, one act list. The
+        whole web suite 406 passed, 106 skipped, 0 failed, on the build
 - [ ] **Toasts, loading states and transitions** on every revamped route per
       `.claude/rules/design.md` — no toast library is installed in either app
       today, exactly one route in `apps/web` has a loading state, and the
