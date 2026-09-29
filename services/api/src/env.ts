@@ -1,4 +1,4 @@
-import { ServerEnv, SERVER_ONLY_SECRETS } from "@octa/contracts";
+import { ServerEnv, SERVER_ONLY_SECRETS } from "@octa/contracts/env";
 
 /**
  * Parse the environment once, at boot, and fail loudly naming the missing var.

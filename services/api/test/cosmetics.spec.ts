@@ -5,11 +5,14 @@ import { fileURLToPath } from "node:url";
 
 import {
   deriveCosmetics,
+  derivePlanetBiome,
+  biomeForBody,
   BIOMES,
   PALETTE_VARIANTS,
   THEMES,
   type Cosmetics,
 } from "../src/routes/cosmetics.js";
+import { Biome, planetOf } from "@octa/contracts";
 import { makeAttemptSeed } from "../src/engine/seed.js";
 
 /**
@@ -286,5 +289,104 @@ describe("the seeded look — F-40", () => {
     const first = deriveCosmetics(A);
     expect(deriveCosmetics(A).themeIndex).toBe(first.themeIndex);
     expect(deriveCosmetics(A).accentHue).toBe(first.accentHue);
+  });
+});
+
+/**
+ * WEB-REMAKE.md §1 (instructor ruling, 30 Sep 2026): one biome per PLANET,
+ * seeded from student and stage, and a moon wears its planet's. Until now
+ * one biome was seeded per student (`biomeIndex`), so every planet a student
+ * opened looked the same.
+ *
+ * The same boundary as the rest of this file holds: a planet's biome decides
+ * what the student looks at inside it, and nothing about what they can do.
+ */
+const STAGES = Array.from({ length: 19 }, (_, i) => String(i).padStart(2, "0"));
+
+describe("per-planet biomes — one per stage, seeded from student and stage", () => {
+  it("is deterministic: the same student gets the same sky every session", () => {
+    for (const s of STAGES) expect(derivePlanetBiome(A, s)).toBe(derivePlanetBiome(A, s));
+    // And nothing but the two inputs can move it: a second derivation for a
+    // different student in between changes nothing.
+    const before = STAGES.map((s) => derivePlanetBiome(A, s));
+    STAGES.forEach((s) => derivePlanetBiome(B, s));
+    expect(STAGES.map((s) => derivePlanetBiome(A, s))).toEqual(before);
+  });
+
+  it("names a biome the server declares, for every stage", () => {
+    for (let i = 0; i < 200; i += 1) {
+      for (const s of STAGES) expect(BIOMES).toContain(derivePlanetBiome(`2321290${i}`, s));
+    }
+  });
+
+  it("gives one student's planets different biomes: the stage is an input", () => {
+    // A sky of one biome would mean the stage id never reached the hash --
+    // the exact per-student behaviour this replaces.
+    for (const key of [A, B, "232129006"]) {
+      const sky = new Set(STAGES.map((s) => derivePlanetBiome(key, s)));
+      expect(sky.size, `${key} got ${[...sky].join(",")}`).toBeGreaterThan(2);
+    }
+  });
+
+  it("gives one planet different biomes across a cohort: the student is an input", () => {
+    const cohort = Array.from({ length: 24 }, (_, i) =>
+      derivePlanetBiome(`2321290${String(i + 1).padStart(2, "0")}`, "04"),
+    );
+    expect(new Set(cohort).size).toBeGreaterThan(2);
+  });
+
+  it("spreads over all seven biomes across a class", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 24; i += 1) for (const s of STAGES) seen.add(derivePlanetBiome(`2321290${i}`, s));
+    expect(seen.size).toBe(BIOMES.length);
+  });
+
+  it("a moon wears its planet's biome", () => {
+    for (const s of STAGES) {
+      for (const moon of [`${s}.1`, `${s}.2`, `${s}.10`]) {
+        expect(biomeForBody(A, moon), moon).toBe(derivePlanetBiome(A, s));
+      }
+      expect(biomeForBody(A, s)).toBe(derivePlanetBiome(A, s));
+    }
+  });
+
+  it("takes exactly the student key and the stage id: nowhere to pass a salt", () => {
+    const src = readFileSync(resolve(ROOT, "services", "api", "src", "routes", "cosmetics.ts"), "utf8");
+    const sig = src.match(/export function derivePlanetBiome\(([^)]*)\)/);
+    expect(sig, "derivePlanetBiome signature not found").not.toBeNull();
+    const params = sig![1]!.split(",").map((x) => x.trim()).filter(Boolean);
+    expect(params, `unexpected parameters: ${params.join(" | ")}`).toHaveLength(2);
+    expect(params[0]).toMatch(/^key\s*:/);
+    expect(params[1]).toMatch(/^stageId\s*:/);
+  });
+
+  it("does not move the per-student cosmetics that already exist", () => {
+    // Adding planets must not repaint anyone's map: rotation, palette, callsign,
+    // theme and hue are the v1 derivation, unchanged.
+    expect(deriveCosmetics("232129006")).toMatchObject({ callsign: "SEXTANT-BD", accentHue: 14, themeIndex: 2 });
+  });
+
+  it("nothing in the cosmetics module can reach a lock, a grade or progress", () => {
+    const code = readFileSync(resolve(ROOT, "services", "api", "src", "routes", "cosmetics.ts"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    for (const forbidden of [
+      /is_stage_unlocked/i, /stage_progress/i, /\binsert\b/i, /\bupdate\s/i, /\bdelete\b/i,
+      /attempt/i, /mastery/i, /lock/i, /grade/i,
+    ]) {
+      expect(code, `cosmetics.ts matches ${forbidden}`).not.toMatch(forbidden);
+    }
+  });
+});
+
+describe("the cosmetics contract (packages/contracts)", () => {
+  it("names the same seven biomes as the server, in the server's order", () => {
+    expect([...BIOMES]).toEqual(Biome.options);
+  });
+
+  it("planetOf maps a moon to its planet and a planet to itself", () => {
+    expect(planetOf("06.3")).toBe("06");
+    expect(planetOf("06.10")).toBe("06");
+    expect(planetOf("06")).toBe("06");
   });
 });

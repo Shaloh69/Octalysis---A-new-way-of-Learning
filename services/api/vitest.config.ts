@@ -11,6 +11,18 @@ export default defineConfig({
     include: ["test/**/*.spec.ts"],
   },
   resolve: {
-    alias: { "@octa/contracts": new URL("../../packages/contracts/src/index.ts", import.meta.url).pathname },
+    // Exact matches, one per entry. A prefix alias on "@octa/contracts" turned
+    // the "/env" subpath (30 Sep 2026) into ".../index.ts/env", and every suite
+    // that booted the server failed to import.
+    alias: [
+      {
+        find: /^@octa\/contracts\/env$/,
+        replacement: new URL("../../packages/contracts/src/env.ts", import.meta.url).pathname,
+      },
+      {
+        find: /^@octa\/contracts$/,
+        replacement: new URL("../../packages/contracts/src/index.ts", import.meta.url).pathname,
+      },
+    ],
   },
 });

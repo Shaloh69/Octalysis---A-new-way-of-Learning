@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { FastifyInstance } from "fastify";
-import { identityFrom } from "../auth.js";
+import { planetOf, type Biome } from "@octa/contracts";
+import { identityFrom, isStaff } from "../auth.js";
 import type { Env } from "../env.js";
 
 /**
@@ -154,6 +155,28 @@ export function deriveCosmetics(key: string): Cosmetics {
   };
 }
 
+/**
+ * One planet's biome: WEB-REMAKE.md §1 (instructor ruling, 30 Sep 2026).
+ * Opening a planet dresses the whole page in its biome, so every planet gets
+ * its own, seeded from the student AND the stage: two students see different
+ * skies over the same stage, and one student sees different planets.
+ *
+ * The same digest as `deriveCosmetics`, keyed on the pair, so it carries the
+ * same guarantees: deterministic (the same student gets the same sky every
+ * session), no secret, and nothing but these two inputs. The per-student
+ * `biomeIndex` above is left exactly as it was, so no student's existing look
+ * moves; this is an addition, not a new version.
+ */
+export function derivePlanetBiome(key: string, stageId: string): Biome {
+  const [w0] = digestWords(`${key}|planet|${stageId}`) as [number];
+  return BIOMES[w0 % BIOMES.length] ?? BIOMES[0];
+}
+
+/** A moon wears its planet's biome (`BIOME-AND-LOADING-SPEC.md` §3). */
+export function biomeForBody(key: string, bodyId: string): Biome {
+  return derivePlanetBiome(key, planetOf(bodyId));
+}
+
 export function registerCosmeticRoutes(app: FastifyInstance, env: Env): void {
   /* ----------------------------------------------------------
    * GET /api/v1/cosmetics -- this student's look. Read-only.
@@ -166,6 +189,16 @@ export function registerCosmeticRoutes(app: FastifyInstance, env: Env): void {
     // error for a case that carries no stakes either way.
     const key = id.studentId ?? id.userId;
 
+    // Every stage the caller can see, the same visibility rule as the map
+    // (`routes/stages.ts`): published, or anything for staff. Read-only, and
+    // the ids are the only column read.
+    const { rows } = await app.db.query<{ id: string }>(
+      `select id from stages where published or $1 order by ordinal`,
+      [isStaff(id)],
+    );
+    const planetBiomes: Record<string, Biome> = {};
+    for (const r of rows) planetBiomes[r.id] = derivePlanetBiome(key, r.id);
+
     return {
       ...deriveCosmetics(key),
       // Echoed so a client can tell one derivation generation from another
@@ -173,6 +206,7 @@ export function registerCosmeticRoutes(app: FastifyInstance, env: Env): void {
       version: COSMETIC_VERSION,
       biomes: BIOMES,
       themes: THEMES,
+      planetBiomes,
     };
   });
 }
