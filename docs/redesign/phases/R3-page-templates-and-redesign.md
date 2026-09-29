@@ -1036,10 +1036,20 @@ thesis deliverable, and right now no phase is accountable for it.
       The remake, one box per session, in `WEB-REMAKE.md` §8 order, each ticked in
       the commit that turns its spec green:
 
-  - [ ] **The look system** — HUD tokens and three variants, a token set per
-        biome, the HUD label face, pixel frames (Kenney CC0), per-planet biome
-        seeding through `/api/v1/cosmetics`, `useRealm()`, a computed AA test
-        over every colour set, a captured look sheet
+  - [x] **The look system** — **30 Sep 2026** (`design/templates/web/_direction/LOOK.md`).
+        HUD tokens in three variants and a complete set per biome
+        (`packages/tokens/looks.css`, ten sets); **Oxanium** as the HUD face and
+        apps/web's display face, Space Grotesk retired there, all three faces
+        self-hosted (`fonts.css`); Kenney's CC0 frames vendored per biome
+        (`pixel/`, frame only, a token ring inside); `/api/v1/cosmetics`
+        `planetBiomes`, one biome per stage (API tests watched failing first,
+        646 passed); `useRealm()` and the first-frame script (`lib/realm.ts`,
+        `index.html`); the AA sweep, 1,780 checks over ten sets and 24 hues,
+        watched failing (12 of 22 red) first; the look sheet (`design/look/`),
+        twenty captures at 1440 and 380, all opened. The instructor chose the
+        face, the frames (vendored, against the CSS recommendation), Space
+        Grotesk's retirement and the paper (follows the variant) from captures.
+        No route rebuilt; the reader now wears the planet's biome
   - [ ] **The shell** — the nav in both dresses, the mission tracker, the
         key-hint bar, the Register Bar, the realm switch and both transitions
         (clears §0p.1-5, §0q.1, §0r.2)

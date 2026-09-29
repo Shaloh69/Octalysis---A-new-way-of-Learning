@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OCTA look sheet</title>
+<!--
+  The look system, rendered: WEB-REMAKE.md section 8, session 1, part (h).
+  It loads packages/tokens and nothing else for colour, type or frames.
+  Query: ?realm=star&theme=bare-metal | ?realm=biome&biome=desert
+         &hue=45  
+  Served over http by capture.mts, because Chromium refuses fonts from file.
+-->
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var el = document.documentElement;
+    el.setAttribute("data-realm", q.get("realm") || "star");
+    el.setAttribute("data-theme", q.get("theme") || "bare-metal");
+    if (q.get("biome")) el.setAttribute("data-biome", q.get("biome"));
+    el.style.setProperty("--accent-hue", q.get("hue") || "45");
+    if (q.get("face")) el.style.setProperty("--font-hud", '"' + q.get("face") + '", ui-sans-serif, sans-serif');
+    el.setAttribute("data-view", q.get("view") || "sheet");
+  })();
+</script>
+<link rel="stylesheet" href="../../packages/tokens/fonts.css" />
+<link rel="stylesheet" href="../../packages/tokens/tokens.css" />
+<link rel="stylesheet" href="../../packages/tokens/looks.css" />
+<link rel="stylesheet" href="./look.css" />
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="padlock" viewBox="0 0 16 16"><path d="M4 7V5a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="2.5" y="7" width="11" height="7.5" rx="1" fill="currentColor"/></symbol>
+  <symbol id="check" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="spark" viewBox="0 0 16 16"><path d="M8 1v14M1 8h14M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+</svg>
+
+<div class="ls-scene" id="scene" aria-hidden="true"></div>
+<main class="ls">
+  <header class="ls-head">
+    <p class="ls-set" id="set-name"></p>
+  </header>
+
+  <!-- ======== THE SHEET: every element, in this set ======== -->
+  <section class="ls-view" data-for="sheet">
+    <!-- The nav, in this realm's dress. -->
+    <nav class="ls-nav-star" aria-label="Main (star system)">
+      <a class="ls-arrow" href="#" aria-label="Previous tab">&larr;</a>
+      <a href="#" aria-current="page">Map</a>
+      <a href="#">Stages</a>
+      <a href="#">Progress</a>
+      <a href="#">Your work</a>
+      <a href="#">Settings</a>
+      <a class="ls-arrow" href="#" aria-label="Next tab">&rarr;</a>
+    </nav>
+    <nav class="ls-nav-biome" aria-label="This planet">
+      <a href="#" class="frame-pixel-button" aria-current="page">Reading</a>
+      <a href="#" class="frame-pixel-button">Moons</a>
+      <a href="#" class="frame-pixel-button">Check</a>
+      <a href="#" class="frame-pixel-button ls-leave">Leave planet</a>
+    </nav>
+
+    <div class="ls-grid">
+      <!-- A panel: caption, stat table, meter -->
+      <section class="ls-panel" aria-labelledby="p1">
+        <h2 class="ls-caption" id="p1">Stage <span class="ls-num">04</span> · Cache Memory</h2>
+        <div class="ls-body">
+          <dl class="ls-stats">
+            <div><dt>Level</dt><dd>2</dd></div>
+            <div><dt>Objectives</dt><dd>4 / 11</dd></div>
+            <div><dt>Check</dt><dd>8 items</dd></div>
+            <div><dt>Threshold</dt><dd>70%</dd></div>
+          </dl>
+          <div class="ls-meter">
+            <div class="ls-meter-label"><span>Mastery</span><span class="ls-num">33%</span></div>
+            <div class="ls-meter-track" role="meter" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100" aria-label="Mastery"><span style="width:33%"></span></div>
+          </div>
+          <p class="ls-here"><span class="ls-here-dot" aria-hidden="true"></span><span>You are here</span></p>
+        </div>
+      </section>
+
+      <!-- A list: rows with badges in words -->
+      <section class="ls-panel" aria-labelledby="p2">
+        <h2 class="ls-caption" id="p2">Act <span class="ls-num">1</span> · Prelim</h2>
+        <ul class="ls-list">
+          <li><a href="#"><span class="ls-num">00</span><span class="ls-row-title">Orientation</span><span class="ls-badge ls-badge-done"><svg aria-hidden="true"><use href="#check"/></svg>Done</span></a></li>
+          <li><a href="#" class="is-lit"><span class="ls-num">01</span><span class="ls-row-title">Introduction</span><span class="ls-badge ls-badge-new"><svg aria-hidden="true"><use href="#spark"/></svg>New</span></a></li>
+          <li><a href="#"><span class="ls-num">02</span><span class="ls-row-title">Computer Evolution and Performance</span><span class="ls-badge ls-badge-locked"><svg aria-hidden="true"><use href="#padlock"/></svg>Locked</span></a></li>
+        </ul>
+        <p class="ls-lock"><svg aria-hidden="true"><use href="#padlock"/></svg><span>Unlocks when Stage 01 reaches <span class="ls-num">70%</span>. You're at <span class="ls-num">0%</span>.</span></p>
+      </section>
+
+      <!-- Buttons, body text, key hints -->
+      <section class="ls-panel ls-wide" aria-labelledby="p3">
+        <h2 class="ls-caption" id="p3">Stage <span class="ls-num">03</span> · Top Level View and Interconnection</h2>
+        <div class="ls-body">
+          <p class="ls-prose">Read the brief, then open the check when you are ready. Your answers save as you give them, and nothing is graded until you submit. A lock always says why it is closed and how far you are from opening it.</p>
+          <div class="ls-actions">
+            <button type="button" class="ls-btn ls-btn-primary">Enter journey</button>
+            <button type="button" class="ls-btn">Show on the map</button>
+          </div>
+          <p class="ls-keys"><span><kbd>Esc</kbd>Back</span><span><kbd>M</kbd>Map</span><span><kbd>Enter</kbd>Enter journey</span></p>
+          <p class="ls-regs" aria-label="Register Bar"><span class="r-pc">PC <b>0x0040</b></span><span class="r-ir">IR <b>0x1A3F</b></span><span class="r-mar">MAR <b>0x0041</b></span><span class="r-mbr">MBR <b>0x00FF</b></span><span class="r-ac">ACC <b>0x0007</b></span></p>
+        </div>
+      </section>
+    </div>
+  </section>
+
+</main>
+<script>
+  (function () {
+    var el = document.documentElement;
+    var realm = el.getAttribute("data-realm");
+    var name = realm === "biome" ? "biome · " + el.getAttribute("data-biome") : "HUD · " + el.getAttribute("data-theme");
+    var hue = getComputedStyle(el).getPropertyValue("--accent-hue").trim();
+    document.getElementById("set-name").textContent = name + " · accent hue " + hue;
+
+    /* Inside a planet the page stands on the biome's real art, so every
+       frame is judged over the scene it will actually sit on. The layer
+       lists are the packs' own (apps/web/src/biomes/packs), back to front. */
+    var LAYERS = {
+      neutral: ["sky", "sun", "clouds", "mountains_1", "mountains_2", "mountains_3", "trees", "rocks"],
+      jungle: ["back", "mid", "lights", "front"],
+      desert: ["far-mountains", "far", "mid", "close"],
+      arctic: ["0", "1", "2", "3", "4"],
+      city: ["sky", "stars", "cloud", "back", "front"],
+      cave: ["back", "far", "mid"],
+      ocean: ["far", "foreground-2", "foreground-1", "sand"]
+    };
+    var biome = el.getAttribute("data-biome");
+    document.querySelectorAll('.ls-panel').forEach(function (p) { p.classList.add(realm === 'biome' ? 'frame-pixel' : 'frame-hud'); });
+    if (realm === 'biome') document.querySelectorAll('.ls-btn').forEach(function (b) { b.classList.add('frame-pixel-button'); });
+    if (realm === "biome" && LAYERS[biome]) {
+      var scene = document.getElementById("scene");
+      scene.style.background = "linear-gradient(var(--biome-sky-top), var(--biome-sky-low))";
+      LAYERS[biome].forEach(function (f) {
+        var d = document.createElement("div");
+        d.style.backgroundImage = 'url("../../apps/web/public/biomes/' + biome + "/" + f + '.png")';
+        scene.appendChild(d);
+      });
+    }
+  })();
+</script>
+</body>
+</html>

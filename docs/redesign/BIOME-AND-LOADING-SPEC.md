@@ -34,7 +34,7 @@ background of the whole page when one is selected.**
 | `/app/stage/:id` and its beats — **after ENTER JOURNEY** | **Yes — full page** | This is the landing. It is what §4.2's hand-off delivers you into |
 | A moon's journey — **after ENTER JOURNEY** on a moon | **Yes** | Same landing, entered at that subtopic's anchor |
 | A stage's activities and minigames | **Yes** | They are the planet's content, and the biome is that content's background |
-| **The map sidebar, planet or moon** | **Yes: its planet's biome** | Reversed by the instructor on 25 Sep 2026 (`WEB-REVAMP.md` §3.5): the sidebar is a window into where you are about to go. A moon's sidebar wears its planet's biome. The map canvas itself still never does. Text sits on a token surface over the biome, AA computed on all themes and biomes. Requires a biome per planet, which does not exist yet: today one biome is seeded per student |
+| **The map sidebar, planet or moon** | **Yes: its planet's biome** | Reversed by the instructor on 25 Sep 2026 (`WEB-REVAMP.md` §3.5): the sidebar is a window into where you are about to go. A moon's sidebar wears its planet's biome. The map canvas itself still never does. Text sits on a token surface over the biome, AA computed on all themes and biomes. The biome per planet exists since 30 Sep 2026 (`planetBiomes`, §3); the sidebar wearing it is `/app/map`'s and `/app`'s remake |
 | `/app`, `/app/map`, hub routes | **No** | The solar system is the background there (`SOLAR-SYSTEM-SPEC.md` §1.5). Two backgrounds is two visual systems arguing. Since 30 Sep 2026 these are **the star realm**: the default sci-fi HUD (`WEB-REMAKE.md` §1-§2) |
 | **The nav and every frame, inside a planet or moon** | **Yes: its planet's biome** | Instructor ruling, 30 Sep 2026 (`WEB-REMAKE.md` §1, §3): opening a planet or moon changes the theme, and the nav and the designs follow the biome, always; leaving returns to the HUD. Both ways are a transition (§5 there) |
 | **The Self-Test / any assessment: its chrome** | **Yes: its planet's biome** | Amended 30 Sep 2026 (`WEB-REMAKE.md` §4): the nav, the frame and the background keep the planet |
@@ -637,6 +637,14 @@ list back from the response rather than hardcoding it, so adding one is a
 one-line change on the server. Expand further only
 if a biome earns its place the way `GAME-DESIGN.md` §9 already required of
 the encounter themes — don't ship a dozen for the sake of variety alone.
+
+**Per planet since 30 Sep 2026** (`WEB-REMAKE.md` §1): the endpoint returns
+`planetBiomes`, one biome for every stage, seeded from the student AND the stage
+(`derivePlanetBiome` in `routes/cosmetics.ts`), so a student's planets differ
+from each other as well as from a classmate's. The single per-student
+`biomeIndex` above remains only as the 3D map's planet tint. On `<html>`,
+`data-biome` is now the realm's (`apps/web/src/lib/realm.ts`): the current
+planet's biome inside a planet, and absent in the star system.
 
 Applies at two scales:
 - **Per planet** — the backdrop when entering a stage

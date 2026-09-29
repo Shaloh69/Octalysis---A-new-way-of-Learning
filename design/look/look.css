@@ -1,0 +1,301 @@
+/* The look sheet's layout. Every colour, face, size and space is a token
+   from packages/tokens; this file only arranges them. It is a specimen,
+   not a component library: the shell session builds the real ones. */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--surface-0);
+  color: var(--ink);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+
+/* ---- the background: the star field, or the biome's own art ---- */
+.ls-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+[data-realm="star"] .ls-scene {
+  background:
+    radial-gradient(1px 1px at 12% 18%, var(--ink-muted), transparent 60%),
+    radial-gradient(1px 1px at 34% 72%, var(--ink-faint), transparent 60%),
+    radial-gradient(1.5px 1.5px at 58% 26%, var(--ink), transparent 60%),
+    radial-gradient(1px 1px at 76% 64%, var(--ink-muted), transparent 60%),
+    radial-gradient(1px 1px at 88% 12%, var(--ink-faint), transparent 60%),
+    radial-gradient(1px 1px at 22% 88%, var(--ink-muted), transparent 60%),
+    radial-gradient(1.5px 1.5px at 64% 90%, var(--ink-faint), transparent 60%),
+    var(--surface-0);
+}
+[data-realm="star"][data-theme="blueprint"] .ls-scene {
+  background:
+    linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--surface-0);
+}
+.ls-scene > div {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat-x;
+  background-position: center bottom;
+  background-size: auto 100%;
+  image-rendering: pixelated;
+}
+@media (max-width: 640px) {
+  .ls-scene > div { background-size: 100% auto; }
+}
+
+/* ---- the page ---- */
+.ls {
+  position: relative;
+  z-index: 1;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+.ls-head { margin-bottom: var(--space-4); }
+.ls-set {
+  display: inline-block;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--surface-1);
+  color: var(--ink-muted);
+  border: var(--border-hair) solid var(--line-strong);
+}
+.ls-view { display: none; }
+[data-view="sheet"] .ls-view[data-for="sheet"],
+[data-view="faces"] .ls-view[data-for="faces"] { display: block; }
+
+.ls-num, kbd, .ls-regs b {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- the nav, dress 1: the HUD tab strip (Starfield's skill screen) ---- */
+.ls-nav-star {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: var(--space-5);
+  font-family: var(--font-hud);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+}
+.ls-nav-star a {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-h-lg);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  background: var(--surface-1);
+  border: var(--border-hair) solid var(--line);
+  border-left-width: 0;
+  text-decoration: none;
+}
+.ls-nav-star a:first-of-type { border-left-width: var(--border-hair); }
+.ls-nav-star a[aria-current="page"] {
+  background: var(--lit-bg);
+  color: var(--lit-ink);
+  box-shadow: inset 0 calc(var(--border-thick) * -1) 0 var(--frame-corner);
+}
+.ls-nav-star .ls-arrow {
+  flex: 0 0 var(--control-h-lg);
+  margin: 0 var(--space-3);
+  border: var(--border-hair) solid var(--line-strong);
+  color: var(--ink);
+}
+[data-realm="biome"] .ls-nav-star { display: none; }
+
+/* ---- the nav, dress 2: pixel tabs on the frame's top edge (Stardew) ---- */
+.ls-nav-biome {
+  display: none;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  font-family: var(--font-hud);
+  letter-spacing: var(--tracking-hud);
+  flex-wrap: wrap;
+}
+[data-realm="biome"] .ls-nav-biome { display: flex; }
+.ls-nav-biome a {
+  position: relative;
+  top: calc(var(--px) * 2);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  background-color: var(--surface-2);
+}
+.ls-nav-biome a[aria-current="page"] { top: 0; background-color: var(--surface-1); z-index: 2; }
+.ls-nav-biome .ls-leave { margin-left: auto; }
+
+/* ---- panels: the HUD frame in the star system, pixel frames in a biome ---- */
+.ls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: var(--space-5);
+}
+.ls-wide { grid-column: 1 / -1; }
+.ls-panel { min-width: 0; }
+/* The frames themselves are looks.css .frame-hud and .frame-pixel, added by
+   the page script per realm: this sheet shows the real classes, not copies. */
+[data-realm="biome"] .ls-panel { padding: 0; }
+
+/* The caption: Starfield's lit bar, or Stardew's scroll tab. */
+.ls-caption .ls-num { letter-spacing: 0; }
+.ls-caption {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-hud);
+  font-weight: 600;
+  font-size: max(var(--text-hud-min), var(--text-base));
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  background: var(--caption-bg);
+  color: var(--caption-ink);
+}
+[data-realm="biome"] .ls-caption {
+  text-transform: none;
+  text-align: center;
+  border-bottom: var(--px) solid var(--frame-inner);
+}
+.ls-body { padding: var(--space-4); display: grid; gap: var(--space-4); }
+.ls-pad { padding: 0 var(--space-4) var(--space-4); }
+
+/* Stat table: label left, value right, the value in mono. */
+.ls-stats { margin: 0; display: grid; gap: var(--border-hair); }
+.ls-stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+}
+.ls-stats dt {
+  font-family: var(--font-hud);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+.ls-stats dd { margin: 0; font-family: var(--font-mono); color: var(--ink); }
+
+/* A meter prints its number (SURVEY 33% is how mastery reads). */
+.ls-meter-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-hud);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-2);
+}
+.ls-meter-label .ls-num { font-family: var(--font-mono); letter-spacing: 0; }
+.ls-meter-track { height: 6px; background: var(--meter-track); }
+.ls-meter-track span { display: block; height: 100%; background: var(--meter-fill); }
+[data-realm="biome"] .ls-meter-track { height: calc(var(--px) * 3); box-shadow: 0 0 0 var(--px) var(--frame-inner); }
+
+/* The student's own place: the accent, and never a state. */
+.ls-here { display: flex; align-items: center; gap: var(--space-2); margin: 0; color: var(--accent); font-family: var(--font-hud); letter-spacing: var(--tracking-hud); text-transform: uppercase; font-size: var(--text-sm); }
+.ls-here-dot { width: 12px; height: 12px; border-radius: var(--radius-full); border: var(--border-thick) solid var(--accent); }
+
+/* List rows, each a framed button with its badge in words. */
+.ls-list { list-style: none; margin: 0; padding: var(--space-3); display: grid; gap: var(--space-2); }
+.ls-list a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--surface-2);
+  border: var(--border-hair) solid var(--line);
+}
+[data-realm="biome"] .ls-list a { border: 0; box-shadow: inset 0 0 0 var(--px) var(--frame-inner); }
+.ls-list a.is-lit { background: var(--lit-bg); color: var(--lit-ink); }
+.ls-row-title { flex: 1; min-width: 0; }
+.ls-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ls-badge svg, .ls-lock svg { width: 14px; height: 14px; flex: none; }
+.ls-badge-done { background: var(--success-bg); color: var(--success); }
+.ls-badge-new { background: var(--info-bg); color: var(--info); }
+.ls-badge-locked { background: var(--locked-bg); color: var(--locked); }
+
+/* A lock reads as Starfield's ranks do: the padlock beside the words. */
+.ls-lock {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin: 0 var(--space-3) var(--space-3);
+  padding: var(--space-3);
+  background: var(--locked-bg);
+  color: var(--locked);
+}
+
+.ls-prose { margin: 0; max-width: 62ch; line-height: var(--lh-base); color: var(--ink); }
+.ls-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.ls-btn {
+  min-height: var(--control-h-lg);
+  padding: 0 var(--space-5);
+  font-family: var(--font-hud);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+}
+/* The HUD button is a rule; the biome button is looks.css .frame-pixel-button,
+   so the border and ground here are the star realm's only. */
+[data-realm="star"] .ls-btn { background: var(--surface-2); border: var(--border-hair) solid var(--line-strong); }
+[data-realm="star"] .ls-btn-primary { background: var(--lit-bg); color: var(--lit-ink); border-color: var(--lit-bg); }
+[data-realm="biome"] .ls-btn { min-height: 0; padding: var(--space-2) var(--space-4); }
+[data-realm="biome"] .ls-btn-primary { background-color: var(--lit-bg); color: var(--lit-ink); }
+
+
+.ls-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  font-family: var(--font-hud);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+.ls-keys span { display: inline-flex; align-items: center; gap: var(--space-2); }
+.ls-keys kbd {
+  min-width: var(--size-7);
+  padding: var(--space-1) var(--space-2);
+  text-align: center;
+  font-size: var(--text-xs);
+  border: var(--border-hair) solid var(--line-strong);
+  color: var(--ink);
+  text-transform: none;
+}
+
+.ls-regs { display: flex; flex-wrap: wrap; gap: var(--space-4); margin: 0; padding: var(--space-2) var(--space-3); background: var(--surface-1); border-top: var(--border-hair) solid var(--line); font-size: var(--text-sm); }
+.ls-regs .r-pc { color: var(--reg-pc); } .ls-regs .r-ir { color: var(--reg-ir); }
+.ls-regs .r-mar { color: var(--reg-mar); } .ls-regs .r-mbr { color: var(--reg-mbr); }
+.ls-regs .r-ac { color: var(--reg-ac); }
+
+:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .ls-nav-star a { font-size: var(--text-xs); padding: 0 var(--space-1); }
+  .ls-nav-star .ls-arrow { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

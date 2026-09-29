@@ -1114,6 +1114,87 @@ What this changes in the sections above:
 
 ---
 
+## 0t. Parked by the look-system session — 30 Sep 2026
+
+`WEB-REMAKE.md` §8 #1, the first remake session (no route rebuilt).
+`design/templates/web/_direction/LOOK.md` is what it built; this is what it
+found and left. §0a to §0s still stand; §0p.1-5, §0q.1 and §0r.2 are the
+shell's, untouched.
+
+1. **`looks.css` is built and NOT imported by apps/web.** Importing it recolours
+   every page at once, and the current runner's question card would take the
+   biome's parchment, against the neutral-paper ruling (`WEB-REMAKE.md` §4). The
+   shell imports it, after `tokens.css`, in the session that builds the frames.
+   The paper then follows the student's variant (instructor, 30 Sep): put
+   `data-theme="<variant>"` on the paper's root and tokens.css re-declares the
+   base theme there, over the biome (`LOOK.md` §6)
+2. **What DID change for a student today:** the reader's scene is now the
+   PLANET's biome, not the student's one biome (232129006: 00 city, 01 cave,
+   02 jungle, 03 desert, 04 ocean; seen in `design/look/captures/reader-*.png`),
+   and apps/web now loads its faces (Inter, JetBrains Mono, Oxanium) instead of
+   borrowing the machine's. `<html>` carries `data-realm` on every route and
+   `data-biome` only inside a planet
+3. **The first-ever deep link paints `neutral`** until the cosmetics response
+   lands, because nothing is cached yet. Every later deep link and reload is
+   right on the first frame (the cache `octa:planet-biomes`, cleared on
+   sign-out; asserted in `cosmetics.spec.ts`). If the instructor minds the one
+   swap, the fix is a held first paint on planet routes, the shell's call
+4. **The 3D map still tints every planet from the student's ONE biome**
+   (`biomeIndex`, now read from `--biome-planet-<name>` on `:root`, since a star
+   route has no `data-biome`). Per planet, the tint should be each planet's own
+   biome: `/app`'s session, one line in `SolarSystemCanvas`
+5. **At 380 the nav wraps.** The look sheet's HUD tab strip wraps "YOUR WORK" to
+   two lines, and the biome tabs push "Leave planet" to a second row
+   (`captures/*-380.png`). `WEB-REMAKE.md` §2 already gives the shell the choice
+   of a bottom bar at 380: take it, or shorten the labels
+6. **Kenney's frames are paint, not tokens.** Jungle's lime band against its own
+   paper is about 1.6:1; the `--frame-inner` token ring is what carries the edge,
+   so a frame without `.frame-pixel` (a hand-rolled `border-image`) loses it.
+   Use the classes. Arctic uses `Outline/blue`, not `space`, because `space` has
+   no pressed sprite (its `space_inlay` is 44 by 44)
+7. **`check-contrast.mjs` skipped aliased tokens silently.** Making
+   `--biome-planet` an alias of `--biome-planet-<name>` dropped seven checks and
+   it still printed "Clean"; it now resolves `var()` against `:root` and throws on
+   an alias it cannot resolve (1181 checks, the same as before the alias). Any
+   token turned into an alias elsewhere needs the same look
+8. **`planetBiomes` arrives with keys 10-18 before 00-09** (JavaScript orders
+   integer-like keys first, and "00" is not one). Harmless; do not iterate it
+   for display order, read `stages` for that
+9. **The Bash tool's heredocs strip backslashes** (`\\d` arrived as `\d`, `\/`
+   as `/`), and a double-quoted `node -e` expands backticks as commands (it ate
+   two words of a comment here). Write scripts with the Write tool and run them
+10. **§0p.16 is FIXED, because this session made it worse first.** apps/web had
+    only ever imported erased types from `@octa/contracts`; `realm.ts` imports
+    `Biome` and `planetOf` at runtime, which compiled the whole entry, env
+    schema included, and put `SERVICE_ROLE` and `EXAM_SALT_SECRET` (names) into
+    the STUDENT bundle too. The env schemas moved to `@octa/contracts/env`
+    (`packages/contracts/src/env.ts`), which only `services/api/src/env.ts`
+    imports; `pnpm scan:bundle` is clean on both bundles again. An app must
+    never import `@octa/contracts/env`. `services/api/vitest.config.ts` aliased
+    the bare name as a PREFIX, which turned the subpath into `index.ts/env` and
+    failed 13 API suites until the aliases became exact matches (the apps keep
+    their bare alias on purpose: an app importing `/env` should fail to build)
+11. **`pnpm db:reset` killed the dev API FOUR times this session (§0c.1).** A
+    burst of 152 console failures (ECONNREFUSED 8090, 03:12-03:14) was a reset
+    in the middle of a chained run, and it ended only because an edit under
+    `services/api/src` made `tsx watch` restart the dead process. Editing there
+    during a run restarts it too. The only safe pattern: a real GET after every
+    reset, restart on 000, then run (`final-chain.sh` in this session did, and
+    caught two more)
+12. **The final web run was 337 passed, 103 skipped** (338 / 102 the run
+    before): the extra skip is `solar-system.spec.ts`'s own frame-rate guard,
+    "this run only sustained 29.4fps — the guard is right to fire", on a machine
+    under load. Not a regression; a quiet machine runs it
+
+**Available to every route from now on (apps/web):** `lib/realm.ts`
+(`realmFor`, `applyRealm`, `useRealm`, the planet-biome cache),
+`design/specs/_realm-fixture.ts` (`forcePlanetBiome(page, stage, biome)`: put a
+planet in a biome through the realm's own input; writing `data-biome` by hand
+now races the realm), and in `packages/tokens`: `looks.css`, `fonts.css`,
+`pixel/`, `contrast.ts`, and `pnpm --filter @octa/tokens test`.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

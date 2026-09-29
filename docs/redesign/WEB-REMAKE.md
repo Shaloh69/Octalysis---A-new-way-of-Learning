@@ -68,9 +68,12 @@ direction; each route still captures its own `template.png`.
   planet paints its biome on the first frame; nothing flashes the HUD first.
 - **One biome per planet, seeded from student and stage** (`WEB-REVAMP.md` §3.5,
   ruled 25 Sep). Deterministic, cosmetic only, never touching a lock, a ring or a
-  grade. **A moon wears its planet's biome.** Today one biome is seeded per
-  student (`cosmetic-seed.ts`, `biomeIndex`): making it per stage is the
-  foundation session's work (§8), through `/api/v1/cosmetics`, with tests.
+  grade. **A moon wears its planet's biome.** **Built 30 Sep 2026:**
+  `/api/v1/cosmetics` returns `planetBiomes`, one per stage
+  (`derivePlanetBiome`, API tests watched failing first); `useRealm()` in
+  `apps/web/src/lib/realm.ts` applies it, and `index.html` paints it on the
+  first frame. The per-student `biomeIndex` survives only as the 3D map's
+  planet tint.
 - **The map's planet sidebar is a window into that planet**: it wears the
   planet's biome while the page around it stays in the star system (§3.5).
 - **Inside a planet the base variant steps aside.** The biome's own token set
@@ -128,7 +131,11 @@ and the CC0 art in `_direction/assets/`.
 - **Frames are art, so they live with the tokens.** Kenney's CC0 Pixel UI Pack is
   the source; the frames, tabs and buttons are vendored into `packages/tokens`
   (nothing else may hold a colour literal) and recoloured per biome, or drawn in
-  CSS from the biome's tokens: the foundation session chooses and records why
+  CSS from the biome's tokens: the foundation session chooses and records why.
+  **Decided 30 Sep 2026: vendored** (the instructor, from captures of both; CSS
+  was recommended). One sprite per biome in `packages/tokens/pixel/`; the sprite
+  draws the frame and never the fill, and a token ring inside it carries the
+  edge's contrast. `design/templates/web/_direction/LOOK.md` §3
 - **Each biome is a complete token set** (surfaces, ink, lines, the accent's
   lightness and chroma), the way the eight encounter themes are four tokens and
   a nine-slice panel. **Legibility is not negotiable:** text sits on a token
@@ -187,6 +194,12 @@ takes the display role; the foundation session decides and updates
 `.claude/rules/design.md` and `packages/tokens` in the same commit. The console
 keeps its type.
 
+**Decided 30 Sep 2026, from captured specimens:** the HUD face is **Oxanium**,
+and **Space Grotesk is retired in apps/web** (Oxanium takes the display role
+under `[data-realm]`; the console keeps Space Grotesk). All three apps/web faces
+are self-hosted woff2 in `packages/tokens/fonts.css`. A **stage check's paper
+follows the student's variant** and never the biome. `_direction/LOOK.md` §1-§2.
+
 ## 7. Every page, every session
 
 Each route is one session, gated exactly as before (root `CLAUDE.md`), and now
@@ -210,7 +223,7 @@ also owes:
 
 | # | Session | Template to start from | What it owes |
 |---|---|---|---|
-| 1 | **The look system** (no route) | `_direction/` entire | The HUD token set and its three variants; one token set per biome (seven); the HUD face; the pixel frames (Kenney CC0) and how they are coloured; **per-planet biome seeding** through `/api/v1/cosmetics` (API tests first); `useRealm()`; a computed AA test in `packages/tokens` over every colour set × a sweep of accent hues; a look sheet rendered and captured at 1440 and 380 |
+| 1 | **The look system** (no route). **Done 30 Sep 2026**: `_direction/LOOK.md` | `_direction/` entire | The HUD token set and its three variants; one token set per biome (seven); the HUD face; the pixel frames (Kenney CC0) and how they are coloured; **per-planet biome seeding** through `/api/v1/cosmetics` (API tests first); `useRealm()`; a computed AA test in `packages/tokens` over every colour set × a sweep of accent hues; a look sheet rendered and captured at 1440 and 380 |
 | 2 | **The shell**: nav (both dresses), mission tracker, key-hint bar, Register Bar, the realm switch and both transitions | `starfield-skill-tree-2`, `no-mans-sky-discoveries`, `starfield-hud`, `stardew-valley-skill-level` | Also clears the shell defects `NEXT-SESSION.md` §0p.1-5, §0q.1 and §0r.2 carry. The instructor confirms the in-planet nav (§3) |
 | 3 | `/app`, the 3D map | `starfield-map` | `WEB-REVAMP.md` §3.1-§3.3 (selection, ~700ms zoom, the sidebar as the planet's window) and §4 (Kepler). Moons and asteroids with it or as the next session, the instructor's call |
 | 4 | `/app/map`, the flat map | `starfield-map` | The 30 Sep behaviour and `web-map.spec.ts` carried; the look redone in the HUD |

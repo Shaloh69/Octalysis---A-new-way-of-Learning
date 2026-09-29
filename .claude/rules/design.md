@@ -8,11 +8,20 @@ that package is blocked by a hook. `slate-` and `blue-` utility classes fail the
 
 Type roles are jobs, not decoration:
 
-- **Space Grotesk** — display, used with restraint
+- **Space Grotesk** — display, used with restraint, **in `apps/console` only**. Retired in
+  `apps/web` (instructor, 30 Sep 2026): the HUD face takes the display role there
 - **Inter** — body
-- **A HUD label face** (`apps/web` only, added 30 Sep 2026, chosen in the remake's first
-  session; `docs/redesign/WEB-REMAKE.md` §6) — nav labels, titles, panel captions, key hints,
-  badges. Never body text, never a number, never below 12px
+- **Oxanium, the HUD label face** (`apps/web` only, chosen 30 Sep 2026 from captured
+  specimens; `docs/redesign/WEB-REMAKE.md` §6, `design/templates/web/_direction/LOOK.md`) —
+  nav labels, titles, panel captions, key hints, badges, and apps/web's display role. Never
+  body text, never a number (a "Stage 04" caption puts the 04 in mono), never below 12px.
+  `--font-hud`
+
+All three of apps/web's faces are **self-hosted** from `packages/tokens/fonts.css` (woff2, OFL);
+until 30 Sep 2026 apps/web loaded no font file at all. The student app's two realms have their
+own colour sets and frames in `packages/tokens/looks.css` (ten sets, AA-swept over every accent
+hue by `packages/tokens/test/looks.spec.ts`); inside a planet the frames are Kenney's CC0
+pixel sprites, which draw the frame and never the fill.
 - **JetBrains Mono** — ALL numbers, register values, hex, machine code, assembly listings, spec
   sheets, and every value in a parameterized question. In this app, monospace means *"this is what
   the machine sees."* That consistency is the design.
