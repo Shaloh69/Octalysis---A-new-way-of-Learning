@@ -171,47 +171,39 @@ A budget nobody measures is a wish.
 | Idle behaviour | `frameloop="demand"` — the canvas stops rendering when nothing is changing, when the tab is hidden, and when the map is idle |
 | Battery | A galaxy spinning in a student's pocket is a bug, not a feature |
 
-### Automatic degradation ladder
+### Automatic degradation ladder — rewritten 30 Sep 2026 (the 2D map is removed)
+
+**Instructor ruling, 30 Sep 2026 (`WEB-REMAKE.md` §0.3):** the 2D map is removed
+and the 3D map is the only map, **with an accessible layer**. The ladder no longer
+swaps the map for another picture; it lowers the cost of the one picture, and the
+accessible layer carries everything the picture does.
+
+**The accessible layer is always there, on every device.** It is not a fallback:
+the SYSTEM panel's row of bodies is a real `<button>` per planet (Starfield's own
+pattern), arrow keys move the selection, and the BODY panel (name, mastery, stat
+table, moons, the lock's reason, Enter journey) is real DOM. Selecting a planet
+from the row and from the canvas are the same action. A screen reader, a keyboard,
+reduced motion and a machine without WebGL all use the same controls.
 
 Applied in order, without asking and without an error state:
 
-1. `prefers-reduced-motion` → **static**, all tiers
-2. Small viewport **held in portrait** → **Tier 1 off**, Tier 2 falls back to the 2D map.
-   Corrected: this was "≤ 640px, full stop", which locked every phone out permanently. The reason
-   was never the device, it was the ASPECT — a solar system in a 380×844 column is a thin strip
-   with no room for orbits. Landscape gets the map; portrait is invited to turn.
-3. WebGL unavailable, or context lost → **all tiers off**, DOM only, silently
-4. Measured frame rate below 30fps for 3 consecutive seconds → **drop a tier** and remember the
-   verdict for that device **for seven days**. Three corrections, all of them from one bug:
-   - **The first 4 seconds are not measured.** Shaders compile, geometry uploads, the lazy chunk
-     settles and React mounts the overlay. Judging the scene then judges it at the one moment it
-     is guaranteed to look worst.
-   - **A frame longer than 0.5s is discarded, not counted.** A tab switch, a GC pause or a laptop
-     sleeping produces one enormous delta that reads as catastrophic frame rate.
-   - **The verdict expires.** It used to be permanent, and that was the whole of the "why am I
-     still on the 2D map" bug: one bad startup demoted a browser forever, nothing re-measured, and
-     because this ladder is deliberately silent the student got no explanation and no way back.
-     Stored as `{"at": <epoch ms>}`; the legacy `"1"` reads as stale, which releases every browser
-     the old flag stranded.
-5. Battery Saver / `navigator.connection.saveData` → **Tier 1 off**
+1. `prefers-reduced-motion` → **the orbits stop and the camera cuts**: planets hold
+   their positions, a selection jumps rather than eases, no warp. The 3D picture
+   stays.
+2. **A portrait phone keeps the 3D map.** The camera frames the system for the
+   aspect, the SYSTEM panel becomes a top strip and the BODY panel a bottom sheet,
+   and a tap selects. (Before 30 Sep a portrait phone was sent to the 2D map.)
+3. **WebGL unavailable, or context lost** → the canvas is not drawn and a one-line
+   notice says so; the accessible layer, the panels and every control remain.
+4. **Measured frame rate below 30fps for 3 consecutive seconds** → **drop quality,
+   never the map**: device pixel ratio to 1, the star field thinned, no glow. The
+   verdict is remembered for seven days (`{"at": <epoch ms>}`), the first 4 seconds
+   are not measured, and a frame longer than 0.5s is discarded, as before.
+5. Battery Saver / `navigator.connection.saveData` → the same lower quality.
 
-**The flat presentation is the SAME galaxy, drawn still.** It used to be a level-strata DAG with
-its own layout function — a second authoring of the map, which root `CLAUDE.md` forbids, and a
-different picture of the same curriculum, so a student sent here had to rebuild their mental model
-instead of recognising a quieter version of what they knew. It now reads `computeSolarLayout`, the
-same function the canvas uses: same rings, same angles, same moons, projected x/z → x/y in SVG.
-No canvas, no `requestAnimationFrame`, and **no motion at all** — see `BIOME-AND-LOADING-SPEC.md`
-§4.1b for the star-field technique and for why selecting a planet warps rather than zooms.
-
-**The flat presentation is not a punishment and is never deleted.** A `<canvas>` carries no
-accessibility semantics at all, so the DOM layer is the only path for a screen reader, for reduced
-motion, for a portrait phone and for a machine without WebGL. Rung 4 exists to protect a student on
-a weak device, not to take the map away from one on a capable device — so when it is wrong, it must
-be wrong *temporarily*.
-
-And a manual override in `/app/settings`: **Full / Reduced / Off**. It passes all four mandate
-tests — it changes what you see, its label is legible, it is instantly reversible, and it is a real
-preference rather than a number.
+The flat presentation (`FlatMap`, `/app/map`, the SVG galaxy) and the Full /
+Reduced / Off override in Settings are **deleted** with it: there is no second
+map to choose.
 
 ---
 

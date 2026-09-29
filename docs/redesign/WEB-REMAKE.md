@@ -1,240 +1,163 @@
 # WEB-REMAKE.md
-### The student app, remade as a game — a star-system HUD outside, the planet's biome inside
+### The student app, remade as a game — one star-system HUD outside, the planet's biome inside
 
-**Instructor ruling, 30 Sep 2026.** The design of the whole student app is too
-bland. It is **remade, not improved**: new templates taken from game UI, a
-different nav bar, and every page rebuilt. Two further rules came with it:
+**Two instructor rulings, both 30 Sep 2026.** The first (morning) ruled the
+student app too bland and ordered it remade as a game. The second (evening),
+after the look system was built and captured, ruled that it **still looks bad**
+and ordered **every aspect reworked**: change it, or remove it and make it new.
+This document holds both, with the second winning wherever they differ. It sits
+under R3 and opens no new phase.
 
 > Every time a student opens a planet or a moon, the theme changes: the nav bar
 > and the designs follow that planet's biome, always. The default look applies
 > while we are in the star system. Moving from the star system into a biome is
-> always a transition.
-
-This document owns that remake. It sits under R3 (page templates and redesign)
-and opens no new phase.
+> always a transition. *(ruling 1)*
+>
+> Stick to the themes, changing only between the star system and the biomes.
+> Use sprites for the nav bars, side bars and buttons in the biomes. Remove the
+> 2D map altogether and use only the 3D one. Make it work on the phone. Revamp
+> the map from the star system you found. Rework every aspect. *(ruling 2)*
 
 ---
 
-## 0. What this supersedes, and what still binds
+## 0. The rulings, in one list
 
-**Superseded:**
+Asked and answered on 30 Sep 2026:
 
-- `WEB-REVAMP.md`'s visual direction and its §6 route order. Its §2 feature list,
-  §3 (the sidebar, moons, ENTER JOURNEY, asteroids, summaries) and §4 (Kepler's
-  third law) **still stand**: they say what the pages do, and this document says
-  what they look like and in what order they are rebuilt.
-- **The look of the three routes rebuilt on 29-30 Sep** (`/app/stage/:id/check`,
-  `/app/stage/:id`, `/app/map`). Their behaviour, data, instructor rulings and
-  specs carry over. Each is the requirements document for its own remake, the
-  way every old page has been. R3's boxes for them are reopened as remake boxes.
+1. **Two looks and only two.** One star-system HUD for everyone, and one look per
+   biome. **The student variants (bare-metal, blueprint, phosphor) are removed**
+   from the student app: nothing a student chooses changes the theme. The seeded
+   accent hue stays, marking the student's own place. (The console keeps its three
+   themes; this is apps/web only.)
+2. **Inside a biome, the chrome is sprites.** The nav bar, the side bars and every
+   button are Kenney's CC0 pixel sprites (`packages/tokens/pixel/`), recoloured by
+   choosing a sprite per biome, never by filter. Text still sits on token surfaces.
+3. **The 2D map is removed.** `/app/map`, `FlatMap` and the flat galaxy are deleted;
+   `/app/map` redirects to `/app`. **The 3D map is the only map, and it carries an
+   accessible layer**: every planet is also a real, focusable button (the SYSTEM
+   panel's row of bodies, Starfield's own pattern), and the side panel is real DOM,
+   so keyboard and screen-reader students can use the map fully. Reduced motion
+   freezes the orbits and cuts the camera. A device without WebGL keeps the whole
+   accessible layer and a one-line notice; only the picture is missing.
+4. **It works on the phone.** The 3D map runs at 380 in portrait: the canvas fills
+   the screen, the panels become a top strip and a bottom sheet, and touch selects.
+5. **The map is Starfield's system map** (`_direction/star/starfield-map.png`):
+   the solar system in the middle, a SYSTEM panel and a BODY panel on the left, a
+   key-hint bar bottom right.
+6. **The Register Bar and the Depth Gauge are reworked, not removed.** The
+   registers become the HUD's readout strip in the star system and a sprite bar in
+   a biome; depth becomes a meter in the mission panel. Same information, new form.
+7. **A check's paper is one neutral set, identical for every student.** With the
+   variants gone, "follows the variant" (the morning's answer) has nothing to
+   follow: the paper is `[data-paper]`, the same colours for all.
+8. **All of it now, gated per piece.** The rework runs in one session, in §8's
+   order; each piece is captured at 1440 and 380, spec-green, committed and pushed
+   before the next. This amends "one route per session" for this rework only.
 
 **Still binding, unchanged:** the eight hard rules; tokens as the only source of
-colour, type, space and motion (a literal hex outside `packages/tokens` is
-blocked); AA computed on every colour set that can appear; keyboard-only
+colour, type, space and motion; AA computed on every colour set; keyboard-only
 operation; 380 with no sideways scroll; `prefers-reduced-motion` cuts, never
-slows; the accent marks the student's own place and never a state or a lock; a
-lock's reason is the server's, verbatim; no client lock, no client score,
-nothing gradeable in `localStorage`; the allowed libraries stay lazy-loaded per
-route; the six-assertion gate, one route per session, and screenshots opened and
-looked at.
-
-**The instructor's rulings of 30 Sep 2026**, asked and answered:
-
-1. **A stage check: the chrome wears the biome, the paper stays neutral.** §4
-2. **The default is one game HUD with three variants.** The student's bare-metal,
-   blueprint or phosphor choice and the seeded accent survive as its colour
-   variants, so Settings still does something. §2
-3. **The style: a sci-fi HUD in the star system, pixel frames per biome inside a
-   planet**, matching the pixel-art biome packs already shipped. §2, §3
-4. **Type: add one game face for HUD labels.** Inter stays for reading and
-   JetBrains Mono for every number; the new face is for nav labels, titles and
-   HUD captions only, never body text and never a number. §6
-
-**The references:** `design/templates/web/_direction/` (SOURCE.md there). They are
-direction; each route still captures its own `template.png`.
-
----
+slows; the accent never marks a state or a lock; a lock's reason is the server's,
+verbatim; no client lock, no client score, nothing gradeable in `localStorage`;
+the allowed libraries lazy-loaded per route; screenshots opened and looked at.
 
 ## 1. Two realms, decided in one place
 
 | Realm | Routes | Look |
 |---|---|---|
-| **The star system** (default) | `/app`, `/app/map`, `/app/stages`, `/app/progress`, `/app/work`, `/app/settings`; and, outside the session, `/login`, `/register`, `/maintenance`, the 404 as the title screen | The **sci-fi HUD** (§2), over the solar system, in the student's variant and accent |
-| **Inside a planet or moon** | `/app/stage/:id` and everything under it: the reading, the check, results, labs, and the moon journeys when they exist | **That planet's biome** (§3): the page background, the frames, **and the nav** |
+| **The star system** | `/app` (the 3D map), `/app/stages`, `/app/progress`, `/app/work`, `/app/settings`; and `/login`, `/register`, `/maintenance`, the 404 | **The HUD** (§2), one set, `[data-realm="star"]` |
+| **Inside a planet or moon** | `/app/stage/:id` and everything under it | **That planet's biome** (§3), `[data-realm="biome"][data-biome=…]`: nav, side bars, buttons and page |
 
-- **The realm is decided once, from the route**, in the shell (`useRealm()`),
-  and written to `<html>` as `data-realm="star"` or `data-realm="biome"` with
-  `data-biome="<name>"`. No page decides its own. A deep link or reload into a
-  planet paints its biome on the first frame; nothing flashes the HUD first.
-- **One biome per planet, seeded from student and stage** (`WEB-REVAMP.md` §3.5,
-  ruled 25 Sep). Deterministic, cosmetic only, never touching a lock, a ring or a
-  grade. **A moon wears its planet's biome.** **Built 30 Sep 2026:**
-  `/api/v1/cosmetics` returns `planetBiomes`, one per stage
-  (`derivePlanetBiome`, API tests watched failing first); `useRealm()` in
-  `apps/web/src/lib/realm.ts` applies it, and `index.html` paints it on the
-  first frame. The per-student `biomeIndex` survives only as the 3D map's
-  planet tint.
-- **The map's planet sidebar is a window into that planet**: it wears the
-  planet's biome while the page around it stays in the star system (§3.5).
-- **Inside a planet the base variant steps aside.** The biome's own token set
-  holds the page; the student's variant returns on leaving. The accent (the
-  student's seeded hue) persists in both realms, with its lightness and chroma
-  fixed per colour set so AA holds for every hue.
+- `useRealm()` (`apps/web/src/lib/realm.ts`) decides the realm from the route and
+  writes `data-realm` / `data-biome` on `<html>`; `index.html` paints them before
+  the first frame. No page decides its own.
+- **One biome per planet**, seeded from student and stage (`planetBiomes` from
+  `/api/v1/cosmetics`); a moon wears its planet's. Cosmetic only.
+- `data-theme` is **not set** in apps/web any more. Every token a student page
+  reads comes from its realm's set in `packages/tokens/looks.css`.
 
----
-
-## 2. The star system: a sci-fi HUD
+## 2. The star system: the HUD
 
 From `_direction/star/`: Starfield's system map, skill screen, character hub,
 inventory and HUD, and No Man's Sky's discoveries list.
 
-- **The nav is a tab strip** (Starfield's skill screen, No Man's Sky's top nav):
-  Map · Stages · Progress · Your work · Settings, in the HUD face, the current
-  one lit with a rule under it, **← and → controls either side** that step to
-  the previous and next tab. It is navigation: real links with `aria-current`,
-  every one reachable by Tab. At 380 it may become a bottom bar of the same five,
-  never a sideways scroller; the shell session decides and records it
-- **A mission tracker**, top-left on every star route (Starfield's MISSION
-  STATUS): the stage `lib/next-stage.ts` chooses and its next step, in words,
-  with one control to go there. It replaces the "pick up where you left off"
-  card as a HUD element
-- **A key-hint bar**, bottom-right at 1440 (Starfield's): each hint is a real
-  keyboard shortcut and a real button that does the same thing (Esc Back, M Map,
-  and the route's own). A hint that does nothing fails the mandate's consequence
-  test and is deleted. Hidden at 380, where there are no keys
-- **Panels**: thin-rule frames with corner brackets, a caption bar in the HUD
-  face, **stat tables** (label left, value right, the value in mono), and
-  **meters that print their number** (SURVEY 33% is how mastery reads)
-- **The Register Bar stays the signature element**, restyled as the ship's
-  readout strip (`.claude/rules/design.md`)
-- **The background is the solar system** on every star route (the map's own
-  scene or its still star field), never a biome (`BIOME-AND-LOADING-SPEC.md`
-  §1b)
-- **Locks read as Starfield's ranks do**: the padlock beside the words, never
-  instead of them
+- **The nav**: a tab strip (Map · Stages · Progress · Your work · Settings) in the
+  HUD face, the current one lit with a rule under it, ← and → either side stepping
+  to the previous and next tab. At 380 it is a **bottom bar** of the same five.
+- **The mission panel**, top-left: the stage `lib/next-stage.ts` chooses and its
+  next step, in words, one control to go there, and the **depth meter** (L0-L6)
+- **The key-hint bar**, bottom-right at 1440: every hint is a real shortcut and a
+  real button. Hidden at 380
+- **The readout strip**: the registers (PC, IR, MAR, MBR, ACC) as a thin HUD strip
+- **Panels**: a hairline frame with corner brackets, a lit caption bar, stat
+  tables, meters that print their number, badges in words
+- **The background**: the 3D system on `/app`; a still CSS star field elsewhere
+  (cheap on a phone, no second WebGL context)
+- **Locks** read as Starfield's ranks: the padlock beside the words, never instead
 
-## 3. Inside a planet: the biome, in pixel frames
+## 3. Inside a planet: the biome, in sprites
 
-From `_direction/biome/`: Stardew Valley's skill page, journal, quest and letter,
-and the CC0 art in `_direction/assets/`.
+From `_direction/biome/`: Stardew Valley's skill page, journal, quest and letter.
 
-- **The same nav component, in the biome's dress** (Stardew's icon tabs attached
-  to the frame's top edge, the current one raised). **Proposed, for the shell
-  session to confirm with the instructor:** inside a planet its items are the
-  planet's own (Reading · Moons · Check, and Labs when they exist) plus **Leave
-  planet**, which returns to the star system with this planet selected; the star
-  destinations are one step away through it
-- **Nine-slice pixel frames** for every panel, title tabs shaped like Stardew's
-  scroll, list rows as framed buttons with badges in words (NEW, DONE, LOCKED),
-  and the reading on a **parchment-like surface** (Stardew's letter) with the
-  biome around it
-- **Frames are art, so they live with the tokens.** Kenney's CC0 Pixel UI Pack is
-  the source; the frames, tabs and buttons are vendored into `packages/tokens`
-  (nothing else may hold a colour literal) and recoloured per biome, or drawn in
-  CSS from the biome's tokens: the foundation session chooses and records why.
-  **Decided 30 Sep 2026: vendored** (the instructor, from captures of both; CSS
-  was recommended). One sprite per biome in `packages/tokens/pixel/`; the sprite
-  draws the frame and never the fill, and a token ring inside it carries the
-  edge's contrast. `design/templates/web/_direction/LOOK.md` §3
-- **Each biome is a complete token set** (surfaces, ink, lines, the accent's
-  lightness and chroma), the way the eight encounter themes are four tokens and
-  a nine-slice panel. **Legibility is not negotiable:** text sits on a token
-  surface over the art, AA computed for every biome and every accent hue, and a
-  biome that cannot hold AA gets a stronger scrim, never an exemption
+- **The nav bar is a sprite bar** across the top: the planet's name, its tabs
+  (Reading · Check, Moons when they exist) as sprite buttons, the current one
+  pressed, and **Leave planet** at the end
+- **The side bar is a sprite panel**: the reading's contents, or the check's
+  question list
+- **Every button is a sprite button**, with the pressed sprite on `:active`
+- **The reading sits on a parchment surface** inside a sprite frame; the biome's
+  art fills the page behind it
+- **Legibility is not negotiable**: the sprite draws the frame, never the fill;
+  a token ring inside it carries the edge; AA is computed on every biome
 
 ## 4. A stage check: the chrome is the planet's, the paper is everyone's
 
-**Instructor ruling, 30 Sep 2026.** The check happens inside the planet, so the
-nav, the frame and the background keep the planet's biome and the student never
-feels they left. **The paper does not change:** the question card, its options,
-Record answer, Submit and every verdict sit on **one neutral surface, identical
-for every student**, with no biome art under or inside it.
-
-This **amends** `DESIGN-MANDATE.md` §1B rule 1 and `BIOME-AND-LOADING-SPEC.md`
-§1b's fairness line from "no theatre anywhere on an assessment" to "theatre may
-dress the chrome of an assessment, never the paper". The purpose is unchanged:
-two students with different biomes, comparing screens, see the same exercise.
-The runner's spec proves it by rendering one paper as two students with
-different biomes and asserting the paper's computed styles are identical.
+The nav, the side bar and the background keep the planet's biome. **The paper**
+(the question card, its options, Record answer, Submit and every verdict) **sits
+on one neutral set, identical for every student** (`[data-paper]`). The runner's
+spec renders one paper as two students with different biomes and asserts the
+paper's computed styles are identical.
 
 ## 5. Transitions: always, both ways
 
-**Star → biome** (entering a planet or moon: Enter journey, a stage link, the
-mission tracker): the star field recedes, §4.1's warp streaks, **the realm
-switches at the warp's peak** (the token swap happens under full cover, so no
-frame mixes two themes), the biome resolves, the frame and nav settle in, the
-content mounts. `BIOME-AND-LOADING-SPEC.md` §4.1-§4.2 already name this
-sequence; the remake makes it the only way in.
-
-**Biome → star** (Leave planet, Back): the reverse. The content leaves, the biome
-dissolves into stars, the HUD returns, and the map opens with the planet
-selected and its sidebar open (`WEB-REVAMP.md` §3.3).
-
-- **Planet → moon** (same biome): no realm change; a short in-biome move
-- **A deep link or reload** into a planet: no warp, because nothing was
-  travelled; the biome is there from the first paint
-- **`prefers-reduced-motion`: a cut.** The realm switches in one frame; no warp,
-  no dissolve. `QA_MODE=1` freezes every ambient loop
-- **Motion is never the only signal:** the nav's words change with the realm
-  ("Stage 06 · External Memory", "Leave planet")
-- **Budget:** the Bring-Up is still the one orchestrated moment per stage. Realm
-  transitions are navigation, which `.claude/rules/design.md` requires to carry a
-  transition both ways; each route's `motion.md` records its own
+**Star → biome**: the star field streaks (§4.1's warp), the realm switches at the
+peak under full cover, the biome resolves, the chrome settles. **Biome → star**:
+the reverse, landing on the map with the planet selected. A deep link has no warp.
+**`prefers-reduced-motion`: a cut.** Motion is never the only signal: the nav's
+words change with the realm.
 
 ## 6. Type
 
 | Role | Face | Where |
 |---|---|---|
-| **HUD label** (new, ruled 30 Sep) | one game face from Google Fonts, chosen in the foundation session from captured specimens: **Chakra Petch**, **Oxanium** and **Pixelify Sans** are the candidates | nav labels, titles, panel captions, key hints, badges. **Never body text, never a number**, never below 12px |
-| Body | Inter | everything read as prose |
-| Mono | JetBrains Mono | **every number**, register value, id, percentage and listing: "what the machine sees", unchanged |
+| HUD label and display | **Oxanium** | nav labels, titles, captions, key hints, badges. Never body text, never a number, never below 12px |
+| Body | Inter | prose |
+| Mono | JetBrains Mono | every number |
 
-Space Grotesk, today's display face, is retired in `apps/web` if the HUD face
-takes the display role; the foundation session decides and updates
-`.claude/rules/design.md` and `packages/tokens` in the same commit. The console
-keeps its type.
+All self-hosted (`packages/tokens/fonts.css`). Space Grotesk is retired in apps/web.
 
-**Decided 30 Sep 2026, from captured specimens:** the HUD face is **Oxanium**,
-and **Space Grotesk is retired in apps/web** (Oxanium takes the display role
-under `[data-realm]`; the console keeps Space Grotesk). All three apps/web faces
-are self-hosted woff2 in `packages/tokens/fonts.css`. A **stage check's paper
-follows the student's variant** and never the biome. `_direction/LOOK.md` §1-§2.
+## 7. Every piece, every time
 
-## 7. Every page, every session
+Each piece owes: a `template.png` from a real game screen (the `_direction/`
+image named for it, captured into its folder), a `SPEC.md` (controls against the
+mandate's four tests, and its realm), `design/specs/web-<piece>.spec.ts` (the six
+gate assertions at 1440 and 380, AA on the realm's set or on all seven biomes,
+the realm's own assertions), and `current*.png`, every one opened.
 
-Each route is one session, gated exactly as before (root `CLAUDE.md`), and now
-also owes:
+## 8. Order (this session, ruling 2)
 
-- its `template.png` captured from a real game screen, starting from the one
-  §8 names; if a better real screen exists, capture that and record why
-- a `SPEC.md` listing its controls against the mandate's four tests, and **its
-  realm**
-- `design/specs/web-<route>.spec.ts`: the six gate assertions at 1440 and 380,
-  what the plan owes, and **the realm's own assertions**: `data-realm` and
-  `data-biome` are right on first paint; a star route never shows a biome; a
-  planet route's nav and frame wear its planet's biome; contrast computed on
-  every colour set the route can show (three variants in the star system, every
-  biome inside a planet); the transition in and out recorded, and a cut under
-  reduced motion
-- `current*.png` at 1440 and 380, in every variant or biome that applies, all
-  opened
-
-## 8. Order
-
-| # | Session | Template to start from | What it owes |
+| # | Piece | Template | Notes |
 |---|---|---|---|
-| 1 | **The look system** (no route). **Done 30 Sep 2026**: `_direction/LOOK.md` | `_direction/` entire | The HUD token set and its three variants; one token set per biome (seven); the HUD face; the pixel frames (Kenney CC0) and how they are coloured; **per-planet biome seeding** through `/api/v1/cosmetics` (API tests first); `useRealm()`; a computed AA test in `packages/tokens` over every colour set × a sweep of accent hues; a look sheet rendered and captured at 1440 and 380 |
-| 2 | **The shell**: nav (both dresses), mission tracker, key-hint bar, Register Bar, the realm switch and both transitions | `starfield-skill-tree-2`, `no-mans-sky-discoveries`, `starfield-hud`, `stardew-valley-skill-level` | Also clears the shell defects `NEXT-SESSION.md` §0p.1-5, §0q.1 and §0r.2 carry. The instructor confirms the in-planet nav (§3) |
-| 3 | `/app`, the 3D map | `starfield-map` | `WEB-REVAMP.md` §3.1-§3.3 (selection, ~700ms zoom, the sidebar as the planet's window) and §4 (Kepler). Moons and asteroids with it or as the next session, the instructor's call |
-| 4 | `/app/map`, the flat map | `starfield-map` | The 30 Sep behaviour and `web-map.spec.ts` carried; the look redone in the HUD |
-| 5 | `/app/stage/:id`, the reader | `stardew-valley-letter`, `stardew-valley-journal` | The reading in the planet's biome; the 29 Sep rulings carried |
-| 6 | `/app/stage/:id/check`, the runner | `stardew-valley-quest` for the chrome | Biome chrome, **neutral paper** (§4); the 29 Sep rulings carried |
-| 7 | `/app/stages` | `no-mans-sky-discoveries` | Acts as systems, stages as planets, state as an icon and a word |
-| 8 | `/app/progress` | `starfield-character-menu-2` | Depth and the 21 competency cells as labelled meters |
-| 9 | `/app/work` | `starfield-inventory-2` | Submissions (40% of the grade) as a list with a detail card; §0g.4's return |
-| 10 | `/app/settings` | the HUD's own panels | The variant picker now changes the HUD's variant |
-| 11 | `/login`, `/register`, `/maintenance`, the 404 | a title screen, captured in session | First contact |
-| 12 | Moons, their journeys, the act-1 minigames (R4) | `starfield-map-3`, `stardew-valley-quest` | `WEB-REVAMP.md` §3.2, §3.6, §3.7 |
+| 1 | **The look system** | `_direction/` | Done 30 Sep (morning); reworked by ruling 2: one star set, sprite classes for bars and buttons, the neutral paper |
+| 2 | **The shell** | `starfield-skill-tree-2`, `starfield-hud`, `stardew-valley-skill-level` | Both navs, mission panel with depth, key hints, readout strip; shell defects §0p.1-5, §0q.1, §0r.2 |
+| 3 | **`/app`, the 3D map** | `starfield-map` | SYSTEM and BODY panels, the accessible row of bodies, selection and zoom, Kepler, per-planet tint, the phone. **`/app/map` and the flat map deleted** |
+| 4 | `/app/stage/:id`, the reader | `stardew-valley-letter`, `stardew-valley-journal` | Sprite nav and side bar, parchment |
+| 5 | `/app/stage/:id/check`, the runner | `stardew-valley-quest` | Sprite chrome, neutral paper |
+| 6 | `/app/stages` | `no-mans-sky-discoveries` | Acts as systems, stages as planets |
+| 7 | `/app/progress` | `starfield-character-menu-2` | Depth and the 21 cells as labelled meters |
+| 8 | `/app/work` | `starfield-inventory-2` | List and detail card |
+| 9 | `/app/settings` | the HUD's panels | The accent; no theme picker |
+| 10 | `/login`, `/register`, `/maintenance`, 404 | a title screen | First contact |
+| 11 | Cleanup | — | Delete the dead code and CSS; the whole suite |
 
-**No route starts until the previous one's spec is green.** The console is not in
-this remake.
+The console is not in this remake.

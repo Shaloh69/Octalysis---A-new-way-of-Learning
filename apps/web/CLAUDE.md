@@ -9,11 +9,14 @@ carried for almost no reuse. `apps/console` is the opposite case and DOES use sh
 Route groups: `/` public (unauthenticated), `/app/*` student (role `student`).
 
 ## Two realms — the remake, 30 Sep 2026 (`docs/redesign/WEB-REMAKE.md`)
-- **The star system** (`/app`, `/app/map`, `/app/stages`, `/app/progress`, `/app/work`,
-  `/app/settings`, and the public pages): the default game HUD, in the student's variant
-  (bare-metal, blueprint, phosphor) and seeded accent. Never a biome.
+- **The star system** (`/app`, `/app/stages`, `/app/progress`, `/app/work`, `/app/settings`, and
+  the public pages): **one** game HUD for everyone, with the seeded accent. No variants: apps/web
+  never sets `data-theme` (ruling 2, 30 Sep). Never a biome.
 - **Inside a planet or moon** (`/app/stage/:id` and everything under it): **that planet's biome,
-  nav included**, one biome per planet seeded from student and stage; a moon wears its planet's.
+  nav, side bars and buttons in sprites**, one biome per planet seeded from student and stage; a
+  moon wears its planet's.
+- **`/app` is the 3D map and the only map.** `/app/map` redirects to it. The map's accessible
+  layer (the row of bodies, the body panel) is what keyboard and screen-reader students use.
 - The realm is decided once, in the shell, from the route (`data-realm`, `data-biome` on
   `<html>`), correct on the first paint. Moving between realms is always a transition; a cut
   under reduced motion.

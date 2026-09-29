@@ -110,13 +110,14 @@ every RLS test would become a lie.
 
 The tree is not a visualisation of the curriculum — it **is** the curriculum. `stages.prereq` is
 the only edge list; nothing about the map may be authored twice. The 3D galaxy is a presentation
-layer. `/app` is the 3D map and is the student's default; `/app/map` is a flat, fully
-keyboard-operable route that is always available and is never a degraded mode. A `<canvas>` has no
-accessibility semantics, so reduced motion, absent WebGL and small viewports fall back to the flat
-presentation — **in place, on the same route, without redirecting.**
+layer. **`/app` is the 3D map and the ONLY map** (instructor ruling, 30 Sep 2026: the 2D map is
+removed; `/app/map` redirects to `/app`). A `<canvas>` has no accessibility semantics, so the map
+carries an **accessible layer on every device**: each planet is also a real focusable button (the
+SYSTEM panel's row of bodies) and the selected planet's panel is real DOM. Reduced motion freezes
+the orbits and cuts the camera; a portrait phone keeps the 3D map; no WebGL keeps the whole
+accessible layer with a one-line notice.
 **`docs/VISUAL-SYSTEM-3D.md` §5's degradation ladder owns this rule; every other document points
-at it.** (R0 ruling, 1 Sep 2026: four documents each restated a redirect the app has never done,
-and the app's degrade-in-place answer is the better one. `docs/PROGRESS.md` F-5.) See `docs/SKILL-TREE-3D.md` and `docs/GAME-DESIGN.md` §2.
+at it.** See `docs/SKILL-TREE-3D.md` and `docs/GAME-DESIGN.md` §2.
 
 ## Structure of the domain
 
@@ -149,8 +150,10 @@ which tests each passes.
 ## Design
 
 Colors, type, spacing, and motion come from `packages/tokens`. **Never write a literal hex outside
-that package** — a hook blocks it. Three base themes (`bare-metal`, `blueprint`, `phosphor`) plus a
-per-student accent derived in OKLCH from a stored hue, not a stored hex.
+that package** — a hook blocks it. **The console** has three base themes (`bare-metal`, `blueprint`,
+`phosphor`, `tokens.css`). **The student app** has the two realms' sets instead (`looks.css`: one
+star HUD, seven biomes, one neutral paper), and no theme choice. Both derive the per-student accent
+in OKLCH from a stored hue, not a stored hex.
 
 On top of those sit **eight encounter themes** (`GAME-DESIGN.md` §9) — each is four tokens and a
 nine-slice panel, never a redesign. They dress the LAB beat and never an assessment, and they are
@@ -161,12 +164,15 @@ values, hex, machine code, and assembly listings render in mono. **In `apps/web`
 2026, one game "HUD label" face** (chosen in the remake's first session) takes nav labels, titles,
 panel captions and key hints: never body text, never a number (`WEB-REMAKE.md` §6).
 
-**The student app has two realms (instructor ruling, 30 Sep 2026; `docs/redesign/WEB-REMAKE.md`).**
-In the star system (`/app`, `/app/map`, the hub routes) it wears the default game HUD, in the
-student's variant and accent. **Opening a planet or moon changes the theme: the nav and every
-design follow that planet's biome, always**, and leaving returns to the HUD. Every move between
-the two is a transition (a cut under reduced motion). In a stage check the biome dresses the
-chrome and **never the paper**: the questions sit on one neutral surface identical for everyone.
+**The student app has two realms and only two looks (instructor rulings, 30 Sep 2026;
+`docs/redesign/WEB-REMAKE.md`).** In the star system (`/app`, the hub routes) it wears **one**
+game HUD for everyone; the bare-metal / blueprint / phosphor variants are **removed from apps/web**
+(the console keeps them), and the seeded accent marks only the student's own place. **Opening a
+planet or moon changes the theme: the nav, the side bars and every button become that planet's
+biome, drawn in sprites**, and leaving returns to the HUD. Nothing else changes the theme. Every
+move between the two is a transition (a cut under reduced motion). In a stage check the biome
+dresses the chrome and **never the paper**: the questions sit on one neutral set, `[data-paper]`,
+identical for everyone.
 
 Motion: one orchestrated moment per stage. Respect `prefers-reduced-motion`. Incorrect answers get
 a neutral response — never red, never a buzzer, never a shake.
@@ -369,6 +375,11 @@ column, unstyled purple links, an ordering item that was unanswerable and graded
 wrong every time — reached production through a page with no spec behind it.
 
 ## ONE SESSION, ONE ROUTE — AND EVERY SESSION WRITES THE NEXT ONE'S PROMPT
+
+**Amended for the student-app rework only (instructor ruling, 30 Sep 2026):** the whole of
+`WEB-REMAKE.md` §8 runs in one session, piece after piece, and each piece is still captured at
+1440 and 380, spec-green, committed and pushed before the next starts. The gate did not move;
+only the session boundary did.
 
 A page-work session does **only** the route its prompt names. A defect found on
 another page is written into `docs/NEXT-SESSION.md` and left alone — fixing it

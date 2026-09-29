@@ -26,6 +26,10 @@ pixel sprites, which draw the frame and never the fill.
   sheets, and every value in a parameterized question. In this app, monospace means *"this is what
   the machine sees."* That consistency is the design.
 
+**In apps/web since 30 Sep 2026 (ruling 2):** the Register Bar is reworked as the HUD's readout
+strip in the star system and a sprite bar inside a biome, and the Depth Gauge is a meter in the
+mission panel. The rest of this paragraph describes what they show, which is unchanged.
+
 The signature element is the **Register Bar**: a persistent top strip showing PC, IR, MAR, MBR,
 ACC as live mono hex. Idle pulse in stages 00-11, live in 12-15, question index as PC during an
 assessment. Spend boldness here; keep everything else quiet.
@@ -34,7 +38,8 @@ Motion: one orchestrated moment per stage (the Bring-Up, ~2s, once). Correct ans
 accent flash. No confetti per question — it is noise by week three. `prefers-reduced-motion`
 disables all of it.
 
-Accessibility floor: WCAG 2.2 AA on all three themes, verified by computation not by eye. Every
+Accessibility floor: WCAG 2.2 AA on every colour set, verified by computation not by eye: the
+console's three themes; apps/web's star HUD, its seven biomes and its neutral paper. Every
 drag interaction has a tap-to-select fallback. `aria-live` on answer feedback. Visible focus
 everywhere. 380px with no horizontal scroll.
 
