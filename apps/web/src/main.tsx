@@ -11,6 +11,7 @@ import "./styles/reader.css";
 import "./styles/runner.css";
 import "./styles/stages.css";
 import "./styles/progress.css";
+import "./styles/work.css";
 
 applyStoredAccent();
 setTokenProvider(getAccessToken);
