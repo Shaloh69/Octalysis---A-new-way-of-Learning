@@ -23,70 +23,139 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: the look system (no route)
+## 1. Start here — the next session: the shell
 
-*Written 30 Sep 2026 by the direction-change session, which could not commit;
-landed 30 Sep by the look-system session. The instructor ruled the first pass
-too bland: the student app is REMADE as a game (`WEB-REMAKE.md`), and its first
-session builds the look system and no page (§8 #1). `pnpm phase` is the count,
-not this line.*
+*Rewritten 30 Sep 2026 by the look-system session (`WEB-REMAKE.md` §8 #1),
+which built the tokens, faces, frames, per-planet biomes and the realm, and
+no page. The shell is next (§8 #2). Phase at handover: **R3 live at 59 / 84
+(70%)**, R4 2 / 29; all tracks **146 done · 76 to-do (222 items, 66%)**.
+`pnpm phase` is the count, not this line. The prompt is in a plain block so
+it pastes exactly as written.*
 
-> Read docs/redesign/WEB-REMAKE.md in full: it owns this remake (the two
-> realms, the HUD, the biome inside a planet, the assessment ruling, the
-> transitions, type, the order). Then design/templates/web/_direction/SOURCE.md,
-> and OPEN every image in _direction/ (star/, biome/, assets/). Then
-> WEB-REVAMP.md §2-§4 (what the pages DO still stands there),
-> BIOME-AND-LOADING-SPEC.md §1b (as amended 30 Sep), §2e (the biome template),
-> §3 (seeding) and §4 (the two loading screens and the warp),
-> SOLAR-SYSTEM-SPEC.md §3 (the cosmetic boundary: never a lock, a ring or a
-> grade), GAME-DESIGN.md §9 (encounter themes: four tokens and a nine-slice
-> panel, the pattern a biome token set follows), root CLAUDE.md's revamp rules,
-> and docs/NEXT-SESSION.md §0a to §0s (§0s is the direction change). Do not
-> re-derive what those carry.
->
-> Run pnpm phase. Show the table, say the percentage, name the live phase.
-> Then state plainly whether Prelim-worth of data is okay to run on students,
-> checking the five conditions in CLAUDE.md rather than remembering them.
->
-> Confirm everything is still green before touching anything, AGAINST BUILDS
-> (§0j.2, §0p.9): pnpm --filter @octa/web build, npx vite preview --port 5185
-> --strictPort from apps/web in the background (rebuild AND restart it after
-> any change), OCTA_WEB_URL and OCTA_CONSOLE_URL = http://localhost:5185, then
-> the whole web suite (every design/specs/*.spec.ts but console-*). The
-> console, built and previewed on 5184. The API suite. Read the skips with a
-> JSON reporter and read their REASONS (§0q.3). A full run writes to the
-> database: reset and re-demo before the next one. If anything is red, that is
-> this session's work.
->
-> THIS SESSION BUILDS THE LOOK SYSTEM AND NO PAGE (WEB-REMAKE.md §8 #1). No
-> route's JSX or layout is rebuilt here; the shell is the NEXT session. It owns:
-> (a) the HUD register's tokens in packages/tokens in its three variants, the
-> seeded accent's lightness and chroma fixed per variant; (b) one COMPLETE
-> token set per biome (the seven in services/api/src/routes/cosmetics.ts
-> BIOMES); (c) data-realm="star|biome" and data-biome on <html>, decided from
-> the ROUTE by one useRealm() in apps/web (pure, unit-tested), set before the
-> first paint of a deep link; wiring it into the shell is allowed, restyling
-> the shell is not; (d) per-planet biome seeding through /api/v1/cosmetics (a
-> biome for EVERY stage, deterministic from the digest plus the stage id, a
-> moon wears its planet's), the Zod contract, API tests watched failing first,
-> the client reading it; (e) the HUD label face (Chakra Petch, Oxanium or
-> Pixelify Sans), and every face it keeps actually LOADING (apps/web loads no
-> font files today); decide with the instructor whether Space Grotesk retires
-> in apps/web; (f) the pixel frames: Kenney's CC0 Pixel UI Pack vendored into
-> packages/tokens as nine-slice border-image, or frames drawn in CSS from each
-> biome's tokens; (g) a computed AA test in packages/tokens over every colour
-> set x accent hues 0-359 step 15, watched failing first; (h) a look sheet
-> under design/look/, captured at 1440 and 380 for every variant and biome, and
-> every PNG OPENED.
->
-> Audit what exists FIRST, then ASK the instructor, with captures, before
-> building: the HUD face, vendored or CSS frames, Space Grotesk kept or
-> retired. Recommend one option each, with its cost. Tests before code. The
-> console must not change. Write LOOK.md beside the direction. Tick "The look
-> system" in R3 in the same commit as the work. Rewrite this §1 for THE SHELL
-> (WEB-REMAKE.md §8 #2). End with that prompt in one fenced code block, plain
-> text, no > markers. Then stop.
+```text
+Read docs/redesign/WEB-REMAKE.md in full: it owns this remake (the two realms,
+the HUD, the biome inside a planet, the assessment ruling, the transitions,
+type, the order). Then design/templates/web/_direction/LOOK.md (what the look
+system built on 30 Sep, and section 6 on how to use it), SOURCE.md beside it,
+and OPEN the four images this session starts from: star/starfield-skill-tree-2,
+star/no-mans-sky-discoveries, star/starfield-hud and biome/stardew-valley-skill-level
+(and star/starfield-map for its key-hint bar). Then OPEN design/look/captures/
+(the twenty look-sheet captures, the face and frame comparisons, reader-*.png).
+Then WEB-REVAMP.md §2-§4, BIOME-AND-LOADING-SPEC.md §1b and §4 (the warp and
+the biome arrival, both still unbuilt), .claude/rules/design.md (toasts,
+loading, transitions), root CLAUDE.md's revamp rules, and docs/NEXT-SESSION.md
+§0a to §0t (§0p.1-5, §0q.1 and §0r.2 are THIS session's; §0t is what the look
+system left). Do not re-derive what those carry.
 
+Run pnpm phase. Show the table, say the percentage, name the live phase. Then
+state plainly whether Prelim-worth of data is okay to run on students, checking
+the five conditions in CLAUDE.md rather than remembering them. (On 30 Sep it
+was NOT. Locally: stages 00-04 had 112 content blocks; all 96 act-1 items at
+review, 0 live, so no paper fills and every Start answers 500 (§0e.1); stage 01
+open for 0 of 24 seeded students (§3a decided, not built); run_invariants() 0
+failing, 4 warnings (INV-18, 25, 27, 29); 0 of 19 planet summaries approved.
+The DEPLOYMENT, last measured 28 Sep: no content for 00-04 and no items at all,
+§0h.1.)
+
+Confirm everything is still green before touching anything, AGAINST BUILDS
+(§0j.2, §0p.9): pnpm --filter @octa/web build, then npx vite preview --port 5185
+--strictPort from apps/web in the background (rebuild AND restart it after any
+change), OCTA_WEB_URL and OCTA_CONSOLE_URL = http://localhost:5185, and the
+whole web suite (every design/specs/*.spec.ts except console-*). On 30 Sep:
+338 passed, 102 skipped, 0 failed (337 and 103 when solar-system.spec.ts's
+frame-rate guard fires on a loaded machine, §0t.12). The console, built and previewed on 5184:
+756 passed, 58 skipped, 0 failed. The API suite: 646 passed, 1 skipped. pnpm --filter @octa/tokens
+test: 38 passed. pnpm --filter @octa/web test: 118 passed. pnpm scan:bundle:
+CLEAN on both bundles (since 30 Sep: the env schemas moved to
+@octa/contracts/env, §0t.10). Read the skips with a JSON reporter and read
+their REASONS (§0q.3). A full run writes to the database: reset and re-demo
+between suites, and PROVE the dev API after every reset with a real GET (a
+reset killed it again on 30 Sep, §0c.1, and a burst of 152 console failures was
+that and nothing else). If anything is red, that is this session's work.
+
+THIS SESSION BUILDS THE SHELL (WEB-REMAKE.md §8 #2) and no page:
+  a. Import @octa/tokens/looks.css into apps/web after tokens.css. Every page
+     recolours at once, so in the SAME session the runner's paper takes
+     data-theme="<the student's variant>" (the paper follows the variant,
+     instructor 30 Sep, LOOK.md §6), and a spec renders one paper as two
+     students with different biomes and asserts identical computed styles.
+  b. The nav, in both dresses. The star system: a tab strip (Map, Stages,
+     Progress, Your work, Settings) in Oxanium with ← and → either side,
+     real links with aria-current, every one reachable by Tab. At 380 the
+     labels wrap (§0t.5): choose a bottom bar of the same five or shorter
+     labels, and record it. Inside a planet: Kenney tabs
+     (.frame-pixel-button) attached to the frame's top edge, the current one
+     raised. ASK the instructor to confirm the in-planet items before building
+     them: proposed Reading, Moons, Check (Labs when they exist) and Leave
+     planet, which returns to the star system with this planet selected.
+  c. The mission tracker, top-left on every star route (Starfield's MISSION
+     STATUS): the stage lib/next-stage.ts chooses and its next step, in words,
+     with one control to go there.
+  d. The key-hint bar, bottom-right at 1440: each hint a real keyboard
+     shortcut AND a real button that does the same (Esc Back, M Map, and the
+     route's own). A hint that does nothing is deleted. Hidden at 380.
+  e. The Register Bar as the ship's readout strip, and its defects: §0p.3
+     (the idle dashes wrap one per line at 380), §0p.4 (the empty band above
+     it), §0p.5 (it and Report a problem sit above a modal's scrim).
+  f. The realm switch and both transitions: star to biome is §4.1's warp with
+     the token swap at the warp's peak (under full cover, no frame mixes two
+     looks), then the biome resolves and the frame and nav settle; biome to
+     star is the reverse, landing on the map with the planet selected; planet
+     to moon changes no realm; a deep link or reload has no warp;
+     prefers-reduced-motion is a cut; QA_MODE=1 freezes the loops. motion.md
+     records each and its reduced-motion path. Motion is never the only
+     signal: the nav's words change with the realm.
+  g. The other shell defects: §0p.1 (--bg is defined nowhere), §0p.2 (the nav
+     is inside <main>; move it out, a landmark fix too), §0q.1 (Report a
+     problem is a full-width bar, not a pill), §0r.2 (on /app/map no nav item
+     is current).
+  h. Its own template and gate: capture design/templates/web/shell/template.png
+     (from the four references, or a better real screen, recorded why) with
+     SOURCE.md; SPEC.md listing every control against the mandate's four tests
+     and its realm; design/specs/web-shell.spec.ts with the six assertions at
+     1440 and 380, AA computed on every colour set the shell can show (three
+     HUD variants on a star route, all seven biomes on a planet route, via
+     _realm-fixture.ts forcePlanetBiome), and the realm's own assertions:
+     data-realm and data-biome right on the first frame, a star route never
+     shows a biome, a planet route's nav and frame wear its planet's biome,
+     the transitions in and out, a cut under reduced motion.
+Extend every existing spec rather than overwrite it; keep every assertion and
+move selectors to the new hooks. Write a defect on another page into
+docs/NEXT-SESSION.md and leave it.
+
+Learned the hard way, carried forward: the Bash tool's heredocs strip
+backslashes and a double-quoted node -e runs backticks (write scripts with the
+Write tool); editing services/api/src while a suite runs restarts the dev API
+and fails everything in flight; a hand-written data-biome now races the realm
+(use forcePlanetBiome); an app must never import @octa/contracts/env; a token
+turned into a var() alias must still be seen by check-contrast.mjs (it now
+resolves :root aliases and throws on one it cannot); the Kenney frames are
+paint, so use .frame-pixel and its token ring, never a bare border-image; the
+first-ever deep link into a planet paints neutral until cosmetics land (§0t.3,
+decide whether the shell holds that first paint).
+
+Stack: docker ps first (Docker Desktop has stopped four times; start it from
+its .exe), pnpm db:up, pnpm db:reset && node scripts/db-demo.mjs, pnpm dev:api
+on 8090, pnpm dev:token student (seeded student 232129006: act 1 is 00 city,
+01 cave, 02 jungle, 03 desert, 04 ocean). 5173 and 5174 belong to other
+projects; use 5183 (dev), 5184 (console) and 5185 (the web build), and confirm
+each port is OURS by process command line and page title.
+
+Finish: run pnpm typecheck, pnpm lint, the tokens and web unit tests, the API
+suite if the API changed, the whole web suite and every console spec, against
+builds; pnpm scan:bundle must stay clean on both bundles; git checkout --
+design/item-review/. Capture every shell state at 1440 and 380 in every
+variant and biome it can show, and OPEN every PNG. Tick "The shell" under
+"Student app REMAKE" in R3 in the same commit as the work and move R3's count in
+docs/PROGRESS.md. Commit with explicit paths, checking git status for anything
+already staged first, messages from a file. Rewrite §1 of
+docs/redesign/REVAMP-PROMPTS.md for the next session (/app, the 3D map,
+WEB-REMAKE.md §8 #3: selection, the ~700ms zoom, the sidebar as the planet's
+window in its biome, Kepler, and the planet tint per planet, §0t.4), commit and
+push. Show me the captures and the test output, say what you ran versus
+assumed, and end with the rewritten §1 prompt in one fenced code block, plain
+text with no > markers. Then stop.
+```
 
 ## 2. Continue — every session after the first
 
