@@ -320,7 +320,8 @@ test.describe("when things fail", () => {
     await expect(main.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 15_000 });
     await expect(main).toContainText(/Something went wrong on our side/);
     await expect(page.getByRole("button", { name: "Try again", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /leave|back to the stage/i })).toBeVisible();
+    // The runner's own; the shell has a "Leave planet" hint of its own.
+    await expect(main.getByRole("button", { name: /leave|back to the stage/i })).toBeVisible();
   });
 
   test("loading: nothing under 400ms, a skeleton after, words after 3s", async ({ page }, info) => {
@@ -384,7 +385,7 @@ test.describe("submitting", () => {
 test.describe("the Register Bar and the paper", () => {
   test("PC is the question number during the paper, in mono", async ({ page }) => {
     await open(page);
-    const pc = page.locator(".register-bar [data-register=PC] .register-value");
+    const pc = page.locator("[data-readout] [data-register=PC] .register-value");
     await expect(pc).toHaveText("01");
     await next(page).click();
     await expect(pc).toHaveText("02");

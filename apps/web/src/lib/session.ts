@@ -29,36 +29,23 @@ export async function getAccessToken(): Promise<string | null> {
 }
 
 /**
- * Theme and accent.
+ * The accent. apps/web has no theme choice since 30 Sep 2026 (WEB-REMAKE.md
+ * §0.1): the look changes only between the star system and a planet's biome,
+ * and `data-theme` is never set here (the console keeps its three themes).
  *
  * The accent is a HUE (0-359), never a hex. Lightness and chroma are fixed per
- * theme in packages/tokens, which is what holds contrast constant across every
- * hue a student can pick -- a stored hex would let them make their own progress
- * UI unreadable.
+ * colour set in packages/tokens/looks.css, which is what holds contrast constant
+ * across every hue a student can land on or pick.
  */
-export type Theme = "bare-metal" | "blueprint" | "phosphor";
 
 /**
- * Paint whatever the student last chose, before first render.
- *
- * **It must not WRITE anything**, and that is not a detail. It used to call
- * `setTheme`/`setAccentHue`, both of which persist — so on a student's very
- * first load it stored `bare-metal` and `250` and every later reader could no
- * longer tell "they chose the default" from "they have never chosen".
- *
- * That is what defeated the first attempt at F-40: the seeded look correctly
- * declined to overwrite a stored choice, and the stored choice was one this
- * function had invented microseconds earlier. Three students still rendered
- * identically and the fix looked broken.
- *
- * So the defaults are applied in memory and left unstored. Absence of the key
- * is the signal that the seed is still free to act; only `SettingsPage` writes.
+ * Paint the accent the student last chose, before first render. It must not
+ * WRITE anything: absence of the key is the signal that the seed is still free
+ * to act, and only the Settings page writes it.
  */
-export function applyStoredTheme(): void {
+export function applyStoredAccent(): void {
   try {
-    const stored = localStorage.getItem("octa:theme") as Theme | null;
     const rawHue = localStorage.getItem("octa:accent-hue");
-    if (stored) document.documentElement.setAttribute("data-theme", stored);
     if (rawHue !== null) {
       const hue = Number(rawHue);
       if (Number.isFinite(hue)) {
@@ -69,33 +56,17 @@ export function applyStoredTheme(): void {
       }
     }
   } catch {
-    /* private window: fall through to the defaults already in the stylesheet */
+    /* private window: the seeded accent applies */
   }
 }
 
-/**
- * Has the student chosen this part of their look? Absence lets the seed act.
- *
- * Theme and hue are asked SEPARATELY, and that is not pedantry. A single
- * "have they chosen anything" flag meant picking a theme also froze the accent
- * at the stylesheet default of 250 — so a student who changed one thing
- * silently lost the seeded value of the other, which is the same
- * everyone-looks-identical bug F-40 fixed, reintroduced in miniature.
- */
-export function hasChosen(part: "theme" | "accent-hue"): boolean {
+/** Has the student chosen their accent? Absence lets the seed act. */
+export function hasChosen(part: "accent-hue"): boolean {
   try {
     return localStorage.getItem(`octa:${part}`) !== null;
   } catch {
-    // Private window: no choice can have been stored, so the seed applies.
     return false;
   }
-}
-
-export function setTheme(theme: Theme): void {
-  document.documentElement.setAttribute("data-theme", theme);
-  try {
-    localStorage.setItem("octa:theme", theme);
-  } catch { /* not persistable here */ }
 }
 
 export function setAccentHue(hue: number): void {

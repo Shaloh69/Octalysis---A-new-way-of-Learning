@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
-import { BiomeScene } from "../biomes/BiomeScene";
-import { useSeededBiome } from "../biomes/useSeededBiome";
 import { api, ApiError, type StageDetail } from "../lib/api";
 import { parseInline, sectionsOf } from "../lib/markdown";
 import { useDelayed } from "../lib/useDelayed";
@@ -66,7 +64,6 @@ export function StageReader({
   /** Opens the attempt runner. Absent on surfaces that cannot sit a check. */
   onStartCheck?: (assessmentId: string, title: string) => void;
 }): JSX.Element {
-  const biome = useSeededBiome();
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -131,8 +128,6 @@ export function StageReader({
    */
   const page = (state: string, children: JSX.Element, busy = false) => (
     <div className={`rd-page${leaving ? " rd-leaving" : ""}`} onAnimationEnd={onAnimationEnd}>
-      <BiomeScene name={biome} />
-      <div className="rd-scrim" aria-hidden="true" />
       <div className="rd" data-reader={state} aria-busy={busy || undefined}>
         {children}
       </div>

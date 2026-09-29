@@ -164,14 +164,10 @@ function applyCosmeticAttributes(c: Cosmetics): void {
  * the seed on the server remains the source of truth if the key is ever lost.
  */
 export function applySeededLook(c: Cosmetics): void {
-  const el = document.documentElement;
-
-  if (!hasChosen("theme")) {
-    const theme = c.themes[c.themeIndex] ?? c.themes[0];
-    if (theme) el.setAttribute("data-theme", theme);
-  }
+  // The theme is NOT applied since 30 Sep 2026: apps/web has no variants
+  // (WEB-REMAKE.md §0.1). `themeIndex` is still derived and sent, and ignored.
   if (!hasChosen("accent-hue")) {
-    el.style.setProperty("--accent-hue", String(c.accentHue));
+    document.documentElement.style.setProperty("--accent-hue", String(c.accentHue));
   }
 }
 

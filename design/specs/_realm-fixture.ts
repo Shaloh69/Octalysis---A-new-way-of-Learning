@@ -25,9 +25,13 @@ export async function forcePlanetBiome(page: Page, stage: string, biome: string)
     [stage, biome],
   );
   await page.route("**/api/v1/cosmetics", async (route) => {
-    const res = await route.fetch();
-    const json = (await res.json()) as { planetBiomes?: Record<string, string> };
-    json.planetBiomes = { ...(json.planetBiomes ?? {}), [stage]: biome };
-    await route.fulfill({ response: res, json });
+    try {
+      const res = await route.fetch();
+      const json = (await res.json()) as { planetBiomes?: Record<string, string> };
+      json.planetBiomes = { ...(json.planetBiomes ?? {}), [stage]: biome };
+      await route.fulfill({ response: res, json });
+    } catch {
+      // The page closed with the request in flight: nothing is left to dress.
+    }
   });
 }

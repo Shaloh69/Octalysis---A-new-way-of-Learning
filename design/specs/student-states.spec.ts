@@ -156,10 +156,10 @@ test.describe("the stage reader — its six states", () => {
     await page.goto("/app/stage/05", { waitUntil: "networkidle" });
 
     await context.setOffline(true);
-    await expect(page.locator(".banner-offline")).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(".shell-banner")).toBeVisible({ timeout: 10_000 });
 
     await context.setOffline(false);
-    await expect(page.locator(".banner-offline")).toBeHidden({ timeout: 10_000 });
+    await expect(page.locator(".shell-banner")).toBeHidden({ timeout: 10_000 });
   });
 
   test("380px: the reader reads, and nothing scrolls sideways", async ({ page }, testInfo: TestInfo) => {

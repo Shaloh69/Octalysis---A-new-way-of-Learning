@@ -284,11 +284,11 @@ test.describe("the rail, and the sheet at 380", () => {
     const pill = page.getByRole("button", { name: /^Contents/ });
     await expect(pill).toHaveAttribute("aria-expanded", "false");
     await expect(page.locator("[data-sheet]")).toBeHidden();
-    // Opposite the shell's Report a problem, never over it.
+    // Clear of the shell's bottom tab bar (since 30 Sep: Report is in the top bar).
     const a = (await pill.boundingBox())!;
-    const b = (await page.locator(".fb-tab").boundingBox())!;
+    const b = (await page.locator(".biome-tabs-bottom").boundingBox())!;
     expect(a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y,
-      "the pill overlaps Report a problem").toBe(true);
+      "the pill overlaps the planet's tab bar").toBe(true);
 
     await pill.click();
     await expect(pill).toHaveAttribute("aria-expanded", "true");

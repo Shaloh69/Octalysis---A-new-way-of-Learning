@@ -230,9 +230,9 @@ export const THEMES = ["bare-metal", "blueprint", "phosphor"] as const;
  *
  * Disabled controls are exempt, as WCAG exempts inactive components.
  */
-export async function contrastFailures(page: Page, scope = SURFACES): Promise<string[]> {
+export async function contrastFailures(page: Page, scope = SURFACES, exclude = ""): Promise<string[]> {
   await settle(page);
-  return page.evaluate((sel) => {
+  return page.evaluate(([sel, skip]) => {
     const cv = document.createElement("canvas");
     cv.width = cv.height = 1;
     const ctx = cv.getContext("2d", { willReadFrequently: true })!;
@@ -294,6 +294,9 @@ export async function contrastFailures(page: Page, scope = SURFACES): Promise<st
       for (const el of root.querySelectorAll<HTMLElement>("*")) {
         if (el instanceof SVGElement) continue;
         if (srOnly(el)) continue;
+        // Text painted on a sprite (border-image) is measured by its own test:
+        // packages/tokens decodes every sprite fill against --sprite-ink.
+        if (skip && el.closest(skip)) continue;
         const hasText = [...el.childNodes].some(
           (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? "").trim() !== "",
         );
@@ -320,7 +323,7 @@ export async function contrastFailures(page: Page, scope = SURFACES): Promise<st
       }
     }
     return [...new Set(out)];
-  }, scope);
+  }, [scope, exclude] as const);
 }
 
 /** Switch theme the way the console's own theme picker does, and let it settle. */
@@ -350,6 +353,11 @@ export async function offTokenStyles(page: Page, scope = SURFACES): Promise<stri
       "accent", "accent-hover", "accent-muted", "accent-fg", "accent-ring",
       "success", "success-bg", "danger", "danger-bg", "warning", "warning-bg",
       "info", "info-bg", "locked", "locked-bg",
+      // The student app's game register (packages/tokens/looks.css, 30 Sep 2026).
+      // Undefined in the console, where each resolves to nothing new.
+      "frame", "frame-corner", "frame-shade", "frame-light", "frame-edge", "frame-inner",
+      "caption-bg", "caption-ink", "lit-bg", "lit-ink", "meter-track", "meter-fill",
+      "sprite-ink", "reg-pc", "reg-ir", "reg-mar", "reg-mbr", "reg-ac", "reg-alu",
     ];
     const probe = document.createElement("div");
     document.body.appendChild(probe);

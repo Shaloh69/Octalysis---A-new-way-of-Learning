@@ -11,122 +11,14 @@
  * blue at the same HSL lightness look nothing alike.
  */
 
-/* The faces, self-hosted (30 Sep 2026): until now apps/web loaded no font file
- * at all and rendered Inter and JetBrains Mono from whatever the machine had.
- * `looks.css`, the two realms' colour sets and frames, is NOT imported yet: it
- * recolours every page, and the neutral-paper ruling needs the runner remade
- * first. The shell session imports it (WEB-REMAKE.md §8 #2). */
+/* Ruling 2 (30 Sep 2026): the tokens, the two realms' looks (looks.css) and
+ * the faces load here; the base, the shell and each remade route live in
+ * src/styles/, loaded after this file (main.tsx). What remains below is the
+ * old pages' CSS, deleted route by route as each is remade. */
 @import "@octa/tokens/fonts.css";
 @import "@octa/tokens/tokens.css";
-/* The shared animated backdrop -- the same file the console imports, so the two
- * apps cannot drift into looking like different products. */
+@import "@octa/tokens/looks.css";
 @import "@octa/tokens/backdrop.css";
-
-/* --------------------------------------------------------------
- * Accent, derived not stored
- * ------------------------------------------------------------ */
-:root {
-  --accent-hue: 250;
-}
-
-[data-theme="bare-metal"] {
-  --accent: oklch(0.72 0.15 var(--accent-hue));
-  --accent-hover: oklch(0.78 0.16 var(--accent-hue));
-  --accent-muted: oklch(0.3 0.06 var(--accent-hue));
-  --accent-fg: oklch(0.15 0.02 var(--accent-hue));
-  --accent-ring: oklch(0.72 0.15 var(--accent-hue) / 0.45);
-}
-
-[data-theme="blueprint"] {
-  --accent: oklch(0.48 0.14 var(--accent-hue));
-  --accent-hover: oklch(0.42 0.15 var(--accent-hue));
-  --accent-muted: oklch(0.92 0.04 var(--accent-hue));
-  --accent-fg: oklch(0.98 0.01 var(--accent-hue));
-  --accent-ring: oklch(0.48 0.14 var(--accent-hue) / 0.45);
-}
-
-[data-theme="phosphor"] {
-  --accent: oklch(0.8 0.11 var(--accent-hue));
-  --accent-hover: oklch(0.86 0.12 var(--accent-hue));
-  --accent-muted: oklch(0.26 0.05 var(--accent-hue));
-  --accent-fg: oklch(0.12 0.02 var(--accent-hue));
-  --accent-ring: oklch(0.8 0.11 var(--accent-hue) / 0.45);
-}
-
-/* --------------------------------------------------------------
- * Base
- * ------------------------------------------------------------ */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font-body, Inter, system-ui, sans-serif);
-  font-size: 16px;
-  line-height: 1.6;
-}
-
-h1,
-h2,
-h3 {
-  font-family: var(--font-display, "Space Grotesk", system-ui, sans-serif);
-  line-height: 1.2;
-  margin: 0 0 0.4em;
-}
-
-/* Every number, register value, hex and listing. In OCTA, monospace means
-   "this is what the machine sees". */
-.mono,
-pre,
-code {
-  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
-  font-variant-numeric: tabular-nums;
-}
-
-button {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-/* Focus is ALWAYS visible. Never remove this without replacing it. */
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: 3px;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.skip-link {
-  position: absolute;
-  left: -9999px;
-  z-index: 100;
-  padding: 0.6rem 1rem;
-  background: var(--accent);
-  color: var(--accent-fg);
-}
-.skip-link:focus {
-  left: 0.5rem;
-  top: 0.5rem;
-}
 
 .dim {
   color: var(--ink-dim);
@@ -2688,7 +2580,8 @@ button {
  * (NEXT-SESSION §0q). A fixed pill sat under that bar there.
  */
 .rd-pill {
-  position: sticky; bottom: var(--space-4); z-index: 2; justify-self: start;
+  /* Clear of the biome shell's bottom tab bar (30 Sep 2026), ~72px at 380. */
+  position: sticky; bottom: 5.25rem; z-index: 2; justify-self: start;
   min-height: 44px; padding: var(--space-2) var(--space-4);
   background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--text-xs);
   border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-full);

@@ -1,94 +1,36 @@
-import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { api, ApiError, type StageMapData, type ProgressGrid as Grid } from "../lib/api";
 import { StageMap } from "../components/StageMap";
+import { useShellData } from "../shell/ShellData";
 import { StageReader } from "../components/StageReader";
 import { ProgressGrid } from "../components/ProgressGrid";
 import { AttemptRunner } from "../components/AttemptRunner";
-import { FlatMapPage } from "./FlatMapPage";
 
 /**
- * The student's routes.
+ * The student's routes (WEB-REMAKE.md, 30 Sep 2026).
  *
- * `/app` and `/app/map` are the same component with a different `flat` prop,
- * and that is a deliberate correction to what the documents used to say.
- *
- * `CLAUDE.md` described two routes where `/app` was a 3D galaxy and `/app/map`
- * a flat fallback that reduced motion, absent WebGL and small viewports would
- * "redirect to". That design has a hole: a redirect means a student on a phone
- * gets a DIFFERENT URL from the one their classmate shares, and a link into the
- * course stops being a link into the course.
- *
- * What is built instead: **the accessible SVG layer is canonical on both
- * routes**, and the WebGL galaxy is a decorative layer behind it — `aria-hidden`,
- * `pointer-events: none`, absent under reduced motion or a small viewport, and
- * silently absent when WebGL fails. `/app/map` is the same page with the canvas
- * suppressed by choice rather than by capability.
- *
- * So nothing ever redirects, every URL works everywhere, and the flat view is
- * never a degraded mode — which is what the document was protecting in the
- * first place.
+ * `/app` is the 3D map and the only map: the 2D map and `/app/map` are
+ * removed by ruling 2. The map and the progress grid come from the shell
+ * (`useShellData`), fetched once for the whole app. Every page renders INSIDE
+ * its shell's `<main>`, so a page is a section with the page's `h1`, never a
+ * second `<main>`.
  */
-
-/* ------------------------------------------------------------------ hooks */
-
-function useMap() {
-  const [map, setMap] = useState<StageMapData | null>(null);
-  const [grid, setGrid] = useState<Grid | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const [m, g] = await Promise.all([api.stages(), api.progress()]);
-      setMap(m);
-      setGrid(g);
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not reach the server. Check your connection and try again.",
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  return { map, grid, error, reload: load };
-}
 
 /* ------------------------------------------------------------------ pages */
 
-export function MapPage({ flat = false }: { flat?: boolean }): JSX.Element {
-  // `/app/map` is its own page since 29 Sep 2026 (FlatMapPage); `/app` mounts
-  // the same flat presentation in place when its ladder drops the canvas.
-  if (flat) return <FlatMapPage />;
-  return <GalaxyPage />;
-}
-
-function GalaxyPage(): JSX.Element {
-  const { map, error, reload } = useMap();
+export function MapPage(): JSX.Element {
+  const { map, error, reload } = useShellData();
   const nav = useNavigate();
 
   if (error) return <ErrorState message={error} onRetry={() => void reload()} />;
   if (!map) return <MapSkeleton />;
 
-  return (
-    <>
-      <StageMap data={map} onOpen={(id) => nav(`/app/stage/${id}`)} />
-      <p className="map-alt-link">
-        <Link to="/app/map">Show the flat map</Link>
-      </p>
-    </>
-  );
+  return <StageMap data={map} onOpen={(id) => nav(`/app/stage/${id}`)} />;
 }
 
 export function StagePage(): JSX.Element {
   const { id = "" } = useParams();
   const nav = useNavigate();
-  const { reload } = useMap();
+  const { reload } = useShellData();
 
   return (
     <StageReader
@@ -130,7 +72,7 @@ export function CheckPage(): JSX.Element {
 }
 
 export function ProgressPage(): JSX.Element {
-  const { grid, error, reload } = useMap();
+  const { grid, error, reload } = useShellData();
   if (error) return <ErrorState message={error} onRetry={() => void reload()} />;
   if (!grid) return <MapSkeleton />;
   return <ProgressGrid data={grid} />;
@@ -162,13 +104,13 @@ export function ErrorState({
       `role="alert"` stays. The heading names the situation; the alert makes a
       screen reader announce it without the student hunting for it.
     */
-    <main className="state state-error" role="alert">
+    <section className="state state-error hud-panel" role="alert">
       <h1>That did not load</h1>
       <p>{message}</p>
-      <button type="button" onClick={onRetry}>
+      <button type="button" className="button hud-button" onClick={onRetry}>
         {retryLabel}
       </button>
-    </main>
+    </section>
   );
 }
 

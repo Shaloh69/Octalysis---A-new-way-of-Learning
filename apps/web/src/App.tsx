@@ -1,19 +1,12 @@
 import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
-  Link,
-  NavLink,
   Navigate,
   Outlet,
   Route,
   Routes,
-  useNavigate,
   useLocation,
 } from "react-router-dom";
-import { RegisterBar } from "./components/RegisterBar";
-import { DepthGauge } from "./components/DepthGauge";
-import { FeedbackWidget } from "./components/FeedbackWidget";
-import { SusSurvey } from "./components/SusSurvey";
 import { Toaster } from "./components/Toaster";
 import { LoginPage, RegisterPage } from "./pages/AuthPages";
 import {
@@ -27,27 +20,30 @@ import {
 import { SettingsPage } from "./pages/SettingsPage";
 import { StagesPage } from "./pages/StagesPage";
 import { SubmitPage } from "./pages/SubmitPage";
-import { api, type ProgressGrid as Grid, type StageMapData } from "./lib/api";
 import { useCosmetics } from "./solar-system/cosmetic-seed";
-import { SolarProvider } from "./solar-system/SolarBackdrop";
-import { currentIdentity, onAuthChange, signOut, type Identity } from "./lib/auth";
-import { realmFor, useRealm } from "./lib/realm";
+import { currentIdentity, onAuthChange, type Identity } from "./lib/auth";
+import { useRealm } from "./lib/realm";
+import { ShellDataProvider } from "./shell/ShellData";
+import { StarShell } from "./shell/StarShell";
+import { BiomeShell } from "./shell/BiomeShell";
+import { RealmWarp } from "./shell/RealmWarp";
+import { KeyHintProvider } from "./shell/keyHints";
 
 /**
- * The student app.
+ * The student app (docs/redesign/WEB-REMAKE.md, rulings of 30 Sep 2026).
  *
- * REAL ROUTES, and that is the point of this file. It used to be a three-way
- * `useState` switch: no deep link to a stage, no browser back button, and no
- * URL a student could send to a classmate. `react-router-dom` was already a
- * dependency and was never imported.
+ * Two realms, two shells. Every hub route sits in the STAR shell (Starfield's
+ * HUD); a planet and everything under it sits in the BIOME shell (the planet's
+ * biome, its chrome in Kenney's sprites). The realm itself is decided once,
+ * from the route (`useRealm`, and index.html for the first frame), and every
+ * move between the two is a warp (`RealmWarp`), a cut under reduced motion.
  *
- * The shell is deliberately thin. It owns the Register Bar, the Depth Gauge,
- * the offline banner and the auth gate; everything else is a route.
+ * `/app` is the 3D map and the ONLY map: the 2D map is removed (ruling 2), and
+ * `/app/map` redirects to `/app`, keeping a selected `?stage=`.
  */
 
 function useIdentity() {
   const [identity, setIdentity] = useState<Identity | null | undefined>(undefined);
-
   useEffect(() => {
     let live = true;
     const read = () => {
@@ -62,7 +58,6 @@ function useIdentity() {
       off();
     };
   }, []);
-
   return identity;
 }
 
@@ -70,165 +65,37 @@ function useIdentity() {
 function RequireSession(): JSX.Element {
   const identity = useIdentity();
   if (identity === undefined) {
-    return <div className="state state-loading">Checking your session…</div>;
+    return (
+      <main className="boot-wait" id="main" aria-busy="true">
+        <h1 className="sr-only">Checking your session</h1>
+        <p className="boot-wait-text">Checking your session…</p>
+      </main>
+    );
   }
   if (identity === null) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
 
-function AppShell(): JSX.Element {
-  const identity = useIdentity();
-  const nav = useNavigate();
-  const location = useLocation();
-
-  /*
-   * The student's seeded look, applied once for the whole authenticated app.
-   *
-   * It lives here rather than on the map because a landing biome dresses a
-   * STAGE (BIOME-AND-LOADING-SPEC.md §1), and the stage reader is a different
-   * route -- called from the map alone, `data-biome` would never be set on the
-   * page that actually uses it. Cosmetic only: it changes what a student looks
-   * at and nothing about what they can do.
-   */
+/**
+ * The signed-in app: the seeded look (the accent, the palette variant and the
+ * per-planet biomes the realm reads) and the map and progress both shells show.
+ */
+function SignedIn(): JSX.Element {
   useCosmetics();
-  const [map, setMap] = useState<StageMapData | null>(null);
-  const [grid, setGrid] = useState<Grid | null>(null);
-  const [offline, setOffline] = useState(!navigator.onLine);
-
-  useEffect(() => {
-    const on = () => setOffline(false);
-    const off = () => setOffline(true);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
-    return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
-  }, []);
-
-  // The gauge and bar need the map, and every route under here needs it too --
-  // but each route loads its own, so this is only for the chrome.
-  useEffect(() => {
-    void Promise.all([api.stages(), api.progress()])
-      .then(([m, g]) => {
-        setMap(m);
-        setGrid(g);
-      })
-      .catch(() => {
-        /* the route below will show the real error; chrome degrades quietly */
-      });
-  }, []);
-
-  /*
-   * Where the solar system is the page background, and where it is not.
-   *
-   * OFF on content surfaces -- the stage reader, the attempt runner, and the
-   * labs and games that live under them. Those carry their own theatre: a LAB
-   * beat wears its encounter theme, a landing wears its biome, and a star field
-   * behind either is a third visual system competing with them.
-   *
-   * The harder reason is the assessment. DESIGN-MANDATE.md 1B rule 1: theatre
-   * dresses the practice, never the assessment. A drifting star field behind a
-   * graded question is exactly what that rule exists to keep out -- and it
-   * would be MOTION behind an assessment, which is worse than decoration.
-   */
-  const onContentSurface = realmFor(location.pathname).realm === "biome";
-
-  /*
-   * AND OFF ON `/app/map`, which is the flat view asked for BY CHOICE.
-   *
-   * Without this the route drew BOTH: the WebGL backdrop painting the solar
-   * system, and the flat galaxy painting the same solar system on top of it.
-   * Two maps of the same 19 stages, stacked, is not a richer view -- it is two
-   * views arguing, which `StageMap` has a comment forbidding and which was
-   * happening anyway, because that comment only governed the component and the
-   * backdrop is mounted a level above it.
-   *
-   * It was survivable while the flat map was a level-strata DAG that looked
-   * nothing like the scene behind it. Now that both draw the same rings from
-   * the same layout function, two slightly misaligned copies of one picture is
-   * the most confusing thing the map could possibly show.
-   *
-   * A student on `/app/map` has asked for the quiet one. Give them only that,
-   * and spend no GPU on a canvas nobody is looking at.
-   */
-  const wantsFlatMap = location.pathname === "/app/map";
-  // A stage landing carries a biome behind the whole page, so the app frame
-  // needs its own ground to stay readable over it (1b: legibility is not
-  // negotiable, and the fix is opacity on the chrome, never less art).
-  const biomePage = onContentSurface;
-  const backdrop = !onContentSurface && !wantsFlatMap;
-
   return (
-    <SolarProvider data={map} active={backdrop} pathname={location.pathname}>
-      {/*
-        `app-has-backdrop` on EVERY route, not only the ones with the solar
-        system. D-2 has bitten this project four times: a fixed full-viewport
-        layer paints over the nav, the Register Bar and the Depth Gauge unless
-        the chrome has its own stacking context. Content surfaces turn the solar
-        backdrop off but now carry a BIOME background instead, so the guard has
-        to be unconditional -- it is about there being a fixed layer at all, not
-        about which one.
-      */}
-      <div className={`app app-has-backdrop${backdrop ? " app-over-solar" : ""}${biomePage ? " app-over-biome-page" : ""}`}>
-      <a className="skip-link" href="#main">
-        Skip to content
-      </a>
-
-      <RegisterBar />
-
-      {offline && (
-        <div className="banner banner-offline" role="status">
-          You are offline. Anything you have answered is saved locally and will send when you
-          reconnect.
-        </div>
-      )}
-
-      <div className="app-body">
-        <DepthGauge
-          depth={grid?.depth ?? 6}
-          revealed={(map?.nodes.find((n) => n.id === "11")?.state ?? "locked") !== "locked"}
-        />
-
-        <main id="main" className="app-main">
-          <nav className="app-nav" aria-label="Main">
-            <NavLink to="/app" end>
-              Map
-            </NavLink>
-            <NavLink to="/app/stages">Stages</NavLink>
-            <NavLink to="/app/progress">Progress</NavLink>
-            <NavLink to="/app/work">Your work</NavLink>
-            <NavLink to="/app/settings">Settings</NavLink>
-            <button
-              type="button"
-              className="app-nav-out"
-              onClick={async () => {
-                await signOut();
-                nav("/login", { replace: true });
-              }}
-            >
-              Sign out
-            </button>
-          </nav>
-
-          <Outlet />
-        </main>
-      </div>
-
-      {/* Both are gated on their own terms and render nothing until earned. */}
-      <FeedbackWidget />
-      {identity && <SusSurvey />}
-      </div>
-    </SolarProvider>
+    <ShellDataProvider>
+      <Outlet />
+    </ShellDataProvider>
   );
 }
 
-/**
- * The realm, applied to <html> for every route (WEB-REMAKE.md §1): the star
- * system everywhere except inside a planet, where that planet's biome holds
- * the page. index.html paints the first frame; this keeps it right on every
- * navigation after. Renders nothing.
- */
+/** `/app/map` is gone; its selection is not. */
+function MapRedirect(): JSX.Element {
+  const { search } = useLocation();
+  return <Navigate to={`/app${search}`} replace />;
+}
+
+/** The realm, applied to <html> for every route. Renders nothing. */
 function RealmSync(): null {
   useRealm();
   return null;
@@ -238,37 +105,35 @@ export default function App(): JSX.Element {
   return (
     <Router>
       <RealmSync />
-      <Routes>
-        <Route path="/" element={<Navigate to="/app" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/maintenance" element={<MaintenancePage />} />
+      <KeyHintProvider>
+        <RealmWarp />
+        <Routes>
+          <Route path="/" element={<Navigate to="/app" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/maintenance" element={<MaintenancePage />} />
 
-        <Route element={<RequireSession />}>
-          <Route element={<AppShell />}>
-            {/*
-             * `/app` and `/app/map` are the SAME page. The galaxy is a
-             * decorative layer on the first and suppressed on the second --
-             * neither is a fallback, and nothing redirects, so every URL works
-             * on every device. See pages/StudentPages.tsx.
-             */}
-            <Route path="/app" element={<MapPage />} />
-            <Route path="/app/map" element={<MapPage flat />} />
-            <Route path="/app/stage/:id" element={<StagePage />} />
-            <Route path="/app/stage/:id/check" element={<CheckPage />} />
-            <Route path="/app/stages" element={<StagesPage />} />
-            <Route path="/app/progress" element={<ProgressPage />} />
-            <Route path="/app/work" element={<SubmitPage />} />
-            <Route path="/app/settings" element={<SettingsPage />} />
+          <Route element={<RequireSession />}>
+            <Route element={<SignedIn />}>
+              <Route element={<StarShell signedIn />}>
+                <Route path="/app" element={<MapPage />} />
+                <Route path="/app/stages" element={<StagesPage />} />
+                <Route path="/app/progress" element={<ProgressPage />} />
+                <Route path="/app/work" element={<SubmitPage />} />
+                <Route path="/app/settings" element={<SettingsPage />} />
+              </Route>
+              <Route path="/app/map" element={<MapRedirect />} />
+              <Route path="/app/stage/:id" element={<BiomeShell signedIn />}>
+                <Route index element={<StagePage />} />
+                <Route path="check" element={<CheckPage />} />
+              </Route>
+            </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-      {/* One toaster for every route, as the console mounts its own (29 Sep 2026). */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </KeyHintProvider>
       <Toaster />
     </Router>
   );
 }
-
-export { Link };
