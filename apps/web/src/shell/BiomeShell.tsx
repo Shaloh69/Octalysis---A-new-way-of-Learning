@@ -94,7 +94,9 @@ export function BiomeShell({ signedIn }: { signedIn: boolean }): JSX.Element {
 
       <header className="biome-top sprite-bar">
         <nav className="biome-nav" aria-label="This planet">
-          <WarpLink to={leaveTo} className="sprite-button biome-leave">
+          {/* Named explicitly: at 380 the long label is display:none and the
+              short one is aria-hidden, which left the link with no name. */}
+          <WarpLink to={leaveTo} className="sprite-button biome-leave" aria-label="Leave planet">
             <span className="sprite-arrow sprite-arrow-left" aria-hidden="true" />
             <span className="biome-leave-long">Leave planet</span>
             <span className="biome-leave-short" aria-hidden="true">

@@ -7,11 +7,15 @@ import {
   offTokenStyles,
   recordMotion,
   recordedMotion,
-  setTheme,
-  THEMES,
   unreachableByKeyboard,
 } from "./_gate.ts";
 import { openStage, realStage, S004 } from "./_stage-fixture.ts";
+import { forcePlanetBiome } from "./_realm-fixture.ts";
+
+/** Ruling 2 (30 Sep 2026): no variants; a planet is one of seven biomes. */
+const BIOMES = ["neutral", "jungle", "desert", "arctic", "city", "cave", "ocean"] as const;
+/** Words painted on a sprite: held to AA by packages/tokens' decoded-sprite test. */
+const SPRITES = ".sprite-bar, .sprite-button";
 
 /**
  * `/app/stage/:id`: the stage reader, the second student route through the
@@ -91,21 +95,20 @@ test.describe("the gate", () => {
     expect(await unreachableByKeyboard(page, "main")).toEqual([]);
   });
 
-  test("4. AA contrast, computed, on all three themes: reading, lock, sheet", async ({ page, browser }, info) => {
-    const ctx = await browser.newContext({ viewport: page.viewportSize()!, baseURL: info.project.use.baseURL });
-    const p = await ctx.newPage();
-    // Stage 07: callouts, quotes, a table, figures and the check, in one reading.
-    await openStage(p, "07", { token: S004 });
-    if (!wide(info)) await p.getByRole("button", { name: /^Contents/ }).click();
-    for (const theme of THEMES) {
-      await setTheme(p, theme);
-      expect(await contrastFailures(p, ROUTE), `07 ${theme}`).toEqual([]);
-    }
-    await ctx.close();
-    await openStage(page, "01", { wait: "locked" });
-    for (const theme of THEMES) {
-      await setTheme(page, theme);
-      expect(await contrastFailures(page, ROUTE), `locked ${theme}`).toEqual([]);
+  test("4. AA contrast, computed, in all seven biomes: reading, lock, sheet", async ({ browser }, info) => {
+    for (const biome of BIOMES) {
+      const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL });
+      const p = await ctx.newPage();
+      // Stage 07: callouts, quotes, a table, figures and the check, in one reading.
+      await forcePlanetBiome(p, "07", biome);
+      await openStage(p, "07", { token: S004 });
+      if (!wide(info)) await p.getByRole("button", { name: /^Contents/ }).click();
+      expect(await contrastFailures(p, ROUTE, SPRITES), `07 ${biome}`).toEqual([]);
+      const q = await ctx.newPage();
+      await forcePlanetBiome(q, "01", biome);
+      await openStage(q, "01", { wait: "locked" });
+      expect(await contrastFailures(q, ROUTE, SPRITES), `locked ${biome}`).toEqual([]);
+      await ctx.close();
     }
   });
 
@@ -122,9 +125,9 @@ test.describe("the gate", () => {
     await openStage(page, "06");
     await page
       .waitForFunction(() => ((window as unknown as { __motion?: Array<{ name: string }> }).__motion ?? [])
-        .some((m) => m.name === "reader-enter"), undefined, { timeout: 3000 })
+        .some((m) => m.name === "rd-enter"), undefined, { timeout: 3000 })
       .catch(() => undefined);
-    const entered = (await recordedMotion(page)).filter((m) => m.name === "reader-enter" && m.ms >= 100);
+    const entered = (await recordedMotion(page)).filter((m) => m.name === "rd-enter" && m.ms >= 100);
     expect(entered.length, "no arrival recorded without reduced motion; the control proves nothing").toBeGreaterThan(0);
 
     const calm = await page.context().newPage();
@@ -135,9 +138,10 @@ test.describe("the gate", () => {
     await calm.waitForTimeout(300);
     const long = (await recordedMotion(calm)).filter((m) => m.on.startsWith("main") && m.ms > 1);
     expect(long, JSON.stringify(long)).toEqual([]);
-    // Leaving is a cut: the map's URL at once, no recede first.
+    // Leaving is a cut: the map's URL at once (this planet selected), no warp.
     await back(calm).first().click();
-    await expect(calm).toHaveURL(/\/app$/, { timeout: 1000 });
+    await expect(calm).toHaveURL(/\/app\?stage=06$/, { timeout: 1000 });
+    expect(await calm.locator(".realm-warp").count(), "a warp under reduced motion").toBe(0);
     await calm.close();
   });
 });
@@ -205,20 +209,23 @@ test.describe("the reading, verbatim and rendered (NEXT-SESSION §0j.3)", () => 
 /* ======================================== leave, finish, resume (29 Sep 2026) */
 
 test.describe("leaving, and what finishes a stage", () => {
-  test("Back to the map is at the top and at the end, and is on top of the biome", async ({ page }) => {
+  test("the way back is at the top (the shell's Leave planet) and at the end, over the biome", async ({ page }) => {
     await openStage(page, "06");
-    await expect(back(page)).toHaveCount(2);
-    expect(await onTop(page, "[data-reader] a[href='/app']"), "painted under the biome (the old reader's defect)").toBe(true);
+    // Ruling 2: the top of a planet is the biome shell's sprite nav bar.
+    await expect(page.getByRole("link", { name: "Leave planet" })).toHaveCount(1);
+    await expect(back(page)).toHaveCount(1);
+    await page.locator("[data-reader] a[href='/app?stage=06']").scrollIntoViewIfNeeded();
+    expect(await onTop(page, "[data-reader] a[href='/app?stage=06']"), "painted under the biome (the old reader's defect)").toBe(true);
   });
 
-  test("leaving eases out, then lands on the map", async ({ page }, info) => {
+  test("leaving warps out, then lands on the map with this planet selected", async ({ page }, info) => {
     test.skip(!wide(info), "behaviour, one width");
-    await recordMotion(page);
     await openStage(page, "06");
     await back(page).first().click();
-    await expect(page).toHaveURL(/\/app$/);
-    const left = (await recordedMotion(page)).filter((m) => m.name === "reader-leave");
-    expect(left.length, "the reverse travel transition did not run").toBeGreaterThan(0);
+    await expect(page).toHaveURL(/\/app\?stage=06$/);
+    // The reverse travel transition is the shell's warp now (RealmWarp).
+    await expect(page.locator(".realm-warp")).toHaveAttribute("data-warp", "out");
+    await expect(page.locator(".starmap-body h2")).toHaveText("External Memory");
   });
 
   test("the end says what finishes the stage, from the API's threshold; nothing is a Finish button", async ({ page, request }) => {

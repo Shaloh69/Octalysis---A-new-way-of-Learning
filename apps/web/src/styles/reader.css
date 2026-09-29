@@ -1,0 +1,284 @@
+/* ============================================================
+   /app/stage/:id — the reader, remade (WEB-REMAKE.md §3, ruling 2)
+   Inside the planet: the biome shell's sprite nav above and the scene
+   behind. A sprite SIDE BAR on the left (Stardew's journal) and the
+   reading as a LETTER on the biome's paper, in a sprite frame. At 1023
+   and under the side bar is a sheet behind a sprite Contents button.
+   Every word sits on a token surface; the sprites draw frames only.
+   ============================================================ */
+
+.rd { position: relative; color: var(--ink); }
+/* Links read as ink; a sprite button keeps its own sprite ink. */
+.rd a:not(.sprite-button) { color: var(--ink); }
+
+.rd-frame {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  max-width: 72rem;
+  margin: 0 auto;
+}
+@media (min-width: 1024px) {
+  .rd-frame { grid-template-columns: 17.5rem minmax(0, 1fr); }
+  .rd-frame-single { grid-template-columns: minmax(0, 48rem); justify-content: center; }
+}
+
+/* ---- the letter ---- */
+.rd-letter {
+  min-width: 0;
+  padding: var(--space-6) var(--space-7) var(--space-7);
+  max-width: 50rem;
+}
+.rd-single { max-width: 40rem; margin: 0 auto; }
+.rd-enter { animation: rd-enter var(--dur-base) var(--ease-out); }
+@keyframes rd-enter { from { opacity: 0; } to { opacity: 1; } }
+
+.rd-head { margin-bottom: var(--space-5); padding-bottom: var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+.rd-eyebrow {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.rd h1 { font-size: var(--text-3xl); line-height: var(--lh-3xl); margin: 0 0 var(--space-2); overflow-wrap: anywhere; }
+.rd-meta { margin: 0; color: var(--ink-muted); font-size: var(--text-sm); }
+.rd-stateline {
+  display: inline-block;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  background: var(--surface-2);
+  border: var(--border-hair) solid var(--line-strong);
+}
+.rd-resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+}
+.rd-empty { color: var(--ink-muted); }
+
+/* ---- the reading's own blocks (ReaderBlocks.tsx) ---- */
+.rd-reading { font-size: var(--text-base); line-height: var(--lh-base); }
+.rd-reading p { margin: 0 0 var(--space-4); }
+.rd-h2 {
+  font-size: var(--text-xl);
+  line-height: var(--lh-xl);
+  margin: var(--space-7) 0 var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-hair) solid var(--line);
+  scroll-margin-top: 6.5rem;
+}
+.rd-h2:focus, .rd-anchor:focus, .rd-check:focus { outline: none; }
+.rd-h3 { font-size: var(--text-lg); line-height: var(--lh-lg); margin: var(--space-5) 0 var(--space-2); }
+.rd-h4 { font-size: var(--text-base); margin: var(--space-4) 0 var(--space-2); }
+.rd-anchor { scroll-margin-top: 6.5rem; }
+.rd-list { margin: 0 0 var(--space-4); padding-left: var(--space-5); }
+.rd-list li { margin-bottom: var(--space-2); padding-left: var(--space-1); }
+.rd-list li::marker { color: var(--ink-muted); }
+.rd-num { font-size: 0.94em; }
+.rd-code { font-size: 0.9em; padding: 0 var(--space-1); background: var(--surface-2); overflow-wrap: anywhere; }
+.rd strong { font-weight: 650; }
+.rd-brief { font-size: var(--text-lg); line-height: var(--lh-lg); margin-bottom: var(--space-5); }
+.rd-brief p { margin: 0 0 var(--space-3); }
+.rd-prose { margin: 0; }
+
+.rd-callout {
+  margin: var(--space-5) 0;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-2);
+  border-left: calc(var(--px) * 2) solid var(--frame-inner);
+}
+.rd-callout > :last-child, .rd-callout p:last-child { margin-bottom: 0; }
+.rd-planned { background: var(--info-bg); border-color: var(--info); }
+.rd-tag {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.rd-quote { margin: var(--space-5) 0; padding: var(--space-4) var(--space-5); background: var(--surface-2); border-left: calc(var(--px) * 2) solid var(--ink-muted); }
+.rd-quote blockquote { margin: 0; font-size: var(--text-lg); line-height: var(--lh-lg); }
+.rd-quote blockquote p:last-child { margin-bottom: 0; }
+.rd-quote figcaption { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--ink-muted); }
+.rd-inset-quote { margin: var(--space-4) 0; padding-left: var(--space-4); border-left: var(--border-thick) solid var(--line-strong); }
+.rd-inset-quote p { margin-bottom: 0; }
+
+/*
+ * A figure, verbatim and never sideways. Its mono size is the smaller of the
+ * body's small size and what fits its own longest line: `--cols` characters at
+ * JetBrains Mono's 0.6em advance over the figure's inner width (100cqi less the
+ * padding); 0.61 and the 1px keep rounding on the safe side.
+ */
+.rd-figure {
+  container-type: inline-size;
+  margin: var(--space-5) 0;
+  background: var(--surface-2);
+  border: var(--border-hair) solid var(--line-strong);
+}
+.rd-figure pre {
+  margin: 0;
+  padding: var(--space-4);
+  white-space: pre;
+  font-size: min(var(--text-sm), calc((100cqi - 2 * var(--space-4) - 1px) / (var(--cols, 40) * 0.61)));
+  line-height: 1.5;
+  color: var(--ink);
+}
+.rd-figure figcaption { padding: var(--space-2) var(--space-4); border-top: var(--border-hair) solid var(--line); font-size: var(--text-sm); color: var(--ink-muted); }
+
+.rd-table-wrap { margin: var(--space-4) 0; }
+.rd-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.rd-table th, .rd-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-hair) solid var(--line);
+  overflow-wrap: anywhere;
+}
+.rd-table thead th { color: var(--ink-muted); font-weight: 600; border-bottom-color: var(--line-strong); }
+.rd-table tbody th { font-weight: 600; }
+
+/* ---- the check (Stardew's quest card) and the end ---- */
+.rd-check {
+  margin: var(--space-7) 0 0;
+  padding: var(--space-5);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 var(--px) var(--frame-inner);
+  scroll-margin-top: 6.5rem;
+}
+.rd-check-tab {
+  display: inline-block;
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.rd-check h2 { font-size: var(--text-xl); margin: 0 0 var(--space-2); }
+.rd-check p { margin: 0 0 var(--space-3); }
+.rd-check-count { color: var(--ink-muted); font-size: var(--text-sm); }
+.rd-check-note {
+  padding: var(--space-2) var(--space-3);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.rd-end { margin-top: var(--space-6); padding-top: var(--space-5); border-top: var(--border-hair) solid var(--line); }
+.rd-end p { margin: 0 0 var(--space-3); }
+.rd-end-title { font-family: var(--font-hud); font-weight: 600; letter-spacing: var(--tracking-hud); }
+.rd-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+
+/* ---- the side bar (1024 and up) and the sheet (under it) ---- */
+.rd-side {
+  display: none;
+  position: sticky;
+  top: 6.5rem;
+  max-height: calc(100dvh - 12rem);
+  overflow-y: auto;
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+}
+@media (min-width: 1024px) {
+  .rd-side { display: block; }
+}
+.rd-side-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-base);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-hud);
+}
+.rd-side-title:focus { outline: none; }
+.rd-progress { margin: 0 0 var(--space-3); color: var(--ink-muted); font-size: var(--text-xs); }
+.rd-sections { list-style: none; margin: 0 0 var(--space-4); padding: 0; display: grid; gap: var(--space-1); }
+.rd-sections a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-2);
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.rd-sections a:hover { background: var(--surface-3); }
+.rd-sections-mark { width: 0.5rem; height: 0.5rem; flex: none; border: var(--border-thick) solid var(--line-strong); }
+/* Where you are: the accent (your own place), a filled mark and bold words. */
+.rd-sections a[aria-current="location"] { font-weight: 700; box-shadow: inset calc(var(--px) * 1.5) 0 0 var(--accent); }
+.rd-sections a[aria-current="location"] .rd-sections-mark { background: var(--accent); border-color: var(--accent); }
+.rd-side-sub {
+  margin: var(--space-3) 0 var(--space-2);
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.rd-objectives { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.rd-obj-id { color: var(--ink-muted); }
+
+.rd-pill {
+  position: sticky;
+  bottom: 5.5rem;
+  z-index: 3;
+  justify-self: start;
+}
+.rd-sheet {
+  position: fixed;
+  left: var(--space-2);
+  right: var(--space-2);
+  bottom: var(--space-2);
+  z-index: calc(var(--z-sheet) + 1);
+  max-height: 70dvh;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+  animation: rd-sheet var(--dur-base) var(--ease-out);
+}
+.rd-sheet[hidden] { display: none; }
+.rd-sheet-close { position: absolute; top: calc(var(--px) * 7); right: calc(var(--px) * 7); }
+@keyframes rd-sheet { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (min-width: 1024px) {
+  .rd-pill, .rd-sheet { display: none; }
+}
+
+/* ---- the lock ---- */
+.rd-lock-card {
+  padding: var(--space-5);
+  background: var(--locked-bg);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--frame-inner);
+}
+.rd-lock-card h2 { font-size: var(--text-xl); margin: 0 0 var(--space-2); display: flex; align-items: center; gap: var(--space-2); }
+.rd-reason { font-size: var(--text-lg); line-height: var(--lh-lg); margin: 0 0 var(--space-2); }
+.rd-quiet { color: var(--ink-muted); margin: 0; }
+.rd-lock-sub { margin: var(--space-6) 0 var(--space-3); font-size: var(--text-lg); }
+
+/* ---- states ---- */
+.rd-state p[role="alert"] { margin: 0 0 var(--space-2); }
+.rd-slow { margin: 0 0 var(--space-4); padding: var(--space-2) var(--space-3); background: var(--info-bg); color: var(--ink); }
+/* Solid bars, clearly apart from the letter in every biome (a light paper
+   and a dark one alike): the shimmer runs over a --line-strong ground. */
+.rd-skel { background-color: var(--line-strong); background-image: none; }
+.rd-skel-title { height: 2.5rem; width: 55%; margin: var(--space-3) 0; }
+.rd-skel-side { display: none; }
+@media (min-width: 1024px) { .rd-skel-side { display: block; } }
+
+@media (max-width: 640px) {
+  .rd-letter { padding: var(--space-4) var(--space-3) var(--space-5); }
+  .rd h1 { font-size: var(--text-2xl); line-height: var(--lh-2xl); }
+  .rd-brief { font-size: var(--text-base); line-height: var(--lh-base); }
+  .rd-callout, .rd-quote { padding: var(--space-3); }
+  .rd-figure { margin-inline: calc(-1 * var(--space-2)); border-inline: 0; }
+  .rd-figure pre { padding: var(--space-3); font-size: min(var(--text-sm), calc((100cqi - 2 * var(--space-3) - 1px) / (var(--cols, 40) * 0.61))); }
+  .rd-table { font-size: var(--text-xs); }
+  .rd-table th, .rd-table td { padding: var(--space-2) var(--space-1); overflow-wrap: break-word; hyphens: auto; }
+  .rd-check { padding: var(--space-4); }
+}

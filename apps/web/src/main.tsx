@@ -7,6 +7,7 @@ import "./styles.css";
 import "./styles/base.css";
 import "./styles/shell.css";
 import "./styles/map.css";
+import "./styles/reader.css";
 
 applyStoredAccent();
 setTokenProvider(getAccessToken);

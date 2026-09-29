@@ -105,9 +105,9 @@ test.describe("arriving at a stage — §4.2", () => {
      * that rule rather than an exception to it, so both halves are asserted.
      */
     await expect(page.locator(ARRIVING)).toBeVisible();
-    expect(await page.locator(`${ARRIVING} .rd-skel`).count()).toBeGreaterThanOrEqual(6);
+    expect(await page.locator(`${ARRIVING} [data-skel]`).count()).toBeGreaterThanOrEqual(6);
     expect(
-      await page.locator(`${ARRIVING} .rd-skel-block`).count(),
+      await page.locator(`${ARRIVING} [data-skel-block]`).count(),
       "the reader has three surfaces and so should its skeleton",
     ).toBeGreaterThanOrEqual(2);
 
@@ -119,8 +119,8 @@ test.describe("arriving at a stage — §4.2", () => {
      * have caught by eye, because on the page background those two differ.
      */
     const contrast = await page.evaluate(() => {
-      const skel = document.querySelector('[data-skeleton] .rd-skel');
-      const panel = document.querySelector('[data-skeleton] .rd-column');
+      const skel = document.querySelector('[data-skeleton] [data-skel]');
+      const panel = document.querySelector('[data-skeleton] [data-skel-surface]');
       if (!skel || !panel) return null;
 
       /*

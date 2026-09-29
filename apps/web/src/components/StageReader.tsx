@@ -1,23 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, type StageDetail } from "../lib/api";
 import { parseInline, sectionsOf } from "../lib/markdown";
 import { useDelayed } from "../lib/useDelayed";
+import { WarpLink } from "../shell/RealmWarp";
 import { InlineText, ReaderBlocks, sectionId } from "./ReaderBlocks";
+import { byObjectiveId } from "../map/useSelection";
 
 /**
- * `/app/stage/:id`, the stage reader. Rebuilt 29 Sep 2026 against
- * `design/templates/web/stage/` (SPEC.md there, MDN's article page as the
- * reference): one reading column over the student's biome, a rail that says
- * what the stage is for and where you are, a bottom sheet at 380.
+ * `/app/stage/:id`, the reader, REMADE under ruling 2 (30 Sep 2026;
+ * WEB-REMAKE.md §3; design/templates/web/stage/SPEC.md). Inside the planet, so
+ * the biome shell holds the page: its sprite nav bar above, the planet's scene
+ * behind. This route adds, from Stardew Valley's journal and letter:
  *
- * Content comes from the database, never from a bundle (hard rule 5), and is
- * rendered, never edited. The lock, the state and the threshold come from the
- * API (hard rule 4); this file computes none of them.
+ *   a sprite SIDE BAR   "In this stage": the sections, where you are, and what
+ *                       you should be able to do (a sheet behind a sprite
+ *                       Contents button at 380)
+ *   the LETTER          the reading on the biome's paper, in a sprite frame
  *
- * Instructor decisions, 29 Sep 2026: leave only (no Finish button; the end says
- * what finishes a stage); resume per device; the lock reason from the server;
- * a rail of what has data (no glossary, no notebook: neither exists).
+ * Behaviour carried from the 29 Sep reader, unchanged: the parser, the resume
+ * per device, the lock card with the server's reason, the check at the end,
+ * the arrival skeleton. Content comes from the database, never a bundle (hard
+ * rule 5); the lock, the state and the threshold come from the API (hard rule
+ * 4); this file computes none of them. Leaving goes back to the map with this
+ * planet selected, through the shell's warp.
  */
 
 const CHECK_ID = "rd-check";
@@ -55,19 +60,16 @@ type Load =
 
 export function StageReader({
   stageId,
-  onBack,
   onStartCheck,
 }: {
   stageId: string;
-  onBack: () => void;
+  onBack?: () => void;
   onProgressChanged?: () => void;
   /** Opens the attempt runner. Absent on surfaces that cannot sit a check. */
   onStartCheck?: (assessmentId: string, title: string) => void;
 }): JSX.Element {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-  const leftRef = useRef(false);
 
   useEffect(() => {
     let live = true;
@@ -82,9 +84,7 @@ export function StageReader({
           setLoad({
             kind: "error",
             message:
-              err instanceof ApiError
-                ? err.message
-                : "The stage could not be reached. Check your connection, then try again.",
+              err instanceof ApiError ? err.message : "The stage could not be reached. Check your connection, then try again.",
           });
       });
     return () => {
@@ -92,45 +92,10 @@ export function StageReader({
     };
   }, [stageId, attempt]);
 
-  /*
-   * The reverse travel transition (`.claude/rules/design.md`): the reading
-   * recedes, then the map. Under reduced motion it is a cut. A modified click
-   * (new tab, new window) is the browser's, untouched.
-   */
-  const leave = useCallback(
-    (e: MouseEvent<HTMLAnchorElement>) => {
-      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      e.preventDefault();
-      const go = () => {
-        if (leftRef.current) return;
-        leftRef.current = true;
-        onBack();
-      };
-      if (reduced()) return go();
-      setLeaving(true);
-      window.setTimeout(go, 400); // if animationend never arrives
-    },
-    [onBack],
-  );
-  const onAnimationEnd = (e: React.AnimationEvent) => {
-    if (e.animationName === "reader-leave" && !leftRef.current) {
-      leftRef.current = true;
-      onBack();
-    }
-  };
-
-  /*
-   * The page: the biome and a token scrim behind, then the route's own
-   * surfaces (`[data-reader]`). The scene sits OUTSIDE `[data-reader]` so the
-   * gate measures the reader, not the weather; the leave fade is on the whole
-   * page and is opacity only, because a transform here would break the
-   * biome's `position: fixed`.
-   */
+  const toMap = `/app?stage=${encodeURIComponent(stageId)}`;
   const page = (state: string, children: JSX.Element, busy = false) => (
-    <div className={`rd-page${leaving ? " rd-leaving" : ""}`} onAnimationEnd={onAnimationEnd}>
-      <div className="rd" data-reader={state} aria-busy={busy || undefined}>
-        {children}
-      </div>
+    <div className="rd" data-reader={state} aria-busy={busy || undefined}>
+      {children}
     </div>
   );
 
@@ -140,22 +105,22 @@ export function StageReader({
     const missing = load.kind === "missing";
     return page(
       missing ? "missing" : "error",
-      <div className="rd-frame rd-frame-single">
-        <section className="rd-column rd-state" aria-labelledby="rd-state-title">
-          <h1 id="rd-state-title">{missing ? "No such stage" : <>Stage <span className="mono">{stageId}</span> did not load</>}</h1>
-          <p role="alert">{load.message}</p>
-          <div className="rd-row">
-            {!missing && (
-              <button type="button" className="rd-btn rd-btn-primary" onClick={() => setAttempt((n) => n + 1)}>
-                Try again
-              </button>
-            )}
-            <Link to="/app" className="rd-btn" onClick={leave}>
-              Back to the map
-            </Link>
-          </div>
-        </section>
-      </div>,
+      <section className="rd-letter rd-single sprite-panel rd-state" aria-labelledby="rd-state-title">
+        <h1 id="rd-state-title">
+          {missing ? "No such stage" : <>Stage <span className="mono">{stageId}</span> did not load</>}
+        </h1>
+        <p role="alert">{load.message}</p>
+        <div className="rd-row">
+          {!missing && (
+            <button type="button" className="sprite-button button-primary" onClick={() => setAttempt((n) => n + 1)}>
+              Try again
+            </button>
+          )}
+          <WarpLink to={toMap} className="sprite-button">
+            Back to the map
+          </WarpLink>
+        </div>
+      </section>,
     );
   }
 
@@ -163,9 +128,9 @@ export function StageReader({
   return page(
     stage.locked ? "locked" : stage.blocks.length === 0 ? "empty" : "reading",
     stage.locked ? (
-      <LockCard stage={stage} onLeave={leave} />
+      <LockCard stage={stage} toMap={toMap} />
     ) : (
-      <Reading stage={stage} onLeave={leave} onStartCheck={onStartCheck} />
+      <Reading stage={stage} toMap={toMap} onStartCheck={onStartCheck} />
     ),
   );
 }
@@ -173,10 +138,10 @@ export function StageReader({
 /* ------------------------------------------------------------ arriving */
 
 /**
- * ARRIVAL, not a spinner (`BIOME-AND-LOADING-SPEC.md` §4.2): the biome is there
- * at once, because it is the destination; everything else follows the loading
- * rule. Nothing under 400ms, a skeleton shaped like the reader after, and a
- * sentence at its top after 3s (Render's free tier can take ~50s to wake).
+ * ARRIVAL, not a spinner (BIOME-AND-LOADING-SPEC.md §4.2): the planet's biome is
+ * already there (the shell's), and the reading follows the loading rule: nothing
+ * under 400ms, a skeleton shaped like the side bar and the letter after, and a
+ * sentence after 3s (Render's free tier can take ~50s to wake).
  */
 function Arriving({ stageId }: { stageId: string }): JSX.Element {
   const show = useDelayed(true, 400);
@@ -186,30 +151,18 @@ function Arriving({ stageId }: { stageId: string }): JSX.Element {
       <span className="sr-only">Arriving at stage {stageId}</span>
       {show && (
         <div className="rd-frame" data-skeleton="" aria-hidden="true">
-          <div className="rd-column rd-skel-column">
-            {slow && (
-              <p className="rd-slow">Still arriving. The server may be waking up, which can take up to a minute.</p>
-            )}
-            <div className="rd-skel rd-skel-eyebrow" />
-            <div className="rd-skel rd-skel-title" />
-            <div className="rd-skel rd-skel-line" style={{ width: "40%" }} />
-            <div className="rd-skel-block">
-              <div className="rd-skel rd-skel-line" />
-              <div className="rd-skel rd-skel-line" style={{ width: "92%" }} />
-              <div className="rd-skel rd-skel-line" style={{ width: "86%" }} />
-            </div>
-            <div className="rd-skel-block">
-              <div className="rd-skel rd-skel-head" />
-              <div className="rd-skel rd-skel-line" />
-              <div className="rd-skel rd-skel-line" style={{ width: "95%" }} />
-              <div className="rd-skel rd-skel-line" style={{ width: "70%" }} />
-            </div>
+          <div className="rd-side sprite-panel rd-skel-side" data-skel-block="">
+            <span className="skel skel-line rd-skel" data-skel="" style={{ width: "60%" }} />
+            <span className="skel skel-line rd-skel" data-skel="" />
+            <span className="skel skel-line rd-skel" data-skel="" style={{ width: "80%" }} />
           </div>
-          <div className="rd-rail rd-skel-rail">
-            <div className="rd-skel rd-skel-line" style={{ width: "60%" }} />
-            <div className="rd-skel rd-skel-line" />
-            <div className="rd-skel rd-skel-line" style={{ width: "80%" }} />
-            <div className="rd-skel rd-skel-line" style={{ width: "70%" }} />
+          <div className="rd-letter sprite-panel" data-skel-block="" data-skel-surface="">
+            {slow && <p className="rd-slow">Still arriving. The server may be waking up, which can take up to a minute.</p>}
+            <span className="skel skel-line rd-skel" data-skel="" style={{ width: "20%" }} />
+            <span className="skel rd-skel rd-skel-title" data-skel="" />
+            <span className="skel skel-line rd-skel" data-skel="" />
+            <span className="skel skel-line rd-skel" data-skel="" style={{ width: "92%" }} />
+            <span className="skel skel-line rd-skel" data-skel="" style={{ width: "86%" }} />
           </div>
         </div>
       )}
@@ -226,17 +179,17 @@ interface Section {
 
 function Reading({
   stage,
-  onLeave,
+  toMap,
   onStartCheck,
 }: {
   stage: StageDetail;
-  onLeave: (e: MouseEvent<HTMLAnchorElement>) => void;
+  toMap: string;
   onStartCheck?: ((assessmentId: string, title: string) => void) | undefined;
 }): JSX.Element {
   /*
-   * The rail's sections: Brief, every `##`, Check. Those are the beats every
-   * archetype declares and the data holds; no beat the blocks lack is shown
-   * (apps/web/CLAUDE.md, INV-27).
+   * The side bar's sections: Brief, every `##`, Check. Those are the beats
+   * every archetype declares and the data holds; no beat the blocks lack is
+   * shown (apps/web/CLAUDE.md, INV-27).
    */
   const sections = useMemo<Section[]>(() => {
     const out: Section[] = [];
@@ -260,10 +213,10 @@ function Reading({
   const moved = useRef(false);
 
   /*
-   * Section progress from the scroll position alone: the current section is the
-   * last whose heading has passed 40% of the viewport, and the last section
-   * once the page is at its end (a short final section can never reach the
-   * line). A section chosen from the rail holds until the scroll settles.
+   * Where you are, from the scroll alone: the last section whose heading has
+   * passed 40% of the viewport, and the last section at the page's end (a short
+   * final section can never reach the line). A section chosen in the side bar
+   * holds until the scroll settles.
    */
   useEffect(() => {
     if (sections.length === 0) return;
@@ -336,11 +289,18 @@ function Reading({
 
   return (
     <div className="rd-frame">
-      <article className="rd-column rd-enter" aria-labelledby="rd-title">
-        <Link to="/app" className="rd-back" onClick={onLeave}>
-          <span aria-hidden="true">&larr; </span>Back to the map
-        </Link>
+      <aside className="rd-side sprite-panel" data-rail="" aria-labelledby="rd-rail-title">
+        <SideContents
+          titleId="rd-rail-title"
+          stage={stage}
+          sections={sections}
+          current={current}
+          count={count}
+          onPick={goTo}
+        />
+      </aside>
 
+      <article className="rd-letter sprite-panel rd-enter" aria-labelledby="rd-title">
         <header className="rd-head">
           <p className="rd-eyebrow">
             Stage <span className="mono">{stage.id}</span>
@@ -363,7 +323,7 @@ function Reading({
         {resume && (
           <p className="rd-resume" data-resume="">
             <span>You were reading: {resume.label}</span>
-            <button type="button" className="rd-btn" onClick={() => goTo(resume.index)}>
+            <button type="button" className="sprite-button" onClick={() => goTo(resume.index)}>
               Resume
             </button>
           </p>
@@ -380,9 +340,7 @@ function Reading({
           </div>
         )}
 
-        {stage.assessment && (
-          <CheckCard assessment={stage.assessment} onStart={onStartCheck} />
-        )}
+        {stage.assessment && <CheckCard assessment={stage.assessment} onStart={onStartCheck} />}
 
         <footer className="rd-end" data-end="">
           <p className="rd-end-title">End of the reading.</p>
@@ -398,36 +356,25 @@ function Reading({
               "This stage has no check. Nothing in it is graded."
             )}
           </p>
-          <Link to="/app" className="rd-btn" onClick={onLeave}>
+          <WarpLink to={toMap} className="sprite-button">
             Back to the map
-          </Link>
+          </WarpLink>
         </footer>
       </article>
 
-      <aside className="rd-rail" data-rail="" aria-labelledby="rd-rail-title">
-        <RailContents
-          titleId="rd-rail-title"
-          stage={stage}
-          sections={sections}
-          current={current}
-          count={count}
-          onPick={goTo}
-        />
-      </aside>
-
-      {/* 380: a pill bottom-LEFT, opposite the shell's Report a problem. */}
+      {/* 380: the side bar is a sheet behind a sprite button. */}
       <button
         ref={pill}
         type="button"
-        className="rd-pill"
+        className="rd-pill sprite-button"
         aria-expanded={sheet}
         aria-controls="rd-sheet"
         onClick={() => (sheet ? closeSheet() : setSheet(true))}
       >
         Contents{count && <> · <span className="mono">{count}</span></>}
       </button>
-      <div id="rd-sheet" className="rd-sheet" data-sheet="" role="region" aria-labelledby="rd-sheet-title" hidden={!sheet}>
-        <RailContents
+      <div id="rd-sheet" className="rd-sheet sprite-panel" data-sheet="" role="region" aria-labelledby="rd-sheet-title" hidden={!sheet}>
+        <SideContents
           titleId="rd-sheet-title"
           headRef={sheetHead}
           stage={stage}
@@ -440,7 +387,7 @@ function Reading({
             goTo(i);
           }}
         />
-        <button type="button" className="rd-btn rd-sheet-close" onClick={closeSheet}>
+        <button type="button" className="sprite-button rd-sheet-close" onClick={closeSheet}>
           Close
         </button>
       </div>
@@ -463,7 +410,7 @@ function StateWords({ stage }: { stage: StageDetail }): JSX.Element {
   }
 }
 
-function RailContents({
+function SideContents({
   titleId,
   headRef,
   stage,
@@ -482,7 +429,7 @@ function RailContents({
 }): JSX.Element {
   return (
     <>
-      <h2 id={titleId} ref={headRef} tabIndex={-1} className="rd-rail-title">
+      <h2 id={titleId} ref={headRef} tabIndex={-1} className="rd-side-title">
         In this stage
       </h2>
       {sections.length > 0 && (
@@ -502,7 +449,10 @@ function RailContents({
                       onPick(i);
                     }}
                   >
-                    <Words text={s.label} />
+                    <span className="rd-sections-mark" aria-hidden="true" />
+                    <span>
+                      <Words text={s.label} />
+                    </span>
                   </a>
                 </li>
               ))}
@@ -510,9 +460,9 @@ function RailContents({
           </nav>
         </>
       )}
-      <h3 className="rd-rail-sub">What you should be able to do</h3>
+      <h3 className="rd-side-sub">What you should be able to do</h3>
       <ul className="rd-objectives">
-        {stage.objectives.map((o) => (
+        {[...stage.objectives].sort(byObjectiveId).map((o) => (
           <li key={o.id}>
             <span className="mono rd-obj-id">{o.id}</span> <Words text={o.description} />
           </li>
@@ -542,6 +492,9 @@ function CheckCard({
 
   return (
     <section className="rd-check" id={CHECK_ID} tabIndex={-1} data-check="" aria-labelledby="rd-check-title">
+      <p className="rd-check-tab" aria-hidden="true">
+        Check
+      </p>
       <h2 id="rd-check-title">
         <Words text={assessment.title} />
       </h2>
@@ -557,13 +510,11 @@ function CheckCard({
       </p>
       {notOpen && <p className="rd-check-note">This check opens {when(assessment.opensAt!)}.</p>}
       {closed && <p className="rd-check-note">This check closed {when(assessment.closesAt!)}.</p>}
-      {exhausted && !closed && (
-        <p className="rd-check-note">You have used every attempt. Your instructor can grant another.</p>
-      )}
+      {exhausted && !closed && <p className="rd-check-note">You have used every attempt. Your instructor can grant another.</p>}
       {onStart && (
         <button
           type="button"
-          className="rd-btn rd-btn-primary"
+          className="sprite-button button-primary"
           disabled={notOpen || closed || exhausted}
           onClick={() => onStart(assessment.id, assessment.title)}
         >
@@ -577,24 +528,14 @@ function CheckCard({
 /* ------------------------------------------------------------ locked */
 
 /**
- * The full-page lock card (PAGE-SPECS): the server's reason, verbatim, with
- * the distance; a way to the prerequisite; what the stage covers, as a
- * preview (Petal 6: scarcity that still respects autonomy).
+ * The lock card (PAGE-SPECS): the server's reason, verbatim, with the distance;
+ * a way to the prerequisite; what the stage covers, as a preview.
  */
-function LockCard({
-  stage,
-  onLeave,
-}: {
-  stage: StageDetail;
-  onLeave: (e: MouseEvent<HTMLAnchorElement>) => void;
-}): JSX.Element {
+function LockCard({ stage, toMap }: { stage: StageDetail; toMap: string }): JSX.Element {
   const reason = stage.lockReason;
   return (
     <div className="rd-frame rd-frame-single">
-      <section className="rd-column rd-enter rd-lock" aria-labelledby="rd-title">
-        <Link to="/app" className="rd-back" onClick={onLeave}>
-          <span aria-hidden="true">&larr; </span>Back to the map
-        </Link>
+      <section className="rd-letter sprite-panel rd-enter rd-lock" aria-labelledby="rd-title">
         <header className="rd-head">
           <p className="rd-eyebrow">
             Stage <span className="mono">{stage.id}</span>
@@ -603,7 +544,13 @@ function LockCard({
         </header>
 
         <div className="rd-lock-card">
-          <h2>Not open yet</h2>
+          <h2>
+            <svg className="glyph" aria-hidden="true" viewBox="0 0 16 16">
+              <path d="M4 7V5a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <rect x="2.5" y="7" width="11" height="7.5" rx="1" fill="currentColor" />
+            </svg>{" "}
+            Not open yet
+          </h2>
           <p className="rd-reason" data-reason="">
             {reason ? <Words text={reason.message} /> : "This stage is not open to you yet."}
           </p>
@@ -612,10 +559,13 @@ function LockCard({
               <p className="rd-quiet">Your instructor can also open it for you.</p>
               <div className="rd-row">
                 {reason.blockingStages.map((id) => (
-                  <Link key={id} to={`/app/stage/${id}`} className="rd-btn rd-btn-primary">
+                  <WarpLink key={id} to={`/app/stage/${id}`} className="sprite-button button-primary">
                     Go to Stage <span className="mono">{id}</span>
-                  </Link>
+                  </WarpLink>
                 ))}
+                <WarpLink to={toMap} className="sprite-button">
+                  Back to the map
+                </WarpLink>
               </div>
             </>
           )}
@@ -623,7 +573,7 @@ function LockCard({
 
         <h2 className="rd-lock-sub">What you should be able to do</h2>
         <ul className="rd-objectives">
-          {stage.objectives.map((o) => (
+          {[...stage.objectives].sort(byObjectiveId).map((o) => (
             <li key={o.id}>
               <span className="mono rd-obj-id">{o.id}</span> <Words text={o.description} />
             </li>
