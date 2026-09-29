@@ -1,0 +1,553 @@
+/* ============================================================
+   OCTA — the student app's two looks
+   packages/tokens/looks.css
+
+   docs/redesign/WEB-REMAKE.md §1-§3 (instructor ruling, 30 Sep 2026).
+   The student app has two realms, decided from the ROUTE and written
+   to <html> by apps/web's useRealm():
+
+     data-realm="star"                 the star system: a sci-fi HUD in
+                                       the student's variant (data-theme)
+     data-realm="biome" data-biome=X   inside a planet or moon: that
+                                       planet's biome holds the page,
+                                       and the variant steps aside
+
+   WHAT THIS FILE IS. Ten complete colour sets (three HUD variants and
+   seven biomes). Each set declares the SAME names every page already
+   reads -- surfaces, ink, lines, accent, the semantic colours -- plus
+   the frame, caption, lit and meter tokens the game register adds. A
+   page written once is therefore correct in both realms; nothing in
+   apps/web branches on the realm to pick a colour.
+
+   WHY IT IS SCOPED TO [data-realm]. The console imports tokens.css and
+   never sets data-realm, so nothing here can reach it. The selectors
+   are two attributes deep, which outranks both tokens.css's theme
+   blocks and apps/web's styles.css without an !important anywhere.
+
+   THE ACCENT. One stored hue (--accent-hue), lightness and chroma
+   FIXED per set, so AA holds for every hue a student can land on.
+   packages/tokens/test/looks.spec.ts sweeps 0-359 in steps of 15 over
+   every set. The accent marks the student's own place and never a
+   state: states carry a word (NEW, DONE, LOCKED) and a glyph.
+
+   SEMANTIC COLOURS ARE NEVER DERIVED FROM THE ACCENT, as in tokens.css.
+   Dark sets carry bare-metal's semantic values, light sets blueprint's,
+   each re-checked against this set's own surfaces by the test.
+
+   IN A BIOME, NO TEXT SITS ON THE ART. Every word is inside a frame on
+   a token surface (BIOME-AND-LOADING-SPEC.md §1b: legibility is not
+   negotiable, and the fix is the surface, never less art). --surface-0
+   is the ground a page falls back to where the art is absent, and it is
+   text-safe too, so the page is readable before the art arrives.
+   ============================================================ */
+
+/* ---------- the HUD label face, and the display role ---------- */
+[data-realm] {
+  /* WEB-REMAKE.md §6, chosen 30 Sep 2026 from captured specimens
+     (design/look/captures/faces-*.png): Oxanium. Nav labels, titles,
+     panel captions, key hints and badges. Never body text, never a
+     number, never below 12px. Loaded by fonts.css. */
+  --font-hud: "Oxanium", ui-sans-serif, system-ui, sans-serif;
+  --tracking-hud: 0.06em;
+  --text-hud-min: 0.75rem;
+
+  /* Space Grotesk is RETIRED in apps/web (instructor, 30 Sep 2026): the
+     HUD face takes the display role. Scoped to [data-realm], which only
+     apps/web sets, so the console keeps Space Grotesk. */
+  --font-display: var(--font-hud);
+  --tracking-display: 0.02em;
+
+  /* One pixel of the pixel register. The Kenney sprites are drawn at 3x
+     on a wide screen and 2x on a phone, so a frame never renders a
+     half-pixel bevel and never eats a 380 screen. */
+  --px: 3px;
+}
+@media (max-width: 640px) {
+  [data-realm] { --px: 2px; }
+}
+
+/* Which frame tone meets the PAGE (--frame-edge) and which meets the PANEL
+   (--frame-inner). A HUD panel is one rule, so both are --frame. A pixel
+   frame is three tones: its dark outline meets the page, and whichever tone
+   contrasts with the panel sits next to it, which is the outline on a light
+   parchment and the highlight on a dark one. Measured, not assumed: the
+   first draft put the dark outline against every panel, and on the dark
+   sets it read 1.07-1.21:1, a frame that vanished into its own panel. */
+[data-realm="star"] {
+  --frame-edge:  var(--frame);
+  --frame-inner: var(--frame-corner);
+}
+[data-realm="biome"] {
+  --frame-edge:  var(--frame-shade);
+  --frame-inner: var(--frame-shade);
+}
+[data-realm="biome"][data-biome="city"],
+[data-realm="biome"][data-biome="cave"],
+[data-realm="biome"][data-biome="ocean"] {
+  /* And on a dark set the bright band meets the page: a dark outline on a
+     dark ground measured 1.05-1.08:1, a panel with no edge. */
+  --frame-edge:  var(--frame);
+  --frame-inner: var(--frame-light);
+}
+
+/* ============================================================
+   THE STAR SYSTEM — the sci-fi HUD, three variants
+   From _direction/star/: Starfield's skill screen and system map,
+   No Man's Sky's discoveries. Thin rules, corner brackets, a lit
+   caption bar, stat tables, meters that print their number.
+   ============================================================ */
+
+/* HUD 1 — BARE METAL. Starfield's navy-black. The default. */
+[data-realm="star"][data-theme="bare-metal"] {
+  --surface-0:  oklch(0.15 0.025 255);  /* space: the page ground */
+  --surface-1:  oklch(0.19 0.028 255);  /* panel */
+  --surface-2:  oklch(0.24 0.030 255);  /* row, raised, hover */
+  --surface-3:  oklch(0.30 0.032 255);  /* active */
+
+  --ink:        oklch(0.94 0.008 250);
+  --ink-muted:  oklch(0.77 0.014 250);
+  --ink-faint:  oklch(0.66 0.014 250);
+
+  --line:       oklch(0.34 0.022 250);  /* hairline rules, decorative */
+  --line-strong:oklch(0.58 0.022 250);  /* control edges, 3:1 */
+
+  --frame:        oklch(0.52 0.026 250);  /* a panel's rule */
+  --frame-corner: oklch(0.90 0.010 250);  /* its corner brackets */
+  --frame-shade:  oklch(0.11 0.020 255);
+  --frame-light:  oklch(0.70 0.020 250);
+
+  --caption-bg:   oklch(0.50 0.090 240);  /* Starfield's GEOLOGY bar */
+  --caption-ink:  oklch(0.98 0.004 240);
+  --lit-bg:       oklch(0.82 0.010 250);  /* the current tab, a selected row */
+  --lit-ink:      oklch(0.17 0.025 255);
+
+  --meter-track:  oklch(0.30 0.020 250);
+  --meter-fill:   oklch(0.90 0.010 250);
+
+  --accent:       oklch(0.76 0.140 var(--accent-hue));
+  --accent-hover: oklch(0.82 0.150 var(--accent-hue));
+  --accent-muted: oklch(0.30 0.060 var(--accent-hue));
+  --accent-fg:    oklch(0.16 0.025 var(--accent-hue));
+  --accent-ring:  oklch(0.76 0.140 var(--accent-hue) / 0.75);
+
+  --success:    oklch(0.76 0.150 150);  --success-bg: oklch(0.27 0.055 150);
+  --danger:     oklch(0.72 0.170  25);  --danger-bg:  oklch(0.27 0.070  25);
+  --warning:    oklch(0.80 0.140  75);  --warning-bg: oklch(0.29 0.060  75);
+  --info:       oklch(0.76 0.120 230);  --info-bg:    oklch(0.27 0.050 230);
+  --locked:     oklch(0.66 0.010 250);  --locked-bg:  oklch(0.20 0.012 255);
+  /* The register cast, declared here so the set is complete and the AA test
+     sees it (tokens.css's :root values, unchanged). */
+  --reg-pc:  oklch(0.72 0.150  20);  --reg-ir:  oklch(0.72 0.150  60);
+  --reg-mar: oklch(0.72 0.150 130);  --reg-mbr: oklch(0.72 0.150 190);
+  --reg-ac:  oklch(0.72 0.150 280);  --reg-alu: oklch(0.72 0.150 320);
+}
+
+/* HUD 2 — BLUEPRINT. The HUD as an engineering drawing: pale ground,
+   navy ink, a navy caption. Reads on a projector. */
+[data-realm="star"][data-theme="blueprint"] {
+  --surface-0:  oklch(0.96 0.012 240);
+  --surface-1:  oklch(0.995 0.004 240);
+  --surface-2:  oklch(0.93 0.016 240);
+  --surface-3:  oklch(0.89 0.022 240);
+
+  --ink:        oklch(0.25 0.050 255);
+  --ink-muted:  oklch(0.41 0.040 255);
+  --ink-faint:  oklch(0.49 0.030 255);
+
+  --line:       oklch(0.86 0.030 240);
+  --line-strong:oklch(0.58 0.060 245);
+
+  --frame:        oklch(0.56 0.090 245);
+  --frame-corner: oklch(0.33 0.100 255);
+  --frame-shade:  oklch(0.33 0.080 255);
+  --frame-light:  oklch(0.88 0.030 240);
+
+  --caption-bg:   oklch(0.36 0.100 255);
+  --caption-ink:  oklch(0.98 0.008 240);
+  --lit-bg:       oklch(0.30 0.070 255);
+  --lit-ink:      oklch(0.98 0.008 240);
+
+  --meter-track:  oklch(0.88 0.025 240);
+  --meter-fill:   oklch(0.33 0.080 255);
+
+  --accent:       oklch(0.47 0.140 var(--accent-hue));
+  --accent-hover: oklch(0.41 0.150 var(--accent-hue));
+  --accent-muted: oklch(0.92 0.040 var(--accent-hue));
+  --accent-fg:    oklch(0.98 0.010 var(--accent-hue));
+  --accent-ring:  oklch(0.47 0.140 var(--accent-hue) / 0.75);
+
+  --success:    oklch(0.45 0.130 150);  --success-bg: oklch(0.94 0.040 150);
+  --danger:     oklch(0.47 0.170  25);  --danger-bg:  oklch(0.94 0.045  25);
+  --warning:    oklch(0.50 0.130  75);  --warning-bg: oklch(0.95 0.045  75);
+  --info:       oklch(0.46 0.110 230);  --info-bg:    oklch(0.94 0.035 230);
+  --locked:     oklch(0.49 0.010 250);  --locked-bg:  oklch(0.93 0.008 240);
+  /* The register cast: tokens.css's blueprint values, unchanged. */
+  --reg-pc:  oklch(0.50 0.150  20);  --reg-ir:  oklch(0.50 0.150  60);
+  --reg-mar: oklch(0.50 0.150 130);  --reg-mbr: oklch(0.50 0.150 190);
+  --reg-ac:  oklch(0.50 0.150 280);  --reg-alu: oklch(0.50 0.150 320);
+}
+
+/* HUD 3 — PHOSPHOR. A green CRT HUD; high contrast, for low vision. */
+[data-realm="star"][data-theme="phosphor"] {
+  --surface-0:  oklch(0.12 0.020 150);
+  --surface-1:  oklch(0.16 0.030 150);
+  --surface-2:  oklch(0.21 0.035 150);
+  --surface-3:  oklch(0.27 0.040 150);
+
+  --ink:        oklch(0.91 0.150 148);
+  --ink-muted:  oklch(0.77 0.120 148);
+  --ink-faint:  oklch(0.66 0.090 148);
+
+  --line:       oklch(0.34 0.060 150);
+  --line-strong:oklch(0.58 0.100 150);
+
+  --frame:        oklch(0.55 0.110 150);
+  --frame-corner: oklch(0.91 0.150 148);
+  --frame-shade:  oklch(0.09 0.020 150);
+  --frame-light:  oklch(0.72 0.130 148);
+
+  --caption-bg:   oklch(0.80 0.160 148);
+  --caption-ink:  oklch(0.14 0.030 150);
+  --lit-bg:       oklch(0.86 0.150 148);
+  --lit-ink:      oklch(0.14 0.030 150);
+
+  --meter-track:  oklch(0.30 0.050 150);
+  --meter-fill:   oklch(0.91 0.150 148);
+
+  --accent:       oklch(0.82 0.110 var(--accent-hue));
+  --accent-hover: oklch(0.88 0.120 var(--accent-hue));
+  --accent-muted: oklch(0.26 0.050 var(--accent-hue));
+  --accent-fg:    oklch(0.13 0.020 var(--accent-hue));
+  --accent-ring:  oklch(0.82 0.110 var(--accent-hue) / 0.75);
+
+  --success:    oklch(0.86 0.150 150);  --success-bg: oklch(0.24 0.060 150);
+  --danger:     oklch(0.80 0.170  35);  --danger-bg:  oklch(0.26 0.070  35);
+  --warning:    oklch(0.86 0.150  85);  --warning-bg: oklch(0.27 0.060  85);
+  --info:       oklch(0.84 0.100 200);  --info-bg:    oklch(0.25 0.045 200);
+  --locked:     oklch(0.66 0.040 150);  --locked-bg:  oklch(0.17 0.020 150);
+  /* The register cast, declared here so the set is complete and the AA test
+     sees it (tokens.css's :root values, unchanged). */
+  --reg-pc:  oklch(0.72 0.150  20);  --reg-ir:  oklch(0.72 0.150  60);
+  --reg-mar: oklch(0.72 0.150 130);  --reg-mbr: oklch(0.72 0.150 190);
+  --reg-ac:  oklch(0.72 0.150 280);  --reg-alu: oklch(0.72 0.150 320);
+}
+
+/* ============================================================
+   INSIDE A PLANET — seven biome sets, pixel frames
+   From _direction/biome/: Stardew Valley's skill page, journal,
+   quest and letter. Four are LIGHT parchments (neutral, jungle,
+   desert, arctic) and three are DARK (city, cave, ocean), so the
+   seven read as seven places before a sprite loads. Each frame is
+   three tones: a dark outline (--frame-shade), a band (--frame)
+   and a highlight (--frame-light), stepped in whole --px.
+   ============================================================ */
+
+/* The light family's semantic colours: blueprint's, re-checked here. */
+[data-realm="biome"][data-biome="neutral"],
+[data-realm="biome"][data-biome="jungle"],
+[data-realm="biome"][data-biome="desert"],
+[data-realm="biome"][data-biome="arctic"] {
+  color-scheme: light;
+  --success:    oklch(0.44 0.130 150);  --success-bg: oklch(0.94 0.040 150);
+  --danger:     oklch(0.46 0.170  25);  --danger-bg:  oklch(0.94 0.045  25);
+  --warning:    oklch(0.48 0.130  75);  --warning-bg: oklch(0.95 0.045  75);
+  --info:       oklch(0.45 0.110 230);  --info-bg:    oklch(0.94 0.035 230);
+
+  /* L 0.42: at 0.44 the cyans (hues 180-210) read 4.38-4.48:1 on the ground. */
+  --accent:       oklch(0.42 0.130 var(--accent-hue));
+  --accent-hover: oklch(0.36 0.140 var(--accent-hue));
+  --accent-muted: oklch(0.92 0.040 var(--accent-hue));
+  --accent-fg:    oklch(0.98 0.010 var(--accent-hue));
+  --accent-ring:  oklch(0.42 0.130 var(--accent-hue) / 0.75);
+
+  --reg-pc:  oklch(0.46 0.150  20);  --reg-ir:  oklch(0.46 0.150  60);
+  --reg-mar: oklch(0.46 0.150 130);  --reg-mbr: oklch(0.46 0.150 190);
+  --reg-ac:  oklch(0.46 0.150 280);  --reg-alu: oklch(0.46 0.150 320);
+}
+
+/* The dark family's: bare-metal's, re-checked here. */
+[data-realm="biome"][data-biome="city"],
+[data-realm="biome"][data-biome="cave"],
+[data-realm="biome"][data-biome="ocean"] {
+  color-scheme: dark;
+  --success:    oklch(0.78 0.150 150);  --success-bg: oklch(0.27 0.055 150);
+  --danger:     oklch(0.74 0.170  25);  --danger-bg:  oklch(0.27 0.070  25);
+  --warning:    oklch(0.82 0.140  75);  --warning-bg: oklch(0.29 0.060  75);
+  --info:       oklch(0.78 0.120 230);  --info-bg:    oklch(0.27 0.050 230);
+
+  --accent:       oklch(0.80 0.120 var(--accent-hue));
+  --accent-hover: oklch(0.86 0.130 var(--accent-hue));
+  --accent-muted: oklch(0.30 0.060 var(--accent-hue));
+  --accent-fg:    oklch(0.16 0.025 var(--accent-hue));
+  --accent-ring:  oklch(0.80 0.120 var(--accent-hue) / 0.75);
+
+  --reg-pc:  oklch(0.76 0.150  20);  --reg-ir:  oklch(0.76 0.150  60);
+  --reg-mar: oklch(0.76 0.150 130);  --reg-mbr: oklch(0.76 0.150 190);
+  --reg-ac:  oklch(0.76 0.150 280);  --reg-alu: oklch(0.76 0.150 320);
+}
+
+/* BIOME 1 — NEUTRAL. Grey stone and slate. The plain one, and it stays plain. */
+[data-realm="biome"][data-biome="neutral"] {
+  --surface-0:  oklch(0.86 0.008 250);
+  --surface-1:  oklch(0.95 0.005 250);
+  --surface-2:  oklch(0.91 0.008 250);
+  --surface-3:  oklch(0.86 0.012 250);
+  --ink:        oklch(0.25 0.020 250);
+  --ink-muted:  oklch(0.38 0.020 250);
+  --ink-faint:  oklch(0.44 0.018 250);
+  --line:       oklch(0.80 0.012 250);
+  --line-strong:oklch(0.52 0.025 250);
+  --frame:        oklch(0.54 0.030 250);
+  --frame-shade:  oklch(0.28 0.025 250);
+  --frame-light:  oklch(0.78 0.015 250);
+  --frame-corner: var(--frame-shade);
+  --caption-bg:   oklch(0.95 0.005 250);
+  --caption-ink:  oklch(0.25 0.020 250);
+  --lit-bg:       oklch(0.34 0.030 250);
+  --lit-ink:      oklch(0.97 0.004 250);
+  --meter-track:  oklch(0.84 0.012 250);
+  --meter-fill:   oklch(0.34 0.030 250);
+  --locked:       oklch(0.44 0.012 250);  --locked-bg: oklch(0.90 0.006 250);
+}
+
+/* BIOME 2 — JUNGLE. Leaf-green paper, a deep moss frame. */
+[data-realm="biome"][data-biome="jungle"] {
+  --surface-0:  oklch(0.86 0.050 125);
+  --surface-1:  oklch(0.95 0.035 118);
+  --surface-2:  oklch(0.91 0.048 120);
+  --surface-3:  oklch(0.86 0.062 124);
+  --ink:        oklch(0.27 0.060 145);
+  --ink-muted:  oklch(0.37 0.060 145);
+  --ink-faint:  oklch(0.43 0.055 145);
+  --line:       oklch(0.80 0.060 125);
+  --line-strong:oklch(0.50 0.090 140);
+  --frame:        oklch(0.50 0.110 140);
+  --frame-shade:  oklch(0.29 0.070 150);
+  --frame-light:  oklch(0.77 0.120 125);
+  --frame-corner: var(--frame-shade);
+  --caption-bg:   oklch(0.95 0.035 118);
+  --caption-ink:  oklch(0.27 0.060 145);
+  --lit-bg:       oklch(0.33 0.080 148);
+  --lit-ink:      oklch(0.97 0.020 118);
+  --meter-track:  oklch(0.84 0.055 124);
+  --meter-fill:   oklch(0.33 0.080 148);
+  --locked:       oklch(0.43 0.030 140);  --locked-bg: oklch(0.90 0.030 120);
+}
+
+/* BIOME 3 — DESERT. Stardew's own parchment, a terracotta frame. */
+[data-realm="biome"][data-biome="desert"] {
+  --surface-0:  oklch(0.86 0.055 78);
+  --surface-1:  oklch(0.95 0.040 85);
+  --surface-2:  oklch(0.91 0.055 82);
+  --surface-3:  oklch(0.86 0.070 78);
+  --ink:        oklch(0.29 0.060 45);
+  --ink-muted:  oklch(0.39 0.060 45);
+  --ink-faint:  oklch(0.45 0.055 45);
+  --line:       oklch(0.80 0.060 75);
+  --line-strong:oklch(0.53 0.100 50);
+  --frame:        oklch(0.60 0.140 55);
+  --frame-shade:  oklch(0.34 0.090 40);
+  --frame-light:  oklch(0.82 0.120 75);
+  --frame-corner: var(--frame-shade);
+  --caption-bg:   oklch(0.95 0.040 85);
+  --caption-ink:  oklch(0.29 0.060 45);
+  --lit-bg:       oklch(0.36 0.080 42);
+  --lit-ink:      oklch(0.97 0.025 85);
+  --meter-track:  oklch(0.84 0.060 78);
+  --meter-fill:   oklch(0.36 0.080 42);
+  --locked:       oklch(0.45 0.030 50);  --locked-bg: oklch(0.90 0.035 82);
+}
+
+/* BIOME 4 — ARCTIC. Ice paper, a steel-blue frame. */
+[data-realm="biome"][data-biome="arctic"] {
+  --surface-0:  oklch(0.87 0.028 225);
+  --surface-1:  oklch(0.965 0.012 220);
+  --surface-2:  oklch(0.92 0.022 222);
+  --surface-3:  oklch(0.87 0.032 225);
+  --ink:        oklch(0.27 0.060 250);
+  --ink-muted:  oklch(0.38 0.055 250);
+  --ink-faint:  oklch(0.44 0.050 248);
+  --line:       oklch(0.82 0.030 225);
+  --line-strong:oklch(0.52 0.070 240);
+  --frame:        oklch(0.57 0.080 235);
+  --frame-shade:  oklch(0.31 0.070 250);
+  --frame-light:  oklch(0.86 0.050 215);
+  --frame-corner: var(--frame-shade);
+  --caption-bg:   oklch(0.965 0.012 220);
+  --caption-ink:  oklch(0.27 0.060 250);
+  --lit-bg:       oklch(0.33 0.070 250);
+  --lit-ink:      oklch(0.98 0.010 220);
+  --meter-track:  oklch(0.85 0.030 225);
+  --meter-fill:   oklch(0.33 0.070 250);
+  --locked:       oklch(0.44 0.020 240);  --locked-bg: oklch(0.91 0.015 222);
+}
+
+/* BIOME 5 — CITY. Night street: violet dark, an amber neon frame. */
+[data-realm="biome"][data-biome="city"] {
+  --surface-0:  oklch(0.16 0.040 285);
+  --surface-1:  oklch(0.21 0.050 285);
+  --surface-2:  oklch(0.26 0.055 285);
+  --surface-3:  oklch(0.31 0.060 285);
+  --ink:        oklch(0.95 0.015 60);
+  --ink-muted:  oklch(0.80 0.030 60);
+  --ink-faint:  oklch(0.70 0.030 60);
+  --line:       oklch(0.36 0.060 285);
+  --line-strong:oklch(0.62 0.080 290);
+  --frame:        oklch(0.74 0.150 60);
+  --frame-shade:  oklch(0.11 0.035 285);
+  --frame-light:  oklch(0.88 0.110 75);
+  --frame-corner: var(--frame-light);
+  --caption-bg:   oklch(0.31 0.070 290);
+  --caption-ink:  oklch(0.95 0.015 60);
+  --lit-bg:       oklch(0.82 0.120 70);
+  --lit-ink:      oklch(0.18 0.040 285);
+  --meter-track:  oklch(0.33 0.050 285);
+  --meter-fill:   oklch(0.88 0.110 75);
+  --locked:       oklch(0.70 0.020 285);  --locked-bg: oklch(0.19 0.040 285);
+}
+
+/* BIOME 6 — CAVE. Amethyst dark, a crystal-violet frame. */
+[data-realm="biome"][data-biome="cave"] {
+  --surface-0:  oklch(0.17 0.040 295);
+  --surface-1:  oklch(0.22 0.050 295);
+  --surface-2:  oklch(0.27 0.055 295);
+  --surface-3:  oklch(0.32 0.060 295);
+  --ink:        oklch(0.95 0.020 290);
+  --ink-muted:  oklch(0.80 0.040 290);
+  --ink-faint:  oklch(0.71 0.040 290);
+  --line:       oklch(0.38 0.060 295);
+  --line-strong:oklch(0.64 0.090 298);
+  --frame:        oklch(0.64 0.130 300);
+  --frame-shade:  oklch(0.12 0.035 295);
+  --frame-light:  oklch(0.84 0.090 305);
+  --frame-corner: var(--frame-light);
+  --caption-bg:   oklch(0.33 0.080 300);
+  --caption-ink:  oklch(0.95 0.020 290);
+  --lit-bg:       oklch(0.82 0.090 305);
+  --lit-ink:      oklch(0.18 0.040 295);
+  --meter-track:  oklch(0.34 0.050 295);
+  --meter-fill:   oklch(0.84 0.090 305);
+  --locked:       oklch(0.71 0.020 295);  --locked-bg: oklch(0.20 0.040 295);
+}
+
+/* BIOME 7 — OCEAN. Deep-sea navy, an aqua frame. */
+[data-realm="biome"][data-biome="ocean"] {
+  --surface-0:  oklch(0.18 0.045 240);
+  --surface-1:  oklch(0.23 0.050 235);
+  --surface-2:  oklch(0.28 0.055 232);
+  --surface-3:  oklch(0.33 0.060 230);
+  --ink:        oklch(0.95 0.020 210);
+  --ink-muted:  oklch(0.81 0.040 210);
+  --ink-faint:  oklch(0.72 0.040 210);
+  --line:       oklch(0.39 0.060 235);
+  --line-strong:oklch(0.64 0.080 215);
+  --frame:        oklch(0.68 0.110 200);
+  --frame-shade:  oklch(0.12 0.040 240);
+  --frame-light:  oklch(0.86 0.090 195);
+  --frame-corner: var(--frame-light);
+  --caption-bg:   oklch(0.34 0.070 225);
+  --caption-ink:  oklch(0.95 0.020 210);
+  --lit-bg:       oklch(0.84 0.090 195);
+  --lit-ink:      oklch(0.18 0.045 240);
+  --meter-track:  oklch(0.35 0.050 235);
+  --meter-fill:   oklch(0.86 0.090 195);
+  --locked:       oklch(0.72 0.020 230);  --locked-bg: oklch(0.21 0.045 240);
+}
+
+/* ============================================================
+   FRAMES — the HUD's drawn from the tokens, the biome's vendored
+   ============================================================ */
+
+/* The HUD panel: a hairline rule with bright corner brackets, the
+   way Starfield frames every panel. The brackets are eight gradient
+   strokes, so they take --frame-corner from whichever set is live. */
+.frame-hud {
+  --bracket: 12px;
+  --bracket-w: var(--border-thick);
+  border: var(--border-hair) solid var(--frame);
+  background:
+    linear-gradient(var(--frame-corner), var(--frame-corner)) top left / var(--bracket) var(--bracket-w) no-repeat,
+    linear-gradient(var(--frame-corner), var(--frame-corner)) top left / var(--bracket-w) var(--bracket) no-repeat,
+    linear-gradient(var(--frame-corner), var(--frame-corner)) top right / var(--bracket) var(--bracket-w) no-repeat,
+    linear-gradient(var(--frame-corner), var(--frame-corner)) top right / var(--bracket-w) var(--bracket) no-repeat,
+    linear-gradient(var(--frame-corner), var(--frame-corner)) bottom left / var(--bracket) var(--bracket-w) no-repeat,
+    linear-gradient(var(--frame-corner), var(--frame-corner)) bottom left / var(--bracket-w) var(--bracket) no-repeat,
+    linear-gradient(var(--frame-corner), var(--frame-corner)) bottom right / var(--bracket) var(--bracket-w) no-repeat,
+    linear-gradient(var(--frame-corner), var(--frame-corner)) bottom right / var(--bracket-w) var(--bracket) no-repeat,
+    var(--surface-1);
+  color: var(--ink);
+}
+
+/* The pixel panel: Kenney's Pixel UI Pack (CC0), vendored in pixel/ with
+   its licence (instructor ruling, 30 Sep 2026, chosen over frames drawn in
+   CSS after both were captured: design/look/captures/frames-*.png).
+
+   One sprite per biome, matched to the biome's own tones:
+     neutral Ancient/grey   jungle Colored/green   desert Ancient/brown
+     arctic  Outline/blue   city   Colored/yellow  cave   Ancient/white
+     ocean   Colored/blue
+   and each one's pressed twin for :active (space, first choice for arctic, has
+   none: its space_inlay is a 44 by 44 inlay, which the sprite test caught).
+
+   THE SPRITE DRAWS THE FRAME, NEVER THE FILL. border-image has no `fill`,
+   so the panel's inside is the biome's --surface-1 and every word sits on a
+   token the AA test checks. The first comparison filled the panel with the
+   sprite and the cave's light ink went illegible on the tan paint.
+
+   A TOKEN RING INSIDE THE SPRITE. A sprite's colours are paint, not
+   tokens, and jungle's lime band measured about 1.6:1 against its own
+   leaf paper: a panel whose edge vanished from the inside. So one --px of
+   --frame-inner (AA-tested against every surface) sits between the sprite
+   and the text. The sprite dresses the frame; the ring guarantees it.
+
+   Each sprite is 48 by 48 with its frame in the outer 6 pixels (measured:
+   outline, highlight and a band of its own colour, with the rivets). Drawn
+   at --px per sprite pixel, `round` so the rivets tile instead of
+   smearing, and pixelated so they stay square. */
+.frame-pixel,
+.frame-pixel-button {
+  border: calc(var(--px) * 6) solid transparent;
+  border-image-slice: 6;
+  border-image-width: calc(var(--px) * 6);
+  border-image-repeat: round;
+  image-rendering: pixelated;
+  background: var(--surface-1) padding-box;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--frame-inner);
+}
+.frame-pixel { padding: var(--space-4); }
+/* A button or a tab is small, so its frame is drawn at two thirds of a
+   panel's: the same six sprite pixels in 4 --px. At a panel's 18px a
+   44px button had 8px left for its label, and the label was clipped. */
+.frame-pixel-button {
+  border-width: calc(var(--px) * 4);
+  border-image-width: calc(var(--px) * 4);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+
+[data-realm="biome"][data-biome="neutral"] :is(.frame-pixel, .frame-pixel-button) { border-image-source: url("./pixel/neutral.png"); }
+[data-realm="biome"][data-biome="jungle"]  :is(.frame-pixel, .frame-pixel-button) { border-image-source: url("./pixel/jungle.png"); }
+[data-realm="biome"][data-biome="desert"]  :is(.frame-pixel, .frame-pixel-button) { border-image-source: url("./pixel/desert.png"); }
+[data-realm="biome"][data-biome="arctic"]  :is(.frame-pixel, .frame-pixel-button) { border-image-source: url("./pixel/arctic.png"); }
+[data-realm="biome"][data-biome="city"]    :is(.frame-pixel, .frame-pixel-button) { border-image-source: url("./pixel/city.png"); }
+[data-realm="biome"][data-biome="cave"]    :is(.frame-pixel, .frame-pixel-button) { border-image-source: url("./pixel/cave.png"); }
+[data-realm="biome"][data-biome="ocean"]   :is(.frame-pixel, .frame-pixel-button) { border-image-source: url("./pixel/ocean.png"); }
+
+[data-realm="biome"][data-biome="neutral"] .frame-pixel-button:active { border-image-source: url("./pixel/neutral-pressed.png"); }
+[data-realm="biome"][data-biome="jungle"]  .frame-pixel-button:active { border-image-source: url("./pixel/jungle-pressed.png"); }
+[data-realm="biome"][data-biome="desert"]  .frame-pixel-button:active { border-image-source: url("./pixel/desert-pressed.png"); }
+[data-realm="biome"][data-biome="arctic"]  .frame-pixel-button:active { border-image-source: url("./pixel/arctic-pressed.png"); }
+[data-realm="biome"][data-biome="city"]    .frame-pixel-button:active { border-image-source: url("./pixel/city-pressed.png"); }
+[data-realm="biome"][data-biome="cave"]    .frame-pixel-button:active { border-image-source: url("./pixel/cave-pressed.png"); }
+[data-realm="biome"][data-biome="ocean"]   .frame-pixel-button:active { border-image-source: url("./pixel/ocean-pressed.png"); }
+
+/* A caption in the HUD face. Never a number, never below 12px. */
+.caption-hud {
+  font-family: var(--font-hud);
+  font-size: max(var(--text-hud-min), var(--text-sm));
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  background: var(--caption-bg);
+  color: var(--caption-ink);
+}

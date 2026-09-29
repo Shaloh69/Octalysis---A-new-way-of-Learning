@@ -1,0 +1,52 @@
+/* ============================================================
+   OCTA — the student app's faces, self-hosted
+   packages/tokens/fonts.css
+
+   Measured 30 Sep 2026: apps/web loaded NO font files at all, so Inter
+   and JetBrains Mono rendered from whatever the machine had installed,
+   and a lab PC without them got the system fallback while every spec
+   passed. This file makes every face apps/web uses actually load.
+
+   THREE FACES, by role (WEB-REMAKE.md §6, instructor ruling 30 Sep 2026):
+     Oxanium         the HUD label face: nav labels, titles, captions,
+                     key hints, badges. Never body text, never a number.
+                     It also takes the display role in apps/web, so
+                     Space Grotesk is retired there (the console keeps
+                     its own type and does not load this file).
+     Inter           everything read as prose
+     JetBrains Mono  every number: "what the machine sees"
+
+   SELF-HOSTED, not Google Fonts: a lecture hall on campus wifi should
+   not wait on fonts.google.com (this package's README), and a third
+   origin is one more thing that can be down during a check. Each file
+   is the Latin subset of the Google Fonts original (fontsource builds),
+   variable weight, 102 KB for all three. Every face is SIL Open Font
+   License 1.1; the licence is kept beside it as fonts/OFL-*.txt.
+
+   font-display: swap, so text is never invisible while a face loads:
+   the fallback stack paints first and the face swaps in.
+   ============================================================ */
+
+@font-face {
+  font-family: "Oxanium";
+  src: url("./fonts/oxanium-latin-wght-normal.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/inter-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}

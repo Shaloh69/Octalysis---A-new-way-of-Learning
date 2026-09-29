@@ -3,16 +3,30 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
   "exports": {
     "./tokens.css": "./tokens.css",
+    "./looks.css": "./looks.css",
+    "./fonts.css": "./fonts.css",
     "./accents": "./accents.ts",
+    "./contrast": "./contrast.ts",
     "./elements.svg": "./elements.svg",
     "./backdrop.css": "./backdrop.css"
   },
   "files": [
     "tokens.css",
+    "looks.css",
+    "fonts.css",
+    "fonts",
+    "pixel",
     "backdrop.css",
     "accents.ts",
+    "contrast.ts",
     "elements.svg"
-  ]
+  ],
+  "devDependencies": {
+    "vitest": "^2.1.3"
+  }
 }

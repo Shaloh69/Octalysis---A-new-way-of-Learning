@@ -176,6 +176,19 @@ const OKLCH = /oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+|var\(--accent-hue\))\s*(?
 export function parseCosmeticBlocks(attr, prefix) {
   const css = readFileSync(TOKENS, "utf8");
   const out = {};
+  /*
+   * `:root` declarations, so a block value that is an alias -- `--biome-planet:
+   * var(--biome-planet-jungle)`, since 30 Sep 2026 -- resolves to the colour
+   * it names. Without this an alias was not an oklch() and was skipped, and
+   * the run still printed "Clean": seven planet-tint checks vanished silently.
+   */
+  const rootVals = {};
+  for (const rm of css.matchAll(/:root\s*\{([^}]*)\}/g)) {
+    for (const line of rm[1].split(";")) {
+      const d = line.match(/(--[\w-]+)\s*:\s*(oklch\([^)]*\))/);
+      if (d) rootVals[d[1]] = d[2];
+    }
+  }
   const blockRe = new RegExp(`\\[data-${attr}="([\\w-]+)"\\]\\s*\\{([^}]*)\\}`, "g");
   let m;
   while ((m = blockRe.exec(css)) !== null) {
@@ -184,7 +197,10 @@ export function parseCosmeticBlocks(attr, prefix) {
     for (const line of m[2].split(";")) {
       const d = line.match(new RegExp(`(--${prefix}-[\\w-]+)\\s*:\\s*(.+)`));
       if (!d) continue;
-      const pm = d[2].trim().match(OKLCH);
+      const alias = d[2].trim().match(/^var\((--[\w-]+)\)$/);
+      const value = alias ? rootVals[alias[1]] : d[2].trim();
+      if (alias && !value) throw new Error(`${d[1]} in [data-${attr}="${name}"] aliases ${alias[1]}, which :root does not declare`);
+      const pm = value.match(OKLCH);
       if (!pm) continue;
       out[name][d[1]] = {
         L: Number(pm[1]),
