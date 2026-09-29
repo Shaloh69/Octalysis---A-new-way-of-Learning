@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { StageNode } from "../lib/api";
+import { ACT_NAMES } from "../lib/acts";
 import { LEVEL_NAMES } from "../solar-system/layout";
 import { NumberedTitle } from "../shell/MissionPanel";
 import { WarpLink } from "../shell/RealmWarp";
@@ -12,12 +13,11 @@ import { byObjectiveId } from "./useSelection";
  * stage's state, its lock or its moons.
  */
 
-export const ACTS: Record<number, { roman: string; name: string }> = {
-  1: { roman: "I", name: "Prelim" },
-  2: { roman: "II", name: "Midterm" },
-  3: { roman: "III", name: "Semi-finals" },
-  4: { roman: "IV", name: "Finals" },
-};
+/** The grading periods: names from lib/acts.ts, the one source (instructor ruling). */
+const ROMAN: Record<number, string> = { 1: "I", 2: "II", 3: "III", 4: "IV" };
+export const ACTS: Record<number, { roman: string; name: string }> = Object.fromEntries(
+  Object.entries(ACT_NAMES).map(([k, name]) => [k, { roman: ROMAN[Number(k)] ?? k, name }]),
+);
 export const ARCHETYPES: Record<string, string> = { A: "Concept", B: "Computation", C: "Artifact", D: "Simulator" };
 export const STATE_WORD: Record<StageNode["state"], string> = {
   locked: "Locked",

@@ -13,16 +13,13 @@
 
 /* Ruling 2 (30 Sep 2026): the tokens, the two realms' looks (looks.css) and
  * the faces load here; the base, the shell and each remade route live in
- * src/styles/, loaded after this file (main.tsx). What remains below is the
- * old pages' CSS, deleted route by route as each is remade. */
+ * src/styles/, loaded after this file (main.tsx). What remains below is only
+ * what a live component still names (the remake's cleanup, 30 Sep 2026, cut
+ * every rule whose classes no source file uses). */
 @import "@octa/tokens/fonts.css";
 @import "@octa/tokens/tokens.css";
 @import "@octa/tokens/looks.css";
 @import "@octa/tokens/backdrop.css";
-
-.dim {
-  color: var(--ink-dim);
-}
 
 /* --------------------------------------------------------------
  * Shell
@@ -33,94 +30,15 @@
   flex-direction: column;
 }
 
-.app-body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-.app-main {
-  flex: 1;
-  min-width: 0;
-  padding: 1.5rem 1.25rem 4rem;
-  max-width: 1180px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.app-nav {
-  display: flex;
-  /* The nav is a flex row with `margin-left: auto` on Sign out, and without
-     wrapping it ran 5px past the viewport at 380px -- a horizontal scrollbar on
-     every page of the student app. Nothing caught it: it is valid CSS, a legal
-     token, and no test had ever measured the document width.
-     `design/specs/solar-system.spec.ts` now asserts it. */
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.app-nav button {
-  background: none;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 0.35rem 0.9rem;
-  color: var(--ink-dim);
-}
-
-.app-nav button[aria-current="page"] {
-  color: var(--accent-fg);
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
 .banner {
   padding: 0.6rem 1rem;
   text-align: center;
   font-size: 0.9rem;
 }
-.banner-offline {
-  background: var(--warn-bg, var(--surface));
-  color: var(--ink);
-  border-bottom: 1px solid var(--rule);
-}
 
 /* --------------------------------------------------------------
  * Register Bar — present from Stage 00, unexplained until Stage 12
  * ------------------------------------------------------------ */
-.register-bar {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 0.4rem 1rem;
-  border-bottom: 1px solid var(--rule);
-  background: var(--surface);
-  overflow-x: auto;
-}
-
-.register-bar-brand {
-  font-family: var(--font-display, "Space Grotesk", sans-serif);
-  letter-spacing: 0.12em;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.register-bar-cells {
-  display: flex;
-  gap: 1rem;
-}
-
-.register-cell {
-  display: flex;
-  gap: 0.4rem;
-  align-items: baseline;
-  font-size: 0.78rem;
-}
-
-.register-name {
-  color: var(--ink-dim);
-  letter-spacing: 0.08em;
-}
 
 .register-value {
   color: var(--ink-dim);
@@ -136,48 +54,10 @@
 /* --------------------------------------------------------------
  * Depth Gauge
  * ------------------------------------------------------------ */
-.depth-gauge {
-  flex: 0 0 auto;
-  padding: 1.5rem 0.75rem;
-  border-right: 1px solid var(--rule);
-}
-
-.depth-gauge ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.depth-seg {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.4rem;
-  border-left: 3px solid var(--rule);
-  color: var(--ink-dim);
-  opacity: 0.45;
-  font-size: 0.75rem;
-}
-
-.depth-reached {
-  opacity: 1;
-  border-left-color: var(--accent);
-  color: var(--ink);
-}
-
-.depth-label {
-  white-space: nowrap;
-}
 
 /* --------------------------------------------------------------
  * Map
  * ------------------------------------------------------------ */
-.map-root {
-  position: relative;
-}
 
 /* --------------------------------------------------------------
  * The solar system as the page background
@@ -195,13 +75,6 @@
  * `pointer-events: none` because the canvas is pixels. Every control is DOM on
  * top, and the empty space between planets must not swallow clicks.
  */
-.solar-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: var(--solar-ground);
-}
 
 /*
  * The page over the scene.
@@ -212,9 +85,6 @@
  * the readable surfaces keep a scrim. Transparent chrome, legible content: the
  * two are not in tension, they just have to be separated deliberately.
  */
-.app-over-solar {
-  background: transparent;
-}
 
 /*
  * Lift the shell's own children above the backdrop.
@@ -234,56 +104,21 @@
  * the backdrop: `z-index: -1` would work here and break the moment any ancestor
  * gains a stacking context.
  */
-.app-over-solar > * {
-  position: relative;
-  z-index: 1;
-}
-.app-over-solar .app-body,
-.app-over-solar .app-main {
-  background: transparent;
-}
 
 /* The nav and the depth gauge float over the scene. */
-.app-over-solar .app-nav,
-.app-over-solar .depth-gauge {
-  background: transparent;
-  border-color: transparent;
-}
 
 /*
  * Anything with real reading in it gets a scrim: a translucent ground that
  * lifts text off the star field without hiding it. `color-mix` keeps this
  * inside the token system -- no literal colour, and it follows the theme.
  */
-.app-over-solar .stage-list,
-.app-over-solar .formation,
-.app-over-solar .settings,
-.app-over-solar .progress-page,
-.app-over-solar .submit-page {
-  background: color-mix(in oklab, var(--surface-0) 82%, transparent);
-  backdrop-filter: blur(3px);
-  border-radius: var(--radius-sm);
-  padding: var(--space-4);
-}
 
 /* The map's header sits directly on the scene, so it needs the lift too. */
-.app-over-solar .map-header {
-  background: color-mix(in oklab, var(--surface-0) 70%, transparent);
-  backdrop-filter: blur(2px);
-  border-radius: var(--radius-sm);
-  padding: var(--space-3) var(--space-4);
-}
 
 /*
  * The control layer over the backdrop. Full viewport, because the scene is:
  * a planet can now be projected anywhere on screen, not just inside a box.
  */
-.map-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
 
 /*
  * The solar system is IN FLOW, not a fixed backdrop.
@@ -298,71 +133,6 @@
  *
  * So it gets its own box, and the text sits below it rather than on it.
  */
-.map-solar {
-  position: relative;
-  z-index: 1;
-  /* The map brings its own ground. `blueprint` is a light theme, and a star
-     field on a near-white page is not a star field -- see the note beside
-     --solar-ground in packages/tokens/tokens.css. Same decision GAME-DESIGN.md
-     9 already made for the encounter themes, for the same reason. */
-  background: var(--solar-ground);
-  border-radius: var(--radius-sm);
-  width: 100%;
-  height: min(54vh, 540px);
-  margin-bottom: 1.5rem;
-  pointer-events: none;
-}
-
-@media (max-width: 640px) {
-  /* Never reached today -- <=640px falls back to flat before this renders --
-     but the box must not be taller than the phone if that ever changes. */
-  .map-solar {
-    height: min(50vh, 380px);
-  }
-}
-
-.map-header {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.25rem;
-}
-
-.map-sub {
-  color: var(--ink-dim);
-  margin: 0;
-}
-
-.mode-toggle {
-  background: none;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 0.4rem 0.9rem;
-  color: var(--ink-dim);
-  white-space: nowrap;
-}
-.mode-toggle[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.map-scroll {
-  position: relative;
-  z-index: 1;
-  overflow-x: auto;
-  padding-bottom: 1rem;
-}
-
-.map-svg {
-  display: block;
-  min-width: 900px;
-  width: 100%;
-  height: auto;
-}
 
 .stratum {
   stroke: var(--rule);
@@ -371,233 +141,23 @@
   opacity: 0.5;
 }
 
-.stratum-label {
-  fill: var(--ink-dim);
-  font-size: 10px;
-  font-family: var(--font-mono, monospace);
-  opacity: 0.7;
-}
-
 .edge {
   stroke: var(--rule);
   stroke-width: 1.5;
-}
-.edge-live {
-  stroke: var(--accent);
-  opacity: 0.75;
-}
-.edge-dim {
-  opacity: 0.35;
-}
-
-.node-disc {
-  fill: var(--surface);
-  stroke: var(--rule);
-  stroke-width: 2;
-}
-.node-column {
-  stroke: var(--rule);
-  stroke-width: 1;
-  stroke-dasharray: 1 5;
-  opacity: 0.5;
-}
-.node-available .node-disc {
-  stroke: var(--ink-dim);
-}
-.node-in_progress .node-disc {
-  stroke: var(--accent);
-}
-.node-mastered .node-disc {
-  fill: var(--accent);
-  stroke: var(--accent);
-}
-.node-mastered .node-id {
-  fill: var(--accent-fg);
-}
-.node-halo {
-  fill: none;
-  stroke: var(--accent);
-  opacity: 0.28;
-}
-.node-locked {
-  opacity: 0.42;
-}
-
-.node-id {
-  fill: var(--ink);
-  font-size: 12px;
-  font-family: var(--font-mono, monospace);
-  text-anchor: middle;
-}
-
-.node-title {
-  fill: var(--ink-dim);
-  font-size: 10px;
-  text-anchor: middle;
 }
 
 /* --------------------------------------------------------------
  * Act list — the text equivalent of the graph
  * ------------------------------------------------------------ */
-.act-list {
-  position: relative;
-  z-index: 1;
-  margin-top: 3rem;
-  display: grid;
-  gap: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-
-.act-group h2 {
-  font-size: 0.9rem;
-  color: var(--ink-dim);
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: 0.4rem;
-}
-
-.act-group ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.act-item {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--rule);
-}
-
-.act-item > button {
-  display: flex;
-  gap: 0.6rem;
-  align-items: baseline;
-  width: 100%;
-  background: none;
-  border: 0;
-  padding: 0.2rem 0;
-  text-align: left;
-}
-
-.act-item-id {
-  font-family: var(--font-mono, monospace);
-  color: var(--ink-dim);
-  font-size: 0.8rem;
-}
-
-.act-item-title {
-  flex: 1;
-}
-
-.act-item-state {
-  font-size: 0.72rem;
-  color: var(--ink-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.act-item-mastered .act-item-title {
-  color: var(--accent);
-}
-.act-item-locked {
-  opacity: 0.6;
-}
-
-.act-item-prereq,
-.act-item-lock {
-  margin: 0.15rem 0 0;
-  font-size: 0.78rem;
-  color: var(--ink-dim);
-}
 
 /* --------------------------------------------------------------
  * Page eyebrow. Was the old reader's; /app/stages, /app/work and /app/settings
  * still use it. The stage reader has its own (`.rd-eyebrow`, end of file).
  * ------------------------------------------------------------ */
-.reader-eyebrow {
-  color: var(--ink-dim);
-  letter-spacing: 0.12em;
-  margin: 0;
-  font-size: 0.78rem;
-}
 
 /* --------------------------------------------------------------
  * Progress grid
  * ------------------------------------------------------------ */
-.progress-sub {
-  color: var(--ink-dim);
-  max-width: 60ch;
-}
-
-.progress-scroll {
-  overflow-x: auto;
-}
-
-.progress-table {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 560px;
-  margin-top: 1.5rem;
-}
-
-.progress-table th,
-.progress-table td {
-  border: 1px solid var(--rule);
-  padding: 0.6rem 0.75rem;
-  text-align: left;
-  vertical-align: middle;
-}
-
-.progress-table thead th {
-  font-size: 0.8rem;
-  color: var(--ink-dim);
-}
-
-.comp-name {
-  display: block;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink);
-}
-.comp-meaning {
-  display: block;
-  font-weight: 400;
-  font-size: 0.72rem;
-  color: var(--ink-dim);
-}
-
-.progress-table tbody th {
-  font-weight: 500;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.progress-table td {
-  position: relative;
-  min-width: 110px;
-}
-
-.cell-pct {
-  position: relative;
-  z-index: 1;
-  font-size: 0.85rem;
-}
-
-.cell-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  background: var(--accent-muted);
-  z-index: 0;
-}
-
-.cell-unreachable {
-  background: var(--surface);
-}
-.cell-none {
-  color: var(--ink-dim);
-  opacity: 0.6;
-}
 
 /* --------------------------------------------------------------
  * States
@@ -632,10 +192,7 @@
   width: 60%;
   margin-bottom: 1.5rem;
 }
-.skel-para {
-  height: 1rem;
-  margin-bottom: 0.6rem;
-}
+
 .skel-row {
   display: flex;
   gap: 1rem;
@@ -655,36 +212,6 @@
 /* --------------------------------------------------------------
  * 380px — the design floor, not an afterthought
  * ------------------------------------------------------------ */
-@media (max-width: 640px) {
-  .app-body {
-    flex-direction: column;
-  }
-  .depth-gauge {
-    border-right: 0;
-    border-bottom: 1px solid var(--rule);
-    padding: 0.5rem;
-  }
-  .depth-gauge ol {
-    flex-direction: row;
-    overflow-x: auto;
-  }
-  .depth-seg {
-    border-left: 0;
-    border-bottom: 3px solid var(--rule);
-  }
-  .depth-reached {
-    border-bottom-color: var(--accent);
-  }
-  .depth-label {
-    display: none;
-  }
-  .app-main {
-    padding: 1rem 0.85rem 3rem;
-  }
-  .map-svg {
-    min-width: 760px;
-  }
-}
 
 /* --------------------------------------------------------------
  * prefers-reduced-motion: every duration to zero. State still
@@ -692,8 +219,8 @@
  * ------------------------------------------------------------ */
 @media (prefers-reduced-motion: reduce) {
   *,
-  *::before,
-  *::after {
+*::before,
+*::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
@@ -713,122 +240,14 @@
    assembly timing is Arwes' idea rebuilt without the library.
    ============================================================ */
 
-.auth-page {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: var(--space-5) var(--space-4);
-}
-
-.boot {
-  --notch: 14px;
-  position: relative;
-  width: min(30rem, 100%);
-  background: var(--surface-1);
-  /* The notched panel. Corners cut top-left and bottom-right only —
-     symmetric cuts read as a generic "tech card"; two reads as machined. */
-  clip-path: polygon(
-    var(--notch) 0%, 100% 0%, 100% calc(100% - var(--notch)),
-    calc(100% - var(--notch)) 100%, 0% 100%, 0% var(--notch)
-  );
-  padding: var(--space-6) var(--space-5) var(--space-5);
-  border: var(--border-hair) solid var(--line);
-}
-
 /* Progressive enhancement: two lines, responsive, animatable.
    Browsers without it keep the clip-path above and look identical. */
-@supports (corner-shape: bevel) {
-  .boot {
-    clip-path: none;
-    border-start-start-radius: var(--notch);
-    border-end-end-radius: var(--notch);
-    corner-shape: bevel;
-  }
-}
 
 /* The four corner brackets, drawn in. Decorative: aria-hidden in the DOM. */
-.boot-frame { position: absolute; inset: 0; pointer-events: none; }
-.boot-corner {
-  position: absolute;
-  width: 18px; height: 18px;
-  border: var(--border-thick) solid var(--accent);
-  opacity: 0;
-  transition: opacity var(--dur-base) var(--ease-out),
-              transform var(--dur-base) var(--ease-out);
-}
-.boot-corner-tl { top: -1px; left: -1px; border-right: 0; border-bottom: 0; transform: translate(-6px, -6px); }
-.boot-corner-tr { top: -1px; right: -1px; border-left: 0; border-bottom: 0; transform: translate(6px, -6px); }
-.boot-corner-bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; transform: translate(-6px, 6px); }
-.boot-corner-br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; transform: translate(6px, 6px); }
-.boot-ready .boot-corner { opacity: 1; transform: translate(0, 0); }
-
-.boot-inner { position: relative; }
-
-.boot-eyebrow {
-  font-size: var(--text-xs);
-  letter-spacing: 0.16em;
-  color: var(--accent);
-  margin: 0 0 var(--space-3);
-}
-.boot-title {
-  font-family: var(--font-display);
-  font-size: var(--text-2xl);
-  letter-spacing: var(--tracking-display);
-  margin: 0 0 var(--space-2);
-}
-.boot-sub { color: var(--ink-muted); margin: 0 0 var(--space-5); font-size: var(--text-sm); }
 
 /* The POST readout. Each line prints in turn. */
-.boot-post {
-  list-style: none;
-  margin: 0 0 var(--space-5);
-  padding: var(--space-3) var(--space-4);
-  background: var(--surface-0);
-  border-left: var(--border-thick) solid var(--line);
-  font-size: var(--text-xs);
-}
-.boot-post li {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  color: var(--ink-faint);
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity var(--dur-fast) var(--ease-out),
-              transform var(--dur-fast) var(--ease-out);
-}
-.boot-post li.boot-post-on { opacity: 1; transform: translateX(0); }
-.boot-post-label { color: var(--ink-muted); }
-.boot-post-dots { flex: 1; border-bottom: 1px dotted var(--line); transform: translateY(-3px); }
-.boot-post-value { color: var(--accent); }
-
-.boot-form { opacity: 0; transition: opacity var(--dur-base) var(--ease-out); }
-.boot-ready .boot-form { opacity: 1; }
-
-.boot-fault {
-  display: flex; gap: var(--space-2); align-items: baseline;
-  font-size: var(--text-xs);
-  color: var(--danger);
-  background: var(--danger-bg);
-  border-left: var(--border-thick) solid var(--danger);
-  padding: var(--space-3);
-  margin: 0 0 var(--space-4);
-}
-.boot-fault-tag { font-weight: 700; letter-spacing: 0.1em; }
-
-.boot-go { width: 100%; }
-
-.auth-alt { margin: var(--space-5) 0 0; font-size: var(--text-sm); color: var(--ink-muted); }
-.auth-done { color: var(--ink-muted); margin: 0 0 var(--space-4); }
 
 /* Reduced motion: the sequence does not play. The end state is the state. */
-@media (prefers-reduced-motion: reduce) {
-  .boot-corner, .boot-post li, .boot-form { transition: none; }
-  .boot-corner { opacity: 1; transform: none; }
-  .boot-post li { opacity: 1; transform: none; }
-  .boot-form { opacity: 1; }
-}
 
 /* ---------------------------------------------------------- form fields */
 .field { margin: 0 0 var(--space-4); }
@@ -843,8 +262,6 @@
   font: inherit;
 }
 .field input:focus-visible { outline: var(--border-thick) solid var(--accent); outline-offset: 1px; }
-.field-hint { font-size: var(--text-xs); color: var(--ink-faint); margin: var(--space-1) 0 0; }
-.field-hint-warn { color: var(--warning); }
 
 .btn-primary {
   background: var(--accent);
@@ -867,54 +284,13 @@
    ============================================================ */
 .settings { max-width: 42rem; }
 .settings h2 { font-family: var(--font-display); font-size: var(--text-lg); margin: var(--space-6) 0 var(--space-2); }
-.settings-note { color: var(--ink-muted); font-size: var(--text-sm); margin: 0 0 var(--space-4); }
-.settings-themes { display: flex; flex-direction: column; gap: var(--space-2); }
-.settings-theme { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--space-3); padding: var(--space-3); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); cursor: pointer; min-height: 44px; }
-.settings-theme.is-on { border-color: var(--accent); background: var(--accent-muted); }
-.settings-theme-name { font-weight: 600; }
-.settings-theme-blurb { grid-column: 2; color: var(--ink-muted); font-size: var(--text-sm); }
-.settings-accents { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.settings-accent { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: var(--border-hair) solid var(--line); border-radius: var(--radius-full); cursor: pointer; min-height: 44px; }
-.settings-accent.is-on { border-color: var(--accent); border-width: var(--border-thick); }
-.settings-swatch { width: 14px; height: 14px; border-radius: var(--radius-full); }
-.settings-accent-name { font-size: var(--text-sm); }
 
 /* ============================================================
    FEEDBACK + SUS
    ============================================================ */
-.fb-tab {
-  position: fixed; right: var(--space-4); bottom: var(--space-4);
-  z-index: var(--z-sheet);
-  padding: var(--space-2) var(--space-4); min-height: 44px;
-  background: var(--surface-2); color: var(--ink-muted);
-  border: var(--border-hair) solid var(--line-strong);
-  border-radius: var(--radius-full); font: inherit; font-size: var(--text-xs); cursor: pointer;
-}
-.fb-tab:hover { color: var(--ink); }
-.fb-panel {
-  position: fixed; right: var(--space-4); bottom: var(--space-4);
-  z-index: var(--z-sheet);
-  width: min(24rem, calc(100vw - 2rem));
-  max-height: 80vh; overflow-y: auto;
-  background: var(--surface-1);
-  border: var(--border-hair) solid var(--line-strong);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  box-shadow: var(--shadow-2);
-}
-.fb-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
-.fb-head h2 { font-family: var(--font-display); font-size: var(--text-base); margin: 0; }
-.fb-close { background: none; border: 0; color: var(--ink-faint); font-size: var(--text-xl); cursor: pointer; min-width: 44px; min-height: 44px; }
-.fb-cats { border: 0; padding: 0; margin: 0 0 var(--space-3); display: flex; flex-direction: column; gap: var(--space-1); }
+
 .fb-cat { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--space-2); padding: var(--space-2); border-radius: var(--radius-sm); cursor: pointer; }
 .fb-cat.is-on { background: var(--accent-muted); }
-.fb-cat-label { font-size: var(--text-sm); }
-.fb-cat-hint { grid-column: 2; font-size: var(--text-xs); color: var(--ink-faint); }
-.fb-label { display: block; font-size: var(--text-xs); color: var(--ink-muted); margin-bottom: var(--space-1); }
-.fb-panel textarea { width: 100%; padding: var(--space-3); background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); color: var(--ink); font: inherit; margin-bottom: var(--space-3); }
-.fb-note { font-size: var(--text-xs); color: var(--ink-faint); margin: 0 0 var(--space-3); }
-.fb-fail { font-size: var(--text-sm); color: var(--danger); margin: 0 0 var(--space-3); }
-.fb-sent p { margin: 0 0 var(--space-2); }
 
 .sus {
   position: fixed; inset-inline: var(--space-4); bottom: var(--space-4);
@@ -940,58 +316,20 @@
 .sus-note { font-size: var(--text-xs); color: var(--ink-faint); text-align: right; margin: var(--space-2) 0 0; }
 
 /* ------------------------------------------------------- nav additions */
-.app-nav a { color: var(--ink-muted); text-decoration: none; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); min-height: 44px; display: inline-flex; align-items: center; }
-.app-nav a:hover { color: var(--ink); background: var(--surface-2); }
-.app-nav a.active { color: var(--accent); background: var(--accent-muted); }
-.app-nav-out { margin-left: auto; background: none; border: 0; color: var(--ink-faint); font: inherit; cursor: pointer; min-height: 44px; }
-.app-nav-out:hover { color: var(--ink); }
-.map-alt-link { margin-top: var(--space-5); font-size: var(--text-sm); }
-
-@media (max-width: 420px) {
-  .boot { padding: var(--space-5) var(--space-4) var(--space-4); }
-}
 
 /* ============================================================
    SUBMISSIONS — labs, project, participation. 40% of the grade.
    ============================================================ */
-.submit-page { max-width: 46rem; }
-.submit-intro { color: var(--ink-muted); margin: 0 0 var(--space-5); }
-.submit-empty { color: var(--ink-muted); }
-.submit-list { list-style: none; padding: 0; margin: 0 0 var(--space-6); display: flex; flex-direction: column; gap: var(--space-3); }
-.submit-row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3); background: var(--surface-1); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); }
-.submit-row button { margin-left: auto; min-height: 44px; padding: var(--space-2) var(--space-4); background: var(--surface-2); color: var(--ink); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); font: inherit; cursor: pointer; }
-.submit-status { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: var(--radius-full); border: var(--border-hair) solid; }
-.submit-status-draft { color: var(--ink-faint); border-color: var(--line); }
-.submit-status-submitted { color: var(--warning); border-color: var(--warning); background: var(--warning-bg); }
-.submit-status-returned { color: var(--info); border-color: var(--info); background: var(--info-bg); }
-.submit-status-graded { color: var(--success); border-color: var(--success); background: var(--success-bg); }
-.submit-slug { font-size: var(--text-xs); color: var(--ink-faint); }
-.submit-title { flex: 1; min-width: 8rem; }
-.submit-score { font-weight: 600; }
-.submit-late { font-size: var(--text-xs); color: var(--warning); margin: var(--space-1) 0 0 var(--space-3); }
-.submit-detail { padding: var(--space-4); border: var(--border-hair) solid var(--line); border-top: 0; border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: var(--surface-1); }
-.submit-detail h3 { font-family: var(--font-display); font-size: var(--text-base); margin: var(--space-4) 0 var(--space-2); }
-.submit-graded { color: var(--success); margin: 0 0 var(--space-3); }
-.submit-feedback, .submit-body { white-space: pre-wrap; color: var(--ink-muted); margin: 0; }
-.submit-new { margin-top: var(--space-6); }
-.submit-new summary { cursor: pointer; padding: var(--space-3); background: var(--surface-2); border-radius: var(--radius-sm); min-height: 44px; display: flex; align-items: center; }
-.submit-form { padding: var(--space-4) 0; }
-.submit-form textarea { width: 100%; padding: var(--space-3); background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); color: var(--ink); font: inherit; }
-.submit-select { width: 100%; padding: var(--space-3); background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); color: var(--ink); font: inherit; min-height: 44px; }
-.submit-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-.submit-actions button:first-child { min-height: 44px; padding: var(--space-3) var(--space-4); background: var(--surface-2); color: var(--ink); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); font: inherit; cursor: pointer; }
-.submit-err { color: var(--danger); margin: 0 0 var(--space-3); }
-.submit-ok { color: var(--success); margin: 0 0 var(--space-3); }
 
 /* An encounter panel inside the reader. The theme tokens come from
    packages/tokens via [data-encounter]; this is only its box. */
 .encounter { margin: var(--space-6) 0; }
-.encounter h2, .encounter h3 { color: var(--enc-ink); font-family: var(--font-display); }
+.encounter h2,
+.encounter h3 { color: var(--enc-ink); font-family: var(--font-display); }
 .encounter a { color: var(--enc-accent); }
 
 /* The boot panel stacks above the fixed backdrop (z-index 0). Without this the
  * backdrop's own stacking context would paint the grid over the form. */
-.boot { position: relative; z-index: 1; }
 
 /* --------------------------------------------------------------
  * Landing biome — real parallax art, per BIOME-AND-LOADING-SPEC.md §2
@@ -1064,10 +402,7 @@
  * layer needs this at the same time it is added, not after someone notices the
  * navigation is gone.
  */
-.app-has-backdrop > * {
-  position: relative;
-  z-index: 1;
-}
+
 .biome-layer {
   position: absolute;
   inset: 0;
@@ -1097,8 +432,6 @@
     radial-gradient(80% 80% at 20% 135%, var(--biome-near) 46%, transparent 47%),
     linear-gradient(180deg, var(--biome-far), var(--biome-near));
 }
-
-
 
 /*
  * Frozen, not slowed. The parallax carries no information the static frame does
@@ -1153,7 +486,6 @@
   }
 }
 
-
 @media (prefers-reduced-motion: reduce) {
   .biome-layer {
     transform: none;
@@ -1163,14 +495,6 @@
 }
 
 /* The seeded system callsign on /app/settings. A name, never an identifier. */
-.settings-callsign {
-  margin: 0 0 var(--space-4);
-}
-.settings-callsign .mono {
-  font-size: 1.05rem;
-  color: var(--accent);
-  letter-spacing: 0.04em;
-}
 
 /* --------------------------------------------------------------
  * Planet hit layer — the controls over the solar system
@@ -1182,54 +506,9 @@
  * empty space between planets does not swallow clicks, and each button turns
  * them back on for itself.
  */
-.map-hits {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.map-hit {
-  position: absolute;
-  top: 0;
-  left: 0;
-  /* Positioned imperatively from an rAF loop, so no transition here -- a
-     transition would fight the per-frame transform and lag the planet. */
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-full);
-  background: none;
-  color: var(--ink-muted);
-  opacity: 0;
-  cursor: pointer;
-}
 
 /* 44px is the touch-target floor, and it is bigger than most planets render --
    which is correct: the target should be easier to hit than the art is to see. */
-.map-hit-id {
-  font-size: 0.62rem;
-  opacity: 0;
-  transition: opacity var(--dur-fast) var(--ease-out);
-}
-
-.map-hit:hover .map-hit-id,
-.map-hit:focus-visible .map-hit-id {
-  opacity: 1;
-}
-
-.map-hit:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.map-hit[aria-disabled="true"] {
-  cursor: default;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .map-hit-id { transition: none; }
-}
 
 /* --------------------------------------------------------------
  * Planet HUD — the response to clicking a planet
@@ -1316,8 +595,7 @@
 }
 
 /* The moon selector. */
-.hud-moons { margin: var(--space-4) 0 0; }
-.hud-moons-head { margin: 0 0 var(--space-2); font-size: 0.8rem; color: var(--ink-muted); }
+
 /*
  * One moon per row, full width.
  *
@@ -1325,86 +603,20 @@
  * a sentence: pills of wildly different widths wrap into a ragged block that is
  * hard to scan and harder to hit. A list of sentences is a list.
  */
-.hud-moon-list {
-  display: flex; flex-direction: column; gap: var(--space-2);
-  list-style: none; margin: 0; padding: 0;
-}
-.hud-moon {
-  display: flex; width: 100%; align-items: center; gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  min-height: var(--control-h-sm);
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-full);
-  color: var(--ink-muted);
-  font: inherit; font-size: 0.75rem;
-  cursor: pointer;
-}
-.hud-moon:hover { border-color: var(--line-strong); color: var(--ink); }
-.hud-moon:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* Selected reads three ways -- border, colour, and a filled dot -- so colour is
    never the only signal. */
-.hud-moon.is-on { border-color: var(--accent); color: var(--accent); }
-.hud-moon.is-on .hud-dot { background: var(--accent); }
-.hud-moon-level { color: var(--ink-faint); }
-
-.hud-head { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--space-3); align-items: center; }
 
 /* The Act chip. A roman numeral — see PlanetHud.tsx for why it is not a name. */
-.hud-act {
-  grid-row: span 2;
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--enc-edge, var(--line));
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--enc-accent, var(--accent));
-}
 
-.hud-eyebrow { margin: 0; font-size: 0.72rem; color: var(--ink-muted); letter-spacing: 0.08em; }
 .hud h2 { margin: 0; font-size: 1.05rem; line-height: 1.25; }
 
-.hud-state {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: var(--space-3) 0 0;
-  font-weight: 600;
-}
 /* Shape carries state as well as colour — colour is never the only signal. */
-.hud-glyph { color: var(--enc-accent, var(--accent)); }
-.hud-state-locked .hud-glyph { color: var(--ink-faint); }
-.hud-pct { margin-left: auto; color: var(--ink-muted); }
 
 /* Printed, always. Never a tooltip. The mandate calls a lock with no visible
    reason the single most demotivating element in ed-tech. */
-.hud-lock-reason {
-  margin: var(--space-2) 0 0;
-  padding-left: var(--space-3);
-  border-left: 2px solid var(--line);
-  color: var(--ink-muted);
-  font-size: 0.88rem;
-}
 
-.hud-summary {
-  display: flex;
-  gap: var(--space-2);
-  margin: var(--space-3) 0 0;
-  font-size: 0.88rem;
-  color: var(--ink-muted);
-}
 /* The pictogram speeds recognition; it does not replace the sentence. */
-.hud-pictogram {
-  flex: 0 0 auto;
-  width: 0.85rem;
-  height: 0.85rem;
-  margin-top: 0.2rem;
-  border: 1px solid var(--enc-accent, var(--accent));
-  border-radius: 2px;
-}
 
 /*
  * `.hud-moons` was declared TWICE -- once above as a plain block, and again
@@ -1418,38 +630,6 @@
  * the dots became buttons. `.hud-dot` survives because each moon still carries
  * one as its selected/unselected mark.
  */
-.hud-dot {
-  flex: none;
-  width: 5px; height: 5px;
-  margin-top: 0.45rem;
-  border-radius: var(--radius-full);
-  background: var(--ink-faint);
-}
-
-.hud-prereq { margin: var(--space-3) 0 0; font-size: 0.85rem; color: var(--ink-muted); }
-
-.hud-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
-.hud-enter {
-  background: var(--accent);
-  color: var(--accent-fg);
-  border: 0;
-  border-radius: var(--radius-sm);
-  min-height: var(--control-h-md);
-  padding: 0 var(--space-4);
-  font: inherit;
-  cursor: pointer;
-}
-.hud-close {
-  background: none;
-  color: var(--ink-muted);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  min-height: var(--control-h-md);
-  padding: 0 var(--space-3);
-  font: inherit;
-  cursor: pointer;
-}
-.hud-enter:focus-visible, .hud-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (max-width: 640px) {
   /* A narrow portrait phone: full width, docked to the bottom. */
@@ -1469,51 +649,9 @@
  * `role="status"` + `aria-live="polite"` so a screen-reader user is told too,
  * without interrupting whatever they were reading.
  */
-.formation {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin: 0 0 var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--surface-1);
-  font-size: 0.9rem;
-}
-
-.formation-mark {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--radius-full);
-  background: var(--accent);
-  animation: formation-settle var(--dur-bringup) var(--ease-out);
-}
 
 /* One settle, once, then still. Not a loop -- a pulsing dot in the corner is
    noise by the third stage. */
-@keyframes formation-settle {
-  from { transform: scale(2.4); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
-
-.formation-dismiss {
-  margin-left: auto;
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--ink-muted);
-  min-height: var(--control-h-sm);
-  padding: 0 var(--space-3);
-  font: inherit;
-  cursor: pointer;
-}
-.formation-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .formation-mark { animation: none; }
-}
-
 /*
  * The collapsed stage list on /app.
  *
@@ -1521,30 +659,6 @@
  * focusable, still complete. `/app/map` renders the same list permanently open,
  * which is the route the accessibility contract actually points at.
  */
-.act-list-fold {
-  position: relative;
-  z-index: 1;
-  margin-top: var(--space-5);
-}
-
-.act-list-fold > summary {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-full);
-  background: color-mix(in oklab, var(--surface-0) 78%, transparent);
-  backdrop-filter: blur(3px);
-  color: var(--ink-muted);
-  cursor: pointer;
-  list-style: none;
-}
-.act-list-fold > summary::-webkit-details-marker { display: none; }
-.act-list-fold > summary::after { content: "▾"; }
-.act-list-fold[open] > summary::after { content: "▴"; }
-.act-list-fold > summary:hover { color: var(--ink); }
-.act-list-fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* --------------------------------------------------------------
  * Loading states — the backdrop moving through them
@@ -1559,30 +673,6 @@
  * whole point of §4.1's budget note is that a loading state must never itself
  * become the reason a page feels slow.
  */
-.solar-backdrop {
-  transition:
-    transform var(--dur-base) var(--ease-out),
-    filter var(--dur-base) var(--ease-out),
-    opacity var(--dur-base) var(--ease-out);
-}
-
-.solar-backdrop.is-warping {
-  transform: scale(1.12);
-  filter: blur(2px) brightness(1.25);
-  opacity: 0.7;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* Skipped, not slowed. The hook already declines to set the class; this is
-     the second belt, for a preference that changes mid-session. */
-  .solar-backdrop,
-  .solar-backdrop.is-warping {
-    transition: none;
-    transform: none;
-    filter: none;
-    opacity: 1;
-  }
-}
 
 /*
  * §4.2 stage/moon loading. The destination biome arriving early, which is also
@@ -1607,77 +697,10 @@
  * Stage list — progress and planet marks, not paragraphs
  * ------------------------------------------------------------ */
 
-.stages-page { max-width: 52rem; }
-
-.stage-list { list-style: none; margin: var(--space-5) 0 0; padding: 0; }
-
-.stage-row + .stage-row { margin-top: var(--space-2); }
-
-.stage-row-btn {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  width: 100%;
-  padding: var(--space-3);
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.app-over-solar .stage-row-btn {
-  /* Each row carries its own ground rather than the list carrying one big
-     panel: the list is 19 rows tall and scrolls over a moving star field, and a
-     single block would either clip the scene or stretch past the content. */
-  background: color-mix(in oklab, var(--surface-0) 84%, transparent);
-  backdrop-filter: blur(3px);
-}
-.stage-row-btn:hover { border-color: var(--line-strong); }
-.stage-row-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
 /* The planet mark uses the same visual language as the scene: filled when
    mastered, outlined when reachable, dashed when its body has not formed. */
-.stage-planet {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  margin-top: 3px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--line-strong);
-}
-.stage-planet-mastered { background: var(--accent); border-color: var(--accent); }
-.stage-planet-in_progress { background: var(--ink-muted); }
-.stage-planet-available { background: var(--ink); border-color: var(--ink); }
-.stage-planet-locked { border-style: dashed; opacity: 0.6; }
-
-.stage-row-main { min-width: 0; flex: 1; }
-.stage-row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
-.stage-row-id { font-size: 0.75rem; color: var(--ink-faint); }
-.stage-row-title { font-weight: 600; }
-.stage-row-state { margin-left: auto; font-size: 0.75rem; color: var(--ink-muted); }
-.stage-row-state-mastered { color: var(--accent); }
-
-.stage-bar {
-  display: block;
-  height: 3px;
-  margin: var(--space-2) 0 0;
-  background: var(--surface-2);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-.stage-bar-fill { display: block; height: 100%; background: var(--ink-muted); }
-.stage-bar-mastered { background: var(--accent); }
-.stage-bar-locked { background: var(--locked); }
 
 /* Printed, always. Never a tooltip. */
-.stage-row-lock {
-  display: block;
-  margin-top: var(--space-2);
-  font-size: 0.8rem;
-  color: var(--ink-muted);
-}
 
 /* --------------------------------------------------------------
  * First run, and the rotate invitation
@@ -1689,35 +712,6 @@
  * dialog — it does not dim the page, does not trap focus, and can be ignored
  * entirely while the rest of the map stays usable.
  */
-.first-run {
-  position: relative;
-  z-index: 2;
-  max-width: 24rem;
-  margin: 0 0 var(--space-4);
-  padding: var(--space-4);
-  background: color-mix(in oklab, var(--surface-1) 92%, transparent);
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-sm);
-}
-.first-run-step { margin: 0 0 var(--space-1); font-size: 0.72rem; color: var(--ink-faint); }
-.first-run-title { margin: 0 0 var(--space-2); font-size: 1rem; }
-.first-run-body { margin: 0; font-size: 0.88rem; color: var(--ink-muted); }
-.first-run-actions { display: flex; gap: var(--space-2); margin-top: var(--space-4); }
-.first-run-next {
-  background: var(--accent); color: var(--accent-fg); border: 0;
-  border-radius: var(--radius-sm); min-height: var(--control-h-sm);
-  padding: 0 var(--space-4); font: inherit; cursor: pointer;
-}
-.first-run-skip {
-  background: none; color: var(--ink-muted); border: 1px solid var(--line);
-  border-radius: var(--radius-sm); min-height: var(--control-h-sm);
-  padding: 0 var(--space-3); font: inherit; cursor: pointer;
-}
-.first-run-next:focus-visible, .first-run-skip:focus-visible,
-.first-run-replay:focus-visible,
-.rotate-prompt-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /*
  * The replay button, in the dismissed panel's own slot.
@@ -1727,28 +721,6 @@
  * Quiet by default and accented on hover: it is an offer, not a call to action,
  * and a permanently bright `?` beside a map is visual noise every single visit.
  */
-.first-run-replay {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  margin: 0 0 var(--space-4);
-  background: color-mix(in oklab, var(--surface-1) 92%, transparent);
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  color: var(--ink-muted);
-  font: inherit;
-  font-size: 1rem;
-  cursor: pointer;
-}
-.first-run-replay:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
 
 /*
  * The rotate invitation. It ASKS: the web cannot force orientation
@@ -1756,44 +728,6 @@
  * a component claiming to force landscape would silently do nothing on half the
  * devices it targets.
  */
-.rotate-prompt {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin: 0 0 var(--space-4);
-  padding: var(--space-3);
-  background: color-mix(in oklab, var(--surface-1) 92%, transparent);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-}
-.rotate-prompt-text { flex: 1; color: var(--ink-muted); }
-.rotate-prompt-text strong { color: var(--ink); }
-.rotate-prompt-dismiss {
-  background: none; color: var(--ink-muted); border: 1px solid var(--line);
-  border-radius: var(--radius-sm); min-height: var(--control-h-sm);
-  padding: 0 var(--space-3); font: inherit; cursor: pointer; white-space: nowrap;
-}
-
-.rotate-prompt-icon { flex: 0 0 auto; display: grid; place-items: center; width: 28px; height: 28px; }
-.rotate-prompt-phone {
-  width: 14px; height: 22px;
-  border: 1.5px solid var(--accent);
-  border-radius: 3px;
-  /* Turns once, then rests. A looping hint in the corner is noise by the
-     second visit -- this is a suggestion, not an alert. */
-  animation: rotate-hint 1.6s var(--ease-inout) 0.4s 2;
-}
-@keyframes rotate-hint {
-  0%, 40% { transform: rotate(0deg); }
-  60%, 100% { transform: rotate(-90deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rotate-prompt-phone { animation: none; transform: rotate(-90deg); }
-}
 
 /*
  * The first-run placeholder disclaimer.
@@ -1802,16 +736,6 @@
  * as scaffolding, not as a designed element, so nobody grows fond of it and
  * leaves it in. It goes when the real copy lands.
  */
-.first-run-placeholder {
-  margin: 0 0 var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-sm);
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
 
 /*
  * A moon row: the objective's sentence first, its code and ring beneath.
@@ -1820,10 +744,6 @@
  * stays because a student cross-referencing the stage reader needs it, and it
  * stays in mono per the type roles in root CLAUDE.md.
  */
-.hud-moon { align-items: flex-start; text-align: left; border-radius: var(--radius-sm); }
-.hud-moon-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.hud-moon-desc { line-height: 1.35; }
-.hud-moon-meta { display: flex; gap: var(--space-2); font-size: 0.72rem; color: var(--ink-faint); }
 
 /*
  * Act grouping on /app/stages — where the act text went when it left the map.
@@ -1832,36 +752,8 @@
  * grouping (DESIGN-REVIEW-01 D-3), and a wrong name is worse than none because
  * a student would plan around it.
  */
-.stage-acts { display: flex; flex-direction: column; gap: var(--space-6); }
-.stage-act { display: flex; flex-direction: column; gap: var(--space-3); }
-.act-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--line);
-}
-.act-head-numeral {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2rem;
-  min-height: 2rem;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-display, inherit);
-  color: var(--ink-muted);
-}
-.act-head-main { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
-.act-head-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
-.act-head-title { font-weight: 600; }
-.act-head-range { color: var(--ink-faint); font-weight: 400; font-size: 0.8rem; }
-.act-head-count { margin-left: auto; font-size: 0.78rem; color: var(--ink-muted); }
-.stage-bar-act { background: var(--accent); }
 
 /* The Finals' scope note. Quieter than the name, louder than nothing. */
-.act-head-note { color: var(--ink-faint); font-weight: 400; font-size: 0.78rem; }
 
 /*
  * Painted strip packs opt out of pixelation.
@@ -1885,12 +777,6 @@
  * must be able to leave a stage, read the Register Bar and see the Depth Gauge
  * no matter what scenery is behind them.
  */
-.app-nav,
-.register-bar,
-.depth-gauge {
-  position: relative;
-  z-index: 2;
-}
 
 /*
  * ...and the frame stays READABLE over it.
@@ -1905,16 +791,6 @@
  * actually have a biome — on the hub the solar backdrop is dark and quiet by
  * construction, and this would be a second panel for no reason.
  */
-.app-over-biome-page .register-bar,
-.app-over-biome-page .app-nav {
-  background: color-mix(in oklab, var(--surface-0) 90%, transparent);
-  backdrop-filter: blur(4px);
-}
-.app-over-biome-page .depth-gauge {
-  background: color-mix(in oklab, var(--surface-0) 82%, transparent);
-  backdrop-filter: blur(4px);
-  border-radius: var(--radius-sm);
-}
 
 /* ═══ Scattered biome sprites — breaking the tile ════════════════════════════
  *
@@ -2137,6 +1013,4 @@
 .toast-close:hover { color: var(--ink); }
 
 /* The Register Bar, live: PC during a paper. */
-.register-cell-live .register-value { animation: none; opacity: 1; color: var(--ink); }
-.register-cell-live .register-name { color: var(--ink); }
 

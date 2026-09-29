@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import type { StageNode } from "../lib/api";
+import { ACT_NOTE } from "../lib/acts";
 import { nextStage } from "../lib/next-stage";
 import { useDelayed } from "../lib/useDelayed";
 import { useCosmetics } from "../solar-system/cosmetic-seed";
@@ -158,6 +159,7 @@ function Stages({ nodes: raw }: { nodes: StageNode[] }): JSX.Element {
                     <span className="stages-system-range mono">
                       {group[0]?.id}–{group[group.length - 1]?.id}
                     </span>
+                    {ACT_NOTE[act] && <span className="stages-system-note">{ACT_NOTE[act]}</span>}
                     <span className="stages-system-count">
                       <span className="mono">{done}</span> of <span className="mono">{group.length}</span> mastered
                     </span>

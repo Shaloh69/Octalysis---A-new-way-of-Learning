@@ -97,6 +97,12 @@ test.describe("/app/stages — what the list owes", () => {
     await expect(page.locator('[data-stage-row][data-state="locked"]').first()).toBeVisible();
   });
 
+  test("the Finals says it is cumulative, on its system row (lib/acts.ts)", async ({ page }) => {
+    await stages(page);
+    await expect(page.locator(".stages-system").last()).toContainText(/Finals/);
+    await expect(page.locator(".stages-system").last().locator(".stages-system-note")).toHaveText(/cumulative/);
+  });
+
   test("every locked row prints the server's reason, on the row, never behind a hover", async ({ page, request }) => {
     await stages(page);
     const res = await request.get(`${process.env.OCTA_API_URL ?? "http://localhost:8090"}/api/v1/stages`, {
