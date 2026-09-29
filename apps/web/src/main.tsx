@@ -13,6 +13,7 @@ import "./styles/stages.css";
 import "./styles/progress.css";
 import "./styles/work.css";
 import "./styles/settings.css";
+import "./styles/title.css";
 
 applyStoredAccent();
 setTokenProvider(getAccessToken);

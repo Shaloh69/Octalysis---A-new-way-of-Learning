@@ -1,0 +1,159 @@
+/* ============================================================
+   The title screen — Starfield's main menu (WEB-REMAKE.md §8 row 10)
+   /login, /register, /maintenance and the 404. The star realm.
+   ============================================================ */
+
+.title {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  color: var(--ink);
+  background: var(--surface-0);
+}
+/* The planet's limb, right of centre: a lit edge and its haze. */
+.title-limb {
+  position: absolute;
+  top: 50%;
+  left: 62%;
+  width: 150vmax;
+  height: 150vmax;
+  transform: translateY(-50%);
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle at 20% 50%, var(--caption-bg), var(--surface-1) 45%, var(--surface-0) 70%);
+  box-shadow: -2px 0 0 var(--frame-light), -24px 0 80px color-mix(in oklab, var(--caption-bg) 60%, transparent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.title-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr) minmax(16rem, 26rem);
+  grid-template-areas: "left mark card";
+  align-items: center;
+  width: min(90rem, 100%);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-6);
+}
+
+/* ---- the menu ---- */
+.title-left { grid-area: left; display: grid; gap: var(--space-4); align-self: center; }
+.title-menu ul { display: grid; gap: var(--border-hair); margin: 0; padding: 0; list-style: none; }
+.title-menu a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-1) var(--space-4);
+  font-family: var(--font-hud);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--surface-2);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.title-menu a:hover { background: var(--surface-3); }
+.title-menu a.is-current { background: var(--lit-bg); color: var(--lit-ink); }
+.title-menu a:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+
+.title-panel { min-width: 0; }
+.title-panel-body { padding: var(--space-4); display: grid; gap: var(--space-3); }
+.title-form { display: grid; }
+.title-form .field-label:first-child { margin-top: 0; }
+.title-form .field:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 1px; }
+.title-go { width: 100%; margin-top: var(--space-4); }
+.title-alt, .title-done { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); }
+.title-done { font-size: var(--text-base); color: var(--ink); }
+.title-alt a, .title-panel-body a:not(.button) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.title-warn { color: var(--warning); }
+.title-fault {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  background: var(--warning-bg);
+  border-left: var(--border-thick) solid var(--warning);
+}
+.title-fault-tag {
+  font-family: var(--font-hud);
+  font-weight: 600;
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+}
+
+/* ---- the mark ---- */
+.title-mark { grid-area: mark; position: relative; display: grid; place-items: center; aspect-ratio: 1; width: min(24rem, 100%); justify-self: center; }
+.title-ring {
+  position: absolute;
+  inset: 0;
+  border: 0.35rem solid var(--ink);
+  border-radius: var(--radius-full);
+}
+.title-word {
+  position: relative;
+  /* letter-spacing trails the last letter; the same on the left centres it. */
+  padding-left: 0.35em;
+  font-family: var(--font-hud);
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  color: var(--ink);
+}
+
+/* ---- the card ---- */
+.title-card {
+  grid-area: card;
+  align-self: start;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-0);
+  border: var(--border-hair) solid var(--frame);
+}
+.title-card-title {
+  margin: 0 0 var(--space-3);
+  padding-bottom: var(--space-2);
+  font-family: var(--font-hud);
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  border-bottom: var(--border-hair) solid var(--line-strong);
+}
+.title-card-body { display: grid; gap: var(--space-2); font-size: var(--text-sm); color: var(--ink); }
+.title-card-body p { margin: 0; }
+.title-status { display: grid; gap: var(--space-2); margin: 0; }
+.title-status div { display: flex; justify-content: space-between; gap: var(--space-3); }
+.title-status dt { color: var(--ink-muted); }
+.title-status dd { margin: 0; font-family: var(--font-hud); letter-spacing: var(--tracking-hud); text-transform: uppercase; }
+
+.title-foot {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+}
+
+/* ---- narrower: the mark above, the menu and panel, then the card ---- */
+@media (max-width: 1099px) {
+  .title-grid {
+    grid-template-columns: minmax(0, 32rem);
+    grid-template-areas: "mark" "left" "card";
+    justify-content: center;
+    gap: var(--space-5);
+    padding: var(--space-6) var(--space-4);
+  }
+  .title-mark { width: min(12rem, 60vw); }
+  .title-word { font-size: clamp(1.75rem, 9vw, 2.5rem); }
+  .title-card { align-self: stretch; }
+  .title-limb { left: 55%; top: 10%; opacity: 0.4; }
+}
+@media (max-width: 640px) {
+  .title-menu a { font-size: var(--text-base); }
+  .title-foot { padding: var(--space-3) var(--space-4); }
+}
