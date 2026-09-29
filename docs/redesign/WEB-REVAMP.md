@@ -60,13 +60,17 @@ it is done when it does these things.
 
 ### `/app/stage/:id` — the reader
 
+**Rebuilt 29 Sep 2026** (`design/templates/web/stage/SPEC.md`), on the instructor's rulings of that day.
+
 | Feature | State |
 |---|---|
-| **Leave / finish the stage** | **missing.** No control exists |
-| **Reverse travel transition** back to the map | **missing** — a known gap, now visible |
-| Mark a block read, resume where you left off | missing |
-| The Bring-Up moment on completion | not visible |
-| Objectives, prose, figures | works |
+| **Leave / finish the stage** | **done**: *Back to the map* at the top and the end. **No Finish button, by ruling**: the end says what finishes a stage (its check reaching the API's threshold; "no check" where there is none). `stage_progress` stays the grading service's |
+| **Reverse travel transition** back to the map | **done**: the page fades, then the map; a cut under reduced motion (`motion.md`) |
+| Mark a block read, resume where you left off | **resume done, per device** (ruling): the rail follows the section on screen; *You were reading: …* with **Resume**. No per-block mark: it would only change a number |
+| The Bring-Up moment on completion | **deferred** (ruling): completion happens when a check is graded, in the runner, not in the reader |
+| The lock card: prerequisite and current mastery | **done**: the API's own `lockReason`, verbatim, with *Go to Stage NN* |
+| Right rail / bottom sheet | **done**: sections with `Section N of M`, objectives. **Glossary and add-to-notebook deferred** (ruling): no glossary data exists and hard rule 5 forbids writing one here; no notebook table or `/app/notebook` |
+| Objectives, prose, figures | **rebuilt**: headings, wrapped lists, tables, quotes with their source, numbers in mono (`lib/markdown.ts`); figures verbatim and fitted to 380 |
 
 ### `/app/stage/:id/check` — the attempt runner
 

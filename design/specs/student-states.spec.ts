@@ -75,7 +75,8 @@ test.describe("the stage reader — its six states", () => {
     await signIn(page);
     await page.goto("/app/stage/12", { waitUntil: "networkidle" });
 
-    const locked = page.locator(".state-locked");
+    // The rebuilt reader's hook (29 Sep 2026); the assertions are unchanged.
+    const locked = page.locator('[data-reader="locked"]');
     await expect(locked).toBeVisible();
 
     // The reason, in words, not a code.
@@ -101,7 +102,7 @@ test.describe("the stage reader — its six states", () => {
     await page.route("**/api/v1/stages/**", (r) => r.abort("failed"));
     await page.goto("/app/stage/05", { waitUntil: "domcontentloaded" });
 
-    const err = page.locator(".state-error");
+    const err = page.locator('[data-reader="error"]');
     await expect(err).toBeVisible({ timeout: 15_000 });
 
     // A way forward, not just a diagnosis.
@@ -136,7 +137,7 @@ test.describe("the stage reader — its six states", () => {
 
     await page.goto("/app/stage/05", { waitUntil: "domcontentloaded" });
 
-    const loading = page.locator(".state-loading");
+    const loading = page.locator('[data-reader="loading"]');
     await expect(loading).toBeVisible({ timeout: 10_000 });
     // The text equivalent: a screen-reader user is told the same thing.
     await expect(loading).toContainText(/loading|arriving/i);

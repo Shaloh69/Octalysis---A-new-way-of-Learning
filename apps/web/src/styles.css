@@ -633,95 +633,14 @@ button {
 }
 
 /* --------------------------------------------------------------
- * Reader
+ * Page eyebrow. Was the old reader's; /app/stages, /app/work and /app/settings
+ * still use it. The stage reader has its own (`.rd-eyebrow`, end of file).
  * ------------------------------------------------------------ */
-.reader {
-  max-width: 68ch;
-  position: relative;
-  z-index: 1;
-}
-
-.reader-back {
-  background: none;
-  border: 0;
-  padding: 0.3rem 0;
-  color: var(--ink-dim);
-}
-
 .reader-eyebrow {
   color: var(--ink-dim);
   letter-spacing: 0.12em;
   margin: 0;
   font-size: 0.78rem;
-}
-
-.reader-meta {
-  color: var(--ink-dim);
-  font-size: 0.85rem;
-  margin-top: 0;
-}
-
-.reader-objectives {
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  padding: 1rem 1.15rem;
-  margin: 1.5rem 0;
-}
-.reader-objectives h2 {
-  font-size: 0.85rem;
-  color: var(--ink-dim);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.reader-objectives ul {
-  margin: 0;
-  padding-left: 1.1rem;
-}
-.obj-id {
-  color: var(--ink-dim);
-  font-size: 0.8rem;
-  margin-right: 0.3rem;
-}
-
-.block-brief {
-  font-size: 1.05rem;
-  color: var(--ink-dim);
-  border-left: 3px solid var(--accent);
-  padding-left: 1rem;
-  margin: 1.5rem 0;
-}
-
-.block-code {
-  margin: 1.5rem 0;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  overflow: hidden;
-}
-.block-code pre {
-  margin: 0;
-  padding: 1rem;
-  overflow-x: auto;
-  background: var(--surface);
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-.block-code figcaption {
-  padding: 0.5rem 1rem;
-  border-top: 1px solid var(--rule);
-  color: var(--ink-dim);
-  font-size: 0.8rem;
-}
-
-.block-callout {
-  margin: 1.5rem 0;
-  padding: 1rem 1.15rem;
-  border: 1px solid var(--rule);
-  border-left: 3px solid var(--ink-dim);
-  border-radius: 4px;
-  background: var(--surface);
-}
-.block-callout p:last-child {
-  margin-bottom: 0;
 }
 
 /* --------------------------------------------------------------
@@ -815,62 +734,6 @@ button {
 
 .state-error {
   border-left: 3px solid var(--danger, var(--ink-dim));
-}
-
-.state-locked {
-  background: var(--surface);
-}
-
-/*
- * ARRIVING — the stage-loading state, sitting on the destination biome.
- * `BIOME-AND-LOADING-SPEC.md` §4.2.
- *
- * It needs its own surface because the plain `.state` box is a bordered card on
- * the page background, and here the page background is a landscape. Skeletons
- * drawn straight onto a forest read as debris; the same panel treatment the
- * loaded reader uses is what makes them read as content about to arrive.
- *
- * Deliberately the SAME geometry as the loaded state — same max-width, same
- * padding, same rhythm — because the whole point of a skeleton is that nothing
- * jumps when the real thing replaces it.
- */
-.state-arriving {
-  background: color-mix(in oklab, var(--surface-1) 88%, transparent);
-  border-color: color-mix(in oklab, var(--line) 70%, transparent);
-  backdrop-filter: blur(2px);
-  max-width: 60ch;
-}
-
-/*
- * The skeletons fade rather than pulse while arriving.
- *
- * A pulsing skeleton says "something is happening here". Over a biome that is
- * already visibly resolving, the biome says it better, and two attention-seeking
- * animations for one navigation is exactly the budget §4.2b spends on the motif.
- */
-/*
- * Skeletons need their OWN fill over a biome.
- *
- * `.skel` is `var(--surface)` and `.state-arriving` is `--surface-1` — the same
- * value in two of the three themes, so the bars were invisible: the panel looked
- * empty and the arrival read as a broken page rather than a loading one. On the
- * page background those two do differ, which is why nobody had noticed.
- *
- * No pulse. Over a biome that is visibly resolving, the biome already says
- * "something is happening"; a second animation for one navigation spends the
- * budget §4.2b reserves for the motif.
- */
-.state-arriving .skel {
-  animation: none;
-  background: color-mix(in oklab, var(--ink) 14%, transparent);
-}
-
-/* The objectives list and the brief, as blocks rather than loose bars — the
-   reader has three surfaces and so does this. */
-.arriving-block {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid color-mix(in oklab, var(--line) 60%, transparent);
 }
 
 .state-error button {
@@ -1122,19 +985,6 @@ button {
 
 /* THE ATTEMPT RUNNER: see the CHECK block at the end of this file (rebuilt 29 Sep 2026). */
 
-/* ---------------------------------------------------------- check card */
-.check-card {
-  margin-top: var(--space-7);
-  padding: var(--space-5);
-  background: var(--surface-1);
-  border: var(--border-hair) solid var(--line-strong);
-  border-radius: var(--radius-md);
-}
-.check-card h2 { font-family: var(--font-display); margin: 0 0 var(--space-2); }
-.check-meta { font-size: var(--text-xs); color: var(--ink-muted); margin: 0 0 var(--space-3); }
-.check-blurb { color: var(--ink-muted); font-size: var(--text-sm); margin: 0 0 var(--space-4); }
-.check-note { color: var(--warning); font-size: var(--text-sm); margin: 0 0 var(--space-3); }
-
 /* ============================================================
    SETTINGS
    ============================================================ */
@@ -1262,25 +1112,6 @@ button {
 .encounter h2, .encounter h3 { color: var(--enc-ink); font-family: var(--font-display); }
 .encounter a { color: var(--enc-accent); }
 
-/* A chapter whose teaching text is still to come. Distinct from a callout on
-   purpose -- an unfinished chapter must never read as a finished one. */
-.block-planned {
-  margin: var(--space-6) 0;
-  padding: var(--space-5);
-  background: var(--info-bg);
-  border: var(--border-hair) solid var(--info);
-  border-left: var(--border-thick) solid var(--info);
-  border-radius: var(--radius-md);
-}
-.block-planned-tag {
-  font-size: var(--text-xs);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--info);
-  margin: 0 0 var(--space-3);
-}
-.block-planned p { color: var(--ink); }
-
 /* The boot panel stacks above the fixed backdrop (z-index 0). Without this the
  * backdrop's own stacking context would paint the grid over the form. */
 .boot { position: relative; z-index: 1; }
@@ -1360,19 +1191,6 @@ button {
   position: relative;
   z-index: 1;
 }
-.app-over-biome .reader {
-  position: relative;
-  z-index: 1;
-}
-.app-over-biome .reader-head,
-.app-over-biome .reader-body,
-.app-over-biome .reader-objectives {
-  background: color-mix(in oklab, var(--surface-0) 88%, transparent);
-  backdrop-filter: blur(3px);
-  border-radius: var(--radius-sm);
-  padding: var(--space-4);
-}
-
 .biome-layer {
   position: absolute;
   inset: 0;
@@ -2825,3 +2643,268 @@ button {
 /* The Register Bar, live: PC during a paper. */
 .register-cell-live .register-value { animation: none; opacity: 1; color: var(--ink); }
 .register-cell-live .register-name { color: var(--ink); }
+
+/* ============================================================
+   STAGE READER, /app/stage/:id
+   Rebuilt 29 Sep 2026 against design/templates/web/stage/ (SPEC.md there,
+   MDN's article page). One reading column and a sticky rail at 1440; one
+   column and a bottom sheet at 380. Tokens only. The biome is the page's
+   background (BIOME-AND-LOADING-SPEC §1b); the words sit on opaque token
+   surfaces over it, never on the art. Accent marks the student's own place
+   (the current section) and nothing else: a seeded accent can be red.
+   ============================================================ */
+
+.rd-page { position: relative; }
+/* The reverse travel transition. Opacity only: a transform here would make this
+   the containing block of the biome's `position: fixed` and drag the scene. */
+.rd-page.rd-leaving { animation: reader-leave var(--dur-base) var(--ease-inout) forwards; }
+@keyframes reader-leave { to { opacity: 0; } }
+
+/* Lets the biome recede behind the reading rather than compete with it. */
+.rd-scrim {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: color-mix(in oklab, var(--surface-0) 40%, transparent);
+}
+
+/* z-index 2, level with the shell's nav (which is z 2 inside <main>, NEXT-SESSION §0p.2):
+   later in the DOM, so the 380 sheet opens OVER the nav rather than under it. */
+.rd { position: relative; z-index: 2; color: var(--ink); }
+.rd a { color: var(--ink); }
+
+.rd-frame {
+  display: grid; gap: var(--space-5); align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1024px) {
+  .rd-frame { grid-template-columns: minmax(0, 46rem) 17rem; justify-content: center; gap: var(--space-6); }
+  .rd-frame-single { grid-template-columns: minmax(0, 46rem); }
+}
+
+.rd-column {
+  min-width: 0; background: var(--surface-0);
+  border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-7) var(--space-7);
+}
+.rd-enter { animation: reader-enter var(--dur-base) var(--ease-out); }
+@keyframes reader-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---- head ---- */
+/* inline-block, not inline-flex: a flex item trims the space between "Go to Stage" and its number. */
+.rd-back {
+  display: inline-block; padding: var(--space-3) 0; min-height: 44px; margin: calc(-1 * var(--space-3)) 0 var(--space-3);
+  color: var(--ink-muted); text-decoration: none; font-size: var(--text-sm);
+}
+.rd a.rd-back { color: var(--ink-muted); }
+.rd a.rd-back:hover { color: var(--ink); text-decoration: underline; }
+.rd-head { margin-bottom: var(--space-5); }
+.rd-eyebrow { font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 var(--space-1); }
+.rd h1 { font-family: var(--font-display); font-size: var(--text-3xl); line-height: var(--lh-3xl); margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
+.rd-meta { margin: 0; color: var(--ink-muted); font-size: var(--text-sm); }
+.rd-stateline {
+  display: inline-block; margin: var(--space-3) 0 0; padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm); color: var(--ink);
+  background: var(--surface-1); border: var(--border-hair) solid var(--line); border-radius: var(--radius-full);
+}
+.rd-resume {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-5); padding: var(--space-2) var(--space-3);
+  background: var(--info-bg); color: var(--ink); border-left: var(--border-thick) solid var(--info); border-radius: var(--radius-sm);
+}
+.rd-empty { color: var(--ink-muted); }
+
+/* ---- the reading ---- */
+.rd-reading { font-size: var(--text-base); line-height: var(--lh-base); }
+.rd-reading p { margin: 0 0 var(--space-4); }
+.rd-h2 {
+  font-family: var(--font-display); font-size: var(--text-xl); line-height: var(--lh-xl);
+  margin: var(--space-7) 0 var(--space-3); padding-top: var(--space-4); border-top: var(--border-hair) solid var(--line);
+  scroll-margin-top: var(--space-4);
+}
+.rd-h2:focus, .rd-anchor:focus, .rd-check:focus { outline: none; }
+.rd-h3 { font-family: var(--font-display); font-size: var(--text-lg); line-height: var(--lh-lg); margin: var(--space-5) 0 var(--space-2); }
+.rd-h4 { font-size: var(--text-base); margin: var(--space-4) 0 var(--space-2); }
+.rd-anchor { scroll-margin-top: var(--space-4); }
+.rd-list { margin: 0 0 var(--space-4); padding-left: var(--space-5); }
+.rd-list li { margin-bottom: var(--space-2); padding-left: var(--space-1); }
+.rd-list li::marker { color: var(--ink-muted); }
+.rd-num { font-size: 0.94em; }
+.rd-code { font-size: 0.9em; padding: 0 var(--space-1); background: var(--surface-2); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+.rd strong { font-weight: 650; }
+
+.rd-brief { font-size: var(--text-lg); line-height: var(--lh-lg); margin-bottom: var(--space-5); }
+.rd-brief p { margin: 0 0 var(--space-3); }
+
+.rd-prose { margin: 0; }
+
+.rd-callout {
+  margin: var(--space-5) 0; padding: var(--space-4) var(--space-5);
+  background: var(--surface-1); border: var(--border-hair) solid var(--line);
+  border-left: var(--border-thick) solid var(--line-strong); border-radius: var(--radius-sm);
+}
+.rd-callout > :last-child, .rd-callout p:last-child { margin-bottom: 0; }
+.rd-planned { background: var(--info-bg); border-color: var(--info); }
+.rd-tag { font-size: var(--text-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); margin: 0 0 var(--space-2); }
+
+/* A quote from the textbook: its own voice, and where it came from. */
+.rd-quote { margin: var(--space-5) 0; padding: var(--space-4) var(--space-5); background: var(--surface-1); border-left: var(--border-thick) solid var(--ink-muted); border-radius: var(--radius-sm); }
+.rd-quote blockquote { margin: 0; font-size: var(--text-lg); line-height: var(--lh-lg); }
+.rd-quote blockquote p:last-child { margin-bottom: 0; }
+.rd-quote figcaption { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--ink-muted); }
+.rd-inset-quote { margin: var(--space-4) 0; padding-left: var(--space-4); border-left: var(--border-thick) solid var(--line-strong); }
+.rd-inset-quote p { margin-bottom: 0; }
+
+/*
+ * A figure, verbatim and never sideways (SPEC "Figures verbatim"). Its mono size
+ * is the smaller of the body's small size and what fits its own longest line:
+ * `--cols` characters at JetBrains Mono's 0.6em advance, over the figure's inner
+ * width (100cqi, less the padding). 0.61 and the 1px keep rounding on the safe
+ * side. At 1440 every figure keeps --text-sm; at 380 the widest one shrinks.
+ */
+.rd-figure {
+  container-type: inline-size; margin: var(--space-5) 0;
+  background: var(--surface-1); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm);
+}
+.rd-figure pre {
+  margin: 0; padding: var(--space-4); white-space: pre;
+  font-size: min(var(--text-sm), calc((100cqi - 2 * var(--space-4) - 1px) / (var(--cols, 40) * 0.61)));
+  line-height: 1.5; color: var(--ink);
+}
+.rd-figure figcaption { padding: var(--space-2) var(--space-4); border-top: var(--border-hair) solid var(--line); font-size: var(--text-sm); color: var(--ink-muted); }
+
+.rd-table-wrap { margin: var(--space-4) 0; }
+.rd-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.rd-table th, .rd-table td {
+  text-align: left; vertical-align: top; padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-hair) solid var(--line); overflow-wrap: anywhere;
+}
+.rd-table thead th { color: var(--ink-muted); font-weight: 600; border-bottom-color: var(--line-strong); }
+.rd-table tbody th { font-weight: 600; }
+
+/* ---- the check and the end ---- */
+.rd-check {
+  margin: var(--space-7) 0 0; padding: var(--space-5);
+  background: var(--surface-1); border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-md);
+  scroll-margin-top: var(--space-4);
+}
+.rd-check h2 { font-family: var(--font-display); font-size: var(--text-xl); margin: 0 0 var(--space-2); }
+.rd-check p { margin: 0 0 var(--space-3); }
+.rd-check-count { color: var(--ink-muted); font-size: var(--text-sm); }
+.rd-check-note {
+  padding: var(--space-2) var(--space-3); background: var(--warning-bg); color: var(--ink);
+  border-left: var(--border-thick) solid var(--warning); border-radius: var(--radius-sm);
+}
+.rd-end { margin-top: var(--space-6); padding-top: var(--space-5); border-top: var(--border-hair) solid var(--line); }
+.rd-end p { margin: 0 0 var(--space-3); }
+.rd-end-title { font-weight: 600; }
+
+/* ---- buttons ---- */
+.rd-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+.rd-btn {
+  display: inline-block; text-align: center; line-height: var(--lh-base);
+  min-height: 44px; padding: calc(var(--space-2) + 1px) var(--space-4);
+  background: var(--surface-2); color: var(--ink); text-decoration: none;
+  border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-sm);
+  font: inherit; cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out);
+}
+.rd a.rd-btn { color: var(--ink); }
+.rd-btn:hover:not(:disabled) { background: var(--surface-3); }
+.rd-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.rd-btn-primary, .rd a.rd-btn-primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+.rd-btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+/* ---- the rail (1440) and the sheet (380) share their contents ---- */
+.rd-rail { display: none; }
+@media (min-width: 1024px) {
+  .rd-rail {
+    display: block; position: sticky; top: var(--space-4);
+    max-height: calc(100vh - 2 * var(--space-4)); overflow-y: auto;
+    background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+    padding: var(--space-5) var(--space-4);
+  }
+}
+.rd-rail-title { font-family: var(--font-display); font-size: var(--text-base); margin: 0 0 var(--space-1); }
+.rd-rail-title:focus { outline: none; }
+.rd-progress { margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--ink-muted); }
+.rd-sections { list-style: none; margin: 0 0 var(--space-5); padding: 0; }
+.rd-sections a {
+  display: block; min-height: 36px; padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm); line-height: var(--lh-sm); color: var(--ink-muted); text-decoration: none;
+  border-left: var(--border-thick) solid var(--line); overflow-wrap: anywhere;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.rd .rd-sections a { color: var(--ink-muted); }
+.rd .rd-sections a:hover { color: var(--ink); background: var(--surface-1); }
+.rd .rd-sections a[aria-current="location"] { color: var(--ink); background: var(--surface-2); border-left-color: var(--accent); font-weight: 600; }
+.rd-rail-sub, .rd-lock-sub { font-size: var(--text-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); margin: 0 0 var(--space-2); font-weight: 600; }
+.rd-lock-sub { margin-top: var(--space-6); }
+.rd-objectives { list-style: none; margin: 0; padding: 0; font-size: var(--text-sm); }
+.rd-objectives li { padding: var(--space-2) 0; border-bottom: var(--border-hair) solid var(--line); }
+.rd-objectives li:last-child { border-bottom: 0; }
+.rd-obj-id { color: var(--ink-muted); margin-right: var(--space-1); }
+
+/*
+ * 380: the Contents pill. STICKY, not fixed: it rides the bottom of the screen
+ * while the reading is in view and settles at the reading's end, above the
+ * shell's "Report a problem" bar, which is in the page flow at the very end
+ * (NEXT-SESSION §0q). A fixed pill sat under that bar there.
+ */
+.rd-pill {
+  position: sticky; bottom: var(--space-4); z-index: 2; justify-self: start;
+  min-height: 44px; padding: var(--space-2) var(--space-4);
+  background: var(--surface-2); color: var(--ink); font: inherit; font-size: var(--text-xs);
+  border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-full);
+  box-shadow: var(--shadow-2); cursor: pointer;
+}
+.rd-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: calc(var(--z-sheet) + 1);
+  max-height: 70vh; overflow-y: auto;
+  padding: var(--space-4) var(--space-4) var(--space-8);
+  background: var(--surface-1); color: var(--ink);
+  border-top: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-md) var(--radius-md) 0 0;
+  box-shadow: var(--shadow-2);
+  animation: reader-sheet var(--dur-base) var(--ease-out);
+}
+.rd-sheet[hidden] { display: none; }
+.rd-sheet-close { position: absolute; top: var(--space-3); right: var(--space-4); }
+@keyframes reader-sheet { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (min-width: 1024px) {
+  .rd-pill, .rd-sheet { display: none; }
+}
+
+/* ---- the lock card ---- */
+.rd-lock-card {
+  padding: var(--space-5); background: var(--locked-bg); color: var(--ink);
+  border: var(--border-hair) solid var(--line); border-left: var(--border-thick) solid var(--locked); border-radius: var(--radius-md);
+}
+.rd-lock-card h2 { font-family: var(--font-display); font-size: var(--text-xl); margin: 0 0 var(--space-2); }
+.rd-reason { font-size: var(--text-lg); line-height: var(--lh-lg); margin: 0 0 var(--space-2); }
+.rd-quiet { color: var(--ink-muted); margin: 0; }
+
+/* ---- states ---- */
+.rd-state p[role="alert"] { margin: 0 0 var(--space-2); }
+.rd-slow {
+  margin: 0 0 var(--space-4); padding: var(--space-2) var(--space-3);
+  background: var(--info-bg); color: var(--ink); border-left: var(--border-thick) solid var(--info); border-radius: var(--radius-sm);
+}
+.rd-skel { background: var(--surface-3); border-radius: var(--radius-sm); }
+.rd-skel-eyebrow { height: 0.75rem; width: 5rem; margin-bottom: var(--space-3); }
+.rd-skel-title { height: 2.5rem; width: 55%; margin-bottom: var(--space-3); }
+.rd-skel-head { height: 1.5rem; width: 45%; margin-bottom: var(--space-4); }
+.rd-skel-line { height: 1rem; width: 100%; margin-bottom: var(--space-3); }
+.rd-skel-block { margin-top: var(--space-6); }
+.rd-skel-rail { padding: var(--space-5) var(--space-4); }
+
+@media (max-width: 640px) {
+  .rd-column { padding: var(--space-4) var(--space-3) var(--space-5); border-radius: var(--radius-sm); }
+  .rd h1 { font-size: var(--text-2xl); line-height: var(--lh-2xl); }
+  .rd-brief { font-size: var(--text-base); line-height: var(--lh-base); }
+  .rd-callout, .rd-quote { padding: var(--space-3); }
+  /* Figures run to the column's edges at 380: every pixel is type size. */
+  .rd-figure { margin-inline: calc(-1 * var(--space-3) + 1px); border-radius: 0; border-inline: 0; }
+  .rd-figure pre { padding: var(--space-3); font-size: min(var(--text-sm), calc((100cqi - 2 * var(--space-3) - 1px) / (var(--cols, 40) * 0.61))); }
+  /* Four columns in ~290px: smaller type and tight cells, so words wrap whole
+     (and hyphenate) rather than splitting "Processor" into "Proce ssor". */
+  .rd-table { font-size: var(--text-xs); }
+  .rd-table th, .rd-table td { padding: var(--space-2) var(--space-1); overflow-wrap: break-word; hyphens: auto; }
+  .rd-check { padding: var(--space-4); }
+}

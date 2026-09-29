@@ -60,7 +60,15 @@ export interface StageDetail {
   archetype: string;
   levels: number[];
   estMinutes: number;
+  /** False for orientation: nothing in it is graded. */
+  gradeable: boolean;
   locked: boolean;
+  /** The map's own state, decided by the server (hard rule 4). */
+  state: "locked" | "available" | "in_progress" | "mastered";
+  /** Best check score at which a stage counts as mastered, from the server. */
+  masteryThreshold: number;
+  /** Why a locked stage is locked, worded by the server; null when open. */
+  lockReason: { kind: string; blockingStages: string[]; message: string } | null;
   mastery?: number;
   objectives: Array<{ id: string; description: string; bloom: string; level?: number; competency?: string }>;
   blocks: ContentBlock[];

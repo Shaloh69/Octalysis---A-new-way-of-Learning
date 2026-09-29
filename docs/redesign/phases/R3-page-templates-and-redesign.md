@@ -970,8 +970,36 @@ thesis deliverable, and right now no phase is accountable for it.
         755 passed, 58 skipped, 1 load race (§0p) that passed 3 of 3 alone; API
         626 passed. `SOURCE.md`, `SPEC.md`, `motion.md`, `current*.png` and
         fifteen state shots per width
-  - [ ] `/app/stage/:id` — the reader (§0j.3's raw `##` and broken lists; no
-        control to leave or finish a stage)
+  - [x] `/app/stage/:id` — **29 Sep 2026** (`design/templates/web/stage/SPEC.md`),
+        against **MDN's article page** (a reading column and an "In this
+        article" rail marking the sections on screen). The named lead,
+        `ui.shadcn.com/blocks`, holds dashboard, sidebar, login and signup
+        blocks and **no reader**: rejected with its capture; shadcn's own docs
+        page considered and not taken (no mark for where you are). The old
+        reader drew **47 `## ` headings with their hashes**, 85 wrapped list
+        lines as run-on paragraphs, 19 table lines as raw pipes, quotes as
+        prose, `p` in `p`; its **back link and lock card were painted UNDER
+        the biome** (static siblings of a fixed scene, and `elementFromPoint`
+        skips `pointer-events: none`, so the first probe missed it); the lock
+        never named the prerequisite; a figure ran 267px off a 380 screen.
+        **Instructor rulings, built:** leave only, with the reverse travel
+        transition, no Finish button, the end says what finishes a stage;
+        **resume per device**; **the lock reason from the server** (the map's
+        own `lockReason`, one function in `routes/stages.ts`, 3 API tests
+        watched failing); a rail of what has data (glossary and notebook
+        deferred: no data, no page). A parser for exactly what the content uses
+        (`lib/markdown.ts`, 12 unit tests, 0 leftovers over every block).
+        Figures fit 380 by their own longest line. Gate:
+        `design/specs/web-stage.spec.ts`, 58 at 1440 and 380, on the real API
+        as two seeded students; red on the old page (and each late assertion
+        watched red on the build before its fix); `arrival.spec.ts` and
+        `student-states.spec.ts` moved to the new hooks, assertions kept;
+        `attempt-runner.spec.ts` now skips LOUDLY on §0e.1's 500 and finds the
+        new "Go to Stage 07 Check". Whole web suite 276 passed, 96 skipped, 0
+        failed; with the stage 07 slice the runner's real-API tests pass; every
+        console spec 756 passed, 58 skipped, 0 failed; API 629 passed.
+        `SOURCE.md`, `SPEC.md`, `motion.md`, and `current*.png`: thirteen
+        state shots at 1440 and fourteen at 380 (the sheet), all opened
   - [ ] `/app/map` — the flat map; its real-DOM keyboard path must not regress
   - [ ] `/app` — the 3D map: §3 selection and zoom, §4 orbital motion
   - [ ] `/app/work` — submissions, 40% of the grade (§0g.4's return)

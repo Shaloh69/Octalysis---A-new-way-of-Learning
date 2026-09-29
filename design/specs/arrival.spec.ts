@@ -47,12 +47,20 @@ async function arriving(page: Page, biome?: string, hold = 4_000): Promise<void>
     await route.continue();
   });
   await page.goto("/app/stage/00", { waitUntil: "domcontentloaded" });
-  await page.locator(".state-arriving").waitFor({ timeout: 15_000 });
+  /*
+   * The rebuilt reader (29 Sep 2026, design/templates/web/stage/SPEC.md) keeps
+   * the arrival: the biome at once, the skeleton after 400ms (the loading
+   * rule), so this waits for the skeleton. Hooks moved from `.state-arriving`
+   * to `[data-reader="loading"]`; every assertion below is unchanged.
+   */
+  await page.locator(ARRIVING).waitFor({ timeout: 15_000 });
   if (biome) {
     await page.evaluate((b) => document.documentElement.setAttribute("data-biome", b), biome);
   }
   await page.waitForTimeout(700);
 }
+
+const ARRIVING = '[data-reader="loading"] [data-skeleton]';
 
 test.describe("arriving at a stage — §4.2", () => {
   test("the destination biome is already there while the stage loads", async ({
@@ -91,10 +99,10 @@ test.describe("arriving at a stage — §4.2", () => {
      * spinner". §4.2 is explicit that a biome preview is the game-native form of
      * that rule rather than an exception to it, so both halves are asserted.
      */
-    await expect(page.locator(".state-arriving")).toBeVisible();
-    expect(await page.locator(".state-arriving .skel").count()).toBeGreaterThanOrEqual(6);
+    await expect(page.locator(ARRIVING)).toBeVisible();
+    expect(await page.locator(`${ARRIVING} .rd-skel`).count()).toBeGreaterThanOrEqual(6);
     expect(
-      await page.locator(".state-arriving .arriving-block").count(),
+      await page.locator(`${ARRIVING} .rd-skel-block`).count(),
       "the reader has three surfaces and so should its skeleton",
     ).toBeGreaterThanOrEqual(2);
 
@@ -106,8 +114,8 @@ test.describe("arriving at a stage — §4.2", () => {
      * have caught by eye, because on the page background those two differ.
      */
     const contrast = await page.evaluate(() => {
-      const skel = document.querySelector(".state-arriving .skel");
-      const panel = document.querySelector(".state-arriving");
+      const skel = document.querySelector('[data-skeleton] .rd-skel');
+      const panel = document.querySelector('[data-skeleton] .rd-column');
       if (!skel || !panel) return null;
 
       /*
@@ -149,7 +157,7 @@ test.describe("arriving at a stage — §4.2", () => {
      * that this is travel to a KNOWN destination — rather than a status word
      * that would describe any fetch on any page.
      */
-    await expect(page.locator(".state-arriving .sr-only")).toHaveText(/arriving at stage 00/i);
+    await expect(page.locator('[data-reader="loading"] .sr-only')).toHaveText(/arriving at stage 00/i);
   });
 
   test("reduced motion freezes it to a static frame", async ({ browser }, testInfo) => {
@@ -189,7 +197,7 @@ test.describe("arriving at a stage — §4.2", () => {
 
     // Definition of done: works at 380px. The biome fills the width there rather
     // than the height (§2e), so the whole scene shows instead of a slice.
-    await expect(page.locator(".state-arriving")).toBeVisible();
+    await expect(page.locator(ARRIVING)).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );

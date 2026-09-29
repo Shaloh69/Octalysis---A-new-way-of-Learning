@@ -928,6 +928,88 @@ send a shape the API never would.
 
 ---
 
+## 0q. Parked by the `/app/stage/:id` revamp — 29 Sep 2026
+
+The second student route (`design/templates/web/stage/SPEC.md`). Found while
+rebuilding the reader and deliberately **not** fixed there. §0a to §0p still
+stand; §0p.1-5 (the shell) are untouched, and item 1 here is one more of them.
+
+1. **"Report a problem" is not a floating pill; it is a full-width bar in the
+   page flow at the very end** (every capture here, 1440 and 380). `.fb-tab`
+   says `position: fixed; right; bottom`, and `.app-has-backdrop > *`
+   (`position: relative; z-index: 1`, same specificity, later in `styles.css`)
+   overrides it. Measured on the build: computed `position: relative`,
+   `z-index: 1`, spanning x −16..1424 at 1440 (its `right`/`bottom` offsets now
+   shift it instead of pinning it). `WEB-REVAMP.md` §9 already named the bar;
+   this is its cause.
+   Shell. The reader's 380 Contents pill is **sticky** rather than fixed
+   because of it (a fixed pill sat under the bar at the page's end); if the
+   shell fixes the tab back to a bottom-right pill, check the reader's pill
+   still clears it (`web-stage.spec.ts` "Contents pill" measures the overlap)
+2. **The "clipped strip on the right edge" (`WEB-REVAMP.md` §1) is a tile seam
+   in the biome art, not clipping.** Measured: every `.biome-layer` spans past
+   the right edge (`[-30..1468]` and wider at 1440), so nothing is uncovered;
+   the strip at x≈1410-1422 is where the desert pack's tile repeats.
+   `BIOME-AND-LOADING-SPEC.md` §2b already records the tiling problem. Biome
+   work, not a reader defect; a `right: -4%` on the layers was tried, changed
+   nothing, and was reverted
+3. **A renamed control turned the runner's real-API tests into SKIPS, with a
+   false reason.** `attempt-runner.spec.ts` found Start by `/^(start|…)/`; the
+   reader's control became "Go to Stage 07 Check", so every test there skipped
+   as "no assessment in the fixture (F-41)". Found by reading the skip
+   reasons, fixed here, and the file now also skips LOUDLY (not red) on §0e.1's
+   500 without the live slice (the 29 Sep handoff said it skipped; measured,
+   two went red). **Read skip REASONS after every rebuild, not only the count**
+4. **`elementFromPoint` skips `pointer-events: none`.** The biome is exactly
+   that, so a naive "is it on top?" probe reported the old reader's back link
+   and lock card on top while both were painted under the scene. The spec's
+   `onTop()` lifts the biome's pointer-events for the question. Any other
+   route proving "nothing covers this" over a biome or backdrop needs the same
+5. **Figures at 380 shrink to their own longest line.** The 73-column figure
+   in stage 07 renders near 7px mono at 380; 55-column ones near 9-10px. That
+   is the honest cost of "verbatim, never sideways" (`SPEC.md`), and pinch zoom
+   works. If it is too small, the fix is authoring (figures of 50 columns or
+   fewer, `content/stages/*.md`) or a "full width" view of one figure: the
+   instructor's call, not a CSS tweak
+6. **The console's `/content` preview still renders the OLD way** (§0j.3):
+   `apps/console/src/lib/content-view.ts` mirrors the old reader, so its
+   preview still shows `## ` and broken lists. `apps/web/src/lib/markdown.ts`
+   is the parser the reader now uses (12 tests); the console could import the
+   same one (a shared package, or a copy with the same tests). Console work
+7. **`GET /api/v1/stages/:id` gained `state`, `gradeable`, `masteryThreshold`
+   and `lockReason`**, the last from the SAME function as the map
+   (`lockReasonFor()` in `routes/stages.ts`). No schema change. A teacher's
+   private override reason is never sent (asserted). Old web builds ignore the
+   new fields, so deploy skew is harmless
+8. **Staff reading a locked stage** get the content with a state line *Closed
+   to students; open to you as staff*. Never seen: apps/web has no staff
+   session locally
+9. **Glossary and add-to-notebook are deferred by ruling** (29 Sep): no
+   glossary data exists anywhere, and hard rule 5 forbids writing one in a
+   page session; no notebook table or `/app/notebook`. PAGE-SPECS still lists
+   both in the rail. When either gets data, the rail has room for it
+10. **The Bring-Up is deferred by ruling**: completion is a grading event (the
+    runner's result, or the map), not something the reader can see happen.
+    `LESSON-PLAN-AND-LEVELS.md`'s BRING-UP and LOG beats have no home yet
+11. **Beats the archetypes declare and the data lacks** (PROBE, SORT, DRILL,
+    TRACE, REMIX, LAB, BUILD, BREAK) are not shown: no block carries them
+    (INV-27 warns on 9 stages). The rail shows Brief, the `##` sections and
+    Check, which every archetype declares and the data holds
+12. **The rail at 1440 scrolls inside itself** when a stage has many
+    objectives (stage 06 has 11): it is sticky with a viewport-high cap.
+    Vertical scroll, allowed by the gate; noted so it is not "found" later
+
+**Available to every route from now on (apps/web):** `lib/markdown.ts`
+(`parseBlocks`, `parseInline`, `numberBlocks`, `sectionsOf`, `sourceLabel`,
+`longestLine`; numbers in running text come back as their own token, for
+mono) and `components/ReaderBlocks.tsx`; `_stage-fixture.ts`' `openStage()`
+(real API, two seeded students, patches only for failed, slow or empty reads);
+and the spec's timing pattern for loading: **record when each state first
+appears with a MutationObserver installed before load, then assert the gaps**.
+A retrying `toHaveCount(0)` waited out a whole 5s load on the first draft.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```
