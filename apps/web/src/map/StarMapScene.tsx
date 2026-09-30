@@ -74,7 +74,6 @@ export interface SceneProps {
   lowQuality: boolean;
   yaw: MutableRefObject<number>;
   dragged: MutableRefObject<boolean>;
-  tag: MutableRefObject<HTMLSpanElement | null>;
   /** The part of the screen the panels leave free, in CSS pixels: the camera
    *  centres and fits the system (or the selected planet) inside it. */
   frame: { x: number; y: number; w: number; h: number } | null;
@@ -663,7 +662,7 @@ function asteroidBelt(
  * selected planet and back out. Fits the system to the screen's aspect, so a
  * portrait phone sees every orbit; shifts the picture right of the side panel
  * on a wide screen. Drag yaws the system (the page owns `yaw`). Also carries
- * the frame-rate guard and the selected planet's name tag.
+ * and the frame-rate guard.
  */
 function Rig(p: SceneProps & { outer: number; positions: MutableRefObject<Map<string, Vector3>> }): null {
   const { camera, size } = useThree();
@@ -709,23 +708,6 @@ function Rig(p: SceneProps & { outer: number; positions: MutableRefObject<Map<st
     const sy = fr.y + fr.h / 2 - H / 2;
     if (Math.abs(sx) > 1 || Math.abs(sy) > 1) persp.setViewOffset?.(W, H, -sx, -sy, W, H);
     else persp.clearViewOffset?.();
-
-    // The selected planet's name tag, Starfield's: positioned, not re-rendered.
-    const tag = p.tag.current;
-    if (tag) {
-      if (selPos) {
-        const v = selPos.clone().project(camera);
-        const x = ((v.x + 1) / 2) * size.width;
-        const y = ((-v.y + 1) / 2) * size.height;
-        // Right of the planet, or left of it when the screen ends first.
-        const tw = tag.offsetWidth;
-        const tx = x + 34 + tw <= W - 8 ? x + 34 : Math.max(8, x - 34 - tw);
-        tag.style.transform = `translate(${Math.round(tx)}px, ${Math.round(y - 12)}px)`;
-        tag.style.visibility = v.z < 1 ? "visible" : "hidden";
-      } else {
-        tag.style.visibility = "hidden";
-      }
-    }
 
     // The frame-rate guard (VISUAL-SYSTEM-3D.md §5, rung 4): lower the
     // picture's cost, never the map. The first 4s are not judged, and a frame

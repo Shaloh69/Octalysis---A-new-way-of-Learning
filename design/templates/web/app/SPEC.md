@@ -28,12 +28,22 @@ The star system: `html[data-realm="star"]`, no `data-biome`.
 - **SYSTEM panel** (the accessible layer): designation, planet count, the
   course, the row of bodies (one radio per planet, grouped by act, named
   "Stage 04 · Cache Memory, locked"), a key to the rings, course mastery as a
-  printed meter, and the next stage.
+  printed meter, and the next stage. **Shown only while no planet is chosen**
+  (instructor, 1 Oct 2026), at every width: choosing one hides it (`hidden`,
+  so its radios stay in the DOM) and moves focus to the body panel's heading;
+  Close brings it back with focus on the planet just left.
 - **BODY panel**: the planet's name, stage and act, its mastery meter (or "Not
   graded"), a stat table (state in words with a padlock when locked, levels,
   kind, time, check), the lock's reason verbatim, the approved summary, its
   moons (objectives, in the syllabus's order), and Enter journey (open) or
-  Show Stage NN (locked). A bottom sheet on a phone.
+  Show Stage NN (locked). A bottom sheet on a phone. While it is open, Left
+  and Right step to the neighbouring planet (the row's arrow keys, carried
+  over, since the row is hidden then).
+- **The name** (instructor, 1 Oct 2026): the chosen planet's title, or "Moon
+  NN.N", centred at the bottom of the free area (above the key hints at 1440,
+  above the sheet at 380), wrapping rather than overflowing. `aria-hidden`:
+  the panel's heading says it to a screen reader. It replaces the tag that
+  followed the planet across the screen.
 
 ## Skins: real textures (1 Oct 2026, the instructor's request)
 
@@ -117,7 +127,11 @@ Loading: the page skeleton until the map arrives (the shell fetches it once).
 Error: `ErrorState` with Try again. No WebGL: the scene is not drawn, a line
 says so, every panel and control remains. Low frame rate: lower quality for
 seven days, never the map. A phone: the scene stays; panels become a top strip
-and a bottom sheet; choosing a planet folds the system panel to its caption.
+and a bottom sheet; choosing a planet hides the system panel, as at 1440.
+
+Captures (1 Oct 2026, reduced motion, opened): `current-chosen` (stage 02:
+no star map, its name at the bottom) and `current-chosen-moon` (moon 02.8),
+each at 1440 and `-380`.
 
 ## Captures, moons (30 Sep 2026, build at 5185, reduced motion; all opened)
 

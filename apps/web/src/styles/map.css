@@ -20,20 +20,30 @@
   position: absolute !important;
   inset: 0;
 }
+/* The chosen body's name, centred at the bottom of the free area (its left,
+   top and max-width are the measured frame's). */
 .starmap-tag {
   position: absolute;
-  top: 0;
-  left: 0;
-  visibility: hidden;
-  padding: var(--space-1) var(--space-2);
+  z-index: 1;
+  transform: translate(-50%, calc(-100% - var(--space-3)));
+  width: max-content;
+  padding: var(--space-1) var(--space-3);
   font-family: var(--font-hud);
-  font-size: var(--text-sm);
+  font-size: var(--text-lg);
   letter-spacing: var(--tracking-hud);
   text-transform: uppercase;
-  white-space: nowrap;
+  text-align: center;
+  overflow-wrap: anywhere;
   color: var(--lit-ink);
   background: var(--lit-bg);
   pointer-events: none;
+  animation: starmap-tag-in var(--dur-base) var(--ease-out);
+}
+@keyframes starmap-tag-in {
+  from { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .starmap-tag { animation: none; }
 }
 
 .starmap-panels {
@@ -46,6 +56,8 @@
   align-content: start;
 }
 .starmap-caption { font-size: var(--text-sm); }
+/* Shown only while no planet is chosen (instructor, 1 Oct 2026). */
+.starmap-system[hidden] { display: none; }
 .starmap-system-body,
 .starmap-body-main {
   display: grid;
@@ -270,10 +282,6 @@ button.starmap-moon:hover { background: var(--surface-2); border-color: var(--li
   .starmap-panels { width: 100%; padding: var(--space-2); }
   .starmap-system-body { gap: var(--space-2); padding: var(--space-2) var(--space-3) var(--space-3); }
   .starmap-course, .starmap-key { display: none; }
-  /* A planet chosen on a phone: the system panel folds to its caption, so the
-     zoomed planet has the space between it and the sheet. The row returns
-     with Close. */
-  .starmap.has-selection .starmap-system-body { display: none; }
   .starmap-body {
     position: fixed;
     left: var(--space-2);
@@ -284,6 +292,7 @@ button.starmap-moon:hover { background: var(--surface-2); border-color: var(--li
   }
 }
 @media (max-width: 640px) {
+  .starmap-tag { font-size: var(--text-base); }
   .starmap-body { bottom: calc(3.5rem + var(--space-2)); }
   .starmap-designation dd { font-size: var(--text-base); }
   .starmap-dot { width: 1.75rem; height: 1.75rem; }

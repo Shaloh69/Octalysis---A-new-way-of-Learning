@@ -7,6 +7,8 @@
 | Closing | the camera eases back to the whole system | about 700ms | a cut |
 | Drag | the system yaws with the pointer | follows the pointer | follows the pointer (a direct manipulation, not an animation) |
 | The body panel | fades in | `--dur-base` | none |
+| The system panel, on choosing a planet (1 Oct) | hides; returns on Close | a cut, at the same moment the body panel fades in | a cut |
+| The chosen body's name at the bottom (1 Oct) | fades in, again for each new planet or moon | `--dur-base` | none: it is simply there |
 | Enter journey | the realm warp (the shell's `RealmWarp`) | 650ms | a cut |
 | A chosen planet's moons (R4.2, 30 Sep) | each on its own circular orbit by the same Kepler law, on a clock ten times the planets' (the outermost moon goes round in a minute) | continuous | **none**: frozen with the planets |
 | Orientation's asteroids (3.10) | a seeded belt, Keplerian around it | continuous | **none** |

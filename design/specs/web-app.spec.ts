@@ -165,12 +165,37 @@ test.describe("/app — what the map owes", () => {
     await choose(page, "04");
     await expect(page).toHaveURL(/\?stage=04$/);
     await expect(page.locator(".starmap-body h2")).toHaveText("Cache Memory");
+    // The star map shows only while no planet is chosen (instructor, 1 Oct 2026).
+    await expect(page.locator(".starmap-system")).toBeHidden();
     await page.keyboard.press("ArrowRight");
     await expect(page).toHaveURL(/\?stage=05$/);
     await expect(page.locator(".starmap-body h2")).not.toHaveText("Cache Memory");
     await page.keyboard.press("Escape");
     await expect(page.locator(".starmap-body")).toHaveCount(0);
     await expect(page).toHaveURL(/\/app$/);
+    await expect(page.locator(".starmap-system")).toBeVisible();
+    // Focus comes back to the planet just left, in the row that returned.
+    await expect(page.locator("input[data-planet='05']")).toBeFocused();
+  });
+
+  test("the chosen planet's name sits at the bottom of the free area, centred", async ({ page }) => {
+    await map(page, "/app?stage=02");
+    const tag = page.locator(".starmap-tag");
+    await expect(tag).toHaveText("Computer Evolution and Performance");
+    const t = (await tag.boundingBox())!;
+    const vp = page.viewportSize()!;
+    const sheet = await page.locator(".starmap-body").boundingBox();
+    if (wide(test.info().project.name)) {
+      // Below the middle of the screen, right of the side column, clear of the key hints' row.
+      expect(t.y).toBeGreaterThan(vp.height / 2);
+      expect(t.x).toBeGreaterThan(sheet!.x + sheet!.width);
+    } else {
+      // Above the sheet on a phone.
+      expect(t.y + t.height).toBeLessThanOrEqual(sheet!.y + 1);
+      expect(t.x).toBeGreaterThanOrEqual(0);
+      expect(t.x + t.width).toBeLessThanOrEqual(vp.width);
+    }
+    await expect(page.locator(".starmap-system")).toBeHidden();
   });
 
   test("a locked planet shows the server's reason, verbatim, beside a padlock, and no Enter", async ({ page }) => {
@@ -251,7 +276,7 @@ test.describe("/app — what the map owes", () => {
     await expect(page.locator(".starmap-body h2")).toHaveText("External Memory");
   });
 
-  test("380: the chosen planet's panel is a sheet above the nav, the system panel folds", async ({ page }, info) => {
+  test("380: the chosen planet's panel is a sheet above the nav, the system panel hides", async ({ page }, info) => {
     test.skip(wide(info.project.name), "the 380 form");
     await map(page, "/app?stage=06");
     const sheet = page.locator(".starmap-body");
@@ -259,7 +284,7 @@ test.describe("/app — what the map owes", () => {
     const s = (await sheet.boundingBox())!;
     const n = (await page.locator("nav[aria-label=Main]").boundingBox())!;
     expect(s.y + s.height).toBeLessThanOrEqual(n.y + 1);
-    await expect(page.locator(".starmap-system-body")).toBeHidden();
+    await expect(page.locator(".starmap-system")).toBeHidden();
   });
 });
 

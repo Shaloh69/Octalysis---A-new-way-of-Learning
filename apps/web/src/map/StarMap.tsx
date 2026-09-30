@@ -20,11 +20,16 @@ const StarMapScene = lazy(() => import("./StarMapScene"));
  *   SYSTEM panel     the course, its mastery, the next stage, and the ROW OF
  *                    BODIES: one radio per planet, grouped by act. This is the
  *                    ACCESSIBLE LAYER (VISUAL-SYSTEM-3D.md §5): a keyboard or
- *                    a screen reader chooses a planet here, arrow keys move
- *                    through them, and it is the same action as a click
+ *                    a screen reader chooses a planet here, and it is the same
+ *                    action as a click. Shown ONLY while no planet is chosen
+ *                    (instructor, 1 Oct 2026); Close brings it back with focus
+ *                    on the planet just left
  *   BODY panel       the selected planet: its name, mastery, a stat table,
  *                    its moons (objectives), the lock's reason verbatim, and
- *                    Enter journey; a bottom sheet on a phone
+ *                    Enter journey; a bottom sheet on a phone. While it is
+ *                    open, Left and Right step to the neighbouring planet
+ *   name             the chosen planet's (or moon's) name, at the bottom of
+ *                    the free area (instructor, 1 Oct 2026)
  *   key hints        Enter journey, Close, Stages, Reset view
  *
  * The selection is `?stage=NN` (useSelection). Without WebGL the scene is not
@@ -78,7 +83,6 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
   const yaw = useRef(0);
   const dragged = useRef(false);
   const drag = useRef<{ x: number; yaw: number } | null>(null);
-  const tag = useRef<HTMLSpanElement | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const systemRef = useRef<HTMLElement | null>(null);
   const bodyRef = useRef<HTMLElement | null>(null);
@@ -113,14 +117,35 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
   const selMoon = sel && moon && sel.moons ? sel.objectives.find((o) => o.id === moon) ?? null : null;
   const acts = [...new Set(nodes.map((n) => n.act))].sort();
 
-  // Focus the body panel's heading when a planet is chosen in the scene (a
-  // pointer choice); a choice in the row keeps focus in the row, so arrowing
-  // through the planets is never interrupted.
-  const fromScene = useRef(false);
+  // The row hides while a planet is chosen, so focus goes to the body panel's
+  // heading on every choice; on Close it returns to the planet just left, in
+  // the row that has come back.
+  const lastSel = useRef<string | null>(null);
   useEffect(() => {
-    if (sel && fromScene.current) heading.current?.focus();
-    fromScene.current = false;
+    const was = lastSel.current;
+    lastSel.current = sel?.id ?? null;
+    if (sel) heading.current?.focus();
+    else if (was) systemRef.current?.querySelector<HTMLInputElement>(`input[data-planet="${was}"]`)?.focus();
   }, [sel]);
+  // Left and Right step through the planets while one is open, as the row's
+  // arrow keys did (the row itself is hidden then). Never inside a field, and
+  // never while a moon is open (its panel belongs to its planet).
+  useEffect(() => {
+    if (!sel || selMoon) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      const i = nodes.findIndex((n) => n.id === sel.id);
+      const to = nodes[(i + (e.key === "ArrowRight" ? 1 : nodes.length - 1)) % nodes.length];
+      if (!to) return;
+      e.preventDefault();
+      open(to.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sel, selMoon, nodes, open]);
   // A moon replaces the panel in place (3.2); focus follows to its heading, and
   // back to the planet's when the student steps out (3.3).
   const moonShown = useRef<string | null>(null);
@@ -140,7 +165,10 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
     const measure = () => {
       const W = window.innerWidth;
       const H = window.innerHeight;
-      const sys = systemRef.current?.getBoundingClientRect();
+      // The system panel is hidden while a planet is chosen: a zero box.
+      const sysBox = systemRef.current?.getBoundingClientRect();
+      const sys = sysBox && sysBox.height > 0 ? sysBox : null;
+      const panels = systemRef.current?.parentElement?.getBoundingClientRect();
       const body = bodyRef.current?.getBoundingClientRect();
       const nav = document.querySelector(".star-nav")?.getBoundingClientRect();
       const navAtBottom = !!nav && nav.top > H / 2;
@@ -149,9 +177,9 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
         const left = Math.max(sys?.right ?? 0, body?.right ?? 0) + 16;
         const top = (nav && !navAtBottom ? nav.bottom : 0) + 8;
         next = { x: left, y: top, w: Math.max(80, W - left - 16), h: Math.max(80, H - top - 72) };
-        setBodyMax(sys ? Math.max(200, H - sys.bottom - 28) : null);
+        setBodyMax(body ? Math.max(200, H - body.top - 16) : null);
       } else {
-        const top = (sys?.bottom ?? 0) + 8;
+        const top = (sys?.bottom ?? panels?.top ?? 0) + 8;
         const bottom = body ? body.top - 8 : navAtBottom ? nav!.top - 8 : H - 8;
         next = { x: 0, y: top, w: W, h: Math.max(80, bottom - top) };
         setBodyMax(null);
@@ -238,16 +266,9 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
               lowQuality={slow || saveData}
               yaw={yaw}
               dragged={dragged}
-              tag={tag}
               frame={frame}
-              onSelect={(id) => {
-                fromScene.current = true;
-                open(id);
-              }}
-              onSelectMoon={(id) => {
-                fromScene.current = true;
-                openMoon(id);
-              }}
+              onSelect={open}
+              onSelectMoon={openMoon}
               onMiss={close}
               onSlow={() => {
                 setSlow(true);
@@ -260,13 +281,22 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
             />
           </Suspense>
         )}
-        <span ref={tag} className="starmap-tag" aria-hidden="true">
-          {selMoon ? `Moon ${selMoon.id}` : sel?.title}
-        </span>
+        {/* The chosen body's name, at the bottom of the free area. The panel's
+            heading says it to a screen reader; this is for the eye. */}
+        {sel && frame && (
+          <span
+            key={selMoon?.id ?? sel.id}
+            className="starmap-tag"
+            aria-hidden="true"
+            style={{ left: `${frame.x + frame.w / 2}px`, top: `${frame.y + frame.h}px`, maxWidth: `${Math.max(120, frame.w - 32)}px` }}
+          >
+            {selMoon ? `Moon ${selMoon.id}` : sel.title}
+          </span>
+        )}
       </div>
 
       <div className="starmap-panels">
-        <section ref={systemRef} className="hud-panel starmap-system" aria-labelledby="starmap-title">
+        <section ref={systemRef} className="hud-panel starmap-system" aria-labelledby="starmap-title" hidden={!!sel}>
           <h1 id="starmap-title" className="hud-caption starmap-caption">
             Star map
           </h1>
@@ -303,6 +333,7 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
                           type="radio"
                           name="planet"
                           className="sr-only"
+                          data-planet={n.id}
                           checked={selected === n.id}
                           onChange={() => open(n.id)}
                         />
