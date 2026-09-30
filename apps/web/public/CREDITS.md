@@ -6,6 +6,21 @@ not require attribution. `GAME-DESIGN.md` §4 is the sourcing rationale.
 ## Audio
 Not yet vendored. Planned: Kenney UI Audio / Interface Sounds (CC0, kenney.nl).
 
+## Planets, moons and the sun on the map
+`src/solar-system/bodies.ts`. Seventeen textures in `public/textures/`, 1.5 MB
+together, requested only by the 3D map's lazy chunk.
+
+- **Solar System Scope texture set** — INOVE, https://www.solarsystemscope.com/textures/
+  — **CC BY 4.0** (https://creativecommons.org/licenses/by/4.0/), stated on that
+  page ("Attribution 4.0 International license"), checked 1 Oct 2026. Based on
+  NASA imagery. **Changes made:** each 2k map downsized to 1024 pixels wide and
+  re-encoded (JPEG quality 0.82; the ring as PNG). The "fictional" dwarf-planet
+  maps are the set's own artistic renderings, and are used as such.
+  Files: `sun.jpg`, `mercury.jpg`, `venus_surface.jpg`, `venus_atmosphere.jpg`,
+  `earth_daymap.jpg`, `earth_clouds.jpg`, `moon.jpg`, `mars.jpg`, `jupiter.jpg`,
+  `saturn.jpg`, `saturn_ring_alpha.png`, `uranus.jpg`, `neptune.jpg`,
+  `ceres.jpg`, `eris.jpg`, `haumea.jpg`, `makemake.jpg`.
+
 ## Landing biomes
 `docs/redesign/BIOME-AND-LOADING-SPEC.md` §2. Seven biomes, seeded per student,
 lazy-loaded one at a time.

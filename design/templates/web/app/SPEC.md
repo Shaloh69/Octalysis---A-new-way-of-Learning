@@ -35,6 +35,35 @@ The star system: `html[data-realm="star"]`, no `data-biome`.
   moons (objectives, in the syllabus's order), and Enter journey (open) or
   Show Stage NN (locked). A bottom sheet on a phone.
 
+## Skins: real textures (1 Oct 2026, the instructor's request)
+
+- **Every body wears a real planetary surface** (`solar-system/bodies.ts`;
+  Solar System Scope's maps, CC BY 4.0, credited in `public/CREDITS.md`;
+  downsized to 1024×512, 17 files, each under 200 KB, served from
+  `public/textures/` so none enters a bundle). `bodies.spec.ts`: every file
+  exists, is under 200 KB, is credited; a skin is seeded, never random.
+- **A planet's skin follows its biome**, so the map and the world a student
+  enters agree: desert is Mars or Venus, ocean Neptune, Earth or Uranus,
+  arctic Uranus or an icy dwarf, city Jupiter, Saturn or Neptune, cave
+  Mercury, the Moon or Ceres, jungle Earth or Venus's clouds. The choice in a
+  biome is seeded from the student's rotation and the stage (FNV-1a), so the
+  same student sees the same system every session and students differ.
+- **Kinds are drawn apart:** gas giants 1.45× the size the moon count gives,
+  ringed 1.3×, ice 1.15×, rocky 0.9×. Earth-likes carry a cloud layer, ringed
+  giants a ring from a radial alpha strip, gas giants flatten at the poles and
+  their bands drift, Uranus rolls on its side.
+- **Moons wear the small bodies** (the Moon, Ceres, Eris, Makemake, Mercury,
+  Haumea), seeded per objective.
+- **The sun** is its own surface, unlit, inside a corona and a halo drawn as
+  soft radial sprites in `--sun-glow` (the first cut, two translucent
+  spheres, read as a flat brown disk with a rim, caught in the planet-09
+  capture).
+- **Cosmetic only.** A skin never touches a lock, a ring, a mastery or a moon
+  count. A locked planet is drawn in `--locked` over its surface; a moon's
+  three states are still its glow and rings. Until a texture arrives a body
+  wears its biome's tint, so nothing blanks; a texture that fails costs only
+  that surface.
+
 ## Moons (R4.2, R4.3, R4.6; WEB-REVAMP 3.1-3.3, 3.7a, 3.10; 30 Sep 2026)
 
 - **A gradeable planet's moons are its objectives**, in the syllabus's order,
@@ -98,3 +127,12 @@ locally no question is live), `current-moon` (01.2, one right), `current-moon-em
 (01.5, no questions yet), `current-moon-locked` (04.1, real data: the planet's
 own reason), `current-asteroids` (Orientation's belt), `current-moons-11`
 (stage 03, eleven moons, real data); each at 1440 and `-380`.
+
+## Captures, textures (1 Oct 2026, build at 5185, reduced motion; all opened)
+
+`current-textures-system` (the whole system: a ringed giant, the sun's
+surface), `current-textures-planet05` (an Earth-like with clouds and its
+textured moons), `current-textures-moons02` (a locked planet dimmed, its
+moons), `current-textures-planet09` (close to the sun: the corona fades with
+no rim); each at 1440 and `-380`. All 17 textures answered 200.
+`web-app.spec.ts` green after the change: 44 passed, 8 skipped by design.

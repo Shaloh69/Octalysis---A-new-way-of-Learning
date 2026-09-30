@@ -1,6 +1,21 @@
-import { useMemo, useRef, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { AdditiveBlending, Color, Group, SRGBColorSpace, Vector3 } from "three";
+import {
+  AdditiveBlending,
+  CanvasTexture,
+  Color,
+  DoubleSide,
+  Group,
+  Mesh,
+  RepeatWrapping,
+  RingGeometry,
+  Sprite,
+  SRGBColorSpace,
+  Texture,
+  TextureLoader,
+  Vector3,
+} from "three";
+import { allTextureFiles, KIND_SCALE, moonSkin, planetSkin, SUN_MAP, type BodySkin } from "../solar-system/bodies";
 import type { SolarLayout } from "../solar-system/layout";
 import { orbitAngle } from "../solar-system/orbit";
 
@@ -22,6 +37,14 @@ import { orbitAngle } from "../solar-system/orbit";
  *             choose it; the camera eases onto it (3.2)
  *   asteroids Orientation has no moons (3.10): a small belt, seeded per
  *             student, grey, unlit and never glowing, that nothing can choose
+ *   skins     real planetary textures (1 Oct 2026; `solar-system/bodies.ts`,
+ *             Solar System Scope, CC BY 4.0): each planet a world of its own
+ *             biome's kind, seeded per student, each with its own animation:
+ *             its spin and axial tilt, a gas giant's flattening and drifting
+ *             bands, an Earth-like's cloud layer, a ringed giant's rings. The
+ *             sun is its own surface with a breathing corona. Textures load
+ *             progressively; until one arrives the planet wears its biome's
+ *             tint, so nothing blanks. Reduced motion freezes all of it
  *   yours     the next stage (the mission) is ringed in the student's accent
  *
  * Colours come from tokens, read through the DOM so a token change repaints
@@ -91,7 +114,41 @@ export default function StarMapScene(props: SceneProps): JSX.Element {
   );
 }
 
+/**
+ * Every texture, loaded once and progressively: the map draws at once in the
+ * biomes' tints and each body takes its surface as it arrives. A texture that
+ * fails costs that surface, never the map.
+ */
+function useTextures(): Map<string, Texture> {
+  const [loaded, setLoaded] = useState<Map<string, Texture>>(() => new Map());
+  useEffect(() => {
+    let live = true;
+    const loader = new TextureLoader();
+    const base = `${import.meta.env.BASE_URL}textures/`;
+    for (const file of allTextureFiles()) {
+      loader.load(
+        base + file,
+        (tex) => {
+          if (!live) return;
+          if (!file.endsWith(".png") && !file.includes("clouds")) tex.colorSpace = SRGBColorSpace;
+          tex.anisotropy = 4;
+          setLoaded((prev) => new Map(prev).set(file, tex));
+        },
+        undefined,
+        () => {
+          /* the body keeps its tint */
+        },
+      );
+    }
+    return () => {
+      live = false;
+    };
+  }, []);
+  return loaded;
+}
+
 function Scene(p: SceneProps): JSX.Element {
+  const textures = useTextures();
   const colors = useMemo<SceneColors>(
     () => ({
       sun: tokenColor("--sun"),
@@ -125,14 +182,7 @@ function Scene(p: SceneProps): JSX.Element {
       <ambientLight intensity={0.55} />
       <pointLight position={[0, 0, 0]} intensity={2.4} decay={0} color={colors.sun} />
       <Stars color={colors.star} count={p.lowQuality ? 600 : 1500} />
-      <mesh>
-        <sphereGeometry args={[1.7, 40, 40]} />
-        <meshBasicMaterial color={colors.sun} />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[2.6, 32, 32]} />
-        <meshBasicMaterial color={colors.glow} transparent opacity={0.16} blending={AdditiveBlending} depthWrite={false} />
-      </mesh>
+      <Sun colors={colors} surface={textures.get(SUN_MAP)} reduced={p.reduced} />
       {radii.map((r) => (
         <OrbitRing key={r} radius={r} color={colors.line} />
       ))}
@@ -146,6 +196,7 @@ function Scene(p: SceneProps): JSX.Element {
           clock={clock}
           positions={positions}
           colors={colors}
+          textures={textures}
           selected={p.selected === pl.id}
           selectedMoon={p.selected === pl.id ? p.selectedMoon : null}
           next={p.next === pl.id}
@@ -208,6 +259,181 @@ function OrbitRing({ radius, color }: { radius: number; color: Color }): JSX.Ele
   );
 }
 
+/**
+ * The sun: its own surface, unlit, turning once in a minute and a half and
+ * churning slowly, inside a corona that breathes. The token colours stay:
+ * the corona is `--sun-glow`, and without its texture the sun is `--sun`.
+ */
+function Sun({ colors, surface, reduced }: { colors: SceneColors; surface: Texture | undefined; reduced: boolean }): JSX.Element {
+  const body = useRef<Mesh>(null);
+  const corona = useRef<Sprite>(null);
+  const halo = useRef<Sprite>(null);
+  const falloff = useMemo(glowFalloff, []);
+  const map = useMemo(() => {
+    if (!surface) return undefined;
+    const t = surface.clone();
+    t.wrapS = RepeatWrapping;
+    t.needsUpdate = true;
+    return t;
+  }, [surface]);
+  const t = useRef(0);
+  useFrame((_, dt) => {
+    if (reduced) return;
+    t.current += Math.min(dt, 0.1);
+    if (body.current) body.current.rotation.y += (dt * Math.PI * 2) / 90;
+    if (map) map.offset.x = (map.offset.x + dt * 0.003) % 1;
+    corona.current?.scale.setScalar(CORONA * (1 + 0.05 * Math.sin(t.current * 0.9)));
+    halo.current?.scale.setScalar(HALO * (1 + 0.035 * Math.sin(t.current * 0.55 + 1.3)));
+  });
+  return (
+    <group>
+      <mesh ref={body}>
+        <sphereGeometry args={[1.7, 48, 48]} />
+        {/* Keyed on the texture: a material compiled without a map never draws one (three.js compiles once). */}
+        <meshBasicMaterial key={map ? "surface" : "tint"} color={map ? WHITE : colors.sun} map={map ?? null} />
+      </mesh>
+      {falloff && (
+        <>
+          <sprite ref={corona} scale={CORONA}>
+            <spriteMaterial map={falloff} color={colors.glow} transparent opacity={0.85} blending={AdditiveBlending} depthWrite={false} />
+          </sprite>
+          <sprite ref={halo} scale={HALO}>
+            <spriteMaterial map={falloff} color={colors.glow} transparent opacity={0.3} blending={AdditiveBlending} depthWrite={false} />
+          </sprite>
+        </>
+      )}
+    </group>
+  );
+}
+
+/** The corona's and the halo's widths, in scene units (the sun's radius is 1.7). */
+const CORONA = 6.2;
+const HALO = 11;
+
+/**
+ * A soft radial falloff, drawn once on a canvas: opaque at the centre to clear
+ * at the edge, so a glow has no rim. It is an alpha mask, not a colour: the
+ * sprite's material tints it `--sun-glow`.
+ */
+function glowFalloff(): CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  for (const [at, a] of [[0, 1], [0.27, 0.7], [0.4, 0.28], [0.65, 0.07], [1, 0]] as const) {
+    g.addColorStop(at, `rgba(255, 255, 255, ${a})`);
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  return new CanvasTexture(c);
+}
+
+/** Unshaded white: the surface as the texture draws it. Not a palette colour. */
+const WHITE = new Color(1, 1, 1);
+
+/** A ring whose texture runs outward: RingGeometry's UVs are planar, so u is remapped to the radius. */
+function radialRing(inner: number, outer: number): RingGeometry {
+  const g = new RingGeometry(inner, outer, 96, 1);
+  const pos = g.attributes.position!;
+  const uv = g.attributes.uv!;
+  for (let i = 0; i < pos.count; i++) {
+    const r = Math.hypot(pos.getX(i), pos.getY(i));
+    uv.setXY(i, (r - inner) / (outer - inner), 0.5);
+  }
+  return g;
+}
+
+/** Spins are real ratios, scaled to be watched: a skin's `spinS` seconds per turn. */
+function Globe({
+  skin,
+  textures,
+  size,
+  fallback,
+  dim,
+  glow,
+  reduced,
+  segments = 40,
+  onClick,
+}: {
+  skin: BodySkin;
+  textures: Map<string, Texture>;
+  size: number;
+  /** The tint drawn until the surface arrives (the biome's, or `--locked`). */
+  fallback: Color;
+  /** Multiply the surface darker (a locked planet, an unmastered moon). */
+  dim: Color | null;
+  /** Emissive strength: a moon's glow, a planet's faint self-light. */
+  glow: number;
+  reduced: boolean;
+  segments?: number;
+  onClick?: (e: ThreeEvent<MouseEvent>) => void;
+}): JSX.Element {
+  const spin = useRef<Mesh>(null);
+  const cloudRef = useRef<Mesh>(null);
+  const surface = textures.get(skin.map);
+  // Each body its own copy, so a gas giant's drifting bands move its texture alone.
+  const map = useMemo(() => {
+    if (!surface) return undefined;
+    const t = surface.clone();
+    t.wrapS = RepeatWrapping;
+    t.needsUpdate = true;
+    return t;
+  }, [surface]);
+  const clouds = skin.clouds ? textures.get(skin.clouds) : undefined;
+  const ringTex = skin.ring ? textures.get(skin.ring) : undefined;
+  const ringGeo = useMemo(() => (skin.ring ? radialRing(size * 1.35, size * 2.3) : null), [skin.ring, size]);
+
+  useFrame((_, dt) => {
+    if (reduced) return;
+    const d = Math.min(dt, 0.1);
+    if (spin.current) spin.current.rotation.y += (d * Math.PI * 2) / skin.spinS;
+    if (cloudRef.current) cloudRef.current.rotation.y += (d * Math.PI * 2) / (skin.spinS * 0.8);
+    if (map && skin.bandDrift) map.offset.x = (map.offset.x + d * skin.bandDrift) % 1;
+  });
+
+  const tint = map ? (dim ?? WHITE) : fallback;
+  return (
+    <group rotation={[0, 0, skin.tilt]}>
+      <mesh
+        ref={spin}
+        scale={[1, skin.oblate, 1]}
+        {...(onClick
+          ? {
+              onClick,
+              onPointerOver: () => (document.body.style.cursor = "pointer"),
+              onPointerOut: () => (document.body.style.cursor = ""),
+            }
+          : {})}
+      >
+        <sphereGeometry args={[size, segments, segments]} />
+        <meshStandardMaterial
+          key={map ? "surface" : "tint"}
+          color={tint}
+          map={map ?? null}
+          emissive={map ? WHITE : fallback}
+          emissiveMap={map ?? null}
+          emissiveIntensity={glow}
+          roughness={skin.kind === "gas" || skin.kind === "ringed" ? 0.7 : 0.95}
+          metalness={0}
+        />
+      </mesh>
+      {clouds && (
+        <mesh ref={cloudRef} scale={[1, skin.oblate, 1]} raycast={() => null}>
+          <sphereGeometry args={[size * 1.025, segments, segments]} />
+          <meshStandardMaterial key={clouds.uuid} color={dim ?? WHITE} alphaMap={clouds} transparent depthWrite={false} opacity={0.9} />
+        </mesh>
+      )}
+      {ringGeo && ringTex && (
+        <mesh geometry={ringGeo} rotation={[Math.PI / 2, 0, 0]} raycast={() => null}>
+          <meshBasicMaterial key={ringTex.uuid} map={ringTex} color={dim ?? WHITE} transparent side={DoubleSide} depthWrite={false} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
 interface PlanetProps {
   planet: ScenePlanet;
   layout: SolarLayout;
@@ -216,6 +442,7 @@ interface PlanetProps {
   clock: MutableRefObject<number>;
   positions: MutableRefObject<Map<string, Vector3>>;
   colors: SceneColors;
+  textures: Map<string, Texture>;
   selected: boolean;
   selectedMoon: string | null;
   next: boolean;
@@ -246,7 +473,9 @@ function Planet(p: PlanetProps): JSX.Element | null {
   const tint = useMemo(() => tokenColor(`--biome-planet-${p.planet.biome}`), [p.planet.biome]);
   const locked = p.planet.state === "locked";
   const color = locked ? p.colors.locked : tint;
-  const size = 0.5 + Math.min(p.planet.moons.length || 5, 12) * 0.03;
+  const skin = useMemo(() => planetSkin(p.planet.id, p.planet.biome, p.rotation), [p.planet.id, p.planet.biome, p.rotation]);
+  // Size still grows with the planet's moons; its kind makes a gas giant read as one.
+  const size = (0.62 + Math.min(p.planet.moons.length || 5, 12) * 0.035) * KIND_SCALE[skin.kind];
   const moonMeshes = useRef<Array<Group | null>>([]);
   const outerMoon = moonRadius(size, Math.max(0, p.planet.moons.length - 1));
   const belt = useMemo(
@@ -295,20 +524,17 @@ function Planet(p: PlanetProps): JSX.Element | null {
 
   return (
     <group ref={group}>
-      <mesh
+      {/* A locked world is its surface dimmed by --locked; its state is in words in the row. */}
+      <Globe
+        skin={skin}
+        textures={p.textures}
+        size={size}
+        fallback={color}
+        dim={locked ? p.colors.locked : null}
+        glow={locked ? 0.02 : 0.12}
+        reduced={p.reduced}
         onClick={click}
-        onPointerOver={() => (document.body.style.cursor = "pointer")}
-        onPointerOut={() => (document.body.style.cursor = "")}
-      >
-        <sphereGeometry args={[size, 28, 28]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={locked ? 0.08 : 0.22}
-          roughness={0.85}
-          metalness={0}
-        />
-      </mesh>
+      />
       {/* A generous invisible hit target, so a phone's thumb can pick a small planet. */}
       <mesh onClick={click} visible={false}>
         <sphereGeometry args={[size + 0.9, 12, 12]} />
@@ -339,7 +565,6 @@ function Planet(p: PlanetProps): JSX.Element | null {
           <group ref={moons}>
             {p.planet.moons.map((m, i) => {
               const glow = m.glow;
-              const mColor = glow === "dim" ? p.colors.locked : tint;
               const isSel = p.selectedMoon === m.id;
               const pick = (e: ThreeEvent<MouseEvent>) => {
                 e.stopPropagation();
@@ -352,19 +577,18 @@ function Planet(p: PlanetProps): JSX.Element | null {
                     moonMeshes.current[i] = g;
                   }}
                 >
-                  <mesh
+                  {/* dim: darkened by --locked; partial: lit; full: glowing, haloed and ringed. */}
+                  <Globe
+                    skin={moonSkin(m.id, p.rotation)}
+                    textures={p.textures}
+                    size={0.16}
+                    segments={20}
+                    fallback={glow === "dim" ? p.colors.locked : tint}
+                    dim={glow === "dim" ? p.colors.locked : null}
+                    glow={glow === "full" ? 0.55 : glow === "partial" ? 0.22 : 0.02}
+                    reduced={p.reduced}
                     onClick={pick}
-                    onPointerOver={() => (document.body.style.cursor = "pointer")}
-                    onPointerOut={() => (document.body.style.cursor = "")}
-                  >
-                    <sphereGeometry args={[0.16, 14, 14]} />
-                    <meshStandardMaterial
-                      color={mColor}
-                      emissive={mColor}
-                      emissiveIntensity={glow === "full" ? 0.95 : glow === "partial" ? 0.4 : 0.04}
-                      roughness={0.8}
-                    />
-                  </mesh>
+                  />
                   <mesh onClick={pick} visible={false}>
                     <sphereGeometry args={[0.42, 8, 8]} />
                     <meshBasicMaterial />

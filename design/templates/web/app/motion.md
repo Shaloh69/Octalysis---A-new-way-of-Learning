@@ -10,6 +10,9 @@
 | Enter journey | the realm warp (the shell's `RealmWarp`) | 650ms | a cut |
 | A chosen planet's moons (R4.2, 30 Sep) | each on its own circular orbit by the same Kepler law, on a clock ten times the planets' (the outermost moon goes round in a minute) | continuous | **none**: frozen with the planets |
 | Orientation's asteroids (3.10) | a seeded belt, Keplerian around it | continuous | **none** |
+| Each planet's own turn (1 Oct, `bodies.ts`) | spins on its tilted axis at its kind's pace (a gas giant's ten seconds a turn, Venus's minute); gas bands drift; an Earth-like's clouds turn a little faster than its ground | continuous | **none**: every surface holds still |
+| The sun (1 Oct) | turns once in 90s, its surface churns slowly, the corona and halo breathe out of step | continuous | **none** |
+| A texture arriving | the body swaps its biome tint for its surface | one frame | the same (a swap, not an animation) |
 | Choosing a moon | the camera eases on to it, closer than to a planet | about 700ms | a cut |
 | Stepping out of a moon (Escape, Close, Back to Stage NN) | the camera eases back to the planet | about 700ms | a cut |
 
