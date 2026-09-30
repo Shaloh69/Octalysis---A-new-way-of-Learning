@@ -89,7 +89,9 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
       **30 Sep 2026:** planets 01-04 carry moons; 00 carries its asteroids
       instead (decided 25 Sep). `design/templates/web/app/current-moon*.png`,
       `-asteroids`, `-moons-11`, each at 1440 and 380, opened
-- [ ] Stage 01 encounter — Sort (DOM), through the page gate
+- [x] Stage 01 encounter — Sort (DOM), through the page gate. **30 Sep 2026:**
+      Two Columns on moon 01.2 (`design/templates/web/encounter-sort/`,
+      `web-encounter-sort.spec.ts`, cards proven quoted by `two-columns.spec.ts`)
 - [ ] Stage 02 encounter — Drill (DOM), through the page gate
 - [ ] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
       keyboard path and a non-canvas fallback
@@ -99,8 +101,10 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
       **DECIDED 30 Sep 2026: the Midterm.** Not built with act 1
 - [ ] Phaser verified absent from the initial bundle — lazy-loaded per route,
       grep `dist/index.html` for a preload, same discipline as the 3D chunk
-- [ ] No encounter dresses an assessment — grep confirms `data-encounter` never
-      wraps the attempt runner
+- [x] No encounter dresses an assessment — grep confirms `data-encounter` never
+      wraps the attempt runner. **30 Sep 2026:** set only in `MoonEncounterSlot`
+      (a sibling of the runner) and the reader's LAB block; asserted in the
+      Sort's spec
 
 ## R4.6 Moons unlock the next planet, and hold the minigames
 

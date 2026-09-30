@@ -60,3 +60,11 @@ and a wrong one neutral; a resumed journey restores the answers given.
 `current` (jungle, resumed, a wrong verdict), `-fresh` (desert, nothing
 recorded), `-ordering` (cave), `-confirm`, `-done` (jungle), `-error` (arctic,
 a locked planet's moon); each at 1440 and `-380`.
+
+## A moon's minigame (30 Sep 2026)
+
+A moon that carries an encounter (`encounters/registry.ts`; §3.6, approved)
+shows it **below the paper, never around it**, in its own section wearing
+`data-encounter`. The first is moon 01.2's Two Columns
+(`design/templates/web/encounter-sort/`). A moon without one is its practice
+alone, and is not unfinished.

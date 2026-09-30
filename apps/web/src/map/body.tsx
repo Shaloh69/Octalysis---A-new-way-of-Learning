@@ -5,6 +5,7 @@ import { LEVEL_NAMES } from "../solar-system/layout";
 import { NumberedTitle } from "../shell/MissionPanel";
 import { WarpLink } from "../shell/RealmWarp";
 import { byObjectiveId } from "./useSelection";
+import { encounterForMoon } from "../encounters/registry";
 
 /**
  * One stage, described once: the BODY card the map shows for a selected
@@ -239,7 +240,8 @@ export function LockGlyph(): JSX.Element {
  * circles with a way back, and Enter journey into practice on its own
  * questions. Enter is disabled, with the reason beside it, when the planet is
  * locked (the server's sentence, verbatim) or the moon has no questions yet
- * (fail-closed, 3.7a). No minigame is named: none is placed on a moon yet.
+ * (fail-closed, 3.7a). Its minigame is named when it has one (3.2 item 3;
+ * placements approved 30 Sep 2026, `encounters/registry.ts`).
  */
 export function MoonPanel({
   node,
@@ -253,6 +255,7 @@ export function MoonPanel({
   onBack: () => void;
 }): JSX.Element {
   const glow = moonGlow(moon);
+  const game = encounterForMoon(moon.id);
   const why =
     node.state === "locked"
       ? node.lockReason?.message ?? "This planet is locked."
@@ -272,6 +275,15 @@ export function MoonPanel({
           </span>
         </span>
       </div>
+
+      {game && (
+        <p className="starmap-moon-game" data-moon-game="">
+          <span className="starmap-survey-label">Minigame</span>
+          <span>
+            {game.name}, a {game.kind.toLowerCase()} beside its questions
+          </span>
+        </p>
+      )}
 
       {why && (
         <p className="starmap-lock" id={`moon-why-${moon.id}`}>

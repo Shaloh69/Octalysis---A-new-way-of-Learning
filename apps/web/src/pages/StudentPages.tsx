@@ -6,6 +6,7 @@ import { ProgressGrid, ProgressSkeleton } from "../components/ProgressGrid";
 import { useDelayed } from "../lib/useDelayed";
 import { AttemptRunner } from "../components/AttemptRunner";
 import { TitleScreen } from "../components/TitleScreen";
+import { MoonEncounterSlot } from "../encounters/MoonEncounterSlot";
 
 /**
  * The student's routes (WEB-REMAKE.md, 30 Sep 2026).
@@ -95,13 +96,17 @@ export function MoonJourneyPage(): JSX.Element {
   }
 
   return (
-    <AttemptRunner
-      key={objectiveId}
-      stageId={id}
-      journey={{ objectiveId }}
-      title={`Moon ${objectiveId}`}
-      onLeave={back}
-    />
+    <>
+      <AttemptRunner
+        key={objectiveId}
+        stageId={id}
+        journey={{ objectiveId }}
+        title={`Moon ${objectiveId}`}
+        onLeave={back}
+      />
+      {/* The moon's minigame, if it has one: beside the questions, never over them (3.6). */}
+      <MoonEncounterSlot stageId={id} objectiveId={objectiveId} />
+    </>
   );
 }
 
