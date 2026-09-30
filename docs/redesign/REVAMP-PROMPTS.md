@@ -23,71 +23,69 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: moon mastery, once approved (R4)
+## 1. Start here — the next session: the act-1 encounters, on their moons (R4.5)
 
-*Rewritten 30 Sep 2026 (night) by the session that built step 1 of moons
-opening planets (a non-gradeable prerequisite never blocks: stage 01 is open)
-and proposed where moon mastery lives (`WEB-REVAMP.md` §3.7a), then stopped for
-the instructor. Phase at handover: **R3 71 / 86**, R4 3 / 29; all tracks
-**159 done · 65 to-do (224 items, 71%)**. `pnpm phase` is the count, not this
-line. The prompt is in a plain block so it pastes exactly as written.*
+*Rewritten 30 Sep 2026 (late night) by the session that built moons opening
+planets end to end (`objective_progress`, the moon's journey, per-moon mastery,
+moons and a moon panel on the map, Orientation's asteroids, and
+`is_stage_unlocked()` reading moons). Phase at handover: **R3 71 / 86**,
+**R4 16 / 30**; all tracks **172 done · 53 to-do (225 items, 76%)**.
+`pnpm phase` is the count, not this line. The prompt is in a plain block so it
+pastes exactly as written.*
 
 ```text
-Read docs/redesign/WEB-REVAMP.md section 3 in full, above all 3.7 and 3.7a
-(3.7a is the PROPOSED home of moon mastery, with three decisions asked of the
-instructor), 3.6 and 3.10. Then docs/redesign/phases/R4-*.md, root CLAUDE.md
-(hard rules 4, 7, 8 and 9), docs/VERIFICATION.md before touching the schema,
-db/CLAUDE.md, and docs/NEXT-SESSION.md sections 0v and 0u. Do not re-derive
-what those carry.
+Read docs/NEXT-SESSION.md section 0w first (what the moons build found and
+parked), then docs/redesign/WEB-REVAMP.md 3.2, 3.6 and 3.7a (3.7a is DECIDED
+and BUILT), docs/redesign/phases/R4-*.md (R4.5 and R4.6),
+docs/redesign/MINIGAME-PROPOSALS.md, docs/GAME-DESIGN.md section 10 (Phaser: lazy,
+per route, never in the initial bundle), and design/templates/web/moon-journey/
+SPEC.md (the journey a minigame will dress). Root CLAUDE.md hard rules 4, 5
+and 9 bind. Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. Then
 state plainly whether Prelim-worth of data is okay to run on students, checking
 the five conditions in CLAUDE.md rather than remembering them. (On 30 Sep it
 was NOT: locally all 96 act-1 items were at review and 0 live, so no paper
-fills and Start answers 500; stage 01 now opens from the start, locally only;
-the deployment was last measured 28 Sep with no act-1 content or items, and
-neither attempt_events nor the new is_stage_unlocked() has been pushed to it.)
+fills and, since moons now open planets and a moon with no live question holds
+its planet shut, stage 02 is shut for any real student; the deployment was last
+measured 28 Sep with no act-1 content or items and has none of attempt_events,
+objective_progress, the journeys or the moon rule.)
 
-Confirm everything is green before touching anything, AGAINST BUILDS: pnpm
-db:reset then node scripts/db-demo.mjs (read its whole output), restart pnpm
-dev:api and prove it with a real GET (a reset can kill it), build apps/web and
-preview it on 5185, build apps/console and preview it on 5186 (npx vite
-preview --port 5186 --strictPort in apps/console). Then the web suite (every
-design/specs file except console-*, 528 tests; with console-locks added,
-461 passed, 121 skipped, 0 failed on 30 Sep night) and pnpm test (669 API
-tests). Never reset the database while a
-Playwright suite runs. After the API suite, db-demo alone is NOT enough: run
-pnpm db:reset then db-demo (the suite truncates blueprints). And pnpm dev:api
-restarts itself when services/api/src changes, so never edit the API while a
-suite is running against it.
+Confirm everything is green before touching anything, AGAINST BUILDS. First
+kill every orphaned API tree (NEXT-SESSION 0w.5: every node process whose
+command line has scripts/dev-api.mjs, with taskkill /T /F, then confirm
+nothing listens on 8090). Then pnpm db:reset, then node scripts/db-demo.mjs
+(read its whole output: 702 moons mastered for the demo cohort), start ONE
+pnpm dev:api and prove it with a real GET, build apps/web and preview it on
+5185, build apps/console and preview it on 5186 (npx vite preview --port 5186
+--strictPort in apps/console). Then the web suite (every design/specs file
+except console-*, plus console-locks: 628 tests, 505 passed, 123 skipped, 0
+failed on 30 Sep late night), the console suite (814: 756 passed, 58 skipped)
+and pnpm test (716 API tests). Never reset while a Playwright suite runs; after
+the API suite run db:reset THEN db-demo; never edit services/api/src while a
+suite runs against it.
 
-Then ask the instructor the three decisions in WEB-REVAMP 3.7a, unless they
-are already recorded there as DECIDED: (1) do only moon journeys count toward a
-moon, or stage checks too (a final never counts); (2) is a moon's journey a
-paper under hard rule 9, or practice without the start prompt and full screen;
-(3) fail-closed for a moon with no live question. Record each answer in 3.7a
-and R4.6 before building on it. Do not migrate before they are answered.
+Then ask the instructor, in one go: (1) approve the minigame placements in
+WEB-REVAMP 3.6 (01.2 Sort, 02.8 Drill, 03.9 Bus wiring, 04.5 Cache drill), or
+change them; (2) The Descent: first release or Midterm; (3) NEXT-SESSION 0w.1:
+does the student record on the console show each student's moon mastery;
+(4) R4.6's last box (the biome as the sidebar's background) predates ruling 2's
+one star HUD: superseded, or wanted; (5) push tonight's schema to the
+deployment now (it needs the section 3b --reset). Record every answer where it
+belongs (3.6, R4.5, R4.6, 0w) before building on it.
 
-The work, server first, one piece at a time, each committed and pushed:
-1. objective_progress per 3.7a as decided: denial tests first, watched
-   failing (a student cannot write it; B cannot read A's; staff cannot write
-   it; service_role cannot UPDATE or DELETE it; a row for an incorrect
-   response is refused), then the table, then the grading service writing it.
-2. The moon journey: blueprints.scope 'objective', practice on that
-   objective's own live questions, written through the one serializer. It
-   must exist before, or in the same commit as, step 3, or stage 02 is shut
-   for every student.
-3. is_stage_unlocked() reads moons (every moon of each gradeable prerequisite
-   mastered), and lockReason names the moons still missing. Denial tests
-   first: 02 stays shut with 01 at 100% stage mastery and its moons not
-   mastered; opens when they are; a voided attempt stops counting.
-4. Then the moons on planets 01-04 (R4.2, R4.5): three-state glow from the
-   API's per-moon mastery, the moon sidebar per WEB-REVAMP 3.2, Orientation's
-   asteroids per 3.10. Every page touched keeps its spec green at 1440 and
-   380, captured and opened.
-
-Moons decide what opens; the check decides what is recorded. Encounters and
-minigames are not this session's.
+The work, once 3.6 is approved, one encounter at a time, each through the page
+gate (template captured as an artifact, SPEC.md, a spec green on all six
+assertions at 1440 and 380, captures opened), committed and pushed before the
+next: first the Stage 01 Sort on moon 01.2, in DOM, inside that moon's
+journey. A minigame dresses practice and NEVER an assessment (data-encounter
+never wraps the runner of a check or an exam); it is never the only path
+through a moon (the journey's questions still count without it); it grades
+nothing on the client (hard rule: no client-side scoring); its content comes
+from docs/source or the database, never invented (hard rule 5). Then Drill on
+02.8, then Cache drill on 04.5, then Bus wiring on 03.9 (Phaser, lazy, with a
+keyboard path and a non-canvas fallback, and dist/index.html grepped for no
+Phaser preload).
 
 End: pnpm phase with the percentage, the Prelim sentence checked, docs/
 NEXT-SESSION.md and PROGRESS.md updated, this section rewritten for the

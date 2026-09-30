@@ -69,9 +69,11 @@ accidentally scope-creep into "let's also change how mastery is computed."
 
 ## Definition of done
 - [ ] `docs/PROGRESS.md` updated
-- [ ] Moons render correctly across a range of stages with different
+- [x] Moons render correctly across a range of stages with different
       objective counts (test against a stage with 3 objectives and one with
-      8+, don't just verify against one example)
+      8+, don't just verify against one example). **30 Sep 2026:** no stage
+      has 3; captured at 5 (01), 8 (02, real demo mastery) and 11 (03), at
+      1440 and 380 (`design/templates/web/app/current-moons*.png`)
 - [ ] Zero new client-side gating logic — grep confirms it
 - [ ] Screen-reader pass confirms moon data is present in the accessible
       equivalent, not just the visual one

@@ -1278,6 +1278,61 @@ one-route-per-session for this rework): shell `862a60e`, map `0d6828a`, reader
 
 ---
 
+## 0w. Moons open planets, built — 30 Sep 2026 (late night)
+
+The instructor answered §3.7a's three questions (journeys AND checks count, a
+final never; a journey is practice; fail-closed). All four pieces landed, each
+pushed: `981e1c4` decisions, `5cbd823` `objective_progress`, `5259c50` journey
+API, `dc523f6` journey page, `16512f0` per-moon mastery, `e521fdc` moons on the
+map, `403ec5b` the flip. Found and left, or needing a decision:
+
+1. **The instructor's student record now lists graded work only.** Journeys
+   are practice and a demo student has ~40 of them, so `GET
+   /console/students/:id` leaves scope `objective` out. **Ask:** does the
+   instructor want each student's moon mastery on the record (a per-student
+   moons read and a section on `/students/:userId`, through the page gate)?
+2. **A stage check on a locked stage is now refused at Start** (`startAttempt`,
+   403 "This stage is locked."), a journey too. It was open through the API
+   before; with checks counting toward moons it would have been a way round
+   the prerequisite. Fixtures that sat checks on 07 now open it per student.
+3. **INV-12 binds papers only** (`addendum-audit.sql`): a journey's length
+   follows its moon's live bank by design.
+4. **`db-demo` now refuses over ANY recorded response**, the demo cohort's own
+   included: `db/demo-moons.sql` earns 702 moons through real journeys and
+   correct answers (0 of 399 student-stage lock states moved, measured). The
+   documented order is unchanged: `pnpm db:reset` THEN `node scripts/db-demo.mjs`.
+5. **Orphaned API processes.** 23 `dev-api.mjs` / `tsx watch` trees from
+   earlier sessions were holding 8090 and fighting over it (a 1.3 MB log of
+   EADDRINUSE; six web tests failed as "could not reach the server"). Before
+   `pnpm dev:api`, kill every `node scripts/dev-api.mjs` tree (PowerShell:
+   `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | ? CommandLine
+   -match 'scripts/dev-api\.mjs'`, then `taskkill /T /F` each) and confirm
+   nothing listens on 8090. A `db:reset` killed the API twice more tonight.
+6. **The deployment needs all of this pushed**, and `schema.sql` changed
+   (`blueprints.objective_id`, `is_stage_unlocked()`), so it is §3b's
+   `--reset` question again, with `attempt_events` from 0u.3. Until then the
+   deployment runs the 70% rule and has no journeys.
+7. **A lock reason can be long.** Locally no question is live, so stage 04's
+   reason lists five moons still to master and the same five as having no
+   questions yet. True, and it will shorten once items are approved; if the
+   instructor finds it heavy, say only the count of unwritten moons.
+8. **R4's open boxes that need a person, not a build:** R4.4's screen-reader
+   pass (moon data is in the DOM: the panel's moon buttons and states, and
+   `/app/stages`' rows); R4.3's "focus-trap" check is moot (the panel is a
+   labelled region, not a modal, §3.9) but Escape and reduced motion are
+   asserted; "zero new client-side gating" should be reviewed: the moon panel
+   disables Enter from the server's facts (planet locked, no live question),
+   and the server refuses both anyway. R4.6's last box (biome as the sidebar's
+   background) predates ruling 2's one star HUD and needs the instructor to
+   say it is superseded.
+9. **`scripts/backup.mjs`** should also check `objective_progress`'s
+   append-only triggers on restore (extends 0u.4).
+10. **Lecture Mode's "active" count** (`live.ts`, `ACTIVE_ATTEMPT`) counts any
+    in-progress attempt, a journey included. Check what it is meant to mean
+    before Lecture Mode ships.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

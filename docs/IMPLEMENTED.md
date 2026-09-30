@@ -212,8 +212,11 @@ absences are what the next session needs.
   closed. What is open is one R3.4 item (both loading screens captured as frame
   sequences, not stills) and the seven Definition-of-done boxes, of which
   `design/templates/` being populated is the only one not substantively met.
-- **R4 (moons and subtopics) and R5 (testing and sign-off)** — 0 of 13 and 0 of
-  24. Nothing has started.
+- **R4 (moons and subtopics) and R5 (testing and sign-off)** — corrected 30 Sep
+  2026: R4 is **16 of 30** (`pnpm phase`). Moons open planets
+  (`is_stage_unlocked()` reads `moon_mastered()`), a moon's journey exists, the
+  map draws moons in three states with a moon panel, and Orientation has its
+  asteroids; the act-1 encounters are not built. R5 is 0 of 24.
 - **`docs/superseded/`** — named in §2c as an EngiRent practice worth copying,
   created 7 Sep alongside this file. Before that, stale documents were edited in
   place or left to rot.

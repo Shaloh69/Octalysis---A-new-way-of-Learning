@@ -321,6 +321,29 @@ moon's journey (practice on the objective's own questions, a new
 
 With these, the proposal above is the design, and building it is R4.6.
 
+**BUILT 30 Sep 2026, the same night,** each piece committed and pushed:
+`objective_progress` (`addendum-audit.sql`, written in `recordAnswer()`;
+`5cbd823`); the moon's journey, `POST /api/v1/objectives/:id/journey` and
+`/app/stage/:id/moon/:objectiveId` (`5259c50`, `dc523f6`); `moon_correct()` /
+`moon_mastered()`, the ONE definition, served per moon by `/stages`
+(`16512f0`); the moons, the moon panel and Orientation's asteroids on the map
+(`e521fdc`); and `is_stage_unlocked()` reading moons, the lock reason naming
+them (`403ec5b`). Four things the design did not say and the build had to:
+
+- **A check on a locked stage is refused at Start**, a journey too. A check's
+  answers count toward moons, so sitting a locked planet's check through the
+  API would have opened the planet after it
+- **A gradeable prerequisite with no moons blocks** (fail-closed, as decision 3)
+- **INV-12 binds papers only.** A journey takes every live question its moon
+  has at Start, so its length follows the bank, and the first journey after a
+  question was approved would have been called short
+- **The console's student record lists graded work only**; journeys are left
+  out of it. Whether the instructor wants moon mastery on the record is asked
+  in `NEXT-SESSION.md` §0w
+- **Left midway, a journey resumes; finished, the next entry is a new paper.**
+  The question put to the instructor said "the next visit is a new attempt";
+  that holds for a finished journey
+
 ### 3.8 The summaries: drafted, gated on approval
 
 **Instructor ruling, 25 Sep 2026:** summaries may be drafted, because the

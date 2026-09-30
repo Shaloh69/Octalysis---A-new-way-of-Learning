@@ -102,6 +102,16 @@ full Playwright run once passed against it — seven of its pages came within on
 commit of being committed as OCTA's biomes. `design/global-setup.ts` now refuses
 to run against an app whose title is not OCTA.
 
+## Orphaned API processes (found 30 Sep 2026)
+
+`pnpm dev:api` spawns `npx tsx watch`, and killing the parent does not always
+kill the tree. Twenty-three trees from earlier sessions were found holding and
+fighting over 8090: a new `dev:api` died on EADDRINUSE while an old one
+answered, restarted and dropped requests, and six web tests failed as "could
+not reach the server". Before starting the API, kill every
+`node scripts/dev-api.mjs` tree (`taskkill /PID <pid> /T /F`) and confirm
+nothing listens on 8090. Then start ONE and prove it with a real GET.
+
 ## Docker is unstable here
 
 Docker Desktop crashed **twice in one session** on 7 Sep. When it is down,
