@@ -153,13 +153,15 @@ describe("POST /api/v1/attempts/:id/answer", () => {
   let items: Array<{ ordinal: number; options: string[]; type: string }>;
 
   beforeAll(async () => {
-    await setup("delete from responses where true").catch(async () => {
-      await setup(`
-        alter table responses disable trigger responses_no_delete;
-        delete from responses where true;
-        alter table responses enable trigger responses_no_delete;
-      `);
-    });
+    // objective_progress cites responses and is append-only too (3.7a).
+    await setup(`
+      alter table objective_progress disable trigger objective_progress_no_delete;
+      delete from objective_progress where true;
+      alter table objective_progress enable trigger objective_progress_no_delete;
+      alter table responses disable trigger responses_no_delete;
+      delete from responses where true;
+      alter table responses enable trigger responses_no_delete;
+    `);
     const res = await app.inject({
       method: "POST", url: "/api/v1/attempts", headers: auth(tokenA),
       payload: { assessmentId: w.stageAssessmentId },
@@ -318,6 +320,94 @@ describe("a resumed paper carries the student's own recorded answers", () => {
     });
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.json().answered)).toBe(true);
+  });
+});
+
+/*
+ * WEB-REVAMP 3.7a (instructor decisions, 30 Sep 2026): a correct answer on a
+ * stage check or a moon journey counts toward its moon; a final never does.
+ * The grading service writes objective_progress in the same step that records
+ * the response, and nothing else writes it.
+ */
+describe("objective_progress: grading records each correct answer toward its moon", () => {
+  type Key = { ordinal: number; index: number; objective_id: string; family_id: string };
+  const keyOf = async (attemptId: string): Promise<Key[]> =>
+    (
+      await pool.query(
+        `select ai.ordinal, (ai.correct_value->>'index')::int as index, i.objective_id, i.family_id
+           from attempt_items ai join items i on i.id = ai.item_id
+          where ai.attempt_id = $1 and (ai.correct_value->>'index')::int >= 0
+            and not exists (select 1 from responses r
+                             where r.attempt_id = ai.attempt_id and r.ordinal = ai.ordinal)
+          order by ai.ordinal`,
+        [attemptId],
+      )
+    ).rows as Key[];
+  const rowsFor = async (attemptId: string) =>
+    (
+      await pool.query(
+        "select ordinal, user_id, objective_id, family_id from objective_progress where attempt_id = $1 order by ordinal",
+        [attemptId],
+      )
+    ).rows;
+  const answer = (attemptId: string, token: string, ordinal: number, index: number) =>
+    app.inject({
+      method: "POST", url: `/api/v1/attempts/${attemptId}/answer`, headers: auth(token),
+      payload: { ordinal, answer: { index } },
+    });
+
+  it("a correct stage-check answer is recorded toward its moon, copied from the item", async () => {
+    const start = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(tokenB),
+      payload: { assessmentId: w.stageAssessmentId },
+    });
+    const attemptId = start.json().attemptId as string;
+    const [k] = await keyOf(attemptId);
+    expect(k, "the paper has an unanswered option question").toBeDefined();
+
+    const res = await answer(attemptId, tokenB, k!.ordinal, k!.index);
+    expect(res.json().isCorrect).toBe(true);
+
+    expect(await rowsFor(attemptId)).toEqual([
+      { ordinal: k!.ordinal, user_id: w.studentB, objective_id: k!.objective_id, family_id: k!.family_id },
+    ]);
+  });
+
+  it("a wrong answer records nothing, and a repeated correct one records once", async () => {
+    const start = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(tokenB),
+      payload: { assessmentId: w.stageAssessmentId },
+    });
+    const attemptId = start.json().attemptId as string;
+    const before = (await rowsFor(attemptId)).length;
+    const [wrong, right] = await keyOf(attemptId);
+
+    const miss = await answer(attemptId, tokenB, wrong!.ordinal, wrong!.index === 0 ? 1 : 0);
+    expect(miss.json().isCorrect).toBe(false);
+    expect((await rowsFor(attemptId)).length).toBe(before);
+
+    await answer(attemptId, tokenB, right!.ordinal, right!.index);
+    const again = await answer(attemptId, tokenB, right!.ordinal, right!.index);
+    expect(again.json().alreadyAnswered).toBe(true);
+    expect((await rowsFor(attemptId)).length).toBe(before + 1);
+  });
+
+  it("a final never counts, even a correct answer", async () => {
+    const start = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(tokenA),
+      payload: { assessmentId: w.finalAssessmentId },
+    });
+    const attemptId = start.json().attemptId as string;
+    const [k] = await keyOf(attemptId);
+    const res = await answer(attemptId, tokenA, k!.ordinal, k!.index);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().verdictWithheld).toBe(true);
+    const { rows } = await pool.query(
+      "select is_correct from responses where attempt_id = $1 and ordinal = $2",
+      [attemptId, k!.ordinal],
+    );
+    expect(rows[0].is_correct, "the answer really was correct").toBe(true);
+    expect(await rowsFor(attemptId)).toEqual([]);
   });
 });
 

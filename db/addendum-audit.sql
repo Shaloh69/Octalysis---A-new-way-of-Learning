@@ -515,3 +515,115 @@ create trigger attempt_events_no_delete before delete on attempt_events
 drop trigger if exists attempt_events_no_truncate on attempt_events;
 create trigger attempt_events_no_truncate before truncate on attempt_events
   for each statement execute function deny_event_mutation();
+
+-- ============================================================
+-- A MOON'S MASTERY: objective_progress (WEB-REVAMP 3.7a; instructor
+-- decisions, 30 Sep 2026)
+--
+-- One row per correct answer that counts toward a moon (an objective). The
+-- key IS the response, (attempt_id, ordinal), so every row is backed by a real
+-- graded answer by construction, and one answer can count once.
+--
+-- What counts: a correct answer on a STAGE CHECK or a MOON JOURNEY. A FINAL
+-- NEVER COUNTS: its verdicts are withheld until submit, and a planet opening
+-- mid-exam would leak them. A voided attempt stops counting through the join
+-- in is_stage_unlocked(), never by a delete: there is no delete path.
+--
+-- Written ONLY by the grading service, in recordAnswer(), in the same step
+-- that records the response. No client write policy, and unlike
+-- stage_progress NO STAFF WRITE either: a hand-set mastery would be a second
+-- author of a fact the responses already hold. Staff who need a planet open
+-- open it on /locks, with a reason and an audit row. Append-only like
+-- `responses`: UPDATE, DELETE and TRUNCATE are refused for service_role too.
+-- A student reads their own rows; staff read all.
+--
+-- Idempotent, like attempt_events, so it reaches the deployment without a
+-- --reset. Fixtures suspend objective_progress_no_delete by name.
+-- ============================================================
+create table if not exists objective_progress (
+  attempt_id   uuid not null,
+  ordinal      int  not null,
+  user_id      uuid not null references auth.users(id),
+  objective_id text not null references objectives(id),
+  family_id    uuid not null,                    -- the question across versions (V-3)
+  recorded_at  timestamptz not null default now(),
+  primary key (attempt_id, ordinal),
+  foreign key (attempt_id, ordinal) references responses (attempt_id, ordinal)
+);
+create index if not exists objective_progress_moon
+  on objective_progress (user_id, objective_id);
+
+alter table objective_progress enable row level security;
+drop policy if exists op_read on objective_progress;
+create policy op_read on objective_progress for select to authenticated
+  using (user_id = auth.uid() or is_staff());
+revoke all on objective_progress from anon, authenticated;
+grant select on objective_progress to authenticated;
+
+-- The row must be the answer's own: a correct response, by this student, on
+-- this objective's question, in an attempt that may count. SECURITY DEFINER so
+-- the check sees `items` and `blueprints` whoever inserts (V-30).
+create or replace function objective_progress_must_be_earned() returns trigger
+language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  v_correct   boolean;
+  v_user      uuid;
+  v_status    attempt_status;
+  v_scope     text;
+  v_objective text;
+  v_family    uuid;
+begin
+  select r.is_correct, a.user_id, a.status, b.scope, i.objective_id, i.family_id
+    into v_correct, v_user, v_status, v_scope, v_objective, v_family
+    from responses r
+    join attempts a       on a.id = r.attempt_id
+    join assessments s    on s.id = a.assessment_id
+    join blueprints b     on b.id = s.blueprint_id
+    join attempt_items ai on ai.attempt_id = r.attempt_id and ai.ordinal = r.ordinal
+    join items i          on i.id = ai.item_id
+   where r.attempt_id = new.attempt_id and r.ordinal = new.ordinal;
+
+  if not found then
+    raise exception 'objective_progress: attempt % question % has no recorded response',
+      new.attempt_id, new.ordinal;
+  end if;
+  if not v_correct then
+    raise exception 'objective_progress: attempt % question % is not a correct answer',
+      new.attempt_id, new.ordinal;
+  end if;
+  if v_scope = 'final' then
+    raise exception 'objective_progress: a final never counts toward a moon'
+      using hint = 'its verdicts are withheld until submit (WEB-REVAMP 3.7a)';
+  end if;
+  if v_status = 'voided' then
+    raise exception 'objective_progress: attempt % is voided', new.attempt_id;
+  end if;
+  if new.user_id is distinct from v_user
+     or new.objective_id is distinct from v_objective
+     or new.family_id is distinct from v_family then
+    raise exception 'objective_progress: the row does not match the answer it cites'
+      using hint = 'user, objective and family are copied from the attempt and the item';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists objective_progress_earned on objective_progress;
+create trigger objective_progress_earned before insert on objective_progress
+  for each row execute function objective_progress_must_be_earned();
+
+create or replace function deny_objective_progress_mutation() returns trigger
+language plpgsql as $$
+begin
+  raise exception 'objective_progress is append-only'
+    using hint = 'a moon''s mastery is a fact about answers already given; void the attempt instead';
+end $$;
+
+drop trigger if exists objective_progress_no_update on objective_progress;
+create trigger objective_progress_no_update before update on objective_progress
+  for each row execute function deny_objective_progress_mutation();
+drop trigger if exists objective_progress_no_delete on objective_progress;
+create trigger objective_progress_no_delete before delete on objective_progress
+  for each row execute function deny_objective_progress_mutation();
+drop trigger if exists objective_progress_no_truncate on objective_progress;
+create trigger objective_progress_no_truncate before truncate on objective_progress
+  for each statement execute function deny_objective_progress_mutation();

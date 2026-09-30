@@ -61,6 +61,11 @@ export async function resetAll(): Promise<void> {
     alter table attempt_events disable trigger attempt_events_no_delete;
     delete from attempt_events     where true;
     alter table attempt_events enable trigger attempt_events_no_delete;
+    -- A moon's mastery (WEB-REVAMP 3.7a, 30 Sep 2026) is append-only for every
+    -- role and references responses, so it goes first, suspended by name.
+    alter table objective_progress disable trigger objective_progress_no_delete;
+    delete from objective_progress where true;
+    alter table objective_progress enable trigger objective_progress_no_delete;
     delete from responses          where true;
     delete from attempt_items      where true;
     delete from attempts           where true;

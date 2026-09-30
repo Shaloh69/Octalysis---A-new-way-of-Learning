@@ -126,9 +126,13 @@ supersede the R4.2 box above that says no new gating logic is built.**
       (2) a moon's journey is **practice**, not a hard-rule-9 paper; (3) a moon
       with no `live` question is **fail-closed**: its planet does not open the
       next, and the lock reason says so
-- [ ] Objective mastery stored server-side, written only by the grading
+- [x] Objective mastery stored server-side, written only by the grading
       service, RLS'd like `stage_progress`, with its denial tests written and
-      watched failing first
+      watched failing first. **Done 30 Sep 2026:** `objective_progress` in
+      `addendum-audit.sql` (idempotent), written by `recordAnswer()` in one
+      transaction with the response. `rls.spec.ts` §3.7a (eleven tests) watched
+      red three ways: no table (11), no protections (7 write denials), RLS alone
+      off (B reads A); `attempts.spec.ts` (three, two red before the write)
 - [ ] `is_stage_unlocked()` opens the next planet when every moon of its
       prerequisite is mastered. Server-side only (hard rule 4); the client
       renders the result and the `lockReason` names the moons still missing

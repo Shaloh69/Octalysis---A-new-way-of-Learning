@@ -381,20 +381,42 @@ export async function recordAnswer(
   // `responses` is append-only, enforced by trigger. A repeated answer for an
   // ordinal is not an error -- a flaky network will produce them -- but the
   // first answer is the one that counts and nothing overwrites it.
-  const inserted = await db.query(
-    `insert into responses (attempt_id, ordinal, raw_answer, is_correct, points, time_ms)
-     values ($1, $2, $3, $4, $5, $6)
-     on conflict (attempt_id, ordinal) do nothing
-     returning ordinal`,
-    [
-      opts.attempt.attemptId,
-      opts.ordinal,
-      JSON.stringify(opts.rawAnswer ?? {}),
-      result.isCorrect,
-      result.points,
-      opts.timeMs ?? null,
-    ],
-  );
+  const inserted = await withTransaction(db, async (client) => {
+    const res = await client.query(
+      `insert into responses (attempt_id, ordinal, raw_answer, is_correct, points, time_ms)
+       values ($1, $2, $3, $4, $5, $6)
+       on conflict (attempt_id, ordinal) do nothing
+       returning ordinal`,
+      [
+        opts.attempt.attemptId,
+        opts.ordinal,
+        JSON.stringify(opts.rawAnswer ?? {}),
+        result.isCorrect,
+        result.points,
+        opts.timeMs ?? null,
+      ],
+    );
+
+    /*
+     * A moon's mastery (WEB-REVAMP 3.7a, instructor decisions 30 Sep 2026): a
+     * correct answer that counts is recorded toward its objective in the SAME
+     * step as the response, so neither exists without the other. A final never
+     * counts. Only a first answer can count, because only a first answer is
+     * recorded. The objective and the question's family are copied from the
+     * item, and the table's trigger refuses a row that does not match them.
+     */
+    if (res.rowCount === 1 && result.isCorrect && opts.attempt.blueprintScope !== "final") {
+      await client.query(
+        `insert into objective_progress (attempt_id, ordinal, user_id, objective_id, family_id)
+         select ai.attempt_id, ai.ordinal, $3, i.objective_id, i.family_id
+           from attempt_items ai
+           join items i on i.id = ai.item_id
+          where ai.attempt_id = $1 and ai.ordinal = $2 and i.objective_id is not null`,
+        [opts.attempt.attemptId, opts.ordinal, opts.attempt.userId],
+      );
+    }
+    return res;
+  });
 
   if (inserted.rowCount === 0) {
     /*

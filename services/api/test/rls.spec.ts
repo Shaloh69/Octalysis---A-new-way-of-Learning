@@ -459,6 +459,203 @@ describe("§3.7 — a non-gradeable prerequisite never blocks", () => {
 });
 
 /* ============================================================
+ * 5c. WEB-REVAMP §3.7a — objective_progress, a moon's mastery
+ *
+ * Instructor decisions, 30 Sep 2026. One row per correct answer that counts
+ * toward a moon, keyed to the response itself, written by the grading service
+ * alone. A correct answer on a stage check or a moon journey counts; a final
+ * never does. Append-only like `responses`, for service_role too. A student
+ * reads their own rows, staff read all, and NOBODY writes through a client:
+ * unlike `stage_progress`, staff have no write policy, because a hand-set
+ * mastery would be a second author of a fact the responses already hold.
+ *
+ * Every denial asserts its exact error, never just `wasDenied()`: that helper
+ * counts "relation does not exist" as a denial, so without the message match
+ * these tests would pass before the table existed.
+ * ========================================================== */
+
+describe("§3.7a — objective_progress is written by grading alone", () => {
+  // ordinal 1: correct, 03.1 · ordinal 2: WRONG, 03.1 · ordinal 3: correct, 03.2
+  // ordinal 4: correct, 03.1, left unrecorded so the mismatches have a target
+  let checkAttempt: string;
+  let fam1: string;
+  let fam2: string;
+  let fam3: string;
+  const REFUSED_TO_CLIENT =
+    /permission denied for table objective_progress|row-level security policy for table "objective_progress"/;
+
+  const insertAs = (actor: Actor, ordinal: number, objective: string, family: string, user?: string) =>
+    runAs(
+      actor,
+      `insert into objective_progress (attempt_id, ordinal, user_id, objective_id, family_id)
+       values ($1, $2, $3, $4, $5) returning ordinal`,
+      [checkAttempt, ordinal, user ?? w.studentA, objective, family],
+    );
+
+  beforeAll(async () => {
+    const { rows } = await setup(
+      `
+      with
+      obj as (
+        insert into objectives (id, stage_id, code, bloom_level, level, competency, description)
+        values ('03.1','03','03.1','understand',6,'read','Fixture moon one'),
+               ('03.2','03','03.2','understand',6,'read','Fixture moon two')
+        returning id
+      ),
+      i1 as (
+        insert into items (slug, stage_id, objective_id, type, status, bloom, stem_template, correct_spec)
+        values ('S-03-moon-1','03','03.1','S','live','understand','Moon one, question one','{"value":"yes"}')
+        returning id, family_id
+      ),
+      i2 as (
+        insert into items (slug, stage_id, objective_id, type, status, bloom, stem_template, correct_spec)
+        values ('S-03-moon-2','03','03.1','S','live','understand','Moon one, question two','{"value":"yes"}')
+        returning id, family_id
+      ),
+      i3 as (
+        insert into items (slug, stage_id, objective_id, type, status, bloom, stem_template, correct_spec)
+        values ('S-03-moon-3','03','03.2','S','live','understand','Moon two, question one','{"value":"yes"}')
+        returning id, family_id
+      ),
+      at as (
+        insert into attempts (user_id, assessment_id, attempt_no, seed, status)
+        values ($1, $2, 3, 'seed-moons', 'in_progress')
+        returning id
+      ),
+      ai as (
+        insert into attempt_items (attempt_id, ordinal, item_id, correct_value)
+        values ((select id from at), 1, (select id from i1), '{"value":"yes"}'),
+               ((select id from at), 2, (select id from i2), '{"value":"yes"}'),
+               ((select id from at), 3, (select id from i3), '{"value":"yes"}'),
+               ((select id from at), 4, (select id from i1), '{"value":"yes"}'),
+               ($3::uuid,             2, (select id from i1), '{"value":"yes"}')
+        returning attempt_id
+      ),
+      rs as (
+        insert into responses (attempt_id, ordinal, raw_answer, is_correct, points)
+        values ((select id from at), 1, '{"value":"yes"}', true,  1),
+               ((select id from at), 2, '{"value":"no"}',  false, 0),
+               ((select id from at), 3, '{"value":"yes"}', true,  1),
+               ((select id from at), 4, '{"value":"yes"}', true,  1),
+               ($3::uuid,             2, '{"value":"yes"}', true,  1)
+        returning attempt_id
+      )
+      select (select id from at) as attempt,
+             (select family_id from i1) as f1,
+             (select family_id from i2) as f2,
+             (select family_id from i3) as f3,
+             (select count(*) from obj) + (select count(*) from ai) + (select count(*) from rs) as n
+      `,
+      [w.studentA, w.practiceAssessmentId, w.finalAttemptId],
+    );
+    checkAttempt = rows[0].attempt;
+    fam1 = rows[0].f1;
+    fam2 = rows[0].f2;
+    fam3 = rows[0].f3;
+  });
+
+  it("POSITIVE CONTROL: the grading service records a correct stage-check answer", async () => {
+    const res = await insertAs(service, 1, "03.1", fam1);
+    expect(res.error).toBeNull();
+    expect(res.rowCount).toBe(1);
+    const again = await insertAs(service, 3, "03.2", fam3);
+    expect(again.error).toBeNull();
+
+    // runAs always rolls back, so the rows the tests below read are committed
+    // here, by the owner, through the same earned-trigger.
+    await setup(
+      `insert into objective_progress (attempt_id, ordinal, user_id, objective_id, family_id)
+       values ($1, 1, $2, '03.1', $3), ($1, 3, $2, '03.2', $4)`,
+      [checkAttempt, w.studentA, fam1, fam3],
+    );
+  });
+
+  it("DENIAL: a student cannot write their own row, even for a correct answer", async () => {
+    const res = await runAs(
+      studentA,
+      `insert into objective_progress (attempt_id, ordinal, user_id, objective_id, family_id)
+       values ($1, 4, auth.uid(), '03.1', $2) returning ordinal`,
+      [checkAttempt, fam1],
+    );
+    expect(res.error?.message ?? "succeeded").toMatch(REFUSED_TO_CLIENT);
+  });
+
+  it("DENIAL: staff cannot write it either — no hand-set mastery", async () => {
+    const res = await insertAs(teacher, 4, "03.1", fam1);
+    expect(res.error?.message ?? "succeeded").toMatch(REFUSED_TO_CLIENT);
+    const upd = await runAs(teacher, "update objective_progress set objective_id = '03.2' returning ordinal");
+    expect(upd.error?.message ?? `updated ${upd.rowCount}`).toMatch(REFUSED_TO_CLIENT);
+    const del = await runAs(teacher, "delete from objective_progress returning ordinal");
+    expect(del.error?.message ?? `deleted ${del.rowCount}`).toMatch(REFUSED_TO_CLIENT);
+  });
+
+  it("DENIAL: append-only — service_role cannot UPDATE, DELETE or TRUNCATE it", async () => {
+    const upd = await runAs(service, "update objective_progress set objective_id = '03.2' where attempt_id = $1", [
+      checkAttempt,
+    ]);
+    expect(upd.error?.message).toMatch(/objective_progress is append-only/);
+    const del = await runAs(service, "delete from objective_progress where attempt_id = $1", [checkAttempt]);
+    expect(del.error?.message).toMatch(/objective_progress is append-only/);
+    const tru = await runAs(service, "truncate objective_progress");
+    expect(tru.error?.message).toMatch(/objective_progress is append-only/);
+    const still = await setup("select count(*)::int n from objective_progress where attempt_id = $1", [checkAttempt]);
+    expect(still.rows[0].n).toBe(2);
+  });
+
+  it("DENIAL: a row for an INCORRECT response is refused, for service_role too", async () => {
+    const res = await insertAs(service, 2, "03.1", fam2);
+    expect(res.error?.message).toMatch(/not a correct answer/);
+  });
+
+  it("DENIAL: a row with no response behind it is refused", async () => {
+    const res = await insertAs(service, 9, "03.1", fam1);
+    expect(res.error?.message).toMatch(/no recorded response/);
+  });
+
+  it("DENIAL: the user, the objective and the question must be the answer's own", async () => {
+    const wrongUser = await insertAs(service, 4, "03.1", fam1, w.studentB);
+    expect(wrongUser.error?.message).toMatch(/does not match/);
+    const wrongMoon = await insertAs(service, 4, "03.2", fam1);
+    expect(wrongMoon.error?.message).toMatch(/does not match/);
+    const wrongQuestion = await insertAs(service, 4, "03.1", fam3);
+    expect(wrongQuestion.error?.message).toMatch(/does not match/);
+  });
+
+  it("DENIAL: a final never counts, even a correct answer", async () => {
+    const res = await runAs(
+      service,
+      `insert into objective_progress (attempt_id, ordinal, user_id, objective_id, family_id)
+       values ($1, 2, $2, '03.1', $3) returning ordinal`,
+      [w.finalAttemptId, w.studentA, fam1],
+    );
+    expect(res.error?.message).toMatch(/a final never counts/);
+  });
+
+  it("POSITIVE CONTROL: a student reads their own rows, staff read all", async () => {
+    const own = await runAs(studentA, "select ordinal from objective_progress where attempt_id = $1", [checkAttempt]);
+    expect(own.error).toBeNull();
+    expect(own.rowCount).toBe(2);
+    const staff = await runAs(teacher, "select ordinal from objective_progress where attempt_id = $1", [checkAttempt]);
+    expect(staff.error).toBeNull();
+    expect(staff.rowCount).toBe(2);
+  });
+
+  it("DENIAL: student B cannot read student A's rows", async () => {
+    // A's rows exist, or "B sees none" would pass on an empty table.
+    const there = await setup("select count(*)::int n from objective_progress where user_id = $1", [w.studentA]);
+    expect(there.rows[0].n).toBeGreaterThan(0);
+    const res = await runAs(studentB, "select ordinal from objective_progress where user_id = $1", [w.studentA]);
+    expect(res.error).toBeNull(); // the table exists and B may query it...
+    expect(res.rowCount).toBe(0); // ...and sees none of A's rows
+  });
+
+  it("DENIAL: anon reads nothing", async () => {
+    const res = await runAs(anon, "select ordinal from objective_progress");
+    expect(res.error?.message).toMatch(/permission denied for table objective_progress/);
+  });
+});
+
+/* ============================================================
  * 6. V-20 — soft delete is the supported deactivation path
  * ========================================================== */
 

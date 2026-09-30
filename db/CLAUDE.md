@@ -59,4 +59,10 @@ guarantees.
 - Add an UPDATE, DELETE or TRUNCATE path to `attempt_events` (append-only since 30 Sep 2026,
   ruling 3: every time a student left a paper). API-written only; staff read it. Fixtures
   suspend `attempt_events_no_delete` by name, as `audit_log`'s are.
+- Add a write path of any kind to `objective_progress` (a moon's mastery, WEB-REVAMP 3.7a,
+  30 Sep 2026). The grading service inserts it in `recordAnswer()`, beside the response it
+  cites; a trigger refuses a row that is not a correct, counting answer (a final never counts);
+  UPDATE, DELETE and TRUNCATE are refused for every role. No staff write, unlike
+  `stage_progress`: a planet is opened by hand on `/locks`, never by editing mastery.
+  Fixtures suspend `objective_progress_no_delete` by name, before `responses`.
 - Drop an item row. Retire it.
