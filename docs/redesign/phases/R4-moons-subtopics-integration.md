@@ -83,7 +83,7 @@ accidentally scope-creep into "let's also change how mastery is computed."
       planet twice
 
 ## Definition of done
-- [ ] `docs/PROGRESS.md` updated
+- [x] `docs/PROGRESS.md` updated. **1 Oct 2026:** STATE NOW's R4 row, counted
 - [x] Moons render correctly across a range of stages with different
       objective counts (test against a stage with 3 objectives and one with
       8+, don't just verify against one example). **30 Sep 2026:** no stage

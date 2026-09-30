@@ -1396,6 +1396,65 @@ Clock Bench (02.8 Drill), `f5b293d` Cache Tuner (04.5), `95c482f` textures,
 
 ---
 
+## 0y. Bus Contention, R4's build boxes, a student deleted from production — 1 Oct 2026
+
+Instructor answers (1 Oct): **0x.3 — grant database access for that one
+action** (done, below); **0x.2 — keep `deploy/local-admin.env` until 0x.3 is
+done, then delete it** (done). Pushed: `b041de8` Bus Contention (moon 03.9),
+`be2052c` R4.3 / R4.4 / client-gating checks. Found and left, or needing a
+decision:
+
+1. **Student `23212905` is deleted from the deployment**, in one transaction:
+   inspected first, read-only (0 attempts, so 0 responses; references were its
+   auth identity, profile, roster claim and one per-student `stage_locks` row),
+   then profile, roster row and auth user deleted (identity and the lock
+   cascaded), with an `audit_log` row `student.delete` naming the instructor's
+   request and V-20's waiver for this one account, and what was removed.
+   Nothing references it now. The deployment has **0 students**.
+2. **`deploy/local-admin.env` is deleted.** Production credentials are no
+   longer on this machine in that file. **`deploy/render-api.env` still
+   exists** (gitignored, not read this session); it very likely carries the
+   same service-role key for Render. Instructor's call: keep or delete.
+   **The root `.env` still points at the OLD project** (`lqvkq…`, 0x.2);
+   unchanged, because repointing it needs the live credentials this session
+   just deleted.
+3. **Bus Contention is built on moon 03.9** (`design/templates/web/
+   encounter-bus/`, `web-encounter-bus.spec.ts` 38/38 at 1440 and 380).
+   Phaser 3.90 is in `bus-scene` only (341.8 KB gz), reached only through
+   `BusContention`; `dist/index.html` names neither. **All four act-1
+   encounters now exist.** The extract's §3.4 has no "Elements of Bus Design"
+   table (it is the edition that defers it to Appendix C), so bus TIMING
+   (synchronous/asynchronous) and arbitration METHODS are not taught by the
+   bench; it says so on the page.
+4. **Phaser's own pointer input kept a stale canvas position** once the page
+   above settled after boot (clicks missed at 380). The scene now takes no
+   Phaser input; a DOM listener measures at click time. Any future Phaser
+   scene (the Descent, stages 12, 14, 18) will hit the same thing.
+5. **A gate hole, closed for this spec only:** "nothing clipped" cannot see a
+   child wider than its own panel while it stays on screen (the wiring table
+   at 1440, found by opening the capture). `web-encounter-bus.spec.ts` has an
+   `outOfPanel` check; `_gate.ts` does not. Worth moving there.
+6. **The full design suite, 1 Oct, against builds:** 1297 passed, 171
+   skipped, 2 failed: `web-stage.spec.ts` "tables, quotes and the brief" and
+   "every figure", both at 380, both a 20 s timeout waiting for
+   `[data-reader="reading"]` under full load; both pass alone in 5 s. Load,
+   not a defect, but the reader's wait is the one that times out.
+   `pnpm test`: API 718 passed (1 skipped), web unit 197, console 217,
+   tokens 38.
+7. **`/app/stages`, for the screen-reader pass:** each planet radio's label
+   also appears in the accessibility tree as a separate text node, so a
+   virtual cursor may read every planet twice. Not fixed (not this session's
+   page).
+8. **The entry chunk is 106.0 KB gz**, not GAME-DESIGN §10.2's 74.9 KB
+   (re-baselined there; the growth is the remake, not a canvas library).
+9. **R4 now owes only a person:** R4.4's screen-reader pass and the DoD's
+   (moon data is asserted in the accessibility tree; someone must listen).
+10. **Prelim, still NOT runnable:** act 1 is 96 items at `review`, 0 `live`,
+   measured on the deployment today and locally. That is the instructor's
+   approval on the console (`/content`), not a build.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

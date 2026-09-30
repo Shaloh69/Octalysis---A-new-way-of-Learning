@@ -23,67 +23,64 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: Bus wiring on moon 03.9 (R4.5), then R4's last boxes
+## 1. Start here — the next session: close R3 (its 15 open boxes, audited against the code)
 
-*Rewritten 1 Oct 2026 by the session that built three act-1 encounters (Two
-Columns 01.2, Clock Bench 02.8, Cache Tuner 04.5), put moon mastery on the
-console's student record, reset and reloaded the deployment, textured the map
-and hid the star map while a planet is chosen. Phase at handover: **R3 71 / 86**,
-**R4 23 / 30**; all tracks **179 done · 46 to-do (225 items, 80%)**.
-`pnpm phase` is the count, not this line. The prompt is in a plain block so it
-pastes exactly as written.*
+*Rewritten 1 Oct 2026 (late) by the session that built Bus Contention on moon
+03.9 (the last act-1 encounter, and the one Phaser one), closed R4's
+build-closable boxes, and deleted student 23212905 from the deployment on the
+instructor's grant. Phase at handover: **R3 71 / 86**, **R4 28 / 30** (the two
+left need a person with a screen reader); all tracks **184 done · 41 to-do
+(225 items, 82%)**. `pnpm phase` is the count, not this line. The prompt is in
+a plain block so it pastes exactly as written.*
 
 ```text
-Read docs/NEXT-SESSION.md section 0x first (what the last session built, found
-and parked: the deployment reset, the root .env pointing at the OLD Supabase
-project, deploy/local-admin.env holding the service-role key, the instructor's
-request to delete student 23212905, the Cache Tuner's missing meter), then
-docs/redesign/WEB-REVAMP.md 3.6 (APPROVED), docs/redesign/phases/R4-*.md
-(R4.5 and the open boxes), docs/redesign/MINIGAME-PROPOSALS.md (Bus
-Contention), docs/GAME-DESIGN.md section 10 (Phaser: lazy, per route, never in
-the initial bundle), and design/templates/web/encounter-sort/SPEC.md (how an
-encounter sits beside a moon's journey: apps/web/src/encounters/registry.ts,
-MoonEncounterSlot.tsx). Root CLAUDE.md hard rules 4, 5 and 9 bind. Do not
-re-derive what those carry.
+Read docs/NEXT-SESSION.md section 0y first (what the last session built, found
+and parked: Bus Contention on 03.9, Phaser's stale pointer input, the gate hole
+outOfPanel closes, the full-suite figures and its two load timeouts, the
+/app/stages double-reading, deploy/render-api.env and the root .env still
+pointing at the OLD Supabase project). Then docs/redesign/phases/R3-*.md in
+full for its open boxes (pnpm phase --open lists them: R3.4's frame
+sequences, the Definition of done, the remake, toasts/loading/transitions,
+the shared icon, map sidebar and Enter journey, planet summaries, planet
+selection and zoom, Kepler orbits, PROGRESS's own box), and REDESIGN-CLAUDE.md
+2b-2d. Root CLAUDE.md hard rules bind. Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. Then
 state plainly whether Prelim-worth of data is okay to run on students, checking
 the five conditions in CLAUDE.md rather than remembering them. (On 1 Oct it was
-NOT: all 96 act-1 items are at review and 0 live, measured locally, and the
-same on the deployment after its reset, so no paper fills and a moon with no
-live question holds its planet shut.)
+NOT: act 1 is 96 items at review and 0 live, on the deployment and locally,
+so no paper fills; bank-feasibility.spec passes only because it models the
+bank as if approved. The approval is the instructor's, on the console.)
 
 Confirm everything is green before touching anything, AGAINST BUILDS. Kill
-every orphaned API tree (NEXT-SESSION 0w.5), confirm nothing listens on 8090,
-pnpm db:reset THEN node scripts/db-demo.mjs, ONE pnpm dev:api proved with a
-real GET, apps/web built and previewed on 5185, apps/console on 5186, with
-OCTA_WEB_URL=http://localhost:5185 and OCTA_CONSOLE_URL=http://localhost:5186
-exported for Playwright. Then the FULL design suite, which was NOT run at the
-last close (the instructor stopped it twice): every design/specs file. Last
-full counts, 30 Sep: web 628 (505 passed, 123 skipped), console 814 (756
-passed, 58 skipped); three encounter specs and more web-app tests were added
-since, so the totals grow. Then pnpm test (1 Oct: 718 API tests passed, 1
-skipped; web unit 165, console unit 217). Never reset while a Playwright suite
-runs; after the API suite run db:reset THEN db-demo.
+every orphaned API tree and preview server (NEXT-SESSION 0w.5; last session
+found both previews and an API from the session before still running),
+confirm nothing listens on 8090, pnpm db:reset THEN node scripts/db-demo.mjs,
+ONE pnpm dev:api proved with a real GET, apps/web built and previewed on 5185,
+apps/console on 5186, OCTA_WEB_URL=http://localhost:5185 and
+OCTA_CONSOLE_URL=http://localhost:5186 exported. Then the FULL design suite
+(1 Oct: 1297 passed, 171 skipped, 2 failed, both web-stage.spec at 380
+timing out on the reader under load and passing alone; re-run failures alone
+before calling them defects). Then pnpm test (1 Oct: API 718 passed, 1
+skipped; web unit 197; console 217; tokens 38). Never reset while a
+Playwright suite runs; after the API suite run db:reset THEN db-demo.
 
-Ask the instructor about 0x.3 (delete student 23212905 on the deployment: grant
-database access for that one action, or delete it in the Supabase dashboard)
-and 0x.2 (delete deploy/local-admin.env once the migration is done). Do not
-touch the production database without that answer.
+The work: close R3. For EACH of its open boxes, in order, read what it asks,
+then find the code and the spec that would prove it. Where both exist and the
+spec is green, tick the box in the same commit with a dated line naming the
+spec (trust the code over the checklist: several of these look built and
+were never ticked, which is the drift 2b exists to stop). Where it is not
+built, say so, plan it, and either build it through the page gate or record
+a deliberate deferral with its reason; ask the instructor before building
+anything a box does not already specify. R3.4's frame sequences (the warp and
+the biome arrival captured as short frame sequences, opened) are known
+unbuilt. Consider moving the outOfPanel check from web-encounter-bus.spec.ts
+into design/specs/_gate.ts so every route gets it, and run the suite if you do.
 
-The work, through the page gate (template captured as an artifact, SPEC.md,
-motion.md, a spec green on all six assertions at 1440 and 380, captures
-opened), committed and pushed: Bus wiring on moon 03.9, the one Phaser
-encounter of act 1. Phaser lazy-loaded inside the encounter's own chunk and
-grep dist/index.html to prove no preload (R4.5's open box); a keyboard path
-through the whole encounter; a DOM fallback when the canvas cannot run; it
-dresses the moon's journey and NEVER an assessment; never the only path; no
-client scoring; its content from docs/source/book/ch-03.md or
-content/stages/03.md, verified by a vitest watched failing (hard rule 5). Then
-R4's remaining boxes that a build can close: R4.3's check (Escape and reduced
-motion still hold with the moon content; the panel is a region, not a modal),
-the zero-new-client-gating grep and review, and the screen-reader equivalence
-checked in the DOM, leaving the real screen-reader pass for the instructor.
+Ask the instructor: keep or delete deploy/render-api.env (0y.2); whether to
+repoint the root .env at the live project (needs credentials supplied again);
+and whether act 1's 96 items can be approved to live, which is the only thing
+between the Prelim and students.
 
 End: pnpm phase with the percentage, the Prelim sentence checked, docs/
 NEXT-SESSION.md and PROGRESS.md updated, this section rewritten for the
