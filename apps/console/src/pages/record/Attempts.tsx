@@ -64,9 +64,14 @@ function Body({ a, p }: { a: Attempt; p: PaperState }) {
   );
 }
 
-const COLS = 6;
+const COLS = 7;
 
-/** Its own width 40rem and up: six columns, and the open paper spans all six. */
+/** Times the student left the paper (ruling 3). A number, never a colour: it is a fact, not a verdict. */
+function Leaves({ a }: { a: Attempt }) {
+  return <span className="num">{a.leaves}</span>;
+}
+
+/** Its own width 40rem and up: seven columns, and the open paper spans all seven. */
 export function AttemptTable({ attempts, p }: { attempts: Attempt[]; p: PaperState }) {
   return (
     <table className="record-table">
@@ -77,6 +82,7 @@ export function AttemptTable({ attempts, p }: { attempts: Attempt[]; p: PaperSta
         <col className="c-status" />
         <col className="c-when" />
         <col className="c-took" />
+        <col className="c-left" />
       </colgroup>
       <thead>
         <tr>
@@ -86,6 +92,7 @@ export function AttemptTable({ attempts, p }: { attempts: Attempt[]; p: PaperSta
           <th scope="col">Status</th>
           <th scope="col">Submitted</th>
           <th scope="col" className="num-col">Time taken</th>
+          <th scope="col" className="num-col">Left the paper</th>
         </tr>
       </thead>
       <tbody>
@@ -98,6 +105,7 @@ export function AttemptTable({ attempts, p }: { attempts: Attempt[]; p: PaperSta
               <td><Status status={a.status} /></td>
               <td className="text-xs text-ink-muted">{shortDate(a.submittedAt)}</td>
               <td className="num-col"><span className="num text-xs">{timeTaken(a.startedAt, a.submittedAt)}</span></td>
+              <td className="num-col"><Leaves a={a} /></td>
             </tr>
             {p.open === a.attemptId ? (
               <tr id={`paper-${a.attemptId}`} className="record-paper-row">
@@ -135,6 +143,9 @@ export function AttemptList({ attempts, p }: { attempts: Attempt[]; p: PaperStat
                 took <span className="num">{timeTaken(a.startedAt, a.submittedAt)}</span>
               </span>
             ) : null}
+            <span>
+              left the paper <Leaves a={a} />
+            </span>
           </p>
           {p.open === a.attemptId ? (
             <div id={`paper-${a.attemptId}`} className="record-paper-row">

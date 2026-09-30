@@ -66,7 +66,9 @@ const TEACHER = teacherToken();
  * The run prefix alone was not enough: two tests in the same file both started
  * at index 0 and the second collided with the first's slugs.
  */
-const RUN = `rev${Date.now().toString(36)}`;
+// Per worker PROCESS as well as per millisecond: the 1440 and 380 workers load
+// this file together and could draw the same timestamp, then the same slugs.
+const RUN = `rev${Date.now().toString(36)}${process.pid.toString(36)}`;
 let batch = 0;
 
 interface Made {

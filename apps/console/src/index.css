@@ -918,6 +918,7 @@
   .record-table col.c-status { width: 8rem; }
   .record-table col.c-when   { width: 9rem; }
   .record-table col.c-took   { width: 7.5rem; }
+  .record-table col.c-left   { width: 7rem; }
   .record-table th,
   .record-table td { padding: var(--space-2) var(--space-3); text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
   .record-table th:first-child,
@@ -2772,4 +2773,11 @@
   .pp-rationale { max-width: 65ch; margin-top: var(--space-3); padding-top: var(--space-2); border-top: var(--border-hair) solid var(--line); }
 
   .pp-missing { display: flex; flex-direction: column; gap: var(--space-2); max-width: 40rem; }
+}
+
+/* The sitting (ruling 3, 30 Sep 2026): every leave and return, in order. */
+@layer components {
+  .sitting { display: grid; gap: var(--space-1); }
+  .sitting-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); font-size: var(--text-sm); }
+  .record-paper .sitting { padding: 0 0 var(--space-3); }
 }

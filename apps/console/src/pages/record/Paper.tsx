@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { AttemptDetail } from "@/lib/api";
+import { Sitting } from "./Sitting";
 import { useDelayed } from "@/lib/useDelayed";
 import {
   duration, paperSummary, sequence, showsKey, TYPE_WORD, verdict, type PaperItem,
@@ -53,6 +54,7 @@ export function PaperBody({
           Open paper on its own page
         </Link>
       </div>
+      <Sitting events={paper.events ?? []} />
       {status === "voided" ? (
         <p className="record-paper-note">Voided. Kept for the record; it no longer counts toward a grade.</p>
       ) : status === "in_progress" ? (

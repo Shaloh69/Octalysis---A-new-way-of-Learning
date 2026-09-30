@@ -1,3 +1,4 @@
+import { Sitting } from "./record/Sitting";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { api, ApiError, type AttemptDetail } from "@/lib/api";
@@ -153,6 +154,11 @@ function PaperDocument({ paper }: { paper: AttemptDetail }) {
             <Link to={`/audit?q=${encodeURIComponent(student.studentId)}`} className="pp-link pp-audit">
               This student in the audit log
             </Link>
+          </section>
+
+          <section className="pp-card" aria-labelledby="pp-sitting-h">
+            <h2 id="pp-sitting-h" className="pp-h2">The sitting</h2>
+            <Sitting events={paper.events ?? []} />
           </section>
 
           <nav className="pp-card" aria-labelledby="pp-index-h" data-index="">
