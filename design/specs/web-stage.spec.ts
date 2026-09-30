@@ -74,7 +74,7 @@ test.describe("the gate", () => {
   });
 
   test("1b. the lock card is clipped nowhere", async ({ page }) => {
-    await openStage(page, "01", { wait: "locked" });
+    await openStage(page, "02", { wait: "locked" });
     expect(await clippedElements(page, ROUTE)).toEqual([]);
   });
 
@@ -86,8 +86,8 @@ test.describe("the gate", () => {
     await openStage(p, "07", { token: S004 });
     expect(await horizontalOverflow(p), "stage 07").toBeLessThanOrEqual(0);
     await ctx.close();
-    await openStage(page, "01", { wait: "locked" });
-    expect(await horizontalOverflow(page), "locked 01").toBeLessThanOrEqual(0);
+    await openStage(page, "02", { wait: "locked" });
+    expect(await horizontalOverflow(page), "locked 02").toBeLessThanOrEqual(0);
   });
 
   test("3. every control is reachable by keyboard", async ({ page }) => {
@@ -105,8 +105,8 @@ test.describe("the gate", () => {
       if (!wide(info)) await p.getByRole("button", { name: /^Contents/ }).click();
       expect(await contrastFailures(p, ROUTE, SPRITES), `07 ${biome}`).toEqual([]);
       const q = await ctx.newPage();
-      await forcePlanetBiome(q, "01", biome);
-      await openStage(q, "01", { wait: "locked" });
+      await forcePlanetBiome(q, "02", biome);
+      await openStage(q, "02", { wait: "locked" });
       expect(await contrastFailures(q, ROUTE, SPRITES), `locked ${biome}`).toEqual([]);
       await ctx.close();
     }
@@ -115,7 +115,7 @@ test.describe("the gate", () => {
   test("5. the token system is what rendered", async ({ page }) => {
     await openStage(page, "06");
     expect(await offTokenStyles(page, ROUTE), "reading").toEqual([]);
-    await openStage(page, "01", { wait: "locked" });
+    await openStage(page, "02", { wait: "locked" });
     expect(await offTokenStyles(page, ROUTE), "locked").toEqual([]);
   });
 
@@ -363,15 +363,15 @@ test.describe("resume, per device (instructor, 29 Sep 2026)", () => {
 
 test.describe("the locked stage (instructor, 29 Sep 2026: the server's words)", () => {
   test("a full-page card: the API's reason verbatim, the prerequisite, the preview", async ({ page, request }) => {
-    const api = await realStage(request, "01");
+    const api = await realStage(request, "02");
     expect(api.lockReason?.kind).toBe("prereq");
-    await openStage(page, "01", { wait: "locked" });
+    await openStage(page, "02", { wait: "locked" });
     const card = page.locator('[data-reader="locked"]');
     await expect(card.locator("h1")).toHaveText(api.title);
     await expect(card).toContainText("Not open yet");
     await expect(card.locator("[data-reason]")).toHaveText(api.lockReason!.message);
-    await expect(card.getByRole("link", { name: "Go to Stage 00", exact: true })).toHaveAttribute("href", "/app/stage/00");
-    await expect(card.locator("li", { hasText: /^01\.1\b/ })).toHaveCount(1);
+    await expect(card.getByRole("link", { name: "Go to Stage 01", exact: true })).toHaveAttribute("href", "/app/stage/01");
+    await expect(card.locator("li", { hasText: /^02\.1\b/ })).toHaveCount(1);
     await expect(page.locator("[data-reading]")).toHaveCount(0);
     expect(await onTop(page, "[data-reason]"), "the lock card is painted under the biome").toBe(true);
   });

@@ -293,17 +293,62 @@ describe("GET /api/v1/stages — the skill tree", () => {
     }
   });
 
-  it("the lock state comes from is_stage_unlocked(), not from the client", async () => {
-    // Prove it by changing the database and re-reading: mastery on 00 should
-    // open 01 with no client involvement at all.
+  /*
+   * WEB-REVAMP §3.7 (instructor, 25 Sep 2026): a non-gradeable prerequisite
+   * never blocks. Orientation has nothing to master, so stage 01 is open from
+   * the start, and no lock reason may name Orientation as the thing to reach.
+   */
+  it("Stage 01 is open for a fresh student: Orientation is not gradeable", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
+    const nodes = res.json().nodes as Array<{
+      id: string; state: string; lockReason: { message: string; blockingStages: string[] } | null;
+    }>;
+    expect(nodes.find((n) => n.id === "01")!.state).toBe("available");
+
+    const s02 = nodes.find((n) => n.id === "02")!;
+    expect(s02.state).toBe("locked");
+    expect(s02.lockReason!.blockingStages).toEqual(["01"]);
+    expect(s02.lockReason!.message).toMatch(/^Unlocks when Stage 01 /);
+
+    for (const n of nodes) {
+      expect(n.lockReason?.blockingStages ?? []).not.toContain("00");
+    }
+  });
+
+  it("an override on Stage 01 reads as the instructor's, never as Orientation's", async () => {
+    // With no mastery anywhere, a reason written from the raw prereq list would
+    // say "Unlocks when Stage 00 (Orientation) reaches 70%" -- a path that does
+    // not exist, printed as the way forward.
     await pool.query(
-      `insert into stage_progress (user_id, stage_id, mastery) values ($1,'00',0.95)
+      `insert into stage_locks (scope, scope_user_id, stage_id, state, reason, actor_id)
+       values ('user', $1, '01', 'locked', 'held back', $2)`,
+      [studentId, teacherId],
+    );
+    try {
+      const map = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
+      const node = (map.json().nodes as Array<{ id: string; state: string; lockReason: { kind: string } }>)
+        .find((n) => n.id === "01")!;
+      expect(node.state).toBe("locked");
+      expect(node.lockReason.kind).toBe("override");
+
+      const reader = await app.inject({ method: "GET", url: "/api/v1/stages/01", headers: auth(studentToken) });
+      expect(reader.json().lockReason).toEqual(node.lockReason);
+    } finally {
+      await pool.query("delete from stage_locks where scope_user_id = $1", [studentId]);
+    }
+  });
+
+  it("the lock state comes from is_stage_unlocked(), not from the client", async () => {
+    // Prove it by changing the database and re-reading: mastery on 01 should
+    // open 02 with no client involvement at all.
+    await pool.query(
+      `insert into stage_progress (user_id, stage_id, mastery) values ($1,'01',0.95)
        on conflict (user_id, stage_id) do update set mastery = 0.95`,
       [studentId],
     );
     const res = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
     const nodes = res.json().nodes as Array<{ id: string; state: string }>;
-    expect(nodes.find((n) => n.id === "01")!.state).toBe("available");
+    expect(nodes.find((n) => n.id === "02")!.state).toBe("available");
   });
 
   it("a teacher override closes a stage the prerequisites would have opened", async () => {

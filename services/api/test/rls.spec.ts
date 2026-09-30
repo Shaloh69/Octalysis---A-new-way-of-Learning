@@ -363,6 +363,102 @@ describe("V-16 — is_stage_unlocked() honours lock_at", () => {
 });
 
 /* ============================================================
+ * 5b. WEB-REVAMP §3.7 — a non-gradeable prerequisite never blocks
+ *
+ * Instructor ruling, 25 Sep 2026. Orientation (00) is gradeable = false: it
+ * has no questions, so no mastery can ever be earned there, and requiring 70%
+ * of it kept stage 01 shut for every student by no path that exists. The rule
+ * is narrow on purpose: it removes an unsatisfiable edge and nothing else. A
+ * gradeable prerequisite still blocks, an override still wins, and nothing a
+ * student can write moves a lock.
+ * ========================================================== */
+
+describe("§3.7 — a non-gradeable prerequisite never blocks", () => {
+  it("stage 01 is open to a student with no progress anywhere (its only prereq is 00)", async () => {
+    const res = await setup("select is_stage_unlocked($1,'01') as ok", [w.studentA]);
+    expect(res.rows[0].ok).toBe(true);
+  });
+
+  it("DENIAL: a gradeable prerequisite still blocks — stage 02 stays shut without 01", async () => {
+    const res = await setup("select is_stage_unlocked($1,'02') as ok", [w.studentA]);
+    expect(res.rows[0].ok).toBe(false);
+  });
+
+  it("DENIAL: beside a gradeable prereq, a non-gradeable one excuses nothing", async () => {
+    // No seeded stage has two prerequisites, so borrow the unpublished fixture
+    // stage: is_stage_unlocked() does not read `published`, cb_read does.
+    await setup("update stages set prereq = '{00,01}' where id = '99'");
+    try {
+      const shut = await setup("select is_stage_unlocked($1,'99') as ok", [w.studentA]);
+      expect(shut.rows[0].ok).toBe(false);
+
+      await setup(
+        `insert into stage_progress (user_id, stage_id, mastery) values ($1,'01',0.70)`,
+        [w.studentA],
+      );
+      const open = await setup("select is_stage_unlocked($1,'99') as ok", [w.studentA]);
+      expect(open.rows[0].ok).toBe(true);
+    } finally {
+      await setup("delete from stage_progress where user_id = $1", [w.studentA]);
+      await setup("update stages set prereq = '{}' where id = '99'");
+    }
+  });
+
+  it("DENIAL: a global override still closes stage 01 (exam mode is not excused)", async () => {
+    await setup(
+      `insert into stage_locks (scope, stage_id, state, reason, actor_id)
+       values ('global', '01', 'locked', 'exam mode', $1)`,
+      [w.teacher],
+    );
+    try {
+      const res = await setup("select is_stage_unlocked($1,'01') as ok", [w.studentA]);
+      expect(res.rows[0].ok).toBe(false);
+    } finally {
+      await setup("delete from stage_locks where scope = 'global'");
+    }
+  });
+
+  /*
+   * The new rule gives a student one more thing to aim at: make a prerequisite
+   * look non-gradeable. Every path by which they could write their way past a
+   * lock is tried here, and each must be refused.
+   */
+  it("DENIAL: a student cannot mark stage 01 non-gradeable to open stage 02", async () => {
+    const res = await runAs(studentA, "update stages set gradeable = false where id = '01'");
+    expect(wasDenied(res), `expected denial, got ${denialReason(res)}`).toBe(true);
+    const still = await setup("select gradeable from stages where id = '01'");
+    expect(still.rows[0].gradeable).toBe(true);
+  });
+
+  it("DENIAL: a student cannot clear stage 02's prerequisites", async () => {
+    const res = await runAs(studentA, "update stages set prereq = '{}' where id = '02'");
+    expect(wasDenied(res), `expected denial, got ${denialReason(res)}`).toBe(true);
+  });
+
+  it("DENIAL: a student cannot write their own stage_progress", async () => {
+    const res = await runAs(
+      studentA,
+      "insert into stage_progress (user_id, stage_id, mastery) values (auth.uid(), '01', 1)",
+    );
+    expect(wasDenied(res), `expected denial, got ${denialReason(res)}`).toBe(true);
+  });
+
+  it("DENIAL: a student cannot write themselves an unlock override", async () => {
+    const res = await runAs(
+      studentA,
+      `insert into stage_locks (scope, scope_user_id, stage_id, state, reason, actor_id)
+       values ('user', auth.uid(), '02', 'unlocked', 'self-service', auth.uid())`,
+    );
+    expect(wasDenied(res), `expected denial, got ${denialReason(res)}`).toBe(true);
+  });
+
+  it("and after every attempt above, stage 02 is still shut", async () => {
+    const res = await setup("select is_stage_unlocked($1,'02') as ok", [w.studentA]);
+    expect(res.rows[0].ok).toBe(false);
+  });
+});
+
+/* ============================================================
  * 6. V-20 — soft delete is the supported deactivation path
  * ========================================================== */
 

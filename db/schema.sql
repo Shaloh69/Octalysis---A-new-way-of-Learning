@@ -550,15 +550,26 @@ begin
        and (v_lock   is null or now() <  v_lock);
   end if;
 
-  -- 4. curriculum policy: all prerequisites at >= 70% mastery
+  -- 4. curriculum policy: every GRADEABLE prerequisite at >= 70% mastery.
+  -- A non-gradeable prerequisite never blocks (WEB-REVAMP 3.7, instructor ruling
+  -- 25 Sep 2026): it has no questions, so no mastery can be earned there, and
+  -- requiring some shut stage 01 behind Orientation by no path that exists.
+  -- A prereq id with no stages row stays blocking (the inner join would drop
+  -- it, so it is counted separately); INV-19 forbids one anyway.
   select prereq into v_prereq from stages where id = p_stage;
   if v_prereq is null or array_length(v_prereq,1) is null then return true; end if;
 
-  select bool_and(coalesce(sp.mastery,0) >= 0.70) into v_ok
+  if exists (select 1 from unnest(v_prereq) req(stage_id)
+              where not exists (select 1 from stages s where s.id = req.stage_id)) then
+    return false;
+  end if;
+
+  select coalesce(bool_and(coalesce(sp.mastery,0) >= 0.70), true) into v_ok
   from unnest(v_prereq) req(stage_id)
+  join stages s on s.id = req.stage_id and s.gradeable
   left join stage_progress sp on sp.user_id = p_user and sp.stage_id = req.stage_id;
 
-  return coalesce(v_ok, false);
+  return v_ok;
 end $$;
 
 -- Is this attempt one whose verdict must be withheld until submit?
@@ -985,7 +996,7 @@ insert into blueprints (name, scope, total_items, constraints) values
 -- STAGE CHECKS — one per gradeable stage.
 --
 -- These were MISSING, and their absence stopped the course working (F-44).
--- `is_stage_unlocked()` needs every prerequisite at >= 70% mastery;
+-- `is_stage_unlocked()` needs every gradeable prerequisite at >= 70% mastery;
 -- `stage_progress.mastery` is written only for an attempt whose blueprint is
 -- STAGE-scoped; and `routes/stages.ts` finds a stage's check by looking for an
 -- assessment whose blueprint is scoped to that stage. With only the four

@@ -112,11 +112,14 @@ supersede the R4.2 box above that says no new gating logic is built.**
       mistakes them for moons; `aria-hidden`, not focusable, not selectable,
       absent from the flat map and the sidebar; frozen under `QA_MODE`, still
       under `prefers-reduced-motion`; Keplerian like everything else
-- [ ] **`is_stage_unlocked()`: a non-gradeable prerequisite never blocks.**
+- [x] **`is_stage_unlocked()`: a non-gradeable prerequisite never blocks.**
       Server-side, denial test first — including the test that a student still
       cannot open stage 02 without stage 01's moons. This is independent of the
       rest of moon gating and can land first, which removes one of the two
-      non-design Prelim blockers on its own
+      non-design Prelim blockers on its own. **Done 30 Sep 2026:** `rls.spec.ts`
+      §3.7 (nine tests, watched failing), `stages.spec.ts`. Until moons gate,
+      "without stage 01's moons" reads "without stage 01 at 70%"; the moon form
+      of that test lands with the box below that makes moons gate
 - [ ] Objective mastery stored server-side, written only by the grading
       service, RLS'd like `stage_progress`, with its denial tests written and
       watched failing first

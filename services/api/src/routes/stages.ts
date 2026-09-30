@@ -70,6 +70,10 @@ function stateOf(unlocked: boolean, mastery: number): StageState {
  * requires every lock to say why and how far off. ONE author for the map and
  * the reader (29 Sep 2026): the reader's lock card prints this verbatim, and a
  * second wording of the same fact would drift from the first.
+ *
+ * `prereq` must already be the GRADEABLE prerequisites only, the ones
+ * `is_stage_unlocked()` counts (WEB-REVAMP 3.7). A reason naming Orientation
+ * would tell the student to reach a mastery no path can earn.
  */
 function lockReasonFor(
   prereq: string[],
@@ -127,6 +131,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
     );
 
     const masteryOf = new Map(rows.map((r) => [r.id, Number(r.mastery ?? 0)]));
+    const gradeable = new Map(rows.map((r) => [r.id, r.gradeable]));
 
     const nodes = rows.map((r) => {
       const mastery = Number(r.mastery ?? 0);
@@ -134,7 +139,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       const lockReason =
         state === "locked"
           ? lockReasonFor(
-              r.prereq,
+              (r.prereq ?? []).filter((p) => gradeable.get(p) !== false),
               (p) => masteryOf.get(p) ?? 0,
               (p) => rows.find((x) => x.id === p)?.title,
             )
@@ -226,8 +231,10 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       // The prerequisites' masteries and titles, read exactly as the map reads
       // them (published stages only), so both routes print the same sentence.
       const prereq: string[] = stage.prereq ?? [];
-      const pre = await app.db.query<{ id: string; title: string; mastery: string | null }>(
-        `select s.id, s.title, sp.mastery
+      const pre = await app.db.query<{
+        id: string; title: string; gradeable: boolean; mastery: string | null;
+      }>(
+        `select s.id, s.title, s.gradeable, sp.mastery
            from stages s
            left join stage_progress sp on sp.user_id = $1 and sp.stage_id = s.id
           where s.id = any($2) and s.published`,
@@ -245,7 +252,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         state: "locked" satisfies StageState,
         masteryThreshold: MASTERY_THRESHOLD,
         lockReason: lockReasonFor(
-          prereq,
+          prereq.filter((p) => known.get(p)?.gradeable !== false),
           (p) => Number(known.get(p)?.mastery ?? 0),
           (p) => known.get(p)?.title,
         ),

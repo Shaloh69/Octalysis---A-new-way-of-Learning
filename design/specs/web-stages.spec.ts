@@ -117,10 +117,13 @@ test.describe("/app/stages — what the list owes", () => {
   });
 
   test("with nothing chosen, the card is the student's next stage, and its row says next", async ({ page }) => {
+    // 01, since 30 Sep 2026: a non-gradeable prerequisite never blocks
+    // (WEB-REVAMP 3.7), so the seeded student's 01 at 65% is open and unfinished,
+    // and it comes before 06 in the syllabus.
     await stages(page);
-    await expect(page.locator(".stages [data-card]")).toHaveAttribute("data-card", "06");
-    await expect(page.locator('[data-stage-row="06"]')).toContainText(/next/i);
-    await expect(page.getByRole("radio", { name: /^06/ })).toBeChecked();
+    await expect(page.locator(".stages [data-card]")).toHaveAttribute("data-card", "01");
+    await expect(page.locator('[data-stage-row="01"]')).toContainText(/next/i);
+    await expect(page.getByRole("radio", { name: /^01/ })).toBeChecked();
   });
 
   test("one Tab stop; arrow keys walk the syllabus and the card follows", async ({ page }, info) => {
