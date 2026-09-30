@@ -72,6 +72,39 @@ export function CheckPage(): JSX.Element {
   );
 }
 
+/**
+ * `/app/stage/:id/moon/:objectiveId`: a moon's journey (WEB-REVAMP 3.2 item 5,
+ * 3.7a). Practice on that objective's own questions, inside its planet's biome
+ * (a moon wears its planet's, 3.5). The server decides the lock and whether the
+ * moon has questions; this page only says what it answered.
+ */
+export function MoonJourneyPage(): JSX.Element {
+  const { id = "", objectiveId = "" } = useParams();
+  const nav = useNavigate();
+  // Leaving returns to the map with the planet, and its moon, still chosen (3.3).
+  const back = () => nav(`/app?stage=${id}&moon=${encodeURIComponent(objectiveId)}`);
+
+  if (!objectiveId.startsWith(`${id}.`)) {
+    return (
+      <ErrorState
+        message="That moon does not circle this planet. Go back to the map and choose it there."
+        onRetry={() => nav(`/app?stage=${id}`)}
+        retryLabel="Back to the map"
+      />
+    );
+  }
+
+  return (
+    <AttemptRunner
+      key={objectiveId}
+      stageId={id}
+      journey={{ objectiveId }}
+      title={`Moon ${objectiveId}`}
+      onLeave={back}
+    />
+  );
+}
+
 export function ProgressPage(): JSX.Element {
   const { map, grid, error, reload } = useShellData();
   const loading = !error && (!grid || !map);

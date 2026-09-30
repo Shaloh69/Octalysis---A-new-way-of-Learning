@@ -169,24 +169,37 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
  */
 export type { Cosmetics };
 
+/** A paper as it opens: a stage check, an exam, or a moon's journey. */
+export interface StartedPaper {
+  attemptId: string;
+  attemptNo: number;
+  resumed: boolean;
+  totalItems: number;
+  items: PaperItem[];
+  /** Since 29 Sep 2026: the student's own recorded answers on a resume. */
+  answered?: RecordedAnswer[];
+}
+
 export const api = {
   stages: () => request<StageMapData>("/api/v1/stages"),
   cosmetics: () => request<Cosmetics>("/api/v1/cosmetics"),
   stage: (id: string) => request<StageDetail>(`/api/v1/stages/${id}`),
   progress: () => request<ProgressGrid>("/api/v1/progress"),
   startAttempt: (assessmentId: string) =>
-    request<{
-      attemptId: string;
-      attemptNo: number;
-      resumed: boolean;
-      totalItems: number;
-      items: PaperItem[];
-      /** Since 29 Sep 2026: the student's own recorded answers on a resume. */
-      answered?: RecordedAnswer[];
-    }>("/api/v1/attempts", {
+    request<StartedPaper>("/api/v1/attempts", {
       method: "POST",
       body: JSON.stringify({ assessmentId }),
     }),
+  /**
+   * A moon's journey (WEB-REVAMP 3.7a): practice on one objective's own live
+   * questions. The server decides the lock and finds or begins the journey;
+   * answering and submitting use the ordinary attempt calls.
+   */
+  startJourney: (objectiveId: string) =>
+    request<StartedPaper & { objectiveId: string }>(
+      `/api/v1/objectives/${encodeURIComponent(objectiveId)}/journey`,
+      { method: "POST" },
+    ),
 
   answer: (attemptId: string, ordinal: number, answer: unknown, timeMs?: number) =>
     request<AnswerOutcome>(`/api/v1/attempts/${attemptId}/answer`, {

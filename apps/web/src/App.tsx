@@ -13,6 +13,7 @@ import {
   CheckPage,
   MaintenancePage,
   MapPage,
+  MoonJourneyPage,
   NotFoundPage,
   ProgressPage,
   StagePage,
@@ -126,6 +127,7 @@ export default function App(): JSX.Element {
               <Route path="/app/stage/:id" element={<BiomeShell signedIn />}>
                 <Route index element={<StagePage />} />
                 <Route path="check" element={<CheckPage />} />
+                <Route path="moon/:objectiveId" element={<MoonJourneyPage />} />
               </Route>
             </Route>
           </Route>

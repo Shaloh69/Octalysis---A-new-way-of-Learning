@@ -51,6 +51,14 @@ import { useDelayed } from "../lib/useDelayed";
  * questions at once and is recorded for the instructor
  * (`POST /api/v1/attempts/:id/events`); the paper comes back only in full
  * screen, or on the page where full screen does not exist.
+ *
+ * **A MOON'S JOURNEY IS PRACTICE, NOT A PAPER** (`journey` prop; instructor
+ * decisions of 30 Sep 2026, WEB-REVAMP 3.7a). The same paper, Record and
+ * verdicts, so a moon's questions look and grade exactly as a check's; none of
+ * ruling 3. It opens at once, with no prompt and no full screen; nothing is
+ * held, covered or recorded as a leave; Back to the moon is always there, and
+ * Finish ends it. It is never graded: its correct answers count toward the
+ * moon, and the moon toward the next planet.
  */
 
 type Phase = "ready" | "loading" | "error" | "sitting" | "done";
@@ -67,12 +75,14 @@ interface Recorded {
   withheld: boolean;
 }
 
-interface Props {
+type Props = {
   stageId: string;
-  assessmentId: string;
   title: string;
   onLeave: () => void;
-}
+} & (
+  | { assessmentId: string; journey?: undefined }
+  | { journey: { objectiveId: string }; assessmentId?: undefined }
+);
 
 const FLAGS = (attemptId: string) => `octa:flags:${attemptId}`;
 
@@ -120,11 +130,14 @@ function answerText(item: PaperItem, a: StudentAnswer | null): string {
   return String(a.value);
 }
 
-export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props): JSX.Element {
-  const [phase, setPhase] = useState<Phase>("ready");
+export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }: Props): JSX.Element {
+  const practice = journey !== undefined;
+  const objectiveId = journey?.objectiveId ?? null;
+  const [phase, setPhase] = useState<Phase>(practice ? "loading" : "ready");
   const [startError, setStartError] = useState<string | null>(null);
   // 0 until the student presses Start: nothing is fetched or shown before it.
-  const [tries, setTries] = useState(0);
+  // A journey is practice and has no Start: it opens at once.
+  const [tries, setTries] = useState(practice ? 1 : 0);
   const [refused, setRefused] = useState(false);
   const [cover, setCover] = useState<Cover>(null);
   const canFullscreen = useMemo(fullscreenSupported, []);
@@ -158,7 +171,9 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
     setStartError(null);
     void (async () => {
       try {
-        const started = await api.startAttempt(assessmentId);
+        const started = objectiveId
+          ? await api.startJourney(objectiveId)
+          : await api.startAttempt(assessmentId ?? "");
         if (!live) return;
         const rec: Record<number, Recorded> = {};
         for (const a of started.answered ?? []) {
@@ -185,7 +200,7 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
     return () => {
       live = false;
     };
-  }, [assessmentId, tries]);
+  }, [assessmentId, objectiveId, tries]);
 
   /* -------------------------------------------- the sitting: ruling 3 */
 
@@ -213,7 +228,8 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
     [attemptId],
   );
 
-  const sittingNow = phase === "sitting";
+  // Ruling 3 binds a paper; a journey is practice and is never held or covered.
+  const sittingNow = phase === "sitting" && !practice;
   useEffect(() => {
     if (!sittingNow) return;
     setSitting(true);
@@ -376,12 +392,17 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
       setConfirming(false);
       setPhase("done");
       writeFlags(attemptId, []);
-      toast.success(`${title} submitted: ${r.score} of ${r.maxScore}`);
+      toast.success(
+        practice
+          ? `${title} finished: ${r.score} of ${r.maxScore} right`
+          : `${title} submitted: ${r.score} of ${r.maxScore}`,
+      );
     } catch (err) {
       setConfirming(false);
+      const why = err instanceof ApiError ? err.message : "The connection dropped.";
       toast.error(
-        "The paper was not submitted",
-        `${err instanceof ApiError ? err.message : "The connection dropped."} Your recorded answers are safe; submit again when you are ready.`,
+        practice ? "The journey was not finished" : "The paper was not submitted",
+        `${why} Your recorded answers are safe; ${practice ? "finish" : "submit"} again when you are ready.`,
       );
       window.setTimeout(() => submitRef.current?.focus(), 0);
     } finally {
@@ -434,9 +455,11 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
     return (
       <section className="check check-state" data-runner="error" data-paper="" aria-labelledby="check-title">
         <p className="check-eyebrow">{title}</p>
-        <h1 id="check-title">Your paper did not open</h1>
+        <h1 id="check-title">{practice ? "This journey did not open" : "Your paper did not open"}</h1>
         <p role="alert">{startError}</p>
-        <p className="check-quiet">Nothing was recorded, and no attempt was used by this failure.</p>
+        <p className="check-quiet">
+          {practice ? "Nothing was recorded." : "Nothing was recorded, and no attempt was used by this failure."}
+        </p>
         <div className="check-row">
           <button type="button" className="check-btn check-btn-primary" onClick={() => setTries((n) => n + 1)}>
             Try again
@@ -449,7 +472,7 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
               onLeave();
             }}
           >
-            Back to the stage
+            {practice ? "Back to the moon" : "Back to the stage"}
           </button>
         </div>
       </section>
@@ -457,16 +480,30 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
   }
 
   if (phase === "done" && result) {
-    return <Result result={result} title={title} items={items} recorded={recorded} objectives={objectives} onLeave={onLeave} />;
+    return (
+      <Result
+        result={result}
+        title={title}
+        practice={practice}
+        items={items}
+        recorded={recorded}
+        objectives={objectives}
+        onLeave={onLeave}
+      />
+    );
   }
 
   if (!item) {
     return (
       <section className="check check-state" data-runner="empty" data-paper="" aria-labelledby="check-title">
         <h1 id="check-title">{title}</h1>
-        <p>This paper has no questions. Tell your instructor; nothing has been recorded.</p>
+        <p>
+          {practice
+            ? "This moon has no questions yet. Nothing has been recorded."
+            : "This paper has no questions. Tell your instructor; nothing has been recorded."}
+        </p>
         <button type="button" className="check-btn" onClick={onLeave}>
-          Back to the stage
+          {practice ? "Back to the moon" : "Back to the stage"}
         </button>
       </section>
     );
@@ -549,12 +586,22 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
 
         <div className="check-paper" data-paper="">
       <header className="check-head">
-        <p className="check-eyebrow">Stage check</p>
+        <p className="check-eyebrow">{practice ? "Moon journey · practice" : "Stage check"}</p>
         <h1 id="check-title">{title}</h1>
-        <p className="check-rule">
-          Work each answer out, then press <strong>Record answer</strong>. Your first recorded answer to
-          each question is final.
-        </p>
+        {practice && objectiveId && objectives[objectiveId] && (
+          <p className="check-objective">{objectives[objectiveId]}</p>
+        )}
+        {practice ? (
+          <p className="check-rule">
+            Practice, never graded. Record an answer to see at once whether it is right, and why. Two different
+            questions answered right master this moon.
+          </p>
+        ) : (
+          <p className="check-rule">
+            Work each answer out, then press <strong>Record answer</strong>. Your first recorded answer to
+            each question is final.
+          </p>
+        )}
         {resumed && (
           <p className="check-resumed" role="status">
             Picking up where you left off. Your recorded answers are shown as you left them.
@@ -711,14 +758,25 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
             className="check-btn check-btn-primary check-submit"
             onClick={() => setConfirming(true)}
           >
-            Submit paper
+            {practice ? "Finish the journey" : "Submit paper"}
           </button>
           <p className="check-quiet">
             {counts.open === 0
               ? "Every question is recorded."
-              : `${counts.open} not answered. Unanswered questions score zero.`}
+              : practice
+                ? `${counts.open} not answered yet.`
+                : `${counts.open} not answered. Unanswered questions score zero.`}
           </p>
-          {/* No Leave the paper since ruling 3: once started, Submit is the way out. */}
+          {/* No Leave the paper since ruling 3: once started, Submit is the way out.
+              A journey is practice, so it may be left at any time. */}
+          {practice && (
+            <>
+              <button type="button" className="check-btn" onClick={onLeave}>
+                Back to the moon
+              </button>
+              <p className="check-quiet">Answers you recorded already count. Come back to finish any time.</p>
+            </>
+          )}
         </div>
         </div>
       </div>
@@ -726,6 +784,7 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
       {confirming && (
         <ConfirmSubmit
           title={title}
+          practice={practice}
           open={counts.open}
           flagged={flags.length}
           total={items.length}
@@ -970,6 +1029,7 @@ function FreeEntry({
  */
 function ConfirmSubmit({
   title,
+  practice,
   open,
   flagged,
   total,
@@ -978,6 +1038,7 @@ function ConfirmSubmit({
   onCancel,
 }: {
   title: string;
+  practice: boolean;
   open: number;
   flagged: number;
   total: number;
@@ -1007,7 +1068,7 @@ function ConfirmSubmit({
           }
         }}
       >
-        <h2 id="confirm-title">Submit {title}?</h2>
+        <h2 id="confirm-title">{practice ? `Finish ${title}?` : `Submit ${title}?`}</h2>
         <div id="confirm-body">
           <p>
             {open === 0 ? (
@@ -1016,7 +1077,8 @@ function ConfirmSubmit({
               </>
             ) : (
               <>
-                <span className="mono">{open}</span> not answered score zero.
+                <span className="mono">{open}</span>{" "}
+                {practice ? "not answered. The next visit starts a new journey." : "not answered score zero."}
               </>
             )}
             {flagged > 0 && (
@@ -1026,11 +1088,11 @@ function ConfirmSubmit({
               </>
             )}
           </p>
-          <p>This cannot be undone.</p>
+          {!practice && <p>This cannot be undone.</p>}
         </div>
         <div className="check-row">
           <button type="button" ref={go} className="check-btn check-btn-primary" disabled={busy} onClick={onSubmit}>
-            {busy ? "Submitting…" : "Submit now"}
+            {busy ? (practice ? "Finishing…" : "Submitting…") : practice ? "Finish now" : "Submit now"}
           </button>
           <button type="button" ref={keep} className="check-btn" disabled={busy} onClick={onCancel}>
             Keep working
@@ -1050,6 +1112,7 @@ function ConfirmSubmit({
 function Result({
   result,
   title,
+  practice,
   items,
   recorded,
   objectives,
@@ -1057,6 +1120,7 @@ function Result({
 }: {
   result: SubmitResult;
   title: string;
+  practice: boolean;
   items: PaperItem[];
   recorded: Record<number, Recorded>;
   objectives: Record<string, string>;
@@ -1069,7 +1133,7 @@ function Result({
 
   return (
     <section className="check check-result" data-runner="done" data-paper="" aria-labelledby="result-title">
-      <p className="check-eyebrow">Submitted</p>
+      <p className="check-eyebrow">{practice ? "Journey finished" : "Submitted"}</p>
       <h1 id="result-title" tabIndex={-1} ref={back}>
         {title}
       </h1>
@@ -1123,7 +1187,7 @@ function Result({
       )}
 
       <button type="button" className="check-btn check-btn-primary" onClick={onLeave}>
-        Back to the stage
+        {practice ? "Back to the moon" : "Back to the stage"}
       </button>
     </section>
   );

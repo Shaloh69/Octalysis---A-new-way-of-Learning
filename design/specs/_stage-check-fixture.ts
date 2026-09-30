@@ -105,6 +105,34 @@ export async function realPaper(request: APIRequestContext): Promise<ResolvedIte
   return out;
 }
 
+/**
+ * A moon's journey (WEB-REVAMP 3.7a): EVERY question of one objective, as the
+ * API's journey takes them, resolved by the real engine. Stage 01 is open for
+ * this student from the start (3.7, Orientation never blocks).
+ */
+export const MOON_STAGE = "01";
+export const MOON = "01.4";
+export async function realMoonPaper(request: APIRequestContext, objectiveId = MOON): Promise<ResolvedItem[]> {
+  const auth = { Authorization: `Bearer ${STAFF}` };
+  const bank = (await (await request.get(`${API}/api/v1/console/items`, { headers: auth })).json()) as {
+    items: Array<{ id: string; objectiveId: string | null }>;
+  };
+  const mine = bank.items.filter((i) => i.objectiveId === objectiveId);
+  if (mine.length < 2) throw new Error(`moon ${objectiveId} has ${mine.length} question(s); is the seed loaded?`);
+  const out: ResolvedItem[] = [];
+  for (const [n, it] of mine.entries()) {
+    const res = await request.get(`${API}/api/v1/console/items/${it.id}/preview?seed=journey-fixture-${n}`, { headers: auth });
+    const body = (await res.json()) as { item: ResolvedItem | null };
+    if (!body.item) throw new Error(`item ${it.id} did not resolve`);
+    out.push({ ...body.item, ordinal: n + 1 });
+  }
+  return out;
+}
+
+export function journeyUrl(objectiveId = MOON): string {
+  return `/app/stage/${objectiveId.split(".")[0]}/moon/${objectiveId}`;
+}
+
 /** The stage 02 check this student would open, read from the real API. */
 export async function realAssessment(request: APIRequestContext): Promise<{ id: string; title: string }> {
   const res = await request.get(`${API}/api/v1/stages/${STAGE}`, {
@@ -123,6 +151,11 @@ export function checkUrl(a: { id: string; title: string }): string {
 export interface PaperOptions {
   /** `final` withholds verdicts until submit, as `recordAnswer()` does. */
   scope?: "stage" | "final";
+  /**
+   * Serve a moon's journey for this objective instead of a check: the paper
+   * answers `POST /api/v1/objectives/:id/journey`, and `/attempts` is not served.
+   */
+  journey?: string;
   /** Answers already recorded: the paper arrives resumed. */
   recorded?: Array<{ ordinal: number; answer: unknown }>;
   /** Hold the start this long: the loading state. */
@@ -167,7 +200,10 @@ export async function servePaper(page: Page, items: ResolvedItem[], opts: PaperO
     await route.fulfill({ status, contentType: "application/json", body });
   };
 
-  await page.route(/\/api\/v1\/attempts$/, async (route) => {
+  const startAt = opts.journey
+    ? new RegExp(`/api/v1/objectives/${opts.journey.replace(".", "\\.")}/journey$`)
+    : /\/api\/v1\/attempts$/;
+  await page.route(startAt, async (route) => {
     if (route.request().method() !== "POST") return route.fallback();
     if (opts.startDelayMs) await new Promise((r) => setTimeout(r, opts.startDelayMs));
     if (opts.failStart) {
@@ -177,6 +213,7 @@ export async function servePaper(page: Page, items: ResolvedItem[], opts: PaperO
       .sort(([a], [b]) => a - b)
       .map(([ordinal, r]) => ({ ordinal, rawAnswer: r.raw, isCorrect: r.isCorrect, points: r.points }));
     return send(route, 200, {
+      ...(opts.journey ? { objectiveId: opts.journey } : {}),
       attemptId: ATTEMPT_ID,
       attemptNo: 1,
       resumed: recorded.length > 0,

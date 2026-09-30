@@ -21,6 +21,8 @@
 }
 .check-head { margin-bottom: var(--space-5); padding-bottom: var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
 .check-rule { color: var(--ink-muted); max-width: 62ch; margin: 0; }
+/* A moon's journey: the objective, in the syllabus's words, under its code. */
+.check-objective { color: var(--ink); max-width: 62ch; margin: 0 0 var(--space-3); font-size: var(--text-lg); line-height: var(--lh-lg); }
 .check-rule strong { color: var(--ink); }
 .check-resumed {
   margin: var(--space-3) 0 0;
