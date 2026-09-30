@@ -129,3 +129,63 @@
 .addr-name { font-family: var(--font-hud); font-size: var(--text-xs); letter-spacing: var(--tracking-hud); }
 .bench-example { margin: 0; font-size: var(--text-sm); color: var(--ink); }
 .bench-example cite { font-style: normal; font-size: var(--text-xs); color: var(--ink-muted); }
+
+/* ---- Bus wiring (moon 03.9, Bus Contention) ----
+   Figure 3.16 on a bench. The canvas (Phaser, its own chunk) draws the bus;
+   .bus-fallback draws the same bus in the DOM when the canvas cannot run.
+   Both are aria-hidden: the readouts beside them carry every fact. */
+.bus-board { gap: var(--space-3); }
+.bus-stage { min-height: 264px; width: 100%; overflow: hidden; }
+.bus-stage canvas { display: block; max-width: 100%; }
+.bus-notice, .bus-help, .bus-why { margin: 0; font-size: var(--text-sm); color: var(--ink); }
+.bus-why { color: var(--ink-muted); }
+.bench-readouts dd.bus-now { font-family: var(--font-mono); font-size: var(--text-sm); text-align: right; }
+.bus-signals, .bus-groups { margin: 0; padding: 0 0 0 var(--space-4); display: grid; gap: var(--space-1); font-size: var(--text-sm); color: var(--ink); }
+.bus-signals cite, .bus-groups cite, .bus-help cite, .bus-why cite { color: var(--ink-muted); }
+
+.bus-wiring { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-sm); color: var(--ink); }
+.bus-wiring th, .bus-wiring td { padding: var(--space-1); text-align: left; border-bottom: var(--border-hair) solid var(--line); }
+.bus-wiring thead th { font-family: var(--font-hud); font-size: var(--text-xs); letter-spacing: var(--tracking-hud); text-transform: uppercase; color: var(--ink-muted); }
+.bus-wiring tbody th { font-weight: 400; }
+.bus-wiring thead th:first-child { width: 34%; }
+.bus-wiring thead th { overflow-wrap: anywhere; }
+.bus-tap { min-height: 44px; min-width: 0; width: 100%; padding-inline: var(--space-1); }
+.bus-tap[aria-pressed="true"] { font-weight: 700; }
+
+.bus-askers { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-3); }
+.bus-asker { display: grid; gap: var(--space-1); }
+.bus-asker button, .bench-presets button { min-height: 44px; }
+.bus-switch { margin-top: var(--space-1); }
+
+.bus-fallback { display: grid; gap: var(--space-3); padding: var(--space-2) 0; color: var(--ink); }
+.bus-modules { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
+.bus-module {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: center;
+  padding: var(--space-2) var(--space-1);
+  background: var(--surface-2);
+  border: var(--border-thick) solid var(--ink);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+.bus-module[data-active="yes"] { border-color: var(--accent); outline: var(--border-thick) solid var(--accent); }
+.bus-module-name { font-family: var(--font-hud); letter-spacing: var(--tracking-hud); }
+.bus-riders { display: flex; gap: var(--space-1); min-height: 0.75rem; }
+.bus-rider { width: 0.75rem; height: 0.75rem; background: var(--ink); }
+.bus-line { display: grid; gap: var(--space-1); }
+.bus-line-name { font-family: var(--font-hud); font-size: var(--text-xs); letter-spacing: var(--tracking-hud); text-transform: uppercase; }
+.bus-line-bar { display: block; height: 3px; background: var(--ink); }
+.bus-line[data-garbled="yes"] .bus-line-bar {
+  background: repeating-linear-gradient(90deg, var(--ink) 0 6px, transparent 6px 12px);
+}
+/* The three steps side by side once there is room for the wiring table in a third. */
+@media (min-width: 1100px) {
+  .bus .bench-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* At a phone's width the wiring table has about 260px: the taps shrink to their word. */
+@media (max-width: 560px) {
+  .bus-wiring th, .bus-wiring td { padding: var(--space-1) 0; }
+  .bus-wiring tbody th { padding-right: var(--space-1); }
+  .bus-tap { font-size: var(--text-xs); }
+}

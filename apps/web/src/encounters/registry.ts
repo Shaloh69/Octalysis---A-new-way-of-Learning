@@ -20,6 +20,8 @@ export interface MoonEncounter {
 export const MOON_ENCOUNTERS: Record<string, MoonEncounter> = {
   "01.2": { name: "Two Columns", kind: "Sort", load: () => import("./TwoColumns") },
   "02.8": { name: "Clock Bench", kind: "Drill", load: () => import("./ClockBench") },
+  // Phaser rides in bus-scene's own chunk, requested by this one (GAME-DESIGN §10.2).
+  "03.9": { name: "Bus Contention", kind: "Bus wiring", load: () => import("./BusContention") },
   "04.5": { name: "Cache Tuner", kind: "Cache drill", load: () => import("./CacheTuner") },
 };
 

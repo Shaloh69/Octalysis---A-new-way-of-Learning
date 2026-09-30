@@ -568,6 +568,20 @@ Non-negotiable consequences:
   change moves *that*, or puts a canvas library into the entry chunk, the change
   is wrong. Re-measure rather than trusting this line — it has been stale once.
 
+  **Stale twice: re-measured 1 Oct 2026, 106.0 KB gzipped** for the entry chunk
+  (105.9 KB before Phaser arrived; the growth since 8 Sep is the remake's shell
+  and routes, not a canvas library). Phaser now exists and is where §10 says:
+
+  | chunk | gzipped | |
+  |---|---|---|
+  | `index` (initial) | **106.0 KB** | no `three`, no Phaser, no CodeMirror (grepped) |
+  | `StarMapScene` | 223.6 KB | `three` + R3F, lazy, the map only |
+  | `BusContention` | 5.4 KB | moon 03.9's encounter, lazy |
+  | `bus-scene` | 341.8 KB | **all of Phaser 3.90**, requested only by `BusContention` |
+
+  `dist/index.html` names neither Phaser chunk; `web-encounter-bus.spec.ts`
+  asserts it on every run.
+
 ### 10.3 Not everything should be a Phaser game — re-derived for the real curriculum
 
 A canvas game is the wrong tool when the interaction is fundamentally form-like,

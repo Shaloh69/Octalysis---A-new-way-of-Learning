@@ -96,8 +96,13 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
       Clock Bench on moon 02.8 (`design/templates/web/encounter-drill/`,
       `web-encounter-drill.spec.ts`; the book's Example 2.2 reproduced and
       quoted, `clock-bench.spec.ts`)
-- [ ] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
-      keyboard path and a non-canvas fallback
+- [x] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
+      keyboard path and a non-canvas fallback. **1 Oct 2026:** Bus Contention on
+      moon 03.9 (`design/templates/web/encounter-bus/`,
+      `web-encounter-bus.spec.ts`, 38/38 at 1440 and 380). Every control is DOM,
+      the spec runs the whole encounter from the keyboard; with the scene's chunk
+      aborted the same bus is drawn in the DOM. Every sentence quoted from
+      ch. 3 §3.3-3.5 (`bus-contention.spec.ts`, watched failing)
 - [x] Stage 04 encounter — cache drill (DOM), through the page gate. **30 Sep 2026:**
       Cache Tuner on moon 04.5 (`design/templates/web/encounter-cache/`,
       `web-encounter-cache.spec.ts`). The address fields and sizes on the book's
@@ -105,8 +110,12 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
 - [x] **The Descent** (04→06, Phaser) — instructor's decision recorded: first
       release or Midterm. Its payoff lands in stage 06, which is Midterm content.
       **DECIDED 30 Sep 2026: the Midterm.** Not built with act 1
-- [ ] Phaser verified absent from the initial bundle — lazy-loaded per route,
-      grep `dist/index.html` for a preload, same discipline as the 3D chunk
+- [x] Phaser verified absent from the initial bundle — lazy-loaded per route,
+      grep `dist/index.html` for a preload, same discipline as the 3D chunk.
+      **1 Oct 2026:** Phaser 3.90 rides only in `bus-scene` (341.8 KB gz),
+      reached only through `BusContention` (5.4 KB gz) on moon 03.9.
+      `dist/index.html` names neither; the entry chunk has no Phaser; moon 03.10
+      fetches neither. All asserted in `web-encounter-bus.spec.ts`
 - [x] No encounter dresses an assessment — grep confirms `data-encounter` never
       wraps the attempt runner. **30 Sep 2026:** set only in `MoonEncounterSlot`
       (a sibling of the runner) and the reader's LAB block; asserted in the
