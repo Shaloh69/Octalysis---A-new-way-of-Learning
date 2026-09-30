@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "../src/server.js";
 import { loadEnv } from "../src/env.js";
-import { pool, closePool } from "./helpers/rls.js";
+import { setup, pool, closePool } from "./helpers/rls.js";
 import { seedItemBank, type BankWorld } from "./helpers/bank.js";
 import { Gradebook, SystemAudit } from "@octa/contracts";
 import { INVARIANT_CATALOGUE } from "../src/audit/invariants.js";
@@ -394,6 +394,17 @@ describe("section-level and scheduled overrides", () => {
 });
 
 describe("student drill-down regenerates the exact paper from the seed", () => {
+  // The lock tests above leave student A's stage 07 on 'auto', which the
+  // prerequisite chain shuts, and a check cannot start on a locked stage.
+  beforeAll(async () => {
+    await setup(
+      `insert into stage_locks (scope, scope_user_id, stage_id, state, reason, actor_id)
+       values ('user', $1, '07', 'unlocked', 'drill-down fixture', $2)
+       on conflict (stage_id, scope_user_id) where scope = 'user' do update set state = 'unlocked'`,
+      [w.studentA, w.teacher],
+    );
+  });
+
   it("reconstructs what the student saw, byte for byte", async () => {
     // Generate a paper as the student.
     const start = await app.inject({

@@ -4,6 +4,7 @@ import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
 import { withTransaction } from "../db.js";
 import type { Env } from "../env.js";
+import { mintSalt } from "../repo/salt.js";
 
 /**
  * Creating the thing a student sits.
@@ -68,18 +69,6 @@ const WindowBody = z.object({
 const RotateBody = z.object({
   reason: z.string().trim().min(3).max(500),
 });
-
-/**
- * A fresh salt. Derived from EXAM_SALT_SECRET plus a random nonce, so it is
- * reproducible from a backup of `assessment_secrets` and the server secret, and
- * unpredictable without both.
- */
-async function mintSalt(secret: string, assessmentId: string): Promise<string> {
-  const { createHmac, randomUUID } = await import("node:crypto");
-  return createHmac("sha256", secret)
-    .update(`assessment:${assessmentId}:${randomUUID()}`)
-    .digest("hex");
-}
 
 /** One live, gradeable item as the feasibility check sees it. */
 interface PoolRow { bloom: string; type: string; act: number | string; stage_id: string }
@@ -156,6 +145,10 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
          join blueprints b on b.id = a.blueprint_id
          left join sections s on s.id = a.section_id
          left join assessment_secrets sec on sec.assessment_id = a.id
+        -- A moon's journey is practice the API creates, not an assessment a
+        -- teacher sets (WEB-REVAMP 3.7a): it has no window, no attempt limit
+        -- and no grade, so it has no row on this page.
+        where b.scope <> 'objective'
         order by a.created_at desc`,
     );
 
@@ -167,7 +160,7 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
 
     const blueprints = await app.db.query(
       `select id, name, scope, stage_id, total_items, constraints
-         from blueprints order by scope, name`,
+         from blueprints where scope <> 'objective' order by scope, name`,
     );
 
     return reply.send({
@@ -248,7 +241,11 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
     }
 
     const created = await withTransaction(app.db, async (client) => {
-      const bp = await client.query("select id from blueprints where id = $1", [b.blueprintId]);
+      // A journey's blueprint is the API's own (3.7a), never a teacher's exam.
+      const bp = await client.query(
+        "select id from blueprints where id = $1 and scope <> 'objective'",
+        [b.blueprintId],
+      );
       if (bp.rows.length === 0) throw errors.notFound("No such blueprint.");
       if (b.sectionId) {
         const sec = await client.query("select 1 from sections where id = $1", [b.sectionId]);
@@ -276,7 +273,7 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
        * on and a deny-all policy. That is service-role only, and it is the
        * entire reason papers are unpredictable but regenerable.
        */
-      const salt = await mintSalt(env.EXAM_SALT_SECRET, assessmentId);
+      const salt = mintSalt(env.EXAM_SALT_SECRET, assessmentId);
 
       await client.query(
         "insert into assessment_secrets (assessment_id, exam_salt) values ($1, $2)",
@@ -427,7 +424,7 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
       if (cur.rows.length === 0) throw errors.notFound("No such assessment.");
       const before = cur.rows[0]!;
 
-      const salt = await mintSalt(env.EXAM_SALT_SECRET, assessmentId);
+      const salt = mintSalt(env.EXAM_SALT_SECRET, assessmentId);
       // An upsert: an assessment seeded without a secrets row (which Start
       // would refuse) is repaired by the same action.
       const { rows } = await client.query(

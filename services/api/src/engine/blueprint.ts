@@ -35,7 +35,8 @@ export interface BlueprintConstraints {
 export interface Blueprint {
   readonly id: string;
   readonly name: string;
-  readonly scope: "stage" | "final";
+  /** "objective" is a moon's journey: practice on one objective (WEB-REVAMP 3.7a). */
+  readonly scope: "stage" | "final" | "objective";
   /**
    * The stage a `scope: "stage"` blueprint belongs to; null for a final.
    *
@@ -46,6 +47,8 @@ export interface Blueprint {
    * samples the entire live bank.
    */
   readonly stageId: string | null;
+  /** The objective a `scope: "objective"` blueprint (a journey) practises; null otherwise. */
+  readonly objectiveId?: string | null;
   readonly totalItems: number;
   readonly constraints: BlueprintConstraints;
 }

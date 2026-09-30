@@ -227,12 +227,20 @@ create table item_stats (
 create table blueprints (
   id           uuid primary key default gen_random_uuid(),
   name         text not null,
-  scope        text not null check (scope in ('stage','final')),
+  -- 'objective' is a MOON'S JOURNEY (WEB-REVAMP 3.7a, 30 Sep 2026): practice
+  -- on one objective's own live questions. Never graded, never in the
+  -- gradebook; its correct answers count toward the moon, as a check's do.
+  scope        text not null check (scope in ('stage','final','objective')),
   stage_id     text references stages(id),
+  objective_id text references objectives(id),
   total_items  int  not null check (total_items > 0),
   constraints  jsonb not null,                   -- by_act / by_bloom / by_type / max_per_objective
-  created_at   timestamptz not null default now()
+  created_at   timestamptz not null default now(),
+  constraint bp_objective_is_a_journey check ((scope = 'objective') = (objective_id is not null))
 );
+-- One journey per moon: the API creates it the first time a student enters.
+create unique index blueprints_one_journey_per_moon on blueprints (objective_id)
+  where scope = 'objective';
 
 create table assessments (
   id               uuid primary key default gen_random_uuid(),

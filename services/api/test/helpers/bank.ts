@@ -144,6 +144,15 @@ export async function seedItemBank(): Promise<BankWorld> {
       values ((select id from a_stage), encode(gen_random_bytes(32),'hex')),
              ((select id from a_final), encode(gen_random_bytes(32),'hex'))
       returning assessment_id
+    ),
+    -- Stage 07 is shut by the prerequisite chain, and a check (or a moon's
+    -- journey) cannot be started on a locked stage. The fixture opens it for
+    -- both students the way an instructor would on /locks.
+    opened as (
+      insert into stage_locks (scope, scope_user_id, stage_id, state, reason, actor_id)
+      select 'user', u.id, '07', 'unlocked', 'bank fixture: stage 07 is open', (select id from ut)
+        from (select id from ua union all select id from ub) u
+      returning id
     )
     select (select id from ua) a, (select id from ub) b, (select id from ut) t,
            (select id from sec) s,

@@ -7,6 +7,7 @@ import { fillBlueprint, type Blueprint, type PoolItem } from "../engine/blueprin
 import { resolveItem, type ResolvedItem } from "../engine/resolve.js";
 import { gradeResponse, scoreAttempt, type GradeResult } from "../engine/grade.js";
 import { errors } from "../errors.js";
+import { mintSalt } from "./salt.js";
 
 /**
  * The bridge between the engine and the database.
@@ -25,7 +26,7 @@ export interface AttemptContext {
   readonly seed: string;
   readonly engineVersion: string;
   readonly status: "in_progress" | "submitted" | "abandoned" | "voided";
-  readonly blueprintScope: "stage" | "final";
+  readonly blueprintScope: "stage" | "final" | "objective";
 }
 
 /* ============================================================
@@ -34,13 +35,17 @@ export interface AttemptContext {
 
 export async function loadLivePool(
   db: Db,
-  opts: { stageId?: string } = {},
+  opts: { stageId?: string; objectiveId?: string } = {},
 ): Promise<PoolItem[]> {
   const params: unknown[] = [];
   let where = "i.status = 'live'";
   if (opts.stageId) {
     params.push(opts.stageId);
     where += ` and i.stage_id = $${params.length}`;
+  }
+  if (opts.objectiveId) {
+    params.push(opts.objectiveId);
+    where += ` and i.objective_id = $${params.length}`;
   }
 
   const { rows } = await db.query(
@@ -75,7 +80,7 @@ export async function loadLivePool(
 
 export async function loadBlueprintFor(db: Db, assessmentId: string): Promise<Blueprint> {
   const { rows } = await db.query(
-    `select b.id, b.name, b.scope, b.stage_id, b.total_items, b.constraints
+    `select b.id, b.name, b.scope, b.stage_id, b.objective_id, b.total_items, b.constraints
        from assessments a join blueprints b on b.id = a.blueprint_id
       where a.id = $1`,
     [assessmentId],
@@ -87,6 +92,7 @@ export async function loadBlueprintFor(db: Db, assessmentId: string): Promise<Bl
     name: r.name,
     scope: r.scope,
     stageId: r.stage_id ?? null,
+    objectiveId: r.objective_id ?? null,
     totalItems: Number(r.total_items),
     constraints: r.constraints ?? {},
   };
@@ -141,6 +147,21 @@ export async function startAttempt(
       [opts.userId, opts.assessmentId],
     );
 
+    /*
+     * Hard rule 4, at Start: a stage check or a moon's journey is sat only
+     * while its stage is open to this student, resumed or new. Their correct
+     * answers count toward the planet's moons (WEB-REVAMP 3.7a), so a locked
+     * planet's check would otherwise master its moons and open the planet
+     * after it. A final spans the course and is governed by its window.
+     */
+    if (blueprint.scope !== "final" && blueprint.stageId) {
+      const { rows: lock } = await client.query(
+        "select is_stage_unlocked($1, $2) as ok",
+        [opts.userId, blueprint.stageId],
+      );
+      if (lock[0]?.ok !== true) throw errors.forbidden("This stage is locked.");
+    }
+
     const open = existing.rows.find((r) => r.status === "in_progress");
     if (open) {
       const items = await loadResolvedPaper(client, open.id, open.seed, open.engine_version);
@@ -175,8 +196,10 @@ export async function startAttempt(
       throw errors.forbidden("That assessment has closed.");
     }
 
+    // A moon's journey is practice (WEB-REVAMP 3.7a, decided 30 Sep 2026): it
+    // may be sat as often as the student likes, so the limit is not applied.
     const used = existing.rows.length;
-    if (used >= Number(assessment.attempts_allowed)) {
+    if (blueprint.scope !== "objective" && used >= Number(assessment.attempts_allowed)) {
       throw errors.forbidden(
         `You have used all ${assessment.attempts_allowed} attempt(s) for this assessment.`,
       );
@@ -196,14 +219,29 @@ export async function startAttempt(
     // Check" from drawing chapter-4 cache questions out of the whole live bank
     // — which is exactly what it did until `loadBlueprintFor()` started
     // carrying `stage_id`. A final is cumulative and takes the full pool.
+    //
+    // A moon's journey samples its OWN objective, and takes every live question
+    // it has, in the seed's order: a moon holds three or four, and mastering it
+    // takes two distinct ones correct, so a journey that drew fewer than all of
+    // them would hide the ones a student still needs.
     const pool = await loadLivePool(
       db,
-      blueprint.scope === "stage" && blueprint.stageId ? { stageId: blueprint.stageId } : {},
+      blueprint.scope === "objective" && blueprint.objectiveId
+        ? { objectiveId: blueprint.objectiveId }
+        : blueprint.scope === "stage" && blueprint.stageId
+          ? { stageId: blueprint.stageId }
+          : {},
     );
+    if (blueprint.scope === "objective" && pool.length === 0) {
+      // Fail-closed (3.7a): a moon with no live question has nothing to practise.
+      throw errors.conflict("This moon has no questions yet.");
+    }
+    const effective: Blueprint =
+      blueprint.scope === "objective" ? { ...blueprint, totalItems: pool.length } : blueprint;
     // BlueprintUnsatisfiable propagates. It is never swallowed into a short
     // paper -- a paper quietly missing three `analyze` items measures something
     // other than what it claims to.
-    const { items: selected } = fillBlueprint(blueprint, pool, seed);
+    const { items: selected } = fillBlueprint(effective, pool, seed);
 
     const resolved = selected.map((item, idx) =>
       resolveItem(item, seed, { ordinal: idx + 1, engineVersion: opts.engineVersion }),
@@ -254,7 +292,7 @@ export async function startAttempt(
 function toContext(
   row: { id: string; attempt_no: number; seed: string; engine_version: string; status: string },
   opts: { userId: string; assessmentId: string },
-  scope: "stage" | "final",
+  scope: AttemptContext["blueprintScope"],
 ): AttemptContext {
   return {
     attemptId: row.id,
@@ -266,6 +304,61 @@ function toContext(
     status: row.status as AttemptContext["status"],
     blueprintScope: scope,
   };
+}
+
+/* ============================================================
+ * A moon's journey (WEB-REVAMP 3.7a, instructor decisions 30 Sep 2026)
+ *
+ * Practice on one objective's own live questions. It is an ordinary attempt
+ * on an ordinary assessment, so it is seeded, resolved, stored, graded and
+ * served exactly as a stage check is, through the same serializer. What
+ * differs: its blueprint's scope is 'objective', it takes every live question
+ * the moon has, it has no attempt limit, and its submit writes no
+ * stage_progress, so it never reaches the gradebook.
+ *
+ * The blueprint and assessment are created the first time any student enters
+ * that moon, with a salt minted here like the console's, so a journey exists
+ * wherever its questions do and no seeding step can be forgotten. One per
+ * moon: a unique index, and an advisory lock so two first entries cannot race.
+ * ========================================================== */
+
+export async function ensureJourney(
+  db: Db,
+  opts: { objectiveId: string; stageId: string; liveQuestions: number; saltSecret: string },
+): Promise<string> {
+  return withTransaction(db, async (client) => {
+    await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [
+      `journey:${opts.objectiveId}`,
+    ]);
+    const have = await client.query(
+      `select a.id from assessments a join blueprints b on b.id = a.blueprint_id
+        where b.scope = 'objective' and b.objective_id = $1
+        order by a.created_at limit 1`,
+      [opts.objectiveId],
+    );
+    if (have.rows[0]) return have.rows[0].id as string;
+
+    // total_items is the count when the journey was created, for the record.
+    // Start takes every live question the moon has at that moment.
+    const bp = await client.query(
+      `insert into blueprints (name, scope, stage_id, objective_id, total_items, constraints)
+       values ($1, 'objective', $2, $3, $4, '{}'::jsonb)
+       on conflict (objective_id) where scope = 'objective' do update set name = excluded.name
+       returning id`,
+      [`Moon ${opts.objectiveId} journey`, opts.stageId, opts.objectiveId, Math.max(1, opts.liveQuestions)],
+    );
+    const { rows } = await client.query(
+      `insert into assessments (blueprint_id, section_id, title)
+       values ($1, null, $2) returning id`,
+      [bp.rows[0].id, `Moon ${opts.objectiveId} journey`],
+    );
+    const assessmentId = rows[0].id as string;
+    await client.query(
+      "insert into assessment_secrets (assessment_id, exam_salt) values ($1, $2)",
+      [assessmentId, mintSalt(opts.saltSecret, assessmentId)],
+    );
+    return assessmentId;
+  });
 }
 
 /* ============================================================

@@ -106,6 +106,30 @@ describe("POST /api/v1/attempts", () => {
     }
   });
 
+  /*
+   * Hard rule 4, at Start. A stage check's correct answers count toward the
+   * planet's moons (WEB-REVAMP 3.7a), so sitting a LOCKED planet's check would
+   * master its moons and open the planet after it: a way round the prerequisite
+   * that the reader never offers but the API used to allow.
+   */
+  it("DENIAL: a check on a LOCKED stage cannot be started or resumed", async () => {
+    const flip = (state: string) =>
+      setup("update stage_locks set state = $3 where scope = 'user' and scope_user_id = $1 and stage_id = $2", [
+        w.studentB, w.stageId, state,
+      ]);
+    await flip("locked");
+    try {
+      const res = await app.inject({
+        method: "POST", url: "/api/v1/attempts", headers: auth(tokenB),
+        payload: { assessmentId: w.stageAssessmentId },
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error.message).toBe("This stage is locked.");
+    } finally {
+      await flip("unlocked");
+    }
+  });
+
   it("resuming returns the SAME paper, not a new one", async () => {
     const first = await app.inject({
       method: "POST", url: "/api/v1/attempts", headers: auth(tokenA),

@@ -136,6 +136,13 @@ beforeAll(async () => {
       insert into assessment_secrets (assessment_id, exam_salt)
       values ((select id from a), encode(gen_random_bytes(32),'hex'))
       returning assessment_id
+    ),
+    -- The seeded chain shuts ${TARGET}, and a check cannot start on a locked
+    -- stage: opened for this student, as an instructor would on /locks.
+    opened as (
+      insert into stage_locks (scope, scope_user_id, stage_id, state, reason, actor_id)
+      values ('user', (select id from us), '${TARGET}', 'unlocked', 'scope fixture', (select id from ut))
+      returning id
     )
     select (select id from us) student, (select id from a) assessment
   `);
