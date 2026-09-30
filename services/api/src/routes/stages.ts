@@ -73,9 +73,28 @@ type StageState = "locked" | "available" | "in_progress" | "mastered";
 interface LockReason {
   kind: string;
   blockingStages: string[];
-  requiredMastery?: number;
-  currentMastery?: number;
+  /*
+   * The distance (DESIGN-MANDATE 1), in moons since 30 Sep 2026 (WEB-REVAMP
+   * 3.7a): the blocking planet's moons mastered of its total, the ones still to
+   * master, and which of those have no questions yet (fail-closed).
+   */
+  moonsMastered?: number;
+  moonsTotal?: number;
+  missingMoons?: string[];
+  unwrittenMoons?: string[];
   message: string;
+}
+
+/** Objectives in the syllabus's order: 06.1, 06.2 ... 06.10. */
+function byObjective(a: { id: string }, b: { id: string }): number {
+  const [sa, oa] = a.id.split(".").map(Number);
+  const [sb, ob] = b.id.split(".").map(Number);
+  return (sa ?? 0) - (sb ?? 0) || (oa ?? 0) - (ob ?? 0);
+}
+
+/** "01.3", "01.3 and 01.5", "01.2, 01.3 and 01.5". */
+function inWords(ids: string[]): string {
+  return ids.length <= 1 ? (ids[0] ?? "") : `${ids.slice(0, -1).join(", ")} and ${ids[ids.length - 1]}`;
 }
 
 function stateOf(unlocked: boolean, mastery: number): StageState {
@@ -91,27 +110,63 @@ function stateOf(unlocked: boolean, mastery: number): StageState {
  * the reader (29 Sep 2026): the reader's lock card prints this verbatim, and a
  * second wording of the same fact would drift from the first.
  *
+ * Since 30 Sep 2026 a planet opens when every moon of its gradeable
+ * prerequisites is mastered (`is_stage_unlocked()`, WEB-REVAMP 3.7a), so the
+ * reason names the moons still missing, and says which have no questions yet:
+ * those hold the planet shut until they are written (fail-closed).
+ *
  * `prereq` must already be the GRADEABLE prerequisites only, the ones
- * `is_stage_unlocked()` counts (WEB-REVAMP 3.7). A reason naming Orientation
- * would tell the student to reach a mastery no path can earn.
+ * `is_stage_unlocked()` counts (WEB-REVAMP 3.7). `moonsOf` returns a planet's
+ * moons with the database's own verdicts; nothing here recounts one.
  */
 function lockReasonFor(
   prereq: string[],
-  masteryOf: (id: string) => number,
+  moonsOf: (id: string) => Moon[],
   titleOf: (id: string) => string | undefined,
 ): LockReason {
-  const short = prereq.filter((p) => masteryOf(p) < MASTERY_THRESHOLD);
+  const short = prereq.filter((p) => {
+    const moons = moonsOf(p);
+    return moons.length === 0 || moons.some((m) => !m.mastered);
+  });
   if (short.length > 0) {
-    const worst = short.map((p) => ({ id: p, m: masteryOf(p) })).sort((a, b) => a.m - b.m)[0]!;
+    // The planet furthest from open: the smallest share of its moons mastered.
+    const worst = short
+      .map((id) => {
+        const moons = [...moonsOf(id)].sort(byObjective);
+        const done = moons.filter((m) => m.mastered).length;
+        return { id, moons, done, share: moons.length ? done / moons.length : 0 };
+      })
+      .sort((a, b) => a.share - b.share || a.id.localeCompare(b.id))[0]!;
     const title = titleOf(worst.id) ?? `Stage ${worst.id}`;
+
+    if (worst.moons.length === 0) {
+      return {
+        kind: "prereq",
+        blockingStages: short,
+        moonsMastered: 0,
+        moonsTotal: 0,
+        missingMoons: [],
+        unwrittenMoons: [],
+        message: `Unlocks when Stage ${worst.id} (${title}) has its moons: none are published yet.`,
+      };
+    }
+
+    const missing = worst.moons.filter((m) => !m.mastered);
+    const unwritten = missing.filter((m) => m.questions === 0).map((m) => m.id);
+    let message =
+      `Unlocks when every moon of Stage ${worst.id} (${title}) is mastered: ` +
+      `${worst.done} of ${worst.moons.length} are. Still to master: ${missing.map((m) => m.id).join(", ")}.`;
+    if (unwritten.length > 0) {
+      message += ` ${inWords(unwritten)} ${unwritten.length === 1 ? "has" : "have"} no questions yet.`;
+    }
     return {
       kind: "prereq",
       blockingStages: short,
-      requiredMastery: MASTERY_THRESHOLD,
-      currentMastery: worst.m,
-      message:
-        `Unlocks when Stage ${worst.id} (${title}) reaches ` +
-        `${Math.round(MASTERY_THRESHOLD * 100)}%. You're at ${Math.round(worst.m * 100)}%.`,
+      moonsMastered: worst.done,
+      moonsTotal: worst.moons.length,
+      missingMoons: missing.map((m) => m.id),
+      unwrittenMoons: unwritten,
+      message,
     };
   }
   // Prerequisites are met, so a teacher override or a lock window is holding
@@ -151,7 +206,17 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       [id.userId, staff],
     );
 
-    const masteryOf = new Map(rows.map((r) => [r.id, Number(r.mastery ?? 0)]));
+    const moonsOf = new Map(
+      rows.map((r) => [
+        r.id,
+        (r.objectives ?? []).map((o) => ({
+          id: o.id,
+          correct: Number(o.correct),
+          mastered: o.mastered === true,
+          questions: Number(o.questions),
+        })),
+      ]),
+    );
     const gradeable = new Map(rows.map((r) => [r.id, r.gradeable]));
 
     const nodes = rows.map((r) => {
@@ -161,7 +226,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         state === "locked"
           ? lockReasonFor(
               (r.prereq ?? []).filter((p) => gradeable.get(p) !== false),
-              (p) => masteryOf.get(p) ?? 0,
+              (p) => moonsOf.get(p) ?? [],
               (p) => rows.find((x) => x.id === p)?.title,
             )
           : null;
@@ -267,16 +332,19 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       // The prerequisites' masteries and titles, read exactly as the map reads
       // them (published stages only), so both routes print the same sentence.
       const prereq: string[] = stage.prereq ?? [];
-      const pre = await app.db.query<{
-        id: string; title: string; gradeable: boolean; mastery: string | null;
-      }>(
-        `select s.id, s.title, s.gradeable, sp.mastery
-           from stages s
-           left join stage_progress sp on sp.user_id = $1 and sp.stage_id = s.id
-          where s.id = any($2) and s.published`,
-        [id.userId, prereq],
+      const pre = await app.db.query<{ id: string; title: string; gradeable: boolean }>(
+        `select s.id, s.title, s.gradeable from stages s where s.id = any($1) and s.published`,
+        [prereq],
       );
       const known = new Map(pre.rows.map((r) => [r.id, r]));
+      // The prerequisites' moons, read exactly as the map reads them.
+      const preMoons = await app.db.query<{ stage_id: string } & Moon>(
+        `select o.stage_id, o.id, moon_correct($1, o.id) as correct, moon_mastered($1, o.id) as mastered,
+                (select count(distinct i.family_id)::int from items i
+                  where i.objective_id = o.id and i.status = 'live') as questions
+           from objectives o where o.stage_id = any($2)`,
+        [id.userId, prereq],
+      );
       return reply.send({
         id: stage.id,
         title: stage.title,
@@ -289,7 +357,10 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         masteryThreshold: MASTERY_THRESHOLD,
         lockReason: lockReasonFor(
           prereq.filter((p) => known.get(p)?.gradeable !== false),
-          (p) => Number(known.get(p)?.mastery ?? 0),
+          (p) =>
+            preMoons.rows
+              .filter((m) => m.stage_id === p)
+              .map((m) => ({ id: m.id, correct: Number(m.correct), mastered: m.mastered === true, questions: Number(m.questions) })),
           (p) => known.get(p)?.title,
         ),
         objectives: objectives.rows.map((o) => ({

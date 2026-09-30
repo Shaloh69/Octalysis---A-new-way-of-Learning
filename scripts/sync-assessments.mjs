@@ -84,9 +84,10 @@ async function main() {
   /*
    * STAGE CHECKS ARE WHAT MAKE THE COURSE MOVE (F-44).
    *
-   * `stage_progress.mastery` is written only for a STAGE-scoped attempt, and
-   * `is_stage_unlocked()` needs every prerequisite at >= 70% of it. Without
-   * these, a student reads stage 00 and never reaches stage 01.
+   * `stage_progress.mastery` is written only for a STAGE-scoped attempt: the
+   * check is what the gradebook records. Since 30 Sep 2026 what OPENS the next
+   * planet is its moons (`is_stage_unlocked()`, WEB-REVAMP 3.7a), and a check's
+   * correct answers count toward them as a moon's journey's do.
    *
    * Only stages inside the examinable scope get one. A stage blueprint exists
    * for all eighteen -- blueprints are the plan -- but offering an assessment

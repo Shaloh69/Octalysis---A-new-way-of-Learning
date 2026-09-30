@@ -176,7 +176,7 @@ test.describe("/app — what the map owes", () => {
   test("a locked planet shows the server's reason, verbatim, beside a padlock, and no Enter", async ({ page }) => {
     await map(page, "/app?stage=04");
     const lock = page.locator(".starmap-lock");
-    await expect(lock).toContainText(/Unlocks when Stage 03/);
+    await expect(lock).toContainText(/Unlocks when every moon of Stage 03/);
     await expect(lock.locator("svg")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "Enter journey" })).toHaveCount(0);
     await page.getByRole("button", { name: "Show Stage 03" }).click();
@@ -334,7 +334,7 @@ test.describe("/app — the moons", () => {
     await map(page, "/app?stage=04&moon=04.1");
     await expect(page.locator(".starmap-body h2")).toHaveText("Moon 04.1");
     await expect(page.locator(".starmap-body").getByRole("button", { name: "Enter journey" })).toBeDisabled();
-    await expect(page.locator(".starmap-body .starmap-lock")).toContainText(/Unlocks when Stage 03/);
+    await expect(page.locator(".starmap-body .starmap-lock")).toContainText(/Unlocks when every moon of Stage 03/);
   });
 
   test("Orientation has no moons: its objectives are text, and nothing to choose (3.10)", async ({ page }) => {

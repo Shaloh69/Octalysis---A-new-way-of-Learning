@@ -282,8 +282,10 @@ describe("GET /api/v1/stages — the skill tree", () => {
       expect(n.lockReason, `stage ${n.id} is locked with no reason`).not.toBeNull();
       expect(n.lockReason!.message.length).toBeGreaterThan(20);
       if (n.lockReason!.kind === "prereq") {
-        expect(n.lockReason!.message).toMatch(/Unlocks when Stage \d\d/);
-        expect(n.lockReason!.message).toMatch(/You're at \d+%/);
+        // Moons open planets (3.7a): the reason names them, and the distance
+        // is moons mastered of the planet's total.
+        expect(n.lockReason!.message).toMatch(/^Unlocks when every moon of Stage \d\d \(.+\) is mastered: \d+ of \d+ are\./);
+        expect(n.lockReason!.message).toMatch(/Still to master: \d\d\.\d+/);
       }
     }
 
@@ -308,7 +310,7 @@ describe("GET /api/v1/stages — the skill tree", () => {
     const s02 = nodes.find((n) => n.id === "02")!;
     expect(s02.state).toBe("locked");
     expect(s02.lockReason!.blockingStages).toEqual(["01"]);
-    expect(s02.lockReason!.message).toMatch(/^Unlocks when Stage 01 /);
+    expect(s02.lockReason!.message).toMatch(/^Unlocks when every moon of Stage 01 /);
 
     for (const n of nodes) {
       expect(n.lockReason?.blockingStages ?? []).not.toContain("00");
@@ -339,16 +341,28 @@ describe("GET /api/v1/stages — the skill tree", () => {
   });
 
   it("the lock state comes from is_stage_unlocked(), not from the client", async () => {
-    // Prove it by changing the database and re-reading: mastery on 01 should
-    // open 02 with no client involvement at all.
+    // Prove it by changing the database and re-reading. A check's mastery on
+    // 01 no longer opens 02 (moons do, 3.7a: moons.spec.ts earns them end to
+    // end); an instructor's override does, with no client involvement at all.
     await pool.query(
       `insert into stage_progress (user_id, stage_id, mastery) values ($1,'01',0.95)
        on conflict (user_id, stage_id) do update set mastery = 0.95`,
       [studentId],
     );
-    const res = await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) });
-    const nodes = res.json().nodes as Array<{ id: string; state: string }>;
-    expect(nodes.find((n) => n.id === "02")!.state).toBe("available");
+    const read = async () =>
+      ((await app.inject({ method: "GET", url: "/api/v1/stages", headers: auth(studentToken) })).json()
+        .nodes as Array<{ id: string; state: string }>).find((n) => n.id === "02")!.state;
+    expect(await read()).toBe("locked");
+    await pool.query(
+      `insert into stage_locks (scope, scope_user_id, stage_id, state, reason, actor_id)
+       values ('user', $1, '02', 'unlocked', 'opened by hand', $2)`,
+      [studentId, teacherId],
+    );
+    try {
+      expect(await read()).toBe("available");
+    } finally {
+      await pool.query("delete from stage_locks where scope_user_id = $1", [studentId]);
+    }
   });
 
   it("a teacher override closes a stage the prerequisites would have opened", async () => {
@@ -428,7 +442,7 @@ describe("GET /api/v1/stages/:id — the reader", () => {
     expect(body.lockReason).toEqual(node.lockReason);
     expect(body.lockReason.kind).toBe("prereq");
     expect(body.lockReason.blockingStages.length).toBeGreaterThan(0);
-    expect(body.lockReason.message).toMatch(/Unlocks when Stage \d\d .* reaches \d+%\. You're at \d+%\./);
+    expect(body.lockReason.message).toMatch(/^Unlocks when every moon of Stage \d\d .* is mastered: \d+ of \d+ are\./);
     // Still no content: the reason is not a way round V-7.
     expect(body.blocks).toEqual([]);
     expect(res.body).not.toContain("Locked content a student must not read");

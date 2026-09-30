@@ -81,8 +81,9 @@ test.describe("the stage reader — its six states", () => {
 
     // The reason, in words, not a code.
     await expect(locked).toContainText(/opens once|reach \d+%|instructor/i);
-    // The distance — a number a student can act on.
-    await expect(locked).toContainText(/\d+%/);
+    // The distance — a number a student can act on. Since 30 Sep 2026 moons
+    // open planets (WEB-REVAMP 3.7a), so it is the moons mastered of the total.
+    await expect(locked).toContainText(/\d+ of \d+ are/);
 
     // And the objectives are still there, above it.
     await expect(page.getByText(/WHAT YOU SHOULD BE ABLE TO DO/i)).toBeVisible();

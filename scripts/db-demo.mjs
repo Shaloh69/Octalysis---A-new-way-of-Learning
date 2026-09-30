@@ -104,11 +104,13 @@ async function count(what, sql) {
  * an append-only table.
  */
 async function foreignHistory() {
-  const { n } = await count(
-    "foreign responses",
-    "select count(*) from responses r join attempts a on a.id = r.attempt_id " +
-      "join profiles p on p.id = a.user_id where p.id::text not like 'dddddddd-%'",
-  );
+  /*
+   * ANY recorded answer, the demo students' own included, since 30 Sep 2026:
+   * `db/demo-moons.sql` earns the demo cohort's moons through real responses,
+   * so a second run on top of the first would meet its own append-only
+   * history halfway through. The legal way to a clean slate is still a reset.
+   */
+  const { n } = await count("recorded responses", "select count(*) from responses");
   return n;
 }
 
@@ -119,7 +121,7 @@ async function main() {
   if (stale > 0) {
     console.log(
       c.red(`
-  ${stale} response(s) belong to non-demo users.`) +
+  ${stale} recorded response(s) are already in this database.`) +
         `
   Nothing here can remove them: \`responses\` is append-only and a` +
         `
@@ -218,6 +220,24 @@ ${err.stderr || err.message}
     process.exit(1);
   }
 
+  process.stdout.write("  demo-moons          ... ");
+  try {
+    /*
+     * Moons open planets (WEB-REVAMP 3.7a): the demo cohort's moons, EARNED
+     * through journeys and correct answers in proportion to its seeded
+     * stage_progress, so the lock picture is what it was. AFTER the item and
+     * assessment syncs, because it answers the bank's own questions.
+     */
+    await psqlFile("db/demo-moons.sql");
+    console.log(c.green("ok"));
+  } catch (err) {
+    console.log(c.red("FAILED"));
+    console.error(c.red(`
+${err.stderr || err.message}
+`));
+    process.exit(1);
+  }
+
   process.stdout.write("  demo-item-stats     ... ");
   try {
     /*
@@ -269,7 +289,11 @@ ${err.stderr || err.message}
     count("objectives", "select count(*) from objectives"),
     count("stage_progress", "select count(*) from stage_progress"),
     count("items (review)", "select count(*) from items where status = 'review'"),
-    count("assessments", "select count(*) from assessments"),
+    count(
+      "assessments (checks and exams)",
+      "select count(*) from assessments a join blueprints b on b.id = a.blueprint_id where b.scope <> 'objective'",
+    ),
+    count("moons mastered (demo cohort)", "select count(*) from (select user_id, objective_id from objective_progress group by 1, 2 having count(distinct family_id) >= 2) m"),
     count("flagged items", "select count(*) from item_stats where flagged"),
     count("audit entries", "select count(*) from audit_log"),
   ]);

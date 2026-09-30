@@ -642,6 +642,9 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
          join assessments s on s.id = a.assessment_id
          join blueprints  b on b.id = s.blueprint_id
         where a.user_id = $1
+          -- Graded work only: a moon's journey is practice (WEB-REVAMP 3.7a),
+          -- never graded, and a student sits dozens of them.
+          and b.scope <> 'objective'
         order by a.started_at desc`,
       [userId],
     );

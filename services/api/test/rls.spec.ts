@@ -392,12 +392,15 @@ describe("§3.7 — a non-gradeable prerequisite never blocks", () => {
       const shut = await setup("select is_stage_unlocked($1,'99') as ok", [w.studentA]);
       expect(shut.rows[0].ok).toBe(false);
 
+      // Since 30 Sep 2026 moons open planets (3.7a), and stage mastery opens
+      // nothing, not even 100% of it. The open half, earned through real
+      // journeys and checks, is `moons.spec.ts`.
       await setup(
-        `insert into stage_progress (user_id, stage_id, mastery) values ($1,'01',0.70)`,
+        `insert into stage_progress (user_id, stage_id, mastery) values ($1,'01',1.0)`,
         [w.studentA],
       );
-      const open = await setup("select is_stage_unlocked($1,'99') as ok", [w.studentA]);
-      expect(open.rows[0].ok).toBe(true);
+      const still = await setup("select is_stage_unlocked($1,'99') as ok", [w.studentA]);
+      expect(still.rows[0].ok).toBe(false);
     } finally {
       await setup("delete from stage_progress where user_id = $1", [w.studentA]);
       await setup("update stages set prereq = '{}' where id = '99'");

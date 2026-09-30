@@ -142,7 +142,7 @@ test.describe("/app/stages — what the list owes", () => {
   test("the card is the map's: a locked stage says why, beside a padlock, and Show Stage NN moves to it", async ({ page }) => {
     await stages(page, "/app/stages?stage=04");
     const lock = page.locator(".stages-card .starmap-lock");
-    await expect(lock).toContainText(/Unlocks when Stage 03/);
+    await expect(lock).toContainText(/Unlocks when every moon of Stage 03/);
     await expect(lock.locator("svg")).toHaveCount(1);
     await expect(page.getByRole("link", { name: "Enter journey" })).toHaveCount(0);
     await page.getByRole("button", { name: "Show Stage 03" }).click();

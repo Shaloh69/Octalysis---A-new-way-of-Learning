@@ -103,6 +103,10 @@ returns table(attempt_id uuid) language sql stable as $$
   select id from attempts where status = 'submitted' and score is null
 $$;
 
+-- PAPERS only (checks and exams): a paper quietly short measures something other
+-- than it claims. A moon's journey (scope 'objective', WEB-REVAMP 3.7a) takes
+-- every live question its moon has at Start, so its length follows the bank by
+-- design, and its blueprint's total_items is only the count when it was made.
 create or replace function inv_12_item_count_matches_blueprint()
 returns table(attempt_id uuid, expected int, actual bigint) language sql stable as $$
   select a.id, b.total_items, count(ai.ordinal)
@@ -110,6 +114,7 @@ returns table(attempt_id uuid, expected int, actual bigint) language sql stable 
   join assessments s on s.id = a.assessment_id
   join blueprints  b on b.id = s.blueprint_id
   left join attempt_items ai on ai.attempt_id = a.id
+  where b.scope <> 'objective'
   group by a.id, b.total_items
   having count(ai.ordinal) <> b.total_items
 $$;

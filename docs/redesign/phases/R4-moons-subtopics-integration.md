@@ -141,9 +141,16 @@ supersede the R4.2 box above that says no new gating logic is built.**
       transaction with the response. `rls.spec.ts` §3.7a (eleven tests) watched
       red three ways: no table (11), no protections (7 write denials), RLS alone
       off (B reads A); `attempts.spec.ts` (three, two red before the write)
-- [ ] `is_stage_unlocked()` opens the next planet when every moon of its
+- [x] `is_stage_unlocked()` opens the next planet when every moon of its
       prerequisite is mastered. Server-side only (hard rule 4); the client
-      renders the result and the `lockReason` names the moons still missing
+      renders the result and the `lockReason` names the moons still missing.
+      **Done 30 Sep 2026:** step 4 reads `moon_mastered()`; a gradeable
+      prerequisite with no moons, or a moon with no live question, holds it
+      shut (fail-closed). `moons.spec.ts` (denials watched red against the 70%
+      rule: 02 shut at 100% stage mastery; an unwritten moon; a voided attempt;
+      an empty planet), `rls.spec.ts`, `stages.spec.ts`. The demo cohort earns
+      its moons through real answers (`db/demo-moons.sql`); its lock picture
+      is unchanged, measured: 0 of 399 student-stage pairs differ
 - [x] A moon's ENTER JOURNEY opens practice on that objective's own questions
       **30 Sep 2026:** `POST /api/v1/objectives/:id/journey` (`journeys.spec.ts`)
       and `/app/stage/:id/moon/:objectiveId` (`web-moon-journey.spec.ts`,

@@ -558,12 +558,19 @@ begin
        and (v_lock   is null or now() <  v_lock);
   end if;
 
-  -- 4. curriculum policy: every GRADEABLE prerequisite at >= 70% mastery.
-  -- A non-gradeable prerequisite never blocks (WEB-REVAMP 3.7, instructor ruling
-  -- 25 Sep 2026): it has no questions, so no mastery can be earned there, and
-  -- requiring some shut stage 01 behind Orientation by no path that exists.
-  -- A prereq id with no stages row stays blocking (the inner join would drop
-  -- it, so it is counted separately); INV-19 forbids one anyway.
+  -- 4. curriculum policy: MOONS OPEN THE NEXT PLANET (WEB-REVAMP 3.7, 3.7a;
+  -- instructor rulings of 25 Sep and decisions of 30 Sep 2026). Every GRADEABLE
+  -- prerequisite has every one of its moons (objectives) mastered, as
+  -- moon_mastered() says (2 distinct questions right, in attempts that are not
+  -- voided, on a journey or a stage check; addendum-audit.sql). stage_progress
+  -- no longer gates: it keeps its other job, the check's recorded result.
+  --   * A non-gradeable prerequisite never blocks (3.7): it has no questions,
+  --     so nothing can be mastered there. Orientation is the case.
+  --   * A gradeable prerequisite with NO moons blocks, and so does a moon with
+  --     no live question (fail-closed, decision 3): a missing bank never opens
+  --     the course. An instructor opens a planet by hand on /locks instead.
+  --   * A prereq id with no stages row stays blocking (the inner join would
+  --     drop it, so it is counted separately); INV-19 forbids one anyway.
   select prereq into v_prereq from stages where id = p_stage;
   if v_prereq is null or array_length(v_prereq,1) is null then return true; end if;
 
@@ -572,10 +579,13 @@ begin
     return false;
   end if;
 
-  select coalesce(bool_and(coalesce(sp.mastery,0) >= 0.70), true) into v_ok
+  select coalesce(bool_and(
+           exists (select 1 from objectives o where o.stage_id = s.id)
+           and not exists (select 1 from objectives o
+                            where o.stage_id = s.id and not moon_mastered(p_user, o.id))
+         ), true) into v_ok
   from unnest(v_prereq) req(stage_id)
-  join stages s on s.id = req.stage_id and s.gradeable
-  left join stage_progress sp on sp.user_id = p_user and sp.stage_id = req.stage_id;
+  join stages s on s.id = req.stage_id and s.gradeable;
 
   return v_ok;
 end $$;
@@ -1004,7 +1014,9 @@ insert into blueprints (name, scope, total_items, constraints) values
 -- STAGE CHECKS — one per gradeable stage.
 --
 -- These were MISSING, and their absence stopped the course working (F-44).
--- `is_stage_unlocked()` needs every gradeable prerequisite at >= 70% mastery;
+-- `is_stage_unlocked()` needed every gradeable prerequisite at >= 70% mastery
+-- (since 30 Sep 2026 it needs every MOON mastered instead, and a check's correct
+-- answers count toward them; WEB-REVAMP 3.7a);
 -- `stage_progress.mastery` is written only for an attempt whose blueprint is
 -- STAGE-scoped; and `routes/stages.ts` finds a stage's check by looking for an
 -- assessment whose blueprint is scoped to that stage. With only the four

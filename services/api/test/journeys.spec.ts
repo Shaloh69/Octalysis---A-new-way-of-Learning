@@ -246,3 +246,20 @@ describe("a journey is not a teacher's assessment", () => {
     expect(res.statusCode).toBe(404);
   });
 });
+
+describe("the instructor's record of a student is their graded work", () => {
+  it("lists checks and exams, and no moon's journey (practice is never graded)", async () => {
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/students/${w.studentA}`, headers: auth(tokenT),
+    });
+    expect(res.statusCode).toBe(200);
+    const scopes = (res.json().attempts as Array<{ scope: string }>).map((a) => a.scope);
+    const journeys = await pool.query(
+      `select count(*)::int n from attempts a join assessments s on s.id = a.assessment_id
+         join blueprints b on b.id = s.blueprint_id where a.user_id = $1 and b.scope = 'objective'`,
+      [w.studentA],
+    );
+    expect(journeys.rows[0].n, "the fixture has journeys, or this proves nothing").toBeGreaterThan(0);
+    expect(scopes).not.toContain("objective");
+  });
+});
