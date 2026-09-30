@@ -22,6 +22,11 @@ Route groups: `/` public (unauthenticated), `/app/*` student (role `student`).
   under reduced motion.
 - **A stage check: biome chrome, neutral paper.** The question card, options, Record, Submit and
   verdicts are identical for every student.
+- **A paper is sat behind Start, with no way back, in full screen** (ruling 3, 30 Sep 2026; root
+  hard rule 9, WEB-REMAKE.md §4a). Nothing of it exists before Start; from Start to Submit the
+  shell has no Leave, no tabs and no shortcut off it (lib/sitting.ts), Back is held; leaving full
+  screen or the page covers the questions and is recorded (POST /attempts/:id/events). Every
+  check and exam, and /app/live when it is built.
 
 ## Never in this package
 - Any import from `services/api/src/engine/**`

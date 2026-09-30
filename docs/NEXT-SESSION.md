@@ -1195,6 +1195,53 @@ now races the realm), and in `packages/tokens`: `looks.css`, `fonts.css`,
 
 ---
 
+## 0u. Parked by the remake (ruling 2) and ruling 3 — 30 Sep 2026
+
+The whole of `WEB-REMAKE.md` §8 landed in one session (the instructor amended
+one-route-per-session for this rework): shell `862a60e`, map `0d6828a`, reader
+`c50376e`, runner `886007a`, stages `2fd1157`, progress `545f2a1`, work
+`943c615`, settings `061464c`, title screen `04f8ffe`, cleanup `264bc91`, then
+**ruling 3** (sitting a paper, root hard rule 9). Each piece's `SPEC.md` is in
+`design/templates/web/<piece>/`. Found and left, or needing a decision:
+
+1. **`/app/progress` is missing three planned things, recorded as deferred:**
+   per-objective mastery, attempt history as a growth curve, competency-named
+   badges (`PAGE-SPECS.md` §/app/progress). `GET /api/v1/progress` serves the
+   21 cells and depth only; no endpoint returns a student's attempt history.
+   Plan it as an API first, then ask.
+2. **`PAGE-SPECS.md` §/app/settings is superseded** (theme picker, audio
+   sliders, profile, larger text): ruling 2 removed the variants, there is no
+   audio, and `design/templates/web/settings/SPEC.md` says what exists. Rewrite
+   the row; ask before building profile or text size.
+3. **`attempt_events` must reach the deployment.** It is appended to
+   `addendum-audit.sql` idempotently (`create table if not exists`, `drop
+   policy/trigger if exists`); `pnpm db:push` has not been run. Until it is, a
+   deployed runner's event POSTs answer 500 (best effort: the cover still
+   works, nothing is recorded).
+4. **`scripts/backup.mjs` checks only `responses`' append-only triggers** on
+   restore. `audit_log`, `live_*`, `content_block_versions` and now
+   `attempt_events` are append-only too and unchecked.
+5. **`apps/web` has no `lint` script**: `pnpm lint` covers the console's
+   palette scan only. The web app's guard is the hex hook and the gate specs.
+6. **Local ports:** the console build is previewed on **5186** beside the web
+   one on 5185; `scripts/dev-api.mjs` now allows 5186 (before this, every
+   console spec against a 5186 preview failed on CORS as "Failed to fetch").
+   Start it with `npx vite preview --port 5186 --strictPort` in apps/console;
+   a PowerShell `Start-Process` starter for it hung.
+7. **The local stack's two traps, again:** `pnpm db:reset` kills the dev API
+   (restart `pnpm dev:api` and prove it with a real GET), and the API test
+   suite truncates the demo fixtures (`design/global-setup.ts` refuses to run
+   and says so; `node scripts/db-demo.mjs`). Never reset while a Playwright
+   suite is running.
+8. **Hard rule 9 binds Lecture Mode:** `/app/live` (not built) must sit behind
+   the same start prompt and full screen, and record leaves the same way. The
+   route and table are per attempt; a live session will need its own key.
+9. **A reload mid-paper now asks first** (`beforeunload`) and lands on the
+   prompt again: full screen needs a click. The resume is the same attempt
+   (`attempt-runner.spec.ts` asserts one attempt id across the reload).
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

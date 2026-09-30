@@ -54,6 +54,21 @@ other documents — check it before believing any claim that something is built.
    attempt; they never edit history.
 8. **Test authorization by testing denial.** For every policy, write the test that proves the
    wrong user is blocked — and watch it fail before you make it pass.
+9. **A paper is sat behind a start prompt, with no way back, in full screen** (instructor
+   ruling 3, 30 Sep 2026; `docs/redesign/WEB-REMAKE.md` §4a). Every stage check and every
+   exam, and Lecture Mode (`/app/live`) when it is built, and anything else a student is
+   graded on in the moment:
+   - **Nothing before Start.** A prompt states the rules; no question and no attempt exist
+     until the student presses Start. Going back is allowed only before it.
+   - **No way back once started.** No Leave, no tabs, no shortcut off the paper, Back held,
+     a reload asks first; Submit is the only way out. A reload resumes behind Start again.
+   - **Full screen, and leaving it is recorded.** Start enters full screen. A browser cannot
+     truly lock it (Esc always works) and an iPhone cannot enter it, so leaving full screen
+     or the page **covers the questions at once** until the student returns, and **every
+     leave is recorded** in `attempt_events` (append-only, API-written, staff-read, shown on
+     the console's record and attempt pages). A device with no full screen may sit the
+     paper under the same page guard, and that is recorded too.
+   - Never auto-submit on a leave: the record goes to the instructor, who decides.
 
 ## Conventions
 

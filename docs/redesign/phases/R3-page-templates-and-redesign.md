@@ -1082,6 +1082,14 @@ thesis deliverable, and right now no phase is accountable for it.
         `04f8ffe`; `web-title.spec.ts`
   - [x] Cleanup — `264bc91`: 297 dead rules, dead modules, one act list. The
         whole web suite 406 passed, 106 skipped, 0 failed, on the build
+  - [x] **Ruling 3, sitting a paper** (30 Sep 2026; root hard rule 9,
+        `WEB-REMAKE.md` §4a): a start prompt before anything, no way back,
+        full screen; leaving covers the questions and is recorded in the new
+        append-only `attempt_events` (`POST /attempts/:id/events`, owner-only),
+        shown on the console's record and attempt pages.
+        `attempt-events.spec.ts` 12 passed, its denial tests watched failing
+        first; `web-stage-check.spec.ts` "sitting a paper"; hard rule 1 re-run
+        against the real API on a LOCAL live slice
 - [ ] **Toasts, loading states and transitions** on every revamped route per
       `.claude/rules/design.md` — no toast library is installed in either app
       today, exactly one route in `apps/web` has a loading state, and the

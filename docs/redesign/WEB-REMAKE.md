@@ -118,6 +118,43 @@ on one neutral set, identical for every student** (`[data-paper]`). The runner's
 spec renders one paper as two students with different biomes and asserts the
 paper's computed styles are identical.
 
+## 4a. Sitting a paper: start, no way back, full screen (ruling 3, 30 Sep 2026)
+
+The instructor's words: *"during checks … they will be prompted to start first
+before showing anything. When started they cannot go back and are locked in
+full screen mode to avoid cheating. Add that rule to any exam or lecture or
+everywhere that needs it."* Root `CLAUDE.md` hard rule 9 carries it. The three
+choices the instructor made the same day, when told what a browser can and
+cannot do:
+
+| Question | Ruling |
+|---|---|
+| Leaving full screen or the page mid-paper | **Cover the questions and record it**: the paper is hidden until the student returns (in full screen where it exists), and each leave and return is a row in `attempt_events`, shown to staff on `/students/:id` (a "Left the paper" column and the timed list) and `/attempts/:id` ("The sitting"). Never an auto-submit |
+| An iPhone (no full screen for a page) | **Allowed, with the page guard**: switching app or tab covers the paper and is recorded; the start is recorded as `fullscreen_unavailable` |
+| Which papers | **Every check and exam**, and Lecture Mode when `/app/live` is built |
+
+What the runner does (`components/AttemptRunner.tsx`, `lib/sitting.ts`):
+
+1. **The prompt** (`data-runner="ready"`): the title and the four rules. No
+   question, no count and no `POST /attempts` before Start. Back to the stage
+   is allowed here and only here
+2. **Start**, inside the click: full screen (refused → the paper does not
+   start, and says why), then the paper (a resume, after a reload, lands here
+   first and continues the same attempt)
+3. **The sitting**: `<html data-sitting>`; the biome shell shows "Paper in
+   progress" in place of Leave planet, hides its tabs and drops L, R and C;
+   Back is held with a toast; a reload asks first; no Leave the paper
+4. **A leave** (`fullscreenchange` out of full screen, or `visibilitychange`
+   to hidden): the cover (`data-runner="covered"`), the event posted
+   (`POST /api/v1/attempts/:id/events`, owner-only, in-progress only, the
+   server's time); **Return to full screen** (or to the paper) brings the
+   questions back and posts `returned`
+5. **Submit** ends the sitting and full screen; the shell's ways back return
+
+`web-stage-check.spec.ts` "sitting a paper" holds all of it, including the
+no-full-screen device; `services/api/test/attempt-events.spec.ts` holds the
+route and the table (denial first, watched failing).
+
 ## 5. Transitions: always, both ways
 
 **Star → biome**: the star field streaks (§4.1's warp), the realm switches at the

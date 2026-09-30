@@ -37,7 +37,7 @@ and R3's denominator had grown. Count, do not copy.
 | R0 scope and guardrails | ✅ 28 / 28 |
 | R1 solar system foundation | ✅ 36 / 36 |
 | R2 per-student cosmetics | ✅ **21 / 21** — closed 7 Sep, and closing it found **F-40** |
-| **R3 page templates** | **59 / 84** ← live, counted 30 Sep 2026 (every console route done. **The student app is REMADE** (`WEB-REMAKE.md`, instructor ruling 30 Sep): the revamp's 7 student boxes became 11 remake boxes, and the 3 routes finished 29-30 Sep are kept as history, not counted, because their look is being redone. **1 of 11 remake boxes done: the look system**, 30 Sep (`_direction/LOOK.md`); the shell is next. It was 61 / 80 before the ruling; `pnpm phase` is the count) |
+| **R3 page templates** | **71 / 86** ← live, counted 30 Sep 2026 (evening). Every console route done; **the student-app remake is done** (`WEB-REMAKE.md` §8, all eleven pieces under ruling 2, one star HUD and a sprite biome per planet, 2D map removed) and **ruling 3** landed (root hard rule 9: a paper behind Start, no way back, full screen, leaves recorded in `attempt_events`). What R3 still owes is its older cross-cutting boxes (`pnpm phase --open`). Whole tracker 158 / 224, **71%** |
 | R4 moons and subtopics | 2 / 29, counted 29 Sep 2026 |
 | R5 testing and sign-off | ▫️ 0 / 24 |
 
