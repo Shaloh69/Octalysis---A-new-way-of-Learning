@@ -98,7 +98,10 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
       quoted, `clock-bench.spec.ts`)
 - [ ] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
       keyboard path and a non-canvas fallback
-- [ ] Stage 04 encounter — cache drill (DOM), through the page gate
+- [x] Stage 04 encounter — cache drill (DOM), through the page gate. **30 Sep 2026:**
+      Cache Tuner on moon 04.5 (`design/templates/web/encounter-cache/`,
+      `web-encounter-cache.spec.ts`). The address fields and sizes on the book's
+      Example 4.2; the hit-rate meter is not built (no sourced trace)
 - [x] **The Descent** (04→06, Phaser) — instructor's decision recorded: first
       release or Midterm. Its payoff lands in stage 06, which is Midterm content.
       **DECIDED 30 Sep 2026: the Midterm.** Not built with act 1
