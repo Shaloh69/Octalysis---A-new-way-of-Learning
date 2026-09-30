@@ -1333,6 +1333,69 @@ map, `403ec5b` the flip. Found and left, or needing a decision:
 
 ---
 
+## 0x. Three encounters, the record's moons, the deployment reset, a textured map — 1 Oct 2026
+
+Instructor answers (30 Sep): all four 3.6 placements approved; The Descent is
+the **Midterm**; moon mastery on the console record **built this session**; the
+R4.6 biome-sidebar box is **superseded** by ruling 2; the schema was **not** to
+be pushed, and then (1 Oct, after the deployment broke) **reset and reload**.
+Pushed: `11dc66d` record moons, `513988d` Two Columns (01.2 Sort), `4410670`
+Clock Bench (02.8 Drill), `f5b293d` Cache Tuner (04.5), `95c482f` textures,
+`3ac7b78` star-map panel. Found and left, or needing a decision:
+
+1. **The deployment was reset and reloaded, 1 Oct.** The live console's
+   `/live`, `/content` and the map all said "Something went wrong on our
+   side" (schema older than the pushed API). Backup first:
+   `db/dumps/live-ddvx-2026-10-01-pre-reset.dump` (gitignored), restore
+   rehearsed (it needs an `extensions` schema and pgcrypto, or
+   `assessment_secrets` fails). Then the SQL files in order, content, items
+   and assessments synced; the admin profile, the section, the roster row,
+   the test student and a stage lock restored from the backup. API routes
+   `/console/content*`, `/console/live*`, `/stages`, `/stages/01`,
+   `/progress` all 200 against it; invariants 25 clean, 0 failures. **Act 1
+   is 96 items at `review` there, 0 live.**
+2. **The root `.env` points at the OLD Supabase project**
+   (`lqvkqdaqtkhxmnvodmyr`, zero users). The live one is
+   `ddvxkbcelpqydnjkffdr`, and its credentials are in
+   `deploy/local-admin.env` (load with `set -a; . deploy/local-admin.env;
+   set +a`). **That file holds the service-role key and says to delete it
+   when the migration is done.** Decide, then delete it. Never echo its
+   connection string: a listing did once, this session.
+3. **The instructor asked to delete student `23212905` ("shemshem",
+   BSCPE-2A, deactivated, 0 attempts) from the deployment, 1 Oct.** Not
+   done: the session's permission mode refused a read of the production
+   database. V-20 says a student is never deleted (the record is evidence;
+   `responses` is append-only and blocks the cascade). With 0 attempts
+   nothing is lost, but check attempts and responses first. Either the
+   instructor grants the access for that one action (then: roster row,
+   profile, auth user, and an `audit_log` row saying why), or deletes it in
+   the Supabase dashboard (Authentication → Users; `student_directory`).
+4. **Bus wiring, moon 03.9, is not built.** The only act-1 encounter left,
+   and the only Phaser one: lazy, a keyboard path, a DOM fallback, and
+   `dist/index.html` grepped for a preload.
+5. **The Cache Tuner has no hit-rate meter.** The book gives no address trace
+   to run one over; a meter on an invented trace would break hard rule 5.
+   The address fields and sizes are the book's Example 4.2.
+6. **The map wears real textures now** (Solar System Scope, CC BY 4.0,
+   `public/CREDITS.md`; `solar-system/bodies.ts`, `bodies.spec.ts`). Cosmetic
+   only; seeded by biome, student and stage. 1.5 MB in `public/textures/`,
+   fetched only by the map's lazy chunk. The sun's first corona (two
+   translucent spheres) read as a flat brown disk in a capture; it is now a
+   radial sprite.
+7. **The star map shows only while no planet is chosen** (instructor, 1 Oct),
+   at every width, and the chosen body's name sits at the bottom. Left and
+   Right step between planets while one is open (the row's arrow keys,
+   carried over). `/app`'s SPEC and motion record it.
+8. **Suites at this close:** web unit 165, console unit 217, API 718 (1
+   skipped), `web-app.spec` 50 passed / 8 skipped; `db:reset` then
+   `db-demo` after the API suite, API answering on 8090. **The full
+   Playwright design suite was NOT run at the close** (the instructor stopped
+   it twice this session). Run it first next session.
+9. **`test-results/` and `.claude/worktrees/` are gitignored now**, after a
+   Playwright artifact was committed by accident (`72497bf`).
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```
