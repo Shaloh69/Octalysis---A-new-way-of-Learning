@@ -260,9 +260,9 @@ prerequisites, and the API's `lockReason` names only those. Stage 01 is open
 from the start; a gradeable prerequisite still blocks at 70% stage mastery until
 the moons below replace that rule.
 
-#### 3.7a Where moon mastery lives — PROPOSED 30 Sep 2026, awaiting approval
+#### 3.7a Where moon mastery lives — PROPOSED 30 Sep 2026, DECIDED the same day
 
-Nothing below is migrated. Measured on the local bank, 30 Sep: stages 01-08
+Measured on the local bank, 30 Sep: stages 01-08
 have every objective carrying 3 or 4 question families (05, 06 and 07 have some
 with 4), all at `review`; stages 09-18 have no items at all.
 
@@ -303,11 +303,23 @@ open stages 02-18 to every student today, because nothing is `live`.
 moon's journey (practice on the objective's own questions, a new
 `blueprints.scope = 'objective'`), and act 1's items approved to `live`.
 
-**Decisions for the instructor:** (1) do only moon journeys count, or stage
-checks too (a final never counts: its verdicts are withheld, and a planet opening
-mid-exam would leak them)? (2) Is a moon's journey a paper under hard rule 9, or
-practice without the start prompt and full screen? (3) Fail-closed for an
-unauthored moon, as proposed?
+**Decisions for the instructor — all three DECIDED 30 Sep 2026:**
+
+1. **What counts. DECIDED: moon journeys AND stage checks.** A correct answer
+   on either counts toward its moon. **A final never counts**: its verdicts are
+   withheld, and a planet opening mid-exam would leak them. A graded correct
+   answer is at least as strong evidence as practice, and a student who aces
+   the check is not sent back to redo it.
+2. **What a journey is. DECIDED: practice.** No start prompt, no full screen,
+   no leave recording: hard rule 9 binds what a student is *graded* on, and a
+   journey never enters the gradebook; it only decides what opens. The stage
+   check stays a rule-9 paper.
+3. **An unauthored moon. DECIDED: fail-closed, as proposed.** A moon with no
+   `live` question holds its planet shut, and the lock reason says so in words.
+   An instructor who needs a planet open anyway opens it on `/locks`, with a
+   reason and an audit row.
+
+With these, the proposal above is the design, and building it is R4.6.
 
 ### 3.8 The summaries: drafted, gated on approval
 

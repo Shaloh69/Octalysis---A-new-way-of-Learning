@@ -120,6 +120,12 @@ supersede the R4.2 box above that says no new gating logic is built.**
       §3.7 (nine tests, watched failing), `stages.spec.ts`. Until moons gate,
       "without stage 01's moons" reads "without stage 01 at 70%"; the moon form
       of that test lands with the box below that makes moons gate
+- [x] **Instructor decisions recorded: where moon mastery lives
+      (`WEB-REVAMP.md` §3.7a). DECIDED 30 Sep 2026:** (1) a correct answer on a
+      moon journey **or** a stage check counts toward its moon, a final never;
+      (2) a moon's journey is **practice**, not a hard-rule-9 paper; (3) a moon
+      with no `live` question is **fail-closed**: its planet does not open the
+      next, and the lock reason says so
 - [ ] Objective mastery stored server-side, written only by the grading
       service, RLS'd like `stage_progress`, with its denial tests written and
       watched failing first
