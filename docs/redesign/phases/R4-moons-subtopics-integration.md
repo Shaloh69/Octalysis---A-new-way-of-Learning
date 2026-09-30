@@ -15,22 +15,27 @@ accidentally scope-creep into "let's also change how mastery is computed."
 > (`WEB-REVAMP.md` §4), animated only while their planet is selected.
 
 ## R4.1 — Confirm the data before building the visual
-- [ ] Locate where `objectives` per stage are currently exposed to the client
+- [x] Locate where `objectives` per stage are currently exposed to the client
       (`/app/progress` already does per-objective mastery per `PAGE-SPECS.md`
       — reuse that read path, don't build a second one)
-- [ ] Confirm objective count per authored stage (Stages 00-05 per
+      **30 Sep 2026:** `GET /api/v1/stages` (and `/stages/:id`) carries each
+      objective with its mastery (`moon_correct()`, `moon_mastered()`): one read
+      path, the map's own. `/app/progress` never had per-objective mastery
+- [x] Confirm objective count per authored stage (Stages 00-05 per
       `STATUS.md` — 16 objectives across 6 stages at time of writing; this
       number will grow as more stages are authored, moons must scale with it,
       not assume a fixed count)
+      **Measured 30 Sep 2026:** 00: 5, 01: 5, 02: 8, 03: 11, 04: 8 (115 across
+      19 stages); moons are counted from the payload, never a fixed number
 
 ## R4.2 — Moon rendering
-- [ ] Moon count per planet = objective count for that stage, computed, not
+- [x] Moon count per planet = objective count for that stage, computed, not
       hardcoded per stage — **for gradeable stages only**. Stage 00 has five
       objectives and no moons (decided 25 Sep 2026); its objectives still appear
       in its sidebar as text
-- [ ] Three-state visual language: dim/unlit, partial glow, full glow — same
+- [x] Three-state visual language: dim/unlit, partial glow, full glow — same
       language as the planet itself, one level down, per §1.4
-- [ ] Moon select → camera zooms onto the moon and the **map sidebar updates to it**
+- [x] Moon select → camera zooms onto the moon and the **map sidebar updates to it**
       (`WEB-REVAMP.md` §3.2) — objective, mastery in words, back-to-planet, and
       ENTER JOURNEY into the stage at that subtopic. This replaces the earlier
       compact popover (objective text, mastery, a "Review this" link), which is
@@ -47,7 +52,7 @@ accidentally scope-creep into "let's also change how mastery is computed."
 
 > The dialog became a sidebar on 25 Sep 2026 (`WEB-REVAMP.md` §3.1). The
 > "N of M subtopics mastered" line below lands in the sidebar.
-- [ ] Add the "N of M subtopics mastered" line per
+- [x] Add the "N of M subtopics mastered" line per
       `SOLAR-SYSTEM-SPEC.md` §2, item 5
 - [ ] Verify focus-trap, Escape-closes, background-stops-animating still hold
       with the new content in the dialog — a content addition to an existing,
@@ -76,9 +81,12 @@ accidentally scope-creep into "let's also change how mastery is computed."
 Instructor decision, 25 Sep 2026: act 1 (stages 00–04) ships with moons and its
 minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
 
-- [ ] Moons live on **planets 00–04** first — one per objective, three-state
+- [x] Moons live on **planets 00–04** first — one per objective, three-state
       glow, select-to-zoom with the sidebar updating — verified by screenshot at
       1440 and 380
+      **30 Sep 2026:** planets 01-04 carry moons; 00 carries its asteroids
+      instead (decided 25 Sep). `design/templates/web/app/current-moon*.png`,
+      `-asteroids`, `-moons-11`, each at 1440 and 380, opened
 - [ ] Stage 01 encounter — Sort (DOM), through the page gate
 - [ ] Stage 02 encounter — Drill (DOM), through the page gate
 - [ ] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
@@ -106,7 +114,7 @@ supersede the R4.2 box above that says no new gating logic is built.**
       (below). Because a planet with no moons has nothing to master, **a
       non-gradeable prerequisite never blocks** — which is what resolves
       decision 3a: stage 01 is open from the start
-- [ ] **Stage 00's asteroids** — a small belt orbiting Orientation, purely
+- [x] **Stage 00's asteroids** — a small belt orbiting Orientation, purely
       cosmetic: seeded per student (never `Math.random`), so the same student
       sees the same belt every session; irregular, grey and unlit so no one
       mistakes them for moons; `aria-hidden`, not focusable, not selectable,
@@ -136,7 +144,10 @@ supersede the R4.2 box above that says no new gating logic is built.**
 - [ ] `is_stage_unlocked()` opens the next planet when every moon of its
       prerequisite is mastered. Server-side only (hard rule 4); the client
       renders the result and the `lockReason` names the moons still missing
-- [ ] A moon's ENTER JOURNEY opens practice on that objective's own questions
+- [x] A moon's ENTER JOURNEY opens practice on that objective's own questions
+      **30 Sep 2026:** `POST /api/v1/objectives/:id/journey` (`journeys.spec.ts`)
+      and `/app/stage/:id/moon/:objectiveId` (`web-moon-journey.spec.ts`,
+      `design/templates/web/moon-journey/`)
 - [ ] **Minigame placement on moons approved** (`WEB-REVAMP.md` §3.6), then each
       minigame built on its moon through the page gate
 - [ ] Biome seeded **per planet** (student and stage), cosmetic only, shown as

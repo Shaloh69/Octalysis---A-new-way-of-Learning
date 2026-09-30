@@ -16,6 +16,19 @@ export interface LockReason {
   message: string;
 }
 
+/**
+ * A moon's mastery, as the server counts it (WEB-REVAMP 3.7a): `correct` is the
+ * distinct questions of it answered right, `mastered` the database's verdict
+ * (two of them), `questions` its live questions (0: it cannot be mastered yet).
+ * Printed, never recomputed: the client does not decide a moon.
+ */
+export interface MoonFacts {
+  id: string;
+  correct: number;
+  mastered: boolean;
+  questions: number;
+}
+
 export interface StageNode {
   id: string;
   act: number;
@@ -30,12 +43,13 @@ export interface StageNode {
   prereq: string[];
   blockCount: number;
   /**
-   * This stage's objectives, as ids and Computer Level Hierarchy levels only.
-   * One objective is one moon, and a planet's orbit ring is the mean of its
-   * moons' levels -- see src/solar-system/layout.ts. No description text: the
-   * map needs the shape, the reader supplies the content.
+   * This stage's objectives: one objective is one moon, and a planet's orbit
+   * ring is the mean of its moons' levels (src/solar-system/layout.ts). Each
+   * carries its mastery as the server counts it (WEB-REVAMP 3.7a).
    */
-  objectives: Array<{ id: string; level: number; description: string }>;
+  objectives: Array<MoonFacts & { level: number; description: string }>;
+  /** "N of M subtopics mastered"; null on a non-gradeable planet (Orientation). */
+  moons: { mastered: number; total: number } | null;
   state: "locked" | "available" | "in_progress" | "mastered";
   mastery: number;
   lockReason: LockReason | null;
@@ -72,7 +86,7 @@ export interface StageDetail {
   /** Why a locked stage is locked, worded by the server; null when open. */
   lockReason: { kind: string; blockingStages: string[]; message: string } | null;
   mastery?: number;
-  objectives: Array<{ id: string; description: string; bloom: string; level?: number; competency?: string }>;
+  objectives: Array<MoonFacts & { description: string; bloom: string; level?: number; competency?: string }>;
   blocks: ContentBlock[];
   /** The stage's check, if one is scheduled for this student's section. */
   assessment: {

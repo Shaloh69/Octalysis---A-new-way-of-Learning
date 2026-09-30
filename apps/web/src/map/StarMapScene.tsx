@@ -15,6 +15,13 @@ import { orbitAngle } from "../solar-system/orbit";
  *             law (`orbit.ts`), tinted by EACH planet's own biome
  *   selection a reticle, the planet's moons, and the camera easing in (~700ms
  *             to settle); under reduced motion it cuts and nothing orbits
+ *   moons     one per objective of a GRADEABLE planet, drawn while it is chosen,
+ *             each on its own circular orbit moving by the same Kepler law
+ *             (WEB-REVAMP 4), in three states one level down from a planet's:
+ *             dim, a partial glow, a full glow with a ring (R4.2). Click one to
+ *             choose it; the camera eases onto it (3.2)
+ *   asteroids Orientation has no moons (3.10): a small belt, seeded per
+ *             student, grey, unlit and never glowing, that nothing can choose
  *   yours     the next stage (the mission) is ringed in the student's accent
  *
  * Colours come from tokens, read through the DOM so a token change repaints
@@ -25,7 +32,10 @@ export interface ScenePlanet {
   id: string;
   state: "locked" | "available" | "in_progress" | "mastered";
   biome: string;
-  moons: number;
+  /** The planet's moons in order, each in its state (the server's, named in body.tsx). */
+  moons: Array<{ id: string; glow: "dim" | "partial" | "full" }>;
+  /** Orientation: a cosmetic belt instead of moons. */
+  asteroids: boolean;
 }
 
 type SceneColors = Record<"sun" | "glow" | "line" | "star" | "locked" | "corner" | "accent" | "ground", Color>;
@@ -34,6 +44,7 @@ export interface SceneProps {
   layout: SolarLayout;
   planets: ScenePlanet[];
   selected: string | null;
+  selectedMoon: string | null;
   next: string | null;
   rotation: number;
   reduced: boolean;
@@ -45,6 +56,7 @@ export interface SceneProps {
    *  centres and fits the system (or the selected planet) inside it. */
   frame: { x: number; y: number; w: number; h: number } | null;
   onSelect: (id: string) => void;
+  onSelectMoon: (id: string) => void;
   onMiss: () => void;
   onSlow: () => void;
 }
@@ -135,10 +147,12 @@ function Scene(p: SceneProps): JSX.Element {
           positions={positions}
           colors={colors}
           selected={p.selected === pl.id}
+          selectedMoon={p.selected === pl.id ? p.selectedMoon : null}
           next={p.next === pl.id}
           reduced={p.reduced}
           dragged={p.dragged}
           onSelect={p.onSelect}
+          onSelectMoon={p.onSelectMoon}
         />
       ))}
       <Rig {...p} outer={outer} positions={positions} />
@@ -203,10 +217,25 @@ interface PlanetProps {
   positions: MutableRefObject<Map<string, Vector3>>;
   colors: SceneColors;
   selected: boolean;
+  selectedMoon: string | null;
   next: boolean;
   reduced: boolean;
   dragged: MutableRefObject<boolean>;
   onSelect: (id: string) => void;
+  onSelectMoon: (id: string) => void;
+}
+
+/**
+ * Local orbits, around the planet. The same law as the planets' (w ~ a^-1.5,
+ * `orbit.ts`), on a faster clock so a moon is seen to move while its planet is
+ * chosen: the outermost moon goes round in a minute.
+ */
+const LOCAL_CLOCK = 10;
+const MOON_GAP = 0.26;
+
+/** A planet's moon orbit radii: distinct, so each moves at its own Kepler speed. */
+function moonRadius(size: number, i: number): number {
+  return size + 1.25 + i * MOON_GAP;
 }
 
 function Planet(p: PlanetProps): JSX.Element | null {
@@ -217,7 +246,14 @@ function Planet(p: PlanetProps): JSX.Element | null {
   const tint = useMemo(() => tokenColor(`--biome-planet-${p.planet.biome}`), [p.planet.biome]);
   const locked = p.planet.state === "locked";
   const color = locked ? p.colors.locked : tint;
-  const size = 0.5 + Math.min(p.planet.moons, 12) * 0.03;
+  const size = 0.5 + Math.min(p.planet.moons.length || 5, 12) * 0.03;
+  const moonMeshes = useRef<Array<Group | null>>([]);
+  const outerMoon = moonRadius(size, Math.max(0, p.planet.moons.length - 1));
+  const belt = useMemo(
+    () => (p.planet.asteroids ? asteroidBelt(p.rotation, size) : []),
+    [p.planet.asteroids, p.rotation, size],
+  );
+  const rocks = useRef<Array<Group | null>>([]);
 
   useFrame((_, dt) => {
     if (!body || !group.current) return;
@@ -228,8 +264,27 @@ function Planet(p: PlanetProps): JSX.Element | null {
     p.positions.current.set(p.planet.id, v);
     if (!p.reduced) {
       if (reticle.current) reticle.current.rotation.y += dt * 0.6;
-      if (moons.current) moons.current.rotation.y += dt * 0.35;
     }
+    // Moons and rocks on their own Kepler orbits; frozen with the planets under
+    // reduced motion (the one clock stays at 0).
+    const t = p.clock.current * LOCAL_CLOCK;
+    p.planet.moons.forEach((m, i) => {
+      const g = moonMeshes.current[i];
+      if (!g || !group.current) return;
+      const r = moonRadius(size, i);
+      const a = orbitAngle((i / Math.max(1, p.planet.moons.length)) * Math.PI * 2, r, outerMoon, t);
+      g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+      const w = p.positions.current.get(`moon:${m.id}`) ?? new Vector3();
+      w.copy(g.position).add(group.current.position);
+      p.positions.current.set(`moon:${m.id}`, w);
+    });
+    const beltOuter = belt.length ? Math.max(...belt.map((b) => b.r)) : 1;
+    belt.forEach((b, i) => {
+      const g = rocks.current[i];
+      if (!g) return;
+      const a = orbitAngle(b.a0, b.r, beltOuter, t);
+      g.position.set(Math.cos(a) * b.r, b.y, Math.sin(a) * b.r);
+    });
   });
   if (!body) return null;
 
@@ -282,21 +337,101 @@ function Planet(p: PlanetProps): JSX.Element | null {
             ))}
           </group>
           <group ref={moons}>
-            {Array.from({ length: Math.min(p.planet.moons, 12) }, (_, i) => {
-              const a = (i / Math.min(p.planet.moons, 12)) * Math.PI * 2;
-              const r = size + 1.5 + (i % 2) * 0.35;
+            {p.planet.moons.map((m, i) => {
+              const glow = m.glow;
+              const mColor = glow === "dim" ? p.colors.locked : tint;
+              const isSel = p.selectedMoon === m.id;
+              const pick = (e: ThreeEvent<MouseEvent>) => {
+                e.stopPropagation();
+                if (!p.dragged.current) p.onSelectMoon(m.id);
+              };
               return (
-                <mesh key={i} position={[Math.cos(a) * r, 0, Math.sin(a) * r]}>
-                  <sphereGeometry args={[0.14, 12, 12]} />
-                  <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} />
-                </mesh>
+                <group
+                  key={m.id}
+                  ref={(g) => {
+                    moonMeshes.current[i] = g;
+                  }}
+                >
+                  <mesh
+                    onClick={pick}
+                    onPointerOver={() => (document.body.style.cursor = "pointer")}
+                    onPointerOut={() => (document.body.style.cursor = "")}
+                  >
+                    <sphereGeometry args={[0.16, 14, 14]} />
+                    <meshStandardMaterial
+                      color={mColor}
+                      emissive={mColor}
+                      emissiveIntensity={glow === "full" ? 0.95 : glow === "partial" ? 0.4 : 0.04}
+                      roughness={0.8}
+                    />
+                  </mesh>
+                  <mesh onClick={pick} visible={false}>
+                    <sphereGeometry args={[0.42, 8, 8]} />
+                    <meshBasicMaterial />
+                  </mesh>
+                  {glow === "full" && (
+                    <>
+                      <mesh>
+                        <sphereGeometry args={[0.3, 16, 16]} />
+                        <meshBasicMaterial color={tint} transparent opacity={0.22} blending={AdditiveBlending} depthWrite={false} />
+                      </mesh>
+                      <mesh rotation={[Math.PI / 2, 0, 0]}>
+                        <torusGeometry args={[0.27, 0.025, 6, 28]} />
+                        <meshBasicMaterial color={p.colors.corner} />
+                      </mesh>
+                    </>
+                  )}
+                  {isSel && (
+                    <mesh rotation={[Math.PI / 2, 0, 0]}>
+                      <torusGeometry args={[0.42, 0.035, 6, 32]} />
+                      <meshBasicMaterial color={p.colors.corner} />
+                    </mesh>
+                  )}
+                </group>
               );
             })}
+            {belt.map((b, i) => (
+              <group
+                key={i}
+                ref={(g) => {
+                  rocks.current[i] = g;
+                }}
+              >
+                {/* Irregular, grey and unlit: never mistaken for a moon (3.10). No handler: nothing chooses it. */}
+                <mesh scale={[b.s, b.s * b.squash, b.s * 0.8]} rotation={[b.tilt, b.tilt * 2, 0]} raycast={() => null}>
+                  <dodecahedronGeometry args={[1, 0]} />
+                  <meshLambertMaterial color={p.colors.line} flatShading />
+                </mesh>
+              </group>
+            ))}
           </group>
         </>
       )}
     </group>
   );
+}
+
+/**
+ * Orientation's belt (3.10): a handful of rocks, SEEDED from the student's own
+ * rotation offset (the per-student value `GET /api/v1/cosmetics` derives), so
+ * the same student sees the same belt every session. A plain LCG over a seed,
+ * never Math.random and never a hash (the client derives nothing).
+ */
+function asteroidBelt(
+  rotation: number,
+  size: number,
+): Array<{ r: number; a0: number; y: number; s: number; squash: number; tilt: number }> {
+  let s = Math.floor(Math.abs(rotation) * 1e6) >>> 0 || 7;
+  const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 0xffffffff);
+  const n = 9 + Math.floor(rand() * 5);
+  return Array.from({ length: n }, () => ({
+    r: size + 1.1 + rand() * 1.1,
+    a0: rand() * Math.PI * 2,
+    y: (rand() - 0.5) * 0.18,
+    s: 0.05 + rand() * 0.07,
+    squash: 0.55 + rand() * 0.5,
+    tilt: rand() * Math.PI,
+  }));
 }
 
 /**
@@ -324,9 +459,13 @@ function Rig(p: SceneProps & { outer: number; positions: MutableRefObject<Map<st
     const byWidth = p.outer / (tan * (Math.max(1, fr.w) / H));
     const byHeight = (p.outer * 0.86) / (tan * (Math.max(1, fr.h) / H));
     const fit = Math.max(byWidth, byHeight) * 1.08;
-    const selPos = p.selected ? p.positions.current.get(p.selected) : undefined;
+    const planetPos = p.selected ? p.positions.current.get(p.selected) : undefined;
+    // A chosen moon: the camera eases on to it, closer than to a planet (3.2).
+    const moonPos = p.selectedMoon ? p.positions.current.get(`moon:${p.selectedMoon}`) : undefined;
+    const selPos = moonPos ?? planetPos;
     const wantTarget = selPos ?? tmp.set(0, 0, 0);
-    const wantDist = selPos ? Math.min(fit, 16 * Math.max(1, (0.55 * H) / Math.max(1, fr.h))) : fit;
+    const near = moonPos ? 7 : 16;
+    const wantDist = selPos ? Math.min(fit, near * Math.max(1, (0.55 * H) / Math.max(1, fr.h))) : fit;
     const k = p.reduced ? 1 : 1 - Math.exp(-dt * 6);
     target.current.lerp(wantTarget, k);
     dist.current = dist.current === null ? wantDist : dist.current + (wantDist - dist.current) * k;

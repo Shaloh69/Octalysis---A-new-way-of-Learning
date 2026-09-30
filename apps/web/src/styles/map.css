@@ -223,9 +223,45 @@
   list-style: none;
   font-size: var(--text-sm);
 }
-.starmap-moons li { display: grid; grid-template-columns: 3.25rem 1fr; gap: var(--space-2); }
-.starmap-moons .mono { color: var(--ink-muted); }
+/*
+ * The moons (WEB-REVAMP 3.1 item 3, 3.2). On the map each is a button that
+ * opens the moon in place; on /app/stages the same row is text. The state is
+ * a SHAPE (empty, half, full circle) and words, never a colour alone.
+ */
+.starmap-moons-count { margin: 0; font-size: var(--text-sm); color: var(--ink); }
+.starmap-moons-count .mono { color: var(--ink); }
+.starmap-moon {
+  display: grid;
+  grid-template-columns: 1rem 3rem 1fr;
+  gap: var(--space-1) var(--space-2);
+  align-items: start;
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: var(--border-hair) solid transparent;
+}
+button.starmap-moon { cursor: pointer; min-height: 44px; }
+button.starmap-moon:hover { background: var(--surface-2); border-color: var(--line); }
+.starmap-moon-glyph { width: 1rem; height: 1rem; margin-top: 0.15rem; color: var(--ink-muted); }
+.starmap-moon-glyph[data-glow="full"] { color: var(--ink); }
+.starmap-moon-id { color: var(--ink-muted); }
+.starmap-moon-text { color: var(--ink); }
+.starmap-moon-state { grid-column: 3; font-size: var(--text-xs); color: var(--ink-muted); }
+.starmap-moon-state .mono { color: var(--ink-muted); }
+/* Orientation's objectives: no glyph column. */
+.starmap-moons span.starmap-moon:not(:has(.starmap-moon-glyph)) { grid-template-columns: 3rem 1fr; }
+
+/* A chosen moon's panel. */
+.starmap-moon-objective { margin: 0; font-size: var(--text-base); color: var(--ink); }
+.starmap-moon-now { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ink); text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-size: var(--text-sm); }
+.starmap-moon-now .mono { color: var(--ink); }
+.starmap-moon-rule { margin: 0; font-size: var(--text-xs); color: var(--ink-muted); }
 .starmap-actions { display: flex; gap: var(--space-2); }
+.starmap-actions.is-stacked { flex-direction: column; }
 .starmap-actions .button { flex: 1; }
 
 /* A phone, and anything too narrow for a side column. */

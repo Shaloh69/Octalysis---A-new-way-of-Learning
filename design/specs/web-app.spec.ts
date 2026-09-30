@@ -40,6 +40,36 @@ async function map(page: Page, path = "/app"): Promise<void> {
   await page.locator(".starmap-bodies input[type=radio]").first().waitFor({ state: "attached" });
 }
 const wide = (name: string) => !name.includes("380");
+/**
+ * Moons in every state, for the tests that need them. Locally no question is
+ * `live`, so every real moon reads "No questions yet" (fail-closed, 3.7a) and
+ * none can glow. This patches the REAL /api/v1/stages payload for stage 01
+ * only: 01.1 mastered, 01.2 one right, 01.3 and 01.4 not started, 01.5 still
+ * without questions. Everything else on the page is the real API's.
+ */
+async function moonsInEveryState(page: Page): Promise<void> {
+  await page.route("**/api/v1/stages", async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as {
+      nodes: Array<{ id: string; objectives: Array<Record<string, unknown>>; moons: unknown }>;
+    };
+    const n = body.nodes.find((x) => x.id === "01")!;
+    const facts: Record<string, [number, boolean, number]> = {
+      "01.1": [3, true, 3],
+      "01.2": [1, false, 3],
+      "01.3": [0, false, 3],
+      "01.4": [0, false, 3],
+      "01.5": [0, false, 0],
+    };
+    for (const o of n.objectives) {
+      const f = facts[o.id as string];
+      if (f) Object.assign(o, { correct: f[0], mastered: f[1], questions: f[2] });
+    }
+    n.moons = { mastered: 1, total: n.objectives.length };
+    await route.fulfill({ response: res, json: body });
+  });
+}
+
 /** Choose a planet the way a pointer does: its dot, whose label carries the radio. */
 async function choose(page: Page, id: string): Promise<void> {
   await page
@@ -49,12 +79,18 @@ async function choose(page: Page, id: string): Promise<void> {
 }
 
 test.describe("/app — the six gate assertions", () => {
-  test("1 · nothing in the panels is clipped, with and without a planet open", async ({ page }) => {
+  test("1 · nothing in the panels is clipped, with and without a planet or a moon open", async ({ page }) => {
+    await moonsInEveryState(page);
     await map(page);
     expect(await clippedElements(page, PANELS)).toEqual([]);
     await page.goto("/app?stage=06");
     await page.locator(".starmap-body h2").waitFor();
     expect(await clippedElements(page, PANELS)).toEqual([]);
+    for (const path of ["/app?stage=01", "/app?stage=01&moon=01.2", "/app?stage=01&moon=01.5"]) {
+      await page.goto(path);
+      await page.locator(".starmap-body h2").waitFor();
+      expect(await clippedElements(page, PANELS), path).toEqual([]);
+    }
   });
 
   test("2 · no horizontal page scroll", async ({ page }) => {
@@ -64,24 +100,32 @@ test.describe("/app — the six gate assertions", () => {
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 
-  test("3 · every control is reachable from the keyboard", async ({ page }) => {
-    await map(page, "/app?stage=06");
-    await page.locator(".starmap-body h2").waitFor();
-    expect(await unreachableByKeyboard(page, PANELS)).toEqual([]);
+  test("3 · every control is reachable from the keyboard, each moon and the moon panel included", async ({ page }) => {
+    await moonsInEveryState(page);
+    for (const path of ["/app?stage=06", "/app?stage=01", "/app?stage=01&moon=01.4"]) {
+      await map(page, path);
+      await page.locator(".starmap-body h2").waitFor();
+      expect(await unreachableByKeyboard(page, PANELS), path).toEqual([]);
+    }
   });
 
-  test("4 · AA computed on the panels (one star set; locked and open planets)", async ({ page }) => {
-    for (const id of ["04", "06", "00"]) {
-      await map(page, `/app?stage=${id}`);
+  test("4 · AA computed on the panels (one star set; locked and open planets; moons)", async ({ page }) => {
+    await moonsInEveryState(page);
+    const views = ["stage=04", "stage=06", "stage=00", "stage=01", "stage=01&moon=01.1", "stage=01&moon=01.5", "stage=04&moon=04.1"];
+    for (const q of views) {
+      await map(page, `/app?${q}`);
       await page.locator(".starmap-body h2").waitFor();
-      expect(await contrastFailures(page, PANELS), `stage ${id}`).toEqual([]);
+      expect(await contrastFailures(page, PANELS), q).toEqual([]);
     }
   });
 
   test("5 · the token system is what rendered", async ({ page }) => {
-    await map(page, "/app?stage=04");
-    await page.locator(".starmap-body h2").waitFor();
-    expect(await offTokenStyles(page, PANELS)).toEqual([]);
+    await moonsInEveryState(page);
+    for (const q of ["stage=04", "stage=01", "stage=01&moon=01.2"]) {
+      await map(page, `/app?${q}`);
+      await page.locator(".starmap-body h2").waitFor();
+      expect(await offTokenStyles(page, PANELS), q).toEqual([]);
+    }
   });
 
   test("6 · reduced motion: the orbits stop and the camera cuts", async ({ browser }, info) => {
@@ -149,7 +193,7 @@ test.describe("/app — what the map owes", () => {
 
   test("the moons are the stage's objectives, in the syllabus's order", async ({ page }) => {
     await map(page, "/app?stage=06");
-    const ids = await page.locator(".starmap-moons li .mono").allTextContents();
+    const ids = await page.locator(".starmap-moons .starmap-moon-id").allTextContents();
     expect(ids.length).toBeGreaterThan(9);
     expect(ids.slice(0, 2)).toEqual(["06.1", "06.2"]);
     expect(ids[ids.length - 1]).toBe(`06.${ids.length}`);
@@ -216,5 +260,100 @@ test.describe("/app — what the map owes", () => {
     const n = (await page.locator("nav[aria-label=Main]").boundingBox())!;
     expect(s.y + s.height).toBeLessThanOrEqual(n.y + 1);
     await expect(page.locator(".starmap-system-body")).toBeHidden();
+  });
+});
+
+/* ======================= moons: WEB-REVAMP 3.1-3.3, 3.7a, 3.10; R4.2, R4.3 */
+
+test.describe("/app — the moons", () => {
+  test("each moon is a button with its mastery in words; the planet says N of M mastered", async ({ page }) => {
+    await moonsInEveryState(page);
+    await map(page, "/app?stage=01");
+    await expect(page.locator("[data-moons-mastered]")).toHaveText(/^1 of 5 subtopics mastered$/);
+    const row = (id: string) => page.locator(".starmap-moons li").filter({ hasText: id });
+    await expect(row("01.1")).toHaveAttribute("data-glow", "full");
+    await expect(row("01.1")).toContainText("Mastered");
+    await expect(row("01.2")).toHaveAttribute("data-glow", "partial");
+    await expect(row("01.2")).toContainText("1 of 3 right");
+    await expect(row("01.3")).toHaveAttribute("data-glow", "dim");
+    await expect(row("01.3")).toContainText("Not started");
+    await expect(row("01.5")).toContainText("No questions yet");
+    await expect(page.locator(".starmap-moons button.starmap-moon")).toHaveCount(5);
+  });
+
+  test("choosing a moon updates the panel in place, and Enter journey goes to its journey", async ({ page }, info) => {
+    test.skip(!wide(info.project.name), "behaviour, one width");
+    await moonsInEveryState(page);
+    await map(page, "/app?stage=01");
+    await page.locator(".starmap-moons button.starmap-moon").filter({ hasText: "01.4" }).click();
+    await expect(page).toHaveURL(/\?stage=01&moon=01\.4$/);
+    const panel = page.locator(".starmap-body");
+    await expect(panel.locator("h2")).toHaveText("Moon 01.4");
+    await expect(panel.locator("h2")).toBeFocused();
+    await expect(panel).toContainText("Circles Stage 01");
+    await expect(panel.locator(".starmap-moon-now")).toHaveText("Not started");
+    await expect(panel).toContainText(/Two different questions right master this moon/);
+    const enter = panel.getByRole("link", { name: "Enter journey" });
+    await expect(enter).toHaveAttribute("href", "/app/stage/01/moon/01.4");
+    await enter.click();
+    await expect(page).toHaveURL(/\/app\/stage\/01\/moon\/01\.4$/);
+  });
+
+  test("Escape steps out one level: the moon, then the planet (3.3)", async ({ page }, info) => {
+    test.skip(!wide(info.project.name), "behaviour, one width");
+    await moonsInEveryState(page);
+    await map(page);
+    await choose(page, "01");
+    await page.locator(".starmap-moons button.starmap-moon").filter({ hasText: "01.2" }).click();
+    await expect(page.locator(".starmap-body h2")).toHaveText("Moon 01.2");
+    await page.keyboard.press("Escape");
+    await expect(page).toHaveURL(/\?stage=01$/);
+    await expect(page.locator(".starmap-body h2")).toHaveText("Introduction");
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".starmap-body")).toHaveCount(0);
+  });
+
+  test("Back to the moon from a journey lands on the moon, and Back to Stage 01 steps out", async ({ page }) => {
+    await moonsInEveryState(page);
+    await map(page, "/app?stage=01&moon=01.4");
+    await expect(page.locator(".starmap-body h2")).toHaveText("Moon 01.4");
+    await page.getByRole("button", { name: "Back to Stage 01" }).click();
+    await expect(page.locator(".starmap-body h2")).toHaveText("Introduction");
+  });
+
+  test("a moon with no questions yet: Enter is disabled, the reason beside it (fail-closed)", async ({ page }) => {
+    await moonsInEveryState(page);
+    await map(page, "/app?stage=01&moon=01.5");
+    const enter = page.locator(".starmap-body").getByRole("button", { name: "Enter journey" });
+    await expect(enter).toBeDisabled();
+    await expect(page.locator(".starmap-body .starmap-lock")).toHaveText("This moon has no questions yet.");
+    await expect(page.getByRole("link", { name: "Enter journey" })).toHaveCount(0);
+  });
+
+  test("a locked planet's moon: Enter disabled, with the planet's own reason, verbatim", async ({ page }) => {
+    await map(page, "/app?stage=04&moon=04.1");
+    await expect(page.locator(".starmap-body h2")).toHaveText("Moon 04.1");
+    await expect(page.locator(".starmap-body").getByRole("button", { name: "Enter journey" })).toBeDisabled();
+    await expect(page.locator(".starmap-body .starmap-lock")).toContainText(/Unlocks when Stage 03/);
+  });
+
+  test("Orientation has no moons: its objectives are text, and nothing to choose (3.10)", async ({ page }) => {
+    await map(page, "/app?stage=00");
+    const body = page.locator(".starmap-body");
+    await expect(body.locator(".starmap-moons-title")).toHaveText("Objectives");
+    await expect(body.locator(".starmap-moons li")).toHaveCount(5);
+    await expect(body.locator("button.starmap-moon")).toHaveCount(0);
+    await expect(body.locator("[data-moons-mastered]")).toHaveCount(0);
+    // A moon link to Orientation names no moon: the planet's panel stays.
+    await page.goto("/app?stage=00&moon=00.1");
+    await expect(page.locator(".starmap-body h2")).toHaveText("Orientation");
+  });
+
+  test("the /app/stages list carries each moon's mastery in words too (R4.4)", async ({ page }) => {
+    await moonsInEveryState(page);
+    await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), TOKEN);
+    await page.goto("/app/stages?stage=01");
+    const row = page.locator(".starmap-moons li").filter({ hasText: "01.2" });
+    await expect(row).toContainText("1 of 3 right");
   });
 });

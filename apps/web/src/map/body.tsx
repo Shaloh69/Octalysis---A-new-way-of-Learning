@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import type { StageNode } from "../lib/api";
+import type { MoonFacts, StageNode } from "../lib/api";
 import { ACT_NAMES } from "../lib/acts";
 import { LEVEL_NAMES } from "../solar-system/layout";
 import { NumberedTitle } from "../shell/MissionPanel";
@@ -43,16 +43,52 @@ export function levelSpan(levels: readonly number[]): string {
   return l.length === 0 ? "—" : l.length === 1 ? `L${l[0]}` : `L${l[0]}–L${l[l.length - 1]}`;
 }
 
+/*
+ * A moon's state, one level down from a planet's (SOLAR-SYSTEM-SPEC 1.4, R4.2):
+ * dim until a question of it is right, a partial glow at one, full at mastery.
+ * Every fact is the server's (`MoonFacts`); this only names and draws it.
+ */
+export type MoonGlow = "dim" | "partial" | "full";
+export function moonGlow(m: MoonFacts): MoonGlow {
+  return m.mastered ? "full" : m.correct > 0 ? "partial" : "dim";
+}
+
+/** A moon's mastery in words (3.2 item 2). Numbers in mono. */
+export function MoonState({ moon }: { moon: MoonFacts }): JSX.Element {
+  if (moon.mastered) return <>Mastered</>;
+  if (moon.questions === 0) return <>No questions yet</>;
+  if (moon.correct === 0) return <>Not started</>;
+  return (
+    <>
+      <span className="mono">{moon.correct}</span> of <span className="mono">{moon.questions}</span> right
+    </>
+  );
+}
+
+/** The state as a shape, so it never rests on a colour: empty, half, full. */
+export function MoonGlyph({ glow }: { glow: MoonGlow }): JSX.Element {
+  return (
+    <svg className="glyph starmap-moon-glyph" data-glow={glow} aria-hidden="true" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      {glow === "partial" && <path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor" />}
+      {glow === "full" && <circle cx="8" cy="8" r="6" fill="currentColor" />}
+    </svg>
+  );
+}
+
 export function BodyPanel({
   node,
   byId,
   onShow,
+  onMoon,
   enterTo,
   extra,
 }: {
   node: StageNode;
   byId: Map<string, StageNode>;
   onShow: (id: string) => void;
+  /** Choose a moon (the map); without it the moons are listed, not chosen. */
+  onMoon?: (id: string) => void;
   enterTo: string | null;
   /** More actions after the page's own (the stages list adds Show on the map). */
   extra?: ReactNode;
@@ -113,20 +149,63 @@ export function BodyPanel({
       )}
       {node.summary && <p className="starmap-summary">{node.summary}</p>}
 
-      <h3 className="starmap-moons-title">
-        Moons <span className="mono">({moons.length})</span>
-      </h3>
-      {moons.length > 0 ? (
-        <ul className="starmap-moons">
-          {moons.map((m) => (
-            <li key={m.id}>
-              <span className="mono">{m.id}</span>
-              <span>{m.description}</span>
-            </li>
-          ))}
-        </ul>
+      {node.moons ? (
+        <>
+          <h3 className="starmap-moons-title">
+            Moons <span className="mono">({moons.length})</span>
+          </h3>
+          {/* 3.1 item 6: what opens the next planet (3.7), in the server's count. */}
+          <p className="starmap-moons-count" data-moons-mastered="">
+            <span className="mono">{node.moons.mastered}</span> of <span className="mono">{node.moons.total}</span>{" "}
+            subtopics mastered
+          </p>
+          {moons.length > 0 ? (
+            <ul className="starmap-moons">
+              {moons.map((m) => {
+                const glow = moonGlow(m);
+                const inner = (
+                  <>
+                    <MoonGlyph glow={glow} />
+                    <span className="mono starmap-moon-id">{m.id}</span>
+                    <span className="starmap-moon-text">{m.description}</span>
+                    <span className="starmap-moon-state">
+                      <MoonState moon={m} />
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={m.id} data-glow={glow}>
+                    {onMoon ? (
+                      <button type="button" className="starmap-moon" onClick={() => onMoon(m.id)}>
+                        {inner}
+                      </button>
+                    ) : (
+                      <span className="starmap-moon">{inner}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="note">No objectives are published for this stage yet.</p>
+          )}
+        </>
       ) : (
-        <p className="note">No objectives are published for this stage yet.</p>
+        <>
+          {/* Orientation (decided 25 Sep 2026): no moons, its objectives as text. */}
+          <h3 className="starmap-moons-title">Objectives</h3>
+          <p className="note">Not graded, so no moons: it never holds the next planet shut.</p>
+          <ul className="starmap-moons">
+            {moons.map((m) => (
+              <li key={m.id}>
+                <span className="starmap-moon">
+                  <span className="mono starmap-moon-id">{m.id}</span>
+                  <span className="starmap-moon-text">{m.description}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <div className="starmap-actions">
@@ -151,5 +230,81 @@ export function LockGlyph(): JSX.Element {
       <path d="M4 7V5a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" strokeWidth="1.6" />
       <rect x="2.5" y="7" width="11" height="7.5" rx="1" fill="currentColor" />
     </svg>
+  );
+}
+
+/**
+ * A moon, chosen (WEB-REVAMP 3.2): the panel updates in place to it. Its
+ * objective in the syllabus's words, its mastery in words, the planet it
+ * circles with a way back, and Enter journey into practice on its own
+ * questions. Enter is disabled, with the reason beside it, when the planet is
+ * locked (the server's sentence, verbatim) or the moon has no questions yet
+ * (fail-closed, 3.7a). No minigame is named: none is placed on a moon yet.
+ */
+export function MoonPanel({
+  node,
+  moon,
+  enterTo,
+  onBack,
+}: {
+  node: StageNode;
+  moon: StageNode["objectives"][number];
+  enterTo: string | null;
+  onBack: () => void;
+}): JSX.Element {
+  const glow = moonGlow(moon);
+  const why =
+    node.state === "locked"
+      ? node.lockReason?.message ?? "This planet is locked."
+      : moon.questions === 0 && !moon.mastered
+        ? "This moon has no questions yet."
+        : null;
+  return (
+    <div className="starmap-body-main" data-moon={moon.id}>
+      <p className="starmap-moon-objective">{moon.description}</p>
+
+      <div className="starmap-survey">
+        <span className="starmap-survey-label">
+          <span>Mastery</span>
+          <span className="starmap-moon-now" data-glow={glow}>
+            <MoonGlyph glow={glow} />
+            <MoonState moon={moon} />
+          </span>
+        </span>
+      </div>
+
+      {why && (
+        <p className="starmap-lock" id={`moon-why-${moon.id}`}>
+          <LockGlyph />
+          <span>{why}</span>
+        </p>
+      )}
+
+      {/* The action first, where a short screen still shows it; then the rule. */}
+      <div className="starmap-actions is-stacked">
+        {enterTo && !why ? (
+          <WarpLink className="button hud-button button-primary" to={enterTo}>
+            Enter journey
+          </WarpLink>
+        ) : (
+          <button
+            type="button"
+            className="button hud-button button-primary"
+            disabled
+            aria-describedby={`moon-why-${moon.id}`}
+          >
+            Enter journey
+          </button>
+        )}
+        <button type="button" className="button hud-button" onClick={onBack}>
+          <NumberedTitle text={`Back to Stage ${node.id}`} />
+        </button>
+      </div>
+
+      <p className="starmap-moon-rule">
+        Practice, never graded. Two different questions right master this moon (it has{" "}
+        <span className="mono">{moon.questions}</span>); every moon of this planet mastered opens the next one.
+      </p>
+    </div>
   );
 }

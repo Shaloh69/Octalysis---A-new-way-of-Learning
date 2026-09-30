@@ -22,6 +22,7 @@ const node = (id: string, ordinal: number, state: StageNode["state"]): StageNode
   prereq: [],
   blockCount: 1,
   objectives: [],
+  moons: { mastered: 0, total: 0 },
   state,
   mastery: state === "in_progress" ? 0.4 : 0,
   lockReason: null,

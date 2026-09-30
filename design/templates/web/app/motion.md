@@ -8,6 +8,10 @@
 | Drag | the system yaws with the pointer | follows the pointer | follows the pointer (a direct manipulation, not an animation) |
 | The body panel | fades in | `--dur-base` | none |
 | Enter journey | the realm warp (the shell's `RealmWarp`) | 650ms | a cut |
+| A chosen planet's moons (R4.2, 30 Sep) | each on its own circular orbit by the same Kepler law, on a clock ten times the planets' (the outermost moon goes round in a minute) | continuous | **none**: frozen with the planets |
+| Orientation's asteroids (3.10) | a seeded belt, Keplerian around it | continuous | **none** |
+| Choosing a moon | the camera eases on to it, closer than to a planet | about 700ms | a cut |
+| Stepping out of a moon (Escape, Close, Back to Stage NN) | the camera eases back to the planet | about 700ms | a cut |
 
 Idle cost: `requestAnimationFrame` stops with a hidden tab. The frame-rate
 guard drops to device-pixel-ratio 1 and 600 stars after 3 seconds under

@@ -6,8 +6,8 @@ import { useCosmetics } from "../solar-system/cosmetic-seed";
 import { nextStage } from "../lib/next-stage";
 import { NumberedTitle } from "../shell/MissionPanel";
 import { useKeyHints } from "../shell/keyHints";
-import { useSelection } from "./useSelection";
-import { ACTS, BodyPanel, STATE_WORD, useWide } from "./body";
+import { byObjectiveId, useSelection } from "./useSelection";
+import { ACTS, BodyPanel, MoonPanel, moonGlow, STATE_WORD, useWide } from "./body";
 import type { ScenePlanet } from "./StarMapScene";
 
 const StarMapScene = lazy(() => import("./StarMapScene"));
@@ -68,7 +68,7 @@ function rememberedSlow(): boolean {
 export function StarMap({ data }: { data: StageMapData }): JSX.Element {
   const nav = useNavigate();
   const { cosmetics } = useCosmetics();
-  const { selected, open, close } = useSelection();
+  const { selected, moon, open, openMoon, close } = useSelection();
   const reduced = useReducedMotion();
   const wide = useWide(900);
   const webgl = useMemo(detectWebGL, []);
@@ -100,13 +100,17 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
     id: n.id,
     state: n.state,
     biome: biomeOf(n.id),
-    moons: n.objectives.length,
+    // A gradeable planet's moons, in the syllabus's order, each in its state.
+    // Orientation has none (3.10): its belt is cosmetic and drawn by the scene.
+    moons: n.moons ? [...n.objectives].sort(byObjectiveId).map((o) => ({ id: o.id, glow: moonGlow(o) })) : [],
+    asteroids: !n.gradeable,
   }));
   const next = nextStage(nodes);
   const nextId = next.kind === "resume" || next.kind === "start" ? next.node.id : null;
   const graded = nodes.filter((n) => n.gradeable);
   const survey = graded.length ? graded.reduce((s, n) => s + n.mastery, 0) / graded.length : 0;
   const sel = selected ? byId.get(selected) ?? null : null;
+  const selMoon = sel && moon && sel.moons ? sel.objectives.find((o) => o.id === moon) ?? null : null;
   const acts = [...new Set(nodes.map((n) => n.act))].sort();
 
   // Focus the body panel's heading when a planet is chosen in the scene (a
@@ -117,6 +121,14 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
     if (sel && fromScene.current) heading.current?.focus();
     fromScene.current = false;
   }, [sel]);
+  // A moon replaces the panel in place (3.2); focus follows to its heading, and
+  // back to the planet's when the student steps out (3.3).
+  const moonShown = useRef<string | null>(null);
+  useEffect(() => {
+    const now = selMoon?.id ?? null;
+    if (now !== moonShown.current && sel) heading.current?.focus();
+    moonShown.current = now;
+  }, [selMoon, sel]);
 
   /*
    * The free area: what the panels leave of the screen. The camera centres and
@@ -161,7 +173,13 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
     };
   }, [selected, wide]);
 
-  const enterTo = sel && sel.state !== "locked" ? `/app/stage/${sel.id}` : null;
+  const planetEnter = sel && sel.state !== "locked" ? `/app/stage/${sel.id}` : null;
+  // A moon's journey: its planet open and a question to practise (3.7a).
+  const moonEnter =
+    sel && selMoon && sel.state !== "locked" && (selMoon.questions > 0 || selMoon.mastered)
+      ? `/app/stage/${sel.id}/moon/${selMoon.id}`
+      : null;
+  const enterTo = selMoon ? moonEnter : planetEnter;
   useKeyHints("map", [
     ...(enterTo ? [{ key: "Enter", cap: "Enter", label: "Enter journey", run: () => nav(enterTo) }] : []),
     ...(sel ? [{ key: "Escape", cap: "Esc", label: "Close", run: close }] : []),
@@ -213,6 +231,7 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
               layout={layout}
               planets={planets}
               selected={selected}
+              selectedMoon={selMoon?.id ?? null}
               next={nextId}
               rotation={cosmetics.rotationOffset}
               reduced={reduced}
@@ -224,6 +243,10 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
               onSelect={(id) => {
                 fromScene.current = true;
                 open(id);
+              }}
+              onSelectMoon={(id) => {
+                fromScene.current = true;
+                openMoon(id);
               }}
               onMiss={close}
               onSlow={() => {
@@ -238,7 +261,7 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
           </Suspense>
         )}
         <span ref={tag} className="starmap-tag" aria-hidden="true">
-          {sel?.title}
+          {selMoon ? `Moon ${selMoon.id}` : sel?.title}
         </span>
       </div>
 
@@ -342,17 +365,25 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
             <div className="starmap-body-head">
               <div>
                 <h2 id="starmap-body-title" ref={heading} tabIndex={-1}>
-                  {sel.title}
+                  {selMoon ? <NumberedTitle text={`Moon ${selMoon.id}`} /> : sel.title}
                 </h2>
                 <p className="starmap-body-sub">
-                  <NumberedTitle text={`Stage ${sel.id} · ${ACTS[sel.act]?.name ?? `Act ${sel.act}`}`} />
+                  {selMoon ? (
+                    <NumberedTitle text={`Circles Stage ${sel.id} · ${sel.title}`} />
+                  ) : (
+                    <NumberedTitle text={`Stage ${sel.id} · ${ACTS[sel.act]?.name ?? `Act ${sel.act}`}`} />
+                  )}
                 </p>
               </div>
               <button type="button" className="dialog-close" aria-label="Close" onClick={close}>
                 <span aria-hidden="true">×</span>
               </button>
             </div>
-            <BodyPanel node={sel} byId={byId} onShow={open} enterTo={enterTo} />
+            {selMoon ? (
+              <MoonPanel node={sel} moon={selMoon} enterTo={moonEnter} onBack={close} />
+            ) : (
+              <BodyPanel node={sel} byId={byId} onShow={open} onMoon={openMoon} enterTo={planetEnter} />
+            )}
           </section>
         )}
       </div>
