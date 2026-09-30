@@ -383,6 +383,26 @@ export async function offTokenStyles(page: Page, scope = SURFACES): Promise<stri
       colors.add(getComputedStyle(paper).color);
     }
     paper.remove();
+    /*
+     * The encounter themes (packages/tokens [data-encounter], GAME-DESIGN §9):
+     * four tokens each (--enc-panel, --enc-ink, --enc-edge, --enc-accent),
+     * scoped to the element that carries the attribute, like the paper's.
+     * Read back through a probe for every theme actually on the page (30 Sep
+     * 2026, when the first moon encounters rendered).
+     */
+    const themes = new Set(
+      [...document.querySelectorAll("[data-encounter]")].map((e) => e.getAttribute("data-encounter") ?? ""),
+    );
+    for (const theme of themes) {
+      const enc = document.createElement("div");
+      enc.setAttribute("data-encounter", theme);
+      document.body.appendChild(enc);
+      for (const t of [...COLOR_TOKENS, "enc-panel", "enc-ink", "enc-edge", "enc-accent"]) {
+        enc.style.color = `var(--${t})`;
+        colors.add(getComputedStyle(enc).color);
+      }
+      enc.remove();
+    }
     const fonts = new Set<string>();
     for (const t of ["font-body", "font-display", "font-mono"]) {
       probe.style.fontFamily = `var(--${t})`;

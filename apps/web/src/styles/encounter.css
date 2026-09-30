@@ -24,7 +24,7 @@
   font-size: var(--text-xs);
   letter-spacing: var(--tracking-hud);
   text-transform: uppercase;
-  color: var(--ink-muted);
+  color: var(--enc-ink);
 }
 .sort-intro { margin: 0; max-width: 62ch; color: var(--enc-ink); }
 
@@ -66,9 +66,41 @@
 .sort-book-why { color: var(--ink-muted); }
 
 .sort-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
-.sort-note { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); max-width: 52ch; }
+.sort-note { margin: 0; font-size: var(--text-sm); color: var(--enc-ink); max-width: 52ch; }
 
 @keyframes sort-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* ---- the Drill bench (moon 02.8, Clock Bench) ---- */
+.bench { display: grid; gap: var(--space-4); }
+.bench-grid { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) {
+  .bench-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+}
+.bench-panel { padding: var(--space-3) var(--space-4) var(--space-4); min-width: 0; display: grid; gap: var(--space-3); align-content: start; }
+.bench-panel h3 {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-hud);
+  color: var(--ink);
+}
+.bench-dial { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: baseline; }
+.bench-dial label { color: var(--ink); font-size: var(--text-sm); }
+.bench-dial output { color: var(--ink); }
+.bench-dial input[type="range"] { grid-column: 1 / -1; width: 100%; min-height: 44px; accent-color: var(--ink); color: var(--ink); background: transparent; }
+.bench-note { grid-column: 1 / -1; margin: 0; font-size: var(--text-xs); color: var(--ink-muted); }
+.bench-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); color: var(--ink); }
+.bench-table caption { caption-side: bottom; text-align: left; padding-top: var(--space-2); font-size: var(--text-xs); color: var(--ink-muted); }
+.bench-table th, .bench-table td { padding: var(--space-1) var(--space-2); border-bottom: var(--border-hair) solid var(--line); text-align: left; }
+.bench-table thead th { font-family: var(--font-hud); font-size: var(--text-xs); letter-spacing: var(--tracking-hud); text-transform: uppercase; color: var(--ink-muted); }
+.bench-table tbody th { font-weight: 400; }
+.bench-table td { text-align: right; white-space: nowrap; }
+.bench-readouts { display: grid; gap: var(--border-hair); margin: 0; }
+.bench-readouts div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-3); padding: var(--space-2) var(--space-3); background: var(--surface-2); }
+.bench-readouts dt { color: var(--ink); font-size: var(--text-sm); }
+.bench-readouts dd { margin: 0; color: var(--ink); font-size: var(--text-lg); }
+.bench-sources { margin: 0; padding: 0 0 0 var(--space-4); display: grid; gap: var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); }
+.bench-sources cite { font-style: normal; }

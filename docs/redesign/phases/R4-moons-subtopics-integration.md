@@ -92,7 +92,10 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
 - [x] Stage 01 encounter — Sort (DOM), through the page gate. **30 Sep 2026:**
       Two Columns on moon 01.2 (`design/templates/web/encounter-sort/`,
       `web-encounter-sort.spec.ts`, cards proven quoted by `two-columns.spec.ts`)
-- [ ] Stage 02 encounter — Drill (DOM), through the page gate
+- [x] Stage 02 encounter — Drill (DOM), through the page gate. **30 Sep 2026:**
+      Clock Bench on moon 02.8 (`design/templates/web/encounter-drill/`,
+      `web-encounter-drill.spec.ts`; the book's Example 2.2 reproduced and
+      quoted, `clock-bench.spec.ts`)
 - [ ] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
       keyboard path and a non-canvas fallback
 - [ ] Stage 04 encounter — cache drill (DOM), through the page gate
