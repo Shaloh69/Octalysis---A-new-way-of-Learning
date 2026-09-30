@@ -43,6 +43,11 @@ export interface StudentDetail {
   sections?: Array<{ id: string; code: string; term: string }>;
   attempts: DetailAttempt[];
   progress: Array<{ stageId: string; mastery: number; bestScore: number | null; attempts: number; lastSeenAt: string | null }>;
+  /** Moon mastery by stage (30 Sep 2026), the REAL record's, earned by the demo cohort's answers. */
+  moons?: Array<{
+    stageId: string; title: string; mastered: number; total: number;
+    objectives: Array<{ id: string; description: string; correct: number; mastered: boolean; questions: number }>;
+  }>;
 }
 export interface PaperItem {
   ordinal: number; type: "S" | "P" | "G"; stageId: string; objectiveId: string | null;

@@ -263,3 +263,47 @@ describe("the instructor's record of a student is their graded work", () => {
     expect(scopes).not.toContain("objective");
   });
 });
+
+/*
+ * The record's moons (instructor, 30 Sep 2026: the console's student record
+ * shows each student's moon mastery). Every gradeable, published stage with
+ * moons, each moon as the map counts it: the database's moon_correct() and
+ * moon_mastered(), and its live questions.
+ */
+describe("the instructor's record carries each moon's mastery", () => {
+  type RecordMoons = Array<{
+    stageId: string; title: string; mastered: number; total: number;
+    objectives: Array<{ id: string; description: string; correct: number; mastered: boolean; questions: number }>;
+  }>;
+
+  it("every moon of a stage, as the database counts it, with N of M mastered", async () => {
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/students/${w.studentA}`, headers: auth(tokenT),
+    });
+    expect(res.statusCode).toBe(200);
+    const moons = res.json().moons as RecordMoons;
+    const s07 = moons.find((m) => m.stageId === "07")!;
+    expect(s07.objectives.map((o) => o.id)).toEqual(["07.1", "07.2", "07.3", "07.4", "07.5"]);
+    expect(s07.total).toBe(5);
+    for (const o of s07.objectives) {
+      const { rows } = await pool.query(
+        "select moon_correct($1, $2) as c, moon_mastered($1, $2) as m", [w.studentA, o.id],
+      );
+      expect(o.correct, o.id).toBe(rows[0].c);
+      expect(o.mastered, o.id).toBe(rows[0].m);
+    }
+    expect(s07.mastered).toBe(s07.objectives.filter((o) => o.mastered).length);
+    expect(s07.objectives.find((o) => o.id === "07.5")!.questions).toBe(0);
+    expect(s07.objectives.find((o) => o.id === "07.1")!.correct).toBeGreaterThan(0);
+    // Orientation is not gradeable: it has no moons, so no row.
+    expect(moons.map((m) => m.stageId)).not.toContain("00");
+  });
+
+  it("DENIAL: a student cannot read a record, their own included", async () => {
+    const res = await app.inject({
+      method: "GET", url: `/api/v1/console/students/${w.studentA}`, headers: auth(tokenA),
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.body).not.toContain("objectives");
+  });
+});

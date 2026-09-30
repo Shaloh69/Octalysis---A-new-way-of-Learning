@@ -232,6 +232,22 @@ export interface StudentDetail {
     attempts: number;
     lastSeenAt: string | null;
   }>;
+  /**
+   * Moon mastery by stage (instructor, 30 Sep 2026; WEB-REVAMP 3.7a): every
+   * gradeable, published stage with moons. `correct` is the distinct questions
+   * of a moon answered right (journey or check), `mastered` the database's
+   * verdict (two of them), `questions` its live questions. Printed, never
+   * recomputed. Optional so an older API degrades to an absent card.
+   */
+  moons?: RecordMoonStage[];
+}
+
+export interface RecordMoonStage {
+  stageId: string;
+  title: string;
+  mastered: number;
+  total: number;
+  objectives: Array<{ id: string; description: string; correct: number; mastered: boolean; questions: number }>;
 }
 
 /** Staff-only. Carries the answer key — see the note at the top of this file. */

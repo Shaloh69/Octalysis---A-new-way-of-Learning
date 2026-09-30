@@ -92,6 +92,18 @@ exactly what a dispute reads.
 3. **Progress by stage**, carried over: one bar per stage with the percentage
    in mono, and the bar has a text equivalent. Beside the attempts at 1440,
    under them at 380.
+4. **Moons by stage** (instructor, 30 Sep 2026; WEB-REVAMP 3.7a), under
+   Progress in the same side column. One row per gradeable, published stage:
+   its code, its title and **N of M** moons mastered, in mono. A row expands in
+   place to its moons, **one stage open at a time**, indented beneath it, which
+   is `template-subrows.png` (TanStack's *Expanding*: child rows under their
+   parent): each moon's code, the syllabus's words and its state **in a word**
+   (Mastered, "1 of 3 right", Not started, No questions yet; `moonWords()` in
+   `lib/record-view.ts`, tested). The numbers are the API's, from the one
+   definition the map and the lock read (`moon_correct()`, `moon_mastered()`).
+   **Journeys are not attempts here**: practice is never graded, so the
+   Attempts list stays graded work only. Captures: `current-moons.png`,
+   `current-moons-380.png` (stage 02 open, real demo moons), both opened.
 
 ## Controls, and the four tests (DESIGN-MANDATE §1)
 
@@ -101,6 +113,7 @@ exactly what a dispute reads.
 | Actions → Move to section… | changes the section locks and windows the student reads | the dialog says so first | move back, with a reason | — |
 | Actions → Deactivate… / Reactivate… | refuses or restores every request | the dialog says what happens to this student | Reactivate | — |
 | Attempt toggle | reveals the exact paper they sat | `aria-expanded`, chevron | the same control closes it | what the student saw, answered and was told |
+| A stage's moons toggle | reveals that stage's moons and each one's state | `aria-expanded`, chevron, N of M | the same control closes it | where this student stands on each subtopic, and what still holds the next stage shut |
 | Open paper on its own page | the full paper | a link, named | back | — |
 | Retry (on failure) | fetches again | a named button | — | — |
 

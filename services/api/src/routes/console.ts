@@ -655,7 +655,46 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
       [userId],
     );
 
+    /*
+     * Moon mastery (instructor, 30 Sep 2026): every gradeable, published stage
+     * with moons, each moon as the map counts it. `moon_correct()` and
+     * `moon_mastered()` are the one definition (WEB-REVAMP 3.7a), the same the
+     * lock reads, so the record, the map and the lock cannot disagree.
+     */
+    const moonRows = await app.db.query<{
+      stage_id: string; title: string; id: string; description: string;
+      correct: number; mastered: boolean; questions: number;
+    }>(
+      `select s.id as stage_id, s.title, o.id, o.description,
+              moon_correct($1, o.id) as correct, moon_mastered($1, o.id) as mastered,
+              (select count(distinct i.family_id)::int from items i
+                where i.objective_id = o.id and i.status = 'live') as questions
+         from stages s join objectives o on o.stage_id = s.id
+        where s.gradeable and s.published
+        order by s.ordinal,
+                 split_part(o.id, '.', 1), nullif(split_part(o.id, '.', 2), '')::int`,
+      [userId],
+    );
+    const moons: Array<{
+      stageId: string; title: string; mastered: number; total: number;
+      objectives: Array<{ id: string; description: string; correct: number; mastered: boolean; questions: number }>;
+    }> = [];
+    for (const r of moonRows.rows) {
+      let stage = moons[moons.length - 1];
+      if (!stage || stage.stageId !== r.stage_id) {
+        stage = { stageId: r.stage_id, title: r.title, mastered: 0, total: 0, objectives: [] };
+        moons.push(stage);
+      }
+      const mastered = r.mastered === true;
+      stage.objectives.push({
+        id: r.id, description: r.description, correct: Number(r.correct), mastered, questions: Number(r.questions),
+      });
+      stage.total += 1;
+      if (mastered) stage.mastered += 1;
+    }
+
     return reply.send({
+      moons,
       student: {
         userId: profile.rows[0].id,
         studentId: profile.rows[0].student_id,

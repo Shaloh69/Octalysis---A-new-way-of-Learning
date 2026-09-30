@@ -209,6 +209,14 @@ async function expand(page: Page, id: string): Promise<void> {
   await page.locator(`#paper-${id} [data-item]`).first().waitFor();
 }
 
+/** Open one stage's moons in the record's Moons card (30 Sep 2026). */
+async function openMoons(page: Page, stageId: string): Promise<void> {
+  const toggle = page.locator(`[data-moon-stage="${stageId}"] > button`);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await page.locator(`#moons-${stageId} [data-moon]`).first().waitFor();
+}
+
 async function openActions(page: Page, d: StudentDetail): Promise<void> {
   await page.getByRole("button", { name: `Actions for ${d.student.fullName}` }).click();
   await page.getByRole("menu").waitFor();
@@ -240,6 +248,8 @@ test.describe("the rebuilt record", () => {
       expect(await clippedElements(page), "the record").toEqual([]);
       await expand(page, ATTEMPT.submitted);
       expect(await clippedElements(page), "with a paper open").toEqual([]);
+      await openMoons(page, "02");
+      expect(await clippedElements(page), "with a stage's moons open").toEqual([]);
       await openDeactivate(page, detail);
       expect(await clippedElements(page), "in the deactivate dialog").toEqual([]);
     });
@@ -249,6 +259,8 @@ test.describe("the rebuilt record", () => {
       expect(await horizontalOverflow(page), "the record").toBeLessThanOrEqual(0);
       await expand(page, ATTEMPT.submitted);
       expect(await horizontalOverflow(page), "with a paper open").toBeLessThanOrEqual(0);
+      await openMoons(page, "02");
+      expect(await horizontalOverflow(page), "with a stage's moons open").toBeLessThanOrEqual(0);
       await openDeactivate(page, detail);
       expect(await horizontalOverflow(page), "with the dialog open").toBeLessThanOrEqual(0);
     });
@@ -259,6 +271,8 @@ test.describe("the rebuilt record", () => {
       expect(await unreachableByKeyboard(page, "main"), "the record").toEqual([]);
       await expand(page, ATTEMPT.submitted);
       expect(await unreachableByKeyboard(page, "main"), "with a paper open").toEqual([]);
+      await openMoons(page, "02");
+      expect(await unreachableByKeyboard(page, "[data-moons]"), "the moons, a stage open").toEqual([]);
 
       // The Actions menu WITHOUT the mouse, and focus comes home when the dialog closes.
       const trigger = page.getByRole("button", { name: `Actions for ${detail.student.fullName}` });
@@ -280,6 +294,7 @@ test.describe("the rebuilt record", () => {
       test.setTimeout(180_000);
       const { detail } = await openRecord(page);
       await expand(page, ATTEMPT.submitted);
+      await openMoons(page, "02");
       const failures: string[] = [];
       for (const theme of THEMES) {
         await setTheme(page, theme);
@@ -301,7 +316,8 @@ test.describe("the rebuilt record", () => {
     test("5 · the token system is what actually rendered", async ({ page }) => {
       const { detail } = await openRecord(page);
       await expand(page, ATTEMPT.submitted);
-      expect(await offTokenStyles(page), "the record with a paper open").toEqual([]);
+      await openMoons(page, "02");
+      expect(await offTokenStyles(page), "the record with a paper and a stage's moons open").toEqual([]);
       await openDeactivate(page, detail);
       expect(await offTokenStyles(page), "in the deactivate dialog").toEqual([]);
     });
@@ -322,6 +338,7 @@ test.describe("the rebuilt record", () => {
       const again = await openRecord(page);
       expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
       await expand(page, ATTEMPT.submitted);
+      await openMoons(page, "02");
       await openDeactivate(page, again.detail);
       const still = (await recordedMotion(page)).filter((m) => m.ms > 1);
       expect(still, "under reduced motion nothing on the route may animate").toEqual([]);
@@ -464,6 +481,60 @@ test.describe("the rebuilt record", () => {
         await expect(page.locator("[data-attempts] table")).toHaveCount(0);
         await expand(page, ATTEMPT.submitted);
       }
+    });
+  });
+
+  /* --------------------------------------------------------------------
+   * MOONS BY STAGE (instructor, 30 Sep 2026; WEB-REVAMP 3.7a)
+   * The REAL record's moons: the demo cohort earned them through answers.
+   * ------------------------------------------------------------------ */
+
+  test.describe("moons by stage", () => {
+    test("every gradeable stage with moons, N of M mastered, as the API counts them", async ({ page }) => {
+      const { detail } = await openRecord(page);
+      const moons = detail.moons!;
+      expect(moons.length, "the demo record carries moons").toBeGreaterThan(0);
+      const rows = page.locator("[data-moons] [data-moon-stage]");
+      await expect(rows).toHaveCount(moons.length);
+      for (const s of moons) {
+        await expect(page.locator(`[data-moon-stage="${s.stageId}"] [data-moons-count]`)).toHaveText(
+          `${s.mastered} of ${s.total}`,
+        );
+      }
+      await expect(page.locator(`[data-moon-stage="00"]`), "Orientation has no moons").toHaveCount(0);
+    });
+
+    test("a stage opens in place to its moons, each state in words, never a colour", async ({ page }) => {
+      const { detail } = await openRecord(page);
+      await openMoons(page, "02");
+      const s02 = detail.moons!.find((s) => s.stageId === "02")!;
+      const items = page.locator("#moons-02 [data-moon]");
+      await expect(items).toHaveCount(s02.total);
+      const word = (o: (typeof s02.objectives)[number]) =>
+        o.mastered ? "Mastered" : o.questions === 0 ? "No questions yet" : o.correct === 0 ? "Not started" : `${o.correct} of ${o.questions} right`;
+      for (const o of s02.objectives) {
+        const li = page.locator(`#moons-02 [data-moon="${o.id}"]`);
+        await expect(li).toContainText(o.description);
+        await expect(li.locator(".record-moon-state")).toHaveText(word(o));
+      }
+      // The demo student has some moons mastered and some not: both words show.
+      await expect(page.locator("#moons-02")).toContainText("Mastered");
+    });
+
+    test("one stage open at a time, and the same control closes it", async ({ page }) => {
+      await openRecord(page);
+      await openMoons(page, "01");
+      await openMoons(page, "02");
+      await expect(page.locator("#moons-01")).toHaveCount(0);
+      const toggle = page.locator(`[data-moon-stage="02"] > button`);
+      await toggle.click();
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await expect(page.locator("#moons-02")).toHaveCount(0);
+    });
+
+    test("the record lists graded work only: no moon's journey among the attempts", async ({ page }) => {
+      await openRecord(page);
+      await expect(page.locator("[data-attempts]")).not.toContainText(/journey/i);
     });
   });
 

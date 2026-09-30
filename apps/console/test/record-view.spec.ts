@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  asRosterRow, dayDate, duration, paperSummary, sequence, showsKey, timeTaken, verdict,
+  asRosterRow, dayDate, duration, moonWords, paperSummary, sequence, showsKey, timeTaken, verdict,
 } from "../src/lib/record-view";
 import type { AttemptDetail, StudentDetail } from "../src/lib/api";
 
@@ -97,5 +97,22 @@ describe("asRosterRow", () => {
     expect(asRosterRow(d)).toMatchObject({
       studentId: "232129006", userId: "u", sectionId: "s", deactivated: true, status: "claimed",
     });
+  });
+});
+
+describe("moonWords: a moon's state in words, never a colour (30 Sep 2026)", () => {
+  const moon = (correct: number, mastered: boolean, questions: number) => ({
+    id: "01.2", description: "x", correct, mastered, questions,
+  });
+  it("mastered wins, even once its questions are retired", () => {
+    expect(moonWords(moon(2, true, 3))).toBe("Mastered");
+    expect(moonWords(moon(2, true, 0))).toBe("Mastered");
+  });
+  it("a moon with no live question says so (fail-closed)", () => {
+    expect(moonWords(moon(0, false, 0))).toBe("No questions yet");
+  });
+  it("not started, then how many are right of how many there are", () => {
+    expect(moonWords(moon(0, false, 3))).toBe("Not started");
+    expect(moonWords(moon(1, false, 3))).toBe("1 of 3 right");
   });
 });

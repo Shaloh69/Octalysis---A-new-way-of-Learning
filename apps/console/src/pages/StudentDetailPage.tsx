@@ -14,6 +14,7 @@ import {
 import { StatusDialog } from "./students/StatusDialog";
 import { MoveDialog } from "./students/MoveDialog";
 import { AttemptList, AttemptTable, type PaperState } from "./record/Attempts";
+import { MoonsCard } from "./record/Moons";
 
 /**
  * `/students/:userId`: one student's record. Rebuilt 27 Sep 2026 against
@@ -179,6 +180,8 @@ export function StudentDetailPage() {
           )}
         </section>
 
+        {/* The side column: the check's result by stage, then the moons (30 Sep 2026). */}
+        <div className="record-side">
         <section className="record-card" aria-labelledby="progress-h">
           <div className="record-card-head">
             <h2 id="progress-h" className="font-display text-lg text-ink">Progress by stage</h2>
@@ -201,6 +204,8 @@ export function StudentDetailPage() {
             </ul>
           )}
         </section>
+        {data.moons ? <MoonsCard moons={data.moons} /> : null}
+        </div>
       </div>
 
       <StatusDialog

@@ -106,3 +106,15 @@ export function asRosterRow(d: StudentDetail): RosterRow {
     avgMastery: null,
   };
 }
+
+/**
+ * A moon's state in words (30 Sep 2026; WEB-REVAMP 3.7a), never a colour.
+ * Mastered wins even when its questions have since been retired: nothing
+ * lowers a moon. A moon with no live question cannot be mastered yet.
+ */
+export function moonWords(m: { correct: number; mastered: boolean; questions: number }): string {
+  if (m.mastered) return "Mastered";
+  if (m.questions === 0) return "No questions yet";
+  if (m.correct === 0) return "Not started";
+  return `${m.correct} of ${m.questions} right`;
+}
