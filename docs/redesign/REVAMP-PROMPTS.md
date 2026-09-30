@@ -23,56 +23,68 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: moons open planets (R4)
+## 1. Start here — the next session: moon mastery, once approved (R4)
 
-*Rewritten 30 Sep 2026 (evening) by the session that finished the student-app
-remake (`WEB-REMAKE.md` §8, all eleven pieces under ruling 2) and landed
-**ruling 3** (root hard rule 9: a paper behind Start, no way back, full screen,
-leaves recorded). Phase at handover: **R3 71 / 86**, R4 2 / 29; all tracks
-**158 done · 66 to-do (224 items, 71%)**. `pnpm phase` is the count, not this
+*Rewritten 30 Sep 2026 (night) by the session that built step 1 of moons
+opening planets (a non-gradeable prerequisite never blocks: stage 01 is open)
+and proposed where moon mastery lives (`WEB-REVAMP.md` §3.7a), then stopped for
+the instructor. Phase at handover: **R3 71 / 86**, R4 3 / 29; all tracks
+**159 done · 65 to-do (224 items, 71%)**. `pnpm phase` is the count, not this
 line. The prompt is in a plain block so it pastes exactly as written.*
 
 ```text
-Read docs/redesign/WEB-REVAMP.md section 3 in full, above all 3.7 (moons unlock
-the next planet: the 2-of-3 threshold and "a non-gradeable prerequisite never
-blocks" are DECIDED; where moon mastery lives is the open design question),
-3.6 and 3.10. Then docs/redesign/phases/R4-*.md, root CLAUDE.md (hard rules 4,
-7, 8 and 9), docs/VERIFICATION.md before touching the schema, db/CLAUDE.md,
-docs/redesign/WEB-REMAKE.md (the remake is DONE; section 4a is ruling 3), and
-docs/NEXT-SESSION.md section 0u (what the remake and ruling 3 left). Do not
-re-derive what those carry.
+Read docs/redesign/WEB-REVAMP.md section 3 in full, above all 3.7 and 3.7a
+(3.7a is the PROPOSED home of moon mastery, with three decisions asked of the
+instructor), 3.6 and 3.10. Then docs/redesign/phases/R4-*.md, root CLAUDE.md
+(hard rules 4, 7, 8 and 9), docs/VERIFICATION.md before touching the schema,
+db/CLAUDE.md, and docs/NEXT-SESSION.md sections 0v and 0u. Do not re-derive
+what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. Then
 state plainly whether Prelim-worth of data is okay to run on students, checking
 the five conditions in CLAUDE.md rather than remembering them. (On 30 Sep it
 was NOT: locally all 96 act-1 items were at review and 0 live, so no paper
-fills and Start answers 500; stage 01 is still closed to every seeded student
-because is_stage_unlocked() still gates on stage 00; the deployment was last
-measured 28 Sep with no act-1 content or items, and attempt_events has not
-been pushed to it.)
+fills and Start answers 500; stage 01 now opens from the start, locally only;
+the deployment was last measured 28 Sep with no act-1 content or items, and
+neither attempt_events nor the new is_stage_unlocked() has been pushed to it.)
 
 Confirm everything is green before touching anything, AGAINST BUILDS: pnpm
-db:reset then node scripts/db-demo.mjs, restart pnpm dev:api and prove it with
-a real GET (a reset kills it), build apps/web and preview it on 5185, build
-apps/console and preview it on 5186 (npx vite preview --port 5186 --strictPort
-in apps/console; 5186 is now an allowed dev origin). Then the whole web suite
-(417 passed, 111 skipped, 0 failed on 30 Sep) and pnpm test. Never reset the
-database while a Playwright suite runs, and reseed after the API suite (it
-truncates the fixtures).
+db:reset then node scripts/db-demo.mjs (read its whole output), restart pnpm
+dev:api and prove it with a real GET (a reset can kill it), build apps/web and
+preview it on 5185, build apps/console and preview it on 5186 (npx vite
+preview --port 5186 --strictPort in apps/console). Then the web suite (every
+design/specs file except console-*, 528 tests; with console-locks added,
+461 passed, 121 skipped, 0 failed on 30 Sep night) and pnpm test (669 API
+tests). Never reset the database while a
+Playwright suite runs. After the API suite, db-demo alone is NOT enough: run
+pnpm db:reset then db-demo (the suite truncates blueprints). And pnpm dev:api
+restarts itself when services/api/src changes, so never edit the API while a
+suite is running against it.
+
+Then ask the instructor the three decisions in WEB-REVAMP 3.7a, unless they
+are already recorded there as DECIDED: (1) do only moon journeys count toward a
+moon, or stage checks too (a final never counts); (2) is a moon's journey a
+paper under hard rule 9, or practice without the start prompt and full screen;
+(3) fail-closed for a moon with no live question. Record each answer in 3.7a
+and R4.6 before building on it. Do not migrate before they are answered.
 
 The work, server first, one piece at a time, each committed and pushed:
-1. "A non-gradeable prerequisite never blocks": is_stage_unlocked() treats a
-   prerequisite with gradeable = false as met, so stage 01 opens from the
-   start. Denial tests first (a gradeable prerequisite still blocks; a student
-   still cannot unlock by writing anything), watched failing.
-2. Where moon mastery lives: a table written only by the grading service,
-   RLS'd like stage_progress, best result per question across attempts, a moon
-   mastered at 2 of its 3. Present the design (table, who writes it and when,
-   how is_stage_unlocked() reads it, what happens to a planet whose moons are
-   not all authored) and STOP for the instructor's approval before migrating.
-3. After approval: the unlock reads moons; then the moons on planets 01-04 on
-   the map (R4), with their panels, per WEB-REVAMP 3.6 and 3.10. Every page
-   touched keeps its spec green at 1440 and 380, captured and opened.
+1. objective_progress per 3.7a as decided: denial tests first, watched
+   failing (a student cannot write it; B cannot read A's; staff cannot write
+   it; service_role cannot UPDATE or DELETE it; a row for an incorrect
+   response is refused), then the table, then the grading service writing it.
+2. The moon journey: blueprints.scope 'objective', practice on that
+   objective's own live questions, written through the one serializer. It
+   must exist before, or in the same commit as, step 3, or stage 02 is shut
+   for every student.
+3. is_stage_unlocked() reads moons (every moon of each gradeable prerequisite
+   mastered), and lockReason names the moons still missing. Denial tests
+   first: 02 stays shut with 01 at 100% stage mastery and its moons not
+   mastered; opens when they are; a voided attempt stops counting.
+4. Then the moons on planets 01-04 (R4.2, R4.5): three-state glow from the
+   API's per-moon mastery, the moon sidebar per WEB-REVAMP 3.2, Orientation's
+   asteroids per 3.10. Every page touched keeps its spec green at 1440 and
+   380, captured and opened.
 
 Moons decide what opens; the check decides what is recorded. Encounters and
 minigames are not this session's.
@@ -249,12 +261,11 @@ even where the course is not yet.
 1. **0 of 183 items are `live`.** The engine samples `where status = 'live'`, so
    every attempt fails to fill at Start. Act 1's 96 items must be approved,
    through `/items` — which is why `/items` goes first.
-2. **Stage 00 gates stage 01 — DECIDED, not yet built.** The instructor ruled
-   on 25 Sep 2026 that Orientation has no moons and that **a non-gradeable
-   prerequisite never blocks**, so stage 01 is open from the start. Until
-   `is_stage_unlocked()` is changed a real student is still told *"Unlocks when
-   Stage 00 reaches 70%. You're at 0%."* The change is small, server-side,
-   denial test first, and independent of the rest of moon gating (R4.6).
+2. ~~**Stage 00 gates stage 01.**~~ **BUILT 30 Sep 2026.** The instructor ruled
+   on 25 Sep 2026 that **a non-gradeable prerequisite never blocks**;
+   `is_stage_unlocked()` now counts only gradeable prerequisites and the API's
+   `lockReason` names only those, so stage 01 is open from the start. Locally
+   only until the schema is pushed to the deployment.
 
 ### Order
 

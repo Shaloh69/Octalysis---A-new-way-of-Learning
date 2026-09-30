@@ -132,10 +132,9 @@ Found while rebuilding `/locks` and deliberately **not** fixed there. §0a and
    spec went red. It now uses `232129021` (seeded, read by no other spec) and
    **asserts every write**. Lesson for every spec that seeds through an API:
    check the response, or the fixture can be empty and the spec still green.
-3. **Stage 01 is closed for all 21 demo students.** `/locks` shows it plainly
-   now: column 01 reads 0. This is §3a's decided-but-unbuilt rule
-   (`is_stage_unlocked()` still requires stage 00 at 70%). The page renders it
-   correctly; the function is what changes, server side, denial tests first.
+3. ~~**Stage 01 is closed for all 21 demo students.**~~ **Fixed 30 Sep 2026:**
+   `is_stage_unlocked()` excuses a non-gradeable prerequisite (§3a), so stage
+   01 is open from the start and `/locks`' column 01 no longer reads 0.
 4. **A controlled Radix dialog with no `Trigger` does not return focus.** Radix
    has nowhere to send it and focus lands on `<body>`. `/locks`' reason
    dialog fixes it with `onCloseAutoFocus` and a remembered opener. Any other
@@ -1231,14 +1230,51 @@ one-route-per-session for this rework): shell `862a60e`, map `0d6828a`, reader
 7. **The local stack's two traps, again:** `pnpm db:reset` kills the dev API
    (restart `pnpm dev:api` and prove it with a real GET), and the API test
    suite truncates the demo fixtures (`design/global-setup.ts` refuses to run
-   and says so; `node scripts/db-demo.mjs`). Never reset while a Playwright
-   suite is running.
+   and says so). **After the API suite, `db-demo` alone is NOT enough**
+   (found 30 Sep 2026): the suite also truncates `blueprints`, which only
+   `schema.sql` seeds, so `sync-assessments` makes no assessments and
+   `demo-audit` fails. Run `pnpm db:reset` **then** `node scripts/db-demo.mjs`,
+   and read its whole output, not its last line. Never reset while a
+   Playwright suite is running.
 8. **Hard rule 9 binds Lecture Mode:** `/app/live` (not built) must sit behind
    the same start prompt and full screen, and record leaves the same way. The
    route and table are per attempt; a live session will need its own key.
 9. **A reload mid-paper now asks first** (`beforeunload`) and lands on the
    prompt again: full screen needs a click. The resume is the same attempt
    (`attempt-runner.spec.ts` asserts one attempt id across the reload).
+
+---
+
+## 0v. Moons open planets, step 1 and the design — 30 Sep 2026 (night)
+
+1. **Built: a non-gradeable prerequisite never blocks** (WEB-REVAMP §3.7, R4.6).
+   `is_stage_unlocked()` step 4 counts only gradeable prerequisites; a prereq
+   id with no `stages` row still blocks. The API's `lockReasonFor()` is given
+   only gradeable prerequisites, on the map and the reader, so an override on
+   stage 01 reads as the instructor's and never as "reach 70% of Orientation".
+   Tests: `rls.spec.ts` §3.7 (nine: open 01; 02 still shut; a non-gradeable
+   prereq beside a gradeable one excuses nothing; a global override still
+   closes 01; a student cannot mark 01 non-gradeable, clear 02's prereqs, write
+   `stage_progress` or write an unlock), `stages.spec.ts` (01 open for a fresh
+   student and no reason names 00; the override reason). Three watched failing
+   against the old function, the fourth against the old route.
+2. **Two specs moved with it:** `web-stage.spec.ts`' locked example is now
+   stage 02 (the seeded student's 01 is open), and `web-stages.spec.ts`' "next
+   stage" is 01, not 06: 01 at 65% is open and unfinished and comes first.
+3. **Not pushed to the deployment.** `schema.sql` changed; the deployment
+   needs the same `db:push` (with §3b's `--reset` question) as `attempt_events`.
+4. **Piece 2 is a PROPOSAL awaiting the instructor:** `WEB-REVAMP.md` §3.7a
+   (`objective_progress`, keyed to `responses`, append-only, grading-service
+   written, no staff write; a moon mastered at 2 distinct correct questions;
+   fail-closed for an unauthored moon). Three decisions are asked there.
+   **Do not migrate before they are answered.**
+5. **Ordering hazard for piece 3:** the moment `is_stage_unlocked()` reads
+   moons, stage 02 is shut for every student until a moon journey exists that
+   can write `objective_progress` and act 1's items are `live`. Build the
+   journey before, or in the same commit as, the unlock change.
+6. **`/locks` still writes only per-student locks** (`LocksPage.tsx` sets
+   `scope: "user"`), so an instructor cannot open a stage for everyone from the
+   console. That matters more once fail-closed moons can hold a planet shut.
 
 ---
 
@@ -1334,10 +1370,13 @@ connected and building is **unverified from here** — ask rather than assume.
 
 > **Decided by the instructor.** Orientation has no moons (cosmetic asteroids
 > instead), and **a non-gradeable prerequisite never blocks**, so stage 01 is
-> open from the start. Recorded in `WEB-REVAMP.md` §3.7 and R4.6. **Not yet
-> built:** `is_stage_unlocked()` still applies the old rule, so the symptom below
-> is still live until that server-side change lands. The analysis is kept for
-> the reasoning.
+> open from the start. Recorded in `WEB-REVAMP.md` §3.7 and R4.6. **BUILT 30 Sep
+> 2026:** `is_stage_unlocked()` counts only gradeable prerequisites, and the
+> API's `lockReason` names only those (`rls.spec.ts` §3.7, `stages.spec.ts`).
+> The symptom below is gone. The suggested invariant ("a non-gradeable stage
+> never appears in any prereq") is **superseded**: the ruling keeps 00 in 01's
+> prereq, as the map's edge, and makes it harmless instead. The analysis is kept
+> for the reasoning.
 
 Stage 00 is `gradeable = false` with no items, so it gets no stage check — and
 stage 01's prerequisite is stage 00. `is_stage_unlocked()` needs every

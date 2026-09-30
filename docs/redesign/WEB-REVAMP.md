@@ -255,6 +255,60 @@ recorded.** A stage check draws 8 questions, at most 2 per objective, so on a
 planet with 11 moons (stage 03) it cannot touch every moon. That is one more
 reason moon mastery has to come from the moons' own journeys.
 
+**Step 1 BUILT 30 Sep 2026:** `is_stage_unlocked()` counts only gradeable
+prerequisites, and the API's `lockReason` names only those. Stage 01 is open
+from the start; a gradeable prerequisite still blocks at 70% stage mastery until
+the moons below replace that rule.
+
+#### 3.7a Where moon mastery lives — PROPOSED 30 Sep 2026, awaiting approval
+
+Nothing below is migrated. Measured on the local bank, 30 Sep: stages 01-08
+have every objective carrying 3 or 4 question families (05, 06 and 07 have some
+with 4), all at `review`; stages 09-18 have no items at all.
+
+**The table: `objective_progress`, one row per correct answer that counts.**
+`(attempt_id, ordinal)` is the key, a foreign key to `responses`, so every row
+is backed by a real graded answer by construction. It carries `user_id`,
+`objective_id` and `family_id` (the question across versions, V-3), copied
+from the attempt and the item. A trigger refuses a row whose response is not
+correct, or whose user, objective or family does not match the attempt and the
+item. Append-only, like `responses`: triggers block UPDATE and DELETE for
+`service_role` too.
+
+**Who writes it, and when.** The grading service only, in `recordAnswer()`,
+in the same step that inserts a correct response into an attempt that counts.
+No client INSERT, UPDATE or DELETE policy; unlike `stage_progress`, **no staff
+write policy either** (a hand-set mastery would be a second author of a fact the
+responses already hold). RLS: a student reads their own rows, staff read all.
+
+**What "mastered" means.** A moon is mastered when the student has answered
+**2 distinct questions** of it correctly, counting every attempt that is not
+voided. Fixed at 2, not a fraction of the bank: on a moon of 4 questions a
+fraction would move the bar when a question is approved, and a moon already
+mastered would fall back, which the ruling forbids ("nothing lowers it").
+A voided attempt stops counting through the join, with no delete path.
+
+**How `is_stage_unlocked()` reads it.** Step 4 becomes: every gradeable
+prerequisite has every one of its moons mastered. `stage_progress` stops gating
+and keeps its other job, the stage check's recorded result.
+
+**A planet whose moons are not all authored.** A moon with no `live` question
+cannot be mastered, so its planet does not open the next one, and the lock
+reason says so in words ("01.3 has no questions yet"). **Proposed as
+fail-closed:** a missing bank never opens the course. The other reading,
+extending "a non-gradeable prerequisite never blocks" to an empty bank, would
+open stages 02-18 to every student today, because nothing is `live`.
+
+**What must exist before the rule flips,** or every student is shut at 02: the
+moon's journey (practice on the objective's own questions, a new
+`blueprints.scope = 'objective'`), and act 1's items approved to `live`.
+
+**Decisions for the instructor:** (1) do only moon journeys count, or stage
+checks too (a final never counts: its verdicts are withheld, and a planet opening
+mid-exam would leak them)? (2) Is a moon's journey a paper under hard rule 9, or
+practice without the start prompt and full screen? (3) Fail-closed for an
+unauthored moon, as proposed?
+
 ### 3.8 The summaries: drafted, gated on approval
 
 **Instructor ruling, 25 Sep 2026:** summaries may be drafted, because the
