@@ -45,8 +45,28 @@ interface StageRow {
    * per-stage route did not already. No description text is selected: the map
    * needs the shape, not the content.
    */
-  objectives: Array<{ id: string; level: number | null; description: string }> | null;
+  objectives: Array<Moon & { level: number | null; description: string }> | null;
 }
+
+/**
+ * A moon's mastery (WEB-REVAMP 3.7a): `correct` is the distinct questions of it
+ * answered right in attempts that count, `mastered` is the database's verdict
+ * (`moon_mastered()`, 2 of them), and `questions` its live questions: 0 means
+ * it cannot be mastered yet (fail-closed). All three come from the database;
+ * the client prints them and never recomputes one.
+ */
+interface Moon {
+  id: string;
+  correct: number;
+  mastered: boolean;
+  questions: number;
+}
+
+/** The objective's own live questions, counted per question across versions (V-3). */
+const MOON_SQL = `'correct', moon_correct($1, o.id),
+                  'mastered', moon_mastered($1, o.id),
+                  'questions', (select count(distinct i.family_id)::int from items i
+                                 where i.objective_id = o.id and i.status = 'live')`;
 
 type StageState = "locked" | "available" | "in_progress" | "mastered";
 
@@ -119,7 +139,8 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
               (select count(*)::int from content_blocks cb where cb.stage_id = s.id) as block_count,
               (select coalesce(
                         jsonb_agg(jsonb_build_object('id', o.id, 'level', o.level,
-                                                     'description', o.description)
+                                                     'description', o.description,
+                                                     ${MOON_SQL})
                                   order by o.id),
                         '[]'::jsonb)
                  from objectives o where o.stage_id = s.id) as objectives
@@ -145,6 +166,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
             )
           : null;
 
+      const moons = (r.objectives ?? []).filter((o) => o.level !== null);
       return {
         id: r.id,
         act: r.act,
@@ -175,9 +197,15 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
          * (the read-only preview of what is next), so the map payload showing
          * the same sentences reveals nothing that was being withheld.
          */
-        objectives: (r.objectives ?? [])
-          .filter((o): o is { id: string; level: number; description: string } =>
-            o.level !== null),
+        objectives: moons,
+        /*
+         * "N of M subtopics mastered" (3.1 item 6): a planet's moons are its
+         * objectives, on a GRADEABLE planet only. Orientation has none to master
+         * (decided 25 Sep 2026: cosmetic asteroids instead), so null, not 0 of 5.
+         */
+        moons: r.gradeable
+          ? { mastered: moons.filter((o) => o.mastered).length, total: moons.length }
+          : null,
         state,
         mastery: Number(mastery.toFixed(3)),
         lockReason,
@@ -217,10 +245,18 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
     if (!stage.published && !staff) throw errors.notFound("That stage does not exist.");
 
     const objectives = await app.db.query(
-      `select id, code, bloom_level, level, competency, description
-         from objectives where stage_id = $1 order by id`,
-      [stageId],
+      `select o.id, o.code, o.bloom_level, o.level, o.competency, o.description,
+              moon_correct($2, o.id) as correct, moon_mastered($2, o.id) as mastered,
+              (select count(distinct i.family_id)::int from items i
+                where i.objective_id = o.id and i.status = 'live') as questions
+         from objectives o where o.stage_id = $1 order by o.id`,
+      [stageId, id.userId],
     );
+    const moonOf = (o: { correct: number; mastered: boolean; questions: number }) => ({
+      correct: Number(o.correct),
+      mastered: o.mastered === true,
+      questions: Number(o.questions),
+    });
 
     const mastery = Number(stage.mastery ?? 0);
 
@@ -260,6 +296,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
           id: o.id,
           description: o.description,
           bloom: o.bloom_level,
+          ...moonOf(o),
         })),
         blocks: [],
       });
@@ -318,6 +355,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         bloom: o.bloom_level,
         level: o.level,
         competency: o.competency,
+        ...moonOf(o),
       })),
       blocks: blocks.rows.map((b) => ({
         ordinal: Number(b.ordinal),

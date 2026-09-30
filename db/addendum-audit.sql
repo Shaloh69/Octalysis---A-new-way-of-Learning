@@ -627,3 +627,32 @@ create trigger objective_progress_no_delete before delete on objective_progress
 drop trigger if exists objective_progress_no_truncate on objective_progress;
 create trigger objective_progress_no_truncate before truncate on objective_progress
   for each statement execute function deny_objective_progress_mutation();
+
+-- A moon's mastery, DEFINED ONCE (WEB-REVAMP 3.7a, decided 30 Sep 2026): the
+-- number of DISTINCT questions (families, V-3) of an objective the student has
+-- answered correctly, in any attempt that is not voided; mastered at 2. Fixed
+-- at 2, not a fraction of the bank, so approving a fourth question never moves
+-- the bar and a mastered moon never falls back. A voided attempt stops
+-- counting here, through the join; nothing is deleted.
+--
+-- The API and is_stage_unlocked() both read these, so the map, the lock reason
+-- and the lock itself cannot disagree. SECURITY DEFINER to read attempts
+-- whoever calls; EXECUTE revoked from every client role, so no student reads
+-- another's count by RPC. The API calls them as the owner.
+create or replace function moon_correct(p_user uuid, p_objective text) returns int
+language sql stable security definer set search_path = public as $$
+  select count(distinct op.family_id)::int
+    from objective_progress op
+    join attempts a on a.id = op.attempt_id
+   where op.user_id = p_user
+     and op.objective_id = p_objective
+     and a.status <> 'voided'
+$$;
+
+create or replace function moon_mastered(p_user uuid, p_objective text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select moon_correct(p_user, p_objective) >= 2
+$$;
+
+revoke all on function moon_correct(uuid, text)  from public, anon, authenticated;
+revoke all on function moon_mastered(uuid, text) from public, anon, authenticated;
