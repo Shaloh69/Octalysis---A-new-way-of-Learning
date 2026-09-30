@@ -94,8 +94,9 @@ minigames, not as a bare exam. `REVAMP-PROMPTS.md` §4 owns the scope.
 - [ ] Stage 03 encounter — bus wiring (Phaser), through the page gate, with a
       keyboard path and a non-canvas fallback
 - [ ] Stage 04 encounter — cache drill (DOM), through the page gate
-- [ ] **The Descent** (04→06, Phaser) — instructor's decision recorded: first
-      release or Midterm. Its payoff lands in stage 06, which is Midterm content
+- [x] **The Descent** (04→06, Phaser) — instructor's decision recorded: first
+      release or Midterm. Its payoff lands in stage 06, which is Midterm content.
+      **DECIDED 30 Sep 2026: the Midterm.** Not built with act 1
 - [ ] Phaser verified absent from the initial bundle — lazy-loaded per route,
       grep `dist/index.html` for a preload, same discipline as the 3D chunk
 - [ ] No encounter dresses an assessment — grep confirms `data-encounter` never
@@ -157,8 +158,14 @@ supersede the R4.2 box above that says no new gating logic is built.**
       **30 Sep 2026:** `POST /api/v1/objectives/:id/journey` (`journeys.spec.ts`)
       and `/app/stage/:id/moon/:objectiveId` (`web-moon-journey.spec.ts`,
       `design/templates/web/moon-journey/`)
-- [ ] **Minigame placement on moons approved** (`WEB-REVAMP.md` §3.6), then each
-      minigame built on its moon through the page gate
-- [ ] Biome seeded **per planet** (student and stage), cosmetic only, shown as
-      the sidebar background; a moon uses its planet's biome
+- [x] **Minigame placement on moons approved** (`WEB-REVAMP.md` §3.6).
+      **APPROVED 30 Sep 2026, all four:** 01.2 Two Columns (Sort), 02.8 Clock
+      Bench (Drill), 03.9 Bus Contention (Phaser), 04.5 Cache Tuner. Each is
+      built on its moon through the page gate by the R4.5 boxes above
+- [x] Biome seeded **per planet** (student and stage), cosmetic only, shown as
+      the sidebar background; a moon uses its planet's biome. **SUPERSEDED 30
+      Sep 2026 (instructor):** ruling 2 keeps the map's panels on the one star
+      HUD. The per-planet biome is seeded (`/api/v1/cosmetics`
+      `planetBiomes`) and dresses everything after Enter journey, the moon's
+      journey included, which is where it belongs
 

@@ -1288,9 +1288,9 @@ map, `403ec5b` the flip. Found and left, or needing a decision:
 
 1. **The instructor's student record now lists graded work only.** Journeys
    are practice and a demo student has ~40 of them, so `GET
-   /console/students/:id` leaves scope `objective` out. **Ask:** does the
-   instructor want each student's moon mastery on the record (a per-student
-   moons read and a section on `/students/:userId`, through the page gate)?
+   /console/students/:id` leaves scope `objective` out. **Asked 30 Sep 2026:
+   YES, built the same session** (a moons section on `/students/:userId`,
+   through the page gate); see 0x.
 2. **A stage check on a locked stage is now refused at Start** (`startAttempt`,
    403 "This stage is locked."), a journey too. It was open through the API
    before; with checks counting toward moons it would have been a way round

@@ -203,8 +203,11 @@ that cannot hold AA behind a sidebar gets a stronger scrim, not an exemption.
 ### 3.6 Minigames live in moons
 
 A minigame belongs to the **subtopic it exercises**, not to the whole planet. The
-act-1 encounters, placed on the moon each one actually teaches. **Proposed, for
-the instructor's approval:**
+act-1 encounters, placed on the moon each one actually teaches. **APPROVED by
+the instructor, 30 Sep 2026, all four as placed below; The Descent is the
+Midterm's, not the first release's** (it pays off at stage 06). Each dresses
+its moon's journey (`/app/stage/NN/moon/NN.N`), the practice surface of 3.7a,
+and never a check or an exam:
 
 | Moon | Objective | Minigame | Built with |
 |---|---|---|---|
