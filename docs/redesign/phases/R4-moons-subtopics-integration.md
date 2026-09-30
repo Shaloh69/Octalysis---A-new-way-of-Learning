@@ -54,18 +54,33 @@ accidentally scope-creep into "let's also change how mastery is computed."
 > "N of M subtopics mastered" line below lands in the sidebar.
 - [x] Add the "N of M subtopics mastered" line per
       `SOLAR-SYSTEM-SPEC.md` §2, item 5
-- [ ] Verify focus-trap, Escape-closes, background-stops-animating still hold
+- [x] Verify focus-trap, Escape-closes, background-stops-animating still hold
       with the new content in the dialog — a content addition to an existing,
       tested interaction is exactly the kind of change that silently breaks
       one of those three without anyone noticing until DESIGN-REVIEW-03 finds
-      it the hard way
+      it the hard way.
+      **1 Oct 2026, with a moon's content in the panel** (`web-app.spec.ts`,
+      "R4.3"): the panel is a labelled **region**, never a modal (no
+      `role=dialog`, no `aria-modal`), so focus-trap is moot and asserted the
+      other way: Tab leaves the panel. Escape steps out moon, then planet.
+      Under reduced motion the map is pixel-identical across 0.9 s with the moon
+      open, and the positive control (no reduced motion) is not
 
 ## R4.4 — Screen-reader equivalence
 - [ ] The list-view equivalent of the map (required by
       `SKILL-TREE-3D.md` §7 already) includes objective/moon count and
       per-objective mastery per stage, not just stage-level state — this is
       `DESIGN-MANDATE-V2.md` §5's solar-system-specific gate item, verify it
-      directly with a screen reader, not by reading the code
+      directly with a screen reader, not by reading the code.
+      **Open, and the instructor's (a person with a screen reader).** The build
+      half is done, 1 Oct 2026: the ACCESSIBILITY TREE (not the DOM text)
+      carries the planet's "N of M subtopics mastered" and every moon as a
+      button named with its id, objective and mastery in words
+      (`web-app.spec.ts`, "R4.4", an ARIA snapshot, watched failing on wrong
+      mastery words); `/app/stages` carries each planet's state and the
+      server's lock reason. For the pass: on `/app/stages` each radio's label
+      also appears as a separate text node, so a virtual cursor may read each
+      planet twice
 
 ## Definition of done
 - [ ] `docs/PROGRESS.md` updated
@@ -74,9 +89,17 @@ accidentally scope-creep into "let's also change how mastery is computed."
       8+, don't just verify against one example). **30 Sep 2026:** no stage
       has 3; captured at 5 (01), 8 (02, real demo mastery) and 11 (03), at
       1440 and 380 (`design/templates/web/app/current-moons*.png`)
-- [ ] Zero new client-side gating logic — grep confirms it
+- [x] Zero new client-side gating logic — grep confirms it.
+      **1 Oct 2026**, grep of `apps/web/src` for thresholds, lock and mastery
+      assignments, reviewed hit by hit: every one renders a server fact
+      (`state`, `lockReason`, `mastered`, `correct`, `questions` from `GET
+      /stages`). The one conditional that withholds a control, the moon panel's
+      Enter (`StarMap.tsx`, planet locked or no live question), is refused by the
+      server on its own: `journeys.spec.ts`'s two DENIAL tests. The encounters
+      gate nothing
 - [ ] Screen-reader pass confirms moon data is present in the accessible
-      equivalent, not just the visual one
+      equivalent, not just the visual one. **The instructor's**: the tree is
+      asserted (R4.4 above); a person must still listen to it
 
 ## R4.5 — The first release: act 1 as the full experience
 

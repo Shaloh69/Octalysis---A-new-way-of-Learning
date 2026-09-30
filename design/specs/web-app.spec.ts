@@ -374,6 +374,85 @@ test.describe("/app — the moons", () => {
     await expect(page.locator(".starmap-body h2")).toHaveText("Orientation");
   });
 
+  /*
+   * R4.3 (the planet dialog became a sidebar, WEB-REVAMP 3.1 and 3.9): with a
+   * MOON's content in it, the three properties the dialog once owed still hold,
+   * restated for a region. Focus-trap is moot and asserted as such: the panel
+   * is a labelled region, never a modal, so focus must be free to leave it.
+   */
+  test("R4.3: with a moon open, the panel is a region not a modal, focus leaves it, Escape steps out", async ({ page }, info) => {
+    test.skip(!wide(info.project.name), "behaviour, one width");
+    await moonsInEveryState(page);
+    await map(page, "/app?stage=01&moon=01.2");
+    const panel = page.getByRole("region", { name: "Moon 01.2" });
+    await expect(panel).toBeVisible();
+    await expect(page.locator("[role=dialog], [aria-modal]")).toHaveCount(0);
+    await expect(panel).toContainText("Two Columns");
+    await panel.locator("h2").focus();
+    let left = false;
+    for (let i = 0; i < 40 && !left; i++) {
+      await page.keyboard.press("Tab");
+      left = await page.evaluate(() => !document.activeElement?.closest(".starmap-body"));
+    }
+    expect(left, "Tab never left the moon panel: it is trapping focus like a modal").toBe(true);
+    await panel.locator("h2").focus();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("region", { name: "Introduction" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".starmap-body")).toHaveCount(0);
+  });
+
+  test("R4.3: with a moon open, reduced motion holds the map still, pixel for pixel (and it moves without)", async ({ browser }, info) => {
+    test.skip(!wide(info.project.name), "one width is enough");
+    test.setTimeout(90_000);
+    const frames = async (reducedMotion: "reduce" | "no-preference") => {
+      const ctx = await browser.newContext({ reducedMotion, viewport: { width: 1440, height: 900 } });
+      const page = await ctx.newPage();
+      await moonsInEveryState(page);
+      await map(page, "/app?stage=01&moon=01.2");
+      await expect(page.locator(".starmap-body h2")).toHaveText("Moon 01.2");
+      await expect(page.locator(".starmap")).toHaveAttribute("data-motion", reducedMotion === "reduce" ? "still" : "orbit");
+      await page.locator(".starmap-stage canvas").waitFor();
+      await page.waitForTimeout(2500); // the textures land and the camera settles
+      const stage = page.locator(".starmap-stage");
+      const a = await stage.screenshot({ animations: "allow" });
+      await page.waitForTimeout(900);
+      const b = await stage.screenshot({ animations: "allow" });
+      await ctx.close();
+      return a.equals(b);
+    };
+    expect(await frames("reduce"), "the map moved under reduced motion with a moon open").toBe(true);
+    expect(await frames("no-preference"), "positive control: the orbits should move without it").toBe(false);
+  });
+
+  /*
+   * R4.4, checked in the ACCESSIBILITY TREE (what a screen reader is handed),
+   * not the DOM text: the planet's N of M line, and every moon a button whose
+   * name carries its id, its objective and its mastery in words. The real
+   * screen-reader pass stays the instructor's (R4.4's box says so).
+   */
+  test("R4.4: moon data is in the accessibility tree: count, and each moon's mastery in its name", async ({ page }) => {
+    await moonsInEveryState(page);
+    await map(page, "/app?stage=01");
+    await expect(page.locator(".starmap-body")).toMatchAriaSnapshot(String.raw`
+      - region "Introduction":
+        - heading "Introduction" [level=2]
+        - heading "Moons (5)" [level=3]
+        - paragraph: 1 of 5 subtopics mastered
+        - list:
+          - listitem:
+            - button /^01\.1 .+ Mastered$/
+          - listitem:
+            - button /^01\.2 .+ 1 of 3 right$/
+          - listitem:
+            - button /^01\.3 .+ Not started$/
+          - listitem:
+            - button /^01\.4 .+ Not started$/
+          - listitem:
+            - button /^01\.5 .+ No questions yet$/
+    `);
+  });
+
   test("the /app/stages list carries each moon's mastery in words too (R4.4)", async ({ page }) => {
     await moonsInEveryState(page);
     await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), TOKEN);
