@@ -56,4 +56,7 @@ guarantees.
 - Add an UPDATE, DELETE or TRUNCATE path to `audit_log` (append-only since 28 Sep 2026). A
   correction is a new entry. Fixtures suspend `audit_log_no_delete` by name, as the owner.
 - Add a client INSERT policy to `responses` or `attempt_items`.
+- Add an UPDATE, DELETE or TRUNCATE path to `attempt_events` (append-only since 30 Sep 2026,
+  ruling 3: every time a student left a paper). API-written only; staff read it. Fixtures
+  suspend `attempt_events_no_delete` by name, as `audit_log`'s are.
 - Drop an item row. Retire it.

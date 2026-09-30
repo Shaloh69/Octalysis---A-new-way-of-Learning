@@ -47,6 +47,7 @@ export const errors = {
   notFound: (m = "That does not exist, or you cannot see it.") => new AppError("not_found", m),
   rateLimited: (m = "Too many attempts. Wait a moment and try again.") => new AppError("rate_limited", m),
   stageLocked: (m: string) => new AppError("stage_locked", m),
+  conflict: (m: string) => new AppError("conflict", m),
   internal: (detail?: string) =>
     new AppError("internal", "Something went wrong on our side. Try again.", detail),
 };

@@ -71,7 +71,8 @@ const PORT = process.env.OCTA_API_PORT ?? "8090";
  * than a single guess -- a CORS rejection presents as "That did not load", with
  * nothing in the page to say why.
  */
-const WEB_PORTS = [5173, 5174, 5183, 5184, 5185];
+// 5186: the console build preview, beside the web one on 5185 (30 Sep 2026).
+const WEB_PORTS = [5173, 5174, 5183, 5184, 5185, 5186];
 
 const env = {
   ...process.env,

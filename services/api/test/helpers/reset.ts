@@ -56,6 +56,11 @@ export async function resetAll(): Promise<void> {
     -- suite that ran before it.
     delete from submissions        where true;
 
+    -- Leaving a paper is recorded append-only (ruling 3, 30 Sep 2026): the
+    -- table refuses a delete for every role, and attempts cascade into it.
+    alter table attempt_events disable trigger attempt_events_no_delete;
+    delete from attempt_events     where true;
+    alter table attempt_events enable trigger attempt_events_no_delete;
     delete from responses          where true;
     delete from attempt_items      where true;
     delete from attempts           where true;

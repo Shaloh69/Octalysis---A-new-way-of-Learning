@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { AttemptEventBody } from "@octa/contracts";
 import { identityFrom, requireOwnerOrStaff } from "../auth.js";
 import { errors } from "../errors.js";
 import { BlueprintUnsatisfiable } from "../engine/blueprint.js";
@@ -137,6 +138,45 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
         // authoritative one because it came from the resolved item.
         ...toStudentVerdict(outcome.item, outcome.result),
       });
+    },
+  );
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/attempts/:id/events
+   *
+   * The student left the paper (full screen, or the page), or came back
+   * (instructor ruling 3, 30 Sep 2026). OWNER ONLY: staff may read a sitting,
+   * never write one, and nobody records a leave for someone else. Only while
+   * the attempt is in progress: after submit there is nothing to leave.
+   * The time is the server's. attempt_events is append-only.
+   * -------------------------------------------------------- */
+  app.post(
+    "/api/v1/attempts/:id/events",
+    { config: { rateLimit: { max: 60 * app.limitScale, timeWindow: "1 minute" } } },
+    async (req, reply) => {
+      const id = await identityFrom(req, env);
+      const attemptId = (req.params as { id: string }).id;
+      if (!z.string().uuid().safeParse(attemptId).success) {
+        throw errors.notFound("That does not exist, or you cannot see it.");
+      }
+      const body = AttemptEventBody.safeParse(req.body);
+      if (!body.success) throw errors.badRequest("That event could not be read.");
+
+      const attempt = await loadAttempt(app.db, attemptId);
+      // Not found for anyone but the owner, staff included: "forbidden" would
+      // confirm the attempt exists to a student probing for ids.
+      if (!attempt || attempt.userId !== id.userId) {
+        throw errors.notFound("That does not exist, or you cannot see it.");
+      }
+      if (attempt.status !== "in_progress") {
+        throw errors.conflict("That paper is no longer open.");
+      }
+
+      await app.db.query("insert into attempt_events (attempt_id, kind) values ($1, $2)", [
+        attemptId,
+        body.data.kind,
+      ]);
+      return reply.status(201).send({ recorded: true });
     },
   );
 

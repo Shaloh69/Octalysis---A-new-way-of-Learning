@@ -58,6 +58,11 @@ delete from feedback        where user_id::text like 'dddddddd-%';
 delete from submissions    where user_id::text like 'dddddddd-%';
 delete from stage_progress  where user_id::text like 'dddddddd-%';
 delete from level_progress  where user_id::text like 'dddddddd-%';
+-- Leaving a paper is recorded append-only (ruling 3, 30 Sep 2026), and attempts
+-- cascade into it: suspended by name for the demo students' own rows.
+alter table attempt_events disable trigger attempt_events_no_delete;
+delete from attempt_events  where attempt_id in (select id from attempts where user_id::text like 'dddddddd-%');
+alter table attempt_events enable trigger attempt_events_no_delete;
 delete from attempts        where user_id::text like 'dddddddd-%';
 -- audit_log is append-only for every role (schema.sql, 28 Sep 2026). The demo
 -- teacher's own rows must go before auth.users can, so the trigger is

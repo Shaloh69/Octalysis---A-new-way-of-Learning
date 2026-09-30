@@ -463,3 +463,55 @@ end $$;
 --
 -- Nightly cron should insert the full result into audit_runs and alert on any
 -- row with severity='fail' and offending_count > 0.
+
+-- ============================================================
+-- SITTING A PAPER: leaving it is recorded (instructor ruling 3,
+-- 30 Sep 2026; docs/redesign/WEB-REMAKE.md §4a)
+--
+-- Every check and exam starts behind a prompt, runs in full screen, and has
+-- no way back until it is submitted. A browser cannot truly lock full screen
+-- (Esc always works) and an iPhone cannot enter it at all, so what the paper
+-- CAN do is hide the questions the moment the student leaves full screen or
+-- the page, and record that it happened. This is that record.
+--
+-- Written ONLY by the API (service role), for the attempt's owner, while the
+-- attempt is in progress. Append-only like `responses`: a leave cannot be
+-- edited or deleted, for service_role too. Staff read it; students do not
+-- (their own screen already told them).
+-- ============================================================
+create table if not exists attempt_events (
+  id          bigserial primary key,
+  attempt_id  uuid not null references attempts(id) on delete cascade,
+  kind        text not null check (kind in (
+                'left_fullscreen',        -- full screen exited mid-paper
+                'left_page',              -- the tab or app went to the background
+                'returned',               -- back in full screen / on the page
+                'fullscreen_unavailable'  -- the device cannot enter full screen (an iPhone)
+              )),
+  at          timestamptz not null default now()
+);
+create index if not exists attempt_events_attempt on attempt_events (attempt_id, at);
+
+alter table attempt_events enable row level security;
+drop policy if exists ae_staff on attempt_events;
+create policy ae_staff on attempt_events for select to authenticated using (is_staff());
+revoke all on attempt_events from anon, authenticated;
+grant select on attempt_events to authenticated;
+revoke all on sequence attempt_events_id_seq from anon, authenticated;
+
+create or replace function deny_event_mutation() returns trigger
+language plpgsql as $$
+begin
+  raise exception 'attempt_events are append-only'
+    using hint = 'a leave is a fact about the sitting; it is never edited';
+end $$;
+
+drop trigger if exists attempt_events_no_update on attempt_events;
+create trigger attempt_events_no_update before update on attempt_events
+  for each row execute function deny_event_mutation();
+drop trigger if exists attempt_events_no_delete on attempt_events;
+create trigger attempt_events_no_delete before delete on attempt_events
+  for each row execute function deny_event_mutation();
+drop trigger if exists attempt_events_no_truncate on attempt_events;
+create trigger attempt_events_no_truncate before truncate on attempt_events
+  for each statement execute function deny_event_mutation();

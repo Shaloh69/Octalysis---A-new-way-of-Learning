@@ -634,7 +634,10 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
     const attempts = await app.db.query(
       `select a.id, a.attempt_no, a.status, a.score, a.max_score,
               a.started_at, a.submitted_at, a.engine_version,
-              s.title as assessment_title, b.scope
+              s.title as assessment_title, b.scope,
+              -- Times the student left the paper (ruling 3, 30 Sep 2026).
+              (select count(*)::int from attempt_events e
+                where e.attempt_id = a.id and e.kind in ('left_fullscreen', 'left_page')) as leaves
          from attempts a
          join assessments s on s.id = a.assessment_id
          join blueprints  b on b.id = s.blueprint_id
@@ -672,6 +675,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
         engineVersion: a.engine_version,
         assessmentTitle: a.assessment_title,
         scope: a.scope,
+        leaves: Number(a.leaves),
       })),
       progress: progress.rows.map((p) => ({
         stageId: p.stage_id,
@@ -731,6 +735,12 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
     );
     const byOrdinal = new Map(responses.rows.map((r) => [Number(r.ordinal), r]));
 
+    // The sitting (ruling 3, 30 Sep 2026): every leave and return, in order.
+    const events = await app.db.query(
+      "select kind, at from attempt_events where attempt_id = $1 order by at, id",
+      [attemptId],
+    );
+
     return reply.send({
       attemptId,
       status: attempt.status,
@@ -743,6 +753,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
       submittedAt: meta.submitted_at,
       score: meta.score === null ? null : Number(meta.score),
       maxScore: meta.max_score === null ? null : Number(meta.max_score),
+      events: events.rows.map((e) => ({ kind: e.kind as string, at: e.at as string })),
       // Staff see the key. That is the whole point of the drill-down, and
       // `ai_after_submit` grants staff the same read at the database level.
       items: items.map((i) => {

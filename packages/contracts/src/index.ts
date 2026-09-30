@@ -720,3 +720,17 @@ export type LiveStartBody = z.infer<typeof LiveStartBody>;
 /** `POST /console/live/sessions/:id/end`. */
 export const LiveEndBody = z.object({ reason: LiveReason }).strict();
 export type LiveEndBody = z.infer<typeof LiveEndBody>;
+
+/* ---------------------------------------------------------------------------
+ * Sitting a paper (instructor ruling 3, 30 Sep 2026; WEB-REMAKE.md §4a).
+ * What the runner reports when a student leaves the paper, and when they come
+ * back. The server stamps the time; the client never supplies one.
+ * ------------------------------------------------------------------------- */
+export const AttemptEventKind = z.enum(["left_fullscreen", "left_page", "returned", "fullscreen_unavailable"]);
+export type AttemptEventKind = z.infer<typeof AttemptEventKind>;
+
+export const AttemptEventBody = z.object({ kind: AttemptEventKind }).strict();
+export type AttemptEventBody = z.infer<typeof AttemptEventBody>;
+
+/** The kinds that count as leaving the paper, for the console's tally. */
+export const LEAVING_KINDS: readonly AttemptEventKind[] = ["left_fullscreen", "left_page"];
