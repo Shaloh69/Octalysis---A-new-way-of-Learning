@@ -124,12 +124,17 @@ async function startCheck(page: Page): Promise<void> {
    * that was never coming. It failed as "element(s) not found", which reads as
    * a bad selector and is really a race.
    */
+  // Ruling 3 (30 Sep 2026): the reader's link lands on the prompt, and the
+  // paper -- the POST -- exists only after "Start the paper".
+  await start.click();
+  const begin = page.getByRole("button", { name: "Start the paper", exact: true });
+  await begin.waitFor({ timeout: 15_000 });
   const [started] = await Promise.all([
     page.waitForResponse(
       (r) => r.url().includes("/api/v1/attempts") && r.request().method() === "POST",
       { timeout: 20_000 },
     ),
-    start.click(),
+    begin.click(),
   ]);
 
   /*
@@ -322,6 +327,9 @@ test.describe("the attempt runner", () => {
     );
 
     await page.reload({ waitUntil: "networkidle" });
+    // Ruling 3: after a reload the prompt comes first again (full screen needs
+    // a click), and Start RESUMES the same attempt rather than opening another.
+    await page.getByRole("button", { name: "Start the paper", exact: true }).click();
     await expect(page.getByText(/Question \d+ of \d+/i)).toBeVisible({ timeout: 15_000 });
 
     expect(ids.length, "no attempt responses captured").toBeGreaterThan(1);
@@ -409,6 +417,7 @@ test.describe("the attempt runner", () => {
       }
     });
     await page.reload({ waitUntil: "networkidle" });
+    await page.getByRole("button", { name: "Start the paper", exact: true }).click(); // ruling 3
     await expect(page.getByText(/Question \d+ of \d+/i).first()).toBeVisible({ timeout: 15_000 });
 
     expect(starts.length, "no start response captured").toBeGreaterThan(0);

@@ -8,6 +8,8 @@ import {
   type Verdict,
 } from "../lib/api";
 import { useRegister } from "../lib/registers";
+import { enterFullscreen, fullscreenSupported, inFullscreen, leaveFullscreen, setSitting } from "../lib/sitting";
+import type { AttemptEventKind } from "@octa/contracts";
 import { toast } from "../lib/toast";
 import { useDelayed } from "../lib/useDelayed";
 
@@ -37,9 +39,24 @@ import { useDelayed } from "../lib/useDelayed";
  * **INCORRECT IS NEUTRAL.** The words, the key and the why. No red, no
  * buzzer, no shake: a student who is wrong needs to know why, and a colour
  * cannot carry that.
+ *
+ * **START, THEN NO WAY BACK, IN FULL SCREEN** (instructor ruling 3, 30 Sep
+ * 2026; `WEB-REMAKE.md` §4a). Nothing of the paper exists until the student
+ * presses Start on the prompt: not a question, not an attempt. Start asks for
+ * full screen (inside the click, as browsers require) and then opens the
+ * paper. From then until Submit there is no way back: the shell hides Leave
+ * planet and its tabs (`lib/sitting.ts`), Back is held, and a reload asks
+ * first. A browser cannot truly LOCK full screen (Esc always works) and an
+ * iPhone cannot enter it at all, so leaving full screen or the page COVERS the
+ * questions at once and is recorded for the instructor
+ * (`POST /api/v1/attempts/:id/events`); the paper comes back only in full
+ * screen, or on the page where full screen does not exist.
  */
 
-type Phase = "loading" | "error" | "sitting" | "done";
+type Phase = "ready" | "loading" | "error" | "sitting" | "done";
+
+/** Why the questions are hidden: the student left full screen, or the page. */
+type Cover = "fullscreen" | "page" | null;
 
 /** What the student has chosen for a question and not yet recorded. */
 type Draft = { index: number } | { value: string } | { order: string[] };
@@ -104,9 +121,13 @@ function answerText(item: PaperItem, a: StudentAnswer | null): string {
 }
 
 export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props): JSX.Element {
-  const [phase, setPhase] = useState<Phase>("loading");
+  const [phase, setPhase] = useState<Phase>("ready");
   const [startError, setStartError] = useState<string | null>(null);
+  // 0 until the student presses Start: nothing is fetched or shown before it.
   const [tries, setTries] = useState(0);
+  const [refused, setRefused] = useState(false);
+  const [cover, setCover] = useState<Cover>(null);
+  const canFullscreen = useMemo(fullscreenSupported, []);
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [items, setItems] = useState<PaperItem[]>([]);
@@ -131,6 +152,7 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
   /* ---------------------------------------------------------------- start */
 
   useEffect(() => {
+    if (tries === 0) return;
     let live = true;
     setPhase("loading");
     setStartError(null);
@@ -164,6 +186,90 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
       live = false;
     };
   }, [assessmentId, tries]);
+
+  /* -------------------------------------------- the sitting: ruling 3 */
+
+  /** Press Start: full screen first (inside the click), then the paper. */
+  async function begin() {
+    setRefused(false);
+    if (canFullscreen && !inFullscreen()) {
+      const ok = await enterFullscreen();
+      if (!ok) {
+        setRefused(true);
+        return;
+      }
+    }
+    setTries((n) => n + 1);
+  }
+
+  /** Tell the server; best effort, one retry. The questions are covered either way. */
+  const report = useCallback(
+    (kind: AttemptEventKind) => {
+      if (!attemptId) return;
+      void api.attemptEvent(attemptId, kind).catch(() => {
+        window.setTimeout(() => void api.attemptEvent(attemptId, kind).catch(() => {}), 2000);
+      });
+    },
+    [attemptId],
+  );
+
+  const sittingNow = phase === "sitting";
+  useEffect(() => {
+    if (!sittingNow) return;
+    setSitting(true);
+    if (!canFullscreen) report("fullscreen_unavailable");
+
+    // Back is held: every Back lands here again, and says why.
+    const here = window.location.href;
+    window.history.pushState({ sitting: true }, "", here);
+    const onPop = () => {
+      window.history.pushState({ sitting: true }, "", here);
+      toast.error("The paper stays open until you submit it", "Your recorded answers are safe.");
+    };
+    // A reload or a closed tab asks first; the paper resumes behind Start.
+    const onUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    const onFullscreen = () => {
+      if (!inFullscreen()) {
+        setCover((c) => c ?? "fullscreen");
+        report("left_fullscreen");
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        setCover((c) => c ?? "page");
+        report("left_page");
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    window.addEventListener("beforeunload", onUnload);
+    document.addEventListener("fullscreenchange", onFullscreen);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.removeEventListener("beforeunload", onUnload);
+      document.removeEventListener("fullscreenchange", onFullscreen);
+      document.removeEventListener("visibilitychange", onVisibility);
+      setSitting(false);
+    };
+  }, [sittingNow, canFullscreen, report]);
+
+  /** Back to the paper: in full screen where it exists. */
+  async function returnToPaper() {
+    if (canFullscreen && !inFullscreen()) {
+      const ok = await enterFullscreen();
+      if (!ok) return;
+    }
+    setCover(null);
+    report("returned");
+  }
+
+  // Handed in: the sitting is over, and so is full screen.
+  useEffect(() => {
+    if (phase === "done") void leaveFullscreen();
+  }, [phase]);
 
   // The syllabus's own words for each objective, for the result. The stage
   // read is the same one the reader makes; a failure only costs the words.
@@ -310,6 +416,18 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
 
   /* ---------------------------------------------------------------- views */
 
+  if (phase === "ready") {
+    return (
+      <StartPrompt
+        title={title}
+        canFullscreen={canFullscreen}
+        refused={refused}
+        onStart={() => void begin()}
+        onLeave={onLeave}
+      />
+    );
+  }
+
   if (phase === "loading") return <Loading />;
 
   if (phase === "error") {
@@ -323,7 +441,14 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
           <button type="button" className="check-btn check-btn-primary" onClick={() => setTries((n) => n + 1)}>
             Try again
           </button>
-          <button type="button" className="check-btn" onClick={onLeave}>
+          <button
+            type="button"
+            className="check-btn"
+            onClick={() => {
+              void leaveFullscreen();
+              onLeave();
+            }}
+          >
             Back to the stage
           </button>
         </div>
@@ -356,6 +481,30 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
   const saving = pending === item.ordinal;
   const failure = failed[item.ordinal];
   const flagged = flags.includes(item.ordinal);
+
+  // Left full screen, or the page: the questions are not on the screen at all
+  // until the student is back (ruling 3). The leave is already recorded.
+  if (cover) {
+    return (
+      <section className="check check-state check-cover" data-runner="covered" data-paper="" aria-labelledby="check-title">
+        <p className="check-eyebrow">{title}</p>
+        <h1 id="check-title">The paper is hidden</h1>
+        <p role="alert">
+          {cover === "fullscreen"
+            ? "You left full screen. That has been recorded for your instructor."
+            : "You left the page. That has been recorded for your instructor."}
+        </p>
+        <p className="check-quiet">
+          Your recorded answers are safe, and the paper is still open. It comes back when you do.
+        </p>
+        <div className="check-row">
+          <button type="button" className="check-btn check-btn-primary" onClick={() => void returnToPaper()}>
+            {canFullscreen ? "Return to full screen" : "Return to the paper"}
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="check" data-runner="sitting" aria-labelledby="check-title">
@@ -569,10 +718,7 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
               ? "Every question is recorded."
               : `${counts.open} not answered. Unanswered questions score zero.`}
           </p>
-          <button type="button" className="check-btn check-leave" onClick={onLeave}>
-            Leave the paper
-          </button>
-          <p className="check-quiet">It stays open: recorded answers are kept, and Start resumes it.</p>
+          {/* No Leave the paper since ruling 3: once started, Submit is the way out. */}
         </div>
         </div>
       </div>
@@ -596,6 +742,68 @@ export function AttemptRunner({ stageId, assessmentId, title, onLeave }: Props):
 }
 
 /* ================================================================ loading */
+
+/**
+ * The prompt before anything (ruling 3). No question, no attempt, no count:
+ * the paper does not exist until Start. Before Start, going back is allowed;
+ * after it, it is not, and this says so first.
+ */
+function StartPrompt({
+  title,
+  canFullscreen,
+  refused,
+  onStart,
+  onLeave,
+}: {
+  title: string;
+  canFullscreen: boolean;
+  refused: boolean;
+  onStart: () => void;
+  onLeave: () => void;
+}): JSX.Element {
+  const start = useRef<HTMLButtonElement>(null);
+  useEffect(() => start.current?.focus(), []);
+  return (
+    <section className="check check-state check-start" data-runner="ready" data-paper="" aria-labelledby="check-title">
+      <p className="check-eyebrow">Before you start</p>
+      <h1 id="check-title">{title}</h1>
+      <ul className="check-rules">
+        {canFullscreen ? (
+          <li>
+            The paper opens in <strong>full screen</strong> and stays there until you submit it.
+          </li>
+        ) : (
+          <li>
+            This device cannot use full screen, so stay on this page: switching to another app or tab hides the
+            questions.
+          </li>
+        )}
+        <li>
+          Once it starts there is <strong>no way back</strong> to the stage until you submit. Your answers are saved
+          as you record them.
+        </li>
+        <li>
+          {canFullscreen ? "Leaving full screen or this page" : "Leaving this page"} hides the questions until you
+          return, and <strong>each time is recorded for your instructor</strong>.
+        </li>
+        <li>Your first recorded answer to each question is final.</li>
+      </ul>
+      {refused && (
+        <p className="check-refused" role="alert">
+          Full screen was not allowed, so the paper did not start. Allow full screen and press Start again.
+        </p>
+      )}
+      <div className="check-row">
+        <button ref={start} type="button" className="check-btn check-btn-primary" onClick={onStart}>
+          Start the paper
+        </button>
+        <button type="button" className="check-btn" onClick={onLeave}>
+          Back to the stage
+        </button>
+      </div>
+    </section>
+  );
+}
 
 function Loading(): JSX.Element {
   const show = useDelayed(true, 400);

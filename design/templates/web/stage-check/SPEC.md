@@ -24,7 +24,7 @@ key-hint sprite bars; PC is the question number).
 - **The paper is everyone's.** Everything a student reads or answers sits on
   `[data-paper]`, the neutral set in `looks.css`: the head (rule, resume
   notice), the question card, options, ordering rows, the answer box, Record,
-  the verdict, Previous/Next, Submit and Leave the paper, the Submit
+  the verdict, Previous/Next, Submit, the Submit
   confirmation, every state (loading, error, empty) and the result. No sprite,
   no biome colour and **no accent** on it: the paper's own `--lit-*` marks a
   choice and the primary action, so two students comparing screens see the
@@ -44,6 +44,31 @@ key-hint sprite bars; PC is the question number).
 - Everything in `first-pass/SPEC.md`: choose then Record, resume, the neutral
   wrong answer, ordering, free entry, flag, the one confirmation, the result by
   objective, a final withholding verdicts, failures that say so and stay
+
+## Sitting it: start, no way back, full screen (ruling 3, 30 Sep 2026)
+
+`WEB-REMAKE.md` §4a, root hard rule 9. **Supersedes** the first pass's "Leave the
+paper; it stays open and Start resumes it" (29 Sep): there is no Leave the paper.
+
+- **The prompt** (`data-runner="ready"`, on the paper): the title and four rules
+  (full screen until Submit; no way back; leaving is recorded; the first recorded
+  answer is final). Nothing is fetched before **Start the paper**; **Back to the
+  stage** only here. On a device with no full screen, the first rule says so
+- **The sitting**: the shell shows "Paper in progress" where Leave planet was and
+  loses its tabs and L/R/C; Back is held (a toast says why); a reload asks first
+- **The cover** (`data-runner="covered"`): leaving full screen or the page hides
+  the questions and says it was recorded; **Return to full screen** (or **Return to
+  the paper**) brings them back
+- **Submit** ends full screen and the sitting
+
+| Control | Consequence | Legibility | Reversibility | Teaching |
+|---|---|---|---|---|
+| **Start the paper** | Enters full screen, opens (or resumes) the attempt | The four rules above it, in words | No: said first, twice | — |
+| **Back to the stage** (prompt only) | Leaves before anything began | Verb and object | Yes | — |
+| **Return to full screen / to the paper** | Uncovers the questions; records the return | Says what happened and what comes back | — | — |
+
+Captures: `current-start`, `current-sitting`, `current-cover`, each at 1440 and
+`-380` (jungle), all opened.
 
 ## Captures (all opened, 30 Sep 2026, on the build at 5185)
 

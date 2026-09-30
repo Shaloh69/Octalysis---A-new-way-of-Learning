@@ -314,3 +314,30 @@
    shell's own bars, so the scrim dims them too and nothing behind it reads
    as live. */
 .biome-main:has(.check-scrim) { z-index: 30; }
+
+/* ---- the start prompt and the cover (ruling 3, 30 Sep 2026) ---- */
+.check-rules { margin: var(--space-4) 0; padding-left: var(--space-5); display: grid; gap: var(--space-2); max-width: 62ch; }
+.check-rules strong { color: var(--ink); }
+.check-refused {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  max-width: 62ch;
+  color: var(--ink);
+  background: var(--warning-bg);
+  border-left: var(--border-thick) solid var(--warning);
+}
+.check-cover [role="alert"] { font-size: var(--text-lg); }
+
+/* The shell's place for Leave planet, while a paper is sat: words, no link. */
+.biome-sitting {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h-md);
+  padding: 0 var(--space-3);
+  font-family: var(--font-hud);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--sprite-ink);
+}

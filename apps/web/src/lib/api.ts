@@ -1,4 +1,4 @@
-import type { Cosmetics } from "@octa/contracts";
+import type { AttemptEventKind, Cosmetics } from "@octa/contracts";
 
 /**
  * API client.
@@ -235,6 +235,13 @@ export const api = {
     request<{ score: number }>("/api/v1/feedback/sus", {
       method: "POST",
       body: JSON.stringify({ answers }),
+    }),
+
+  /** The student left the paper, or came back (ruling 3). The server stamps the time. */
+  attemptEvent: (attemptId: string, kind: AttemptEventKind) =>
+    request<{ recorded: true }>(`/api/v1/attempts/${attemptId}/events`, {
+      method: "POST",
+      body: JSON.stringify({ kind }),
     }),
 
   submit: (attemptId: string) =>

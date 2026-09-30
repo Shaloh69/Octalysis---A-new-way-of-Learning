@@ -143,6 +143,8 @@ export interface Served {
   submitted: boolean;
   /** How many answer POSTs arrived, repeats and failures included. */
   answerPosts: Array<{ ordinal: number; answer: unknown }>;
+  /** Leaves and returns the runner reported (ruling 3), in order. */
+  events: string[];
 }
 
 /**
@@ -152,7 +154,7 @@ export interface Served {
 export async function servePaper(page: Page, items: ResolvedItem[], opts: PaperOptions = {}): Promise<Served> {
   const scope = opts.scope ?? "stage";
   const reveal = scope !== "final";
-  const served: Served = { bodies: [], responses: new Map(), submitted: false, answerPosts: [] };
+  const served: Served = { bodies: [], responses: new Map(), submitted: false, answerPosts: [], events: [] };
   for (const r of opts.recorded ?? []) {
     const item = items.find((i) => i.ordinal === r.ordinal)!;
     const g = gradeResponse(item, r.answer);
@@ -209,6 +211,11 @@ export async function servePaper(page: Page, items: ResolvedItem[], opts: PaperO
       answer: toStudentAnswer(kept.raw),
       ...toStudentVerdict(item, { isCorrect: kept.isCorrect, points: kept.points }),
     });
+  });
+
+  await page.route(/\/api\/v1\/attempts\/[^/]+\/events$/, async (route) => {
+    served.events.push((route.request().postDataJSON() as { kind: string }).kind);
+    return send(route, 201, { recorded: true });
   });
 
   await page.route(/\/api\/v1\/attempts\/[^/]+\/submit$/, async (route) => {

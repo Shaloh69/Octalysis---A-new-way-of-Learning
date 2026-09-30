@@ -8,6 +8,7 @@ import { SusSurvey } from "../components/SusSurvey";
 import { Readout } from "./Readout";
 import { KeyHintBar } from "./KeyHintBar";
 import { useKeyHints } from "./keyHints";
+import { useSitting } from "../lib/sitting";
 import { NumberedTitle } from "./MissionPanel";
 import { WarpLink } from "./RealmWarp";
 import { useOnline } from "./useOnline";
@@ -60,12 +61,21 @@ export function BiomeShell({ signedIn }: { signedIn: boolean }): JSX.Element {
   const leaveTo = `/app?stage=${encodeURIComponent(id)}`;
   const title = stage ? `Stage ${id} · ${stage.title}` : `Stage ${id}`;
 
-  useKeyHints("shell", [
-    { key: "l", cap: "L", label: "Leave planet", run: () => nav(leaveTo) },
-    { key: "r", cap: "R", label: "Reading", run: () => nav(`/app/stage/${id}`) },
-    ...(check ? [{ key: "c", cap: "C", label: "Check", run: () => nav(check) }] : []),
-    { key: "f", cap: "F", label: "Report a problem", run: () => setReporting(true) },
-  ]);
+  // A paper being sat has no way back (ruling 3, 30 Sep 2026): no Leave
+  // planet, no tabs, no shortcut to either. Report a problem stays: it is a
+  // dialog over the paper, not a way off it.
+  const sitting = useSitting();
+  useKeyHints(
+    "shell",
+    sitting
+      ? [{ key: "f", cap: "F", label: "Report a problem", run: () => setReporting(true) }]
+      : [
+          { key: "l", cap: "L", label: "Leave planet", run: () => nav(leaveTo) },
+          { key: "r", cap: "R", label: "Reading", run: () => nav(`/app/stage/${id}`) },
+          ...(check ? [{ key: "c", cap: "C", label: "Check", run: () => nav(check) }] : []),
+          { key: "f", cap: "F", label: "Report a problem", run: () => setReporting(true) },
+        ],
+  );
 
   const tabs = (
     <ul className="biome-tabs">
@@ -96,17 +106,21 @@ export function BiomeShell({ signedIn }: { signedIn: boolean }): JSX.Element {
         <nav className="biome-nav" aria-label="This planet">
           {/* Named explicitly: at 380 the long label is display:none and the
               short one is aria-hidden, which left the link with no name. */}
-          <WarpLink to={leaveTo} className="sprite-button biome-leave" aria-label="Leave planet">
-            <span className="sprite-arrow sprite-arrow-left" aria-hidden="true" />
-            <span className="biome-leave-long">Leave planet</span>
-            <span className="biome-leave-short" aria-hidden="true">
-              Leave
-            </span>
-          </WarpLink>
+          {sitting ? (
+            <p className="biome-sitting">Paper in progress</p>
+          ) : (
+            <WarpLink to={leaveTo} className="sprite-button biome-leave" aria-label="Leave planet">
+              <span className="sprite-arrow sprite-arrow-left" aria-hidden="true" />
+              <span className="biome-leave-long">Leave planet</span>
+              <span className="biome-leave-short" aria-hidden="true">
+                Leave
+              </span>
+            </WarpLink>
+          )}
           <p className="biome-planet">
             <NumberedTitle text={title} />
           </p>
-          <div className="biome-tabs-top">{tabs}</div>
+          {!sitting && <div className="biome-tabs-top">{tabs}</div>}
           <button type="button" className="sprite-button biome-report" onClick={() => setReporting(true)}>
             Report
           </button>
@@ -126,9 +140,11 @@ export function BiomeShell({ signedIn }: { signedIn: boolean }): JSX.Element {
       <footer className="biome-bottom">
         <Readout dress="sprite" />
         <KeyHintBar dress="sprite" />
-        <nav className="biome-tabs-bottom sprite-bar" aria-label="This planet's pages">
-          {tabs}
-        </nav>
+        {!sitting && (
+          <nav className="biome-tabs-bottom sprite-bar" aria-label="This planet's pages">
+            {tabs}
+          </nav>
+        )}
       </footer>
 
       {reporting && <FeedbackDialog framed="sprite-panel" onClose={() => setReporting(false)} />}

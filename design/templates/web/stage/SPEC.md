@@ -35,7 +35,7 @@ biome shell holds the page (sprite nav bar, the scene, the bottom bars).
 |---|---|---|---|---|
 | A section in the side bar or sheet | scrolls to it, focus follows | its heading's words | scroll | the stage's shape |
 | Resume | back to where this device left off | names the section | scroll | — |
-| Go to the check | opens the runner (starts or reopens an attempt; the card says so first) | yes, with attempts used | Reading tab | — |
+| Go to the check | opens the runner's start prompt; the attempt starts (or resumes) only on its Start, in full screen (ruling 3; the card says so first) | yes, with attempts used | Reading tab | — |
 | Back to the map (the end; the shell's Leave planet at the top) | the map, this planet selected, through the warp | yes | Enter journey | where it sits |
 | Go to Stage NN (locked) | the prerequisite | yes | Back | the chain |
 | Try again (error) | reads again | yes | — | — |

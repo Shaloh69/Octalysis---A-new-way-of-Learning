@@ -73,10 +73,16 @@ async function open(page: Page, opts: PaperOptions = {}): Promise<Served> {
   const look = page.waitForResponse((r) => r.url().includes("/api/v1/cosmetics"), { timeout: 15_000 }).catch(() => null);
   await page.goto(checkUrl(assessment));
   await look;
+  // Ruling 3: nothing of the paper exists until Start.
+  await startPaper(page);
   if (!opts.failStart) {
     await expect(page.locator("main").getByText(/Question \d+ of \d+/).first()).toBeVisible({ timeout: 15_000 });
   }
   return served;
+}
+
+async function startPaper(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Start the paper", exact: true }).click();
 }
 
 const recordButton = (page: Page) => page.getByRole("button", { name: "Record answer", exact: true });
@@ -153,6 +159,125 @@ test.describe("the gate", () => {
     const long = (await recordedMotion(calm)).filter((m) => m.ms > 1);
     expect(long, JSON.stringify(long)).toEqual([]);
     await calm.close();
+  });
+});
+
+/* ============================ start, no way back, full screen (ruling 3) */
+
+test.describe("sitting a paper (instructor ruling 3, 30 Sep 2026)", () => {
+  /** Arrive at the prompt, and stop there. */
+  async function prompt(page: Page, opts: PaperOptions = {}): Promise<Served> {
+    await signIn(page);
+    const served = await servePaper(page, items, opts);
+    await page.goto(checkUrl(assessment));
+    await page.getByRole("button", { name: "Start the paper", exact: true }).waitFor({ timeout: 15_000 });
+    return served;
+  }
+  const fullscreen = (page: Page) => page.evaluate(() => !!document.fullscreenElement);
+  const leavePage = (page: Page) =>
+    page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+      document.dispatchEvent(new Event("visibilitychange"));
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+    });
+
+  test("nothing of the paper exists before Start: no question, no attempt, the rules said first", async ({ page }) => {
+    const served = await prompt(page);
+    await expect(page.locator("main").getByText(/Question \d+ of/)).toHaveCount(0);
+    expect(served.bodies.filter((b) => /\/attempts$/.test(b.url)), "the paper was fetched before Start").toEqual([]);
+    const rules = page.locator("[data-runner=ready]");
+    await expect(rules).toContainText(/full screen/i);
+    await expect(rules).toContainText(/no way back/i);
+    await expect(rules).toContainText(/recorded for your instructor/i);
+    await expect(page.getByRole("button", { name: "Start the paper", exact: true })).toBeFocused();
+  });
+
+  test("the prompt and the cover pass the gate: nothing clipped, AA, tokens", async ({ page }) => {
+    await prompt(page);
+    expect(await clippedElements(page, ROUTE), "prompt clipped").toEqual([]);
+    expect(await contrastFailures(page, ROUTE), "prompt contrast").toEqual([]);
+    expect(await offTokenStyles(page, ROUTE), "prompt tokens").toEqual([]);
+    await page.getByRole("button", { name: "Start the paper", exact: true }).click();
+    await expect(page.locator("main").getByText(/Question \d+ of/).first()).toBeVisible({ timeout: 15_000 });
+    await leavePage(page);
+    await expect(page.locator("[data-runner=covered]")).toBeVisible();
+    expect(await clippedElements(page, ROUTE), "cover clipped").toEqual([]);
+    expect(await contrastFailures(page, ROUTE), "cover contrast").toEqual([]);
+    expect(await offTokenStyles(page, ROUTE), "cover tokens").toEqual([]);
+  });
+
+  test("Start enters full screen, and the shell loses every way back", async ({ page }) => {
+    await prompt(page);
+    await page.getByRole("button", { name: "Start the paper", exact: true }).click();
+    await expect(page.locator("main").getByText(/Question \d+ of/).first()).toBeVisible({ timeout: 15_000 });
+    expect(await fullscreen(page), "Start did not enter full screen").toBe(true);
+    await expect(page.getByRole("link", { name: "Leave planet" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Reading" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /leave the paper/i })).toHaveCount(0);
+    await expect(page.locator("html")).toHaveAttribute("data-sitting", "");
+    const url = page.url();
+    await page.locator("body").press("l");
+    await page.locator("body").press("r");
+    await page.waitForTimeout(300);
+    expect(page.url(), "a shortcut left the paper").toBe(url);
+  });
+
+  test("Back does not leave the paper, and says why", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    await open(page);
+    const url = page.url();
+    await page.goBack();
+    await page.waitForTimeout(400);
+    expect(page.url()).toBe(url);
+    await expect(page.locator("main").getByText(/Question \d+ of/).first()).toBeVisible();
+    await expect(page.locator("[data-toaster] [role=alert]")).toContainText(/stays open until you submit/i);
+  });
+
+  test("leaving full screen hides the questions and is recorded; returning brings them back", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    const served = await open(page);
+    const stem = q(1).stem.slice(0, 25);
+    await expect(page.locator("main")).toContainText(stem);
+    await page.evaluate(() => document.exitFullscreen());
+    await expect(page.locator("[data-runner=covered]")).toBeVisible();
+    await expect(page.locator("main"), "the question is still on the screen").not.toContainText(stem);
+    await expect.poll(() => served.events).toContain("left_fullscreen");
+    await page.getByRole("button", { name: "Return to full screen" }).click();
+    await expect(page.locator("main")).toContainText(stem);
+    expect(await fullscreen(page)).toBe(true);
+    await expect.poll(() => served.events).toContain("returned");
+  });
+
+  test("leaving the page (another tab or app) hides the questions and is recorded", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    const served = await open(page);
+    await leavePage(page);
+    await expect(page.locator("[data-runner=covered]")).toContainText(/left the page/i);
+    await expect.poll(() => served.events).toContain("left_page");
+  });
+
+  test("a device with no full screen (an iPhone) may sit it, is told so, and it is recorded", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    await page.addInitScript(() => Object.defineProperty(Document.prototype, "fullscreenEnabled", { get: () => false }));
+    const served = await prompt(page);
+    await expect(page.locator("[data-runner=ready]")).toContainText(/cannot use full screen/i);
+    await page.getByRole("button", { name: "Start the paper", exact: true }).click();
+    await expect(page.locator("main").getByText(/Question \d+ of/).first()).toBeVisible({ timeout: 15_000 });
+    await expect.poll(() => served.events).toContain("fullscreen_unavailable");
+    await leavePage(page);
+    await page.getByRole("button", { name: "Return to the paper" }).click();
+    await expect(page.locator("main").getByText(/Question \d+ of/).first()).toBeVisible();
+  });
+
+  test("after Submit the sitting is over: full screen ends and the way back returns", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    await open(page, { recorded: TWO_RECORDED() });
+    await page.getByRole("button", { name: "Submit paper", exact: true }).click();
+    await page.getByRole("button", { name: "Submit now", exact: true }).click();
+    await expect(page.locator("[data-score]")).toBeVisible();
+    await expect.poll(() => fullscreen(page)).toBe(false);
+    await expect(page.getByRole("link", { name: "Leave planet" })).toHaveCount(1);
+    expect(await page.locator("html").getAttribute("data-sitting")).toBeNull();
   });
 });
 
@@ -379,6 +504,7 @@ test.describe("when things fail", () => {
     await signIn(page);
     await servePaper(page, items, { startDelayMs: 4_500 });
     await page.goto(checkUrl(assessment));
+    await startPaper(page);
     await page.waitForTimeout(150);
     await expect(page.locator("[data-skeleton]"), "a skeleton flashed under 400ms").toHaveCount(0);
     await expect(page.locator("[data-skeleton]")).toBeVisible({ timeout: 2_000 });

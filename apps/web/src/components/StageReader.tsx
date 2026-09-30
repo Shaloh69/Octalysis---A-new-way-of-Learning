@@ -474,8 +474,8 @@ function SideContents({
 
 /**
  * The stage check, at the END of the reading: a student who has read this far
- * has met the material. It states its cost before it is pressed, because the
- * runner starts an attempt on arrival (or reopens the one left open).
+ * has met the material. It states its cost before it is pressed. The runner
+ * shows its start prompt first (ruling 3); Start begins or resumes the attempt.
  */
 function CheckCard({
   assessment,
@@ -499,8 +499,8 @@ function CheckCard({
         <Words text={assessment.title} />
       </h2>
       <p>
-        Your questions are generated for you: the numbers differ from everyone else&apos;s. Going to it starts an
-        attempt, or reopens one you left open.
+        Your questions are generated for you: the numbers differ from everyone else&apos;s. Going to it shows the
+        rules first; the attempt starts only when you press Start, in full screen, with no way back until you submit.
       </p>
       <p className="rd-check-count">
         <span className="mono">

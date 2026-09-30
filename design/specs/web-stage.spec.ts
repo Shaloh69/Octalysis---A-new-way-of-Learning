@@ -250,7 +250,7 @@ test.describe("leaving, and what finishes a stage", () => {
     const go = page.getByRole("button", { name: "Go to Stage 07 Check", exact: true });
     await expect(go).toBeEnabled();
     const card = page.locator("[data-check]");
-    await expect(card).toContainText(/starts an attempt, or reopens one you left open/);
+    await expect(card).toContainText(/rules first; the attempt starts only when you press Start, in full screen, with no way back/);
     await expect(card.locator(".mono", { hasText: /^0 of 5$/ })).toBeVisible();
     test.skip(!wide(info), "navigation, one width");
     await go.click();
