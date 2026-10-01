@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import type { ResolvedItem } from "../../services/api/src/engine/resolve.ts";
-import { clippedElements, contrastFailures, horizontalOverflow, offTokenStyles, unreachableByKeyboard } from "./_gate.ts";
+import { clippedElements, contrastFailures, horizontalOverflow, offTokenStyles, outOfPanel, unreachableByKeyboard } from "./_gate.ts";
 import { forcePlanetBiome } from "./_realm-fixture.ts";
 import { journeyUrl, realMoonPaper, servePaper, signIn } from "./_stage-check-fixture.ts";
 
@@ -60,25 +60,6 @@ async function open(page: Page, opts: { moon?: string; canvas?: "block" } = {}):
 const readout = (page: Page, k: string) => page.locator(`[data-readout="${k}"]`);
 const btn = (page: Page, name: string | RegExp) => page.locator(ENC).getByRole("button", { name });
 
-/**
- * What the viewport check cannot see: a child wider than its own panel, which
- * stays on screen and so is never "clipped". Found by eye in the first 1440
- * capture (the wiring table ran past its frame), asserted from then on.
- */
-async function outOfPanel(page: Page): Promise<string[]> {
-  return page.locator(`${ENC} .bench-panel`).evaluateAll((panels) =>
-    panels.flatMap((panel) => {
-      const box = panel.getBoundingClientRect();
-      return [...panel.querySelectorAll("*")]
-        .filter((el) => {
-          const r = el.getBoundingClientRect();
-          return r.width > 0 && (r.right > box.right + 0.5 || r.left < box.left - 0.5);
-        })
-        .map((el) => `<${el.tagName.toLowerCase()}> "${(el.textContent ?? "").trim().slice(0, 30)}" leaves its panel`);
-    }),
-  );
-}
-
 async function wireAll(page: Page): Promise<void> {
   await btn(page, "Wire every module").click();
 }
@@ -99,7 +80,7 @@ test.describe("the gate", () => {
     await everyoneAsks(page);
     await stepOnce(page);
     expect(await clippedElements(page, ENC), "contended").toEqual([]);
-    expect(await outOfPanel(page), "contended, inside the panels").toEqual([]);
+    expect(await outOfPanel(page, `${ENC} .bench-panel`), "contended, inside the panels").toEqual([]);
     await page.locator(ENC).getByRole("checkbox", { name: /arbitration/ }).uncheck();
     await stepOnce(page);
     expect(await clippedElements(page, ENC), "garbled").toEqual([]);
@@ -362,7 +343,7 @@ test.describe("the book's bus, on a bench", () => {
 
 test.describe("captures", () => {
   test.skip(!process.env.OCTA_CAPTURE, "set OCTA_CAPTURE=1 to write current*.png");
-  test.use({ reducedMotion: "reduce" });
+  test.use({ contextOptions: { reducedMotion: "reduce" } });
 
   test("unwired, contended, garbled, fallback and the page", async ({ browser }, info) => {
     test.setTimeout(120_000);

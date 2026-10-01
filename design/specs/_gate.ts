@@ -127,6 +127,27 @@ export async function clippedElements(page: Page, scope = SURFACES): Promise<str
 /* ------------------------------------------------------------------ 2 */
 
 /** `body.scrollWidth <= clientWidth`, measured on the document. */
+/**
+ * What `clippedElements` cannot see: a child wider than its own panel while it
+ * stays on screen, so it is never "clipped". Found by eye on 1 Oct 2026 (the
+ * Bus Contention wiring table ran past its frame at 1440 and every assertion
+ * passed). Checks every descendant of each `panels` match against that
+ * panel's own left and right edges. Opt-in per spec: pass the route's panels.
+ */
+export async function outOfPanel(page: Page, panels: string): Promise<string[]> {
+  return page.locator(panels).evaluateAll((els) =>
+    els.flatMap((panel) => {
+      const box = panel.getBoundingClientRect();
+      return [...panel.querySelectorAll("*")]
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && (r.right > box.right + 0.5 || r.left < box.left - 0.5);
+        })
+        .map((el) => `<${el.tagName.toLowerCase()}> "${(el.textContent ?? "").trim().slice(0, 30)}" leaves its panel`);
+    }),
+  );
+}
+
 export async function horizontalOverflow(page: Page): Promise<number> {
   return page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

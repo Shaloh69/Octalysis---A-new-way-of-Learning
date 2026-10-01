@@ -508,6 +508,13 @@ wherever it's triggered, not as a per-route task:
         is covered is `openWithWarp`, the single handler both surfaces now call.
 - [ ] Both captured as short frame sequences per `REDESIGN-CLAUDE.md` §2, not
       single stills
+- [ ] **The warp lasts longer** (instructor, 2 Oct 2026): long enough to read
+      as travel, still a cut under reduced motion, still switching at the peak
+- [ ] **An arrival screen for every planet and moon, after the warp**
+      (instructor, 2 Oct 2026): what you are entering ("a blue gas giant") and
+      facts about that body, unique per planet; every fact sourced
+      (`docs/source/solar-system-brief.md`, the instructor's own text, or the
+      planet's own data), never invented (hard rule 5); through the page gate
 - [x] Both verified frozen-to-static under `prefers-reduced-motion`
       · **Arrival: DONE**, asserted through `getAnimations()` rather than by
         screenshotting twice — a slow animation and a stopped one look identical
@@ -597,7 +604,7 @@ that claims completion, not scheduled work. Worth raising on its own.
 | Route | What is missing |
 |---|---|
 | `/console` overview | The whole page. `/` is a `<Navigate>`, so there is no dashboard at all |
-| `/console/roster` | The whole page. CSV import with a **dry-run preview modal** — `PAGE-SPECS.md` §3 calls this out specifically |
+| `/console/roster` | **Built, as `/students`' Import roster dialog** (checked 1 Oct 2026: `apps/console/src/pages/students/ImportDialog.tsx`, two steps, the server's dry run shown line by line before anything is written). `/console/roster` IS `/students` (root `CLAUDE.md`); moves out of the backlog |
 | `/console/analytics` | The whole page. The cohort mastery heatmap, which `CONSOLE-DATA-AND-TEMPLATES.md` §1 calls "the single highest-value chart on the whole console" |
 | `/console/items/:id/edit` | The whole page, including the mandatory confirm dialog whose copy is specified word-for-word |
 | `/console/live/present` | **Built 29 Sep 2026 as `/live/present`**, its own route outside the shell's nav (`design/templates/console/live/SPEC.md`). **No names, ever** |
@@ -622,19 +629,41 @@ have no home in the plan:
 thesis deliverable, and right now no phase is accountable for it.
 
 ## Definition of done
-- [ ] **Every BUILT route checked** — 3 public + the catch-all, 7 student, 14
+- [x] **Every BUILT route checked** — 3 public + the catch-all, 7 student, 14
       console — each with a template screenshot and an implementation
       screenshot on file. **Not 44**; see the scope ruling at the top
-- [ ] §R3.6's backlog is current: anything built during R3 moves out of it,
+      **Closed 2 Oct 2026, counted from the folders:** 17 console and 15 web
+      folders under `design/templates/`, each with `template*.png`,
+      `current*.png`, `SOURCE.md`, `SPEC.md` and `motion.md` (`web/app` gained
+      its `SOURCE.md`, pointing at `_direction/SOURCE.md`, the same day);
+      `r3-inventory.spec.ts` runs every built route at both widths
+- [x] §R3.6's backlog is current: anything built during R3 moves out of it,
       anything newly discovered as missing moves into it
+      **Closed 2 Oct 2026**, every row checked against both apps' route tables:
+      `/console/roster` moved out (built as `/students`' Import roster with the
+      server's dry run); `/console/live/present` already marked built; every
+      other row is still absent from the code. Built during R3/R4 and never in
+      it: `/app/stage/:id/moon/:objectiveId` (the moon journey)
 - [ ] Both loading screens (R3.4) built and verified
-- [ ] Console pages built per `CONSOLE-DATA-AND-TEMPLATES.md`'s merges, not
+- [x] Console pages built per `CONSOLE-DATA-AND-TEMPLATES.md`'s merges, not
       just the shadcn-admin default
-- [ ] All five approved minigames (R3.2b) built and confirmed non-blocking,
+      **Closed 2 Oct 2026 for every BUILT page it names:** `/items` (shadcn-admin
+      Tasks density), `/students/:id` (TanStack's expanding rows), `/audit`
+      (dense table plus a timeline view), `/gradebook` (the default, as the doc
+      says), each recorded in its `SOURCE.md`/`SPEC.md`. The overview and
+      `/console/analytics` are not built; they are in R3.6's backlog, analytics
+      deliberately (`apps/console/CLAUDE.md`)
+- [x] All five approved minigames (R3.2b) built and confirmed non-blocking,
       **or** explicitly deferred with the reason recorded. Deferral is the
       expected outcome for all five while chapters 08–18 are scaffolds — that
       is a real answer, not a slip, and it is not a reversal of R0.1b's approval
-- [ ] `design/templates/` fully populated and committed
+      **Closed 2 Oct 2026:** all five carry a DEFERRED line with its reason
+      (8 Sep 2026: their chapters are scaffolds, hard rule 5), which this box
+      names as the expected outcome. The Descent moved to the Midterm
+      (instructor, 30 Sep)
+- [x] `design/templates/` fully populated and committed
+      **Closed 2 Oct 2026:** see "Every BUILT route checked" above; every folder
+      complete and committed
 - [x] **Console revamp** (`CONSOLE-REVAMP.md`) — every console route has
       `template.png` + `SOURCE.md` + `SPEC.md` captured and VERIFIED BY OPENING
       IT, and its `design/specs/console-<route>.spec.ts` green on all six
@@ -937,12 +966,16 @@ thesis deliverable, and right now no phase is accountable for it.
         ticked in the same commit: seventeen template folders, each with
         `template*.png`, `SOURCE.md`, `SPEC.md`, `motion.md`, `current.png`
         and `current-380.png`, counted on 29 Sep 2026
-- [ ] **Student app REMAKE** (`WEB-REMAKE.md`, instructor ruling 30 Sep 2026) —
+- [x] **Student app REMAKE** (`WEB-REMAKE.md`, instructor ruling 30 Sep 2026) —
       `apps/web` remade as a game: a sci-fi HUD in the star system, the
       planet's biome (nav included) inside a planet or moon, a transition every
       time between them, a new nav, every route rebuilt from
       `design/templates/web/_direction/`. Replaces the revamp below, whose three
       finished routes are kept as history and remade
+      **Closed 2 Oct 2026:** every one of `WEB-REMAKE.md` §8's eleven pieces has
+      its child box ticked below with its commit and spec, and the full design
+      suite ran green against builds on 1 Oct (1339 passed, 175 skipped, 0
+      failed). The parent had been left open after its last child landed
 
       One box per route, in `WEB-REVAMP.md` §6 order, ticked in the commit that
       turns that route's `design/specs/web-<route>.spec.ts` green. Added 29 Sep
@@ -1090,17 +1123,39 @@ thesis deliverable, and right now no phase is accountable for it.
         `attempt-events.spec.ts` 12 passed, its denial tests watched failing
         first; `web-stage-check.spec.ts` "sitting a paper"; hard rule 1 re-run
         against the real API on a LOCAL live slice
-- [ ] **Toasts, loading states and transitions** on every revamped route per
+- [x] **Toasts, loading states and transitions** on every revamped route per
       `.claude/rules/design.md` — no toast library is installed in either app
       today, exactly one route in `apps/web` has a loading state, and the
       reverse travel transition leaving a stage does not exist
-- [ ] **Shared icon** — `packages/tokens/icon.svg` wired into both apps and
+      **Closed 2 Oct 2026, the three absences it names, each resolved:** toasts
+      in both apps with no library (console `components/ui/toast.tsx`, web
+      `lib/toast.ts` + `Toaster.tsx`, asserted e.g. `web-work.spec.ts` "Save
+      draft confirms with one toast"); loading on every fetching route
+      (delayed skeletons, words after 3s, an error with a retry: `StageReader`,
+      `AttemptRunner` (the check and the moon journey), `ProgressPage`, `/work`,
+      `/stages`; asserted `arrival.spec.ts`, `web-work.spec.ts` "loading");
+      the reverse transition leaving a planet is `RealmWarp` "out", asserted in
+      `web-shell.spec.ts` and `web-stage.spec.ts`, none under reduced motion.
+      Each route's `motion.md` records its reduced-motion path
+- [x] **Shared icon** — `packages/tokens/icon.svg` wired into both apps and
       verified rendering at 96/48/32/16 on light and dark chrome
-- [ ] **Map sidebar and ENTER JOURNEY** (`WEB-REVAMP.md` §3) — selecting a
+      **Closed 2 Oct 2026:** `design/specs/icon.spec.ts` — both built
+      `index.html` link `/icon.svg`, both apps serve the token package's file
+      byte for byte, it parses as XML, and at 96/48/32/16 on dark and light
+      chrome it decodes and draws, the lit body included at 16.
+      `design/templates/icon-preview.png` regenerated with both rows and
+      opened (the old one was cut off after the light row's first icon)
+- [x] **Map sidebar and ENTER JOURNEY** (`WEB-REVAMP.md` §3) — selecting a
       planet opens a sidebar explaining it, with the lock reason printed in words
       from the API and ENTER JOURNEY disabled when locked; selecting a moon zooms
       and updates the sidebar; **the sidebar wears the planet's biome, the map canvas never does**;
       the flat map opens the same sidebar in place
+      **Closed 2 Oct 2026** (`web-app.spec.ts`): the panel explains the planet;
+      a locked planet prints the server's reason verbatim beside a padlock with
+      no Enter; a moon updates the panel in place and its Enter goes to its
+      journey. **Two clauses superseded by ruling 2 (30 Sep):** the sidebar
+      wears the star HUD, not the planet's biome (the biome dresses everything
+      after Enter, as R4.6 records), and the flat map no longer exists
 - [ ] **Planet summaries approved** — all 19 drafted 25 Sep 2026 in
       `content/stages/NN.md`; since 28 Sep each is approved on `/content`,
       bound to its text (`WEB-REVAMP.md` §3.8). 0 of 19 approved: the
@@ -1110,14 +1165,33 @@ thesis deliverable, and right now no phase is accountable for it.
       the `/content` revamp: `stage_summaries` (staff-only), approval by the
       draft's hash, send back with a reason, audit rows, and a trigger that
       refuses an unapproved `stages.summary` for every role
-- [ ] **Planet selection and zoom** (`WEB-REVAMP.md` §3) — select by click AND
+- [x] **Planet selection and zoom** (`WEB-REVAMP.md` §3) — select by click AND
       keyboard, camera easing with nodes pinned and no force simulation, Escape
       returns focus to the selected planet, flat map carries the same selection
       in place
-- [ ] **Orbital motion follows Kepler's third law** (`WEB-REVAMP.md` §4) —
+      **Closed 2 Oct 2026** (`web-app.spec.ts`): select by pointer and by the
+      row's keyboard (arrows step), Escape closes and focus returns to the
+      planet just left, the camera eases (`StarMapScene` `Rig`, an exponential
+      approach; cut under reduced motion, asserted pixel-still); positions come
+      from the deterministic layout, no force-simulation dependency exists.
+      The flat-map clause is superseded by ruling 2 (the flat map is removed)
+- [x] **Orbital motion follows Kepler's third law** (`WEB-REVAMP.md` §4) —
       `ω ∝ a^-1.5`, circular orbits kept so radius still means level, phase
       seeded not random, frozen under `QA_MODE`, stopped under
       `prefers-reduced-motion`, with a unit test asserting the ratio across all
       seven rings
+      **Closed 2 Oct 2026:** `layout-solar.spec.ts` "Kepler's third law on the
+      layout's own seven rings": T² ∝ a³ and ω ∝ a^-1.5 for every pair of the
+      seeded rings, inner laps outer, every planet on its level's ring;
+      watched failing with the exponent at 1.4. Phase is the server-seeded
+      `rotationOffset` (`/api/v1/cosmetics`), never `Math.random`. Stopped under
+      reduced motion (`web-app.spec.ts`, pixel-still with a moon open, and the
+      positive control). **`QA_MODE`: superseded, instructor 1 Oct 2026** —
+      nothing in apps/web reads it; every capture freezes the map through
+      emulated `prefers-reduced-motion`, the students' own freeze path, so
+      there is one freeze, and it is the asserted one.
+      **Note:** on 1 Oct the instructor ruled gentle ellipses, one planet per
+      orbit with a level as a band, and a frost line; this box is closed for
+      the circular system it describes, and the rework is tracked in R4.7
 - [ ] `docs/PROGRESS.md` reflects real progress through this phase — given
       the size, update it after every batch of routes, not just at the end

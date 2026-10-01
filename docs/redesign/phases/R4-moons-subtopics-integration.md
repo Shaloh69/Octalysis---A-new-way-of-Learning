@@ -211,3 +211,35 @@ supersede the R4.2 box above that says no new gating logic is built.**
       `planetBiomes`) and dresses everything after Enter journey, the moon's
       journey included, which is where it belongs
 
+## R4.7 — A realistic system (instructor rulings, 1 Oct 2026)
+
+The instructor asked for a realistic solar system (host star, elliptical
+orbits, one dominant planet per orbit, moons within the Hill sphere and
+outside the Roche limit, a frost line, belts, centaurs, comets, the
+interplanetary medium). Three parts collided with rulings already built, and
+were decided 1 Oct 2026: **gentle ellipses** (the level is the orbit a planet
+follows, not its distance at an instant); **a level becomes a band** of
+single-planet orbits; **the frost line decides a globe's look** (the biome
+still dresses the planet's pages). Everything here is cosmetic over the same
+data: no lock, mastery or moon count moves (SOLAR-SYSTEM-SPEC §3).
+The instructor's text is kept as a source: `docs/source/solar-system-brief.md`.
+
+- [ ] **Gentle ellipses**, low eccentricity, Kepler's second law (faster at
+      perihelion, slower at aphelion), no orbit leaving its level's band;
+      unit-tested (equal areas in equal times, perihelion faster than
+      aphelion, every point of every orbit inside its band); still under
+      reduced motion
+- [ ] **One planet per orbit; a level is a labelled band** of neighbouring
+      orbits, so distance still reads as level; stage 01 stays its spoke
+- [ ] **The frost line**, drawn; globes rocky inside it, gas and ice giants
+      outside, still seeded per student
+- [ ] **Moons inside their planet's Hill sphere and outside its Roche limit**,
+      and rings inside the Roche limit; unit-tested
+- [ ] **The populations**: an inner asteroid belt, centaurs among the giants,
+      a Kuiper belt and an Oort cloud of comets (a coma and a tail near the
+      star), dust and the solar wind. `aria-hidden`, unselectable, seeded,
+      still under reduced motion, never mistaken for a planet or a moon, and
+      inside the map chunk's budget on a phone
+- [ ] **Through `/app`'s page gate**: template captured, SPEC and motion
+      updated, `web-app.spec.ts` green at 1440 and 380, captures opened
+

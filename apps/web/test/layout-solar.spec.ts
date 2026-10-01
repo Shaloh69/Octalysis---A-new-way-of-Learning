@@ -12,6 +12,7 @@ import {
   type StageInput,
   type ObjectiveInput,
 } from "../src/solar-system/layout";
+import { angularSpeed, periodSeconds } from "../src/solar-system/orbit";
 
 /**
  * INV-32 and INV-33, restated for the solar system: the map may not invent a
@@ -510,5 +511,47 @@ describe("level naming", () => {
     expect(LEVELS.at(-1)).toBe(6);
     expect(LEVEL_NAMES[0]).toBe("Digital Logic");
     expect(LEVEL_NAMES[6]).toBe("User");
+  });
+});
+
+/* ------------------------------------------- Kepler on the real seven rings */
+
+/**
+ * R3's box (WEB-REVAMP §4): "a unit test asserting the ratio across all seven
+ * rings". `orbit.spec.ts` proves the law on hand-picked radii; this proves it
+ * on the rings the map actually draws, from the seeded stages and the authored
+ * objectives, with `outer` taken exactly as `StarMapScene` takes it.
+ */
+describe("Kepler's third law on the layout's own seven rings", () => {
+  const rings = LAYOUT.ringRadii;
+  const outer = Math.max(...rings);
+
+  it("there are seven rings, L0 innermost, strictly widening", () => {
+    expect(rings).toHaveLength(7);
+    for (let i = 1; i < rings.length; i++) expect(rings[i]!).toBeGreaterThan(rings[i - 1]!);
+  });
+
+  it("T² ∝ a³ and ω ∝ a^-1.5 for every pair of rings", () => {
+    for (let i = 0; i < rings.length; i++) {
+      for (let j = 0; j < rings.length; j++) {
+        const a = rings[i]!;
+        const b = rings[j]!;
+        expect((periodSeconds(a, outer) / periodSeconds(b, outer)) ** 2).toBeCloseTo((a / b) ** 3, 8);
+        expect(angularSpeed(a, outer) / angularSpeed(b, outer)).toBeCloseTo((b / a) ** 1.5, 8);
+      }
+    }
+  });
+
+  it("inner rings turn faster: L0 laps L6", () => {
+    for (let i = 1; i < rings.length; i++) {
+      expect(angularSpeed(rings[i - 1]!, outer)).toBeGreaterThan(angularSpeed(rings[i]!, outer));
+    }
+  });
+
+  it("orbits stay circular: every planet's radius is its level's ring, so radius still means level", () => {
+    for (const p of planets().filter((b) => !b.spansAllLevels)) {
+      expect(Number.isInteger(p.ring), p.id).toBe(true);
+      expect(p.radius, p.id).toBeCloseTo(rings[p.ring]!, 8);
+    }
   });
 });
