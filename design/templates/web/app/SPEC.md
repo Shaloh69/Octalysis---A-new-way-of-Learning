@@ -150,3 +150,49 @@ textured moons), `current-textures-moons02` (a locked planet dimmed, its
 moons), `current-textures-planet09` (close to the sun: the corona fades with
 no rim); each at 1440 and `-380`. All 17 textures answered 200.
 `web-app.spec.ts` green after the change: 44 passed, 8 skipped by design.
+
+## R4.7: a realistic system (instructor rulings, 1 Oct 2026)
+
+The instructor's brief (`docs/source/solar-system-brief.md`) and three rulings
+on the parts that collided with the map's: **gentle ellipses** (the level is
+the orbit, not the distance at an instant), **a level is a band** of
+single-planet orbits, **the frost line decides a globe's look**. Templates:
+`template-inner.png` (the asteroid belt), `template-outer.png` (Kuiper belt,
+Oort cloud); `SOURCE.md`. All of it is cosmetic over the same data: no lock,
+mastery or moon count moves, and the accessible row is unchanged.
+
+- **Orbits**: every planet its own ellipse, the sun at a focus, `e` 0 to 0.12
+  from its stage id (the same for every student), moving by Kepler's three
+  laws (`solar-system/kepler.ts`: equal areas, faster at perihelion; tested).
+  Each starts at its curriculum angle, so the map still opens in curriculum
+  order. Orbit lines are the ellipses themselves.
+- **Bands**: each level a faint band as wide as its planets need (2.2 units
+  each); no planet's ellipse leaves its band or reaches its neighbour's
+  (`layout-solar.spec.ts`). The system is about 1.8x wider; planets and moon
+  systems grow with it (`TUNED_OUTER`), and the camera fits a chosen planet's
+  whole moon system.
+- **The frost line**: dashed, in the gap between L2 and L3; rocky worlds
+  inside, gas and ice giants beyond (`world.ts`), the spoke (01) the home world.
+- **Moons and rings**: the map is not to scale, as no orrery is. A real mass
+  model (the star over 99% of every system's mass), real Hill radii, and every
+  moon system drawn the same 200x larger; in that frame every moon orbits
+  outside its planet's Roche limit (2.44 radii) and inside its Hill sphere, and
+  a ring lies inside the Roche limit (`satellites.ts`, tested over the seeded
+  layout and five student seeds).
+- **The leftovers** (`populations.ts`, `map/Leftovers.tsx`): the asteroid
+  belt in the frost gap, dust in the inner system, centaurs crossing at least
+  two giants' orbits, the Kuiper belt beyond the last band, the Oort cloud as a
+  sphere, three comets whose coma and tail grow only inside 1.3x the frost
+  line, and the solar wind streaming outward. Seeded per student, never
+  random; unpickable; lighter on a phone (the belt keeps 80%).
+
+Captures (2 Oct 2026, build at 5185, reduced motion; all opened):
+`current-realism` (the whole system: bands, ellipses, the frost line and the
+belt beside it, comets near the sun, the Kuiper belt), `current-realism-chosen`
+(stage 06, a giant, with its ten moons framed); each at 1440 and `-380`.
+Reproduce: `OCTA_CAPTURE=1`, `web-app.spec.ts` "captures, R4.7".
+
+**Found by looking:** the first build's belt was sub-pixel at overview
+distance (it now reads as the ring the template shows), and the chosen
+planet's moons fell off-screen (moons now begin outside the Roche limit, so
+the camera fits the planet's moon system instead of a fixed distance).

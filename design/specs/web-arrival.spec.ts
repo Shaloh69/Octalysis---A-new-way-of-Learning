@@ -127,15 +127,22 @@ test.describe("the gate", () => {
 test.describe("what it owes", () => {
   test("the warp is longer now: 1.1s, from the token", async ({ page }) => {
     await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), TOKEN);
+    // Recorded as it mounts: a 1.1s warp can come and go between two polls on a loaded machine.
     await page.addInitScript(() => {
+      const w = window as unknown as { __warps: Array<{ dir: string; dur: string }> };
+      w.__warps = [];
       new MutationObserver(() => {
-        const w = document.querySelector(".realm-warp") as HTMLElement | null;
-        if (w && !w.dataset.measured) w.dataset.measured = getComputedStyle(w).animationDuration;
+        const el = document.querySelector(".realm-warp") as (HTMLElement & { seen?: boolean }) | null;
+        if (!el || el.seen) return;
+        el.seen = true;
+        w.__warps.push({ dir: el.dataset.warp ?? "", dur: getComputedStyle(el).animationDuration });
       }).observe(document, { subtree: true, childList: true });
     });
     await page.goto("/app?stage=06", { waitUntil: "domcontentloaded" });
     await page.locator(".starmap-body").getByRole("link", { name: "Enter journey" }).click();
-    await expect(page.locator(".realm-warp")).toHaveAttribute("data-measured", "1.1s");
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __warps: Array<{ dir: string; dur: string }> }).__warps))
+      .toEqual([{ dir: "in", dur: "1.1s" }]);
   });
 
   test("it names the world, draws its texture, and every fact is the brief's words or the planet's own data", async ({ page }) => {

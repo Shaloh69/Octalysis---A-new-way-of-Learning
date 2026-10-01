@@ -13,6 +13,9 @@ import {
   type ObjectiveInput,
 } from "../src/solar-system/layout";
 import { angularSpeed, periodSeconds } from "../src/solar-system/orbit";
+import { skinFor } from "../src/solar-system/bodies";
+import { planetSkinKey } from "../src/solar-system/world";
+import { hillRadius, MASS_RATIO, moonOrbit, planetSize, ringSpan, rocheLimit } from "../src/solar-system/satellites";
 
 /**
  * INV-32 and INV-33, restated for the solar system: the map may not invent a
@@ -247,15 +250,10 @@ describe("F-2 — ring radii are spaced by occupancy", () => {
     );
   });
 
-  it("spaces rings on a GROWING curve, not uniform steps", () => {
-    // §1.1: each ring out gets proportionally more room than the one inside
-    // it, which is what gives the system a sense of scale. Compare the
-    // outermost gap against the innermost.
-    const r = LAYOUT.ringRadii;
-    const innerGap = r[1]! - r[0]!;
-    const outerGap = r[6]! - r[5]!;
-    expect(outerGap, "outer rings must be further apart than inner ones")
-      .toBeGreaterThan(innerGap);
+  it("gives a crowded level a wider band than an empty one (R4.7: a level is a band)", () => {
+    const width = (l: number) => LAYOUT.bands[l]!.outer - LAYOUT.bands[l]!.inner;
+    expect(width(1), "L1, seven planets").toBeGreaterThan(width(4));
+    expect(width(1)).toBeGreaterThan(width(0));
   });
 
   it("gives the tightest ring more room than even spacing would", () => {
@@ -548,10 +546,107 @@ describe("Kepler's third law on the layout's own seven rings", () => {
     }
   });
 
-  it("orbits stay circular: every planet's radius is its level's ring, so radius still means level", () => {
-    for (const p of planets().filter((b) => !b.spansAllLevels)) {
-      expect(Number.isInteger(p.ring), p.id).toBe(true);
-      expect(p.radius, p.id).toBeCloseTo(rings[p.ring]!, 8);
+  it("every planet's orbit sits in its own level's band, so distance still reads as level (R4.7)", () => {
+    for (const p of planets()) {
+      const band = LAYOUT.bands[Math.round(p.ring)]!;
+      expect(p.radius, p.id).toBeGreaterThan(band.inner);
+      expect(p.radius, p.id).toBeLessThan(band.outer);
+    }
+  });
+});
+
+/* -------------------------------------------- R4.7: a realistic system */
+
+describe("R4.7 — one planet per orbit, gentle ellipses, the frost line (instructor, 1 Oct 2026)", () => {
+  const ps = () => planets().sort((a, b) => a.radius - b.radius);
+
+  it("the bands are in level order and never overlap", () => {
+    for (let l = 1; l < 7; l++) expect(LAYOUT.bands[l]!.inner).toBeGreaterThan(LAYOUT.bands[l - 1]!.outer);
+  });
+
+  it("one planet per orbit: no two share a semi-major axis", () => {
+    const axes = ps().map((p) => p.radius.toFixed(6));
+    expect(new Set(axes).size).toBe(axes.length);
+  });
+
+  it("gentle ellipses: e between 0 and 0.12, and most planets visibly not circles", () => {
+    for (const p of ps()) {
+      expect(p.e!, p.id).toBeGreaterThanOrEqual(0);
+      expect(p.e!, p.id).toBeLessThanOrEqual(0.12);
+    }
+    expect(ps().filter((p) => p.e! >= 0.03).length).toBeGreaterThan(ps().length / 2);
+  });
+
+  it("no orbit reaches its neighbour's: every ellipse stays inside its band, and their distance ranges never overlap", () => {
+    const list = ps();
+    list.forEach((p, i) => {
+      const band = LAYOUT.bands[Math.round(p.ring)]!;
+      const lo = p.radius * (1 - p.e!);
+      const hi = p.radius * (1 + p.e!);
+      expect(lo, p.id).toBeGreaterThanOrEqual(band.inner);
+      expect(hi, p.id).toBeLessThanOrEqual(band.outer);
+      const next = list[i + 1];
+      if (next) expect(hi, `${p.id} vs ${next.id}`).toBeLessThan(next.radius * (1 - next.e!));
+    });
+  });
+
+  it("the frost line sits in the gap between L2 and L3: inner bands inside it, outer bands beyond", () => {
+    expect(LAYOUT.frost.inner).toBe(LAYOUT.bands[2]!.outer);
+    expect(LAYOUT.frost.outer).toBe(LAYOUT.bands[3]!.inner);
+    for (const p of ps()) {
+      if (Math.round(p.ring) <= 2) expect(p.radius * (1 + p.e!), p.id).toBeLessThan(LAYOUT.frost.radius);
+      else expect(p.radius * (1 - p.e!), p.id).toBeGreaterThan(LAYOUT.frost.radius);
+    }
+  });
+
+  it("the Kuiper belt lies beyond the last band, and the Oort cloud beyond that", () => {
+    expect(LAYOUT.kuiper.inner).toBeGreaterThan(LAYOUT.bands[6]!.outer);
+    expect(LAYOUT.oort).toBeGreaterThan(LAYOUT.kuiper.outer);
+  });
+
+  it("at t = 0 each planet is at its curriculum angle, on its ellipse", () => {
+    for (const p of ps()) {
+      const d = Math.atan2(p.z, p.x) - p.angle;
+      expect(Math.abs(Math.atan2(Math.sin(d), Math.cos(d))), p.id).toBeLessThan(1e-9);
+      const r = Math.hypot(p.x, p.z);
+      expect(r, p.id).toBeGreaterThanOrEqual(p.radius * (1 - p.e!) - 1e-9);
+      expect(r, p.id).toBeLessThanOrEqual(p.radius * (1 + p.e!) + 1e-9);
+    }
+  });
+});
+
+describe("R4.7 — moons inside the Hill sphere, outside the Roche limit; rings inside it; a star of over 99%", () => {
+  const SCALE = Math.max(...LAYOUT.ringRadii) / 35;
+  const seeds = [0, 0.37, 1.234, 5.5, 9.81];
+  const moonCount = (id: string) => OBJECTIVES.filter((o) => o.stageId === id).length;
+
+  it("every moon of every planet orbits between its Roche limit and its Hill radius, for every student's worlds", () => {
+    for (const seed of seeds) {
+      for (const p of planets()) {
+        const kind = skinFor(planetSkinKey(p.id, p.ring, !!p.spansAllLevels, seed)).kind;
+        const n = moonCount(p.id);
+        const size = planetSize(n, kind, SCALE);
+        const hill = hillRadius(p.radius, p.e!, kind);
+        for (let i = 0; i < n; i++) {
+          const r = moonOrbit(size, i, SCALE);
+          expect(r, `${p.id}.${i + 1} outside Roche`).toBeGreaterThan(rocheLimit(size));
+          expect(r, `${p.id}.${i + 1} inside Hill (${hill.toFixed(2)})`).toBeLessThan(hill);
+        }
+      }
+    }
+  });
+
+  it("a ring lies inside its planet's Roche limit", () => {
+    for (const size of [0.5, 1, 1.7]) expect(ringSpan(size)[1]).toBeLessThan(rocheLimit(size));
+  });
+
+  it("the star holds over 99% of the system's mass, for every student's worlds", () => {
+    for (const seed of seeds) {
+      const planetsMass = planets().reduce(
+        (sum, p) => sum + MASS_RATIO[skinFor(planetSkinKey(p.id, p.ring, !!p.spansAllLevels, seed)).kind],
+        0,
+      );
+      expect(1 / (1 + planetsMass), `seed ${seed}`).toBeGreaterThan(0.99);
     }
   });
 });

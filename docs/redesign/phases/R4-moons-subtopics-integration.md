@@ -224,22 +224,46 @@ still dresses the planet's pages). Everything here is cosmetic over the same
 data: no lock, mastery or moon count moves (SOLAR-SYSTEM-SPEC §3).
 The instructor's text is kept as a source: `docs/source/solar-system-brief.md`.
 
-- [ ] **Gentle ellipses**, low eccentricity, Kepler's second law (faster at
+- [x] **Gentle ellipses**, low eccentricity, Kepler's second law (faster at
       perihelion, slower at aphelion), no orbit leaving its level's band;
       unit-tested (equal areas in equal times, perihelion faster than
       aphelion, every point of every orbit inside its band); still under
       reduced motion
-- [ ] **One planet per orbit; a level is a labelled band** of neighbouring
+      **2 Oct 2026:** `solar-system/kepler.ts` (`kepler.spec.ts`: Kepler's
+      equation, perihelion/aphelion, equal areas, the speed ratio (1+e)/(1-e),
+      T² ∝ a³, the start angle; watched failing with the star off-focus);
+      `layout-solar.spec.ts` R4.7 (e ≤ 0.12, inside its band). Still under
+      reduced motion (`web-app.spec.ts` R4.3, pixel-still)
+- [x] **One planet per orbit; a level is a labelled band** of neighbouring
       orbits, so distance still reads as level; stage 01 stays its spoke
-- [ ] **The frost line**, drawn; globes rocky inside it, gas and ice giants
+      **2 Oct 2026:** bands sized by their planets, one semi-major axis each,
+      no two ellipses' distance ranges overlapping (`layout-solar.spec.ts`).
+      **Shaded, not labelled in the canvas:** the level is named in words in
+      the planet panel (LEVELS) and on the arrival screen; a canvas label
+      would be a second copy no screen reader can read
+- [x] **The frost line**, drawn; globes rocky inside it, gas and ice giants
       outside, still seeded per student
-- [ ] **Moons inside their planet's Hill sphere and outside its Roche limit**,
+      **2 Oct 2026:** dashed, in the gap between L2 and L3 (`layout.frost`);
+      `world.ts` picks the globe (`world.spec.ts`, every seed)
+- [x] **Moons inside their planet's Hill sphere and outside its Roche limit**,
       and rings inside the Roche limit; unit-tested
-- [ ] **The populations**: an inner asteroid belt, centaurs among the giants,
+      **2 Oct 2026:** `satellites.ts`, a real mass model and Hill radius, one
+      200x magnification for every moon system (the map is not to scale);
+      `layout-solar.spec.ts` checks every moon of every planet over five
+      student seeds, rings inside Roche, the star over 99%; watched failing
+      at 60x
+- [x] **The populations**: an inner asteroid belt, centaurs among the giants,
       a Kuiper belt and an Oort cloud of comets (a coma and a tail near the
       star), dust and the solar wind. `aria-hidden`, unselectable, seeded,
       still under reduced motion, never mistaken for a planet or a moon, and
       inside the map chunk's budget on a phone
-- [ ] **Through `/app`'s page gate**: template captured, SPEC and motion
+      **2 Oct 2026:** `populations.ts` (`populations.spec.ts`, 9 tests,
+      watched failing first) and `map/Leftovers.tsx`, all `raycast`-empty,
+      on the scene's one clock; the map chunk grew 1.3 KB gz
+- [x] **Through `/app`'s page gate**: template captured, SPEC and motion
       updated, `web-app.spec.ts` green at 1440 and 380, captures opened
+      **2 Oct 2026:** `template-inner.png`, `template-outer.png` (NASA-derived,
+      public domain), SPEC/SOURCE/motion updated, `web-app.spec.ts` 50 passed
+      at 1440 and 380 (10 one-width skips), captures `current-realism*`
+      opened
 

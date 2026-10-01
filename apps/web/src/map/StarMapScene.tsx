@@ -15,10 +15,24 @@ import {
   TextureLoader,
   Vector3,
 } from "three";
-import { allTextureFiles, KIND_SCALE, moonSkin, skinFor, SUN_MAP, type BodySkin } from "../solar-system/bodies";
+import { allTextureFiles, moonSkin, skinFor, SUN_MAP, type BodySkin } from "../solar-system/bodies";
+import { ellipsePoints, orbitThrough, positionAt } from "../solar-system/kepler";
+import { populations } from "../solar-system/populations";
+import { moonOrbit, planetSize, ringSpan, rocheLimit } from "../solar-system/satellites";
+import { Leftovers } from "./Leftovers";
 import { planetSkinKey } from "../solar-system/world";
 import type { SolarLayout } from "../solar-system/layout";
 import { orbitAngle } from "../solar-system/orbit";
+
+/** The map was tuned with its outermost ring at 35 units; R4.7's bands make it larger, and planets and moon systems grow with it. */
+const TUNED_OUTER = 35;
+
+/** How far a planet's own system reaches from its centre: its outermost moon's orbit, or the planet itself. */
+function systemReach(pl: ScenePlanet, rotation: number, scale: number): number {
+  const kind = skinFor(planetSkinKey(pl.id, pl.ring, pl.spoke, rotation)).kind;
+  const size = planetSize(pl.moons.length, kind, scale);
+  return pl.moons.length ? moonOrbit(size, pl.moons.length - 1, scale) + 0.3 * scale : size * 2.6;
+}
 
 /**
  * The 3D map's scene (WEB-REMAKE.md §0.3-§0.5): Starfield's system map.
@@ -167,11 +181,8 @@ function Scene(p: SceneProps): JSX.Element {
     [],
   );
   const outer = Math.max(...p.layout.ringRadii);
-  const radii = useMemo(() => {
-    const set = new Set<number>();
-    for (const pl of p.planets) set.add(p.layout.bodies.get(pl.id)?.radius ?? 0);
-    return [...set].filter((r) => r > 0);
-  }, [p.layout, p.planets]);
+  const scale = outer / TUNED_OUTER;
+  const pops = useMemo(() => populations(p.layout, p.rotation, p.lowQuality), [p.layout, p.rotation, p.lowQuality]);
 
   // One clock for every body; frozen at 0 under reduced motion.
   const clock = useRef(0);
@@ -187,15 +198,23 @@ function Scene(p: SceneProps): JSX.Element {
       <pointLight position={[0, 0, 0]} intensity={2.4} decay={0} color={colors.sun} />
       <Stars color={colors.star} count={p.lowQuality ? 600 : 1500} />
       <Sun colors={colors} surface={textures.get(SUN_MAP)} reduced={p.reduced} />
-      {radii.map((r) => (
-        <OrbitRing key={r} radius={r} color={colors.line} />
+      {/* R4.7: each level a faint band, one planet per orbit inside it; the frost line between L2 and L3. */}
+      {p.layout.bands.map((b) => (
+        <LevelBand key={b.level} inner={b.inner} outer={b.outer} color={colors.line} />
       ))}
+      <FrostLine radius={p.layout.frost.radius} color={colors.glow} />
+      {p.planets.map((pl) => {
+        const b = p.layout.bodies.get(pl.id);
+        return b ? <OrbitEllipse key={`orbit-${pl.id}`} a={b.radius} e={b.e ?? 0} omega={(b.omega ?? 0) + p.rotation} color={colors.line} /> : null;
+      })}
+      <Leftovers pops={pops} layout={p.layout} outer={outer} rotation={p.rotation} clock={clock} colors={colors} />
       {p.planets.map((pl) => (
         <Planet
           key={pl.id}
           planet={pl}
           layout={p.layout}
           outer={outer}
+          scale={scale}
           rotation={p.rotation}
           clock={clock}
           positions={positions}
@@ -242,23 +261,55 @@ function Stars({ color, count }: { color: Color; count: number }): JSX.Element {
   );
 }
 
-function OrbitRing({ radius, color }: { radius: number; color: Color }): JSX.Element {
+/** A planet's own orbit: an ellipse with the sun at a focus (R4.7). */
+function OrbitEllipse({ a, e, omega, color }: { a: number; e: number; omega: number; color: Color }): JSX.Element {
   const arr = useMemo(() => {
-    const n = 160;
+    const pts = ellipsePoints({ a, e, omega }, 160);
+    const out = new Float32Array(pts.length * 3);
+    pts.forEach((pt, i) => {
+      out[i * 3] = pt.x;
+      out[i * 3 + 2] = pt.y;
+    });
+    return out;
+  }, [a, e, omega]);
+  return (
+    <lineLoop raycast={() => null}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[arr, 3]} />
+      </bufferGeometry>
+      <lineBasicMaterial color={color} transparent opacity={0.4} />
+    </lineLoop>
+  );
+}
+
+/** A level's band (R4.7: a level is a band of orbits, so distance still reads as level). */
+function LevelBand({ inner, outer, color }: { inner: number; outer: number; color: Color }): JSX.Element {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+      <ringGeometry args={[inner, outer, 128, 1]} />
+      <meshBasicMaterial color={color} transparent opacity={0.05} side={DoubleSide} depthWrite={false} />
+    </mesh>
+  );
+}
+
+/** The frost line: rocky worlds inside it, gas and ice giants beyond (R4.7). Dashed: a boundary, not an orbit. */
+function FrostLine({ radius, color }: { radius: number; color: Color }): JSX.Element {
+  const arr = useMemo(() => {
+    const n = 220;
     const out = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      out[i * 3] = Math.cos(a) * radius;
-      out[i * 3 + 2] = Math.sin(a) * radius;
+      const t = (i / n) * Math.PI * 2;
+      out[i * 3] = Math.cos(t) * radius;
+      out[i * 3 + 2] = Math.sin(t) * radius;
     }
     return out;
   }, [radius]);
   return (
-    <lineLoop>
+    <lineLoop raycast={() => null} onUpdate={(l) => l.computeLineDistances()}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[arr, 3]} />
       </bufferGeometry>
-      <lineBasicMaterial color={color} transparent opacity={0.45} />
+      <lineDashedMaterial color={color} dashSize={0.6} gapSize={0.5} transparent opacity={0.55} />
     </lineLoop>
   );
 }
@@ -387,7 +438,7 @@ function Globe({
   }, [surface]);
   const clouds = skin.clouds ? textures.get(skin.clouds) : undefined;
   const ringTex = skin.ring ? textures.get(skin.ring) : undefined;
-  const ringGeo = useMemo(() => (skin.ring ? radialRing(size * 1.35, size * 2.3) : null), [skin.ring, size]);
+  const ringGeo = useMemo(() => (skin.ring ? radialRing(...ringSpan(size)) : null), [skin.ring, size]);
 
   useFrame((_, dt) => {
     if (reduced) return;
@@ -442,6 +493,8 @@ interface PlanetProps {
   planet: ScenePlanet;
   layout: SolarLayout;
   outer: number;
+  /** outer / TUNED_OUTER: planets and moon systems grow with the system (R4.7). */
+  scale: number;
   rotation: number;
   clock: MutableRefObject<number>;
   positions: MutableRefObject<Map<string, Vector3>>;
@@ -462,12 +515,7 @@ interface PlanetProps {
  * chosen: the outermost moon goes round in a minute.
  */
 const LOCAL_CLOCK = 10;
-const MOON_GAP = 0.26;
 
-/** A planet's moon orbit radii: distinct, so each moves at its own Kepler speed. */
-function moonRadius(size: number, i: number): number {
-  return size + 1.25 + i * MOON_GAP;
-}
 
 function Planet(p: PlanetProps): JSX.Element | null {
   const body = p.layout.bodies.get(p.planet.id);
@@ -482,19 +530,28 @@ function Planet(p: PlanetProps): JSX.Element | null {
     [p.planet.id, p.planet.ring, p.planet.spoke, p.rotation],
   );
   // Size still grows with the planet's moons; its kind makes a gas giant read as one.
-  const size = (0.62 + Math.min(p.planet.moons.length || 5, 12) * 0.035) * KIND_SCALE[skin.kind];
+  // Moons orbit outside its Roche limit and inside its Hill sphere (satellites.ts, tested).
+  const size = planetSize(p.planet.moons.length, skin.kind, p.scale);
   const moonMeshes = useRef<Array<Group | null>>([]);
-  const outerMoon = moonRadius(size, Math.max(0, p.planet.moons.length - 1));
+  const outerMoon = moonOrbit(size, Math.max(0, p.planet.moons.length - 1), p.scale);
   const belt = useMemo(
-    () => (p.planet.asteroids ? asteroidBelt(p.rotation, size) : []),
-    [p.planet.asteroids, p.rotation, size],
+    () => (p.planet.asteroids ? asteroidBelt(p.rotation, size, p.scale) : []),
+    [p.planet.asteroids, p.rotation, size, p.scale],
+  );
+  // Its own ellipse, the sun at a focus, starting where the curriculum put it (R4.7, kepler.ts).
+  const orbit = useMemo(
+    () =>
+      body
+        ? orbitThrough({ a: body.radius, e: body.e ?? 0, omega: (body.omega ?? 0) + p.rotation, theta0: body.angle + p.rotation, outerA: p.outer })
+        : null,
+    [body, p.rotation, p.outer],
   );
   const rocks = useRef<Array<Group | null>>([]);
 
   useFrame((_, dt) => {
-    if (!body || !group.current) return;
-    const a = orbitAngle(body.angle + p.rotation, body.radius, p.outer, p.clock.current);
-    group.current.position.set(Math.cos(a) * body.radius, 0, Math.sin(a) * body.radius);
+    if (!body || !orbit || !group.current) return;
+    const at = positionAt(orbit, p.clock.current);
+    group.current.position.set(at.x, 0, at.y);
     const v = p.positions.current.get(p.planet.id) ?? new Vector3();
     v.copy(group.current.position);
     p.positions.current.set(p.planet.id, v);
@@ -507,7 +564,7 @@ function Planet(p: PlanetProps): JSX.Element | null {
     p.planet.moons.forEach((m, i) => {
       const g = moonMeshes.current[i];
       if (!g || !group.current) return;
-      const r = moonRadius(size, i);
+      const r = moonOrbit(size, i, p.scale);
       const a = orbitAngle((i / Math.max(1, p.planet.moons.length)) * Math.PI * 2, r, outerMoon, t);
       g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
       const w = p.positions.current.get(`moon:${m.id}`) ?? new Vector3();
@@ -588,7 +645,7 @@ function Planet(p: PlanetProps): JSX.Element | null {
                   <Globe
                     skin={moonSkin(m.id, p.rotation)}
                     textures={p.textures}
-                    size={0.16}
+                    size={0.16 * p.scale}
                     segments={20}
                     fallback={glow === "dim" ? p.colors.locked : tint}
                     dim={glow === "dim" ? p.colors.locked : null}
@@ -597,24 +654,24 @@ function Planet(p: PlanetProps): JSX.Element | null {
                     onClick={pick}
                   />
                   <mesh onClick={pick} visible={false}>
-                    <sphereGeometry args={[0.42, 8, 8]} />
+                    <sphereGeometry args={[0.42 * p.scale, 8, 8]} />
                     <meshBasicMaterial />
                   </mesh>
                   {glow === "full" && (
                     <>
                       <mesh>
-                        <sphereGeometry args={[0.3, 16, 16]} />
+                        <sphereGeometry args={[0.3 * p.scale, 16, 16]} />
                         <meshBasicMaterial color={tint} transparent opacity={0.22} blending={AdditiveBlending} depthWrite={false} />
                       </mesh>
                       <mesh rotation={[Math.PI / 2, 0, 0]}>
-                        <torusGeometry args={[0.27, 0.025, 6, 28]} />
+                        <torusGeometry args={[0.27 * p.scale, 0.025 * p.scale, 6, 28]} />
                         <meshBasicMaterial color={p.colors.corner} />
                       </mesh>
                     </>
                   )}
                   {isSel && (
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
-                      <torusGeometry args={[0.42, 0.035, 6, 32]} />
+                      <torusGeometry args={[0.42 * p.scale, 0.035 * p.scale, 6, 32]} />
                       <meshBasicMaterial color={p.colors.corner} />
                     </mesh>
                   )}
@@ -651,15 +708,17 @@ function Planet(p: PlanetProps): JSX.Element | null {
 function asteroidBelt(
   rotation: number,
   size: number,
+  scale: number,
 ): Array<{ r: number; a0: number; y: number; s: number; squash: number; tilt: number }> {
   let s = Math.floor(Math.abs(rotation) * 1e6) >>> 0 || 7;
   const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 0xffffffff);
   const n = 9 + Math.floor(rand() * 5);
   return Array.from({ length: n }, () => ({
-    r: size + 1.1 + rand() * 1.1,
+    // Outside the Roche limit, like a moon: inside it, debris is a ring.
+    r: rocheLimit(size) * 1.05 + rand() * 1.1 * scale,
     a0: rand() * Math.PI * 2,
     y: (rand() - 0.5) * 0.18,
-    s: 0.05 + rand() * 0.07,
+    s: (0.05 + rand() * 0.07) * scale,
     squash: 0.55 + rand() * 0.5,
     tilt: rand() * Math.PI,
   }));
@@ -695,8 +754,14 @@ function Rig(p: SceneProps & { outer: number; positions: MutableRefObject<Map<st
     const moonPos = p.selectedMoon ? p.positions.current.get(`moon:${p.selectedMoon}`) : undefined;
     const selPos = moonPos ?? planetPos;
     const wantTarget = selPos ?? tmp.set(0, 0, 0);
-    const near = moonPos ? 7 : 16;
-    const wantDist = selPos ? Math.min(fit, near * Math.max(1, (0.55 * H) / Math.max(1, fr.h))) : fit;
+    // A chosen planet's whole moon system fits the free area (R4.7: moons now
+    // begin outside the Roche limit, so systems are wider than the old fixed 16).
+    const scale = p.outer / TUNED_OUTER;
+    const chosen = p.selected ? p.planets.find((pl) => pl.id === p.selected) : undefined;
+    const reach = chosen ? systemReach(chosen, p.rotation, scale) : 0;
+    const planetNear = (reach * 1.15) / (tan * (Math.max(1, Math.min(fr.w, fr.h)) / H));
+    const near = moonPos ? 7 * scale : planetNear;
+    const wantDist = selPos ? Math.min(fit, moonPos ? near * Math.max(1, (0.55 * H) / Math.max(1, fr.h)) : near) : fit;
     const k = p.reduced ? 1 : 1 - Math.exp(-dt * 6);
     target.current.lerp(wantTarget, k);
     dist.current = dist.current === null ? wantDist : dist.current + (wantDist - dist.current) * k;

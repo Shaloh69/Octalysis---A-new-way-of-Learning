@@ -582,6 +582,10 @@ Non-negotiable consequences:
   `dist/index.html` names neither Phaser chunk; `web-encounter-bus.spec.ts`
   asserts it on every run.
 
+  **2 Oct 2026: 109.6 KB gzipped.** The arrival screen and `world.ts` (its
+  facts, quoted from the instructor's brief) ship with the biome shell, +3.6
+  KB; the map chunk is 224.8 KB with R4.7's ellipses and populations (+1.3).
+
 ### 10.3 Not everything should be a Phaser game — re-derived for the real curriculum
 
 A canvas game is the wrong tool when the interaction is fundamentally form-like,

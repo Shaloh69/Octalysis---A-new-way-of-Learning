@@ -21,3 +21,13 @@
 Idle cost: `requestAnimationFrame` stops with a hidden tab. The frame-rate
 guard drops to device-pixel-ratio 1 and 600 stars after 3 seconds under
 30fps (the first 4s are not judged), remembered for seven days.
+
+## R4.7 (2 Oct 2026)
+
+Planets move on ellipses by Kepler's laws: visibly a little faster near
+perihelion. The asteroid belt, dust and Kuiper belt turn at their own Kepler
+rates; centaurs and comets ride their ellipses (a comet's clock runs 40x, so
+one is seen falling in and out); the solar wind streams outward. **All of it
+runs on the scene's one clock, which `prefers-reduced-motion` holds at 0**:
+asserted pixel-still with a moon open (`web-app.spec.ts`, R4.3), after the
+frame-rate guard's one-off quality switch.

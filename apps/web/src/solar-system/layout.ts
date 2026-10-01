@@ -29,6 +29,9 @@
  * test. Read them before changing a constant.
  */
 
+import { seededHash } from "./bodies";
+import { stageRing } from "./ring";
+
 /* ------------------------------------------------------------------ types */
 
 export interface StageInput {
@@ -76,6 +79,22 @@ export interface Body {
    * a spoke crossing every ring rather than a point on one. See F-4.
    */
   readonly spansAllLevels?: boolean;
+  /**
+   * Planets only (R4.7, instructor 1 Oct 2026): the orbit is an ellipse with
+   * the sun at a focus. `radius` is its semi-major axis, `e` its eccentricity
+   * (gentle, and never reaching a neighbouring orbit), `omega` the direction
+   * of perihelion. Curriculum data, never the student's seed: every student's
+   * orbits are the same shape.
+   */
+  readonly e?: number;
+  readonly omega?: number;
+}
+
+/** A level's band: one planet per orbit inside it, so distance still reads as level. */
+export interface Band {
+  readonly level: number;
+  readonly inner: number;
+  readonly outer: number;
 }
 
 export interface SolarLayout {
@@ -84,6 +103,13 @@ export interface SolarLayout {
   readonly ringRadii: readonly number[];
   /** Bodies sitting on each ring, indexed by level. Drives ring stroke weight. */
   readonly ringOccupancy: readonly number[];
+  /** Each level's band, L0 innermost. `ringRadii[L]` is its centre. */
+  readonly bands: readonly Band[];
+  /** The frost line: the gap between L2 and L3, rocky inside, giants beyond (world.ts). */
+  readonly frost: { readonly inner: number; readonly outer: number; readonly radius: number };
+  /** Where the system's leftovers sit (cosmetic, R4.7): the asteroid belt fills the frost gap. */
+  readonly kuiper: { readonly inner: number; readonly outer: number };
+  readonly oort: number;
 }
 
 /* -------------------------------------------------------------- constants */
@@ -104,33 +130,12 @@ export const LEVEL_NAMES: Record<number, string> = {
 /** Clearance around the sun, so the innermost ring is not drawn through it. */
 const INNER_RADIUS = 4;
 
-/** Every ring gets at least this much step, so an empty ring is still visible. */
-const MIN_STEP = 0.8;
-
-/**
- * How much extra radius the busiest ring earns over an empty one (F-2).
- *
- * Tuned, not arbitrary: the tightest ring's arc-length-per-body improves
- * measurably against even spacing, which `layout-solar.spec.ts` asserts as a
- * property rather than pinning these numbers. Raise it and crowded rings spread
- * further; the monotonicity and student-independence tests must both still pass.
+/*
+ * The spacing constants that were here (MIN_STEP, STEP_SPREAD, STEP_GROWTH)
+ * drew circular rings spaced by occupancy (F-2). R4.7 replaced them with bands
+ * sized by their planets (ORBIT_GAP, below); the F-2 property survives as
+ * "a crowded level gets a wider band", tested in layout-solar.spec.ts.
  */
-const STEP_SPREAD = 3.2;
-
-/**
- * How much more room each ring gets than the one inside it.
- *
- * Ring spacing GROWS outward rather than stepping uniformly (§1.1). The gap
- * between L5 and L6 is visibly larger than the gap between L0 and L1, which is
- * what gives the system a sense of scale — a uniform widening just makes a
- * bigger flat disc, and real orbital systems do not step evenly either.
- *
- * Still a fixed, deterministic function of LEVEL. It is not a function of time,
- * completion order, or progress, and §1.1 explicitly forbids making it one:
- * radius carries the Computer Level Hierarchy, and a time-varying value inside
- * that axis would replace a fact with an effect that merely resembles it.
- */
-const STEP_GROWTH = 1.32;
 
 /**
  * The sweep, in radians. ~300°, deliberately NOT a full turn (F-3).
@@ -158,6 +163,26 @@ const MOON_ORBIT = 1.15;
 /** Moons past this many per ring start a second, slightly wider ring. */
 const MOONS_PER_LOCAL_RING = 8;
 
+/**
+ * R4.7, ONE PLANET PER ORBIT, A LEVEL IS A BAND (instructor, 1 Oct 2026).
+ * Each level's band is as wide as its planets need (ORBIT_GAP each, never less
+ * than MIN_BAND), so a crowded level still gets more room (F-2) and radius is
+ * still strictly increasing in level. The gap at the frost line is wide enough
+ * to hold the asteroid belt.
+ */
+const ORBIT_GAP = 2.2;
+const MIN_BAND = 2.4;
+const BAND_GAP = 1.2;
+const FROST_GAP = 6;
+/** Gentle: no orbit is more eccentric than this, and none reaches a neighbour's. */
+const E_MIN = 0.03;
+const E_MAX = 0.12;
+
+/** A number in [0, 1) from a stage id: curriculum data, the same for every student. */
+function unit(id: string, salt: string): number {
+  return seededHash(`${salt}:${id}`) / 0x100000000;
+}
+
 /* ---------------------------------------------------------------- helpers */
 
 /**
@@ -177,58 +202,8 @@ const MOONS_PER_LOCAL_RING = 8;
  * visible to the next reader instead of hiding inside an expression.
  */
 function ringForStage(stage: StageInput, moons: readonly ObjectiveInput[]): number {
-  if (moons.length === 0) {
-    // No objectives authored for this stage. See F-1.
-    return Math.min(...stage.levels);
-  }
-  return moons.reduce((sum, m) => sum + m.level, 0) / moons.length;
-}
-
-/**
- * Ring radii, spaced by how loaded each ring is (F-2).
- *
- * Even steps were the original rule and they fail the thing they were meant to
- * fix. Measured against the real seed: L1 carries 7 of 19 planets and 43 of 110
- * moons -- 39% of every body in the system -- on the second-smallest
- * circumference, while L4 and L5 carry nothing at all. Even spacing gives the
- * most crowded ring one of the least room.
- *
- * So each ring's radial STEP grows with its own load, which pushes a crowded
- * ring (and everything outside it) outward and buys it circumference.
- *
- * Two properties this may never break, both tested:
- *   - radius is strictly increasing in level. L0 is always innermost. That is
- *     the semantic claim the whole map rests on.
- *   - radius is identical for every student. Occupancy comes from curriculum
- *     data, never from the per-student cosmetic seed.
- *
- * `DESIGN-MANDATE-V2.md` §1B states the principle this obeys: which ring a body
- * sits on is data and is never adjusted; how far apart the rings are drawn is a
- * rendering constant. Ordering is data, spacing is typography.
- */
-function computeRingRadii(occupancy: readonly number[]): number[] {
-  const busiest = Math.max(...occupancy, 1);
-  const radii: number[] = [];
-  let r = INNER_RADIUS;
-  for (const level of LEVELS) {
-    // Two independent contributions, both positive, so the result is strictly
-    // increasing by construction: occupancy (F-2) widens crowded rings, and
-    // growth widens every ring relative to the one inside it.
-    const load = MIN_STEP + STEP_SPREAD * ((occupancy[level] ?? 0) / busiest);
-    r += load * Math.pow(STEP_GROWTH, level);
-    radii[level] = r;
-  }
-  return radii;
-}
-
-/** Radius for a possibly-fractional ring, interpolating between whole rings. */
-function radiusForRing(ring: number, ringRadii: readonly number[]): number {
-  const lo = Math.floor(ring);
-  const hi = Math.ceil(ring);
-  const loR = ringRadii[Math.max(0, Math.min(6, lo))]!;
-  if (lo === hi) return loR;
-  const hiR = ringRadii[Math.max(0, Math.min(6, hi))]!;
-  return loR + (hiR - loR) * (ring - lo);
+  // No objectives authored for this stage falls back to its lowest level. See F-1.
+  return stageRing(stage.levels, moons.map((m) => m.level));
 }
 
 /**
@@ -306,14 +281,46 @@ export function computeSolarLayout(
   }
   for (const o of objectives) countOnRing(o.level);
 
-  // Pass 2: radii, then place everything.
-  const ringRadii = computeRingRadii(occupancy);
+  // Pass 2: the bands, one per level, as wide as their planets need (R4.7).
+  const byBand = LEVELS.map(() => [] as StageInput[]);
+  for (const s of ordered) byBand[Math.max(0, Math.min(6, Math.round(stageRing.get(s.id)!)))]!.push(s);
+  for (const list of byBand) list.sort((a, b) => stageRing.get(a.id)! - stageRing.get(b.id)! || a.ordinal - b.ordinal);
+  const bands: Band[] = [];
+  let edge = INNER_RADIUS;
+  for (const level of LEVELS) {
+    if (level > 0) edge += level === 3 ? FROST_GAP : BAND_GAP;
+    const width = Math.max(MIN_BAND, byBand[level]!.length * ORBIT_GAP);
+    bands.push({ level, inner: edge, outer: edge + width });
+    edge += width;
+  }
+  const ringRadii = bands.map((b) => (b.inner + b.outer) / 2);
+  const frost = { inner: bands[2]!.outer, outer: bands[3]!.inner, radius: (bands[2]!.outer + bands[3]!.inner) / 2 };
+  const kuiper = { inner: bands[6]!.outer + 3, outer: bands[6]!.outer + 9 };
+
+  // Each planet's own orbit: its slot in its band, and a gentle ellipse that
+  // stays inside its slot (so no orbit ever reaches its neighbour's).
+  const orbitOf = new Map<string, { a: number; e: number; omega: number }>();
+  for (const level of LEVELS) {
+    const list = byBand[level]!;
+    const band = bands[level]!;
+    const slot = (band.outer - band.inner) / Math.max(1, list.length);
+    list.forEach((s, i) => {
+      const a = band.inner + (i + 0.5) * slot;
+      const eMax = Math.min(E_MAX, (0.45 * slot) / a);
+      const e = Math.max(0, Math.min(eMax, E_MIN + unit(s.id, "e") * (eMax - E_MIN)));
+      orbitOf.set(s.id, { a, e, omega: unit(s.id, "omega") * Math.PI * 2 });
+    });
+  }
+
   const bodies = new Map<string, Body>();
 
   for (const s of ordered) {
     const ring = stageRing.get(s.id)!;
-    const radius = radiusForRing(ring, ringRadii);
+    const orbit = orbitOf.get(s.id)!;
     const angle = angleForOrdinal(s.ordinal, ordered.length);
+    // Where the ellipse puts it at the layout's angle (t = 0): r = a(1-e²)/(1+e cos ν).
+    const radius = orbit.a;
+    const r0 = (orbit.a * (1 - orbit.e * orbit.e)) / (1 + orbit.e * Math.cos(angle - orbit.omega));
 
     // F-4: a stage declaring every level is about the hierarchy, not in it.
     // Keep the flag so the renderer can draw it as a spoke across all seven
@@ -327,10 +334,12 @@ export function computeSolarLayout(
       ring,
       radius,
       angle,
-      x: Math.cos(angle) * radius,
+      x: Math.cos(angle) * r0,
       y: 0,
-      z: Math.sin(angle) * radius,
+      z: Math.sin(angle) * r0,
       spansAllLevels,
+      e: orbit.e,
+      omega: orbit.omega,
     });
 
     // Moons orbit their planet, not the sun. A moon's `ring` still records its
@@ -353,16 +362,16 @@ export function computeSolarLayout(
         ring: m.level,
         radius: localRadius,
         angle: localAngle,
-        x: Math.cos(angle) * radius + Math.cos(localAngle) * localRadius,
+        x: Math.cos(angle) * r0 + Math.cos(localAngle) * localRadius,
         y: 0,
-        z: Math.sin(angle) * radius + Math.sin(localAngle) * localRadius,
+        z: Math.sin(angle) * r0 + Math.sin(localAngle) * localRadius,
         parentId: s.id,
         previewAtOverview: isPreviewMoon(m.id, previewSeed),
       });
     });
   }
 
-  return { bodies, ringRadii, ringOccupancy: occupancy };
+  return { bodies, ringRadii, ringOccupancy: occupancy, bands, frost, kuiper, oort: kuiper.outer * 1.6 };
 }
 
 /** The flight path: curriculum order, one point per stage. */

@@ -210,10 +210,23 @@ test.describe("/app — what the map owes", () => {
 
   test("an open planet's Enter journey warps into it", async ({ page }, info) => {
     test.skip(!wide(info.project.name), "behaviour, one width");
+    // Recorded as it mounts: a 1.1s warp can come and go between two polls on a loaded machine.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __warps: Array<{ dir: string; dur: string }> };
+      w.__warps = [];
+      new MutationObserver(() => {
+        const el = document.querySelector(".realm-warp") as (HTMLElement & { seen?: boolean }) | null;
+        if (!el || el.seen) return;
+        el.seen = true;
+        w.__warps.push({ dir: el.dataset.warp ?? "", dur: getComputedStyle(el).animationDuration });
+      }).observe(document, { subtree: true, childList: true });
+    });
     await map(page, "/app?stage=06");
     await page.getByRole("link", { name: "Enter journey" }).click();
     await expect(page).toHaveURL(/\/app\/stage\/06$/);
-    await expect(page.locator(".realm-warp")).toHaveAttribute("data-warp", "in");
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __warps: Array<{ dir: string }> }).__warps.map((w) => w.dir)))
+      .toContain("in");
   });
 
   test("the moons are the stage's objectives, in the syllabus's order", async ({ page }) => {
@@ -420,11 +433,15 @@ test.describe("/app — the moons", () => {
         // texture arriving is a changed pixel that is not motion (it failed
         // that way once, 2 Oct 2026, and passed alone). A map that truly
         // moves never settles, so this cannot hide motion.
+        // Two unchanged checks in a row: the frame-rate guard's one-off switch
+        // to low quality (headless is slow) redraws the stars and the system's
+        // leftovers a few seconds in, and is not motion either.
         let prev = await shot();
-        for (let i = 0; i < 20; i++) {
-          await page.waitForTimeout(500);
+        let still = 0;
+        for (let i = 0; i < 30 && still < 2; i++) {
+          await page.waitForTimeout(700);
           const next = await shot();
-          if (next.equals(prev)) break;
+          still = next.equals(prev) ? still + 1 : 0;
           prev = next;
         }
       } else {
@@ -474,5 +491,29 @@ test.describe("/app — the moons", () => {
     await page.goto("/app/stages?stage=01");
     const row = page.locator(".starmap-moons li").filter({ hasText: "01.2" });
     await expect(row).toContainText("1 of 3 right");
+  });
+});
+
+/* ======================================================= captures (opt-in) */
+
+test.describe("captures, R4.7's realistic system", () => {
+  test.skip(!process.env.OCTA_CAPTURE, "set OCTA_CAPTURE=1 to write current-realism*.png");
+
+  test("the whole system, and a giant with its moons", async ({ browser }, info) => {
+    test.setTimeout(120_000);
+    const s = info.project.name.includes("380") ? "-380" : "";
+    const DIR = "design/templates/web/app";
+    for (const [name, path] of [
+      ["current-realism", "/app"],
+      ["current-realism-chosen", "/app?stage=06"],
+    ] as const) {
+      const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL, reducedMotion: "reduce" });
+      const page = await ctx.newPage();
+      await map(page, path);
+      await page.locator(".starmap-stage canvas").waitFor();
+      await page.waitForTimeout(6000); // textures, and the frame-rate guard's one switch
+      await page.screenshot({ path: `${DIR}/${name}${s}.png` });
+      await ctx.close();
+    }
   });
 });
