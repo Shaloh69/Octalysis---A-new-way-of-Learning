@@ -12,6 +12,7 @@ import { useSitting } from "../lib/sitting";
 import { NumberedTitle } from "./MissionPanel";
 import { WarpLink } from "./RealmWarp";
 import { useOnline } from "./useOnline";
+import { ArrivalScreen } from "./ArrivalScreen";
 
 /**
  * Inside a planet (WEB-REMAKE.md §3): the planet's biome holds the page, and
@@ -101,6 +102,8 @@ export function BiomeShell({ signedIn }: { signedIn: boolean }): JSX.Element {
       </a>
       <BiomeScene name={biome} />
       <div className="biome-scrim" aria-hidden="true" />
+      {/* After travel in, the world being entered (instructor, 2 Oct 2026). */}
+      <ArrivalScreen stageId={id} />
 
       <header className="biome-top sprite-bar">
         <nav className="biome-nav" aria-label="This planet">

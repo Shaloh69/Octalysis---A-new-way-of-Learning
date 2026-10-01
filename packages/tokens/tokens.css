@@ -76,6 +76,11 @@
   --dur-base:     240ms;   /* panels, sheets */
   --dur-trace:    700ms;   /* bus-line trace on stage unlock */
   --dur-bringup: 2000ms;   /* subsystem coming online — once per stage */
+  --dur-warp:    1100ms;   /* the realm warp (instructor, 2 Oct 2026: longer, to read as travel) */
+  /* Reading time, not motion: how long an arrival screen stays before it clears
+     itself (any key or click clears it sooner). NOT zeroed under reduced motion,
+     because the facts are content; the screen cuts in and out instead. */
+  --dur-arrival: 6000ms;
   --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
   --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
 
@@ -93,7 +98,7 @@
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-flash: 0ms; --dur-fast: 0ms; --dur-base: 0ms;
-    --dur-trace: 0ms; --dur-bringup: 0ms;
+    --dur-trace: 0ms; --dur-bringup: 0ms; --dur-warp: 0ms;
   }
 }
 

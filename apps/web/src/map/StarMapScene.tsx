@@ -15,7 +15,8 @@ import {
   TextureLoader,
   Vector3,
 } from "three";
-import { allTextureFiles, KIND_SCALE, moonSkin, planetSkin, SUN_MAP, type BodySkin } from "../solar-system/bodies";
+import { allTextureFiles, KIND_SCALE, moonSkin, skinFor, SUN_MAP, type BodySkin } from "../solar-system/bodies";
+import { planetSkinKey } from "../solar-system/world";
 import type { SolarLayout } from "../solar-system/layout";
 import { orbitAngle } from "../solar-system/orbit";
 
@@ -59,6 +60,10 @@ export interface ScenePlanet {
   moons: Array<{ id: string; glow: "dim" | "partial" | "full" }>;
   /** Orientation: a cosmetic belt instead of moons. */
   asteroids: boolean;
+  /** The layout's ring for it, which puts it inside or beyond the frost line (world.ts). */
+  ring: number;
+  /** Stage 01: a spoke across every level, the home world. */
+  spoke: boolean;
 }
 
 type SceneColors = Record<"sun" | "glow" | "line" | "star" | "locked" | "corner" | "accent" | "ground", Color>;
@@ -472,7 +477,10 @@ function Planet(p: PlanetProps): JSX.Element | null {
   const tint = useMemo(() => tokenColor(`--biome-planet-${p.planet.biome}`), [p.planet.biome]);
   const locked = p.planet.state === "locked";
   const color = locked ? p.colors.locked : tint;
-  const skin = useMemo(() => planetSkin(p.planet.id, p.planet.biome, p.rotation), [p.planet.id, p.planet.biome, p.rotation]);
+  const skin = useMemo(
+    () => skinFor(planetSkinKey(p.planet.id, p.planet.ring, p.planet.spoke, p.rotation)),
+    [p.planet.id, p.planet.ring, p.planet.spoke, p.rotation],
+  );
   // Size still grows with the planet's moons; its kind makes a gas giant read as one.
   const size = (0.62 + Math.min(p.planet.moons.length || 5, 12) * 0.035) * KIND_SCALE[skin.kind];
   const moonMeshes = useRef<Array<Group | null>>([]);

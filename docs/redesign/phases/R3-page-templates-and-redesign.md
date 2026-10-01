@@ -506,15 +506,24 @@ wherever it's triggered, not as a per-route task:
         contract from that page is the "All 19 stages" link, not 19 invisible
         buttons — so the HUD's enter button cannot be reached headlessly. What
         is covered is `openWithWarp`, the single handler both surfaces now call.
-- [ ] Both captured as short frame sequences per `REDESIGN-CLAUDE.md` §2, not
-      single stills
-- [ ] **The warp lasts longer** (instructor, 2 Oct 2026): long enough to read
-      as travel, still a cut under reduced motion, still switching at the peak
-- [ ] **An arrival screen for every planet and moon, after the warp**
+- [x] Both captured as short frame sequences per `REDESIGN-CLAUDE.md` §2, not
+      single stills. **2 Oct 2026:** `design/templates/web/loading/`, written by
+      `r3-loading-frames.spec.ts` (exact frames: the warp paused and sought),
+      contact sheets opened at both widths
+- [x] **The warp lasts longer** (instructor, 2 Oct 2026): long enough to read
+      as travel, still a cut under reduced motion, still switching at the peak.
+      **2 Oct 2026:** `--dur-warp`, 1.1s (was a literal 650ms), 0 under reduced
+      motion; measured on the rendered warp (`web-arrival.spec.ts`)
+- [x] **An arrival screen for every planet and moon, after the warp**
       (instructor, 2 Oct 2026): what you are entering ("a blue gas giant") and
       facts about that body, unique per planet; every fact sourced
       (`docs/source/solar-system-brief.md`, the instructor's own text, or the
-      planet's own data), never invented (hard rule 5); through the page gate
+      planet's own data), never invented (hard rule 5); through the page gate.
+      **2 Oct 2026:** `design/templates/web/arrival/` (Starfield's loading
+      screen), `web-arrival.spec.ts` 28/28 at 1440 and 380, `world.spec.ts`
+      (every brief fact found in the file; no two planets alike). The
+      instructor's revision the same day is built: the planet's biome is the
+      background, no globe, and the hand-over to the page is seamless
 - [x] Both verified frozen-to-static under `prefers-reduced-motion`
       · **Arrival: DONE**, asserted through `getAnimations()` rather than by
         screenshotting twice — a slow animation and a stopped one look identical
@@ -644,7 +653,9 @@ thesis deliverable, and right now no phase is accountable for it.
       server's dry run); `/console/live/present` already marked built; every
       other row is still absent from the code. Built during R3/R4 and never in
       it: `/app/stage/:id/moon/:objectiveId` (the moon journey)
-- [ ] Both loading screens (R3.4) built and verified
+- [x] Both loading screens (R3.4) built and verified. **2 Oct 2026:** the warp
+      (both ways) and the biome arrival, as frame sequences, plus the arrival
+      screen that now follows the warp in
 - [x] Console pages built per `CONSOLE-DATA-AND-TEMPLATES.md`'s merges, not
       just the shadcn-admin default
       **Closed 2 Oct 2026 for every BUILT page it names:** `/items` (shadcn-admin

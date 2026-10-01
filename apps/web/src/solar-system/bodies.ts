@@ -3,13 +3,12 @@
  * Scope, CC BY 4.0, credited in `public/CREDITS.md`), downsized to 1024×512
  * and served from `public/textures/`, so none of it enters a JS bundle.
  *
- * A PLANET'S SKIN FOLLOWS ITS BIOME. Every planet already wears its own biome
- * (seeded per student and stage, `cosmetic-seed.ts`), and the biome is the
- * world a student enters. So a desert planet is Mars or Venus, an ocean planet
- * Neptune, an arctic one Uranus or an icy dwarf, and so on: the map and the
- * world agree. Within a biome the choice is SEEDED from the student's own
- * rotation offset and the stage, never `Math.random`, so the same student sees
- * the same system every session.
+ * WHICH SKIN A PLANET WEARS is decided by `world.ts`, by the frost line
+ * (instructor, 1 Oct 2026): rocky worlds inside it, gas and ice giants beyond.
+ * Until then a planet's skin followed its biome; the biome still dresses the
+ * planet's pages, and only the globe follows the frost line. The choice is
+ * SEEDED from the student's rotation offset and the stage, never
+ * `Math.random`, so the same student sees the same system every session.
  *
  * COSMETIC ONLY (SOLAR-SYSTEM-SPEC §3): a skin never touches a lock, a ring, a
  * mastery or a moon count. The accessible layer (the row of bodies) is
@@ -36,7 +35,7 @@ export interface BodySkin {
   bandDrift?: number;
 }
 
-const SKINS: Record<string, BodySkin> = {
+const SKINS = {
   earth: { map: "earth_daymap.jpg", kind: "earthlike", spinS: 24, tilt: 0.41, oblate: 1, clouds: "earth_clouds.jpg" },
   mars: { map: "mars.jpg", kind: "rocky", spinS: 26, tilt: 0.44, oblate: 1 },
   venus: { map: "venus_atmosphere.jpg", kind: "veiled", spinS: 60, tilt: 0.05, oblate: 1, bandDrift: 0.004 },
@@ -51,18 +50,14 @@ const SKINS: Record<string, BodySkin> = {
   eris: { map: "eris.jpg", kind: "ice", spinS: 36, tilt: 0.2, oblate: 1 },
   haumea: { map: "haumea.jpg", kind: "ice", spinS: 8, tilt: 0.3, oblate: 0.8 },
   makemake: { map: "makemake.jpg", kind: "rocky", spinS: 23, tilt: 0.25, oblate: 1 },
-};
+} satisfies Record<string, BodySkin>;
 
-/** A biome's worlds. Every biome has more than one, so neighbours differ. */
-export const BY_BIOME: Record<string, readonly string[]> = {
-  jungle: ["earth", "earth", "venus"],
-  desert: ["mars", "venusSurface", "venus"],
-  arctic: ["uranus", "eris", "haumea"],
-  ocean: ["neptune", "earth", "uranus"],
-  city: ["jupiter", "saturn", "neptune"],
-  cave: ["mercury", "moon", "ceres"],
-  neutral: ["saturn", "jupiter", "makemake"],
-};
+export type SkinKey = keyof typeof SKINS;
+
+/** A skin by its key. */
+export function skinFor(key: SkinKey): BodySkin {
+  return SKINS[key];
+}
 
 /**
  * How big a world of this kind is drawn, relative to the size its moon count
@@ -79,7 +74,7 @@ export const KIND_SCALE: Record<BodyKind, number> = {
 };
 
 /** A moon's surface: the small, cratered and icy bodies. */
-const MOON_SKINS = ["moon", "ceres", "eris", "makemake", "mercury", "haumea"] as const;
+export const MOON_SKINS = ["moon", "ceres", "eris", "makemake", "mercury", "haumea"] as const satisfies readonly SkinKey[];
 
 /** The sun's surface. */
 export const SUN_MAP = "sun.jpg";
@@ -87,7 +82,7 @@ export const SUN_MAP = "sun.jpg";
 /** Every file the map may request, for preloading and for the credit check. */
 export function allTextureFiles(): string[] {
   const set = new Set<string>([SUN_MAP]);
-  for (const s of Object.values(SKINS)) {
+  for (const s of Object.values(SKINS) as BodySkin[]) {
     set.add(s.map);
     if (s.clouds) set.add(s.clouds);
     if (s.ring) set.add(s.ring);
@@ -96,7 +91,7 @@ export function allTextureFiles(): string[] {
 }
 
 /** A small, stable string hash (FNV-1a). Deterministic, and not cryptography. */
-function hash(text: string): number {
+export function seededHash(text: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
@@ -105,15 +100,12 @@ function hash(text: string): number {
   return h;
 }
 
-/** The planet's skin: its biome's worlds, one chosen by the student's seed and the stage. */
-export function planetSkin(stageId: string, biome: string, seed: number): BodySkin {
-  const list = BY_BIOME[biome] ?? BY_BIOME.neutral!;
-  const key = list[hash(`${stageId}:${Math.round(seed * 1e6)}`) % list.length]!;
-  return SKINS[key]!;
+/** A moon's skin key, chosen by its objective id and the student's seed. */
+export function moonSkinKey(objectiveId: string, seed: number): SkinKey {
+  return MOON_SKINS[seededHash(`moon:${objectiveId}:${Math.round(seed * 1e6)}`) % MOON_SKINS.length]!;
 }
 
-/** A moon's skin, chosen by its objective id and the student's seed. */
+/** A moon's skin. */
 export function moonSkin(objectiveId: string, seed: number): BodySkin {
-  const key = MOON_SKINS[hash(`moon:${objectiveId}:${Math.round(seed * 1e6)}`) % MOON_SKINS.length]!;
-  return SKINS[key]!;
+  return SKINS[moonSkinKey(objectiveId, seed)];
 }

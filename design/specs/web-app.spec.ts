@@ -413,11 +413,26 @@ test.describe("/app — the moons", () => {
       await expect(page.locator(".starmap-body h2")).toHaveText("Moon 01.2");
       await expect(page.locator(".starmap")).toHaveAttribute("data-motion", reducedMotion === "reduce" ? "still" : "orbit");
       await page.locator(".starmap-stage canvas").waitFor();
-      await page.waitForTimeout(2500); // the textures land and the camera settles
       const stage = page.locator(".starmap-stage");
-      const a = await stage.screenshot({ animations: "allow" });
+      const shot = () => stage.screenshot({ animations: "allow" });
+      if (reducedMotion === "reduce") {
+        // Settled first: textures land late under a full parallel run, and a
+        // texture arriving is a changed pixel that is not motion (it failed
+        // that way once, 2 Oct 2026, and passed alone). A map that truly
+        // moves never settles, so this cannot hide motion.
+        let prev = await shot();
+        for (let i = 0; i < 20; i++) {
+          await page.waitForTimeout(500);
+          const next = await shot();
+          if (next.equals(prev)) break;
+          prev = next;
+        }
+      } else {
+        await page.waitForTimeout(2500);
+      }
+      const a = await shot();
       await page.waitForTimeout(900);
-      const b = await stage.screenshot({ animations: "allow" });
+      const b = await shot();
       await ctx.close();
       return a.equals(b);
     };

@@ -473,7 +473,7 @@
   pointer-events: none;
   overflow: hidden;
   background: var(--sprite-ink);
-  animation: realm-warp-clear 650ms var(--ease-inout) forwards;
+  animation: realm-warp-clear var(--dur-warp) var(--ease-inout) forwards;
 }
 .realm-warp-streaks {
   position: absolute;
@@ -482,8 +482,8 @@
   -webkit-mask: radial-gradient(circle at 50% 50%, transparent 8%, black 40%);
   mask: radial-gradient(circle at 50% 50%, transparent 8%, black 40%);
 }
-.realm-warp-in .realm-warp-streaks { animation: realm-warp-rush 650ms var(--ease-out) forwards; }
-.realm-warp-out .realm-warp-streaks { animation: realm-warp-pull 650ms var(--ease-out) forwards; }
+.realm-warp-in .realm-warp-streaks { animation: realm-warp-rush var(--dur-warp) var(--ease-out) forwards; }
+.realm-warp-out .realm-warp-streaks { animation: realm-warp-pull var(--dur-warp) var(--ease-out) forwards; }
 @keyframes realm-warp-clear {
   0%, 35% { opacity: 1; }
   100% { opacity: 0; }
@@ -567,4 +567,87 @@
 [data-realm="biome"] .toaster { bottom: 5rem; }
 @media (max-width: 899px) {
   [data-realm="biome"] .toaster { bottom: 4.75rem; }
+}
+
+/* ---------------------------------------------------------- the arrival
+   After the warp into a planet or moon (instructor, 2 Oct 2026; template
+   design/templates/web/arrival/, Starfield's loading screen). The planet's
+   biome IS the screen: no veil, no globe ("the background should be its
+   biome design", "make it seamless"). While it shows, the shell's bars and
+   the page are hidden over that same biome; on dismiss the caption fades
+   out as they fade in, so the background never changes. Every word is on
+   the caption's sprite panel, in the biome's checked inks. Under reduced
+   motion the ring is still and both fades are cuts (--dur-base is 0). */
+.arrival {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  padding: var(--space-6) var(--space-6) var(--space-8);
+  background: transparent;
+  transition: opacity var(--dur-base) var(--ease-out);
+  cursor: pointer;
+}
+.arrival.is-leaving { opacity: 0; }
+.biome-top, .biome-main, .biome-bottom { transition: opacity var(--dur-base) var(--ease-out); }
+.biome-shell:has(> .arrival:not(.is-leaving)) :is(.biome-top, .biome-main, .biome-bottom) {
+  opacity: 0;
+  pointer-events: none;
+}
+.arrival-caption {
+  width: 100%;
+  max-width: 62rem;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  cursor: default;
+}
+.arrival-head { display: flex; align-items: center; gap: var(--space-3); }
+.arrival-badge {
+  min-width: 3.5rem;
+  padding: var(--space-2);
+  border: var(--border-thick) solid var(--ink);
+  text-align: center;
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+.arrival-eyebrow {
+  margin: 0;
+  font-family: var(--font-hud);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-hud);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.arrival-title { margin: 0; font-family: var(--font-hud); font-size: var(--text-2xl); line-height: var(--lh-2xl); color: var(--ink); }
+.arrival-where { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); }
+.arrival-lore {
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: var(--border-hair) solid var(--line);
+  max-width: 78ch;
+  color: var(--ink);
+}
+.arrival-facts { margin: 0; padding-left: var(--space-4); display: grid; gap: var(--space-1); font-size: var(--text-sm); color: var(--ink); }
+.arrival-go { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); }
+.arrival-go .sprite-button { min-height: 44px; }
+.arrival-hint { font-family: var(--font-hud); font-size: var(--text-xs); letter-spacing: var(--tracking-hud); text-transform: uppercase; color: var(--ink-muted); }
+.arrival-ring {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-full);
+  border: var(--border-thick) solid var(--ink-muted);
+  border-top-color: transparent;
+  animation: arrival-spin var(--dur-bringup) linear infinite;
+}
+@keyframes arrival-spin { to { transform: rotate(1turn); } }
+@media (max-width: 640px) {
+  /* A phone's biome keeps its landscape in the lower third: the caption goes
+     to the top so the planet's ground stays in view (found by looking, 2 Oct). */
+  .arrival { align-items: start; padding: var(--space-4) var(--space-3) var(--space-5); }
+  .arrival-caption { padding: var(--space-3); gap: var(--space-2); }
+  .arrival-title { font-size: var(--text-xl); line-height: var(--lh-xl); }
+  .arrival-facts { font-size: var(--text-xs); }
 }

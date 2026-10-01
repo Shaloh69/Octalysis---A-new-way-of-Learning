@@ -108,6 +108,8 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
     // Orientation has none (3.10): its belt is cosmetic and drawn by the scene.
     moons: n.moons ? [...n.objectives].sort(byObjectiveId).map((o) => ({ id: o.id, glow: moonGlow(o) })) : [],
     asteroids: !n.gradeable,
+    ring: layout.bodies.get(n.id)?.ring ?? 6,
+    spoke: !!layout.bodies.get(n.id)?.spansAllLevels,
   }));
   const next = nextStage(nodes);
   const nextId = next.kind === "resume" || next.kind === "start" ? next.node.id : null;

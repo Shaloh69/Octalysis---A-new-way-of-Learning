@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ComponentProps } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { realmFor } from "../lib/realm";
+import { clearArrival, markArrival } from "../lib/arrival";
 
 /**
  * The transition between the realms (WEB-REMAKE.md §5): always, both ways.
@@ -14,6 +15,9 @@ import { realmFor } from "../lib/realm";
  *
  *   star -> biome   the streaks rush outward: you are arriving somewhere
  *   biome -> star   they draw back in: you are pulling out to the system
+ *
+ * The warp is `--dur-warp` long (1.1s since 2 Oct 2026, "a bit longer", the
+ * instructor), and a planet's arrival screen follows it (`lib/arrival.ts`).
  *
  * A deep link or a reload has no warp: nothing was travelled. Under
  * `prefers-reduced-motion` there is none either: the realm cuts in one frame.
@@ -29,6 +33,10 @@ export function RealmWarp(): JSX.Element | null {
     const was = prev.current;
     prev.current = realm;
     if (was === null || was === realm) return;
+    // Travel, so an arrival screen follows the warp into a planet or moon; under
+    // reduced motion there is no warp, but the student still travelled.
+    if (realm === "biome") markArrival(pathname);
+    else clearArrival();
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     setWarp((w) => ({ dir: realm === "biome" ? "in" : "out", n: (w?.n ?? 0) + 1 }));
   }, [realm]);
