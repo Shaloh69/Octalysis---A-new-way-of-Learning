@@ -118,7 +118,7 @@ importers:
         specifier: ^2.45.4
         version: 2.112.4
       phaser:
-        specifier: ^3
+        specifier: ^3.90.0
         version: 3.90.0
       react:
         specifier: ^18.3.1

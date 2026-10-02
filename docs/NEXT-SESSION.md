@@ -1502,6 +1502,12 @@ left, or needing a decision:
 9. **Suites at this close:** the full design suite on the final build, 2 Oct:
    **1375 passed, 179 skipped, 0 failed** (13.6 min). Web unit 241. API, console and tokens
    unchanged this session (1 Oct: 718 / 217 / 38).
+11. **A hand-edited package.json broke the Vercel build (2 Oct, fixed in the
+   same session).** Phaser's range was narrowed to `^3.90.0` by hand after
+   `pnpm add`, leaving `pnpm-lock.yaml` at `^3`; Vercel installs with
+   `--frozen-lockfile` and refused. No local check runs a frozen install.
+   After touching any `package.json`, run `pnpm install --frozen-lockfile`
+   before pushing.
 10. **Prelim still NOT runnable:** 96 act-1 items at `review`, 0 `live`
    (measured locally today; the deployment was measured 1 Oct, its admin
    credentials are now deleted from this machine).
