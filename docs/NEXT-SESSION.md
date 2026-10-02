@@ -1455,6 +1455,59 @@ decision:
 
 ---
 
+## 0z. R3 closed against the code, the arrival screen, a realistic system — 2 Oct 2026
+
+Instructor answers (1-2 Oct): delete `deploy/render-api.env` (done); leave the
+root `.env` on the old project for now; act 1's 96 items will be reviewed on
+`/content` by the instructor; the `QA_MODE` clause is superseded (reduced
+motion is the one freeze). New requests, built: **R4.7, a realistic solar
+system** (ellipses, a level as a band, the frost line, Hill/Roche, belts and
+comets; the brief kept in `docs/source/solar-system-brief.md`), **a longer
+warp**, and **an arrival screen after it** for every planet and moon (revised
+the same day: the biome is the background, no globe, seamless). Pushed:
+`466578c` R3 audit, `d4b9f32` warp and arrival, `f1c14ca` R4.7. Found and
+left, or needing a decision:
+
+1. **R3 at 87/88**: eleven boxes closed against code and specs (several were
+   built and never ticked), R3.4's four, and PROGRESS's own. Open: only the
+   planet summaries (0 of 19 approved, the instructor's, on `/content`).
+2. **R4 at 34/36**: only the screen-reader pass is left (R4.4 and the DoD),
+   a person's job. For it: `/app/stages` may read each planet twice (0y.7).
+3. **R5.3 will likely fail its draw-call budget (≤50).** R4.7 added 19
+   ellipses, 7 bands, the frost line, 4 point clouds, 7 centaurs, 3 comets
+   (3 meshes each) and the wind. Measure it (`renderer.info.render.calls`)
+   before believing it; merging the ellipses into one `LineSegments` and the
+   centaurs into one `InstancedMesh` are the cheap fixes.
+4. **The first frame of a deep link paints the FALLBACK biome** when the
+   browser has no cached biome (a first visit), and the planet's own replaces
+   it about half a second later, once `/cosmetics` answers. Seen only in
+   R3.4's frames (`design/templates/web/loading/arrival-0100*.png` vs
+   `-0700`). `lib/realm.ts` promises "one frame of the fallback"; locally it
+   is ~500ms. Not fixed (not this session's page).
+5. **The map is not to scale, on purpose**: moon systems are drawn 200x larger
+   than their orbits allow, so the Hill/Roche rule holds in that frame
+   (`satellites.ts`); real Hill spheres at this scale are ~0.06 units. Said in
+   `design/templates/web/app/SPEC.md`. If the instructor wants it otherwise,
+   the band widths or the moon systems must change.
+6. **The arrival's facts are fixed per planet** (kind, frost line, moons,
+   levels, grading period); the instructor asked for "unique fun facts".
+   Every fact must come from the brief or the planet's data (hard rule 5);
+   more would need more instructor text in the brief.
+7. **Harness notices are not process state.** The dev API and both previews
+   were reported "stopped after the background time limit" mid-suite and all
+   kept serving; a relaunch made two APIs fight for 8090. Probe the ports.
+   After a reboot, start Docker Desktop before `db:up`.
+8. **The entry chunk is 109.6 KB gz** (+3.6 KB: the arrival and its facts ship
+   with the biome shell); the map chunk 224.8 KB (+1.3). GAME-DESIGN §10.2.
+9. **Suites at this close:** the full design suite on the final build, 2 Oct:
+   **1375 passed, 179 skipped, 0 failed** (13.6 min). Web unit 241. API, console and tokens
+   unchanged this session (1 Oct: 718 / 217 / 38).
+10. **Prelim still NOT runnable:** 96 act-1 items at `review`, 0 `live`
+   (measured locally today; the deployment was measured 1 Oct, its admin
+   credentials are now deleted from this machine).
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

@@ -1204,5 +1204,7 @@ thesis deliverable, and right now no phase is accountable for it.
       **Note:** on 1 Oct the instructor ruled gentle ellipses, one planet per
       orbit with a level as a band, and a frost line; this box is closed for
       the circular system it describes, and the rework is tracked in R4.7
-- [ ] `docs/PROGRESS.md` reflects real progress through this phase — given
+- [x] `docs/PROGRESS.md` reflects real progress through this phase — given
       the size, update it after every batch of routes, not just at the end
+      **2 Oct 2026:** STATE NOW's R3 row counted from `pnpm phase`, with what
+      closed and what is left
