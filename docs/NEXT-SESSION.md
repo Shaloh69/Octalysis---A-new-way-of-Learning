@@ -1511,6 +1511,13 @@ left, or needing a decision:
    `--frozen-lockfile` and refused. No local check runs a frozen install.
    After touching any `package.json`, run `pnpm install --frozen-lockfile`
    before pushing.
+12. **The instructor re-sent the solar-system brief (2 Oct) for the next
+   session.** Most of it is R4.7, built. The five things it names that are
+   not are now **R4.8** (R4 phase file): Trojan swarms at L4/L5 of the giants
+   (not companion planets: every planet is a stage), irregular captured
+   moons, rings on the other giants, the star's magnetic field as Parker
+   spirals, and periods from the star's mass. Build R4.8 BEFORE R5.3, so the
+   draw-call measurement includes it.
 
 ---
 

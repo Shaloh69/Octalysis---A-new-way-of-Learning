@@ -23,14 +23,15 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: R5, testing and sign-off (R5.1-R5.3 first)
+## 1. Start here — the next session: R4.8 (the rest of the brief), then R5
 
-*Rewritten 2 Oct 2026 by the session that closed R3 against the code (87/88:
+*Rewritten 2 Oct 2026 (amended the same day: R4.8 added at the instructor's
+request) by the session that closed R3 against the code (87/88:
 only the instructor's planet summaries left), built the longer warp and the
 arrival screen, and built R4.7's realistic system (ellipses, bands, the frost
 line, Hill/Roche, belts and comets). Phase at handover: **R3 87 / 88**,
-**R4 34 / 36** (the two left are a person's screen-reader pass), **R5 0 / 24**;
-all tracks **206 done · 27 to-do (233 items, 88%)**. `pnpm phase` is the count,
+**R4 34 / 42** (R4.8's six, and a person's screen-reader pass), **R5 0 / 24**;
+all tracks **206 done · 33 to-do (239 items, 86%)**. `pnpm phase` is the count,
 not this line. The prompt is in a plain block so it pastes exactly as written.*
 
 ```text
@@ -62,7 +63,19 @@ and pnpm test (API 718 passed 1 skipped, web unit 241, console 217, tokens
 38). Never reset while a Playwright suite runs; after the API suite run
 db:reset THEN db-demo.
 
-The work: R5 in order, each box checked against the code and the running
+The work, first: R4.8, the rest of the instructor's solar-system brief
+(docs/source/solar-system-brief.md; re-sent 2 Oct "for the next session").
+R4.7 built most of it; R4.8 in the R4 phase file names the five things it
+does not have, each specified: Trojan swarms at L4/L5 of the giants (not
+companion planets: every planet is a stage), irregular captured moons that
+stay moons (same button, glow states, pick target), faint rings on the other
+giants inside the Roche limit, the star's magnetic field as Parker spirals,
+and orbital periods from the star's mass (T = 2π√(a³/GM)). Pure modules with
+vitest tests watched failing first (populations.ts, satellites.ts and
+kepler.ts show the shape), merged geometry so draw calls stay low, through
+/app's page gate (captures at 1440 and 380, opened), committed and pushed.
+
+Then R5 in order, each box checked against the code and the running
 app, ticked in the same commit with a dated line naming its evidence.
 R5.1 first: INV-32/33/34 against layout.ts as R4.7 left it (bands and
 ellipses: radius is now a semi-major axis inside a band, so "the map matches

@@ -267,3 +267,41 @@ The instructor's text is kept as a source: `docs/source/solar-system-brief.md`.
       at 1440 and 380 (10 one-width skips), captures `current-realism*`
       opened
 
+
+## R4.8 — The rest of the brief (instructor, 2 Oct 2026: "implement them for the next session")
+
+The instructor re-sent the solar-system brief (`docs/source/solar-system-brief.md`)
+on 2 Oct and asked for it in the next session. R4.7 already built most of it
+(`f1c14ca`). Compared line by line, five things the brief names are NOT built.
+Each is specified here, so the next session builds rather than guesses. All
+cosmetic over the same data, `aria-hidden`, unpickable, seeded never random,
+still under reduced motion, through `/app`'s page gate:
+
+- [ ] **Lagrange companions**: "a massive planet paired with a smaller
+      companion tucked 60 degrees ahead or behind it in a stable Lagrange
+      point". Built as **Trojan swarms**: a small cloud at L4 (+60°) and L5
+      (-60°) of each giant beyond the frost line, riding its orbit (the
+      template already captured: `design/templates/web/app/template-inner.png`,
+      Jupiter's Trojans and Greeks). NOT a second planet: every planet on the
+      map is a stage, and a companion planet would be a stage that does not
+      exist. Tested: each swarm's centre is 60° from its planet, on its orbit,
+      at every t
+- [ ] **Moons, the full range**: "from massive spheroidal worlds with
+      subsurface oceans to tiny, captured irregularly-shaped asteroids". A
+      giant's outermost moons drawn as small irregular captured bodies, the
+      rest spheres; seeded per student. A moon stays a moon: same button in
+      the panel, same three glow states legible, same pick target
+- [ ] **Planetary rings beyond Saturn**: faint rings on the other giants
+      (Jupiter-like, Uranus-like, Neptune-like worlds), every ring inside its
+      planet's Roche limit (`satellites.ts`'s `ringSpan`, already tested)
+- [ ] **Magnetic fields** (the interplanetary medium: "cosmic dust, solar
+      wind ... and magnetic fields"): the star's field as faint Parker-spiral
+      lines winding outward with the solar wind, one draw call
+- [ ] **The host star's mass dictates speed and distance**: make it explicit.
+      Periods from T = 2π√(a³/GM) with one star-mass constant, instead of
+      scaling to the outermost orbit; tested that a heavier star turns every
+      orbit faster in the same ratio, and that the map's speeds are unchanged
+      at the chosen mass
+- [ ] **Through `/app`'s page gate**, and the draw-call budget measured with
+      all of it (`renderer.info.render.calls`; R5.3's ≤50): Trojans and the
+      field lines as merged geometry, never a mesh each
