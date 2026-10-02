@@ -9,13 +9,15 @@ import {
   flightPath,
   LEVELS,
   LEVEL_NAMES,
+  SUN_RADIUS,
   type StageInput,
   type ObjectiveInput,
 } from "../src/solar-system/layout";
 import { angularSpeed, OUTER_PERIOD_S, periodSeconds, starPeriod } from "../src/solar-system/orbit";
 import { skinFor } from "../src/solar-system/bodies";
 import { planetSkinKey } from "../src/solar-system/world";
-import { hillRadius, MASS_RATIO, moonOrbit, planetSize, ringSpan, rocheLimit } from "../src/solar-system/satellites";
+import { BODY_SCALE, hillRadius, MASS_RATIO, moonOrbit, planetSize, ringSpan, rocheLimit } from "../src/solar-system/satellites";
+import { bodyOrbit, positionAt, radiusAt } from "../src/solar-system/kepler";
 
 /**
  * INV-32 and INV-33, restated for the solar system: the map may not invent a
@@ -616,7 +618,7 @@ describe("R4.7 — one planet per orbit, gentle ellipses, the frost line (instru
 });
 
 describe("R4.7 — moons inside the Hill sphere, outside the Roche limit; rings inside it; a star of over 99%", () => {
-  const SCALE = Math.max(...LAYOUT.ringRadii) / 35;
+  const SCALE = BODY_SCALE;
   const seeds = [0, 0.37, 1.234, 5.5, 9.81];
   const moonCount = (id: string) => OBJECTIVES.filter((o) => o.stageId === id).length;
 
@@ -648,6 +650,73 @@ describe("R4.7 — moons inside the Hill sphere, outside the Roche limit; rings 
       );
       expect(1 / (1 + planetsMass), `seed ${seed}`).toBeGreaterThan(0.99);
     }
+  });
+});
+
+/**
+ * R4.9 (instructor, 2 Oct 2026: "smaller planets, a wider orbit with enough
+ * space that they don't overlap with each other", "also a bigger sun").
+ * Tested on the MOVING positions (kepler.ts), for every student's worlds:
+ * a planet's drawn size depends on its seeded kind.
+ */
+describe("R4.9 — no two planets ever overlap, and the sun is clear of them", () => {
+  const seeds = [0, 0.37, 1.234, 3.7449036281682666, 5.5, 9.81];
+  const outer = Math.max(...LAYOUT.ringRadii);
+  /** Room left between two planets' surfaces, in scene units: the reticle and rings need some. */
+  const MARGIN = 0.5;
+  const drawn = (p: ReturnType<typeof planets>[number], seed: number) =>
+    planetSize(OBJECTIVES.filter((o) => o.stageId === p.id).length, skinFor(planetSkinKey(p.id, p.ring, !!p.spansAllLevels, seed)).kind, BODY_SCALE);
+
+  it("over a full outer period, sampled, every pair of planets' centres stays apart by more than their drawn radii plus a margin", () => {
+    const ps = planets();
+    const orbits = ps.map((p) => bodyOrbit(p, 0));
+    const T = starPeriod(outer);
+    const N = 1500;
+    for (const seed of seeds) {
+      const r = ps.map((p) => drawn(p, seed));
+      let worst = Infinity;
+      let pair = "";
+      for (let k = 0; k <= N; k++) {
+        const at = orbits.map((o) => positionAt(o, (T * k) / N));
+        for (let i = 0; i < ps.length; i++) {
+          for (let j = i + 1; j < ps.length; j++) {
+            const clear = Math.hypot(at[i]!.x - at[j]!.x, at[i]!.y - at[j]!.y) - r[i]! - r[j]!;
+            if (clear < worst) [worst, pair] = [clear, `${ps[i]!.id}/${ps[j]!.id}`];
+          }
+        }
+      }
+      // A NaN size never lowers `worst`: without this the test passes on nothing.
+      expect(Number.isFinite(worst), `seed ${seed}: no pair was measured`).toBe(true);
+      expect(worst, `seed ${seed}: ${pair}`).toBeGreaterThan(MARGIN);
+    }
+  });
+
+  it("and forever: at every angle, the gap between neighbouring orbits exceeds their drawn radii plus the margin", () => {
+    const ps = planets().sort((a, b) => a.radius - b.radius);
+    for (const seed of seeds) {
+      for (let i = 0; i + 1 < ps.length; i++) {
+        const [p, q] = [ps[i]!, ps[i + 1]!];
+        const need = drawn(p, seed) + drawn(q, seed) + MARGIN;
+        for (let k = 0; k < 720; k++) {
+          const th = (k / 720) * Math.PI * 2;
+          const gap = radiusAt(bodyOrbit(q, 0), th) - radiusAt(bodyOrbit(p, 0), th);
+          expect(gap, `seed ${seed}: ${p.id}/${q.id} at ${th.toFixed(2)}`).toBeGreaterThan(need);
+        }
+      }
+    }
+  });
+
+  it("the sun sits inside the innermost band, clear of the innermost planet even at its perihelion", () => {
+    expect(SUN_RADIUS).toBeLessThan(LAYOUT.bands[0]!.inner);
+    const first = planets().sort((a, b) => a.radius - b.radius)[0]!;
+    for (const seed of seeds) {
+      expect(SUN_RADIUS + drawn(first, seed) + MARGIN, `seed ${seed}`).toBeLessThan(first.radius * (1 - first.e!));
+    }
+  });
+
+  it("a bigger sun than R4.7's (1.7), and planets drawn smaller than R4.7 drew them (outer/35 then)", () => {
+    expect(SUN_RADIUS).toBeGreaterThanOrEqual(1.7 * 1.8);
+    expect(BODY_SCALE).toBeLessThan(60.4 / 35);
   });
 });
 

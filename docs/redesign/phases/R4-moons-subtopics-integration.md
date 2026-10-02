@@ -334,28 +334,51 @@ the map a tad bit bigger, smaller planets, a wider orbit with enough space
 that they don't overlap with each other", "also a bigger sun". Cosmetic, the
 same data; through `/app`'s page gate with captures at 1440 and 380, opened.
 
-- [ ] **Comets stay out at the edges, much slower.** Drop the comets' 40x
+- [x] **Comets stay out at the edges, much slower.** Drop the comets' 40x
       clock (`map/Leftovers.tsx`): they move at their real Kepler speed, so
       by the second law they spend almost all their time far out. Start each
       near aphelion (t = 0), in the Kuiper/Oort region beyond the last band.
       Tested (`populations.spec.ts` / `kepler.spec.ts`): every comet starts
       beyond the last band, and spends at least 90% of its period beyond the
       frost line; its coma and tail still appear only when it swings in
-- [ ] **Smaller planets**: the drawn planet sizes shrink (`planetSize` in
+      **2 Oct 2026:** the clock is gone; aphelia in the Oort cloud (now 2.2x
+      the Kuiper edge: 90% needs an aphelion about 3.4x the frost line),
+      each starting within 2% of a period of aphelion, in TIME (an angle
+      near aphelion is not near it on an orbit this eccentric; found by the
+      test). `populations.spec.ts` over four seeds; the coma test unchanged
+- [x] **Smaller planets**: the drawn planet sizes shrink (`planetSize` in
       `satellites.ts`), moon systems with them; the Hill/Roche tests still pass
-- [ ] **Wider orbits, and no two planets ever overlap**: `ORBIT_GAP` widened
+      **2 Oct 2026:** `BODY_SCALE`, one fixed 0.65 of R4.7's, for planets and
+      moon systems alike (a chosen planet looks the same; the camera fits
+      it). Hill/Roche green over five seeds
+- [x] **Wider orbits, and no two planets ever overlap**: `ORBIT_GAP` widened
       (`layout.ts`) until a new test holds: over a full outer period, sampled,
       the distance between every pair of planets' centres stays above the sum
       of their drawn radii plus a margin (the moving positions from
       `kepler.ts`, not just the semi-major axes); the band, frost-line and
       ellipse tests still pass
-- [ ] **The map a tad bigger on screen**: the system fills more of the free
+      **2 Oct 2026:** 3.2 inside the frost line, 4.4 beyond (by level, never
+      by seed), a swing of at most 0.4 of a slot. `layout-solar.spec.ts`:
+      the sampled test (six seeds, margin 0.5; guarded against passing on
+      NaN, which it first did) and a forever one (the gap at every angle).
+      All R4.7 tests green, 11 of 19 orbits still visibly elliptical
+- [x] **The map a tad bigger on screen**: the system fills more of the free
       area (the camera's fit margin in `Rig`, now 1.08), still with no part of
       the outer band clipped at 1440 or 380
-- [ ] **A bigger sun**: the star drawn larger (`Sun` in `StarMapScene.tsx`),
+      **2 Oct 2026:** fitted to the outer band's edge (0.98 down the height;
+      exact across the width, d = R·√(1/t² + cos²pitch), after the first
+      fit clipped 380 by a few pixels: seen in the capture, confirmed in a
+      2x crop). 885px across at 1440, was 821
+- [x] **A bigger sun**: the star drawn larger (`Sun` in `StarMapScene.tsx`),
       its corona included, still clear of the innermost band
       (`INNER_RADIUS` moves with it if needed); tested that the sun's drawn
       radius stays inside the innermost band's inner edge
-- [ ] **Through `/app`'s page gate**: `web-app.spec.ts` green at 1440 and
+      **2 Oct 2026:** `SUN_RADIUS` 3.4 (was 1.7), corona and halo in
+      proportion, `INNER_RADIUS` = it + 3; tested clear of the innermost
+      planet at perihelion, six seeds. `STAR_GM` 68.78 keeps the 600s pace
+- [x] **Through `/app`'s page gate**: `web-app.spec.ts` green at 1440 and
       380, `current-realism*` recaptured and opened, before and after side by
       side in the SPEC
+      **2 Oct 2026:** `web-app.spec.ts` + `web-arrival.spec.ts` 76 passed,
+      16 skipped, at 1440 and 380; the table is in the SPEC's R4.9 section.
+      Draw calls 84 (whole system), R5.3's to fix

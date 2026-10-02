@@ -18,14 +18,12 @@ import {
 import { allTextureFiles, moonSkin, skinFor, SUN_MAP, type BodySkin, type RingStyle } from "../solar-system/bodies";
 import { bodyOrbit, ellipsePoints, positionAt } from "../solar-system/kepler";
 import { populations, SUN_SPIN_S } from "../solar-system/populations";
-import { irregularShape, isGiant, isIrregular, moonDirection, moonOrbit, planetSize, ringBands, ringSpan, rocheLimit } from "../solar-system/satellites";
+import { BODY_SCALE, irregularShape, isGiant, isIrregular, moonDirection, moonOrbit, planetSize, ringBands, ringSpan, rocheLimit } from "../solar-system/satellites";
 import { Leftovers } from "./Leftovers";
 import { planetSkinKey } from "../solar-system/world";
-import type { SolarLayout } from "../solar-system/layout";
+import { SUN_RADIUS, type SolarLayout } from "../solar-system/layout";
 import { orbitAngle } from "../solar-system/orbit";
 
-/** The map was tuned with its outermost ring at 35 units; R4.7's bands make it larger, and planets and moon systems grow with it. */
-const TUNED_OUTER = 35;
 
 /** How far a planet's own system reaches from its centre: its outermost moon's orbit, or the planet itself. */
 function systemReach(pl: ScenePlanet, rotation: number, scale: number): number {
@@ -180,8 +178,8 @@ function Scene(p: SceneProps): JSX.Element {
     }),
     [],
   );
-  const outer = Math.max(...p.layout.ringRadii);
-  const scale = outer / TUNED_OUTER;
+  // Bodies are drawn at one fixed scale (R4.9): wider orbits no longer grow the planets.
+  const scale = BODY_SCALE;
   const pops = useMemo(() => populations(p.layout, p.rotation, p.lowQuality), [p.layout, p.rotation, p.lowQuality]);
   // The giants (the worlds beyond the frost line): each carries Trojans at L4 and L5 (R4.8).
   const giants = useMemo(
@@ -218,7 +216,6 @@ function Scene(p: SceneProps): JSX.Element {
           key={pl.id}
           planet={pl}
           layout={p.layout}
-          outer={outer}
           scale={scale}
           rotation={p.rotation}
           clock={clock}
@@ -234,7 +231,7 @@ function Scene(p: SceneProps): JSX.Element {
           onSelectMoon={p.onSelectMoon}
         />
       ))}
-      <Rig {...p} outer={outer} positions={positions} />
+      <Rig {...p} edge={p.layout.bands[p.layout.bands.length - 1]!.outer} positions={positions} />
     </>
   );
 }
@@ -349,7 +346,7 @@ function Sun({ colors, surface, reduced }: { colors: SceneColors; surface: Textu
   return (
     <group>
       <mesh ref={body}>
-        <sphereGeometry args={[1.7, 48, 48]} />
+        <sphereGeometry args={[SUN_RADIUS, 48, 48]} />
         {/* Keyed on the texture: a material compiled without a map never draws one (three.js compiles once). */}
         <meshBasicMaterial key={map ? "surface" : "tint"} color={map ? WHITE : colors.sun} map={map ?? null} />
       </mesh>
@@ -367,9 +364,9 @@ function Sun({ colors, surface, reduced }: { colors: SceneColors; surface: Textu
   );
 }
 
-/** The corona's and the halo's widths, in scene units (the sun's radius is 1.7). */
-const CORONA = 6.2;
-const HALO = 11;
+/** The corona's and the halo's widths, in scene units, in proportion to the sun (R4.9: twice R4.7's 1.7). */
+const CORONA = SUN_RADIUS * 3.4;
+const HALO = SUN_RADIUS * 5.2;
 
 /**
  * A soft radial falloff, drawn once on a canvas: opaque at the centre to clear
@@ -536,8 +533,7 @@ function Globe({
 interface PlanetProps {
   planet: ScenePlanet;
   layout: SolarLayout;
-  outer: number;
-  /** outer / TUNED_OUTER: planets and moon systems grow with the system (R4.7). */
+  /** BODY_SCALE (satellites.ts): how large planets and moon systems are drawn. */
   scale: number;
   rotation: number;
   clock: MutableRefObject<number>;
@@ -780,7 +776,7 @@ function asteroidBelt(
  * on a wide screen. Drag yaws the system (the page owns `yaw`). Also carries
  * and the frame-rate guard.
  */
-function Rig(p: SceneProps & { outer: number; positions: MutableRefObject<Map<string, Vector3>> }): null {
+function Rig(p: SceneProps & { edge: number; positions: MutableRefObject<Map<string, Vector3>> }): null {
   const { camera, size } = useThree();
   const target = useRef(new Vector3());
   const dist = useRef<number | null>(null);
@@ -795,9 +791,17 @@ function Rig(p: SceneProps & { outer: number; positions: MutableRefObject<Map<st
     const tan = Math.tan((20 * Math.PI) / 180);
     // Fit the tilted disc inside the free area: its width across the free
     // width, its foreshortened depth (≈ sin(pitch) of it) down the free height.
-    const byWidth = p.outer / (tan * (Math.max(1, fr.w) / H));
-    const byHeight = (p.outer * 0.86) / (tan * (Math.max(1, fr.h) / H));
-    const fit = Math.max(byWidth, byHeight) * 1.08;
+    // The width is exact: the disc's near side is closer to the camera and
+    // projects wider, so a circle of radius R fills a half-width whose tangent
+    // is t at d = R·√(1/t² + cos²pitch). Without the cos² term a portrait
+    // phone clips the outer band by a few pixels a side (found R4.9).
+    const PITCH = (58 * Math.PI) / 180;
+    const tanW = tan * (Math.max(1, fr.w) / H);
+    const byWidth = p.edge * Math.sqrt(1 / (tanW * tanW) + Math.cos(PITCH) ** 2) * 1.01;
+    // R4.9 (instructor, 2 Oct 2026: "the map a tad bigger"): fitted to the outer
+    // band's own edge, a little tighter than R4.7's 1.08 of its centre.
+    const byHeight = ((p.edge * 0.86) / (tan * (Math.max(1, fr.h) / H))) * 0.98;
+    const fit = Math.max(byWidth, byHeight);
     const planetPos = p.selected ? p.positions.current.get(p.selected) : undefined;
     // A chosen moon: the camera eases on to it, closer than to a planet (3.2).
     const moonPos = p.selectedMoon ? p.positions.current.get(`moon:${p.selectedMoon}`) : undefined;
@@ -805,7 +809,7 @@ function Rig(p: SceneProps & { outer: number; positions: MutableRefObject<Map<st
     const wantTarget = selPos ?? tmp.set(0, 0, 0);
     // A chosen planet's whole moon system fits the free area (R4.7: moons now
     // begin outside the Roche limit, so systems are wider than the old fixed 16).
-    const scale = p.outer / TUNED_OUTER;
+    const scale = BODY_SCALE;
     const chosen = p.selected ? p.planets.find((pl) => pl.id === p.selected) : undefined;
     const reach = chosen ? systemReach(chosen, p.rotation, scale) : 0;
     const planetNear = (reach * 1.15) / (tan * (Math.max(1, Math.min(fr.w, fr.h)) / H));
@@ -816,7 +820,7 @@ function Rig(p: SceneProps & { outer: number; positions: MutableRefObject<Map<st
     dist.current = dist.current === null ? wantDist : dist.current + (wantDist - dist.current) * k;
     yawNow.current += (p.yaw.current - yawNow.current) * (p.reduced ? 1 : 1 - Math.exp(-dt * 10));
 
-    const pitch = (58 * Math.PI) / 180;
+    const pitch = PITCH;
     const d = dist.current;
     camera.position.set(
       target.current.x + d * Math.cos(pitch) * Math.sin(yawNow.current),

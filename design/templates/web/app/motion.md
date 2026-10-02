@@ -42,3 +42,10 @@ lines (Parker spirals) turn with the star, once in 90s, and the sun now spins
 prograde, the way its planets go round and its field winds. **All of it is on
 the one clock that `prefers-reduced-motion` holds at 0** (the R4.3 pixel-still
 test passed with all of it rendering).
+
+## R4.9 (2 Oct 2026)
+
+Comets move at their real Kepler speed (the 40x clock is gone): each starts
+near aphelion, off the screen, and takes minutes to fall in, swing round the
+sun with its coma and tail, and leave. Under reduced motion they hold at t = 0,
+out of view.

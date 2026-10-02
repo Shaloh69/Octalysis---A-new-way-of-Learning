@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { computeSolarLayout, type StageInput, type ObjectiveInput } from "../src/solar-system/layout";
+import { orbitThrough, positionAt } from "../src/solar-system/kepler";
 import {
   populations,
   cometActivity,
@@ -88,6 +89,34 @@ describe("where the brief puts them", () => {
       expect(c.a * (1 + c.e), "aphelion out in the reservoir").toBeGreaterThan(L.kuiper.inner);
       expect(c.a * (1 - c.e), "perihelion inside the frost line").toBeLessThan(L.frost.inner);
       expect(c.e).toBeGreaterThan(0.6);
+    }
+  });
+
+  /*
+   * R4.9 (instructor, 2 Oct 2026): "make the comets move away from the map,
+   * also at a much slower speed", clarified "stay out at the edges". At their
+   * real Kepler speed (no faster clock) the second law keeps them far out
+   * almost all the time; each starts near aphelion.
+   */
+  it("every comet starts beyond the last band, near its aphelion", () => {
+    for (const seed of [0.42, 1.7, 3.7449036281682666, 6.1]) {
+      for (const c of populations(L, seed, false).comets) {
+        const p = positionAt(orbitThrough({ a: c.a, e: c.e, omega: c.omega, theta0: c.theta0 }), 0);
+        expect(p.r).toBeGreaterThan(L.bands[6]!.outer);
+        expect(p.r, "near aphelion").toBeGreaterThan(c.a * (1 + c.e) * 0.95);
+      }
+    }
+  });
+
+  it("every comet spends at least 90% of its period beyond the frost line, at its real speed", () => {
+    for (const seed of [0.42, 1.7, 3.7449036281682666, 6.1]) {
+      for (const c of populations(L, seed, false).comets) {
+        const o = orbitThrough({ a: c.a, e: c.e, omega: c.omega, theta0: c.theta0 });
+        const N = 4000;
+        let out = 0;
+        for (let k = 0; k < N; k++) if (positionAt(o, (o.period * k) / N).r > L.frost.radius) out++;
+        expect(out / N, `seed ${seed}`).toBeGreaterThanOrEqual(0.9);
+      }
     }
   });
 
@@ -180,7 +209,7 @@ describe("the star's magnetic field, Parker spirals (R4.8)", () => {
       expect(f[i + 1]).toBe(0);
     }
     expect(min).toBeCloseTo(WIND_INNER, 6);
-    expect(max).toBeCloseTo(L.kuiper.outer, 6);
+    expect(max).toBeCloseTo(L.kuiper.outer, 4); // float32 at r ~ 100
   });
 
   it("each line trails the star's turn: its angle falls by k per unit of distance, 45° from radial at r = 1/k", () => {

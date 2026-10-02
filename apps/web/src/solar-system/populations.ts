@@ -1,3 +1,4 @@
+import { solveKepler } from "./kepler";
 import type { SolarLayout } from "./layout";
 
 /**
@@ -92,11 +93,20 @@ export function populations(layout: SolarLayout, seed: number, low: boolean): Po
     return { a: (peri + apo) / 2, e: (apo - peri) / (apo + peri), omega: rand() * Math.PI * 2, theta0: rand() * Math.PI * 2, size: 0.12 + rand() * 0.1 };
   });
 
-  // Comets: from the icy reservoir to inside the frost line.
-  const comets: SmallOrbit[] = Array.from({ length: 3 }, (_, i) => {
-    const peri = 3.2 + rand() * (frost.inner * 0.45);
-    const apo = kuiper.inner + (oort * 0.7 - kuiper.inner) * (0.3 + rand() * 0.6);
-    return { a: (peri + apo) / 2, e: (apo - peri) / (apo + peri), omega: rand() * Math.PI * 2, theta0: (i / 3) * Math.PI * 2 + rand(), size: 0.1 };
+  // Comets: from the Oort cloud to inside the frost line. R4.9 (instructor,
+  // 2 Oct 2026: "stay out at the edges", "much slower"): each starts near
+  // aphelion, and at its real speed the second law keeps it out there for over
+  // 90% of its period (tested); it swings in, grows its coma and tail, and goes.
+  const comets: SmallOrbit[] = Array.from({ length: 3 }, () => {
+    const peri = 3.2 + rand() * (frost.inner * 0.3);
+    const apo = oort * (0.95 + rand() * 0.1);
+    const omega = rand() * Math.PI * 2;
+    const e = (apo - peri) / (apo + peri);
+    // Near aphelion in TIME: a mean anomaly within 2% of a period of it. (On an
+    // orbit this eccentric, an angle near aphelion can be far from it.)
+    const E = solveKepler(Math.PI + (rand() - 0.5) * 0.25, e);
+    const nu = 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2));
+    return { a: (peri + apo) / 2, e, omega, theta0: omega + nu, size: 0.1 };
   });
 
   const wind: WindParticle[] = Array.from({ length: Math.round(240 * k) }, () => {

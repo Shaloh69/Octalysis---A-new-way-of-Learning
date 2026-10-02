@@ -17,9 +17,10 @@ export const OUTER_PERIOD_S = 600;
  * all orbiting bodies"). Its gravitational parameter GM, in scene units³ per
  * second², chosen so the layout's outermost ring takes OUTER_PERIOD_S: the map
  * keeps the pace it was tuned to, and now says why (`layout-solar.spec.ts`).
- * Every body circling the star takes its period from this one number.
+ * Every body circling the star takes its period from this one number. R4.9
+ * widened the orbits, and the star grew to keep the pace (24.164 to 68.78).
  */
-export const STAR_GM = 24.164;
+export const STAR_GM = 68.78;
 
 /** Kepler's third law with the star's mass in it: T = 2π√(a³/GM). */
 export function starPeriod(a: number, gm = STAR_GM): number {

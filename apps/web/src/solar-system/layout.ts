@@ -127,8 +127,15 @@ export const LEVEL_NAMES: Record<number, string> = {
   0: "Digital Logic",
 };
 
-/** Clearance around the sun, so the innermost ring is not drawn through it. */
-const INNER_RADIUS = 4;
+/**
+ * The sun's drawn radius (R4.9, instructor 2 Oct 2026: "also a bigger sun";
+ * R4.7's was 1.7). The scene draws it; the layout keeps the innermost band
+ * clear of it, tested with the innermost planet at its perihelion.
+ */
+export const SUN_RADIUS = 3.4;
+
+/** Clearance around the sun, so the innermost band is not drawn through it. */
+const INNER_RADIUS = SUN_RADIUS + 3;
 
 /*
  * The spacing constants that were here (MIN_STEP, STEP_SPREAD, STEP_GROWTH)
@@ -169,14 +176,23 @@ const MOONS_PER_LOCAL_RING = 8;
  * than MIN_BAND), so a crowded level still gets more room (F-2) and radius is
  * still strictly increasing in level. The gap at the frost line is wide enough
  * to hold the asteroid belt.
+ *
+ * R4.9 (instructor, 2 Oct 2026: "a wider orbit with enough space that they
+ * don't overlap"): the orbits are wider, and a giant's orbit wider than a
+ * rocky world's, since a giant is drawn larger. Which is which comes from the
+ * level alone (the frost line sits between L2 and L3), never from the
+ * student's seed. Tested on the moving planets: no two ever overlap.
  */
-const ORBIT_GAP = 2.2;
+const ORBIT_GAP = 3.2;
+const ORBIT_GAP_GIANTS = 4.4;
 const MIN_BAND = 2.4;
 const BAND_GAP = 1.2;
 const FROST_GAP = 6;
 /** Gentle: no orbit is more eccentric than this, and none reaches a neighbour's. */
 const E_MIN = 0.03;
 const E_MAX = 0.12;
+/** How much of its slot an orbit's swing (a·e) may take, so neighbours keep their distance. */
+const E_ROOM = 0.4;
 
 /** A number in [0, 1) from a stage id: curriculum data, the same for every student. */
 function unit(id: string, salt: string): number {
@@ -289,7 +305,7 @@ export function computeSolarLayout(
   let edge = INNER_RADIUS;
   for (const level of LEVELS) {
     if (level > 0) edge += level === 3 ? FROST_GAP : BAND_GAP;
-    const width = Math.max(MIN_BAND, byBand[level]!.length * ORBIT_GAP);
+    const width = Math.max(MIN_BAND, byBand[level]!.length * (level >= 3 ? ORBIT_GAP_GIANTS : ORBIT_GAP));
     bands.push({ level, inner: edge, outer: edge + width });
     edge += width;
   }
@@ -306,7 +322,7 @@ export function computeSolarLayout(
     const slot = (band.outer - band.inner) / Math.max(1, list.length);
     list.forEach((s, i) => {
       const a = band.inner + (i + 0.5) * slot;
-      const eMax = Math.min(E_MAX, (0.45 * slot) / a);
+      const eMax = Math.min(E_MAX, (E_ROOM * slot) / a);
       const e = Math.max(0, Math.min(eMax, E_MIN + unit(s.id, "e") * (eMax - E_MIN)));
       orbitOf.set(s.id, { a, e, omega: unit(s.id, "omega") * Math.PI * 2 });
     });
@@ -371,7 +387,8 @@ export function computeSolarLayout(
     });
   }
 
-  return { bodies, ringRadii, ringOccupancy: occupancy, bands, frost, kuiper, oort: kuiper.outer * 1.6 };
+  // The Oort cloud far out (R4.9): comets falling from it stay out there nearly all the time.
+  return { bodies, ringRadii, ringOccupancy: occupancy, bands, frost, kuiper, oort: kuiper.outer * 2.2 };
 }
 
 /** The flight path: curriculum order, one point per stage. */

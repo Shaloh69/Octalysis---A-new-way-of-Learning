@@ -41,13 +41,13 @@ interface Props {
   colors: { line: Color; star: Color; glow: Color };
 }
 
-function Cloud({ positions, color, size, opacity }: { positions: Float32Array; color: Color; size: number; opacity: number }): JSX.Element {
+function Cloud({ positions, color, size, opacity, fixed = false }: { positions: Float32Array; color: Color; size: number; opacity: number; fixed?: boolean }): JSX.Element {
   return (
     <points raycast={noPick}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color={color} size={size} sizeAttenuation transparent opacity={opacity} depthWrite={false} />
+      <pointsMaterial color={color} size={size} sizeAttenuation={!fixed} transparent opacity={opacity} depthWrite={false} />
     </points>
   );
 }
@@ -69,8 +69,7 @@ export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, c
   const orbits = useMemo(
     () => ({
       centaurs: pops.centaurs.map((c) => orbitThrough({ a: c.a, e: c.e, omega: c.omega + rotation, theta0: c.theta0 + rotation })),
-      // A comet's period at its true semi-major axis would be centuries of
-      // screen time: its clock runs 40x, so one is seen falling in and out.
+      // At their real speed (R4.9: "much slower"): out at the edges nearly all the time, then in.
       comets: pops.comets.map((c) => orbitThrough({ a: c.a, e: c.e, omega: c.omega + rotation, theta0: c.theta0 + rotation })),
     }),
     [pops, rotation],
@@ -107,7 +106,7 @@ export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, c
     orbits.comets.forEach((o: Orbit, i) => {
       const g = cometRefs.current[i];
       if (!g) return;
-      const p = positionAt(o, t * 40);
+      const p = positionAt(o, t);
       g.position.set(p.x, 0, p.y);
       const act = cometActivity(p.r, layout);
       const coma = g.children[1] as Mesh | undefined;
@@ -173,7 +172,8 @@ export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, c
       <group ref={kuiper}>
         <Cloud positions={pops.kuiper} color={colors.star} size={0.45} opacity={0.7} />
       </group>
-      <Cloud positions={pops.oort} color={colors.star} size={0.6} opacity={0.45} />
+      {/* The Oort cloud is as far out as the camera (R4.9), so it is drawn in pixels, as the stars are: never a square up close. */}
+      <Cloud positions={pops.oort} color={colors.star} size={2} opacity={0.45} fixed />
       {/* Every giant's Trojans, at L4 and L5: one draw for all of them. */}
       <points ref={trojans} raycast={noPick}>
         <bufferGeometry>

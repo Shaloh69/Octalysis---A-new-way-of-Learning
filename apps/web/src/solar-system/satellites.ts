@@ -35,6 +35,15 @@ export const MASS_RATIO: Record<BodyKind, number> = {
   ice: 5.0e-5,
 };
 
+/**
+ * How large every planet and moon system is drawn (R4.9, instructor 2 Oct
+ * 2026: "smaller planets"). R4.7 grew bodies with the system (its outermost
+ * ring over 35 units: 1.73); R4.9 fixes them at 0.65 of that, so widening the
+ * orbits no longer grows the planets, and a chosen planet's moon system keeps
+ * its proportions (the camera fits it either way).
+ */
+export const BODY_SCALE = 1.73 * 0.65;
+
 /** A planet's drawn radius: it still grows with its moons, its kind makes a giant read as one. */
 export function planetSize(moonCount: number, kind: BodyKind, scale: number): number {
   return (0.62 + Math.min(moonCount || 5, 12) * 0.035) * KIND_SCALE[kind] * scale;

@@ -234,3 +234,50 @@ at alpha 0.32 sat beside the reticle); it is 0.18 now. **Measured:** 89 draw
 calls a frame for the whole system, counted at the GL (the probe R5.3 commits as `web-app-perf.spec.ts`), against R5.3's
 50. R4.8's own share is two (the Trojans and the field); the rest is R4.7's
 ellipses, bands and centaurs, merged under R5.3.
+
+## R4.9: scale, spacing and the comets (instructor, 2 Oct 2026)
+
+Asked after R4.7's captures: "make the comets move away from the map, also at
+a much slower speed" (clarified: stay out at the edges), "make the map a tad
+bit bigger, smaller planets, a wider orbit with enough space that they don't
+overlap with each other", "also a bigger sun". Supersedes R4.7's "planets and
+moon systems grow with it (`TUNED_OUTER`)": bodies are now drawn at one fixed
+`BODY_SCALE` (`satellites.ts`), 0.65 of R4.7's.
+
+- **Comets**: no faster clock. Each falls from the Oort cloud (now 2.2x the
+  Kuiper belt's edge) to inside the frost line, starts within 2% of a period
+  of aphelion, and at its real speed spends over 90% of its period beyond the
+  frost line (`populations.spec.ts`, four seeds). Off the screen most of the
+  time, then in, with its coma and tail, and out again. The Oort cloud is
+  drawn in pixels now (as the stars are), since it sits about as far out as
+  the camera.
+- **Smaller planets, wider orbits**: an orbit's slot is 3.2 units inside the
+  frost line and 4.4 beyond it (a giant is drawn larger; the level alone
+  decides, never the seed), and an orbit's swing takes at most 0.4 of its
+  slot. Tested on the MOVING planets for six students' worlds: over a full
+  outer period no two planets' centres come within their drawn radii plus 0.5,
+  and at every angle neighbouring orbits stay that far apart, so it holds for
+  ever (`layout-solar.spec.ts`). 11 of 19 orbits still visibly elliptical.
+- **A tad bigger**: the camera fits the outer band's own edge (0.98 down the
+  height); across the width it is exact, d = R·√(1/t² + cos²pitch), since the
+  disc's near side projects wider. **Found by looking**: the first fit
+  clipped the outer band at 380 by a few pixels a side; R4.7's 1.08 had hidden
+  the missing term.
+- **A bigger sun**: radius 3.4 (was 1.7), its corona and halo in proportion;
+  the innermost band starts 3 units out, clear of the innermost planet at its
+  perihelion (tested). The star's mass grew with the orbits (`STAR_GM` 68.78),
+  so the outermost ring still takes 600s.
+
+Before (R4.8, `current-r48*`) and after (`current-realism*`), 2 Oct 2026,
+build at 5185, reduced motion; all opened, and a 2x crop of 380's left edge:
+
+| | before (R4.8) | after (R4.9) |
+|---|---|---|
+| 1440 | ![](current-r48.png) | ![](current-realism.png) |
+| 380 | ![](current-r48-380.png) | ![](current-realism-380.png) |
+| 06 chosen, 1440 | ![](current-r48-jupiter.png) | ![](current-r49-jupiter.png) |
+| 08 chosen, 1440 | ![](current-r48-uranus.png) | ![](current-r49-uranus.png) |
+
+At 1440 the system spans about 885px across (821 before); a planet's radius is
+3 to 6px (8 to 16 before); the sun's about 19px (11). A chosen planet looks as
+it did: its moon system shrank with it and the camera fits it.
