@@ -57,7 +57,7 @@ scripts/db-demo.mjs, ONE pnpm dev:api proved with a real GET, apps/web built
 and previewed on 5185, apps/console on 5186, OCTA_WEB_URL and
 OCTA_CONSOLE_URL exported. A harness notice that a background server
 "stopped" is not proof: probe the ports. Then the FULL design suite (2 Oct,
-final build: see PROGRESS; earlier the same day 1374 passed, 177 skipped)
+final build: 1375 passed, 179 skipped, 0 failed)
 and pnpm test (API 718 passed 1 skipped, web unit 241, console 217, tokens
 38). Never reset while a Playwright suite runs; after the API suite run
 db:reset THEN db-demo.

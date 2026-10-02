@@ -23,6 +23,13 @@ import { mkdirSync } from "node:fs";
  */
 
 const DIR = "design/templates/web/loading";
+/**
+ * The assertions run on every suite; the frames are WRITTEN only under
+ * OCTA_CAPTURE=1, like every other capture block, so a plain run does not
+ * rewrite forty committed PNGs (it did on 2 Oct 2026, every run).
+ */
+const CAPTURE = !!process.env.OCTA_CAPTURE;
+const shoot = (page: Page, path: string) => (CAPTURE ? page.screenshot({ path }) : page.screenshot());
 const SECRET = process.env.SUPABASE_JWT_SECRET ?? "test-secret-at-least-32-characters-long-000000";
 function token(): string {
   const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
@@ -96,7 +103,7 @@ async function warpFrames(page: Page, dir: "in" | "out", s: string): Promise<num
   for (const t of TIMES) {
     await seekWarp(page, t);
     cover.push(await page.locator(".realm-warp").evaluate((el) => Number(getComputedStyle(el).opacity)));
-    await page.screenshot({ path: `${DIR}/warp-${dir}-${String(t).padStart(4, "0")}${s}.png` });
+    await shoot(page, `${DIR}/warp-${dir}-${String(t).padStart(4, "0")}${s}.png`);
   }
   // Let it finish: a loading state that never clears is a stuck page.
   await page.evaluate(() => document.getAnimations().forEach((a) => a.play()));
@@ -120,7 +127,7 @@ test("the realm warp, both ways, as frames", async ({ page }, info) => {
   await page.locator("[data-reader]").first().waitFor();
   // The arrival screen follows the warp in (2 Oct 2026): its frame, then a key clears it.
   await page.locator(".arrival-facts li").first().waitFor();
-  await page.screenshot({ path: `${DIR}/warp-in-arrival${s}.png` });
+  await shoot(page, `${DIR}/warp-in-arrival${s}.png`);
   await page.keyboard.press("Enter");
   await expect(page.locator(".arrival")).toHaveCount(0);
   await page.getByRole("link", { name: "Leave planet" }).click();
@@ -153,20 +160,20 @@ test("the biome arrival, as frames: biome at once, skeleton at 400ms, words at 3
   await at(100);
   await expect(page.locator("html")).toHaveAttribute("data-realm", "biome");
   await expect(page.locator("[data-skeleton]")).toHaveCount(0);
-  await page.screenshot({ path: `${DIR}/arrival-0100${s}.png` });
+  await shoot(page, `${DIR}/arrival-0100${s}.png`);
 
   await at(700);
   await expect(reader).toHaveAttribute("data-reader", "loading");
   await expect(reader).toHaveAttribute("aria-busy", "true");
   await expect(page.locator("[data-skeleton]")).toBeVisible();
-  await page.screenshot({ path: `${DIR}/arrival-0700${s}.png` });
+  await shoot(page, `${DIR}/arrival-0700${s}.png`);
 
   await at(3300);
   await expect(page.locator(".rd-slow")).toBeVisible();
-  await page.screenshot({ path: `${DIR}/arrival-3300${s}.png` });
+  await shoot(page, `${DIR}/arrival-3300${s}.png`);
 
   release();
   await expect(reader).toHaveAttribute("data-reader", "reading", { timeout: 10_000 });
   await expect(page.locator(".rd-slow")).toHaveCount(0);
-  await page.screenshot({ path: `${DIR}/arrival-landed${s}.png` });
+  await shoot(page, `${DIR}/arrival-landed${s}.png`);
 });

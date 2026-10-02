@@ -1,8 +1,8 @@
 # R3.4's loading screens, as frame sequences
 
 `REDESIGN-CLAUDE.md` §2: a transition is captured as a short sequence, not a
-still. Written by `design/specs/r3-loading-frames.spec.ts` (green at 1440 and
-380); `sequence.png` and `sequence-380.png` are the contact sheets to open.
+still. Written by `design/specs/r3-loading-frames.spec.ts` under `OCTA_CAPTURE=1`
+(it asserts on every run and writes only on request; green at 1440 and 380); `sequence.png` and `sequence-380.png` are the contact sheets to open.
 
 - **The realm warp** (`--dur-warp`, 1.1s since 2 Oct 2026): `warp-in-*` and
   `warp-out-*` at 0, 180, ... 1080ms. The frames are exact, not raced: the
