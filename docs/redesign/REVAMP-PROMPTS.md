@@ -39,7 +39,9 @@ Read docs/NEXT-SESSION.md section 0z first (what the last session built,
 found and parked: R3 closed against the code, the warp and the arrival
 screen, R4.7's realistic system and why the map is not to scale, the
 draw-call risk it created, the fallback-biome first frame, harness notices
-that are not process state). Then docs/redesign/phases/R5-*.md in full,
+that are not process state, and 0z.12: R4.8). Then
+docs/redesign/phases/R4-*.md section R4.8 and docs/source/solar-system-brief.md,
+docs/redesign/phases/R5-*.md in full,
 docs/SKILL-TREE-3D.md section 7 (the accessibility contract R5.2 re-runs),
 docs/redesign/WEB-REVAMP.md section 4 and design/templates/web/app/SPEC.md's
 R4.7 section (what the map now is), and REDESIGN-CLAUDE.md 2b-2d. Root
