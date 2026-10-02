@@ -1518,6 +1518,11 @@ left, or needing a decision:
    moons, rings on the other giants, the star's magnetic field as Parker
    spirals, and periods from the star's mass. Build R4.8 BEFORE R5.3, so the
    draw-call measurement includes it.
+13. **R4.9, the instructor's changes after seeing R4.7 (2 Oct, for the next
+   session):** comets stay out at the edges and move much slower (no 40x
+   clock, start near aphelion); smaller planets; wider orbits so that no two
+   planets ever overlap (tested on their moving positions); the map a tad
+   bigger on screen; a bigger sun. Specified box by box in the R4 phase file.
 
 ---
 

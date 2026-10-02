@@ -23,15 +23,15 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: R4.8 (the rest of the brief), then R5
+## 1. Start here — the next session: R4.8 and R4.9 (the brief, scale and spacing), then R5
 
-*Rewritten 2 Oct 2026 (amended the same day: R4.8 added at the instructor's
-request) by the session that closed R3 against the code (87/88:
+*Rewritten 2 Oct 2026 (amended the same day: R4.8 and R4.9 added at the
+instructor's request) by the session that closed R3 against the code (87/88:
 only the instructor's planet summaries left), built the longer warp and the
 arrival screen, and built R4.7's realistic system (ellipses, bands, the frost
 line, Hill/Roche, belts and comets). Phase at handover: **R3 87 / 88**,
-**R4 34 / 42** (R4.8's six, and a person's screen-reader pass), **R5 0 / 24**;
-all tracks **206 done · 33 to-do (239 items, 86%)**. `pnpm phase` is the count,
+**R4 34 / 48** (R4.8's six, R4.9's six, and a person's screen-reader pass),
+**R5 0 / 24**; all tracks **206 done · 39 to-do (245 items, 84%)**. `pnpm phase` is the count,
 not this line. The prompt is in a plain block so it pastes exactly as written.*
 
 ```text
@@ -39,8 +39,9 @@ Read docs/NEXT-SESSION.md section 0z first (what the last session built,
 found and parked: R3 closed against the code, the warp and the arrival
 screen, R4.7's realistic system and why the map is not to scale, the
 draw-call risk it created, the fallback-biome first frame, harness notices
-that are not process state, and 0z.12: R4.8). Then
-docs/redesign/phases/R4-*.md section R4.8 and docs/source/solar-system-brief.md,
+that are not process state, 0z.12: R4.8, 0z.13: R4.9). Then
+docs/redesign/phases/R4-*.md sections R4.8 and R4.9, and
+docs/source/solar-system-brief.md,
 docs/redesign/phases/R5-*.md in full,
 docs/SKILL-TREE-3D.md section 7 (the accessibility contract R5.2 re-runs),
 docs/redesign/WEB-REVAMP.md section 4 and design/templates/web/app/SPEC.md's
@@ -76,6 +77,16 @@ and orbital periods from the star's mass (T = 2π√(a³/GM)). Pure modules with
 vitest tests watched failing first (populations.ts, satellites.ts and
 kepler.ts show the shape), merged geometry so draw calls stay low, through
 /app's page gate (captures at 1440 and 380, opened), committed and pushed.
+
+Then R4.9, the instructor's changes after seeing R4.7, each specified in the
+R4 phase file: comets stay out at the edges and move much slower (drop the
+40x comet clock in map/Leftovers.tsx, start each near aphelion; test they
+start beyond the last band and spend at least 90% of their period beyond the
+frost line); smaller planets; wider orbits with a NEW test that no two
+planets ever overlap, on their moving positions over a full outer period;
+the map a tad bigger on screen (the Rig's fit margin) with nothing clipped;
+a bigger sun, still clear of the innermost band. Through the page gate,
+before and after captures side by side in the SPEC, committed and pushed.
 
 Then R5 in order, each box checked against the code and the running
 app, ticked in the same commit with a dated line naming its evidence.

@@ -305,3 +305,37 @@ still under reduced motion, through `/app`'s page gate:
 - [ ] **Through `/app`'s page gate**, and the draw-call budget measured with
       all of it (`renderer.info.render.calls`; R5.3's ≤50): Trojans and the
       field lines as merged geometry, never a mesh each
+
+## R4.9 — Scale, spacing and the comets (instructor, 2 Oct 2026, for the next session)
+
+Asked after R4.7's captures: "make the comets move away from the map, also at a
+much slower speed" (clarified the same day: **stay out at the edges**), "make
+the map a tad bit bigger, smaller planets, a wider orbit with enough space
+that they don't overlap with each other", "also a bigger sun". Cosmetic, the
+same data; through `/app`'s page gate with captures at 1440 and 380, opened.
+
+- [ ] **Comets stay out at the edges, much slower.** Drop the comets' 40x
+      clock (`map/Leftovers.tsx`): they move at their real Kepler speed, so
+      by the second law they spend almost all their time far out. Start each
+      near aphelion (t = 0), in the Kuiper/Oort region beyond the last band.
+      Tested (`populations.spec.ts` / `kepler.spec.ts`): every comet starts
+      beyond the last band, and spends at least 90% of its period beyond the
+      frost line; its coma and tail still appear only when it swings in
+- [ ] **Smaller planets**: the drawn planet sizes shrink (`planetSize` in
+      `satellites.ts`), moon systems with them; the Hill/Roche tests still pass
+- [ ] **Wider orbits, and no two planets ever overlap**: `ORBIT_GAP` widened
+      (`layout.ts`) until a new test holds: over a full outer period, sampled,
+      the distance between every pair of planets' centres stays above the sum
+      of their drawn radii plus a margin (the moving positions from
+      `kepler.ts`, not just the semi-major axes); the band, frost-line and
+      ellipse tests still pass
+- [ ] **The map a tad bigger on screen**: the system fills more of the free
+      area (the camera's fit margin in `Rig`, now 1.08), still with no part of
+      the outer band clipped at 1440 or 380
+- [ ] **A bigger sun**: the star drawn larger (`Sun` in `StarMapScene.tsx`),
+      its corona included, still clear of the innermost band
+      (`INNER_RADIUS` moves with it if needed); tested that the sun's drawn
+      radius stays inside the innermost band's inner edge
+- [ ] **Through `/app`'s page gate**: `web-app.spec.ts` green at 1440 and
+      380, `current-realism*` recaptured and opened, before and after side by
+      side in the SPEC
