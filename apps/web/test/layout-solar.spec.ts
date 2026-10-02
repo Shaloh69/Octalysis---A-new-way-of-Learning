@@ -720,6 +720,54 @@ describe("R4.9 — no two planets ever overlap, and the sun is clear of them", (
   });
 });
 
+/**
+ * R5.1, INV-32 restated for the system R4.7-R4.9 built: a planet is no longer
+ * a point on a ring but an ellipse inside its level's band, moving. "The map
+ * matches the seed" now means: each planet's band, semi-major axis,
+ * eccentricity and perihelion are functions of the curriculum alone, and what
+ * a student's seed does to the moving system is a rigid turn, never a change
+ * of shape.
+ */
+describe("R5.1 — INV-32 for bands and ellipses: the orbits are the curriculum's, the student's seed only turns them", () => {
+  it("the preview seed cannot move a band, an axis, an eccentricity or a perihelion", () => {
+    const a = computeSolarLayout(STAGES, OBJECTIVES, 1);
+    const b = computeSolarLayout(STAGES, OBJECTIVES, 999);
+    expect(a.bands).toEqual(b.bands);
+    expect(a.frost).toEqual(b.frost);
+    for (const p of planets()) {
+      const [x, y] = [a.bodies.get(p.id)!, b.bodies.get(p.id)!];
+      expect([y.radius, y.e, y.omega], p.id).toEqual([x.radius, x.e, x.omega]);
+    }
+  });
+
+  it("each planet sits in the band of its own level, and the bands run in level order", () => {
+    for (const p of planets()) {
+      const band = LAYOUT.bands[Math.round(p.ring)]!;
+      expect(band.level, p.id).toBe(Math.round(p.ring));
+      expect(p.radius * (1 - p.e!), p.id).toBeGreaterThanOrEqual(band.inner);
+      expect(p.radius * (1 + p.e!), p.id).toBeLessThanOrEqual(band.outer);
+    }
+    LAYOUT.bands.forEach((b, i) => expect(b.level).toBe(i));
+  });
+
+  it("a student's rotation turns the moving system rigidly: every distance from the sun and between planets is everyone's, at every t", () => {
+    const ps = planets();
+    const T = starPeriod(Math.max(...LAYOUT.ringRadii));
+    for (const rot of [0.37, 3.7449036281682666, 5.9]) {
+      for (const t of [0, T * 0.13, T * 0.5, T * 0.91]) {
+        const base = ps.map((p) => positionAt(bodyOrbit(p, 0), t));
+        const turned = ps.map((p) => positionAt(bodyOrbit(p, rot), t));
+        for (let i = 0; i < ps.length; i++) {
+          expect(turned[i]!.r, `${ps[i]!.id} r`).toBeCloseTo(base[i]!.r, 9);
+          // The same point, turned by rot about the sun.
+          const d = Math.atan2(turned[i]!.y, turned[i]!.x) - Math.atan2(base[i]!.y, base[i]!.x) - rot;
+          expect(Math.abs(Math.atan2(Math.sin(d), Math.cos(d))), `${ps[i]!.id} angle`).toBeLessThan(1e-9);
+        }
+      }
+    }
+  });
+});
+
 describe("R4.8 — the star's mass sets the pace, and it is the pace the map was tuned to", () => {
   const outer = Math.max(...LAYOUT.ringRadii);
 

@@ -6,12 +6,36 @@ tested rather than assumed. This phase closes the redesign, same spirit as
 `PHASES.md`'s own exit-criteria discipline.
 
 ## R5.1 — Re-run the existing invariants against the new coordinate system
-- [ ] **INV-32** (map matches seed exactly) — re-verify against `layout.ts`'s
+- [x] **INV-32** (map matches seed exactly) — re-verify against `layout.ts`'s
       new ring-based formula
+      **2 Oct 2026, restated for R4.7-R4.9** (a planet is an ellipse in its
+      level's band, moving): every stage one planet and every objective one
+      moon, order-independent (`layout-solar.spec.ts` INV-32, green on the
+      R4.9 layout); NEW in `R5.1`: the cosmetic seed cannot move a band, an
+      axis, an eccentricity or a perihelion; each planet's whole ellipse in
+      its own level's band; a student's rotation turns the moving system
+      rigidly (every distance the same, at every t; watched failing with
+      the rotation dropped from ω)
 - [ ] **INV-33** (every edge on the map = an entry in `stages.prereq`, no
       editorializing) — re-verify against the flight-path line specifically
-- [ ] **INV-34** (states are server-derived, never client-computed) —
+      **2 Oct 2026: NOT TICKED, and the reason is a finding.** There is no
+      flight-path line to verify. The 30 Sep remake (`0d6828a`, ruling 2,
+      Starfield's system map) deleted `FlightPath` with the old canvas and
+      recorded it nowhere; `layout.ts`'s `flightPath()` is now called only
+      by tests. What holds: the map draws NO edge, so it invents none, and
+      the API's own INV-32/33 (`services/api/test/stages.spec.ts`: 19 nodes,
+      18 edges, every edge a real prereq row) and the database's
+      (`inv_33_edges_resolve`) are green. What fails is the other half,
+      "every prereq entry is drawn". Restoring a line is a planned feature
+      gone missing: planned and parked for the instructor (NEXT-SESSION 0za),
+      not rebuilt unasked
+- [x] **INV-34** (states are server-derived, never client-computed) —
       re-verify, including the new moon states from R4
+      **2 Oct 2026:** `pnpm check:boundary` clean (no client-side lock or
+      mastery threshold); a planet's state is the API node's `state`
+      (`map/StarMap.tsx`), a moon's glow its server `mastered` flag, with
+      `correct > 0` choosing only the partial glyph (`map/body.tsx`
+      `moonGlow`); every R4.7-R4.9 addition is cosmetic and reads no state
 
 ## R5.2 — Re-run `SKILL-TREE-3D.md` §7's accessibility contract in full
 - [ ] Keyboard-only, full map, curriculum focus order
