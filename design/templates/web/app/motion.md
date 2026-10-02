@@ -31,3 +31,14 @@ one is seen falling in and out); the solar wind streams outward. **All of it
 runs on the scene's one clock, which `prefers-reduced-motion` holds at 0**:
 asserted pixel-still with a moon open (`web-app.spec.ts`, R4.3), after the
 frame-rate guard's one-off quality switch.
+
+## R4.8 (2 Oct 2026)
+
+Every period now comes from the star's mass (T = 2π√(a³/GM), `orbit.ts`),
+chosen so the pace is unchanged: the outermost ring still takes 600s. The
+Trojan swarms ride their giants' orbits, a cloud 60° ahead and one 60° behind,
+at every moment. A giant's captured moons orbit backwards. The star's field
+lines (Parker spirals) turn with the star, once in 90s, and the sun now spins
+prograde, the way its planets go round and its field winds. **All of it is on
+the one clock that `prefers-reduced-motion` holds at 0** (the R4.3 pixel-still
+test passed with all of it rendering).

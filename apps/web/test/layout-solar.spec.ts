@@ -12,7 +12,7 @@ import {
   type StageInput,
   type ObjectiveInput,
 } from "../src/solar-system/layout";
-import { angularSpeed, periodSeconds } from "../src/solar-system/orbit";
+import { angularSpeed, OUTER_PERIOD_S, periodSeconds, starPeriod } from "../src/solar-system/orbit";
 import { skinFor } from "../src/solar-system/bodies";
 import { planetSkinKey } from "../src/solar-system/world";
 import { hillRadius, MASS_RATIO, moonOrbit, planetSize, ringSpan, rocheLimit } from "../src/solar-system/satellites";
@@ -648,5 +648,14 @@ describe("R4.7 — moons inside the Hill sphere, outside the Roche limit; rings 
       );
       expect(1 / (1 + planetsMass), `seed ${seed}`).toBeGreaterThan(0.99);
     }
+  });
+});
+
+describe("R4.8 — the star's mass sets the pace, and it is the pace the map was tuned to", () => {
+  const outer = Math.max(...LAYOUT.ringRadii);
+
+  it("at the chosen mass the outermost ring still takes OUTER_PERIOD_S, and every planet keeps its speed", () => {
+    expect(starPeriod(outer) / OUTER_PERIOD_S).toBeCloseTo(1, 2);
+    for (const p of planets()) expect(starPeriod(p.radius) / periodSeconds(p.radius, outer), p.id).toBeCloseTo(1, 2);
   });
 });

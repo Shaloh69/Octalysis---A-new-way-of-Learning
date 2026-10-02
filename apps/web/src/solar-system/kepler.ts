@@ -1,4 +1,4 @@
-import { periodSeconds } from "./orbit";
+import { starPeriod, STAR_GM } from "./orbit";
 
 /**
  * Elliptical orbits (R4.7; instructor, 1 Oct 2026: gentle ellipses, faster at
@@ -7,7 +7,7 @@ import { periodSeconds } from "./orbit";
  *   1. an ellipse with the star at one focus: r = a(1 - e cos E)
  *   2. equal areas in equal times: the MEAN anomaly advances uniformly,
  *      M = M0 + n t, and E follows from Kepler's equation E - e sin E = M
- *   3. T² ∝ a³: the period is `orbit.ts`'s, scaled to the outermost orbit
+ *   3. T² ∝ a³, with the star's mass in it: T = 2π√(a³/GM) (`orbit.ts`, R4.8)
  *
  * Pure and deterministic: the same orbit and time give the same point on every
  * device. At t = 0 the body sits at `theta0`, the angle the curriculum layout
@@ -42,11 +42,24 @@ export function solveKepler(M: number, e: number): number {
   return E;
 }
 
-/** The orbit of semi-major axis `a` and eccentricity `e` that passes through angle `theta0` at t = 0. */
-export function orbitThrough(o: { a: number; e: number; omega: number; theta0: number; outerA: number }): Orbit {
+/**
+ * The orbit of semi-major axis `a` and eccentricity `e` that passes through
+ * angle `theta0` at t = 0, around a star of gravitational parameter `gm`.
+ */
+export function orbitThrough(o: { a: number; e: number; omega: number; theta0: number; gm?: number }): Orbit {
   const nu = o.theta0 - o.omega;
   const E0 = 2 * Math.atan2(Math.sqrt(1 - o.e) * Math.sin(nu / 2), Math.sqrt(1 + o.e) * Math.cos(nu / 2));
-  return { a: o.a, e: o.e, omega: o.omega, M0: E0 - o.e * Math.sin(E0), period: periodSeconds(o.a, o.outerA) };
+  return { a: o.a, e: o.e, omega: o.omega, M0: E0 - o.e * Math.sin(E0), period: starPeriod(o.a, o.gm ?? STAR_GM) };
+}
+
+/** A planet's orbit from its layout body, turned by the student's rotation: the one the map draws it on. */
+export function bodyOrbit(b: { radius: number; e?: number; omega?: number; angle: number }, rotation: number): Orbit {
+  return orbitThrough({ a: b.radius, e: b.e ?? 0, omega: (b.omega ?? 0) + rotation, theta0: b.angle + rotation });
+}
+
+/** The orbit's distance from the star in direction `theta`: r = a(1-e²)/(1+e cos(θ-ω)). */
+export function radiusAt(o: Pick<Orbit, "a" | "e" | "omega">, theta: number): number {
+  return (o.a * (1 - o.e * o.e)) / (1 + o.e * Math.cos(theta - o.omega));
 }
 
 /** Where the body is at time t: the plane's x and y (the star at the origin), and its distance. */
@@ -57,6 +70,19 @@ export function positionAt(o: Orbit, t: number): { x: number; y: number; r: numb
   const c = Math.cos(o.omega);
   const s = Math.sin(o.omega);
   return { x: px * c - py * s, y: px * s + py * c, r: o.a * (1 - o.e * Math.cos(E)) };
+}
+
+/**
+ * L4 (60° ahead of the planet) or L5 (60° behind), on the planet's own orbit,
+ * at time t (R4.8, the Trojans). The brief: "tucked 60 degrees ahead or behind
+ * it in a stable Lagrange point". Ahead is the direction of motion, which is
+ * increasing angle here.
+ */
+export function lagrangePoint(o: Orbit, t: number, side: 4 | 5): { x: number; y: number; r: number; theta: number } {
+  const p = positionAt(o, t);
+  const theta = Math.atan2(p.y, p.x) + (side === 4 ? Math.PI / 3 : -Math.PI / 3);
+  const r = radiusAt(o, theta);
+  return { x: Math.cos(theta) * r, y: Math.sin(theta) * r, r, theta };
 }
 
 /** The ellipse's own points, for drawing the orbit line: n points, the star at a focus. */

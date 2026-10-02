@@ -17,6 +17,9 @@
 
 export type BodyKind = "rocky" | "earthlike" | "gas" | "ringed" | "ice" | "veiled";
 
+/** The faint rings (R4.8): a broad dusty sheet (Jupiter's), narrow dark bands (Uranus's), a few rings with arcs (Neptune's). */
+export type RingStyle = "dust" | "narrow" | "arcs";
+
 export interface BodySkin {
   /** The surface map, in `public/textures/`. */
   map: string;
@@ -31,6 +34,8 @@ export interface BodySkin {
   clouds?: string;
   /** A ring, drawn from a radial alpha strip. */
   ring?: string;
+  /** A faint ring of the giants beyond Saturn (R4.8), drawn from `satellites.ts`'s `ringBands`. */
+  faintRing?: RingStyle;
   /** Cloud bands drifting across a gas giant, as a fraction of a turn per second. */
   bandDrift?: number;
 }
@@ -43,10 +48,10 @@ const SKINS = {
   mercury: { map: "mercury.jpg", kind: "rocky", spinS: 50, tilt: 0.01, oblate: 1 },
   moon: { map: "moon.jpg", kind: "rocky", spinS: 40, tilt: 0.12, oblate: 1 },
   ceres: { map: "ceres.jpg", kind: "rocky", spinS: 30, tilt: 0.07, oblate: 1 },
-  jupiter: { map: "jupiter.jpg", kind: "gas", spinS: 10, tilt: 0.05, oblate: 0.93, bandDrift: 0.012 },
+  jupiter: { map: "jupiter.jpg", kind: "gas", spinS: 10, tilt: 0.05, oblate: 0.93, bandDrift: 0.012, faintRing: "dust" },
   saturn: { map: "saturn.jpg", kind: "ringed", spinS: 11, tilt: 0.47, oblate: 0.9, ring: "saturn_ring_alpha.png", bandDrift: 0.008 },
-  uranus: { map: "uranus.jpg", kind: "ice", spinS: 17, tilt: 1.71, oblate: 0.98 },
-  neptune: { map: "neptune.jpg", kind: "gas", spinS: 16, tilt: 0.49, oblate: 0.98, bandDrift: 0.01 },
+  uranus: { map: "uranus.jpg", kind: "ice", spinS: 17, tilt: 1.71, oblate: 0.98, faintRing: "narrow" },
+  neptune: { map: "neptune.jpg", kind: "gas", spinS: 16, tilt: 0.49, oblate: 0.98, bandDrift: 0.01, faintRing: "arcs" },
   eris: { map: "eris.jpg", kind: "ice", spinS: 36, tilt: 0.2, oblate: 1 },
   haumea: { map: "haumea.jpg", kind: "ice", spinS: 8, tilt: 0.3, oblate: 0.8 },
   makemake: { map: "makemake.jpg", kind: "rocky", spinS: 23, tilt: 0.25, oblate: 1 },

@@ -15,10 +15,10 @@ import {
   TextureLoader,
   Vector3,
 } from "three";
-import { allTextureFiles, moonSkin, skinFor, SUN_MAP, type BodySkin } from "../solar-system/bodies";
-import { ellipsePoints, orbitThrough, positionAt } from "../solar-system/kepler";
-import { populations } from "../solar-system/populations";
-import { moonOrbit, planetSize, ringSpan, rocheLimit } from "../solar-system/satellites";
+import { allTextureFiles, moonSkin, skinFor, SUN_MAP, type BodySkin, type RingStyle } from "../solar-system/bodies";
+import { bodyOrbit, ellipsePoints, positionAt } from "../solar-system/kepler";
+import { populations, SUN_SPIN_S } from "../solar-system/populations";
+import { irregularShape, isGiant, isIrregular, moonDirection, moonOrbit, planetSize, ringBands, ringSpan, rocheLimit } from "../solar-system/satellites";
 import { Leftovers } from "./Leftovers";
 import { planetSkinKey } from "../solar-system/world";
 import type { SolarLayout } from "../solar-system/layout";
@@ -183,6 +183,11 @@ function Scene(p: SceneProps): JSX.Element {
   const outer = Math.max(...p.layout.ringRadii);
   const scale = outer / TUNED_OUTER;
   const pops = useMemo(() => populations(p.layout, p.rotation, p.lowQuality), [p.layout, p.rotation, p.lowQuality]);
+  // The giants (the worlds beyond the frost line): each carries Trojans at L4 and L5 (R4.8).
+  const giants = useMemo(
+    () => p.planets.filter((pl) => isGiant(skinFor(planetSkinKey(pl.id, pl.ring, pl.spoke, p.rotation)).kind)).map((pl) => pl.id),
+    [p.planets, p.rotation],
+  );
 
   // One clock for every body; frozen at 0 under reduced motion.
   const clock = useRef(0);
@@ -207,7 +212,7 @@ function Scene(p: SceneProps): JSX.Element {
         const b = p.layout.bodies.get(pl.id);
         return b ? <OrbitEllipse key={`orbit-${pl.id}`} a={b.radius} e={b.e ?? 0} omega={(b.omega ?? 0) + p.rotation} color={colors.line} /> : null;
       })}
-      <Leftovers pops={pops} layout={p.layout} outer={outer} rotation={p.rotation} clock={clock} colors={colors} />
+      <Leftovers pops={pops} layout={p.layout} rotation={p.rotation} giants={giants} lowQuality={p.lowQuality} clock={clock} colors={colors} />
       {p.planets.map((pl) => (
         <Planet
           key={pl.id}
@@ -335,7 +340,8 @@ function Sun({ colors, surface, reduced }: { colors: SceneColors; surface: Textu
   useFrame((_, dt) => {
     if (reduced) return;
     t.current += Math.min(dt, 0.1);
-    if (body.current) body.current.rotation.y += (dt * Math.PI * 2) / 90;
+    // Prograde, the way its planets go round and its field lines wind (R4.8).
+    if (body.current) body.current.rotation.y -= (dt * Math.PI * 2) / SUN_SPIN_S;
     if (map) map.offset.x = (map.offset.x + dt * 0.003) % 1;
     corona.current?.scale.setScalar(CORONA * (1 + 0.05 * Math.sin(t.current * 0.9)));
     halo.current?.scale.setScalar(HALO * (1 + 0.035 * Math.sin(t.current * 0.55 + 1.3)));
@@ -400,6 +406,33 @@ function radialRing(inner: number, outer: number): RingGeometry {
   return g;
 }
 
+/** The faint rings' grey: unshaded, a little under white, so a dusty ring never outshines its planet. Not a palette colour. */
+const RING_TINT = new Color(0.82, 0.82, 0.82);
+
+/**
+ * A faint ring's radial profile (R4.8, `satellites.ts`'s `ringBands`, every
+ * band inside the Roche limit), painted once per style on a strip: x runs
+ * from the ring's inner edge to its outer, the alpha is each band's.
+ */
+const faintRings = new Map<RingStyle, CanvasTexture>();
+function faintRingTexture(style: RingStyle): CanvasTexture | null {
+  const have = faintRings.get(style);
+  if (have) return have;
+  if (typeof document === "undefined") return null;
+  const c = document.createElement("canvas");
+  c.width = 512;
+  c.height = 1;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  for (const b of ringBands(style)) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${b.alpha})`;
+    ctx.fillRect(Math.floor(b.from * 512), 0, Math.max(1, Math.ceil((b.to - b.from) * 512)), 1);
+  }
+  const tex = new CanvasTexture(c);
+  faintRings.set(style, tex);
+  return tex;
+}
+
 /** Spins are real ratios, scaled to be watched: a skin's `spinS` seconds per turn. */
 function Globe({
   skin,
@@ -410,6 +443,7 @@ function Globe({
   glow,
   reduced,
   segments = 40,
+  shape,
   onClick,
 }: {
   skin: BodySkin;
@@ -423,11 +457,15 @@ function Globe({
   glow: number;
   reduced: boolean;
   segments?: number;
+  /** A captured moon's three axes (R4.8): a lumpy, faceted body instead of a sphere. */
+  shape?: [number, number, number] | undefined;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
 }): JSX.Element {
   const spin = useRef<Mesh>(null);
   const cloudRef = useRef<Mesh>(null);
   const surface = textures.get(skin.map);
+  const faint = useMemo(() => (skin.faintRing ? faintRingTexture(skin.faintRing) : null), [skin.faintRing]);
+  const faintGeo = useMemo(() => (skin.faintRing ? radialRing(...ringSpan(size)) : null), [skin.faintRing, size]);
   // Each body its own copy, so a gas giant's drifting bands move its texture alone.
   const map = useMemo(() => {
     if (!surface) return undefined;
@@ -453,7 +491,7 @@ function Globe({
     <group rotation={[0, 0, skin.tilt]}>
       <mesh
         ref={spin}
-        scale={[1, skin.oblate, 1]}
+        scale={shape ?? [1, skin.oblate, 1]}
         {...(onClick
           ? {
               onClick,
@@ -462,7 +500,7 @@ function Globe({
             }
           : {})}
       >
-        <sphereGeometry args={[size, segments, segments]} />
+        {shape ? <icosahedronGeometry args={[size, 1]} /> : <sphereGeometry args={[size, segments, segments]} />}
         <meshStandardMaterial
           key={map ? "surface" : "tint"}
           color={tint}
@@ -472,8 +510,14 @@ function Globe({
           emissiveIntensity={glow}
           roughness={skin.kind === "gas" || skin.kind === "ringed" ? 0.7 : 0.95}
           metalness={0}
+          flatShading={!!shape}
         />
       </mesh>
+      {faint && faintGeo && (
+        <mesh geometry={faintGeo} rotation={[Math.PI / 2, 0, 0]} raycast={() => null}>
+          <meshBasicMaterial map={faint} color={dim ?? RING_TINT} transparent side={DoubleSide} depthWrite={false} />
+        </mesh>
+      )}
       {clouds && (
         <mesh ref={cloudRef} scale={[1, skin.oblate, 1]} raycast={() => null}>
           <sphereGeometry args={[size * 1.025, segments, segments]} />
@@ -534,18 +578,22 @@ function Planet(p: PlanetProps): JSX.Element | null {
   const size = planetSize(p.planet.moons.length, skin.kind, p.scale);
   const moonMeshes = useRef<Array<Group | null>>([]);
   const outerMoon = moonOrbit(size, Math.max(0, p.planet.moons.length - 1), p.scale);
+  // A giant's outermost moons are captured irregulars, orbiting backwards (R4.8,
+  // satellites.ts). Still moons: the same button, glow states and pick target.
+  const captured = useMemo(() => {
+    const n = p.planet.moons.length;
+    return p.planet.moons.map((m, i) => ({
+      dir: moonDirection(skin.kind, i, n, p.planet.id, p.rotation),
+      shape: isIrregular(skin.kind, i, n, p.planet.id, p.rotation) ? irregularShape(m.id, p.rotation) : undefined,
+    }));
+  }, [p.planet.moons, p.planet.id, p.rotation, skin.kind]);
   const belt = useMemo(
     () => (p.planet.asteroids ? asteroidBelt(p.rotation, size, p.scale) : []),
     [p.planet.asteroids, p.rotation, size, p.scale],
   );
   // Its own ellipse, the sun at a focus, starting where the curriculum put it (R4.7, kepler.ts).
-  const orbit = useMemo(
-    () =>
-      body
-        ? orbitThrough({ a: body.radius, e: body.e ?? 0, omega: (body.omega ?? 0) + p.rotation, theta0: body.angle + p.rotation, outerA: p.outer })
-        : null,
-    [body, p.rotation, p.outer],
-  );
+  // Its period from the star's mass (R4.8, orbit.ts).
+  const orbit = useMemo(() => (body ? bodyOrbit(body, p.rotation) : null), [body, p.rotation]);
   const rocks = useRef<Array<Group | null>>([]);
 
   useFrame((_, dt) => {
@@ -565,7 +613,7 @@ function Planet(p: PlanetProps): JSX.Element | null {
       const g = moonMeshes.current[i];
       if (!g || !group.current) return;
       const r = moonOrbit(size, i, p.scale);
-      const a = orbitAngle((i / Math.max(1, p.planet.moons.length)) * Math.PI * 2, r, outerMoon, t);
+      const a = orbitAngle((i / Math.max(1, p.planet.moons.length)) * Math.PI * 2, r, outerMoon, t * (captured[i]?.dir ?? 1));
       g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
       const w = p.positions.current.get(`moon:${m.id}`) ?? new Vector3();
       w.copy(g.position).add(group.current.position);
@@ -647,6 +695,7 @@ function Planet(p: PlanetProps): JSX.Element | null {
                     textures={p.textures}
                     size={0.16 * p.scale}
                     segments={20}
+                    shape={captured[i]?.shape}
                     fallback={glow === "dim" ? p.colors.locked : tint}
                     dim={glow === "dim" ? p.colors.locked : null}
                     glow={glow === "full" ? 0.55 : glow === "partial" ? 0.22 : 0.02}

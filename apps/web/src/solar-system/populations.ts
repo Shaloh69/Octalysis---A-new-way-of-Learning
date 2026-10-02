@@ -107,6 +107,98 @@ export function populations(layout: SolarLayout, seed: number, low: boolean): Po
   return { belt, dust, kuiper: kuiperPts, oort: oortPts, centaurs, comets, wind };
 }
 
+/* --------------------------------------------- R4.8: the rest of the brief */
+
+/** One Trojan: its offset from the swarm's Lagrange point, along the orbit (radians) and across it. */
+export interface TrojanMember {
+  dTheta: number;
+  dr: number;
+  y: number;
+}
+
+export interface TrojanSwarm {
+  planetId: string;
+  /** L4 leads the planet by 60°, L5 trails it. */
+  side: 4 | 5;
+  members: TrojanMember[];
+}
+
+/**
+ * Trojan swarms (the brief: "a massive planet paired with a smaller companion
+ * tucked 60 degrees ahead or behind it in a stable Lagrange point"). Drawn as
+ * Jupiter's Trojans and Greeks are, a loose cloud at L4 and one at L5 of every
+ * giant, and NOT as a second planet: every planet on this map is a stage, and
+ * a companion planet would be a stage that does not exist.
+ *
+ * Each cloud is built in mirrored pairs, so its offsets balance exactly and
+ * its centre IS the Lagrange point (`kepler.ts`'s `lagrangePoint`, tested).
+ * Spread along the orbit, as real swarms are, thin across it.
+ */
+export function trojanSwarms(giants: readonly string[], seed: number, low: boolean): TrojanSwarm[] {
+  const rand = lcg(seed + 0.5);
+  const half = low ? 12 : 30;
+  return giants.flatMap((planetId) =>
+    ([4, 5] as const).map((side) => {
+      const members: TrojanMember[] = [];
+      for (let i = 0; i < half; i++) {
+        // Denser near the point: the product of two uniforms leans towards 0.
+        const dTheta = (rand() - 0.5) * 0.8 * rand();
+        const dr = (rand() - 0.5) * 1.6 * rand();
+        const y = (rand() - 0.5) * 0.4;
+        members.push({ dTheta, dr, y }, { dTheta: -dTheta, dr: -dr, y: -y });
+      }
+      return { planetId, side, members };
+    }),
+  );
+}
+
+/** The sun turns once in this many seconds on the map (`StarMapScene`'s Sun). */
+export const SUN_SPIN_S = 90;
+/** The solar wind is drawn from this distance out to the frost line... */
+export const WIND_INNER = 2.4;
+/** ...and takes this many seconds to cross it. */
+export const WIND_CROSSING_S = 20;
+
+/**
+ * The Parker spiral's winding, k = Ω/v: the star's spin over the wind's speed,
+ * both as the map draws them. The star turns while the wind carries its field
+ * outward, so a field line trails the turn by k radians per unit of distance.
+ */
+export function parkerK(layout: SolarLayout): number {
+  const omega = (2 * Math.PI) / SUN_SPIN_S;
+  const v = (layout.frost.inner - WIND_INNER) / WIND_CROSSING_S;
+  return omega / v;
+}
+
+/**
+ * The star's magnetic field (the brief's interplanetary medium: "cosmic dust,
+ * solar wind ... and magnetic fields") as Parker spirals: `lines` field lines
+ * from the wind's start out past the Kuiper belt, each φ(r) = φ0 - k(r - r0),
+ * as one set of line segments (x, y, z pairs) so the whole field is one draw.
+ * The same for every student: it is the star's, not the student's.
+ */
+export function parkerField(layout: SolarLayout, lines = 12, segs = 96): Float32Array {
+  const k = parkerK(layout);
+  const r0 = WIND_INNER;
+  const r1 = layout.kuiper.outer;
+  const out = new Float32Array(lines * segs * 2 * 3);
+  let o = 0;
+  const put = (r: number, phi0: number) => {
+    const phi = phi0 - k * (r - r0);
+    out[o++] = Math.cos(phi) * r;
+    out[o++] = 0;
+    out[o++] = Math.sin(phi) * r;
+  };
+  for (let j = 0; j < lines; j++) {
+    const phi0 = (j / lines) * Math.PI * 2;
+    for (let s = 0; s < segs; s++) {
+      put(r0 + ((r1 - r0) * s) / segs, phi0);
+      put(r0 + ((r1 - r0) * (s + 1)) / segs, phi0);
+    }
+  }
+  return out;
+}
+
 /** How strongly a comet's ices boil at distance r: 0 beyond 1.3 × the frost line, rising to 1 near the star. */
 export function cometActivity(r: number, layout: SolarLayout): number {
   const onset = layout.frost.radius * 1.3;

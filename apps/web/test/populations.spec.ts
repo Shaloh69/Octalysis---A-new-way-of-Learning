@@ -1,6 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { computeSolarLayout, type StageInput, type ObjectiveInput } from "../src/solar-system/layout";
-import { populations, cometActivity } from "../src/solar-system/populations";
+import {
+  populations,
+  cometActivity,
+  trojanSwarms,
+  parkerField,
+  parkerK,
+  SUN_SPIN_S,
+  WIND_CROSSING_S,
+  WIND_INNER,
+} from "../src/solar-system/populations";
 
 /**
  * R4.7, the system's leftovers (the instructor's brief, 1 Oct 2026): "an inner
@@ -110,5 +119,83 @@ describe("seeded, never random; lighter on a phone", () => {
     expect(lo.belt.length).toBeLessThan(hi.belt.length);
     expect(lo.oort.length).toBeLessThan(hi.oort.length);
     expect(lo.comets.length).toBe(hi.comets.length);
+  });
+});
+
+/**
+ * R4.8 (instructor, 2 Oct 2026): the rest of the brief. Trojan swarms at L4
+ * and L5 of the giants ("a smaller companion tucked 60 degrees ahead or behind
+ * it in a stable Lagrange point"), and the star's magnetic field ("the
+ * interplanetary medium ... solar wind ... and magnetic fields").
+ */
+describe("Trojan swarms (R4.8)", () => {
+  const giants = ["06", "08", "18", "00"];
+
+  it("two swarms per giant, one at L4 and one at L5, and none for any other world", () => {
+    const S = trojanSwarms(giants, 0.42, false);
+    expect(S).toHaveLength(giants.length * 2);
+    for (const g of giants) expect(S.filter((s) => s.planetId === g).map((s) => s.side).sort()).toEqual([4, 5]);
+    expect(trojanSwarms([], 0.42, false)).toEqual([]);
+  });
+
+  it("a swarm is a cloud whose centre IS the Lagrange point: its offsets balance to zero", () => {
+    for (const s of trojanSwarms(giants, 1.7, false)) {
+      expect(s.members.length).toBeGreaterThanOrEqual(20);
+      const mean = (f: (m: (typeof s.members)[number]) => number) => s.members.reduce((acc, m) => acc + f(m), 0) / s.members.length;
+      expect(mean((m) => m.dTheta)).toBeCloseTo(0, 12);
+      expect(mean((m) => m.dr)).toBeCloseTo(0, 12);
+      // A cloud along the orbit, not a second planet: spread in angle, thin across it.
+      expect(Math.max(...s.members.map((m) => Math.abs(m.dTheta)))).toBeLessThan(0.45);
+      expect(Math.max(...s.members.map((m) => Math.abs(m.dr)))).toBeLessThan(1.2);
+    }
+  });
+
+  it("seeded, never random; lighter on a phone", () => {
+    const a = JSON.stringify(trojanSwarms(giants, 0.42, false));
+    expect(JSON.stringify(trojanSwarms(giants, 0.42, false))).toBe(a);
+    expect(JSON.stringify(trojanSwarms(giants, 3.3, false))).not.toBe(a);
+    const lo = trojanSwarms(giants, 0.42, true);
+    expect(lo[0]!.members.length).toBeLessThan(trojanSwarms(giants, 0.42, false)[0]!.members.length);
+  });
+});
+
+describe("the star's magnetic field, Parker spirals (R4.8)", () => {
+  const k = parkerK(L);
+
+  it("the winding comes from the scene's own star and wind: k = Ω_star / v_wind", () => {
+    const omega = (2 * Math.PI) / SUN_SPIN_S;
+    const v = (L.frost.inner - WIND_INNER) / WIND_CROSSING_S;
+    expect(k).toBeCloseTo(omega / v, 12);
+  });
+
+  it("one geometry: line segments from near the star out past the Kuiper belt, in the plane", () => {
+    const f = parkerField(L, 12, 80);
+    expect(f.length).toBe(12 * 80 * 2 * 3);
+    let min = Infinity;
+    let max = 0;
+    for (let i = 0; i < f.length; i += 3) {
+      const r = Math.hypot(f[i]!, f[i + 2]!);
+      min = Math.min(min, r);
+      max = Math.max(max, r);
+      expect(f[i + 1]).toBe(0);
+    }
+    expect(min).toBeCloseTo(WIND_INNER, 6);
+    expect(max).toBeCloseTo(L.kuiper.outer, 6);
+  });
+
+  it("each line trails the star's turn: its angle falls by k per unit of distance, 45° from radial at r = 1/k", () => {
+    const segs = 80;
+    const f = parkerField(L, 12, segs);
+    // The first line's points, in order: each segment's start.
+    const pts: Array<{ r: number; phi: number }> = [];
+    for (let s = 0; s < segs; s++) pts.push({ r: Math.hypot(f[s * 6]!, f[s * 6 + 2]!), phi: Math.atan2(f[s * 6 + 2]!, f[s * 6]!) });
+    for (let i = 1; i < pts.length; i++) {
+      const d = pts[i]!.phi - pts[i - 1]!.phi;
+      const dphi = Math.atan2(Math.sin(d), Math.cos(d));
+      expect(dphi / (pts[i]!.r - pts[i - 1]!.r)).toBeCloseTo(-k, 6); // float32 positions
+    }
+    // The angle from radial is atan(r·|dφ/dr|) = atan(k r): 45° where r = 1/k, which lies inside the drawn field.
+    expect(1 / k).toBeGreaterThan(WIND_INNER);
+    expect(1 / k).toBeLessThan(L.kuiper.outer);
   });
 });

@@ -12,7 +12,30 @@
 /** Seconds for the OUTERMOST ring to go round once. Slow: ambient, never busy. */
 export const OUTER_PERIOD_S = 600;
 
-/** Period of an orbit of radius `a`, scaled so the outermost ring takes OUTER_PERIOD_S. */
+/**
+ * THE HOST STAR (R4.8; the brief: "Its mass dictates the speed and distance of
+ * all orbiting bodies"). Its gravitational parameter GM, in scene units³ per
+ * second², chosen so the layout's outermost ring takes OUTER_PERIOD_S: the map
+ * keeps the pace it was tuned to, and now says why (`layout-solar.spec.ts`).
+ * Every body circling the star takes its period from this one number.
+ */
+export const STAR_GM = 24.164;
+
+/** Kepler's third law with the star's mass in it: T = 2π√(a³/GM). */
+export function starPeriod(a: number, gm = STAR_GM): number {
+  return 2 * Math.PI * Math.sqrt((a * a * a) / gm);
+}
+
+/** Radians per second around the star: ω = √(GM/a³). */
+export function starAngularSpeed(a: number, gm = STAR_GM): number {
+  return (2 * Math.PI) / starPeriod(a, gm);
+}
+
+/**
+ * Period of an orbit of radius `a`, scaled so the outermost of a set takes
+ * OUTER_PERIOD_S. Since R4.8 the star's bodies use `starPeriod`; this scaling
+ * remains for a planet's own moons, which circle the planet, not the star.
+ */
 export function periodSeconds(a: number, outer: number): number {
   return OUTER_PERIOD_S * Math.pow(a / outer, 1.5);
 }

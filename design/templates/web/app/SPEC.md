@@ -196,3 +196,41 @@ Reproduce: `OCTA_CAPTURE=1`, `web-app.spec.ts` "captures, R4.7".
 distance (it now reads as the ring the template shows), and the chosen
 planet's moons fell off-screen (moons now begin outside the Roche limit, so
 the camera fits the planet's moon system instead of a fixed distance).
+
+## R4.8: the rest of the brief (instructor, 2 Oct 2026)
+
+The five things in `docs/source/solar-system-brief.md` that R4.7 did not
+build. All cosmetic over the same data, `aria-hidden`, unpickable, seeded,
+still under reduced motion. Template: `template-inner.png` already shows
+Jupiter's Trojans and Greeks.
+
+- **Trojan swarms**, not companion planets (every planet is a stage): a cloud
+  at L4 (60° ahead) and L5 (60° behind) of every giant, riding its ellipse
+  (`kepler.ts` `lagrangePoint`, `populations.ts` `trojanSwarms`; each cloud is
+  built in mirrored pairs so its centre IS the point). One `Points` for all.
+- **Captured moons**: a giant's outermost one or two moons (seeded, never more
+  than a third) are lumpy, faceted bodies orbiting backwards (`satellites.ts`).
+  A moon stays a moon: the same button in the panel, the same three glow
+  states, the same invisible pick sphere.
+- **Faint rings** on the other giants: Jupiter-like a dusty sheet,
+  Uranus-like narrow bands (tilted with the planet, on its side), Neptune-like
+  two narrow rings and two broad faint ones; every band inside the Roche limit
+  (`ringBands`, tested). Saturn keeps its bright ring.
+- **The star's magnetic field**: twelve Parker spirals, φ = φ0 − k(r − r0),
+  with k = Ω/v from the sun's drawn spin and the drawn wind's speed, out past
+  the Kuiper belt; one `LineSegments`, turning with the star.
+- **The star's mass**: T = 2π√(a³/GM), one constant (`STAR_GM`), chosen so
+  the outermost ring still takes 600s; a heavier star turns every orbit faster
+  in the same ratio (tested).
+
+Captures (2 Oct 2026, build at 5185, reduced motion; all opened, and 2x crops
+of the Trojans beside 06 and of 06's captured moon): `current-r48` (the whole
+system), `current-r48-jupiter` (06, a dusty ring and ten moons, the outermost
+captured), `current-r48-uranus` (08, narrow rings on its side, locked and
+dimmed); each at 1440 and `-380`.
+
+**Found by looking:** the first dusty ring read as a UI ring (its main band
+at alpha 0.32 sat beside the reticle); it is 0.18 now. **Measured:** 89 draw
+calls a frame for the whole system, counted at the GL (the probe R5.3 commits as `web-app-perf.spec.ts`), against R5.3's
+50. R4.8's own share is two (the Trojans and the field); the rest is R4.7's
+ellipses, bands and centaurs, merged under R5.3.

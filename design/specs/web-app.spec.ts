@@ -517,3 +517,28 @@ test.describe("captures, R4.7's realistic system", () => {
     }
   });
 });
+
+test.describe("captures, R4.8's rest of the brief", () => {
+  test.skip(!process.env.OCTA_CAPTURE, "set OCTA_CAPTURE=1 to write current-r48*.png");
+
+  // For the demo student (rotation 3.7449): 06 is Jupiter-like (a dusty ring, ten
+  // moons, the outermost captured), 08 Uranus-like (narrow rings, on its side).
+  test("the whole system (Trojans, the field), a Jupiter and a Uranus", async ({ browser }, info) => {
+    test.setTimeout(150_000);
+    const s = info.project.name.includes("380") ? "-380" : "";
+    const DIR = "design/templates/web/app";
+    for (const [name, path] of [
+      ["current-r48", "/app"],
+      ["current-r48-jupiter", "/app?stage=06"],
+      ["current-r48-uranus", "/app?stage=08"],
+    ] as const) {
+      const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL, reducedMotion: "reduce" });
+      const page = await ctx.newPage();
+      await map(page, path);
+      await page.locator(".starmap-stage canvas").waitFor();
+      await page.waitForTimeout(6000); // textures, and the frame-rate guard's one switch
+      await page.screenshot({ path: `${DIR}/${name}${s}.png` });
+      await ctx.close();
+    }
+  });
+});

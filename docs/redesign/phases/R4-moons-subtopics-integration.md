@@ -277,7 +277,7 @@ Each is specified here, so the next session builds rather than guesses. All
 cosmetic over the same data, `aria-hidden`, unpickable, seeded never random,
 still under reduced motion, through `/app`'s page gate:
 
-- [ ] **Lagrange companions**: "a massive planet paired with a smaller
+- [x] **Lagrange companions**: "a massive planet paired with a smaller
       companion tucked 60 degrees ahead or behind it in a stable Lagrange
       point". Built as **Trojan swarms**: a small cloud at L4 (+60°) and L5
       (-60°) of each giant beyond the frost line, riding its orbit (the
@@ -286,25 +286,45 @@ still under reduced motion, through `/app`'s page gate:
       map is a stage, and a companion planet would be a stage that does not
       exist. Tested: each swarm's centre is 60° from its planet, on its orbit,
       at every t
-- [ ] **Moons, the full range**: "from massive spheroidal worlds with
+      **2 Oct 2026:** `kepler.ts` `lagrangePoint` (`kepler.spec.ts`: 60° at
+      400 instants, on the ellipse, L4 ahead of the motion) and
+      `populations.ts` `trojanSwarms` (mirrored pairs, so the cloud's centre
+      IS the point; seeded; lighter on a phone). All watched failing first
+- [x] **Moons, the full range**: "from massive spheroidal worlds with
       subsurface oceans to tiny, captured irregularly-shaped asteroids". A
       giant's outermost moons drawn as small irregular captured bodies, the
       rest spheres; seeded per student. A moon stays a moon: same button in
       the panel, same three glow states legible, same pick target
-- [ ] **Planetary rings beyond Saturn**: faint rings on the other giants
+      **2 Oct 2026:** `satellites.ts` (`satellites.spec.ts`): giants only,
+      the outermost one or two, never more than a third, retrograde, never
+      under half size on any axis. Same `Globe`, glow and hit sphere; the
+      panel is untouched (`web-app.spec.ts` R4.4 aria snapshot green)
+- [x] **Planetary rings beyond Saturn**: faint rings on the other giants
       (Jupiter-like, Uranus-like, Neptune-like worlds), every ring inside its
       planet's Roche limit (`satellites.ts`'s `ringSpan`, already tested)
-- [ ] **Magnetic fields** (the interplanetary medium: "cosmic dust, solar
+      **2 Oct 2026:** `ringBands` dust / narrow / arcs, every band inside the
+      Roche limit and at most alpha 0.45 (`satellites.spec.ts`)
+- [x] **Magnetic fields** (the interplanetary medium: "cosmic dust, solar
       wind ... and magnetic fields"): the star's field as faint Parker-spiral
       lines winding outward with the solar wind, one draw call
-- [ ] **The host star's mass dictates speed and distance**: make it explicit.
+      **2 Oct 2026:** `parkerField`, k = Ω/v from the sun's drawn spin and
+      the drawn wind (`populations.spec.ts`); one `LineSegments`
+- [x] **The host star's mass dictates speed and distance**: make it explicit.
       Periods from T = 2π√(a³/GM) with one star-mass constant, instead of
       scaling to the outermost orbit; tested that a heavier star turns every
       orbit faster in the same ratio, and that the map's speeds are unchanged
       at the chosen mass
-- [ ] **Through `/app`'s page gate**, and the draw-call budget measured with
+      **2 Oct 2026:** `orbit.ts` `STAR_GM`, `starPeriod` (`kepler.spec.ts`:
+      4x the mass halves every period); `layout-solar.spec.ts`: at the
+      chosen mass every planet's period is within 1% of the old one
+- [x] **Through `/app`'s page gate**, and the draw-call budget measured with
       all of it (`renderer.info.render.calls`; R5.3's ≤50): Trojans and the
       field lines as merged geometry, never a mesh each
+      **2 Oct 2026:** `web-app.spec.ts` 54 passed at 1440 and 380 (10
+      one-width skips); captures `current-r48*` opened (SPEC). Measured at
+      the GL: **89 draw calls** for the whole system, over the 50 budget;
+      the Trojans and the field are one each, so the excess is R4.7's
+      ellipses, bands and centaurs, which R5.3 merges. Map chunk 226.4 KB gz
 
 ## R4.9 — Scale, spacing and the comets (instructor, 2 Oct 2026, for the next session)
 

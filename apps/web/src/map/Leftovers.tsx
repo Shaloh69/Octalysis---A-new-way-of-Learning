@@ -1,16 +1,26 @@
 import { useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { AdditiveBlending, BufferAttribute, Color, Group, Mesh, Points, Vector3 } from "three";
-import { orbitThrough, positionAt, type Orbit } from "../solar-system/kepler";
+import { bodyOrbit, lagrangePoint, orbitThrough, positionAt, radiusAt, type Orbit } from "../solar-system/kepler";
 import type { SolarLayout } from "../solar-system/layout";
-import { cometActivity, type Populations } from "../solar-system/populations";
-import { angularSpeed } from "../solar-system/orbit";
+import {
+  cometActivity,
+  parkerField,
+  trojanSwarms,
+  SUN_SPIN_S,
+  WIND_CROSSING_S,
+  WIND_INNER,
+  type Populations,
+} from "../solar-system/populations";
+import { starAngularSpeed } from "../solar-system/orbit";
 
 /**
  * The system's leftovers (R4.7; the instructor's brief, 1 Oct 2026): the
  * asteroid belt at the frost line, dust, centaurs among the giants, the Kuiper
  * belt, the Oort cloud, comets with a coma and a tail near the star, and the
- * solar wind. Where each sits is `solar-system/populations.ts` (tested).
+ * solar wind. R4.8 adds the Trojan swarms at L4 and L5 of every giant and the
+ * star's magnetic field as Parker spirals. Where each sits is
+ * `solar-system/populations.ts` (tested).
  *
  * COSMETIC, like the whole canvas (`aria-hidden`): small, grey or faint so no
  * one mistakes them for a planet or a moon, and UNPICKABLE (`raycast` is
@@ -23,8 +33,10 @@ const noPick = () => null;
 interface Props {
   pops: Populations;
   layout: SolarLayout;
-  outer: number;
   rotation: number;
+  /** The giants' stage ids: each carries a Trojan swarm at L4 and at L5. */
+  giants: readonly string[];
+  lowQuality: boolean;
   clock: MutableRefObject<number>;
   colors: { line: Color; star: Color; glow: Color };
 }
@@ -40,30 +52,43 @@ function Cloud({ positions, color, size, opacity }: { positions: Float32Array; c
   );
 }
 
-export function Leftovers({ pops, layout, outer, rotation, clock, colors }: Props): JSX.Element {
+export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, colors }: Props): JSX.Element {
   const belt = useRef<Group>(null);
   const kuiper = useRef<Group>(null);
   const dust = useRef<Group>(null);
+  const field = useRef<Group>(null);
   const centaurRefs = useRef<Array<Mesh | null>>([]);
   const cometRefs = useRef<Array<Group | null>>([]);
   const wind = useRef<Points>(null);
+  const trojans = useRef<Points>(null);
 
-  const beltSpeed = angularSpeed((layout.frost.inner + layout.frost.outer) / 2, outer);
-  const kuiperSpeed = angularSpeed((layout.kuiper.inner + layout.kuiper.outer) / 2, outer);
-  const dustSpeed = angularSpeed(layout.frost.inner * 0.6, outer);
+  // Every speed from the star's mass (R4.8, orbit.ts): the belts turn at their own distance's rate.
+  const beltSpeed = starAngularSpeed((layout.frost.inner + layout.frost.outer) / 2);
+  const kuiperSpeed = starAngularSpeed((layout.kuiper.inner + layout.kuiper.outer) / 2);
+  const dustSpeed = starAngularSpeed(layout.frost.inner * 0.6);
   const orbits = useMemo(
     () => ({
-      centaurs: pops.centaurs.map((c) => orbitThrough({ a: c.a, e: c.e, omega: c.omega + rotation, theta0: c.theta0 + rotation, outerA: outer })),
+      centaurs: pops.centaurs.map((c) => orbitThrough({ a: c.a, e: c.e, omega: c.omega + rotation, theta0: c.theta0 + rotation })),
       // A comet's period at its true semi-major axis would be centuries of
       // screen time: its clock runs 40x, so one is seen falling in and out.
-      comets: pops.comets.map((c) => orbitThrough({ a: c.a, e: c.e, omega: c.omega + rotation, theta0: c.theta0 + rotation, outerA: outer })),
+      comets: pops.comets.map((c) => orbitThrough({ a: c.a, e: c.e, omega: c.omega + rotation, theta0: c.theta0 + rotation })),
     }),
-    [pops, rotation, outer],
+    [pops, rotation],
   );
   const windPositions = useMemo(() => new Float32Array(pops.wind.length * 3), [pops]);
-  const windInner = 2.4;
   const windOuter = layout.frost.inner;
   const sun = useMemo(() => new Vector3(0, 0, 0), []);
+
+  // The Trojans ride their giants' own orbits (the same ones the planets are drawn on).
+  const swarms = useMemo(() => {
+    const list = trojanSwarms(giants, rotation, lowQuality);
+    return list.flatMap((s) => {
+      const b = layout.bodies.get(s.planetId);
+      return b ? [{ ...s, orbit: bodyOrbit(b, rotation) }] : [];
+    });
+  }, [giants, rotation, lowQuality, layout]);
+  const trojanPositions = useMemo(() => new Float32Array(swarms.reduce((n, s) => n + s.members.length, 0) * 3), [swarms]);
+  const fieldLines = useMemo(() => parkerField(layout, 12, 96), [layout]);
 
   useFrame(() => {
     const t = clock.current;
@@ -71,6 +96,8 @@ export function Leftovers({ pops, layout, outer, rotation, clock, colors }: Prop
     if (belt.current) belt.current.rotation.y = -(beltSpeed * t + rotation);
     if (kuiper.current) kuiper.current.rotation.y = -(kuiperSpeed * t + rotation);
     if (dust.current) dust.current.rotation.y = -(dustSpeed * t + rotation);
+    // The field is the star's: it turns with the star, as the spirals do.
+    if (field.current) field.current.rotation.y = -((2 * Math.PI * t) / SUN_SPIN_S + rotation);
     orbits.centaurs.forEach((o: Orbit, i) => {
       const m = centaurRefs.current[i];
       if (!m) return;
@@ -100,19 +127,43 @@ export function Leftovers({ pops, layout, outer, rotation, clock, colors }: Prop
     });
     const w = wind.current;
     if (w) {
-      const span = windOuter - windInner;
+      const span = windOuter - WIND_INNER;
       pops.wind.forEach((p, i) => {
-        const r = windInner + (((p.phase + t * 0.05) % 1) + 1) % 1 * span;
+        const r = WIND_INNER + ((((p.phase + t / WIND_CROSSING_S) % 1) + 1) % 1) * span;
         windPositions[i * 3] = p.dx * r;
         windPositions[i * 3 + 1] = p.y;
         windPositions[i * 3 + 2] = p.dz * r;
       });
       (w.geometry.getAttribute("position") as BufferAttribute).needsUpdate = true;
     }
+    const tr = trojans.current;
+    if (tr) {
+      let o = 0;
+      for (const s of swarms) {
+        const L = lagrangePoint(s.orbit, t, s.side);
+        for (const m of s.members) {
+          const theta = L.theta + m.dTheta;
+          const r = radiusAt(s.orbit, theta) + m.dr;
+          trojanPositions[o++] = Math.cos(theta) * r;
+          trojanPositions[o++] = m.y;
+          trojanPositions[o++] = Math.sin(theta) * r;
+        }
+      }
+      (tr.geometry.getAttribute("position") as BufferAttribute).needsUpdate = true;
+    }
   });
 
   return (
     <group>
+      <group ref={field}>
+        {/* The star's magnetic field: twelve Parker spirals, one draw. */}
+        <lineSegments raycast={noPick}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[fieldLines, 3]} />
+          </bufferGeometry>
+          <lineBasicMaterial color={colors.glow} transparent opacity={0.09} depthWrite={false} />
+        </lineSegments>
+      </group>
       <group ref={dust}>
         <Cloud positions={pops.dust} color={colors.star} size={0.22} opacity={0.3} />
       </group>
@@ -123,6 +174,13 @@ export function Leftovers({ pops, layout, outer, rotation, clock, colors }: Prop
         <Cloud positions={pops.kuiper} color={colors.star} size={0.45} opacity={0.7} />
       </group>
       <Cloud positions={pops.oort} color={colors.star} size={0.6} opacity={0.45} />
+      {/* Every giant's Trojans, at L4 and L5: one draw for all of them. */}
+      <points ref={trojans} raycast={noPick}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[trojanPositions, 3]} />
+        </bufferGeometry>
+        <pointsMaterial color={colors.star} size={0.4} sizeAttenuation transparent opacity={0.85} depthWrite={false} />
+      </points>
       {pops.centaurs.map((c, i) => (
         <mesh
           key={`c${i}`}
