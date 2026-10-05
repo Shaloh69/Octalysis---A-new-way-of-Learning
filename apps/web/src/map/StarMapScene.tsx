@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "rea
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import {
   AdditiveBlending,
+  BufferAttribute,
+  BufferGeometry,
   CanvasTexture,
   Color,
   DoubleSide,
@@ -181,6 +183,14 @@ function Scene(p: SceneProps): JSX.Element {
   // Bodies are drawn at one fixed scale (R4.9): wider orbits no longer grow the planets.
   const scale = BODY_SCALE;
   const pops = useMemo(() => populations(p.layout, p.rotation, p.lowQuality), [p.layout, p.rotation, p.lowQuality]);
+  const ellipses = useMemo(
+    () =>
+      p.planets.flatMap((pl) => {
+        const b = p.layout.bodies.get(pl.id);
+        return b ? [{ a: b.radius, e: b.e ?? 0, omega: (b.omega ?? 0) + p.rotation }] : [];
+      }),
+    [p.planets, p.layout, p.rotation],
+  );
   // The giants (the worlds beyond the frost line): each carries Trojans at L4 and L5 (R4.8).
   const giants = useMemo(
     () => p.planets.filter((pl) => isGiant(skinFor(planetSkinKey(pl.id, pl.ring, pl.spoke, p.rotation)).kind)).map((pl) => pl.id),
@@ -202,14 +212,9 @@ function Scene(p: SceneProps): JSX.Element {
       <Stars color={colors.star} count={p.lowQuality ? 600 : 1500} />
       <Sun colors={colors} surface={textures.get(SUN_MAP)} reduced={p.reduced} />
       {/* R4.7: each level a faint band, one planet per orbit inside it; the frost line between L2 and L3. */}
-      {p.layout.bands.map((b) => (
-        <LevelBand key={b.level} inner={b.inner} outer={b.outer} color={colors.line} />
-      ))}
+      <LevelBands bands={p.layout.bands} color={colors.line} />
       <FrostLine radius={p.layout.frost.radius} color={colors.glow} />
-      {p.planets.map((pl) => {
-        const b = p.layout.bodies.get(pl.id);
-        return b ? <OrbitEllipse key={`orbit-${pl.id}`} a={b.radius} e={b.e ?? 0} omega={(b.omega ?? 0) + p.rotation} color={colors.line} /> : null;
-      })}
+      <OrbitEllipses orbits={ellipses} color={colors.line} />
       <Leftovers pops={pops} layout={p.layout} rotation={p.rotation} giants={giants} lowQuality={p.lowQuality} clock={clock} colors={colors} />
       {p.planets.map((pl) => (
         <Planet
@@ -263,33 +268,72 @@ function Stars({ color, count }: { color: Color; count: number }): JSX.Element {
   );
 }
 
-/** A planet's own orbit: an ellipse with the sun at a focus (R4.7). */
-function OrbitEllipse({ a, e, omega, color }: { a: number; e: number; omega: number; color: Color }): JSX.Element {
+/**
+ * Every planet's own orbit, an ellipse with the sun at a focus (R4.7), as ONE
+ * set of line segments: one draw for all nineteen (R5.3; they were a line
+ * loop each).
+ */
+function OrbitEllipses({ orbits, color }: { orbits: Array<{ a: number; e: number; omega: number }>; color: Color }): JSX.Element {
   const arr = useMemo(() => {
-    const pts = ellipsePoints({ a, e, omega }, 160);
-    const out = new Float32Array(pts.length * 3);
-    pts.forEach((pt, i) => {
-      out[i * 3] = pt.x;
-      out[i * 3 + 2] = pt.y;
-    });
+    const n = 160;
+    const out = new Float32Array(orbits.length * n * 2 * 3);
+    let o = 0;
+    for (const orbit of orbits) {
+      const pts = ellipsePoints(orbit, n);
+      for (let i = 0; i < n; i++) {
+        for (const pt of [pts[i]!, pts[i + 1]!]) {
+          out[o++] = pt.x;
+          out[o++] = 0;
+          out[o++] = pt.y;
+        }
+      }
+    }
     return out;
-  }, [a, e, omega]);
+  }, [orbits]);
   return (
-    <lineLoop raycast={() => null}>
+    <lineSegments raycast={() => null}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[arr, 3]} />
       </bufferGeometry>
       <lineBasicMaterial color={color} transparent opacity={0.4} />
-    </lineLoop>
+    </lineSegments>
   );
 }
 
-/** A level's band (R4.7: a level is a band of orbits, so distance still reads as level). */
-function LevelBand({ inner, outer, color }: { inner: number; outer: number; color: Color }): JSX.Element {
+/**
+ * The levels' bands (R4.7: a level is a band of orbits, so distance still
+ * reads as level), all seven in ONE flat mesh in the plane, drawn in one pass
+ * (R5.3; seven transparent double-sided rings were fourteen draws).
+ */
+function LevelBands({ bands, color }: { bands: ReadonlyArray<{ inner: number; outer: number }>; color: Color }): JSX.Element {
+  const geo = useMemo(() => {
+    const seg = 128;
+    const pos = new Float32Array(bands.length * (seg + 1) * 2 * 3);
+    const index: number[] = [];
+    let v = 0;
+    bands.forEach((b) => {
+      const base = v;
+      for (let i = 0; i <= seg; i++) {
+        const t = (i / seg) * Math.PI * 2;
+        for (const r of [b.inner, b.outer]) {
+          pos[v * 3] = Math.cos(t) * r;
+          pos[v * 3 + 2] = Math.sin(t) * r;
+          v++;
+        }
+      }
+      for (let i = 0; i < seg; i++) {
+        const k = base + i * 2;
+        index.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+      }
+    });
+    const g = new BufferGeometry();
+    g.setAttribute("position", new BufferAttribute(pos, 3));
+    g.setIndex(index);
+    return g;
+  }, [bands]);
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
-      <ringGeometry args={[inner, outer, 128, 1]} />
-      <meshBasicMaterial color={color} transparent opacity={0.05} side={DoubleSide} depthWrite={false} />
+    <mesh geometry={geo} raycast={() => null}>
+      <meshBasicMaterial color={color} transparent opacity={0.05} side={DoubleSide} forceSinglePass depthWrite={false} />
     </mesh>
   );
 }
@@ -512,7 +556,7 @@ function Globe({
       </mesh>
       {faint && faintGeo && (
         <mesh geometry={faintGeo} rotation={[Math.PI / 2, 0, 0]} raycast={() => null}>
-          <meshBasicMaterial map={faint} color={dim ?? RING_TINT} transparent side={DoubleSide} depthWrite={false} />
+          <meshBasicMaterial map={faint} color={dim ?? RING_TINT} transparent side={DoubleSide} forceSinglePass depthWrite={false} />
         </mesh>
       )}
       {clouds && (
@@ -523,7 +567,7 @@ function Globe({
       )}
       {ringGeo && ringTex && (
         <mesh geometry={ringGeo} rotation={[Math.PI / 2, 0, 0]} raycast={() => null}>
-          <meshBasicMaterial key={ringTex.uuid} map={ringTex} color={dim ?? WHITE} transparent side={DoubleSide} depthWrite={false} />
+          <meshBasicMaterial key={ringTex.uuid} map={ringTex} color={dim ?? WHITE} transparent side={DoubleSide} forceSinglePass depthWrite={false} />
         </mesh>
       )}
     </group>

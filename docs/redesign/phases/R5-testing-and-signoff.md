@@ -50,9 +50,20 @@ tested rather than assumed. This phase closes the redesign, same spirit as
       outline, not just a colour change)
 
 ## R5.3 — Performance re-check, full system
-- [ ] Bundle size with everything from R1-R4 included, still ≤250 KB gz for
+- [x] Bundle size with everything from R1-R4 included, still ≤250 KB gz for
       the 3D chunk
-- [ ] Draw calls still ≤50 with moons added
+      **5 Oct 2026:** map chunk `StarMapScene` 226.6 KB gz with R4.7-R4.9
+      and the merges (was 224.8 before R4.8); entry 109.6 KB gz; lazy
+- [x] Draw calls still ≤50 with moons added
+      **5 Oct 2026:** measured at the GL (`design/specs/web-app-perf.spec.ts`,
+      every draw entry point wrapped, counted per frame): R4.8 left 89 for
+      the whole system. Merged: the 19 orbit ellipses into one
+      `LineSegments`, the 7 bands into one single-pass mesh (transparent
+      double-sided rings were drawing twice each), the 7 centaurs into one
+      `InstancedMesh`, the faint and bright rings single-pass. Now **43-44
+      whole system, 36-37 a giant chosen, 43-44 eleven moons**, at 1440 and
+      380; the spec asserts ≤50 on all six. `web-app.spec.ts` 54 passed, the
+      capture unchanged
 - [ ] 30fps floor re-verified on a throttled/mid-range profile with the full
       system (rings + planets + moons + flight path + starfield) rendering,
       not just the R1 skeleton

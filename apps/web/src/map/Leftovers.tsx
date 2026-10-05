@@ -1,6 +1,6 @@
 import { useMemo, useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
-import { AdditiveBlending, BufferAttribute, Color, Group, Mesh, Points, Vector3 } from "three";
+import { AdditiveBlending, BufferAttribute, Color, Group, InstancedMesh, Mesh, Object3D, Points, Vector3 } from "three";
 import { bodyOrbit, lagrangePoint, orbitThrough, positionAt, radiusAt, type Orbit } from "../solar-system/kepler";
 import type { SolarLayout } from "../solar-system/layout";
 import {
@@ -57,7 +57,8 @@ export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, c
   const kuiper = useRef<Group>(null);
   const dust = useRef<Group>(null);
   const field = useRef<Group>(null);
-  const centaurRefs = useRef<Array<Mesh | null>>([]);
+  const centaurs = useRef<InstancedMesh>(null);
+  const dummy = useMemo(() => new Object3D(), []);
   const cometRefs = useRef<Array<Group | null>>([]);
   const wind = useRef<Points>(null);
   const trojans = useRef<Points>(null);
@@ -97,12 +98,18 @@ export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, c
     if (dust.current) dust.current.rotation.y = -(dustSpeed * t + rotation);
     // The field is the star's: it turns with the star, as the spirals do.
     if (field.current) field.current.rotation.y = -((2 * Math.PI * t) / SUN_SPIN_S + rotation);
-    orbits.centaurs.forEach((o: Orbit, i) => {
-      const m = centaurRefs.current[i];
-      if (!m) return;
-      const p = positionAt(o, t);
-      m.position.set(p.x, 0, p.y);
-    });
+    const cm = centaurs.current;
+    if (cm) {
+      orbits.centaurs.forEach((o: Orbit, i) => {
+        const c = pops.centaurs[i]!;
+        const p = positionAt(o, t);
+        dummy.position.set(p.x, 0, p.y);
+        dummy.scale.set(c.size, c.size * 0.7, c.size * 0.85);
+        dummy.updateMatrix();
+        cm.setMatrixAt(i, dummy.matrix);
+      });
+      cm.instanceMatrix.needsUpdate = true;
+    }
     orbits.comets.forEach((o: Orbit, i) => {
       const g = cometRefs.current[i];
       if (!g) return;
@@ -181,19 +188,11 @@ export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, c
         </bufferGeometry>
         <pointsMaterial color={colors.star} size={0.4} sizeAttenuation transparent opacity={0.85} depthWrite={false} />
       </points>
-      {pops.centaurs.map((c, i) => (
-        <mesh
-          key={`c${i}`}
-          ref={(m) => {
-            centaurRefs.current[i] = m;
-          }}
-          scale={[c.size, c.size * 0.7, c.size * 0.85]}
-          raycast={noPick}
-        >
-          <dodecahedronGeometry args={[1, 0]} />
-          <meshLambertMaterial color={colors.line} flatShading />
-        </mesh>
-      ))}
+      {/* Every centaur, one draw (R5.3: they were a mesh each). They roam the whole system, so never culled as one. */}
+      <instancedMesh ref={centaurs} args={[undefined, undefined, pops.centaurs.length]} raycast={noPick} frustumCulled={false}>
+        <dodecahedronGeometry args={[1, 0]} />
+        <meshLambertMaterial color={colors.line} flatShading />
+      </instancedMesh>
       {pops.comets.map((c, i) => (
         <group
           key={`k${i}`}
