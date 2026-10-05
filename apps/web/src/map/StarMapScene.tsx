@@ -8,6 +8,7 @@ import {
   Color,
   DoubleSide,
   Group,
+  LineBasicMaterial,
   Mesh,
   Plane,
   Raycaster,
@@ -23,7 +24,7 @@ import {
 import { allTextureFiles, moonSkin, skinFor, SUN_MAP, type BodySkin, type RingStyle } from "../solar-system/bodies";
 import { bodyOrbit, ellipsePoints, positionAt } from "../solar-system/kepler";
 import { populations, SUN_SPIN_S } from "../solar-system/populations";
-import { BODY_SCALE, irregularShape, isGiant, isIrregular, moonDirection, moonOrbit, planetSize, ringBands, ringSpan, rocheLimit } from "../solar-system/satellites";
+import { BODY_SCALE, MOON_SIZE, moonOrbitsOf, irregularShape, isGiant, isIrregular, moonDirection, planetSize, ringBands, ringSpan, rocheLimit } from "../solar-system/satellites";
 import { Leftovers } from "./Leftovers";
 import { HOME, clampPan, zoomToward, type ViewControl } from "./view";
 
@@ -38,7 +39,9 @@ import { orbitAngle } from "../solar-system/orbit";
 function systemReach(pl: ScenePlanet, rotation: number, scale: number): number {
   const kind = skinFor(planetSkinKey(pl.id, pl.ring, pl.spoke, rotation)).kind;
   const size = planetSize(pl.moons.length, kind, scale);
-  return pl.moons.length ? moonOrbit(size, pl.moons.length - 1, scale) + 0.3 * scale : size * 2.6;
+  if (!pl.moons.length) return size * 2.6;
+  const orbits = moonOrbitsOf({ planetId: pl.id, kind, moonIds: pl.moons.map((m) => m.id), size, scale, seed: rotation });
+  return Math.max(...orbits.map((o) => o.a * (1 + o.e))) + MOON_SIZE * scale * 2;
 }
 
 /**
@@ -200,6 +203,11 @@ function Scene(p: SceneProps): JSX.Element {
       }),
     [p.planets, p.layout, p.rotation],
   );
+  // The chosen planet's own orbit, drawn clearly over the faint rest.
+  const chosenOrbit = useMemo(() => {
+    const b = p.selected ? p.layout.bodies.get(p.selected) : undefined;
+    return b ? [{ a: b.radius, e: b.e ?? 0, omega: (b.omega ?? 0) + p.rotation }] : null;
+  }, [p.selected, p.layout, p.rotation]);
   // The giants (the worlds beyond the frost line): each carries Trojans at L4 and L5 (R4.8).
   const giants = useMemo(
     () => p.planets.filter((pl) => isGiant(skinFor(planetSkinKey(pl.id, pl.ring, pl.spoke, p.rotation)).kind)).map((pl) => pl.id),
@@ -223,7 +231,8 @@ function Scene(p: SceneProps): JSX.Element {
       {/* R4.7: each level a faint band, one planet per orbit inside it; the frost line between L2 and L3. */}
       <LevelBands bands={p.layout.bands} color={colors.line} />
       <FrostLine radius={p.layout.frost.radius} color={colors.glow} />
-      <OrbitEllipses orbits={ellipses} color={colors.line} />
+      <OrbitLines orbits={ellipses} color={colors.line} clock={clock} base={p.selected ? 0.07 : 0.13} breathe />
+      {chosenOrbit && <OrbitLines orbits={chosenOrbit} color={colors.corner} clock={clock} base={0.7} />}
       <Leftovers pops={pops} layout={p.layout} rotation={p.rotation} giants={giants} lowQuality={p.lowQuality} clock={clock} colors={colors} />
       {p.planets.map((pl) => (
         <Planet
@@ -278,18 +287,31 @@ function Stars({ color, count }: { color: Color; count: number }): JSX.Element {
 }
 
 /**
- * Every planet's own orbit, an ellipse with the sun at a focus (R4.7), as ONE
- * set of line segments: one draw for all nineteen (R5.3; they were a line
- * loop each).
+ * Orbits drawn as ONE set of line segments: one draw for all of them (R5.3).
+ *
+ * Faint by default (instructor, 5 Oct 2026: "only show the lines of a
+ * selected planet or moon; the rest should be less visible or just fade in
+ * and out"). With `breathe`, the opacity rises and falls slowly on the
+ * scene's one clock, so reduced motion holds it still. A chosen body's orbit
+ * is its own OrbitLines, drawn clearly in the selection colour.
  */
-function OrbitEllipses({ orbits, color }: { orbits: Array<{ a: number; e: number; omega: number }>; color: Color }): JSX.Element {
+function OrbitLines({
+  orbits, color, clock, base, breathe = false, segs = 160,
+}: {
+  orbits: ReadonlyArray<{ a: number; e: number; omega: number }>;
+  color: Color;
+  clock: MutableRefObject<number>;
+  base: number;
+  breathe?: boolean;
+  segs?: number;
+}): JSX.Element {
+  const mat = useRef<LineBasicMaterial>(null);
   const arr = useMemo(() => {
-    const n = 160;
-    const out = new Float32Array(orbits.length * n * 2 * 3);
+    const out = new Float32Array(orbits.length * segs * 2 * 3);
     let o = 0;
     for (const orbit of orbits) {
-      const pts = ellipsePoints(orbit, n);
-      for (let i = 0; i < n; i++) {
+      const pts = ellipsePoints(orbit, segs);
+      for (let i = 0; i < segs; i++) {
         for (const pt of [pts[i]!, pts[i + 1]!]) {
           out[o++] = pt.x;
           out[o++] = 0;
@@ -298,16 +320,24 @@ function OrbitEllipses({ orbits, color }: { orbits: Array<{ a: number; e: number
       }
     }
     return out;
-  }, [orbits]);
+  }, [orbits, segs]);
+  useFrame(() => {
+    if (!mat.current) return;
+    const k = breathe ? 0.4 + 0.6 * (0.5 + 0.5 * Math.sin((2 * Math.PI * clock.current) / BREATH_S)) : 1;
+    mat.current.opacity = base * k;
+  });
   return (
     <lineSegments raycast={() => null}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[arr, 3]} />
       </bufferGeometry>
-      <lineBasicMaterial color={color} transparent opacity={0.4} />
+      <lineBasicMaterial ref={mat} color={color} transparent opacity={base} depthWrite={false} />
     </lineSegments>
   );
 }
+
+/** Seconds for one slow breath of the faint orbits. */
+const BREATH_S = 9;
 
 /**
  * The levels' bands (R4.7: a level is a band of orbits, so distance still
@@ -603,12 +633,12 @@ interface PlanetProps {
 }
 
 /**
- * Local orbits, around the planet. The same law as the planets' (w ~ a^-1.5,
- * `orbit.ts`), on a faster clock so a moon is seen to move while its planet is
- * chosen: the outermost moon goes round in a minute.
+ * Orientation's rocks circle on a faster clock, so they are seen to move. They
+ * are not moons: the moons follow the planets' rules (`moonOrbitsOf`).
  */
 const LOCAL_CLOCK = 10;
 
+/* The moons' orbits are OrbitLines too, in Planet below. */
 
 function Planet(p: PlanetProps): JSX.Element | null {
   const body = p.layout.bodies.get(p.planet.id);
@@ -626,7 +656,11 @@ function Planet(p: PlanetProps): JSX.Element | null {
   // Moons orbit outside its Roche limit and inside its Hill sphere (satellites.ts, tested).
   const size = planetSize(p.planet.moons.length, skin.kind, p.scale);
   const moonMeshes = useRef<Array<Group | null>>([]);
-  const outerMoon = moonOrbit(size, Math.max(0, p.planet.moons.length - 1), p.scale);
+  // The moons on the planets' rules (instructor, 5 Oct 2026; satellites.ts, tested).
+  const moonOrbits = useMemo(
+    () => moonOrbitsOf({ planetId: p.planet.id, kind: skin.kind, moonIds: p.planet.moons.map((m) => m.id), size, scale: p.scale, seed: p.rotation }),
+    [p.planet.id, p.planet.moons, skin.kind, size, p.scale, p.rotation],
+  );
   // A giant's outermost moons are captured irregulars, orbiting backwards (R4.8,
   // satellites.ts). Still moons: the same button, glow states and pick target.
   const captured = useMemo(() => {
@@ -636,6 +670,10 @@ function Planet(p: PlanetProps): JSX.Element | null {
       shape: isIrregular(skin.kind, i, n, p.planet.id, p.rotation) ? irregularShape(m.id, p.rotation) : undefined,
     }));
   }, [p.planet.moons, p.planet.id, p.rotation, skin.kind]);
+  const chosenMoonOrbit = useMemo(() => {
+    const i = p.selectedMoon ? p.planet.moons.findIndex((m) => m.id === p.selectedMoon) : -1;
+    return i >= 0 && moonOrbits[i] ? [moonOrbits[i]!] : null;
+  }, [p.selectedMoon, p.planet.moons, moonOrbits]);
   const belt = useMemo(
     () => (p.planet.asteroids ? asteroidBelt(p.rotation, size, p.scale) : []),
     [p.planet.asteroids, p.rotation, size, p.scale],
@@ -660,10 +698,11 @@ function Planet(p: PlanetProps): JSX.Element | null {
     const t = p.clock.current * LOCAL_CLOCK;
     p.planet.moons.forEach((m, i) => {
       const g = moonMeshes.current[i];
-      if (!g || !group.current) return;
-      const r = moonOrbit(size, i, p.scale);
-      const a = orbitAngle((i / Math.max(1, p.planet.moons.length)) * Math.PI * 2, r, outerMoon, t * (captured[i]?.dir ?? 1));
-      g.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+      const o = moonOrbits[i];
+      if (!g || !o || !group.current) return;
+      // Kepler around the planet; a captured moon runs its orbit backwards.
+      const at = positionAt(o, p.clock.current * o.dir);
+      g.position.set(at.x, 0, at.y);
       const w = p.positions.current.get(`moon:${m.id}`) ?? new Vector3();
       w.copy(g.position).add(group.current.position);
       p.positions.current.set(`moon:${m.id}`, w);
@@ -724,6 +763,8 @@ function Planet(p: PlanetProps): JSX.Element | null {
             ))}
           </group>
           <group ref={moons}>
+            {moonOrbits.length > 0 && <OrbitLines orbits={moonOrbits} color={p.colors.line} clock={p.clock} base={0.12} breathe segs={96} />}
+            {chosenMoonOrbit && <OrbitLines orbits={chosenMoonOrbit} color={p.colors.corner} clock={p.clock} base={0.75} segs={96} />}
             {p.planet.moons.map((m, i) => {
               const glow = m.glow;
               const isSel = p.selectedMoon === m.id;
@@ -742,7 +783,7 @@ function Planet(p: PlanetProps): JSX.Element | null {
                   <Globe
                     skin={moonSkin(m.id, p.rotation)}
                     textures={p.textures}
-                    size={0.16 * p.scale}
+                    size={MOON_SIZE * p.scale}
                     segments={20}
                     shape={captured[i]?.shape}
                     fallback={glow === "dim" ? p.colors.locked : tint}
@@ -752,24 +793,23 @@ function Planet(p: PlanetProps): JSX.Element | null {
                     onClick={pick}
                   />
                   <mesh onClick={pick} visible={false}>
-                    <sphereGeometry args={[0.42 * p.scale, 8, 8]} />
+                    <sphereGeometry args={[0.24 * p.scale, 8, 8]} />
                     <meshBasicMaterial />
                   </mesh>
+                  {/* Mastered: bright (its emissive glow) and ringed. The ring is the shape
+                      that says it; the halo sphere it once had cost a draw per moon and went
+                      for R5.3's budget (5 Oct 2026). */}
                   {glow === "full" && (
                     <>
-                      <mesh>
-                        <sphereGeometry args={[0.3 * p.scale, 16, 16]} />
-                        <meshBasicMaterial color={tint} transparent opacity={0.22} blending={AdditiveBlending} depthWrite={false} />
-                      </mesh>
                       <mesh rotation={[Math.PI / 2, 0, 0]}>
-                        <torusGeometry args={[0.27 * p.scale, 0.025 * p.scale, 6, 28]} />
+                        <torusGeometry args={[0.19 * p.scale, 0.02 * p.scale, 6, 28]} />
                         <meshBasicMaterial color={p.colors.corner} />
                       </mesh>
                     </>
                   )}
                   {isSel && (
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
-                      <torusGeometry args={[0.42 * p.scale, 0.035 * p.scale, 6, 32]} />
+                      <torusGeometry args={[0.24 * p.scale, 0.03 * p.scale, 6, 32]} />
                       <meshBasicMaterial color={p.colors.corner} />
                     </mesh>
                   )}

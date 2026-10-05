@@ -1,4 +1,6 @@
 import { KIND_SCALE, seededHash, type BodyKind, type RingStyle } from "./bodies";
+import { orbitThrough, type Orbit } from "./kepler";
+import { STAR_GM } from "./orbit";
 
 /**
  * Moons, rings and the planets they belong to (R4.7; the instructor's brief:
@@ -23,7 +25,14 @@ export const ROCHE_K = 2.44;
 /** How much larger every moon system is drawn than its orbit's scale allows. One number for all. */
 export const MOON_SYSTEM_SCALE = 200;
 /** Space between successive moon orbits, before the scene's scale. */
-const MOON_GAP = 0.26;
+/**
+ * Space between successive moon orbits, before the scene's scale. Wider than a
+ * moon is across (2 × MOON_SIZE) plus each orbit's swing, so neighbouring
+ * moons never touch (5 Oct 2026; it was 0.26, narrower than a moon).
+ */
+const MOON_GAP = 0.5;
+/** A moon's drawn radius, before the scene's scale. */
+export const MOON_SIZE = 0.13;
 
 /** Planet mass over star mass, by kind (Earth, Venus, Jupiter, Saturn, Uranus and Neptune's own). */
 export const MASS_RATIO: Record<BodyKind, number> = {
@@ -142,4 +151,58 @@ export function ringBands(style: RingStyle): Array<{ from: number; to: number; a
         { from: 0.86, to: 0.885, alpha: 0.42 },
       ];
   }
+}
+
+/* ------------------------------------------- moons on the planets' rules */
+
+/** Gentle, as the planets' are: no moon's orbit is more eccentric than this. */
+export const MOON_E_MAX = 0.08;
+/** How much of the gap to its neighbour a moon's swing (a·e) may take. */
+const MOON_E_ROOM = 0.3;
+/**
+ * A moon system's time runs this much faster than the star's, one number for
+ * every system (as MOON_SYSTEM_SCALE magnifies every system by one number).
+ * At the true rate a rocky world's moon would take twenty minutes to go round.
+ */
+export const MOON_CLOCK = 20;
+
+/** A planet's gravitational parameter: its mass ratio times the star's (orbit.ts). */
+export function planetGM(kind: BodyKind): number {
+  return MASS_RATIO[kind] * STAR_GM;
+}
+
+export type MoonOrbit = Orbit & { dir: 1 | -1 };
+
+/**
+ * Every moon of a planet, on the planets' own rules (instructor, 5 Oct 2026:
+ * "make it follow the same logic and rules we had for planets"):
+ *
+ *   - its own gentle ellipse, the planet at a focus, Kepler's second law
+ *     (`kepler.ts`), one moon per orbit, starting at its curriculum angle
+ *   - its period from the PLANET's mass, T = 2π√(a³/GM), on the moon clock
+ *   - spaced so no two moons ever touch, and every orbit, perihelion to
+ *     aphelion, outside the Roche limit and inside the Hill sphere (tested)
+ *   - its ellipse the objective's (its id), the same for every student; only
+ *     a captured moon's backward direction depends on the student's world
+ */
+export function moonOrbitsOf(o: {
+  planetId: string;
+  kind: BodyKind;
+  moonIds: readonly string[];
+  size: number;
+  scale: number;
+  seed: number;
+}): MoonOrbit[] {
+  const n = o.moonIds.length;
+  const gm = planetGM(o.kind) * MOON_CLOCK * MOON_CLOCK;
+  const room = MOON_GAP * o.scale - 2 * MOON_SIZE * o.scale;
+  return o.moonIds.map((id, i) => {
+    // Its slot sits a swing's width out from the Roche limit, so its perihelion clears it.
+    const a = moonOrbit(o.size, i, o.scale) + (MOON_E_ROOM * room) / 2;
+    const eMax = Math.min(MOON_E_MAX, (MOON_E_ROOM * room) / 2 / a);
+    const e = eMax * (0.35 + 0.65 * (seededHash(`moon-e:${id}`) / 0x100000000));
+    const omega = (seededHash(`moon-w:${id}`) / 0x100000000) * Math.PI * 2;
+    const orbit = orbitThrough({ a, e, omega, theta0: (i / Math.max(1, n)) * Math.PI * 2, gm });
+    return { ...orbit, dir: moonDirection(o.kind, i, n, o.planetId, o.seed) };
+  });
 }

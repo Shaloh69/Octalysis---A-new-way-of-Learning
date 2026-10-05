@@ -421,6 +421,10 @@ test.describe("/app — the moons", () => {
     const frames = async (reducedMotion: "reduce" | "no-preference") => {
       const ctx = await browser.newContext({ reducedMotion, viewport: { width: 1440, height: 900 } });
       const page = await ctx.newPage();
+      // Start in the frame-rate guard's low quality, its own remembered verdict:
+      // under a full parallel run the guard switched quality a few seconds in,
+      // between the two frames compared, and that redraw is not motion (5 Oct 2026).
+      await page.addInitScript(() => localStorage.setItem("octa:map-quality", JSON.stringify({ at: Date.now() })));
       await moonsInEveryState(page);
       await map(page, "/app?stage=01&moon=01.2");
       await expect(page.locator(".starmap-body h2")).toHaveText("Moon 01.2");

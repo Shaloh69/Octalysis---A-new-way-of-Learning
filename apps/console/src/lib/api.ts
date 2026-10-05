@@ -81,7 +81,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
-      "content-type": "application/json",
+      // Only a request WITH a body says it is JSON. The API (Fastify) refuses a
+      // JSON content type with an empty body, so every bodiless POST (a journey,
+      // a dismiss, Orientation's finish) answered 400 (found 5 Oct 2026).
+      ...(init.body !== undefined && init.body !== null ? { "content-type": "application/json" } : {}),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },

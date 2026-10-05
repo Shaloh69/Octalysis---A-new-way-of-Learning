@@ -41,7 +41,7 @@ before anything else.
 
 ```bash
 pnpm db:up      # Postgres 16 in Docker on :15432
-pnpm db:reset   # drop, recreate, apply all SIX SQL files, run invariants
+pnpm db:reset   # drop, recreate, apply all SEVEN SQL files, run invariants
 pnpm dev:api    # the API on :8090, configured for LOCAL auth  <- not `pnpm dev`
 pnpm test:rls   # the 38-test denial suite
 pnpm verify     # typecheck + tests + invariants
@@ -65,7 +65,8 @@ try, get blocked by the trigger, and abort *halfway*, leaving a database that
 presented as "stage 00 is locked".
 
 Apply order is load-bearing: `local-bootstrap.sql` → `schema.sql` → `addendum-feedback.sql` →
-`addendum-submissions.sql` → `addendum-audit.sql` → `addendum-cron.sql`. **Six files, not
+`addendum-submissions.sql` → `addendum-audit.sql` → `addendum-cron.sql` → `addendum-drafts.sql`
+(5 Oct 2026, idempotent; `pnpm db:push --file` sends it alone to a live project). **Seven files, not
 five** — this said five and omitted `addendum-submissions.sql`, which holds labs, project
 and participation. `scripts/db-reset.mjs` is the authority and always applied it; anyone
 applying to Supabase BY HAND from this list would have skipped 40% of the grade.

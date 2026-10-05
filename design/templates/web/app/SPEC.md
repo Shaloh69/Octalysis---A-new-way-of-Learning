@@ -312,3 +312,30 @@ drag, a real two-finger pinch at 380 (CDP touch events), the keys, and the
 thirty seconds on a fake clock (not at 29, restarted by input, home after).
 10 passed at 1440 and 380. Captures `current-looking` (wheel, 1440) and
 `current-looking-380` (pinch), opened. `web-app.spec.ts` 50 passed.
+
+## Moons on the planets' rules, and quieter orbit lines (instructor, 5 Oct 2026)
+
+"Fix the moons' orbit, make it follow the same logic and rules we had for
+planets." Then: "only show the lines of a selected planet or moon; the rest
+should be less visible, or just fade in and out."
+
+- **Moons** (`satellites.ts` `moonOrbitsOf`, `satellites.spec.ts`): each its
+  own gentle ellipse (e ≤ 0.08), the planet at a focus, Kepler's second law,
+  one moon per orbit, starting at its curriculum angle; its period from the
+  PLANET's mass, T = 2π√(a³/GM), on one moon clock (20x, as the 200x
+  magnification is one number), so a Jupiter-like world turns its moons
+  faster than an Earth-like one in the ratio √(m₁/m₂); spaced so no two moons
+  ever touch (moving positions over a full period, and at every angle); every
+  orbit, perihelion to aphelion, outside Roche and inside Hill. A moon's
+  ellipse is its objective's, the same for every student; captured moons
+  still go backwards. Moon gap 0.5 (was 0.26, narrower than a moon); moons
+  drawn at 0.13.
+- **Orbit lines**: every planet's ellipse faint, breathing slowly (9s, on the
+  scene's one clock, so still under reduced motion); a chosen planet's orbit
+  drawn clearly in the selection colour; its moons' orbits faint the same way,
+  and a chosen moon's drawn clearly.
+- **Budget**: a mastered moon is bright and ringed; its halo sphere went
+  (a draw per moon). 34-44 draw calls in every view, eleven moons included.
+
+Captures opened (build at 5185): 01 and 06 chosen at 1440 and 380, 06 with
+Moon 06.3 chosen, and the overview.

@@ -9,6 +9,9 @@
 //   node scripts/db-push-supabase.mjs            apply
 //   node scripts/db-push-supabase.mjs --check    connect + report state, change nothing
 //   node scripts/db-push-supabase.mjs --reset    DROP the public schema first
+//   node scripts/db-push-supabase.mjs --file db/addendum-drafts.sql
+//        apply ONE idempotent file to a live project, nothing else re-run
+//        (how a schema change reaches the deployment: CLAUDE.md, 5 Oct 2026)
 //
 // Connection comes from SUPABASE_DB_SESSION in .env (session pooler, port 5432).
 // The transaction pooler on 6543 cannot run DDL reliably — use session mode.
@@ -42,6 +45,8 @@ const FILES = [
   // Scheduled work. This is where pg_cron actually EXISTS -- locally the
   // extension is absent and the file only creates the functions.
   "db/addendum-cron.sql",
+  // Drafted lesson text (5 Oct 2026). Idempotent: `--file` sends it alone to a live project.
+  "db/addendum-drafts.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 
@@ -72,6 +77,13 @@ async function loadEnvFile() {
 
 async function main() {
   const args = new Set(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  const fileArg = argv.includes("--file") ? argv[argv.indexOf("--file") + 1] : null;
+  const only = fileArg ? fileArg.split(String.fromCharCode(92)).join("/") : fileArg;
+  if (only !== null && (!only || !FILES.includes(only))) {
+    console.error(c.red(`\n--file takes one of: ${FILES.join(", ")}\n`));
+    process.exit(1);
+  }
   const env = { ...(await loadEnvFile()), ...process.env };
   const conn = env.SUPABASE_DB_SESSION;
 
@@ -200,6 +212,9 @@ async function main() {
       alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
     `);
     console.log(c.green("  public schema recreated, default privileges restored"));
+  } else if (only) {
+    console.log(c.dim(`
+  --file: applying ${only} alone (it must be idempotent)`));
   } else if (existing.rows[0].n > 0) {
     console.log(
       c.yellow(
@@ -212,7 +227,7 @@ async function main() {
   }
 
   console.log("");
-  for (const f of FILES) {
+  for (const f of only ? [only] : FILES) {
     if (f.includes(FORBIDDEN)) {
       console.error(c.red(`  refusing to apply ${f} to a Supabase project`));
       process.exit(1);

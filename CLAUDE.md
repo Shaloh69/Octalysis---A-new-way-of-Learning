@@ -23,7 +23,7 @@ other documents — check it before believing any claim that something is built.
 - `packages/contracts` — Zod schemas shared across all three
 - `packages/tokens` — three themes + accent derivation, as CSS custom properties
 - `db` — Supabase Postgres. Apply in order: `schema.sql` → `addendum-feedback.sql` →
-  **`addendum-submissions.sql`** → `addendum-audit.sql` → `addendum-cron.sql` (local
+  **`addendum-submissions.sql`** → `addendum-audit.sql` → `addendum-cron.sql` → `addendum-drafts.sql` (local
   prepends `local-bootstrap.sql`). `addendum-submissions.sql` carries labs, project and
   participation — **40% of the grade** — and was missing from this list while
   `scripts/db-reset.mjs` had been applying it all along.
@@ -76,6 +76,20 @@ other documents — check it before believing any claim that something is built.
      the console's record and attempt pages). A device with no full screen may sit the
      paper under the same page guard, and that is recorded too.
    - Never auto-submit on a leave: the record goes to the instructor, who decides.
+10. **Every database change reaches Supabase in the same session, before the code that uses
+   it** (instructor, 5 Oct 2026: "whenever a new schema or any database update, always
+   update Supabase for no errors"). A new table, column, policy, function or trigger:
+   - is written **idempotently** (`create ... if not exists`, `drop policy if exists` then
+     `create policy`), in an addendum that can be re-applied to a live project on its own;
+   - is applied locally (`pnpm db:reset`), and then to **the deployment's** project with
+     `pnpm db:push --file db/<that addendum>.sql`, **before** the code that reads it is
+     pushed to `main`. Render and both Vercel apps build from `main`; an API that queries
+     a table Supabase lacks answers 500 (5 Oct 2026: `/content` failed on the deployment
+     because `chapter_drafts` existed only locally);
+   - is checked against the right project first: `pnpm db:push:check` prints the host,
+     and the project ref in it must be the deployment's. The root `.env` has pointed at
+     an older project before. If the deployment's credentials are not on this machine,
+     **stop and ask for them**; do not push code that needs the change, and say so.
 
 ## Conventions
 
@@ -95,7 +109,7 @@ other documents — check it before believing any claim that something is built.
 
 ```bash
 pnpm db:up      # Postgres 16 in Docker on :15432
-pnpm db:reset   # drop, recreate, apply all SIX SQL files, run invariants
+pnpm db:reset   # drop, recreate, apply all SEVEN SQL files, run invariants
 pnpm dev:api    # the API on :8090, configured for LOCAL auth  <- not `pnpm dev`
 pnpm test:rls   # the 38-test denial suite
 pnpm verify     # typecheck + tests + invariants
@@ -105,7 +119,7 @@ pnpm verify     # typecheck + tests + invariants
 that cost hours each and are not guessable: the raw API dev script boots from
 `.env` and fails three ways that all look like app bugs (use `pnpm dev:api`);
 **ports 8080 and 5173 belong to other projects on this machine** and both answer
-200, so "the port is up" proves nothing; and the SQL apply order is **six files**
+200, so "the port is up" proves nothing; and the SQL apply order is **seven files**
 — omitting `addendum-submissions.sql` silently drops 40% of the grade.
 
 **`local-bootstrap.sql` is LOCAL ONLY** — it supplies the `auth` schema and the

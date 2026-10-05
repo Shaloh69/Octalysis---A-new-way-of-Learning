@@ -139,6 +139,8 @@ test.describe("/app — looking around the system", () => {
     // frames rendered in software for 29s, which timed the test out.
     await page.clock.install();
     await map(page);
+    // Under load the scene can lag the panels: the keys need the map drawn.
+    await page.locator(".starmap-stage canvas").waitFor();
     await page.keyboard.press("+");
     await expect(stage(page)).toHaveAttribute("data-view", "looking");
     await page.clock.fastForward(29_000);

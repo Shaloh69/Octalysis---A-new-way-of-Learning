@@ -37,6 +37,8 @@ const FILES = [
   // cleanly to plain Postgres -- the functions are created either way, only the
   // scheduling needs Supabase.
   "db/addendum-cron.sql",
+  // Drafted lesson text (5 Oct 2026). Idempotent: `--file` sends it alone to a live project.
+  "db/addendum-drafts.sql",
 ];
 
 const c = {

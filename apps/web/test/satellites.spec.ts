@@ -9,7 +9,17 @@ import {
   ringSpan,
   rocheLimit,
   RING_STYLES,
+  BODY_SCALE,
+  MASS_RATIO,
+  MOON_CLOCK,
+  MOON_E_MAX,
+  MOON_SIZE,
+  hillRadius,
+  moonOrbitsOf,
+  planetGM,
+  planetSize,
 } from "../src/solar-system/satellites";
+import { positionAt, radiusAt } from "../src/solar-system/kepler";
 import { skinFor, type BodyKind } from "../src/solar-system/bodies";
 import { OUTER_WORLDS, INNER_WORLDS } from "../src/solar-system/world";
 
@@ -102,5 +112,88 @@ describe("faint rings on the other giants (R4.8)", () => {
         }
       }
     }
+  });
+});
+
+/**
+ * Moons follow the planets' rules (instructor, 5 Oct 2026: "fix the moons
+ * orbit, make it follow the same logic and rules we had for planets").
+ */
+describe("moons on the planets' rules", () => {
+  const SCALE = BODY_SCALE;
+  const ids = (n: number) => Array.from({ length: n }, (_, i) => `06.${i + 1}`);
+  const systems = KINDS.flatMap((kind) => [2, 5, 8, 11].map((n) => ({ kind, n, size: planetSize(n, kind, SCALE) })));
+
+  it("each moon its own gentle ellipse, the planet at a focus, starting at its curriculum angle", () => {
+    for (const s of systems) {
+      const os = moonOrbitsOf({ planetId: "06", kind: s.kind, moonIds: ids(s.n), size: s.size, scale: SCALE, seed: 0.37 });
+      expect(os).toHaveLength(s.n);
+      os.forEach((o, i) => {
+        expect(o.e).toBeGreaterThan(0);
+        expect(o.e).toBeLessThanOrEqual(MOON_E_MAX);
+        const p = positionAt(o, 0);
+        const d = Math.atan2(p.y, p.x) - (i / s.n) * Math.PI * 2;
+        expect(Math.abs(Math.atan2(Math.sin(d), Math.cos(d)))).toBeLessThan(1e-9);
+      });
+      const axes = os.map((o) => o.a);
+      expect(new Set(axes.map((a) => a.toFixed(6))).size, "one moon per orbit").toBe(s.n);
+    }
+  });
+
+  it("every orbit, perihelion to aphelion, stays outside the Roche limit and inside the Hill sphere", () => {
+    for (const s of systems) {
+      const os = moonOrbitsOf({ planetId: "06", kind: s.kind, moonIds: ids(s.n), size: s.size, scale: SCALE, seed: 0.37 });
+      const hill = hillRadius(12, 0.03, s.kind); // the innermost planet's orbit: the smallest Hill sphere on the map
+      for (const o of os) {
+        expect(o.a * (1 - o.e), `${s.kind}`).toBeGreaterThan(rocheLimit(s.size));
+        expect(o.a * (1 + o.e) + MOON_SIZE * SCALE, `${s.kind} ${s.n}`).toBeLessThan(hill);
+      }
+    }
+  });
+
+  it("no two moons ever overlap: on their moving positions over the outermost moon's period, and at every angle", () => {
+    for (const s of systems) {
+      const os = moonOrbitsOf({ planetId: "06", kind: s.kind, moonIds: ids(s.n), size: s.size, scale: SCALE, seed: 0.37 });
+      const r = MOON_SIZE * SCALE;
+      const T = Math.max(...os.map((o) => o.period));
+      let worst = Infinity;
+      for (let k = 0; k <= 600; k++) {
+        const at = os.map((o) => positionAt(o, (T * k) / 600 * o.dir));
+        for (let i = 0; i < at.length; i++)
+          for (let j = i + 1; j < at.length; j++) worst = Math.min(worst, Math.hypot(at[i]!.x - at[j]!.x, at[i]!.y - at[j]!.y) - 2 * r);
+      }
+      if (s.n > 1) {
+        expect(Number.isFinite(worst)).toBe(true);
+        expect(worst, `${s.kind} ${s.n}`).toBeGreaterThan(0.05 * SCALE);
+      }
+      for (let i = 0; i + 1 < os.length; i++) {
+        for (let k = 0; k < 360; k++) {
+          const th = (k / 360) * Math.PI * 2;
+          expect(radiusAt(os[i + 1]!, th) - radiusAt(os[i]!, th), `${s.kind} ${s.n} moons ${i}/${i + 1}`).toBeGreaterThan(2 * r);
+        }
+      }
+    }
+  });
+
+  it("the planet's mass sets the pace: T² ∝ a³ around one planet, and a heavier planet turns its moons faster in the same ratio", () => {
+    const giant = moonOrbitsOf({ planetId: "06", kind: "gas", moonIds: ids(5), size: 1, scale: SCALE, seed: 0 });
+    const rocky = moonOrbitsOf({ planetId: "06", kind: "rocky", moonIds: ids(5), size: 1, scale: SCALE, seed: 0 });
+    expect((giant[0]!.period / giant[4]!.period) ** 2).toBeCloseTo((giant[0]!.a / giant[4]!.a) ** 3, 9);
+    for (let i = 0; i < 5; i++) {
+      expect(giant[i]!.a).toBeCloseTo(rocky[i]!.a, 12);
+      expect(rocky[i]!.period / giant[i]!.period).toBeCloseTo(Math.sqrt(MASS_RATIO.gas / MASS_RATIO.rocky), 9);
+      expect(giant[i]!.period).toBeCloseTo(2 * Math.PI * Math.sqrt(giant[i]!.a ** 3 / (planetGM("gas") * MOON_CLOCK ** 2)), 9);
+    }
+  });
+
+  it("captured moons still go backwards; the rest go the planet's way", () => {
+    const os = moonOrbitsOf({ planetId: "06", kind: "gas", moonIds: ids(10), size: 1.5, scale: SCALE, seed: 0.37 });
+    os.forEach((o, i) => expect(o.dir).toBe(moonDirection("gas", i, 10, "06", 0.37)));
+  });
+
+  it("the same for every student: a moon's ellipse is its objective's, never the seed's", () => {
+    const a = moonOrbitsOf({ planetId: "06", kind: "gas", moonIds: ids(6), size: 1, scale: SCALE, seed: 1 });
+    const b = moonOrbitsOf({ planetId: "06", kind: "gas", moonIds: ids(6), size: 1, scale: SCALE, seed: 9 });
+    expect(a.map((o) => [o.a, o.e, o.omega, o.M0])).toEqual(b.map((o) => [o.a, o.e, o.omega, o.M0]));
   });
 });
