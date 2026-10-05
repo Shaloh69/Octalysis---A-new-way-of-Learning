@@ -319,6 +319,8 @@ export interface ContentStage {
   /** Blocks edited in the console and not yet written back into the .md. */
   consoleEdited: number;
   summaryStatus: SummaryStatus | null;
+  /** Drafted lesson text waiting on /content (5 Oct 2026), or null when the chapter has none. */
+  draftStatus: SummaryStatus | null;
 }
 
 export type SummaryStatus = "draft" | "approved" | "sent_back";
@@ -369,6 +371,21 @@ export interface ChapterDetail {
   };
   blocks: ContentBlock[];
   summary: StageSummary | null;
+  /** The chapter's drafted lesson text (instructor ruling, 5 Oct 2026). Staff-only, unreviewed. */
+  draft: ChapterDraft | null;
+}
+
+/** A chapter's lesson text drafted from the textbook, waiting for review. Approving is of THIS text. */
+export interface ChapterDraft {
+  blocks: Array<{ kind: string; body: string; meta: Record<string, string> }>;
+  hash: string;
+  status: SummaryStatus;
+  note: string | null;
+  /** Students already read an earlier approved version of this chapter's draft. */
+  everApproved: boolean;
+  reviewer: string | null;
+  reviewedAt: string | null;
+  updatedAt: string;
 }
 
 export interface BlockVersion {
@@ -393,6 +410,7 @@ export interface ContentStatus {
     itemTarget: number;
     consoleEdited: number;
     summaries: { draft: number; approved: number; sentBack: number; none: number };
+    chapters: { draft: number; approved: number; sentBack: number };
   };
 }
 
@@ -633,6 +651,19 @@ export const api = {
     request<{ ok: true; alreadyApproved: boolean }>(
       `/api/v1/console/content/summaries/${encodeURIComponent(stageId)}/approve`,
       { method: "POST", body: JSON.stringify({ hash }) },
+    ),
+
+  /** Drafted lesson text: approving copies it in, and students read it from then on. */
+  approveDraft: (stageId: string, hash: string) =>
+    request<{ ok: true; alreadyApproved: boolean }>(
+      `/api/v1/console/content/drafts/${encodeURIComponent(stageId)}/approve`,
+      { method: "POST", body: JSON.stringify({ hash }) },
+    ),
+
+  sendBackDraft: (stageId: string, reason: string) =>
+    request<{ ok: true }>(
+      `/api/v1/console/content/drafts/${encodeURIComponent(stageId)}/send-back`,
+      { method: "POST", body: JSON.stringify({ reason }) },
     ),
 
   sendBackSummary: (stageId: string, reason: string) =>

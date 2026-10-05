@@ -182,3 +182,72 @@ describe("sync-content and the console editor", () => {
     await expect(sync()).rejects.toMatchObject({ stderr: expect.stringMatching(/summary_status is no longer read/) });
   });
 });
+
+/*
+ * Drafted lesson text (instructor ruling, 5 Oct 2026): `NN.draft.md` beside
+ * `NN.md` goes to the staff-only `chapter_drafts`, never to `content_blocks`,
+ * until the instructor approves it on /content.
+ */
+describe("sync-content and drafted lesson text", () => {
+  const DRAFT = (b1: string, b2: string, extra = "") => `---
+stage: "00"
+title: Orientation
+---
+
+<!-- block: prose -->
+${b1}
+
+<!-- block: prose${extra} -->
+${b2}
+`;
+  const bodies = async () =>
+    (await setup("select body_md from content_blocks where stage_id = '00' order by ordinal")).rows.map((r) => r.body_md);
+  const draftRow = async () =>
+    (await setup("select status, ever_approved, draft_hash from chapter_drafts where stage_id = '00'")).rows[0];
+
+  it("a draft goes to chapter_drafts for review; students keep reading NN.md", async () => {
+    await writeFile(join(dir, "00.md"), stageFile(SUMMARY, "Stub one.", "Stub two."));
+    await writeFile(join(dir, "00.draft.md"), DRAFT("Drafted one.", "Drafted two."));
+    const out = await sync("--take-file");
+    expect(out).toMatch(/drafted lesson text: 0 chapter\(s\) approved, 1 to review on \/content/);
+    expect(await bodies()).toEqual(["Stub one.", "Stub two."]);
+    expect(await draftRow()).toMatchObject({ status: "draft", ever_approved: false });
+  });
+
+  it("once approved, sync never puts the stub back over the reviewed text", async () => {
+    const res = await app.inject({
+      method: "POST", url: "/api/v1/console/content/drafts/00/approve",
+      headers: { authorization: `Bearer ${token}` }, payload: { hash: (await draftRow()).draft_hash },
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(await bodies()).toEqual(["Drafted one.", "Drafted two."]);
+    const out = await sync();
+    expect(out).toMatch(/approved chapters left as reviewed: 00/);
+    expect(await bodies()).toEqual(["Drafted one.", "Drafted two."]);
+  });
+
+  it("a changed draft withdraws its approval; students keep the last approved text", async () => {
+    await writeFile(join(dir, "00.draft.md"), DRAFT("Drafted one, revised.", "Drafted two."));
+    const out = await sync();
+    expect(out).toMatch(/stage 00: its drafted text changed, so its approval was withdrawn/);
+    expect(await draftRow()).toMatchObject({ status: "draft", ever_approved: true });
+    expect(await bodies()).toEqual(["Drafted one.", "Drafted two."]);
+  });
+
+  it("a draft that misquotes the book fails like any other block", async () => {
+    const book = resolve(ROOT, "docs/source/book/ch-10.md");
+    let present = true;
+    try {
+      await readFile(book, "utf8");
+    } catch {
+      present = false;
+    }
+    if (!present) return; // the book is gitignored; `--verify` says so itself
+    await writeFile(
+      join(dir, "00.draft.md"),
+      DRAFT("Drafted one.", "Two's complement is a representation that this textbook never once describes in these words at all.", ' source="ch-10.md 10.2"'),
+    );
+    await expect(sync()).rejects.toMatchObject({ stdout: expect.stringMatching(/do not match their cited source/) });
+    await rm(join(dir, "00.draft.md"));
+  });
+});

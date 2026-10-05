@@ -1065,3 +1065,57 @@ describe("Lecture Mode — sessions and answers are staff-read, client-write-nev
     expect(reopen.error?.message, denialReason(reopen)).toMatch(/cannot change/i);
   });
 });
+
+/* ============================================================
+ * Drafted lesson text — instructor ruling, 5 Oct 2026
+ *
+ * A chapter drafted from the textbook is UNREVIEWED text. It lives in
+ * `chapter_drafts`, staff-only, and reaches `content_blocks` (what students
+ * read) only through the API's approval, which writes an audit row. Each
+ * denial asserts the outcome, with a positive control.
+ * ========================================================== */
+describe("drafted lesson text — staff-only until the API approves it", () => {
+  const BLOCKS = JSON.stringify([{ kind: "prose", body: "An unreviewed lesson on computer arithmetic.", meta: {} }]);
+
+  beforeAll(async () => {
+    await setup(
+      `insert into chapter_drafts (stage_id, blocks, draft_hash)
+       values ('09', $1::jsonb, 'hash-of-draft-09')
+       on conflict (stage_id) do update
+         set blocks = excluded.blocks, draft_hash = excluded.draft_hash,
+             status = 'draft', approved_hash = null, note = null`,
+      [BLOCKS],
+    );
+  });
+
+  it("a student cannot read a drafted chapter", async () => {
+    const res = await runAs(studentA, "select blocks from chapter_drafts");
+    expect(res.error, `expected a silent RLS filter, got ${denialReason(res)}`).toBeNull();
+    expect(res.rowCount).toBe(0);
+  });
+
+  it("POSITIVE CONTROL: a teacher can read it", async () => {
+    const res = await runAs<{ draft_hash: string }>(teacher, "select draft_hash from chapter_drafts where stage_id = '09'");
+    expect(res.error).toBeNull();
+    expect(res.rows.map((r) => r.draft_hash)).toEqual(["hash-of-draft-09"]);
+  });
+
+  it("a teacher cannot approve a chapter behind the API's back", async () => {
+    const res = await runAs(
+      teacher,
+      "update chapter_drafts set status = 'approved', approved_hash = draft_hash where stage_id = '09'",
+    );
+    expect(res.error, denialReason(res)).toBeNull();
+    expect(res.rowCount, "an approval with no audit row got through").toBe(0);
+  });
+
+  it("a teacher cannot write a draft either: sync and the API own the table", async () => {
+    const res = await runAs(teacher, "insert into chapter_drafts (stage_id, blocks, draft_hash) values ('10', '[{}]'::jsonb, 'x')");
+    expect(res.error, "a staff client inserted a draft").not.toBeNull();
+  });
+
+  it("an approval can only be of the text it names: the constraint, for every role", async () => {
+    const res = await runAs(service, "update chapter_drafts set status = 'approved', approved_hash = 'some-other-text' where stage_id = '09'");
+    expect(res.error?.message ?? "").toMatch(/cd_approved_is_this_text/);
+  });
+});

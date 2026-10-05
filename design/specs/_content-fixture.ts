@@ -31,10 +31,13 @@ export interface Writes {
   edit: Array<{ id: string; body: { body: string; version: number; reason: string } }>;
   approve: Array<{ stageId: string; body: { hash: string } }>;
   sendBack: Array<{ stageId: string; body: { reason: string } }>;
+  /** Drafted lesson text (5 Oct 2026). */
+  approveDraft: Array<{ stageId: string; body: { hash: string } }>;
+  sendBackDraft: Array<{ stageId: string; body: { reason: string } }>;
 }
 
 export interface FixtureOpts {
-  fail?: "edit" | "stale" | "approve" | "send-back";
+  fail?: "edit" | "stale" | "approve" | "send-back" | "approve-draft";
   /** Delay every read, to see the skeleton. */
   delayMs?: number;
   /** Answer every read with this status. */
@@ -66,7 +69,7 @@ function applyBlock(b: Block, w: Writes): Block {
 }
 
 export async function useFixture(page: Page, opts: FixtureOpts = {}) {
-  const writes: Writes = { edit: [], approve: [], sendBack: [] };
+  const writes: Writes = { edit: [], approve: [], sendBack: [], approveDraft: [], sendBackDraft: [] };
 
   await page.route(/\/api\/v1\/console\/content(\/|\?|$)/, async (route: Route) => {
     const req = route.request();
@@ -88,6 +91,17 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
         return route.fulfill({
           json: { block: { id: m[1], version: body.version + 1, body: body.body.trim(), consoleEdited: true } },
         });
+      }
+      m = /^\/drafts\/(\d\d)\/(approve|send-back)$/.exec(path);
+      if (m) {
+        const [, stageId, action] = m;
+        if (action === "approve") {
+          if (opts.fail === "approve-draft") return fail(409, "This chapter's draft changed since you opened it. Read the new text before approving it.");
+          writes.approveDraft.push({ stageId: stageId!, body: req.postDataJSON() });
+        } else {
+          writes.sendBackDraft.push({ stageId: stageId!, body: req.postDataJSON() });
+        }
+        return route.fulfill({ json: { ok: true, alreadyApproved: false } });
       }
       m = /^\/summaries\/(\d\d)\/(approve|send-back)$/.exec(path);
       if (m) {
@@ -150,6 +164,12 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
     } else if (/^\/\d\d$/.test(path)) {
       json.blocks = (json.blocks as Block[]).map((b) => applyBlock(b, writes));
       if (json.summary) json.summary = applySummary(json.summary as Summary, writes);
+      const id = path.slice(1);
+      const d = json.draft as { status: string; note: string | null; reviewer: string | null; reviewedAt: string | null; everApproved: boolean } | null;
+      if (d) {
+        for (const a of writes.approveDraft) if (a.stageId === id) Object.assign(d, { status: "approved", note: null, everApproved: true, reviewer: REVIEWER, reviewedAt: new Date().toISOString() });
+        for (const b of writes.sendBackDraft) if (b.stageId === id) Object.assign(d, { status: "sent_back", note: b.body.reason, reviewer: REVIEWER, reviewedAt: new Date().toISOString() });
+      }
       // Two replaced versions (2 and 1) means the block is now at version 3.
       if (opts.history) json.blocks = (json.blocks as Block[]).map((b) => ({ ...b, version: b.version + 2, historyCount: Math.max(2, b.historyCount) }));
     }

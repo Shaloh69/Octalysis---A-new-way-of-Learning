@@ -85,9 +85,11 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
               (select count(*)::int from items i
                 where i.stage_id = s.id and i.status <> 'live')
                 as draft_items,
-              ss.status as summary_status
+              ss.status as summary_status,
+              cd.status as draft_status, cd.ever_approved as draft_ever_approved
          from stages s
          left join stage_summaries ss on ss.stage_id = s.id
+         left join chapter_drafts cd on cd.stage_id = s.id
         order by s.ordinal`,
     );
 
@@ -110,6 +112,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
         draftItems: Number(r.draft_items),
         authoring: authoringOf(blocks, Number(r.scaffold_blocks)),
         summaryStatus: (r.summary_status ?? null) as "draft" | "approved" | "sent_back" | null,
+        draftStatus: (r.draft_status ?? null) as "draft" | "approved" | "sent_back" | null,
       };
     });
 
@@ -128,6 +131,11 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
         // schedule, so the shortfall is stated as a number rather than implied.
         itemTarget: gradeable.length * 40,
         consoleEdited: stages.reduce((a, s) => a + s.consoleEdited, 0),
+        chapters: {
+          draft: stages.filter((s) => s.draftStatus === "draft").length,
+          approved: stages.filter((s) => s.draftStatus === "approved").length,
+          sentBack: stages.filter((s) => s.draftStatus === "sent_back").length,
+        },
         summaries: {
           draft: countSummaries("draft"),
           approved: countSummaries("approved"),
@@ -208,7 +216,29 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
       [stageId],
     );
 
+    // Drafted lesson text, if any (5 Oct 2026): shown beside the live blocks.
+    const { rows: drafts } = await app.db.query(
+      `select cd.blocks, cd.draft_hash, cd.status, cd.note, cd.ever_approved, cd.reviewed_at, cd.updated_at,
+              p.full_name as reviewer
+         from chapter_drafts cd left join profiles p on p.id = cd.reviewed_by
+        where cd.stage_id = $1`,
+      [stageId],
+    );
+    const dr = drafts[0];
+
     return reply.send({
+      draft: dr
+        ? {
+            blocks: dr.blocks as Array<{ kind: string; body: string; meta: Record<string, unknown> }>,
+            hash: dr.draft_hash as string,
+            status: dr.status as "draft" | "approved" | "sent_back",
+            note: (dr.note ?? null) as string | null,
+            everApproved: dr.ever_approved === true,
+            reviewer: (dr.reviewer ?? null) as string | null,
+            reviewedAt: dr.reviewed_at ?? null,
+            updatedAt: dr.updated_at,
+          }
+        : null,
       stage: {
         id: s.id,
         title: s.title,
@@ -431,6 +461,111 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
       );
     });
 
+    return reply.send({ ok: true });
+  });
+}
+
+/* ------------------------------------------------------------------
+ * Drafted lesson text (instructor ruling, 5 Oct 2026). A chapter drafted from
+ * the textbook waits in `chapter_drafts` (staff-only) until approved here.
+ * ---------------------------------------------------------------- */
+const DraftBlock = z.object({ kind: z.string().min(1), body: z.string(), meta: z.record(z.string(), z.unknown()).default({}) });
+
+export function registerChapterDraftRoutes(app: FastifyInstance, env: Env): void {
+  /**
+   * POST /api/v1/console/content/drafts/:stageId/approve   (staff)
+   *
+   * Bound to the text the reviewer read (its hash). Copies the drafted blocks
+   * into `content_blocks` through the archive trigger (named a console edit,
+   * with the reviewer as actor), removes blocks past the draft's end, marks the
+   * draft approved and `ever_approved` (sync leaves the chapter alone from
+   * now on), and writes one audit row. Idempotent.
+   */
+  app.post("/api/v1/console/content/drafts/:stageId/approve", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const stageId = (req.params as { stageId: string }).stageId;
+    if (!STAGE_ID.test(stageId)) throw errors.notFound("No drafted text for that chapter.");
+    const parsed = z.object({ hash: z.string().min(1).max(128) }).safeParse(req.body);
+    if (!parsed.success) throw errors.badRequest("An approval names the text it approves.");
+
+    const result = await withTransaction(app.db, async (client) => {
+      const { rows } = await client.query(
+        "select blocks, draft_hash, status from chapter_drafts where stage_id = $1 for update",
+        [stageId],
+      );
+      const cur = rows[0];
+      if (!cur) throw errors.notFound("No drafted text for that chapter.");
+      if (cur.draft_hash !== parsed.data.hash) {
+        throw new AppError("conflict", "This chapter's draft changed since you opened it. Read the new text before approving it.");
+      }
+      if (cur.status === "approved") return { already: true };
+      const blocks = z.array(DraftBlock).min(1).parse(cur.blocks);
+
+      await client.query(
+        `select set_config('app.edit_via', 'console', true),
+                set_config('app.actor_id', $1, true),
+                set_config('app.edit_reason', $2, true)`,
+        [id!.userId, `Drafted lesson text approved (${cur.draft_hash})`],
+      );
+      for (let i = 0; i < blocks.length; i++) {
+        const b = blocks[i]!;
+        await client.query(
+          `insert into content_blocks (stage_id, ordinal, kind, body_md, meta)
+           values ($1, $2, $3, $4, $5::jsonb)
+           on conflict (stage_id, ordinal) do update
+             set kind = excluded.kind, body_md = excluded.body_md, meta = excluded.meta,
+                 console_edited = false, source_hash = null`,
+          [stageId, i + 1, b.kind, b.body, JSON.stringify(b.meta)],
+        );
+      }
+      await client.query("delete from content_blocks where stage_id = $1 and ordinal > $2", [stageId, blocks.length]);
+      await client.query(
+        `update chapter_drafts
+            set status = 'approved', approved_hash = draft_hash, ever_approved = true, note = null,
+                reviewed_by = $2, reviewed_at = now()
+          where stage_id = $1`,
+        [stageId, id!.userId],
+      );
+      await client.query(
+        `insert into audit_log (actor_id, action, target_type, target_id, payload)
+         values ($1, 'chapter.approve', 'stage', $2, $3)`,
+        [id!.userId, stageId, JSON.stringify({ hash: cur.draft_hash, blocks: blocks.length })],
+      );
+      return { already: false };
+    });
+    return reply.send({ ok: true, alreadyApproved: result.already });
+  });
+
+  /**
+   * POST /api/v1/console/content/drafts/:stageId/send-back   (staff)
+   *
+   * The draft goes back to its author with the reason. What students read does
+   * not change: a draft never reached them, and an earlier approved text stays.
+   */
+  app.post("/api/v1/console/content/drafts/:stageId/send-back", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const stageId = (req.params as { stageId: string }).stageId;
+    if (!STAGE_ID.test(stageId)) throw errors.notFound("No drafted text for that chapter.");
+    const parsed = z.object({ reason: z.string().trim().min(3).max(1000) }).safeParse(req.body);
+    if (!parsed.success) throw errors.badRequest("Sending a chapter back needs a reason of at least 3 characters.");
+
+    await withTransaction(app.db, async (client) => {
+      const { rows } = await client.query("select status from chapter_drafts where stage_id = $1 for update", [stageId]);
+      if (!rows[0]) throw errors.notFound("No drafted text for that chapter.");
+      await client.query(
+        `update chapter_drafts
+            set status = 'sent_back', approved_hash = null, note = $2, reviewed_by = $3, reviewed_at = now()
+          where stage_id = $1`,
+        [stageId, parsed.data.reason, id!.userId],
+      );
+      await client.query(
+        `insert into audit_log (actor_id, action, target_type, target_id, payload)
+         values ($1, 'chapter.send_back', 'stage', $2, $3)`,
+        [id!.userId, stageId, JSON.stringify({ reason: parsed.data.reason })],
+      );
+    });
     return reply.send({ ok: true });
   });
 }

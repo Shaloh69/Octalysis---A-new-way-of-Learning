@@ -27,6 +27,7 @@ export async function resetAll(): Promise<void> {
     delete from content_block_versions where true;
     -- Before auth.users (reviewed_by) and stage 99 (stage_id).
     delete from stage_summaries    where true;
+    delete from chapter_drafts     where true;
     -- Content history is append-only and the archive trigger writes it on every
     -- block delete: both are suspended here, like the responses triggers.
     alter table content_blocks disable trigger content_blocks_archive;
@@ -35,6 +36,7 @@ export async function resetAll(): Promise<void> {
     delete from content_block_versions where true;
     -- Before auth.users (reviewed_by) and stage 99 (stage_id).
     delete from stage_summaries    where true;
+    delete from chapter_drafts     where true;
 
     -- feedback FIRST: feedback.item_id references items(id) with no cascade,
     -- so once any suite files a content report, every later reset fails on

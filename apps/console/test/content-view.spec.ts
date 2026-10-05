@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { StageSummary } from "../src/lib/api";
-import { bold, canSave, characters, excerpt, levelsText, nextToReview, paragraphs, shapeOf } from "../src/lib/content-view";
+import { canSave, characters, excerpt, levelsText, nextToReview, shapeOf } from "../src/lib/content-view";
 
 const sum = (stageId: string, status: StageSummary["status"]): StageSummary => ({
   stageId, title: `Stage ${stageId}`, act: 1, draft: "x", hash: "h", status, note: null,
@@ -8,29 +8,7 @@ const sum = (stageId: string, status: StageSummary["status"]): StageSummary => (
 });
 
 describe("the preview reads a block exactly as the student reader does", () => {
-  it("splits paragraphs on a blank line and joins wrapped lines", () => {
-    expect(paragraphs("one\ntwo\n\nthree")).toEqual([
-      { type: "p", segs: [{ text: "one two", bold: false }] },
-      { type: "p", segs: [{ text: "three", bold: false }] },
-    ]);
-  });
-  it("a chunk of dash or star items is a list", () => {
-    expect(paragraphs("- a\n* **b**")).toEqual([
-      { type: "list", items: [[{ text: "a", bold: false }], [{ text: "b", bold: true }]] },
-    ]);
-  });
-  it("a chunk mixing items and prose is a paragraph, as in the reader", () => {
-    expect(paragraphs("lead-in:\n- a")[0]!.type).toBe("p");
-  });
-  it("bold is **x**, and nothing else is markdown", () => {
-    expect(bold("a **b** c")).toEqual([
-      { text: "a ", bold: false }, { text: "b", bold: true }, { text: " c", bold: false },
-    ]);
-    expect(bold("*one star*")).toEqual([{ text: "*one star*", bold: false }]);
-  });
-  it("a ## heading stays literal: students see the hashes today", () => {
-    expect(paragraphs("## The problem")).toEqual([{ type: "p", segs: [{ text: "## The problem", bold: false }] }]);
-  });
+  // The markdown itself is the reader's, tested against it in reader-markdown.spec.ts.
   it("draws a block in one of the reader's five shapes", () => {
     expect(shapeOf("code", {})).toBe("code");
     expect(shapeOf("callout", { kind: "planned" })).toBe("planned");

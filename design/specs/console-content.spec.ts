@@ -221,6 +221,119 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
 });
 
 /* ======================================================================
+ * Drafted lesson text — instructor ruling, 5 Oct 2026
+ *
+ * Chapter 08's text was drafted from book chapter 8 and waits, staff-only,
+ * for approval. The six gate assertions run on its card, then what it owes:
+ * approval of the exact text, a reason to send it back, and words for both.
+ * ==================================================================== */
+
+async function openDraft(page: Page, opts: FixtureOpts = {}) {
+  const fx = await openChapter(page, opts, "08");
+  await page.locator("[data-draft-card]").waitFor({ timeout: 15_000 });
+  return fx;
+}
+const draftCard = (page: Page) => page.locator("[data-draft-card]");
+
+test.describe("drafted lesson text: the gate, on the draft card", () => {
+  test("1-3 · nothing clipped, no horizontal scroll, every control by keyboard (and the send-back dialog)", async ({ page }) => {
+    await openDraft(page);
+    expect(await clippedElements(page), "draft card").toEqual([]);
+    expect(await horizontalOverflow(page), "draft card").toBeLessThanOrEqual(0);
+    expect(await unreachableByKeyboard(page, "main"), "draft card").toEqual([]);
+    await draftCard(page).getByRole("button", { name: /^Send back stage 08/ }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    expect(await clippedElements(page), "send-back dialog").toEqual([]);
+  });
+
+  test("4 · AA contrast, computed, on all three themes", async ({ page }) => {
+    test.setTimeout(240_000);
+    await openDraft(page);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      expect(await contrastFailures(page), `${theme}: draft`).toEqual([]);
+    }
+  });
+
+  test("5 · the rendered output uses the tokens", async ({ page }) => {
+    await openDraft(page);
+    expect(await offTokenStyles(page), "draft").toEqual([]);
+  });
+
+  test("6 · under reduced motion the send-back dialog does not animate", async ({ page }) => {
+    await recordMotion(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openDraft(page);
+    await draftCard(page).getByRole("button", { name: /^Send back stage 08/ }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    const still = (await recordedMotion(page)).filter((m) => m.ms > 1);
+    expect(still).toEqual([]);
+  });
+});
+
+test.describe("drafted lesson text: approval is of the exact text, and says what it does", () => {
+  test("the card says no student reads it, counts its blocks and quotes, and draws the draft as a student would", async ({ page }) => {
+    await openDraft(page);
+    const card = draftCard(page);
+    await expect(card).toHaveAttribute("data-draft-status", "draft");
+    await expect(card).toContainText("Waiting for your review");
+    await expect(card).toContainText(/No student reads it until you approve it/);
+    await expect(card).toContainText(/quoted from the book, each checked against it by sync/);
+    await expect(card.getByRole("heading", { name: /The draft · as a student would read it/ })).toBeVisible();
+    await expect(card.locator("[data-preview]")).toContainText("An OS is a program that controls the execution of application programs");
+  });
+
+  test("approving posts the text's hash once and says students read it now", async ({ page }) => {
+    const fx = await openDraft(page);
+    const api = process.env.OCTA_API_URL ?? "http://localhost:8090";
+    const res = await page.request.get(`${api}/api/v1/console/content/08`, { headers: { authorization: `Bearer ${TEACHER}` } });
+    const real = ((await res.json()) as { draft: { hash: string } }).draft.hash;
+    await draftCard(page).getByRole("button", { name: /^Approve stage 08 lesson text/ }).click();
+    await expect(page.getByRole("status").filter({ hasText: /Stage 08 lesson text approved/ })).toContainText(/Students read these \d+ blocks now/);
+    expect(fx.writes.approveDraft).toEqual([{ stageId: "08", body: { hash: real } }]);
+    await expect(draftCard(page)).toHaveAttribute("data-draft-status", "approved");
+  });
+
+  test("an approval of a draft that has changed is refused, and the refusal stays", async ({ page }) => {
+    await openDraft(page, { fail: "approve-draft" });
+    await draftCard(page).getByRole("button", { name: /^Approve stage 08 lesson text/ }).click();
+    const t = page.locator("[data-toaster]").getByRole("alert");
+    await expect(t).toContainText(/changed since you opened it/i);
+    await page.waitForTimeout(4_500);
+    await expect(t).toBeVisible();
+  });
+
+  test("sending back needs a reason, says what happens, posts once, and shows the reason", async ({ page }) => {
+    const fx = await openDraft(page);
+    await draftCard(page).getByRole("button", { name: /^Send back stage 08/ }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText(/Students read none of it/);
+    const confirm = dialog.getByRole("button", { name: /^Send back stage 08/ });
+    await expect(confirm).toBeDisabled();
+    await dialog.getByLabel(/Reason/).fill("Add the book's own paging figure, described.");
+    await confirm.click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByRole("status").filter({ hasText: /Stage 08 lesson text sent back/ })).toBeVisible();
+    expect(fx.writes.sendBackDraft).toEqual([{ stageId: "08", body: { reason: "Add the book's own paging figure, described." } }]);
+    await expect(draftCard(page)).toContainText("Add the book's own paging figure, described.");
+  });
+
+  test("the chapters list says a chapter's text is waiting, in words", async ({ page }) => {
+    await openList(page);
+    await expect(page.locator('[data-chapter="08"] [data-fact="draft"]').first()).toHaveText("Text to review");
+    await expect(page.locator('[data-chapter="04"] [data-fact="draft"]')).toHaveCount(0);
+  });
+
+  test("captures: the draft card, at both widths", async ({ page }, info) => {
+    await openDraft(page);
+    await draftCard(page).scrollIntoViewIfNeeded();
+    const s = wide(info.project.name) ? "" : "-380";
+    await page.screenshot({ path: `design/templates/console/content/current-draft${s}.png` });
+  });
+});
+
+/* ======================================================================
  * /content — where each chapter stands
  * ==================================================================== */
 

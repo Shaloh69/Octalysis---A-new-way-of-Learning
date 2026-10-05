@@ -10,6 +10,7 @@ import { toast } from "@/components/ui/toast";
 import { BlockRow, type Editing } from "./content/BlockRow";
 import { Preview } from "./content/Preview";
 import { SendBackDialog, SummaryEntry, useSummaryActions } from "./content/Summaries";
+import { DraftCard } from "./content/Draft";
 
 /**
  * `/content/:stageId`: one chapter, its summary, and its blocks beside a
@@ -176,6 +177,10 @@ export function ContentChapterPage() {
               </p>
             )}
           </section>
+
+          {data.draft ? (
+            <DraftCard stageId={st.id} title={st.title} draft={data.draft} liveBlocks={data.blocks.length} onChanged={q.reload} />
+          ) : null}
 
           {!split ? (
             <div className="ct-views" role="group" aria-label="Show">

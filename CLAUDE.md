@@ -46,6 +46,13 @@ other documents — check it before believing any claim that something is built.
    writes each draft to the staff-only `stage_summaries`, an approval is bound to
    that exact text, and a trigger refuses any other text on `stages.summary`
    for every role. The exception covers those summaries and nothing else.
+   **A second, instructor ruling 5 Oct 2026:** the **lesson text** of chapters
+   08-18 and the **questions** of stages 09-18 may be drafted from the textbook
+   (`docs/source/book`, through `content/book-map.json`; definitions and
+   facts quoted verbatim and checked by `sync-content --verify`), because each
+   is approved before students see it: questions land at `review` on /items,
+   lesson text in `content/stages/NN.draft.md` → the staff-only
+   `chapter_drafts`, approved per chapter on /content, bound to its hash.
 6. **Items are versioned, never edited in place.** New version = new row sharing `family_id`.
    Old version is retired, not deleted.
 7. **`responses` and `attempt_items` are written only by the grading service, and `responses` is

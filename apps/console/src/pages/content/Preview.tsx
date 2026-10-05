@@ -1,11 +1,12 @@
 import { forwardRef } from "react";
 import type { ContentBlock } from "@/lib/api";
-import { paragraphs, shapeOf, type Segment } from "@/lib/content-view";
+import { shapeOf } from "@/lib/content-view";
+import { parseBlocks, type Block as MdBlock, type Inline } from "@/lib/reader-markdown";
 
 /**
- * The chapter as a student reads it: the student reader's own rules
- * (`apps/web/src/components/StageReader.tsx`, `Block` and `Paragraphs`),
- * mirrored in `lib/content-view.ts` and drawn here in the console's tokens.
+ * The chapter as a student reads it: the student reader's own markdown
+ * (`lib/reader-markdown.ts`, a copy of `apps/web/src/lib/markdown.ts` held
+ * to it by `test/reader-markdown.spec.ts`), drawn here in the console's tokens.
  * The structure is the reader's (paragraphs, lists, bold, code in mono, the
  * planned-chapter note); the colours are the console's, so this is "what it
  * says and how it is shaped", not a pixel copy of the student theme.
@@ -13,22 +14,53 @@ import { paragraphs, shapeOf, type Segment } from "@/lib/content-view";
  * The block being edited shows what is typed, as it is typed.
  */
 
-function Segs({ segs }: { segs: Segment[] }) {
-  return <>{segs.map((s, i) => (s.bold ? <strong key={i}>{s.text}</strong> : <span key={i}>{s.text}</span>))}</>;
-}
-
-function Paragraphs({ body }: { body: string }) {
+/** Inline runs, as the reader draws them: numbers and code in mono, bold, italics. */
+function Inl({ c }: { c: Inline[] }) {
   return (
     <>
-      {paragraphs(body).map((c, i) =>
-        c.type === "list" ? (
-          <ul key={i}>{c.items.map((it, j) => <li key={j}><Segs segs={it} /></li>)}</ul>
-        ) : (
-          <p key={i}><Segs segs={c.segs} /></p>
-        ),
+      {c.map((n, i) =>
+        n.t === "text" ? <span key={i}>{n.v}</span>
+          : n.t === "num" ? <span key={i} className="num">{n.v}</span>
+            : n.t === "code" ? <code key={i} className="mono">{n.v}</code>
+              : n.t === "strong" ? <strong key={i}><Inl c={n.c} /></strong>
+                : <em key={i}><Inl c={n.c} /></em>,
       )}
     </>
   );
+}
+
+/** One parsed block of markdown. A `##` is an h3 here: the preview pane is under an h2. */
+function Md({ blocks }: { blocks: MdBlock[] }) {
+  return (
+    <>
+      {blocks.map((b, i) => {
+        if (b.t === "h") {
+          const H = b.level === 2 ? "h3" : b.level === 3 ? "h4" : "h5";
+          return <H key={i} className={`pv-h pv-h${b.level}`}><Inl c={b.c} /></H>;
+        }
+        if (b.t === "p") return <p key={i}><Inl c={b.c} /></p>;
+        if (b.t === "list") {
+          const items = b.items.map((it, j) => <li key={j}><Inl c={it} /></li>);
+          return b.ordered ? <ol key={i} start={b.start}>{items}</ol> : <ul key={i}>{items}</ul>;
+        }
+        if (b.t === "quote") return <blockquote key={i} className="pv-quote"><Md blocks={b.c} /></blockquote>;
+        return (
+          <div key={i} className="pv-table">
+            <table>
+              {b.head ? (
+                <thead><tr>{b.head.map((h, j) => <th key={j} scope="col"><Inl c={h} /></th>)}</tr></thead>
+              ) : null}
+              <tbody>{b.rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k}><Inl c={c} /></td>)}</tr>)}</tbody>
+            </table>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function Paragraphs({ body }: { body: string }) {
+  return <Md blocks={parseBlocks(body)} />;
 }
 
 function Shape({ kind, meta, body }: { kind: string; meta: Record<string, string>; body: string }) {
@@ -58,11 +90,14 @@ export const Preview = forwardRef<HTMLDivElement, {
   blocks: readonly ContentBlock[];
   editing: { blockId: string; text: string } | null;
   title: string;
-}>(function Preview({ blocks, editing, title }, ref) {
+  /** A second preview on the page (a drafted chapter's) needs its own heading. */
+  headingId?: string;
+  heading?: string;
+}>(function Preview({ blocks, editing, title, headingId = "pv-title", heading = "Preview · as a student reads it" }, ref) {
   return (
-    <section ref={ref} className="ct-card ct-preview" data-preview tabIndex={0} aria-labelledby="pv-title">
+    <section ref={ref} className="ct-card ct-preview" data-preview tabIndex={0} aria-labelledby={headingId}>
       <div className="ct-pane-head">
-        <h2 id="pv-title" className="ct-h2">Preview · as a student reads it</h2>
+        <h2 id={headingId} className="ct-h2">{heading}</h2>
         <p className="ct-faint">{title}</p>
       </div>
       <div className="pv-body">

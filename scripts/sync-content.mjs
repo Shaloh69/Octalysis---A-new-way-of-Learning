@@ -33,6 +33,16 @@
 // "File unchanged" means: the .md body hashes to `source_hash`, the hash of
 // the body this script last wrote.
 //
+// DRAFTED LESSON TEXT (instructor ruling, 5 Oct 2026). A chapter may have a
+// `NN.draft.md` beside `NN.md`: lesson text drafted from the textbook for a
+// chapter the syllabus outline alone covered. Its blocks go to the staff-only
+// `chapter_drafts`, never to `content_blocks`: students go on reading NN.md
+// until the instructor approves the draft on /content, and the approval (an
+// API write with an audit row) is what copies it in. A changed draft withdraws
+// its approval; the text students read stays the last approved one. Once a
+// chapter has EVER been approved, this script leaves its blocks alone, so a
+// later run can never put NN.md's stub back over reviewed text.
+//
 // PLANET SUMMARIES are no longer approved here. Each `summary:` is written to
 // `stage_summaries` as a draft and approved on /content, bound to its text; a
 // changed draft withdraws its approval. A `summary_status:` line is refused.
@@ -153,7 +163,8 @@ function rewriteBlocks(stage, edits) {
 const hash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 
 async function loadStageFiles() {
-  const names = (await readdir(STAGE_DIR)).filter((f) => /^\d\d\.md$/.test(f)).sort();
+  const all = await readdir(STAGE_DIR);
+  const names = all.filter((f) => /^\d\d\.md$/.test(f)).sort();
   const out = [];
   for (const name of names) {
     const raw = await readFile(resolve(STAGE_DIR, name), "utf8");
@@ -166,6 +177,19 @@ async function loadStageFiles() {
           `/content page, bound to its exact text (28 Sep 2026). Delete the line.`,
       );
     }
+    // The chapter's drafted lesson text, if any (ruling of 5 Oct 2026).
+    let draft = null;
+    const draftName = `${name.slice(0, 2)}.draft.md`;
+    if (all.includes(draftName)) {
+      const draw = await readFile(resolve(STAGE_DIR, draftName), "utf8");
+      const d = parseFrontMatter(draw);
+      const dblocks = parseBlocks(d.body).map(({ kind, body: b, meta }) => ({ kind, body: b, meta }));
+      if (dblocks.length === 0) throw new Error(`${draftName}: no blocks found`);
+      if (d.fm.title && fm.title && d.fm.title !== fm.title) {
+        throw new Error(`${draftName}: its title "${d.fm.title}" is not its chapter's, "${fm.title}".`);
+      }
+      draft = { file: draftName, blocks: dblocks, hash: hash(JSON.stringify(dblocks)) };
+    }
     out.push({
       file: name,
       path: resolve(STAGE_DIR, name),
@@ -174,6 +198,7 @@ async function loadStageFiles() {
       blocks,
       body,
       frontMatter: fm._raw,
+      draft,
     });
   }
   return out;
@@ -238,7 +263,13 @@ async function verifyAgainstSource(stages) {
       .trim()
       .toLowerCase();
 
-  for (const stage of stages) {
+  // A drafted chapter (5 Oct 2026) is held to the same proof as an authored
+  // one: every block citing the book must quote it, before anyone reviews it.
+  const sourced = stages.flatMap((stage) => [
+    { file: stage.file, blocks: stage.blocks },
+    ...(stage.draft ? [{ file: stage.draft.file, blocks: stage.draft.blocks }] : []),
+  ]);
+  for (const stage of sourced) {
     for (const b of stage.blocks) {
       if (!b.meta.source) continue;
       const deckName = b.meta.source.split(" ")[0];
@@ -307,6 +338,8 @@ async function verifyAgainstSource(stages) {
 async function sync(client, stages, { dryRun, pull = false, takeFile = false }) {
   let inserted = 0, updated = 0, unchanged = 0, removed = 0, objectives = 0;
   let summariesLive = 0, summariesPending = 0;
+  let chaptersLive = 0, chaptersPending = 0;
+  const chaptersWithdrawn = [], chaptersKept = [];
   const summariesWithdrawn = [], kept = [], conflicts = [], pulled = [], filesToWrite = [];
 
   // Every block this run replaces is archived as a SYNC change, not 'direct'.
@@ -404,6 +437,48 @@ async function sync(client, stages, { dryRun, pull = false, takeFile = false }) 
                description = excluded.description`,
         [o.id, stage.stageId, o.bloom, o.level ?? null, o.competency ?? null, o.description],
       );
+    }
+
+    // Drafted lesson text: written for review, never straight to students.
+    const { rows: draftRows } = await client.query(
+      "select draft_hash, status, ever_approved from chapter_drafts where stage_id = $1",
+      [stage.stageId],
+    );
+    const dRow = draftRows[0];
+    if (stage.draft) {
+      if (!dRow) {
+        chaptersPending++;
+        if (!dryRun) {
+          await client.query(
+            "insert into chapter_drafts (stage_id, blocks, draft_hash) values ($1, $2::jsonb, $3)",
+            [stage.stageId, JSON.stringify(stage.draft.blocks), stage.draft.hash],
+          );
+        }
+      } else if (dRow.draft_hash !== stage.draft.hash) {
+        chaptersPending++;
+        if (dRow.status === "approved") chaptersWithdrawn.push(stage.stageId);
+        if (!dryRun) {
+          await client.query(
+            `update chapter_drafts
+                set blocks = $2::jsonb, draft_hash = $3, status = 'draft', approved_hash = null,
+                    note = null, reviewed_by = null, reviewed_at = null, updated_at = now()
+              where stage_id = $1`,
+            [stage.stageId, JSON.stringify(stage.draft.blocks), stage.draft.hash],
+          );
+        }
+      } else if (dRow.status === "approved") {
+        chaptersLive++;
+      } else {
+        chaptersPending++;
+      }
+    } else if (dRow && !dRow.ever_approved && !dryRun) {
+      // The draft file is gone and nothing of it was ever approved: nothing to keep.
+      await client.query("delete from chapter_drafts where stage_id = $1", [stage.stageId]);
+    }
+    if (dRow?.ever_approved) {
+      // Students read reviewed text here, written by the approval. Never overwrite it.
+      chaptersKept.push(stage.stageId);
+      continue;
     }
 
     // Blocks
@@ -508,6 +583,7 @@ async function sync(client, stages, { dryRun, pull = false, takeFile = false }) 
   return {
     inserted, updated, unchanged, removed, objectives, summariesLive, summariesPending,
     summariesWithdrawn, kept, conflicts, pulled, filesToWrite,
+    chaptersLive, chaptersPending, chaptersWithdrawn, chaptersKept,
   };
 }
 
@@ -587,6 +663,15 @@ async function main() {
         `  planet summaries: ${s.summariesLive} approved, ${s.summariesPending} to review on /content`,
       ),
     );
+    console.log(
+      c.dim(`  drafted lesson text: ${s.chaptersLive} chapter(s) approved, ${s.chaptersPending} to review on /content`),
+    );
+    for (const id of s.chaptersWithdrawn) {
+      console.log(c.yellow(`  stage ${id}: its drafted text changed, so its approval was withdrawn. Students keep the last approved text.`));
+    }
+    if (s.chaptersKept.length > 0) {
+      console.log(c.dim(`  approved chapters left as reviewed: ${s.chaptersKept.join(", ")}`));
+    }
     for (const id of s.summariesWithdrawn) {
       console.log(c.yellow(`  stage ${id}: its summary changed, so its approval was withdrawn. Review it again.`));
     }

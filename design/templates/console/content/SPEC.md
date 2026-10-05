@@ -131,3 +131,29 @@ anywhere: nothing here is destructive, and sending back is not a failure.
   reviewed); the console reviews them
 - Rich-text editing. The student reader renders a small subset; the source is
   the truth
+
+## Drafted lesson text (instructor ruling, 5 Oct 2026)
+
+"Author everything for me so that I can approve them in the admin." Lesson
+text had no approval step: a chapter's blocks reached students the moment
+they synced. Now a chapter drafted from the textbook (`content/stages/NN.draft.md`)
+goes to the staff-only `chapter_drafts` and waits here:
+
+- **The draft card** on `/content/:stageId`: status in words, what approving
+  does ("replaces the chapter's 4 blocks with these 52"), how many blocks
+  quote the book (each checked by `sync-content --verify`), **Approve stage NN
+  lesson text** (posts the hash of the text on screen; 409 if it changed) and
+  **Send back** (a reason required, dialog says what happens), and the draft
+  drawn as a student would read it.
+- The chapters list says **Text to review / approved / sent back** beside a
+  chapter's status.
+- **Found by looking:** the preview drew `##` and `*x*` literally. Its
+  "mirror" of the reader still copied the OLD reader, from before 29 Sep. It
+  now uses a copy of the reader's own parser (`lib/reader-markdown.ts`), held
+  to the original over every block of every chapter and draft by
+  `test/reader-markdown.spec.ts`.
+
+`console-content.spec.ts`: the six gate assertions on the draft card, approval
+by hash, the refusal that stays, send-back, the list's words. 73 passed at
+1440 and 380 with `console-teaching.spec.ts` 80. Captures `current-draft` and
+`current-draft-380`, opened.

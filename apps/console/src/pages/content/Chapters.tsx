@@ -11,8 +11,18 @@ import { Badge } from "@/components/ui/badge";
  * screen at 380: the old table cut all four off there (`before-380.png`).
  */
 
+/** Drafted lesson text (5 Oct 2026), in words beside the chapter's status. */
+const DRAFT_WORD = { draft: "Text to review", approved: "Text approved", sent_back: "Text sent back" } as const;
+
 function Status({ s }: { s: ContentStage }) {
-  return <Badge tone={AUTHORING_TONE[s.authoring]} data-fact="status">{AUTHORING_WORD[s.authoring]}</Badge>;
+  return (
+    <span className="inline-flex flex-wrap gap-1">
+      <Badge tone={AUTHORING_TONE[s.authoring]} data-fact="status">{AUTHORING_WORD[s.authoring]}</Badge>
+      {s.draftStatus ? (
+        <Badge tone={SUMMARY_TONE[s.draftStatus]} data-fact="draft">{DRAFT_WORD[s.draftStatus]}</Badge>
+      ) : null}
+    </span>
+  );
 }
 
 function SummaryState({ s }: { s: ContentStage }) {

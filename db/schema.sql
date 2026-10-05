@@ -172,6 +172,34 @@ create table stage_summaries (
     check (status <> 'sent_back' or length(trim(coalesce(note, ''))) >= 3)
 );
 
+-- ---------- drafted lesson text, approved before students see it ----------
+-- Instructor ruling, 5 Oct 2026: the lesson text of the chapters the syllabus
+-- outline alone covered (08-18) may be DRAFTED from the textbook chapters in
+-- docs/source/book, because the instructor approves each chapter on /content
+-- before any student reads it. A chapter's draft is its whole set of blocks
+-- (content/stages/NN.draft.md, written here by sync), staff-only. An approval
+-- is of ONE text, by hash: approving copies the blocks into content_blocks
+-- (archived as every edit is), and a changed draft withdraws the approval.
+-- `ever_approved` tells sync that content_blocks now hold reviewed text it
+-- must not overwrite with the file's stub.
+create table chapter_drafts (
+  stage_id      text primary key references stages(id) on delete cascade,
+  blocks        jsonb not null check (jsonb_typeof(blocks) = 'array' and jsonb_array_length(blocks) > 0),
+  draft_hash    text not null,
+  status        text not null default 'draft'
+                  check (status in ('draft','approved','sent_back')),
+  approved_hash text,
+  ever_approved boolean not null default false,
+  note          text,
+  reviewed_by   uuid references auth.users(id),
+  reviewed_at   timestamptz,
+  updated_at    timestamptz not null default now(),
+  constraint cd_approved_is_this_text
+    check (status <> 'approved' or approved_hash = draft_hash),
+  constraint cd_sent_back_says_why
+    check (status <> 'sent_back' or length(trim(coalesce(note, ''))) >= 3)
+);
+
 -- ---------- item bank ---------------------------------------
 create table items (
   -- V-3: `id` identifies ONE VERSION. `family_id` is the stable identity across versions.
@@ -721,6 +749,7 @@ alter table objectives         enable row level security;
 alter table content_blocks     enable row level security;
 alter table content_block_versions enable row level security;
 alter table stage_summaries    enable row level security;
+alter table chapter_drafts     enable row level security;
 alter table items              enable row level security;
 alter table item_stats         enable row level security;
 alter table blueprints         enable row level security;
@@ -781,6 +810,8 @@ create policy cb_staff on content_blocks for all to authenticated
 -- API with an audit row, and history by the archive trigger. No write policy,
 -- so a staff token approving behind the API's back matches nothing.
 create policy cbv_staff_read on content_block_versions for select to authenticated
+  using (is_staff());
+create policy cd_staff_read  on chapter_drafts         for select to authenticated
   using (is_staff());
 create policy ss_staff_read  on stage_summaries        for select to authenticated
   using (is_staff());

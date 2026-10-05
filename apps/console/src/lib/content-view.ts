@@ -79,36 +79,7 @@ export function excerpt(body: string, max = 96): string {
 
 /* ------------------------------------------------------------------ preview */
 
-/**
- * The student reader's inline rules, exactly: `apps/web/src/components/
- * StageReader.tsx`, `Paragraphs` and `bold`. Paragraphs split on a blank
- * line; a chunk whose every line is a `-`/`*` item is a list; `**x**` is bold;
- * nothing else is markdown. A `## heading` is therefore a paragraph that reads
- * "## heading", because that is what students see today, and a preview that
- * prettified it would hide the gap (`NEXT-SESSION.md` §0j).
- */
-export type Segment = { text: string; bold: boolean };
-export type Chunk = { type: "p"; segs: Segment[] } | { type: "list"; items: Segment[][] };
-
-export function bold(text: string): Segment[] {
-  return text
-    .split(/(\*\*[^*]+\*\*)/g)
-    .filter((p) => p !== "")
-    .map((p) => (p.startsWith("**") && p.endsWith("**") && p.length > 4
-      ? { text: p.slice(2, -2), bold: true }
-      : { text: p, bold: false }));
-}
-
-export function paragraphs(body: string): Chunk[] {
-  return body.split(/\n\s*\n/).map((chunk) => {
-    const lines = chunk.split(/\n/).map((l) => l.trim());
-    const isList = lines.every((l) => l === "" || /^[-*]\s+/.test(l));
-    if (isList && lines.some((l) => l !== "")) {
-      return { type: "list", items: lines.filter((l) => l !== "").map((l) => bold(l.replace(/^[-*]\s+/, ""))) };
-    }
-    return { type: "p", segs: bold(chunk.replace(/\n/g, " ")) };
-  });
-}
+/* The preview's markdown is `lib/reader-markdown.ts`, the student reader's own. */
 
 /** How the reader draws a block: which of its five shapes. */
 export type Shape = "code" | "planned" | "callout" | "brief" | "prose";
