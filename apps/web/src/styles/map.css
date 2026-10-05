@@ -298,3 +298,50 @@ button.starmap-moon:hover { background: var(--surface-2); border-color: var(--li
   .starmap-dot { width: 1.75rem; height: 1.75rem; }
   .starmap-act { gap: 0.4rem; }
 }
+
+/* The easter egg (5 Oct 2026): the alien's speech bubble, over the saucer.
+   Saucer.tsx writes the saucer's screen point to left/top every frame. Its
+   words are dialogue, so body type; the colours are the name tag's pair. */
+.starmap-alien {
+  position: absolute;
+  z-index: 2;
+  left: -999px;
+  top: -999px;
+  pointer-events: none;
+}
+.starmap-bubble {
+  position: absolute;
+  bottom: calc(var(--alien-r, 0px) + var(--space-3));
+  left: 0;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 14rem;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: var(--lh-xl);
+  color: var(--lit-ink);
+  background: var(--lit-bg);
+  border-radius: var(--radius-lg);
+  animation: alien-pop var(--dur-fast) ease-out;
+}
+.starmap-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(-1 * var(--space-2));
+  transform: translateX(-50%);
+  border: var(--space-2) solid transparent;
+  border-bottom: 0;
+  border-top-color: var(--lit-bg);
+}
+.starmap-bubble[hidden] { display: none; }
+@keyframes alien-pop {
+  from { opacity: 0; transform: translateX(-50%) scale(0.9); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .starmap-bubble { animation: none; }
+}

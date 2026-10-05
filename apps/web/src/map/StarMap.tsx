@@ -9,6 +9,7 @@ import { useKeyHints } from "../shell/keyHints";
 import { byObjectiveId, useSelection } from "./useSelection";
 import { ACTS, BodyPanel, MoonPanel, moonGlow, STATE_WORD, useWide } from "./body";
 import type { ScenePlanet } from "./StarMapScene";
+import { alienLine } from "../solar-system/alien";
 import { IDLE_RESET_MS, homeControl, pinchFactor, tiltBy, wheelFactor, type ViewControl } from "./view";
 
 const StarMapScene = lazy(() => import("./StarMapScene"));
@@ -84,6 +85,18 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
   const yaw = useRef(0);
   const dragged = useRef(false);
   const view = useRef<ViewControl>(homeControl());
+  /*
+   * The easter egg (instructor, 5 Oct 2026; solar-system/alien.ts): a saucer
+   * that sometimes rides a comet's orbit through the system. Clicking it
+   * focuses the camera on it and it says the next of its four lines, in a
+   * bubble that follows it (a live region, so a screen reader hears it too).
+   * `?alien=now` brings it in at once. Escape, a click on empty space, or
+   * choosing a planet lets it go.
+   */
+  const alienNow = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("alien") === "now";
+  const alienAnchor = useRef<HTMLDivElement | null>(null);
+  const [alien, setAlien] = useState<{ focused: boolean; clicks: number; line: string | null }>({ focused: false, clicks: 0, line: null });
+  const letAlienGo = useCallback(() => setAlien((a) => (a.focused || a.line ? { ...a, focused: false, line: null } : a)), []);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const travel = useRef(0);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -235,7 +248,7 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
   const enterTo = selMoon ? moonEnter : planetEnter;
   useKeyHints("map", [
     ...(enterTo ? [{ key: "Enter", cap: "Enter", label: "Enter journey", run: () => nav(enterTo) }] : []),
-    ...(sel ? [{ key: "Escape", cap: "Esc", label: "Close", run: close }] : []),
+    ...(sel ? [{ key: "Escape", cap: "Esc", label: "Close", run: close }] : alien.focused ? [{ key: "Escape", cap: "Esc", label: "Close", run: letAlienGo }] : []),
     { key: "s", cap: "S", label: "Stages", run: () => nav("/app/stages") },
     ...(webgl
       ? [
@@ -289,7 +302,8 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
   // pan were relative to what was framed before. The turn is kept.
   useEffect(() => {
     goHome(false);
-  }, [selected, moon, goHome]);
+    if (selected) letAlienGo();
+  }, [selected, moon, goHome, letAlienGo]);
 
   /*
    * Looking around (instructor, 5 Oct 2026; map/view.ts). One finger or the
@@ -369,7 +383,21 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
               frame={frame}
               onSelect={open}
               onSelectMoon={openMoon}
-              onMiss={close}
+              onMiss={() => {
+                letAlienGo();
+                close();
+              }}
+              alien={{
+                now: alienNow,
+                focused: alien.focused,
+                anchor: alienAnchor,
+                onClick: () => {
+                  if (dragged.current) return;
+                  if (selected) close();
+                  setAlien((a) => ({ focused: true, clicks: a.clicks + 1, line: alienLine(a.clicks) }));
+                  touched();
+                },
+              }}
               onSlow={() => {
                 setSlow(true);
                 try {
@@ -381,6 +409,12 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
             />
           </Suspense>
         )}
+        {/* The alien's speech bubble, wherever the saucer is on screen (Saucer.tsx moves it). */}
+        <div ref={alienAnchor} className="starmap-alien" data-alien="away">
+          <p className="starmap-bubble" role="status" aria-live="polite" hidden={!alien.line}>
+            {alien.line}
+          </p>
+        </div>
         {/* The chosen body's name, at the bottom of the free area. The panel's
             heading says it to a screen reader; this is for the eye. */}
         {sel && frame && (

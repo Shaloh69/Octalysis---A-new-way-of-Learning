@@ -167,3 +167,57 @@ test.describe("/app — looking around the system", () => {
     await ctx.close();
   });
 });
+
+/*
+ * The easter egg (instructor, 5 Oct 2026): "sometimes in a comet orbit an
+ * alien will come to orbit, and if we click on that alien riding a flying
+ * saucer we will focus on that alien", saying one of four lines per click.
+ * `?alien=now` brings it in at once; reduced motion holds it where it is, so
+ * the click lands where the scene says it is drawn (the bubble's anchor).
+ */
+test.describe("/app — the alien on a comet's orbit", () => {
+  test.describe.configure({ timeout: 120_000 });
+
+  async function openAlien(browser: import("@playwright/test").Browser, info: import("@playwright/test").TestInfo) {
+    const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL, reducedMotion: "reduce" });
+    const page = await ctx.newPage();
+    await map(page, "/app?alien=now");
+    await page.locator(".starmap-stage canvas").waitFor();
+    await page.waitForTimeout(3000);
+    return { ctx, page };
+  }
+  const anchor = (page: Page) => page.locator(".starmap-alien");
+  async function clickAlien(page: Page): Promise<void> {
+    const box = (await anchor(page).boundingBox())!;
+    await page.mouse.click(box.x, box.y);
+  }
+
+  test("it is in the system, a click focuses it, and it says its lines in order", async ({ browser }, info) => {
+    const { ctx, page } = await openAlien(browser, info);
+    await expect(anchor(page)).toHaveAttribute("data-alien", "near");
+    await expect(page.locator(".starmap-bubble")).toBeHidden();
+    await clickAlien(page);
+    await expect(anchor(page)).toHaveAttribute("data-alien", "focused");
+    await expect(page.locator(".starmap-bubble")).toHaveText("Pag tuon haa");
+    await expect(page.getByRole("status").filter({ hasText: "Pag tuon haa" })).toHaveCount(1);
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: `design/templates/web/app/current-alien${wide(info.project.name) ? "" : "-380"}.png` });
+    await clickAlien(page);
+    await expect(page.locator(".starmap-bubble")).toHaveText("Oi tan aw man ka");
+    await expect(page).toHaveURL(/\/app\?alien=now$/);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".starmap-bubble")).toBeHidden();
+    await expect(anchor(page)).not.toHaveAttribute("data-alien", "focused");
+    await ctx.close();
+  });
+
+  test("without ?alien=now it is not there yet: it comes in later, on its comet's orbit", async ({ browser }, info) => {
+    const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL, reducedMotion: "reduce" });
+    const page = await ctx.newPage();
+    await map(page);
+    await page.locator(".starmap-stage canvas").waitFor();
+    await page.waitForTimeout(2000);
+    await expect(anchor(page)).toHaveAttribute("data-alien", "away");
+    await ctx.close();
+  });
+});

@@ -339,3 +339,23 @@ should be less visible, or just fade in and out."
 
 Captures opened (build at 5185): 01 and 06 chosen at 1440 and 380, 06 with
 Moon 06.3 chosen, and the overview.
+
+## The alien (instructor's easter egg, 5 Oct 2026)
+
+"Sometimes in a comet orbit an alien will come to orbit, and if we click on
+that alien riding a flying saucer we will focus on that alien", saying "Pag
+tuon haa", "Oi tan aw man ka", "Alien nako BOII!", "Shem gwapo" in a bubble,
+one per click, in order.
+
+- `solar-system/alien.ts` (`alien.spec.ts`): the saucer rides a real comet's
+  ellipse, its first pass 25-75 s after the map opens (seeded per student),
+  then out at the edges for over 80% of its period: the "sometimes".
+- `map/Saucer.tsx`: hull and alien always; dome and eyes only when focused
+  (two draws at overview); a generous invisible target for a thumb; its screen
+  point and drawn radius go to the bubble's anchor every frame.
+- Clicking focuses the camera on it and follows it; Escape, a click on empty
+  space or choosing a planet lets go. The bubble is a live region.
+- `?alien=now` brings it in at once, just past perihelion.
+- Spec: `web-app-look.spec.ts` (click at its real screen point, focus, the
+  first two lines, Escape; away without the parameter). Captures
+  `current-alien`, `-380`, opened. Draw calls 45-46 with it in frame.

@@ -26,6 +26,7 @@ import { bodyOrbit, ellipsePoints, positionAt } from "../solar-system/kepler";
 import { populations, SUN_SPIN_S } from "../solar-system/populations";
 import { BODY_SCALE, MOON_SIZE, moonOrbitsOf, irregularShape, isGiant, isIrregular, moonDirection, planetSize, ringBands, ringSpan, rocheLimit } from "../solar-system/satellites";
 import { Leftovers } from "./Leftovers";
+import { Saucer } from "./Saucer";
 import { HOME, clampPan, zoomToward, type ViewControl } from "./view";
 
 /** The plane the system lies in, for finding what is under the pointer. */
@@ -102,6 +103,8 @@ export interface SceneProps {
   reduced: boolean;
   lowQuality: boolean;
   yaw: MutableRefObject<number>;
+  /** The easter egg (5 Oct 2026): the alien's saucer, focused when clicked; its screen point goes to `anchor`. */
+  alien: { now: boolean; focused: boolean; anchor: MutableRefObject<HTMLElement | null>; onClick: () => void };
   /** The student's own zoom, tilt and pan, and the gestures queued for the Rig (view.ts). */
   view: MutableRefObject<ViewControl>;
   dragged: MutableRefObject<boolean>;
@@ -203,6 +206,10 @@ function Scene(p: SceneProps): JSX.Element {
       }),
     [p.planets, p.layout, p.rotation],
   );
+  const saucerColors = useMemo(
+    () => ({ hull: colors.line, dome: colors.glow, alien: tokenColor("--biome-planet-jungle"), eyes: colors.ground }),
+    [colors],
+  );
   // The chosen planet's own orbit, drawn clearly over the faint rest.
   const chosenOrbit = useMemo(() => {
     const b = p.selected ? p.layout.bodies.get(p.selected) : undefined;
@@ -234,6 +241,18 @@ function Scene(p: SceneProps): JSX.Element {
       <OrbitLines orbits={ellipses} color={colors.line} clock={clock} base={p.selected ? 0.07 : 0.13} breathe />
       {chosenOrbit && <OrbitLines orbits={chosenOrbit} color={colors.corner} clock={clock} base={0.7} />}
       <Leftovers pops={pops} layout={p.layout} rotation={p.rotation} giants={giants} lowQuality={p.lowQuality} clock={clock} colors={colors} />
+      <Saucer
+        pops={pops}
+        layout={p.layout}
+        rotation={p.rotation}
+        now={p.alien.now}
+        clock={clock}
+        colors={saucerColors}
+        positions={positions}
+        anchor={p.alien.anchor}
+        focused={p.alien.focused}
+        onClick={p.alien.onClick}
+      />
       {p.planets.map((pl) => (
         <Planet
           key={pl.id}
@@ -905,7 +924,9 @@ function Rig(p: SceneProps & { edge: number; positions: MutableRefObject<Map<str
     const planetPos = p.selected ? p.positions.current.get(p.selected) : undefined;
     // A chosen moon: the camera eases on to it, closer than to a planet (3.2).
     const moonPos = p.selectedMoon ? p.positions.current.get(`moon:${p.selectedMoon}`) : undefined;
-    const selPos = moonPos ?? planetPos;
+    // The easter egg: a focused alien outranks a planet or a moon, and the camera rides with it.
+    const alienPos = p.alien.focused ? p.positions.current.get("alien") : undefined;
+    const selPos = alienPos ?? moonPos ?? planetPos;
     const wantTarget = selPos ?? tmp.set(0, 0, 0);
     // A chosen planet's whole moon system fits the free area (R4.7: moons now
     // begin outside the Roche limit, so systems are wider than the old fixed 16).
@@ -913,7 +934,7 @@ function Rig(p: SceneProps & { edge: number; positions: MutableRefObject<Map<str
     const chosen = p.selected ? p.planets.find((pl) => pl.id === p.selected) : undefined;
     const reach = chosen ? systemReach(chosen, p.rotation, scale) : 0;
     const planetNear = (reach * 1.15) / (tan * (Math.max(1, Math.min(fr.w, fr.h)) / H));
-    const near = moonPos ? 7 * scale : planetNear;
+    const near = alienPos ? 16 * scale : moonPos ? 7 * scale : planetNear;
     const wantDist = selPos ? Math.min(fit, moonPos ? near * Math.max(1, (0.55 * H) / Math.max(1, fr.h)) : near) : fit;
     const k = p.reduced ? 1 : 1 - Math.exp(-dt * 6);
 
