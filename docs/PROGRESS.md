@@ -19,6 +19,11 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**5 Oct 2026:** phase report 222/245 (91%); live R3 87/88, R4 46/48, R5 4/24.
+R4.8, R4.9, R5.1 (INV-33 open) and R5.3's draw calls done; the lesson-text
+approval gate built; chapters 08-09 drafted for review; hard rule 10 added.
+Prelim NOT runnable (0 live items). Detail: NEXT-SESSION.md section 0za.
+
 > **After a `/clear`, read `docs/NEXT-SESSION.md` first.** It carries the
 > measured state with the command beside each figure, so a fresh session does not
 > spend its first hour re-deriving what this one established.

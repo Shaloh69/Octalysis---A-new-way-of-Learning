@@ -1526,6 +1526,66 @@ left, or needing a decision:
 
 ---
 
+## 0za. R4.8, R4.9, R5 begun, the approval gate, the map's new tricks — 2-5 Oct 2026
+
+Pushed, in order: `80a8233` R4.8 (Trojans, captured moons, faint rings,
+Parker spirals, periods from the star's mass), `f578165` R4.9 (smaller
+planets, wider orbits, no overlap tested on moving positions, bigger sun,
+distant slow comets), `9c36f75` R5.1 (INV-32 restated, INV-34; INV-33
+open), `444e063` R5.3 draw calls (89 to 43-44: merged ellipses, bands,
+centaurs, single-pass rings), `2c0b929` Orientation finishes itself,
+`943aef0` zoom and look around (home after 30 s), `9ac1058` the lesson-text
+approval gate and chapter 08's draft, `b8ed4bd` the bodiless-POST fix, moons
+on the planets' rules, quieter orbit lines, addendum-drafts.sql and hard rule
+10, `204788a` the alien, `9a95834` chapter 09's draft. Found and left:
+
+1. **Instructor requests this session, all built:** Orientation completes
+   when read to the end and carries the student to 01; manual zoom, pinch,
+   pan and tilt, home after 30 s; moons follow the planets' rules; orbit
+   lines faint and breathing, the chosen one clear; an alien saucer on a
+   comet's orbit, focused on click, saying "Pag tuon haa", "Oi tan aw man
+   ka", "Alien nako BOII!", "Shem gwapo" (`?alien=now` brings it in).
+2. **"Why we don't have moons yet":** a moon counts only LIVE questions.
+   Stages 01-08 have 183 items, all at `review`; 09-18 have none. The
+   instructor approves on /items; authoring 09-18 continues (item 6).
+3. **A bodiless POST answered 400 everywhere** (Orientation's finish, moon
+   journeys, the prompt's dismiss): the client said JSON on every request and
+   Fastify refuses an empty JSON body. Fixed in both apps' request();
+   `apps/web/test/api-request.spec.ts` pins it. Moon journeys were broken in
+   browsers before this session; the specs stubbed them.
+4. **The deployment broke and was fixed:** /content answered 500 because
+   `chapter_drafts` was only local. Hard rule 10 now binds (instructor):
+   idempotent addendum and `pnpm db:push --file`, before dependent code. The
+   deployment is **ddvxkbcelpqydnjkffdr** (Singapore, ap-southeast-1), 29
+   tables; the root .env now names it (the instructor set it; never read or
+   print it). The old project lqvkqdaqtkhxmnvodmyr is dead weight. Chapters
+   08 and 09's drafts are on the deployment for review.
+5. **The lesson-text gate:** `content/stages/NN.draft.md` to the staff-only
+   `chapter_drafts`, approved on /content (hash-bound, audited), then copied
+   into content_blocks; sync never puts the stub back over approved text. The
+   console's preview now uses a copy of the reader's parser, held to it by a
+   test (its old mirror drew `##` literally).
+6. **Authoring done: lesson text 08 and 09.** Left: lesson text 10-18 and
+   questions 09-18. sync-items refuses items past stage 08 (scope.ts): the
+   bank's reach and the exams' reach need separating first.
+7. **INV-33 is open for the instructor:** the 30 Sep remake deleted the flight
+   path; the map draws no prerequisite edge, and Orientation's own text says
+   "Every connection on it is a real prerequisite."
+8. **R4.3's pixel-still test is load-sensitive** (the frame-rate guard's
+   quality switch); it now starts in low quality. WebGL specs are slow under
+   load: run them at 2-3 workers.
+9. **apps/console/.env.example now holds a key** (the instructor's): it is
+   TRACKED. Never stage it; suggest moving it to apps/console/.env.local.
+10. **Suites at close:** API 745 (+1 skip), web unit 294, console 215, tokens
+   38; /app, look, perf and reader 128 passed; console content 80. Entry
+   chunk 112.5 KB gz (was 109.6), map chunk 227.7 KB gz.
+11. **Prelim still NOT runnable:** 96 act-1 items at review, 0 live, local and
+   deployment.
+
+The next session's prompt is REVAMP-PROMPTS.md section 1.
+
+---
+
 ## 0. Run the phase report — this is a rule
 
 ```

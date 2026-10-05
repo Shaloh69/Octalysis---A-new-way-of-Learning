@@ -23,90 +23,79 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: R4.8 and R4.9 (the brief, scale and spacing), then R5
+## 1. Start here — the next session: authoring 10-18 and questions 09-18, then R5
 
-*Rewritten 2 Oct 2026 (amended the same day: R4.8 and R4.9 added at the
-instructor's request) by the session that closed R3 against the code (87/88:
-only the instructor's planet summaries left), built the longer warp and the
-arrival screen, and built R4.7's realistic system (ellipses, bands, the frost
-line, Hill/Roche, belts and comets). Phase at handover: **R3 87 / 88**,
-**R4 34 / 48** (R4.8's six, R4.9's six, and a person's screen-reader pass),
-**R5 0 / 24**; all tracks **206 done · 39 to-do (245 items, 84%)**. `pnpm phase` is the count,
-not this line. The prompt is in a plain block so it pastes exactly as written.*
-
-```text
-Read docs/NEXT-SESSION.md section 0z first (what the last session built,
-found and parked: R3 closed against the code, the warp and the arrival
-screen, R4.7's realistic system and why the map is not to scale, the
-draw-call risk it created, the fallback-biome first frame, harness notices
-that are not process state, 0z.12: R4.8, 0z.13: R4.9). Then
-docs/redesign/phases/R4-*.md sections R4.8 and R4.9, and
-docs/source/solar-system-brief.md,
-docs/redesign/phases/R5-*.md in full,
-docs/SKILL-TREE-3D.md section 7 (the accessibility contract R5.2 re-runs),
-docs/redesign/WEB-REVAMP.md section 4 and design/templates/web/app/SPEC.md's
-R4.7 section (what the map now is), and REDESIGN-CLAUDE.md 2b-2d. Root
-CLAUDE.md hard rules bind. Do not re-derive what those carry.
+```
+Read docs/NEXT-SESSION.md section 0za first (what the last session built,
+found and parked: R4.8 and R4.9 done, R5.1 and R5.3's draw calls done, the
+lesson-text approval gate, Orientation finishing itself, look-around on the
+map, moons on the planets' rules, the alien easter egg, the bodiless-POST
+400 fix, hard rule 10, and the authoring begun). Then root CLAUDE.md hard
+rules 5 and 10, .claude/rules/content.md, content/book-map.json, and
+docs/redesign/phases/R5-*.md. Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. Then
-state plainly whether Prelim-worth of data is okay to run on students, checking
-the five conditions in CLAUDE.md rather than remembering them. (On 2 Oct it was
-NOT: act 1 is 96 items at review and 0 live; the instructor is reviewing them
-on the console's /content.)
+state plainly whether Prelim-worth of data is okay to run on students,
+checking the five conditions in CLAUDE.md (on 5 Oct it was NOT: act 1's 96
+items at review, 0 live, locally and on the deployment, 183 items at review
+there; the instructor approves on the console's /items).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot start Docker Desktop first. Kill every orphaned API tree and preview
-server, confirm nothing listens on 8090, pnpm db:reset THEN node
-scripts/db-demo.mjs, ONE pnpm dev:api proved with a real GET, apps/web built
-and previewed on 5185, apps/console on 5186, OCTA_WEB_URL and
-OCTA_CONSOLE_URL exported. A harness notice that a background server
-"stopped" is not proof: probe the ports. Then the FULL design suite (2 Oct,
-final build: 1375 passed, 179 skipped, 0 failed)
-and pnpm test (API 718 passed 1 skipped, web unit 241, console 217, tokens
-38). Never reset while a Playwright suite runs; after the API suite run
-db:reset THEN db-demo.
+reboot start Docker Desktop first. Kill orphaned API trees and previews,
+pnpm db:reset THEN node scripts/db-demo.mjs (seven SQL files now), ONE
+pnpm dev:api proved with a real GET, apps/web built and previewed on 5185,
+apps/console on 5186, OCTA_WEB_URL and OCTA_CONSOLE_URL exported. The API
+suite truncates the demo data: after it, db:reset THEN db-demo, and restart
+the API (a reset kills it). Run WebGL specs at --workers=2 or 3 when the
+machine is loaded.
 
-The work, first: R4.8, the rest of the instructor's solar-system brief
-(docs/source/solar-system-brief.md; re-sent 2 Oct "for the next session").
-R4.7 built most of it; R4.8 in the R4 phase file names the five things it
-does not have, each specified: Trojan swarms at L4/L5 of the giants (not
-companion planets: every planet is a stage), irregular captured moons that
-stay moons (same button, glow states, pick target), faint rings on the other
-giants inside the Roche limit, the star's magnetic field as Parker spirals,
-and orbital periods from the star's mass (T = 2π√(a³/GM)). Pure modules with
-vitest tests watched failing first (populations.ts, satellites.ts and
-kepler.ts show the shape), merged geometry so draw calls stay low, through
-/app's page gate (captures at 1440 and 380, opened), committed and pushed.
+The work, in order:
 
-Then R4.9, the instructor's changes after seeing R4.7, each specified in the
-R4 phase file: comets stay out at the edges and move much slower (drop the
-40x comet clock in map/Leftovers.tsx, start each near aphelion; test they
-start beyond the last band and spend at least 90% of their period beyond the
-frost line); smaller planets; wider orbits with a NEW test that no two
-planets ever overlap, on their moving positions over a full outer period;
-the map a tad bigger on screen (the Rig's fit margin) with nothing clipped;
-a bigger sun, still clear of the innermost band. Through the page gate,
-before and after captures side by side in the SPEC, committed and pushed.
+1. AUTHORING, the instructor's request ("author everything so I can approve
+   it in the admin"; the ruling is recorded in hard rule 5). Drafted lesson
+   text for chapters 10 to 18 as content/stages/NN.draft.md, in the form of
+   08.draft.md and 09.draft.md: original teaching prose, the book's
+   definitions and claims quoted verbatim in quote blocks with
+   source="ch-NN.md section" (from clean paragraphs: the extractor put ** into
+   the book's bullet lists), original worked examples checked by hand, a
+   references callout. ALWAYS go through content/book-map.json: syllabus 10
+   = book 12, 11 = 13, 12 = 14, 13 = 15, 14 = 16, 15 = 20, 16 = 21, 17 = 18
+   (+17). Chapter 18 is in no edition of the book: its sources are the open
+   references in docs/CPE412-CURRICULUM.md 4.1; if they cannot be fetched
+   and quoted, stop and say so. Per chapter: node scripts/sync-content.mjs
+   --verify green, commit, push. Then put the drafts on the deployment for
+   review: dry run first (sync-content --check with DATABASE_URL taken from
+   the root .env's SUPABASE_DB_SESSION, which must name
+   ddvxkbcelpqydnjkffdr), then apply; never print or read the keys. Then
+   QUESTIONS for stages 09-18 at review: read content/items/01.json and
+   scripts/sync-items.mjs first; sync-items refuses stages past
+   EXAMINABLE_THROUGH_STAGE (08), so the bank's reach and the exams' reach
+   must be separated, keeping the Semi-final and Final blueprints out of
+   scope until the instructor widens them. Every question-engine function
+   needs a test.
 
-Then R5 in order, each box checked against the code and the running
-app, ticked in the same commit with a dated line naming its evidence.
-R5.1 first: INV-32/33/34 against layout.ts as R4.7 left it (bands and
-ellipses: radius is now a semi-major axis inside a band, so "the map matches
-the seed" needs restating, and the edges must still be stages.prereq only).
-R5.3 next, and MEASURE: the bundle (entry 109.6 KB gz, map chunk 224.8 KB),
-the draw calls with the full system (renderer.info.render.calls; R4.7 added
-ellipses, bands, point clouds, centaurs and comets, so the 50 budget is
-likely broken: merge the ellipses into one LineSegments and the centaurs into
-one InstancedMesh before anything cleverer), and the 30fps floor on a
-throttled profile. Then R5.2 (the accessibility contract in full, leaving the
-real screen-reader pass for the instructor), R5.4, R5.5. Any visual change
-goes through the page gate (captures at 1440 and 380, opened). R5.6's
-sign-off report only when everything above it is true.
+2. R5 in order, each box against the code and the running app, ticked in
+   the same commit with a dated line: R5.3's 30fps floor (measure on a
+   throttled profile; headless WebGL is software, say so), R5.2 (the
+   accessibility contract in full; decide whether the alien needs a
+   keyboard path), R5.4, R5.5, then R5.6 only when everything above is
+   true. INV-33 stays open for the instructor (the flight path).
 
-End: pnpm phase with the percentage, the Prelim sentence checked, docs/
-NEXT-SESSION.md and PROGRESS.md updated, this section rewritten for the
-session after, committed and pushed, and the next prompt given in one plain
-fenced block.
+3. Parked for the instructor, ask once: INV-33 (the map draws no
+   prerequisite line since 30 Sep, yet Orientation's text says "every
+   connection on it is a real prerequisite"); the belt and Trojan points
+   draw as big squares up close.
+
+Hard rule 10 binds: any database change goes to the deployment's Supabase
+(idempotent addendum, pnpm db:push --file) before the code that uses it.
+Never stage apps/console/.env.example (the instructor put a key in it).
+Any visual change goes through its page gate (captures at 1440 and 380,
+opened).
+
+End: pnpm phase with the percentage, the Prelim sentence checked,
+docs/NEXT-SESSION.md and PROGRESS.md updated, REVAMP-PROMPTS.md section 1
+rewritten for the session after, committed and pushed, and the next prompt
+given in one plain fenced block.
 ```
 
 ## 2. Continue — every session after the first
