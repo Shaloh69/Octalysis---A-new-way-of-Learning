@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import type { StageMapData } from "../lib/api";
 import { computeSolarLayout } from "../solar-system/layout";
@@ -9,6 +9,7 @@ import { useKeyHints } from "../shell/keyHints";
 import { byObjectiveId, useSelection } from "./useSelection";
 import { ACTS, BodyPanel, MoonPanel, moonGlow, STATE_WORD, useWide } from "./body";
 import type { ScenePlanet } from "./StarMapScene";
+import { IDLE_RESET_MS, homeControl, pinchFactor, tiltBy, wheelFactor, type ViewControl } from "./view";
 
 const StarMapScene = lazy(() => import("./StarMapScene"));
 
@@ -82,7 +83,29 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
 
   const yaw = useRef(0);
   const dragged = useRef(false);
-  const drag = useRef<{ x: number; yaw: number } | null>(null);
+  const view = useRef<ViewControl>(homeControl());
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const travel = useRef(0);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  /** Whether the student has moved the view (`data-view`), and the timer that brings it home. */
+  const [looking, setLooking] = useState(false);
+  const idle = useRef<number | null>(null);
+  const goHome = useCallback((turnBack = true) => {
+    view.current = homeControl();
+    if (turnBack) yaw.current = 0;
+    setLooking(false);
+    if (idle.current !== null) window.clearTimeout(idle.current);
+    idle.current = null;
+  }, []);
+  /** Any input: the view is the student's for another thirty seconds. */
+  const touched = useCallback(() => {
+    setLooking(true);
+    if (idle.current !== null) window.clearTimeout(idle.current);
+    idle.current = window.setTimeout(() => goHome(), IDLE_RESET_MS);
+  }, [goHome]);
+  useEffect(() => () => {
+    if (idle.current !== null) window.clearTimeout(idle.current);
+  }, []);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const systemRef = useRef<HTMLElement | null>(null);
   const bodyRef = useRef<HTMLElement | null>(null);
@@ -214,29 +237,100 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
     ...(enterTo ? [{ key: "Enter", cap: "Enter", label: "Enter journey", run: () => nav(enterTo) }] : []),
     ...(sel ? [{ key: "Escape", cap: "Esc", label: "Close", run: close }] : []),
     { key: "s", cap: "S", label: "Stages", run: () => nav("/app/stages") },
+    ...(webgl
+      ? [
+          { key: "+", cap: "+", label: "Zoom in", run: () => zoomKey(0.8) },
+          { key: "-", cap: "−", label: "Zoom out", run: () => zoomKey(1.25) },
+        ]
+      : []),
     {
       key: "r",
       cap: "R",
       label: "Reset view",
       run: () => {
-        yaw.current = 0;
+        goHome();
         close();
       },
     },
   ]);
 
+  /** A key's zoom aims at the middle of the free area. */
+  const zoomKey = (f: number) => {
+    const fr = frame ?? { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
+    view.current.zoomAt.push({ f, x: fr.x + fr.w / 2, y: fr.y + fr.h / 2 });
+    touched();
+  };
+  // "=" is "+" without Shift on most keyboards; key hints match one key each.
+  useEffect(() => {
+    if (!webgl) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "=" || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(TEXTAREA|SELECT)$/.test(t.tagName) || (t instanceof HTMLInputElement && !/^(radio|checkbox)$/.test(t.type)))) return;
+      e.preventDefault();
+      zoomKey(0.8);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+  // The wheel zooms toward the pointer; never the page (a non-passive listener).
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || !webgl) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      view.current.zoomAt.push({ f: wheelFactor(e.deltaY), x: e.clientX, y: e.clientY });
+      touched();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [webgl, touched]);
+  // A planet or moon chosen (or let go) frames itself afresh: the zoom, tilt and
+  // pan were relative to what was framed before. The turn is kept.
+  useEffect(() => {
+    goHome(false);
+  }, [selected, moon, goHome]);
+
+  /*
+   * Looking around (instructor, 5 Oct 2026; map/view.ts). One finger or the
+   * left button turns the system and tilts it; two fingers pinch to zoom and
+   * move together to pan; the right button or Shift pans; the wheel zooms
+   * toward the pointer. Every gesture marks a drag, so the click that ends it
+   * chooses nothing.
+   */
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
-    drag.current = { x: e.clientX, yaw: yaw.current };
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    travel.current = 0;
     dragged.current = false;
   };
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (!drag.current || e.buttons === 0) return;
-    const dx = e.clientX - drag.current.x;
-    if (Math.abs(dx) > 6) dragged.current = true;
-    yaw.current = drag.current.yaw - dx * 0.006;
+    const was = pointers.current.get(e.pointerId);
+    if (!was || (e.pointerType === "mouse" && e.buttons === 0)) return;
+    const at = { x: e.clientX, y: e.clientY };
+    const dx = at.x - was.x;
+    const dy = at.y - was.y;
+    const vc = view.current;
+    const other = [...pointers.current.entries()].find(([id]) => id !== e.pointerId)?.[1];
+    if (other) {
+      // Two fingers: the pinch zooms toward their midpoint, the midpoint pans.
+      const f = pinchFactor(Math.hypot(was.x - other.x, was.y - other.y), Math.hypot(at.x - other.x, at.y - other.y));
+      vc.zoomAt.push({ f, x: (at.x + other.x) / 2, y: (at.y + other.y) / 2 });
+      vc.panPx.dx += dx / 2;
+      vc.panPx.dy += dy / 2;
+    } else if (e.shiftKey || (e.buttons & 6) !== 0) {
+      vc.panPx.dx += dx;
+      vc.panPx.dy += dy;
+    } else {
+      yaw.current -= dx * 0.006;
+      vc.view = tiltBy(vc.view, dy * 0.004);
+    }
+    pointers.current.set(e.pointerId, at);
+    travel.current += Math.abs(dx) + Math.abs(dy);
+    if (travel.current > 6) dragged.current = true;
+    touched();
   };
-  const onPointerUp = () => {
-    drag.current = null;
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    pointers.current.delete(e.pointerId);
     // Let the click that ends a drag see `dragged`, then clear it.
     window.setTimeout(() => (dragged.current = false), 0);
   };
@@ -249,7 +343,10 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
       aria-labelledby="starmap-title"
     >
       <div
+        ref={stageRef}
         className="starmap-stage"
+        data-view={looking ? "looking" : "home"}
+        onContextMenu={(e) => e.preventDefault()}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -267,6 +364,7 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
               reduced={reduced}
               lowQuality={slow || saveData}
               yaw={yaw}
+              view={view}
               dragged={dragged}
               frame={frame}
               onSelect={open}

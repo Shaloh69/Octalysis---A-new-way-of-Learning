@@ -281,3 +281,34 @@ build at 5185, reduced motion; all opened, and a 2x crop of 380's left edge:
 At 1440 the system spans about 885px across (821 before); a planet's radius is
 3 to 6px (8 to 16 before); the sun's about 19px (11). A chosen planet looks as
 it did: its moon system shrank with it and the camera fits it.
+
+## Looking around (instructor, 5 Oct 2026)
+
+"I want the students in the map have the ability to zoom in manually and look
+around the solar system. The camera view will reset on its own after 30
+seconds of not doing anything. Make sure that works on the phone too."
+`map/view.ts` (pure, `test/view.spec.ts`), applied by the page and the Rig:
+
+- **Drag** turns the system (as before) and now tilts it, from nearly
+  edge-on to straight down. **Wheel** and **two-finger pinch** zoom toward
+  the pointer or the fingers' midpoint (the point under them stays put).
+  **Two fingers moving**, the right button or Shift-drag **pan**, never further
+  than the outer band from the sun. Every gesture marks a drag, so the click
+  that ends it chooses nothing.
+- **Keys**: `+` (or `=`) and `−` zoom on the middle of the free area; they sit
+  in the key hints beside R, Reset view, which also brings the view home.
+- **Thirty seconds without input** and the view eases home (cuts under reduced
+  motion). Choosing or letting go of a planet or moon frames afresh.
+- `data-view` on the stage says `home` or `looking`.
+
+Controls against the mandate: each changes what the student can see
+(consequence), the hints name them (legibility), R and the 30 s return undo
+them (reversibility). The accessible layer is untouched: every planet is still
+a button in the row.
+
+`design/specs/web-app-look.spec.ts` (its own file: with the trace on, a
+canvas that redraws every frame took a wheel test to 150s; off, 16s): wheel,
+drag, a real two-finger pinch at 380 (CDP touch events), the keys, and the
+thirty seconds on a fake clock (not at 29, restarted by input, home after).
+10 passed at 1440 and 380. Captures `current-looking` (wheel, 1440) and
+`current-looking-380` (pinch), opened. `web-app.spec.ts` 50 passed.

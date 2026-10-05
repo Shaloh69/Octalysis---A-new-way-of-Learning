@@ -9,12 +9,15 @@ import {
   DoubleSide,
   Group,
   Mesh,
+  Plane,
+  Raycaster,
   RepeatWrapping,
   RingGeometry,
   Sprite,
   SRGBColorSpace,
   Texture,
   TextureLoader,
+  Vector2,
   Vector3,
 } from "three";
 import { allTextureFiles, moonSkin, skinFor, SUN_MAP, type BodySkin, type RingStyle } from "../solar-system/bodies";
@@ -22,6 +25,10 @@ import { bodyOrbit, ellipsePoints, positionAt } from "../solar-system/kepler";
 import { populations, SUN_SPIN_S } from "../solar-system/populations";
 import { BODY_SCALE, irregularShape, isGiant, isIrregular, moonDirection, moonOrbit, planetSize, ringBands, ringSpan, rocheLimit } from "../solar-system/satellites";
 import { Leftovers } from "./Leftovers";
+import { HOME, clampPan, zoomToward, type ViewControl } from "./view";
+
+/** The plane the system lies in, for finding what is under the pointer. */
+const PLANE = new Plane(new Vector3(0, 1, 0), 0);
 import { planetSkinKey } from "../solar-system/world";
 import { SUN_RADIUS, type SolarLayout } from "../solar-system/layout";
 import { orbitAngle } from "../solar-system/orbit";
@@ -92,6 +99,8 @@ export interface SceneProps {
   reduced: boolean;
   lowQuality: boolean;
   yaw: MutableRefObject<number>;
+  /** The student's own zoom, tilt and pan, and the gestures queued for the Rig (view.ts). */
+  view: MutableRefObject<ViewControl>;
   dragged: MutableRefObject<boolean>;
   /** The part of the screen the panels leave free, in CSS pixels: the camera
    *  centres and fits the system (or the selected planet) inside it. */
@@ -827,6 +836,13 @@ function Rig(p: SceneProps & { edge: number; positions: MutableRefObject<Map<str
   const yawNow = useRef(0);
   const frames = useRef({ t: 0, n: 0, slow: 0, age: 0 });
   const tmp = useMemo(() => new Vector3(), []);
+  const aim = useMemo(() => new Vector3(), []);
+  const pan = useMemo(() => new Vector3(), []);
+  const onPlane = useMemo(() => new Vector3(), []);
+  const ndc = useMemo(() => new Vector2(), []);
+  const ray = useMemo(() => new Raycaster(), []);
+  /** The view as drawn, easing toward the student's. */
+  const now = useRef({ ...HOME });
 
   useFrame((_, dt) => {
     const W = size.width;
@@ -860,12 +876,48 @@ function Rig(p: SceneProps & { edge: number; positions: MutableRefObject<Map<str
     const near = moonPos ? 7 * scale : planetNear;
     const wantDist = selPos ? Math.min(fit, moonPos ? near * Math.max(1, (0.55 * H) / Math.max(1, fr.h)) : near) : fit;
     const k = p.reduced ? 1 : 1 - Math.exp(-dt * 6);
-    target.current.lerp(wantTarget, k);
+
+    /*
+     * The student's own view (instructor, 5 Oct 2026; `view.ts`). The page
+     * queues gestures in pixels; here a zoom finds the plane point under the
+     * pointer (so it stays under it) and a pan turns pixels into distance at
+     * the current zoom. The camera then eases to the view, or cuts under
+     * reduced motion.
+     */
+    const vc = p.view.current;
+    for (const z of vc.zoomAt) {
+      ndc.set((z.x / W) * 2 - 1, -(z.y / H) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const hit = ray.ray.intersectPlane(PLANE, onPlane);
+      const at = hit ?? target.current;
+      vc.view = zoomToward(vc.view, z.f, { x: at.x, z: at.z }, { x: target.current.x, z: target.current.z });
+    }
+    vc.zoomAt = [];
+    if (vc.panPx.dx !== 0 || vc.panPx.dy !== 0) {
+      const perPx = (2 * (dist.current ?? wantDist) * tan) / H;
+      const y = yawNow.current;
+      const lift = Math.max(0.3, Math.sin(PITCH + now.current.tilt));
+      vc.view = {
+        ...vc.view,
+        // Content follows the finger: the look-at point moves the other way.
+        panX: vc.view.panX - vc.panPx.dx * perPx * Math.cos(y) - (vc.panPx.dy * perPx * Math.sin(y)) / lift,
+        panZ: vc.view.panZ + vc.panPx.dx * perPx * Math.sin(y) - (vc.panPx.dy * perPx * Math.cos(y)) / lift,
+      };
+      vc.panPx = { dx: 0, dy: 0 };
+    }
+    vc.view = clampPan(vc.view, p.edge);
+    const nv = now.current;
+    nv.zoom += (vc.view.zoom - nv.zoom) * k;
+    nv.tilt += (vc.view.tilt - nv.tilt) * k;
+    nv.panX += (vc.view.panX - nv.panX) * k;
+    nv.panZ += (vc.view.panZ - nv.panZ) * k;
+
+    target.current.lerp(aim.copy(wantTarget).add(pan.set(nv.panX, 0, nv.panZ)), k);
     dist.current = dist.current === null ? wantDist : dist.current + (wantDist - dist.current) * k;
     yawNow.current += (p.yaw.current - yawNow.current) * (p.reduced ? 1 : 1 - Math.exp(-dt * 10));
 
-    const pitch = PITCH;
-    const d = dist.current;
+    const pitch = PITCH + nv.tilt;
+    const d = dist.current * nv.zoom;
     camera.position.set(
       target.current.x + d * Math.cos(pitch) * Math.sin(yawNow.current),
       target.current.y + d * Math.sin(pitch),

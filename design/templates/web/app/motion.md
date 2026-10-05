@@ -49,3 +49,9 @@ Comets move at their real Kepler speed (the 40x clock is gone): each starts
 near aphelion, off the screen, and takes minutes to fall in, swing round the
 sun with its coma and tail, and leave. Under reduced motion they hold at t = 0,
 out of view.
+
+## Looking around (5 Oct 2026)
+
+Zoom, tilt and pan ease with the camera (the same easing as a chosen planet);
+under reduced motion each cuts. Thirty seconds without input, the view eases
+home; under reduced motion it cuts home.
