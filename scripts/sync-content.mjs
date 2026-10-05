@@ -52,12 +52,17 @@ import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { checkFigureSvg } from "./lib/figure-svg.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // OCTA_STAGE_DIR is for the API's test suite, which syncs a temporary copy.
 const STAGE_DIR = process.env.OCTA_STAGE_DIR
   ? resolve(process.env.OCTA_STAGE_DIR)
   : resolve(ROOT, "content/stages");
+// The course's figures, one SVG per file (docs/FIGURES-AND-AUDIO.md, 6 Oct 2026).
+const FIGURE_DIR = process.env.OCTA_FIGURE_DIR
+  ? resolve(process.env.OCTA_FIGURE_DIR)
+  : resolve(ROOT, "content/figures");
 
 const c = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
@@ -202,6 +207,96 @@ async function loadStageFiles() {
     });
   }
   return out;
+}
+
+/* ---------- figures: recreated SVG, approved before students see them ---------- */
+// Instructor rulings, 6 Oct 2026 (docs/FIGURES-AND-AUDIO.md): every figure is
+// drawn for this course, never a screenshot of the book. Each file passes
+// checkFigureSvg() (a figure renders inline, so this is the line between a
+// diagram and a script), every `figure` block names one that exists and
+// belongs to its chapter, and sync writes each as a DRAFT to the staff-only
+// `figures` table. Students are served only what an instructor approved.
+async function loadFigures() {
+  let names = [];
+  try {
+    names = (await readdir(FIGURE_DIR)).filter((n) => n.endsWith(".svg")).sort();
+  } catch { /* no figures yet */ }
+  const out = [];
+  for (const name of names) {
+    const id = name.slice(0, -4);
+    const svg = (await readFile(resolve(FIGURE_DIR, name), "utf8")).replace(/\r\n/g, "\n").trim();
+    const { problems, title } = checkFigureSvg(svg, id);
+    out.push({ id, stageId: id.slice(0, 2), svg, hash: hash(svg), title, problems });
+  }
+  return out;
+}
+
+function checkFigures(stages, figures) {
+  const problems = [];
+  const byId = new Map(figures.map((f) => [f.id, f]));
+  const stageIds = new Set(stages.map((s) => s.stageId));
+  for (const f of figures) {
+    for (const p of f.problems) problems.push(`content/figures/${f.id}.svg: ${p}`);
+    if (!stageIds.has(f.stageId)) problems.push(`content/figures/${f.id}.svg: no stage ${f.stageId}`);
+  }
+  for (const stage of stages) {
+    const files = [{ file: stage.file, blocks: stage.blocks }];
+    if (stage.draft) files.push({ file: stage.draft.file, blocks: stage.draft.blocks });
+    for (const { file, blocks } of files) {
+      for (const b of blocks) {
+        if (b.kind !== "figure") continue;
+        const id = b.meta.id;
+        if (!id) { problems.push(`${file}: a figure block names no id`); continue; }
+        if (!byId.has(id)) problems.push(`${file}: figure "${id}" has no content/figures/${id}.svg`);
+        else if (!id.startsWith(stage.stageId + "-")) problems.push(`${file}: figure "${id}" belongs to another chapter`);
+        if (!b.body.trim()) problems.push(`${file}: figure "${id}" has no caption`);
+      }
+    }
+  }
+  return problems;
+}
+
+async function syncFigures(client, figures) {
+  let inserted = 0, updated = 0, unchanged = 0, removed = 0;
+  const withdrawn = [];
+  const { rows } = await client.query("select id, svg_hash, status, ever_approved from figures");
+  const had = new Map(rows.map((r) => [r.id, r]));
+  for (const f of figures) {
+    const cur = had.get(f.id);
+    if (!cur) {
+      await client.query(
+        "insert into figures (id, stage_id, title, svg, svg_hash) values ($1, $2, $3, $4, $5)",
+        [f.id, f.stageId, f.title, f.svg, f.hash],
+      );
+      inserted++;
+    } else if (cur.svg_hash !== f.hash) {
+      // A changed drawing withdraws its approval. `approved_svg` stays: students
+      // keep the last drawing an instructor approved until this one is.
+      await client.query(
+        `update figures set title = $2, svg = $3, svg_hash = $4, status = 'draft', note = null,
+                reviewed_by = null, reviewed_at = null, updated_at = now()
+          where id = $1`,
+        [f.id, f.title, f.svg, f.hash],
+      );
+      if (cur.status === "approved") withdrawn.push(f.id);
+      updated++;
+    } else {
+      unchanged++;
+    }
+    had.delete(f.id);
+  }
+  // A file that is gone: forget a figure nobody ever approved; keep one that
+  // was, since students may be reading it and an item may point at it.
+  for (const [id, r] of had) {
+    if (!r.ever_approved) {
+      const used = await client.query("select 1 from items where figure_id = $1 limit 1", [id]);
+      if (used.rowCount === 0) { await client.query("delete from figures where id = $1", [id]); removed++; }
+    }
+  }
+  const counts = await client.query(
+    "select count(*) filter (where status = 'approved')::int a, count(*) filter (where status <> 'approved')::int p from figures",
+  );
+  return { inserted, updated, unchanged, removed, withdrawn, approved: counts.rows[0].a, pending: counts.rows[0].p };
 }
 
 /* ---------- verify quoted spans against the source decks ---------- */
@@ -622,6 +717,17 @@ async function main() {
   }
   console.log(c.green("  all sourced blocks match the decks"));
 
+  const figures = await loadFigures();
+  const figureProblems = checkFigures(stages, figures);
+  console.log(c.dim(`  ${figures.length} figure(s) checked`));
+  if (figureProblems.length > 0) {
+    console.log(c.red(`\n  ${figureProblems.length} figure problem(s):\n`));
+    for (const p of figureProblems) console.log(`    ${c.red(p)}`);
+    console.log(c.red("\n  A figure is a drawing in the course's own tokens, never code. See docs/FIGURES-AND-AUDIO.md.\n"));
+    process.exit(1);
+  }
+  if (figures.length > 0) console.log(c.green("  every figure passes"));
+
   if (verifyOnly) {
     console.log(c.dim("\n  --verify: nothing written.\n"));
     return;
@@ -645,6 +751,7 @@ async function main() {
   try {
     await client.query("begin");
     const s = await sync(client, stages, { dryRun, pull, takeFile });
+    const fig = await syncFigures(client, figures);
     if (dryRun) await client.query("rollback");
     else await client.query("commit");
 
@@ -666,6 +773,12 @@ async function main() {
     console.log(
       c.dim(`  drafted lesson text: ${s.chaptersLive} chapter(s) approved, ${s.chaptersPending} to review on /content`),
     );
+    console.log(
+      c.dim(`  figures: ${fig.inserted} new, ${fig.updated} changed, ${fig.removed} removed; ${fig.approved} approved, ${fig.pending} to review on /content`),
+    );
+    for (const id of fig.withdrawn) {
+      console.log(c.yellow(`  figure ${id}: its drawing changed, so its approval was withdrawn. Students keep the last approved drawing.`));
+    }
     for (const id of s.chaptersWithdrawn) {
       console.log(c.yellow(`  stage ${id}: its drafted text changed, so its approval was withdrawn. Students keep the last approved text.`));
     }
@@ -691,7 +804,8 @@ async function main() {
 
     if (dryRun) {
       console.log(c.dim("\n  --check: rolled back, nothing written.\n"));
-    } else if (s.inserted === 0 && s.updated === 0 && s.removed === 0 && s.pulled.length === 0) {
+    } else if (s.inserted === 0 && s.updated === 0 && s.removed === 0 && s.pulled.length === 0 &&
+               fig.inserted === 0 && fig.updated === 0 && fig.removed === 0) {
       console.log(c.green("\n  Idempotent: a second run changed nothing.\n"));
     } else {
       console.log(c.green("\n  Content synced.\n"));

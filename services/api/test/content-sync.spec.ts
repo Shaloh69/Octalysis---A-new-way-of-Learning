@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createHmac } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,7 +54,7 @@ ${b2}
 
 async function sync(...flags: string[]): Promise<string> {
   const { stdout } = await run(process.execPath, [SCRIPT, ...flags], {
-    env: { ...process.env, DATABASE_URL: DB, OCTA_STAGE_DIR: dir },
+    env: { ...process.env, DATABASE_URL: DB, OCTA_STAGE_DIR: dir, OCTA_FIGURE_DIR: join(dir, "figures") },
   });
   return stdout;
 }
@@ -99,6 +99,8 @@ beforeAll(async () => {
 }, 60_000);
 
 afterAll(async () => {
+  // Before the pool closes: a query after closePool() fails without a word.
+  await setup("delete from figures where id like '00-sync-%'");
   await app?.close();
   await closePool();
   if (dir) await rm(dir, { recursive: true, force: true });
@@ -249,5 +251,63 @@ ${b2}
     );
     await expect(sync()).rejects.toMatchObject({ stdout: expect.stringMatching(/do not match their cited source/) });
     await rm(join(dir, "00.draft.md"));
+  });
+});
+
+/* ============================================================
+ * Figures (6 Oct 2026, docs/FIGURES-AND-AUDIO.md): sync checks each drawing
+ * and writes it as a DRAFT. A drawing that fails the check stops the whole
+ * sync, and nothing of it is written.
+ * ========================================================== */
+describe("sync-content and figures", () => {
+  const FIG_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <title>The sync probe</title>
+  <desc>One box.</desc>
+  <rect x="10" y="10" width="60" height="40" class="fig-box"/>
+</svg>
+`;
+  const withFigure = (id: string) =>
+    stageFile(SUMMARY, "The first block.", "The second block.") +
+    `
+<!-- block: figure id="${id}" after="1.1" -->
+A box, drawn for the sync test.
+`;
+
+  it("a figure file and a block naming it: the drawing is written as a draft, never served", async () => {
+    await setup("delete from figures where id like '00-sync-%'");
+    await mkdir(join(dir, "figures"), { recursive: true });
+    await writeFile(join(dir, "figures", "00-sync-probe.svg"), FIG_SVG);
+    await writeFile(join(dir, "00.md"), withFigure("00-sync-probe"));
+    const out = await sync();
+    expect(out).toMatch(/figures: 1 new/);
+    const r = (await setup("select status, approved_svg, title from figures where id = '00-sync-probe'")).rows[0];
+    expect(r).toMatchObject({ status: "draft", approved_svg: null, title: "The sync probe" });
+    expect(await sync()).toMatch(/Idempotent/);
+  });
+
+  it("a block naming a figure with no file fails the sync", async () => {
+    await writeFile(join(dir, "00.md"), withFigure("00-sync-missing"));
+    await expect(sync("--verify")).rejects.toMatchObject({ stdout: expect.stringMatching(/has no content\/figures\/00-sync-missing\.svg/) });
+  });
+
+  it("a drawing carrying a script fails the sync, and nothing of it is written", async () => {
+    await writeFile(join(dir, "figures", "00-sync-hostile.svg"), FIG_SVG.replace("</svg>", "<script>alert(1)</script></svg>"));
+    await writeFile(join(dir, "00.md"), withFigure("00-sync-probe"));
+    await expect(sync()).rejects.toMatchObject({ stdout: expect.stringMatching(/<script> is not a drawing element/) });
+    expect((await setup("select count(*)::int n from figures where id = '00-sync-hostile'")).rows[0].n).toBe(0);
+    await rm(join(dir, "figures", "00-sync-hostile.svg"));
+  });
+
+  it("a redrawn figure withdraws its approval; the approved drawing stays served", async () => {
+    await setup(
+      "update figures set status = 'approved', approved_hash = svg_hash, approved_svg = svg, ever_approved = true where id = '00-sync-probe'",
+    );
+    await writeFile(join(dir, "figures", "00-sync-probe.svg"), FIG_SVG.replace('width="60"', 'width="90"'));
+    const out = await sync();
+    expect(out).toMatch(/figure 00-sync-probe: its drawing changed, so its approval was withdrawn/);
+    const r = (await setup("select status, svg, approved_svg from figures where id = '00-sync-probe'")).rows[0];
+    expect(r.status).toBe("draft");
+    expect(r.svg).toContain('width="90"');
+    expect(r.approved_svg).toContain('width="60"');
   });
 });

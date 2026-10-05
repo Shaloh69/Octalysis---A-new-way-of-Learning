@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 150">
+  <title>A simple 16-bit instruction format</title>
+  <desc>One 16-bit instruction divided into three fields, left to right: a 4-bit opcode, then two 6-bit operand references. A bracket under all three marks the full 16 bits.</desc>
+  <defs>
+    <marker id="10-instruction-format-tip" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse">
+      <path d="M0,0 L8,4 L0,8 z" class="fig-ink"/>
+    </marker>
+  </defs>
+  <text x="75" y="30" font-size="13" text-anchor="middle" class="fig-muted fig-mono">4 bits</text>
+  <text x="212.5" y="30" font-size="13" text-anchor="middle" class="fig-muted fig-mono">6 bits</text>
+  <text x="377.5" y="30" font-size="13" text-anchor="middle" class="fig-muted fig-mono">6 bits</text>
+  <rect x="20" y="40" width="110" height="48" class="fig-accent"/>
+  <rect x="130" y="40" width="165" height="48" class="fig-box"/>
+  <rect x="295" y="40" width="165" height="48" class="fig-box"/>
+  <text x="75" y="69" font-size="14" text-anchor="middle" class="fig-ink">Opcode</text>
+  <text x="212.5" y="69" font-size="14" text-anchor="middle" class="fig-ink">Operand reference</text>
+  <text x="377.5" y="69" font-size="14" text-anchor="middle" class="fig-ink">Operand reference</text>
+  <line x1="22" y1="110" x2="458" y2="110" class="fig-line" stroke-width="1.5" marker-start="url(#10-instruction-format-tip)" marker-end="url(#10-instruction-format-tip)"/>
+  <text x="240" y="136" font-size="13" text-anchor="middle" class="fig-muted fig-mono">16 bits</text>
+</svg>

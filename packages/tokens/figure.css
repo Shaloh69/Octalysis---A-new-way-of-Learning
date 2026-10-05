@@ -1,0 +1,41 @@
+/*
+ * The course's figures (docs/FIGURES-AND-AUDIO.md, instructor rulings of
+ * 6 Oct 2026). A figure is SVG drawn for this course and carries NO colour of
+ * its own: it names these eight classes, and each realm's tokens decide what
+ * they look like. So one drawing is right in the star HUD, every biome, the
+ * neutral paper of a check and all three console themes, at the same
+ * contrast as the text around it.
+ *
+ * The set is closed. scripts/lib/figure-svg.mjs refuses any other fig-* name,
+ * so a figure can never depend on a class nobody styled.
+ *
+ * Class rules beat SVG presentation attributes, so a figure's own
+ * fill="none" / stroke="currentColor" are only fallbacks for a page that has
+ * not loaded this file.
+ */
+/* The wrapper an app draws a figure into (role="img", named by its title). */
+.fig-svg {
+  display: block;
+  width: 100%;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+/* A figure's viewBox is at most 640 wide and its text at least 12 units
+   (scripts/lib/figure-svg.mjs), so at 380px it scales to no less than about
+   half size and stays readable; on a wide screen it stops at its own width. */
+.fig-svg > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 640px;
+  margin-inline: auto;
+}
+.fig-svg text { fill: var(--ink); }
+.fig-svg .fig-ink { fill: var(--ink); }
+.fig-svg .fig-muted { fill: var(--ink-muted); }
+.fig-svg .fig-line { fill: none; stroke: var(--line-strong); }
+.fig-svg .fig-box { fill: var(--surface-2); stroke: var(--line-strong); }
+.fig-svg .fig-fill { fill: var(--surface-3); stroke: none; }
+.fig-svg .fig-accent { fill: var(--accent-muted); stroke: var(--accent); }
+.fig-svg .fig-accent-line { fill: none; stroke: var(--accent); }
+.fig-svg .fig-mono { font-family: var(--font-mono); }

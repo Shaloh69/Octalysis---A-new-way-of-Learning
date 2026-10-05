@@ -19,6 +19,7 @@ import {
   toStudentRecorded,
   toStudentVerdict,
 } from "../serialize/student.js";
+import { loadItemFigures } from "../repo/figures-repo.js";
 import type { Env } from "../env.js";
 
 /**
@@ -77,7 +78,7 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
           resumed,
           totalItems: items.length,
           // The ONE serializer. Never `items` directly.
-          items: toStudentPaper(items),
+          items: toStudentPaper(items, await loadItemFigures(app.db, items.map((i) => i.itemId))),
           answered: toStudentRecorded(items, recorded, attempt.blueprintScope !== "final"),
         });
       } catch (err) {
@@ -249,7 +250,7 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
       status: attempt.status,
       totalItems: items.length,
       answeredOrdinals: answered.map((r) => Number(r.ordinal)),
-      items: toStudentPaper(items),
+      items: toStudentPaper(items, await loadItemFigures(app.db, items.map((i) => i.itemId))),
     });
   });
 }

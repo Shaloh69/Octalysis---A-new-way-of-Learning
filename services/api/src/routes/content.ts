@@ -4,6 +4,7 @@ import { identityFrom, requireStaff } from "../auth.js";
 import { AppError, errors } from "../errors.js";
 import { withTransaction } from "../db.js";
 import type { Env } from "../env.js";
+import { toFigure } from "./figures.js";
 
 /**
  * `/content`: authoring status, the block editor, and planet-summary review.
@@ -85,6 +86,12 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
               (select count(*)::int from items i
                 where i.stage_id = s.id and i.status <> 'live')
                 as draft_items,
+              (select count(*)::int from figures f
+                where f.stage_id = s.id and f.status <> 'approved')
+                as figures_waiting,
+              (select count(*)::int from figures f
+                where f.stage_id = s.id and f.status = 'approved')
+                as figures_approved,
               ss.status as summary_status,
               cd.status as draft_status, cd.ever_approved as draft_ever_approved
          from stages s
@@ -113,6 +120,8 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
         authoring: authoringOf(blocks, Number(r.scaffold_blocks)),
         summaryStatus: (r.summary_status ?? null) as "draft" | "approved" | "sent_back" | null,
         draftStatus: (r.draft_status ?? null) as "draft" | "approved" | "sent_back" | null,
+        figuresWaiting: Number(r.figures_waiting),
+        figuresApproved: Number(r.figures_approved),
       };
     });
 
@@ -135,6 +144,10 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
           draft: stages.filter((s) => s.draftStatus === "draft").length,
           approved: stages.filter((s) => s.draftStatus === "approved").length,
           sentBack: stages.filter((s) => s.draftStatus === "sent_back").length,
+        },
+        figures: {
+          waiting: stages.reduce((a, s) => a + s.figuresWaiting, 0),
+          approved: stages.reduce((a, s) => a + s.figuresApproved, 0),
         },
         summaries: {
           draft: countSummaries("draft"),
@@ -226,7 +239,18 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
     );
     const dr = drafts[0];
 
+    // The chapter's figures (6 Oct 2026), each drawn as it is under review.
+    const { rows: figs } = await app.db.query(
+      `select f.id, f.title, f.svg, f.svg_hash, f.status, f.note, f.ever_approved,
+              f.approved_svg is not null as served, f.reviewed_at, p.full_name as reviewer
+         from figures f left join profiles p on p.id = f.reviewed_by
+        where f.stage_id = $1
+        order by f.id`,
+      [stageId],
+    );
+
     return reply.send({
+      figures: figs.map(toFigure),
       draft: dr
         ? {
             blocks: dr.blocks as Array<{ kind: string; body: string; meta: Record<string, unknown> }>,

@@ -373,9 +373,17 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       });
     }
 
+    // A figure block carries its drawing, and only the APPROVED one
+    // (docs/FIGURES-AND-AUDIO.md). A figure nobody has approved is left out
+    // whole, caption included: a caption under an empty frame teaches nothing.
     const blocks = await app.db.query(
-      `select ordinal, kind, body_md, meta, version
-         from content_blocks where stage_id = $1 order by ordinal`,
+      `select cb.ordinal, cb.kind, cb.body_md, cb.meta, cb.version,
+              f.id as figure_id, f.title as figure_title, f.approved_svg as figure_svg
+         from content_blocks cb
+         left join figures f on cb.kind = 'figure' and f.id = cb.meta->>'id'
+        where cb.stage_id = $1
+          and (cb.kind <> 'figure' or f.approved_svg is not null)
+        order by cb.ordinal`,
       [stageId],
     );
 
@@ -434,6 +442,9 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         body: b.body_md,
         meta: b.meta ?? {},
         version: Number(b.version),
+        ...(b.kind === "figure"
+          ? { figure: { id: b.figure_id as string, title: b.figure_title as string, svg: b.figure_svg as string } }
+          : {}),
       })),
       assessment: a0
         ? {

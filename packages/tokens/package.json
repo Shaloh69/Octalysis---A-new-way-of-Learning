@@ -13,7 +13,8 @@
     "./accents": "./accents.ts",
     "./contrast": "./contrast.ts",
     "./elements.svg": "./elements.svg",
-    "./backdrop.css": "./backdrop.css"
+    "./backdrop.css": "./backdrop.css",
+    "./figure.css": "./figure.css"
   },
   "files": [
     "tokens.css",
@@ -24,7 +25,8 @@
     "backdrop.css",
     "accents.ts",
     "contrast.ts",
-    "elements.svg"
+    "elements.svg",
+    "figure.css"
   ],
   "devDependencies": {
     "vitest": "^2.1.3"

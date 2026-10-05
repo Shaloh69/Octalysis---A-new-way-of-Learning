@@ -5,6 +5,7 @@ import { errors } from "../errors.js";
 import { BlueprintUnsatisfiable } from "../engine/blueprint.js";
 import { ensureJourney, loadRecordedAnswers, startAttempt } from "../repo/engine-repo.js";
 import { toStudentPaper, toStudentRecorded } from "../serialize/student.js";
+import { loadItemFigures } from "../repo/figures-repo.js";
 import type { Env } from "../env.js";
 
 /**
@@ -77,7 +78,7 @@ export function registerJourneyRoutes(app: FastifyInstance, env: Env): void {
           resumed,
           totalItems: items.length,
           // The ONE serializer. Never `items` directly.
-          items: toStudentPaper(items),
+          items: toStudentPaper(items, await loadItemFigures(app.db, items.map((i) => i.itemId))),
           answered: toStudentRecorded(items, recorded, true),
         });
       } catch (err) {

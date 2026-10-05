@@ -34,6 +34,7 @@
  *   node scripts/sync-items.mjs --check     validate only, touch nothing
  */
 
+import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -41,6 +42,8 @@ import pg from "pg";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ITEM_DIR = resolve(ROOT, "content/items");
+// A question may need a figure (6 Oct 2026, docs/FIGURES-AND-AUDIO.md).
+const FIGURE_DIR = resolve(ROOT, "content/figures");
 const SCOPE_TS = resolve(ROOT, "services/api/src/engine/scope.ts");
 const SOLVER_GLOB = ["solvers.ts", "solvers-act1.ts", "solvers-act2.ts", "solvers-act3.ts", "solvers-act4.ts"];
 
@@ -138,6 +141,15 @@ function validateShape(files, solvers, through) {
       }
 
       if (!TYPES.has(it.type)) errors.push(`${at}: type must be S, P or G`);
+      if (it.figure !== undefined) {
+        if (typeof it.figure !== "string" || !/^[0-9]{2}-[a-z0-9]+(-[a-z0-9]+)*$/.test(it.figure)) {
+          errors.push(`${at}: figure must be a figure id like "${f.stage}-instruction-format"`);
+        } else if (!it.figure.startsWith(f.stage + "-")) {
+          errors.push(`${at}: figure "${it.figure}" belongs to another chapter`);
+        } else if (!existsSync(resolve(FIGURE_DIR, `${it.figure}.svg`))) {
+          errors.push(`${at}: figure "${it.figure}" has no content/figures/${it.figure}.svg`);
+        }
+      }
       if (!BLOOMS.has(it.bloom)) errors.push(`${at}: bloom must be one of ${[...BLOOMS].join(", ")}`);
       if (!it.objective) errors.push(`${at}: no objective — it would be invisible to coverage`);
       if (!it.source) errors.push(`${at}: no source. Every item cites where it came from`);
@@ -224,6 +236,7 @@ async function main() {
   let locked = 0;
   const lockedSlugs = [];
   const missingObjectives = [];
+  const missingFigures = [];
 
   try {
     await client.query("begin");
@@ -235,6 +248,13 @@ async function main() {
         if (obj.rowCount === 0) {
           missingObjectives.push(`${it.slug} -> ${it.objective}`);
           continue;
+        }
+        if (it.figure) {
+          const fig = await client.query("select 1 from figures where id = $1", [it.figure]);
+          if (fig.rowCount === 0) {
+            missingFigures.push(`${it.slug} -> ${it.figure}`);
+            continue;
+          }
         }
 
         const existing = await client.query(
@@ -272,6 +292,7 @@ async function main() {
           ),
           JSON.stringify(it.type === "S" ? it.distractors : []),
           it.rationale ?? null,
+          it.figure ?? null,
         ];
 
         if (existing.rowCount > 0) {
@@ -287,8 +308,8 @@ async function main() {
             `update items set slug=$1, stage_id=$2, objective_id=$3, type=$4::item_type, bloom=$5,
                     target_difficulty=$6, stem_template=$7, solver_ref=$8, solver_version=$9,
                     correct_spec=$10::jsonb, distractor_pool=$11::jsonb, rationale_template=$12,
-                    status='review'
-              where id = $13`,
+                    figure_id=$13, status='review'
+              where id = $14`,
             [...fields, existing.rows[0].id],
           );
           updated++;
@@ -297,13 +318,22 @@ async function main() {
             `insert into items
                (slug, stage_id, objective_id, type, status, version, bloom, target_difficulty,
                 stem_template, solver_ref, solver_version, correct_spec, distractor_pool,
-                rationale_template, author_id)
-             values ($1,$2,$3,$4::item_type,'review',1,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12,null)`,
+                rationale_template, figure_id, author_id)
+             values ($1,$2,$3,$4::item_type,'review',1,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12,$13,null)`,
             fields,
           );
           inserted++;
         }
       }
+    }
+
+    if (missingFigures.length > 0) {
+      await client.query("rollback");
+      console.log(c.red(`\n  ${missingFigures.length} item(s) name a figure that is not in the database:\n`));
+      for (const m of missingFigures) console.log(c.red(`    ${m}`));
+      console.log(c.dim("\n  Run `node scripts/sync-content.mjs` first — it writes content/figures.\n"));
+      process.exitCode = 1;
+      return;
     }
 
     if (missingObjectives.length > 0) {

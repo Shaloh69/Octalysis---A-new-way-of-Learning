@@ -15,6 +15,7 @@ import {
   countActions, planImport, toAuthored, type ExistingItem, type PlannedRow, type RowFields,
 } from "../items/import-plan.js";
 import type { Env } from "../env.js";
+import { toFigure } from "./figures.js";
 
 /**
  * P7 — the item bank: review, preview, version, retire.
@@ -204,10 +205,12 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
               i.stem_template, i.solver_ref, i.created_at,
               i.author_id, i.reviewed_by, i.reviewed_at,
               o.description as objective_text,
+              i.figure_id, fg.status as figure_status, fg.approved_svg is not null as figure_served,
               st.n_exposures, st.p_value, st.discrimination, st.flagged, st.flag_reason,
               a.full_name as author_name, rv.full_name as reviewer_name
          from items i
          left join objectives  o  on o.id = i.objective_id
+         left join figures     fg on fg.id = i.figure_id
          left join item_stats  st on st.item_id = i.id
          left join profiles    a  on a.id = i.author_id
          left join profiles    rv on rv.id = i.reviewed_by
@@ -240,6 +243,11 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
         // `{f}` slots rather than anyone's numbers, and no answer.
         stemTemplate: r.stem_template,
         solverRef: r.solver_ref,
+        // A question that needs a figure (6 Oct 2026): it cannot go live until
+        // the figure is approved, so the list says where each one stands.
+        figure: r.figure_id
+          ? { id: r.figure_id as string, status: r.figure_status as string, served: r.figure_served === true }
+          : null,
         authorName: r.author_name,
         reviewerName: r.reviewer_name,
         reviewedAt: r.reviewed_at,
@@ -272,18 +280,31 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
 
     const { rows } = await app.db.query(
       `select id, slug, stage_id, objective_id, type, bloom, stem_template,
-              solver_ref, correct_spec, distractor_pool, rationale_template
+              solver_ref, correct_spec, distractor_pool, rationale_template, figure_id
          from items where id = $1`,
       [itemId],
     );
     if (rows.length === 0) throw errors.notFound("No such item.");
+
+    // The figure under review is the DRAFT drawing: approving it here is
+    // approving what the reviewer sees (routes/figures.ts, bound to its hash).
+    let figure: ReturnType<typeof toFigure> | null = null;
+    if (rows[0]!.figure_id) {
+      const fr = await app.db.query(
+        `select f.id, f.title, f.svg, f.svg_hash, f.status, f.note, f.ever_approved,
+                f.approved_svg is not null as served, f.reviewed_at, p.full_name as reviewer
+           from figures f left join profiles p on p.id = f.reviewed_by where f.id = $1`,
+        [rows[0]!.figure_id],
+      );
+      figure = fr.rows[0] ? toFigure(fr.rows[0]) : null;
+    }
 
     try {
       const resolved = resolveItem(toBankItem(rows[0]!), seed, {
         ordinal: 1,
         engineVersion: env.ENGINE_VERSION,
       });
-      return reply.send({ seed, item: resolved });
+      return reply.send({ seed, item: resolved, figure });
     } catch (err) {
       // A solver that throws is a BROKEN ITEM, and saying so plainly is the
       // whole value of a preview. Returning 500 would read as "the console is
@@ -292,6 +313,7 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
       return reply.send({
         seed,
         item: null,
+        figure,
         error:
           err instanceof Error
             ? err.message
@@ -442,13 +464,24 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
     if (!body.success) throw errors.badRequest("That status change could not be read.");
 
     const cur = await app.db.query(
-      "select status, author_id, type, correct_spec from items where id = $1",
+      `select i.status, i.author_id, i.type, i.correct_spec, i.figure_id,
+              f.approved_svg is not null as figure_served
+         from items i left join figures f on f.id = i.figure_id
+        where i.id = $1`,
       [itemId],
     );
     if (cur.rows.length === 0) throw errors.notFound("No such item.");
     const item = cur.rows[0]!;
 
     if (body.data.status === "live") {
+      // A question about a picture that students would not see (6 Oct 2026).
+      // The database refuses this too (trigger items_figure_approved); saying
+      // it here names the figure and the next move.
+      if (item.figure_id && item.figure_served !== true) {
+        throw errors.badRequest(
+          `This question needs figure ${item.figure_id as string}, which is not approved yet. Approve the figure first; it is shown with the question.`,
+        );
+      }
       /*
        * Rule 3, and the one place it bends.
        *

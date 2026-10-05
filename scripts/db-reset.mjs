@@ -39,6 +39,8 @@ const FILES = [
   "db/addendum-cron.sql",
   // Drafted lesson text (5 Oct 2026). Idempotent: `--file` sends it alone to a live project.
   "db/addendum-drafts.sql",
+  // Figures, recreated as our own SVG (6 Oct 2026). Idempotent: `--file` sends it alone.
+  "db/addendum-figures.sql",
 ];
 
 const c = {

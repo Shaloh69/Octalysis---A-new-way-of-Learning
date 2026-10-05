@@ -22,10 +22,22 @@ export interface StudentItem {
   readonly points: number;
   /** Safe: the unit is part of the question, not the answer. */
   readonly unit?: string;
+  /**
+   * The question's figure, when it needs one (6 Oct 2026). Only an APPROVED
+   * drawing ever reaches here; an item whose figure is unapproved cannot be
+   * live (trigger `items_figure_approved`). A figure is part of the question,
+   * like its stem: whoever writes one must never draw the answer into it.
+   */
+  readonly figure?: StudentFigure;
+}
+
+export interface StudentFigure {
+  readonly title: string;
+  readonly svg: string;
 }
 
 /** Strip one item down to what a student may see while the attempt is open. */
-export function toStudentItem(item: ResolvedItem): StudentItem {
+export function toStudentItem(item: ResolvedItem, figure?: StudentFigure): StudentItem {
   const out: StudentItem = {
     ordinal: item.ordinal,
     type: item.type,
@@ -35,11 +47,17 @@ export function toStudentItem(item: ResolvedItem): StudentItem {
   };
   // `unit` is only included when it is non-empty, so the payload does not carry
   // an empty string that hints at the answer's shape.
-  return item.unit ? { ...out, unit: item.unit } : out;
+  const withUnit = item.unit ? { ...out, unit: item.unit } : out;
+  // Built field by field, like everything else here.
+  return figure ? { ...withUnit, figure: { title: figure.title, svg: figure.svg } } : withUnit;
 }
 
-export function toStudentPaper(items: readonly ResolvedItem[]): StudentItem[] {
-  return items.map(toStudentItem);
+/** `figures` maps an item id to its approved figure (repo/figures-repo.ts). */
+export function toStudentPaper(
+  items: readonly ResolvedItem[],
+  figures: ReadonlyMap<string, StudentFigure> = new Map(),
+): StudentItem[] {
+  return items.map((item) => toStudentItem(item, figures.get(item.itemId)));
 }
 
 /**

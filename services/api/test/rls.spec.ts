@@ -1119,3 +1119,84 @@ describe("drafted lesson text — staff-only until the API approves it", () => {
     expect(res.error?.message ?? "").toMatch(/cd_approved_is_this_text/);
   });
 });
+
+/* ============================================================
+ * Figures — 6 Oct 2026 (docs/FIGURES-AND-AUDIO.md)
+ *
+ * A figure's drawing is unreviewed until an instructor approves it. Students
+ * never read `figures`: the API serves the approved drawing inside the stage
+ * or the paper. Nobody approves one through a client, and no role, not even
+ * service_role, can put a drawing in front of students that is not the one
+ * approved, by its hash.
+ * ========================================================== */
+describe("figures — drafts are staff-only, and only the approved drawing is served", () => {
+  const SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><title>probe</title><desc>a probe figure</desc></svg>';
+  const OTHER = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40"><title>other</title><desc>a different drawing</desc></svg>';
+
+  beforeAll(async () => {
+    await setup(
+      `insert into figures (id, stage_id, title, svg, svg_hash)
+       values ('00-rls-probe', '00', 'probe', $1, left(encode(digest($1, 'sha256'), 'hex'), 16))
+       on conflict (id) do update set svg = excluded.svg, svg_hash = excluded.svg_hash,
+         status = 'draft', approved_hash = null, approved_svg = null, ever_approved = false, note = null`,
+      [SVG],
+    );
+  });
+
+  it("a student cannot read a figure, drafted or approved", async () => {
+    const res = await runAs<{ svg: string }>(studentA, "select svg, approved_svg from figures");
+    expect(res.error, `expected a silent RLS filter, got ${denialReason(res)}`).toBeNull();
+    expect(res.rowCount).toBe(0);
+  });
+
+  it("POSITIVE CONTROL: a teacher can read it", async () => {
+    const res = await runAs<{ title: string }>(teacher, "select title from figures where id = '00-rls-probe'");
+    expect(res.error).toBeNull();
+    expect(res.rows.map((r) => r.title)).toEqual(["probe"]);
+  });
+
+  it("a teacher cannot approve a figure behind the API's back", async () => {
+    const res = await runAs(
+      teacher,
+      "update figures set status = 'approved', approved_hash = svg_hash, approved_svg = svg where id = '00-rls-probe'",
+    );
+    expect(res.error, denialReason(res)).toBeNull();
+    expect(res.rowCount, "an approval with no audit row got through").toBe(0);
+  });
+
+  it("no role can serve a drawing that was not approved — service_role included", async () => {
+    // Not approved at all.
+    const a = await runAs(service, "update figures set approved_svg = svg where id = '00-rls-probe'");
+    expect(a.error?.message ?? "").toMatch(/has not been approved/i);
+    // Approved, but the bytes served are not the bytes approved.
+    const b = await runAs(
+      service,
+      "update figures set status = 'approved', approved_hash = svg_hash, approved_svg = $1 where id = '00-rls-probe'",
+      [OTHER],
+    );
+    expect(b.error?.message ?? "").toMatch(/has not been approved/i);
+  });
+
+  it("POSITIVE CONTROL: the approved drawing itself is allowed", async () => {
+    const res = await runAs(
+      service,
+      "update figures set status = 'approved', approved_hash = svg_hash, approved_svg = svg where id = '00-rls-probe'",
+    );
+    expect(res.error, denialReason(res)).toBeNull();
+  });
+
+  it("withdrawing a drawing is always allowed", async () => {
+    const res = await runAs(service, "update figures set approved_svg = null where id = '00-rls-probe'");
+    expect(res.error, denialReason(res)).toBeNull();
+  });
+
+  it("a question cannot go live while its figure is unapproved — service_role included", async () => {
+    await setup("update figures set status = 'draft', approved_svg = null where id = '00-rls-probe'");
+    const res = await runAs(
+      service,
+      `insert into items (slug, stage_id, type, status, version, bloom, stem_template, correct_spec, figure_id)
+       values ('00-rls-figure-probe', '00', 'S', 'live', 1, 'remember', 'What does the probe show?', '{"value":"x"}', '00-rls-probe')`,
+    );
+    expect(res.error?.message ?? "").toMatch(/cannot go live: figure 00-rls-probe is not approved/i);
+  });
+});
