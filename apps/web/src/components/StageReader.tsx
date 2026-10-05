@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError, type StageDetail } from "../lib/api";
 import { parseInline, sectionsOf } from "../lib/markdown";
 import { useDelayed } from "../lib/useDelayed";
 import { WarpLink } from "../shell/RealmWarp";
 import { InlineText, ReaderBlocks, sectionId } from "./ReaderBlocks";
 import { byObjectiveId } from "../map/useSelection";
+import { toast } from "../lib/toast";
+import { useShellData } from "../shell/ShellData";
 
 /**
  * `/app/stage/:id`, the reader, REMADE under ruling 2 (30 Sep 2026;
@@ -356,6 +359,7 @@ function Reading({
               "This stage has no check. Nothing in it is graded."
             )}
           </p>
+          {!stage.gradeable && <ReadToTheEnd stage={stage} />}
           <WarpLink to={toMap} className="sprite-button">
             Back to the map
           </WarpLink>
@@ -390,6 +394,117 @@ function Reading({
         <button type="button" className="sprite-button rd-sheet-close" onClick={closeSheet}>
           Close
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** Seconds before a finished Orientation carries the student on. */
+const CARRY_S = 5;
+
+/**
+ * The end of an UNGRADED stage (instructor, 5 Oct 2026: "if orientation is
+ * done reading, automatically mark it as mastered then move to the next
+ * stage"). Reaching the end of the letter records it with the server (which
+ * decides; this never does), confirms it, and carries the student to the next
+ * stage after CARRY_S seconds, with Go now and Stay here. Only the FIRST
+ * finish carries: a stage already mastered just offers the way on, so a
+ * re-read is never hijacked. A countdown, not motion: it runs under reduced
+ * motion too, and every step is in words.
+ */
+function ReadToTheEnd({ stage }: { stage: StageDetail }): JSX.Element {
+  const navigate = useNavigate();
+  const { reload, map } = useShellData();
+  // On a revisit, the stage after this one in curriculum order (the server named it on the first finish).
+  const after = map ? ([...map.nodes].sort((a, b) => a.ordinal - b.ordinal).find((n) => n.ordinal > (map.nodes.find((x) => x.id === stage.id)?.ordinal ?? Infinity))?.id ?? null) : null;
+  const already = stage.state === "mastered";
+  const [phase, setPhase] = useState<"reading" | "saving" | "done" | "failed" | "staying">(already ? "done" : "reading");
+  const [named, setNext] = useState<string | null>(null);
+  const next = named ?? (already ? after : null);
+  const [left, setLeft] = useState<number | null>(null);
+  const mark = useRef<HTMLSpanElement>(null);
+  const sent = useRef(false);
+
+  const finish = async () => {
+    if (sent.current) return;
+    sent.current = true;
+    setPhase("saving");
+    try {
+      const r = await api.readStage(stage.id);
+      setNext(r.next);
+      setPhase("done");
+      setLeft(r.next ? CARRY_S : null);
+      toast.success(`Stage ${stage.id} · ${stage.title} mastered`, r.next ? `Stage ${r.next} is next.` : undefined);
+      void reload();
+    } catch (err) {
+      sent.current = false;
+      setPhase("failed");
+      toast.error(`Stage ${stage.id} was not recorded`, err instanceof ApiError ? err.message : "Check your connection, then try again.");
+    }
+  };
+
+  // The end of the letter in view is the end of the reading.
+  useEffect(() => {
+    if (already || !mark.current || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) void finish();
+    });
+    io.observe(mark.current);
+    return () => io.disconnect();
+  }, [already]);
+
+  useEffect(() => {
+    if (left === null || phase !== "done" || !next) return;
+    if (left <= 0) {
+      navigate(`/app/stage/${next}`);
+      return;
+    }
+    const t = window.setTimeout(() => setLeft(left - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [left, phase, next, navigate]);
+
+  return (
+    <div className="rd-finish" data-finish={phase}>
+      <span ref={mark} aria-hidden="true" />
+      <p role="status">
+        {phase === "reading" && "Read to the end to finish this stage."}
+        {phase === "saving" && "Recording that you have read it."}
+        {phase === "done" && (
+          <>
+            Stage <span className="mono">{stage.id}</span> is mastered.
+            {next && left !== null && left > 0 && (
+              <>
+                {" "}Taking you to Stage <span className="mono">{next}</span> in <span className="mono">{left}</span>s.
+              </>
+            )}
+          </>
+        )}
+        {phase === "staying" && "Staying here. The next stage is open whenever you are."}
+        {phase === "failed" && "That was not recorded. Nothing was lost; try again."}
+      </p>
+      <div className="rd-row">
+        {phase === "failed" && (
+          <button type="button" className="sprite-button button-primary" onClick={() => void finish()}>
+            Try again
+          </button>
+        )}
+        {(phase === "done" || phase === "staying") && next && (
+          <Link to={`/app/stage/${next}`} className="sprite-button button-primary">
+            {left !== null && left > 0 ? "Go now" : <>Go to Stage <span className="mono">{next}</span></>}
+          </Link>
+        )}
+        {phase === "done" && left !== null && left > 0 && (
+          <button
+            type="button"
+            className="sprite-button"
+            onClick={() => {
+              setLeft(null);
+              setPhase("staying");
+            }}
+          >
+            Stay here
+          </button>
+        )}
       </div>
     </div>
   );

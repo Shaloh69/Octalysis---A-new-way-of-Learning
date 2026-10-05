@@ -175,6 +175,10 @@
 .rd-end { margin-top: var(--space-6); padding-top: var(--space-5); border-top: var(--border-hair) solid var(--line); }
 .rd-end p { margin: 0 0 var(--space-3); }
 .rd-end-title { font-family: var(--font-hud); font-weight: 600; letter-spacing: var(--tracking-hud); }
+.rd-finish { margin: var(--space-4) 0; padding: var(--space-3) var(--space-4); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); }
+.rd-finish[data-finish="done"] { border-color: var(--line-strong); }
+.rd-finish .rd-row { margin-top: var(--space-3); }
+.rd-finish > span:first-child { display: block; height: 1px; }
 .rd-row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
 
 /* ---- the side bar (1024 and up) and the sheet (under it) ---- */

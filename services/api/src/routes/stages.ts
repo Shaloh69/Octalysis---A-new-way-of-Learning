@@ -449,6 +449,47 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
   });
 
   /* ----------------------------------------------------------
+   * POST /api/v1/stages/:id/read  -- an UNGRADED stage read to its end
+   *
+   * Instructor, 5 Oct 2026: "if orientation is done reading, automatically
+   * mark it as mastered then move to the next stage". Orientation (00) is the
+   * one ungraded stage: it has no questions, so reading it is the whole of it.
+   * The server records it (the state a student sees is the database's) and
+   * names the next stage by curriculum order. A graded stage is refused: its
+   * mastery is its moons', and reading never stands in for them. Idempotent.
+   * -------------------------------------------------------- */
+  app.post(
+    "/api/v1/stages/:id/read",
+    { config: { rateLimit: { max: 20 * app.limitScale, timeWindow: "1 minute" } } },
+    async (req) => {
+      const id = await identityFrom(req, env);
+      const stageId = (req.params as { id: string }).id;
+      if (!/^\d{2}$/.test(stageId)) throw errors.notFound("That stage does not exist.");
+      if (!id.studentId) throw errors.forbidden("Your account is not linked to a student ID.");
+
+      const { rows } = await app.db.query<{ gradeable: boolean; published: boolean; unlocked: boolean; next: string | null }>(
+        `select s.gradeable, s.published, is_stage_unlocked($1, s.id) as unlocked,
+                (select n.id from stages n where n.published and n.ordinal > s.ordinal
+                  order by n.ordinal limit 1) as next
+           from stages s where s.id = $2`,
+        [id.userId, stageId],
+      );
+      const stage = rows[0];
+      if (!stage || !stage.published) throw errors.notFound("That stage does not exist.");
+      if (!stage.unlocked) throw errors.forbidden("This stage is locked.");
+      if (stage.gradeable) throw errors.conflict("A graded stage is mastered through its moons, not by reading it.");
+
+      await app.db.query(
+        `insert into stage_progress (user_id, stage_id, mastery, attempts, last_seen_at)
+         values ($1, $2, 1, 0, now())
+         on conflict (user_id, stage_id) do update set mastery = 1, last_seen_at = now()`,
+        [id.userId, stageId],
+      );
+      return { stageId, state: "mastered" as const, next: stage.next };
+    },
+  );
+
+  /* ----------------------------------------------------------
    * GET /api/v1/progress  -- the 7x3 competency grid + depth
    * -------------------------------------------------------- */
   app.get("/api/v1/progress", async (req, reply) => {

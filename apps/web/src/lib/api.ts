@@ -209,6 +209,16 @@ export const api = {
    * questions. The server decides the lock and finds or begins the journey;
    * answering and submitting use the ordinary attempt calls.
    */
+  /**
+   * An UNGRADED stage read to its end (instructor, 5 Oct 2026): the server
+   * records it mastered and names the next stage. A graded stage is refused.
+   */
+  readStage: (stageId: string) =>
+    request<{ stageId: string; state: "mastered"; next: string | null }>(
+      `/api/v1/stages/${encodeURIComponent(stageId)}/read`,
+      { method: "POST" },
+    ),
+
   startJourney: (objectiveId: string) =>
     request<StartedPaper & { objectiveId: string }>(
       `/api/v1/objectives/${encodeURIComponent(objectiveId)}/journey`,

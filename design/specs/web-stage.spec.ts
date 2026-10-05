@@ -9,7 +9,7 @@ import {
   recordedMotion,
   unreachableByKeyboard,
 } from "./_gate.ts";
-import { openStage, realStage, S004 } from "./_stage-fixture.ts";
+import { openStage, realStage, S004, type StageBody } from "./_stage-fixture.ts";
 import { forcePlanetBiome } from "./_realm-fixture.ts";
 
 /** Ruling 2 (30 Sep 2026): no variants; a planet is one of seven biomes. */
@@ -264,6 +264,85 @@ test.describe("leaving, and what finishes a stage", () => {
     });
     await expect(page.getByRole("button", { name: "Go to Stage 07 Check", exact: true })).toBeDisabled();
     await expect(page.locator("[data-check]")).toContainText(/used every attempt/);
+  });
+});
+
+/*
+ * Instructor, 5 Oct 2026: "if orientation is done reading, automatically mark
+ * it as mastered then move to the next stage". The write is the API's
+ * (services/api/test/orientation.spec.ts holds it, denials first); here the
+ * POST is stood in for, so the shared demo fixture is never changed by a run.
+ */
+test.describe("Orientation, read to its end (instructor, 5 Oct 2026)", () => {
+  const fresh = (b: StageBody): StageBody => ({ ...b, state: "available", mastery: 0 });
+  async function answerRead(page: Page, status = 200): Promise<{ calls: number }> {
+    const seen = { calls: 0 };
+    await page.route(/\/api\/v1\/stages\/00\/read$/, async (route) => {
+      seen.calls++;
+      await route.fulfill(
+        status === 200
+          ? { status, contentType: "application/json", body: JSON.stringify({ stageId: "00", state: "mastered", next: "01" }) }
+          : { status, contentType: "application/json", body: JSON.stringify({ error: { code: "internal", message: "Something went wrong on our side. Try again." } }) },
+      );
+    });
+    return seen;
+  }
+
+  test("reaching the end records it, says so, and carries the student to Stage 01", async ({ page }) => {
+    const seen = await answerRead(page);
+    await openStage(page, "00", { patch: fresh });
+    await expect(page.locator("[data-finish]")).toHaveAttribute("data-finish", "reading");
+    await page.locator("[data-end]").scrollIntoViewIfNeeded();
+    const finish = page.locator("[data-finish]");
+    await expect(finish).toHaveAttribute("data-finish", "done");
+    await expect(finish.getByRole("status")).toContainText(/Stage 00 is mastered\. Taking you to Stage 01 in \d+s/);
+    await expect(page.locator("[data-toaster]")).toContainText("mastered");
+    await expect(page).toHaveURL(/\/app\/stage\/01$/, { timeout: 9_000 });
+    expect(seen.calls, "recorded once").toBe(1);
+  });
+
+  test("Stay here stops the carry; the way on stays offered", async ({ page }) => {
+    await answerRead(page);
+    await openStage(page, "00", { patch: fresh });
+    await page.locator("[data-end]").scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: "Stay here" }).click();
+    await expect(page.locator("[data-finish] [role=status]")).toContainText("Staying here");
+    await page.waitForTimeout(6_000);
+    await expect(page).toHaveURL(/\/app\/stage\/00$/);
+    await expect(page.getByRole("link", { name: /Go to Stage 01/ })).toBeVisible();
+  });
+
+  test("a stage already mastered is never recorded again, and never carries anyone off", async ({ page }) => {
+    const seen = await answerRead(page);
+    await openStage(page, "00", { patch: (b) => ({ ...b, state: "mastered", mastery: 1 }) });
+    await page.locator("[data-end]").scrollIntoViewIfNeeded();
+    await expect(page.locator("[data-finish] [role=status]")).toContainText("Stage 00 is mastered.");
+    await page.waitForTimeout(6_000);
+    await expect(page).toHaveURL(/\/app\/stage\/00$/);
+    expect(seen.calls).toBe(0);
+  });
+
+  test("a record that fails says so, stays, and offers Try again", async ({ page }) => {
+    await answerRead(page, 500);
+    await openStage(page, "00", { patch: fresh });
+    await page.locator("[data-end]").scrollIntoViewIfNeeded();
+    await expect(page.locator("[data-finish]")).toHaveAttribute("data-finish", "failed");
+    await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+    await expect(page.locator("[data-toaster] [role=alert]")).toContainText("was not recorded");
+  });
+
+  test("a graded stage has none of it: its moons master it", async ({ page }) => {
+    await openStage(page, "06");
+    await expect(page.locator("[data-finish]")).toHaveCount(0);
+  });
+
+  test("captures: the finish, at both widths", async ({ page }, info) => {
+    await answerRead(page);
+    await openStage(page, "00", { patch: fresh });
+    await page.locator("[data-end]").scrollIntoViewIfNeeded();
+    await expect(page.locator("[data-finish]")).toHaveAttribute("data-finish", "done");
+    const s = wide(info) ? "" : "-380";
+    await page.screenshot({ path: `design/templates/web/stage/current-orientation-done${s}.png` });
   });
 });
 
