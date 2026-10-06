@@ -1611,6 +1611,12 @@ captures. Range: `46ac563`..`c7afc04` (18 commits).
    self-service path is verified on the deployment. Supabase's built-in sender
    allows only a few emails an hour; a custom SMTP is the fix if a class needs
    more.
+12. **Listen's voice (instructor: "horrible"), fixed the same evening**
+   (`bbe05f6`): the most natural English voice chosen, a Voice choice, whole
+   paragraphs per utterance, symbols as words, and the reading mark redrawn as
+   a soft panel (instructor: "too close to the paragraph"). **MP3s from Google
+   Cloud TTS ruled next**; the plan is in docs/FIGURES-AND-AUDIO.md and waits
+   for the instructor's API key (server-side only).
 10. **Prelim still NOT runnable:** deployment stage 01 has 13 live, 2 at
    review, 2 retired; 02-04 have none live (81 at review).
 

@@ -58,9 +58,13 @@ services/api/.submit-stale.tmp.ts.
 
 The work, in order:
 
-1. Ask the instructor once: approve docs/AI-ASSISTANT-PLAN.md, and which
-   machine runs it. (The students' email reset is fully verified on the
-   deployment, delivery included: NEXT-SESSION 0zc.11.)
+1. Ask the instructor once, together: approve docs/AI-ASSISTANT-PLAN.md, and
+   which machine runs it; and for the Google Cloud Text-to-Speech API key
+   (ruled 6 Oct: the audiobook's MP3s come from it; server-side only, the
+   root .env and Render). With the key, build the MP3s first, by the plan in
+   docs/FIGURES-AND-AUDIO.md (schema pushed before code, approved text only,
+   through the reader's page gate). The email reset is fully verified
+   (NEXT-SESSION 0zc.11).
 2. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: one throwaway
    student (ask before creating it, as for the chat), sit a stage check,
    leave full screen, and see the paper handed in with its reason on the
