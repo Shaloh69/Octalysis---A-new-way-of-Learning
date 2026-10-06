@@ -1556,6 +1556,13 @@ pipeline (schema, sync, API, tests), `2e78512` figures in the reader and on
    the open dialog, or an aria-live region inside DialogContent), on its own gate.
 5. **Not yet on the deployment:** the chapter drafts 10-13 and the three figures. DONE 6 Oct: synced (dry run first), 08-13 drafts and 3 figures wait on /content. NOT seen on the deployed console by me: no deployed URL is recorded in the repo; the hosts build from main (Render, Vercel), so the figure code should be live there.
    `sync-content` against the deployment, dry run first, is still owed.
+7. **Plan changed (instructor, 6 Oct): authoring stops at chapter 12.** 13's
+   draft predates the ruling and waits unapproved (withdraw it only if asked);
+   14-18 stay planned stubs. Order now: reread 01-12 for figures, questions
+   09-12, audiobook, then the "Octalysis AI" proposal (analysed in
+   `docs/AI-ASSISTANT-PROPOSAL.md`: not buildable as written; a local,
+   staff-only drafting assistant feeding the existing gates is the alternative),
+   then R5. `docs/FIGURES-AND-AUDIO.md` ruling 4 holds the order.
 6. **Prelim still NOT runnable** on 6 Oct: on the deployment stage 01's 15 items
    are live (the instructor began approving on 5 Oct), 02-04's 81 are at review.
 

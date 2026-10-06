@@ -20,6 +20,15 @@ an audiobook feature."
 3. **Order: the figure pipeline first**, then the lesson text of chapters 13-18
    written with their figures in one pass, then a reread of 01-12 to add theirs,
    then the questions for 09-18, then the audiobook, then R5.
+4. **Revised, instructor, 6 Oct 2026: "stop all authoring only until chapter 12,
+   don't pursue the rest."** Lesson text is drafted for 08-12 and no further.
+   Chapter 13's draft (with two figures) was already written and synced before
+   this ruling, and waits unapproved on /content; whether to withdraw it is the
+   instructor's call. 14-18 keep their planned stubs. The work order is now:
+   (a) the reread of 01-12 to add figures; (b) questions for 09-12 only, at
+   review; (c) the audiobook; (d) **the "Octalysis AI" proposal, analysed in
+   `docs/AI-ASSISTANT-PROPOSAL.md`**: decide it, and build only the local drafting
+   assistant if approved; (e) R5.
 
 ## Figures — how they work
 
