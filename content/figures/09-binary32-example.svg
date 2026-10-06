@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 190">
+  <title>Minus 6.25 as a binary32 word, bit by bit</title>
+  <desc>Thirty-two bit cells. The first is the sign, 1, so the number is negative. The next eight are the biased exponent, 1000 0001, which is 129; minus the bias of 127 that is 2. The last twenty-three are the fraction, 1001 followed by zeros; with the implied leading 1 the significand is 1.1001 in binary. So the value is minus 1.1001 binary times 2 to the 2, which is minus 110.01 binary, minus 6.25. In hexadecimal the word is C0C80000.</desc>
+  <rect x="12" y="40" width="13" height="30" class="fig-accent"/>
+  <text x="18.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <rect x="25" y="40" width="13" height="30" class="fig-box"/>
+  <text x="31.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <rect x="38" y="40" width="13" height="30" class="fig-box"/>
+  <text x="44.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="51" y="40" width="13" height="30" class="fig-box"/>
+  <text x="57.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="64" y="40" width="13" height="30" class="fig-box"/>
+  <text x="70.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="77" y="40" width="13" height="30" class="fig-box"/>
+  <text x="83.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="90" y="40" width="13" height="30" class="fig-box"/>
+  <text x="96.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="103" y="40" width="13" height="30" class="fig-box"/>
+  <text x="109.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="116" y="40" width="13" height="30" class="fig-box"/>
+  <text x="122.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <rect x="129" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="135.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <rect x="142" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="148.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="155" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="161.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="168" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="174.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <rect x="181" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="187.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="194" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="200.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="207" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="213.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="220" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="226.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="233" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="239.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="246" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="252.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="259" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="265.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="272" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="278.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="285" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="291.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="298" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="304.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="311" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="317.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="324" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="330.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="337" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="343.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="350" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="356.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="363" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="369.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="376" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="382.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="389" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="395.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="402" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="408.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <rect x="415" y="40" width="13" height="30" class="fig-fill"/>
+  <text x="421.5" y="61" font-size="14" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <path d="M13 76 L13 82 L24 82 L24 76" class="fig-line" stroke-width="1.5"/>
+  <path d="M26 76 L26 82 L128 82 L128 76" class="fig-line" stroke-width="1.5"/>
+  <path d="M130 76 L130 82 L427 82 L427 76" class="fig-line" stroke-width="1.5"/>
+  <text x="12" y="28" font-size="14" class="fig-muted">sign</text>
+  <text x="77" y="28" font-size="14" text-anchor="middle" class="fig-muted">exponent</text>
+  <text x="278.5" y="28" font-size="14" text-anchor="middle" class="fig-muted">fraction</text>
+  <text x="12" y="104" font-size="14" class="fig-ink">negative</text>
+  <text x="77" y="122" font-size="14" text-anchor="middle" class="fig-ink"><tspan class="fig-mono">129 − 127 = 2</tspan></text>
+  <text x="278.5" y="104" font-size="14" text-anchor="middle" class="fig-ink">1<tspan class="fig-mono">.1001</tspan> (the 1 is implied)</text>
+  <text x="12" y="160" font-size="14" class="fig-ink"><tspan class="fig-mono">−1.1001₂ × 2² = −110.01₂ = −6.25</tspan></text>
+  <text x="12" y="182" font-size="14" class="fig-muted">in hexadecimal: <tspan class="fig-mono">C0C80000</tspan></text>
+</svg>

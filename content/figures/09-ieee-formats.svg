@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 250">
+  <title>The three IEEE 754 basic binary formats</title>
+  <desc>Three bars, one per format, each divided into a sign bit, an exponent field and a significand field, the exponent and significand drawn in proportion within each bar. binary32: 1 sign bit, 8 exponent bits, 23 significand bits. binary64: 1, 11 and 52. binary128: 1, 15 and 112. The sign bit is drawn wider than its share so that it can be seen.</desc>
+  <text x="28" y="24" font-size="14" text-anchor="middle" class="fig-muted">sign</text>
+  <text x="15" y="50" font-size="14" font-weight="600" class="fig-ink fig-mono">binary32</text>
+  <rect x="15" y="58" width="26" height="34" class="fig-accent"/>
+  <rect x="41" y="58" width="99.1" height="34" class="fig-box"/>
+  <rect x="140.1" y="58" width="284.9" height="34" class="fig-fill"/>
+  <text x="28" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <text x="90.5" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">8</text>
+  <text x="282.5" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">23</text>
+  <text x="90.5" y="24" font-size="14" text-anchor="middle" class="fig-muted">exponent</text>
+  <text x="282.5" y="24" font-size="14" text-anchor="middle" class="fig-muted">significand (fraction)</text>
+  <text x="15" y="116" font-size="14" font-weight="600" class="fig-ink fig-mono">binary64</text>
+  <rect x="15" y="124" width="26" height="34" class="fig-accent"/>
+  <rect x="41" y="124" width="67.0" height="34" class="fig-box"/>
+  <rect x="108.0" y="124" width="317.0" height="34" class="fig-fill"/>
+  <text x="28" y="146" font-size="14" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <text x="74.5" y="146" font-size="14" text-anchor="middle" class="fig-ink fig-mono">11</text>
+  <text x="266.5" y="146" font-size="14" text-anchor="middle" class="fig-ink fig-mono">52</text>
+  <text x="15" y="182" font-size="14" font-weight="600" class="fig-ink fig-mono">binary128</text>
+  <rect x="15" y="190" width="26" height="34" class="fig-accent"/>
+  <rect x="41" y="190" width="45.4" height="34" class="fig-box"/>
+  <rect x="86.4" y="190" width="338.6" height="34" class="fig-fill"/>
+  <text x="28" y="212" font-size="14" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <text x="63.7" y="212" font-size="14" text-anchor="middle" class="fig-ink fig-mono">15</text>
+  <text x="255.7" y="212" font-size="14" text-anchor="middle" class="fig-ink fig-mono">112</text>
+  <text x="15" y="246" font-size="14" class="fig-muted">bits in each field</text>
+</svg>
