@@ -1554,7 +1554,7 @@ pipeline (schema, sync, API, tests), `2e78512` figures in the reader and on
    dialog is open is on screen but NOT announced to a screen reader (/items
    decisions, a figure approved on /items). Fix in the toaster (portal it into
    the open dialog, or an aria-live region inside DialogContent), on its own gate.
-5. **Not yet on the deployment:** the chapter drafts 10-13 and the four figures.
+5. **Not yet on the deployment:** the chapter drafts 10-13 and the three figures. DONE 6 Oct: synced (dry run first), 08-13 drafts and 3 figures wait on /content. NOT seen on the deployed console by me: no deployed URL is recorded in the repo; the hosts build from main (Render, Vercel), so the figure code should be live there.
    `sync-content` against the deployment, dry run first, is still owed.
 6. **Prelim still NOT runnable** on 6 Oct: on the deployment stage 01's 15 items
    are live (the instructor began approving on 5 Oct), 02-04's 81 are at review.
