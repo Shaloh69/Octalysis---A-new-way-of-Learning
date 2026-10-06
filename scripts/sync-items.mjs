@@ -63,10 +63,12 @@ const TYPES = new Set(["S", "P", "G"]);
  * A copy here would let the bank and the flag disagree, which is the exact
  * failure `scope.spec.ts` exists to prevent on the other side.
  */
-async function examinableThrough() {
+async function bankThrough() {
   const src = await readFile(SCOPE_TS, "utf8");
-  const m = src.match(/EXAMINABLE_THROUGH_STAGE\s*=\s*"(\d{2})"/);
-  if (!m) throw new Error("Could not read EXAMINABLE_THROUGH_STAGE from scope.ts");
+  // The BANK's reach, not the exams' (6 Oct 2026): questions for 09-12 may be
+  // authored and reviewed while every exam still stops at EXAMINABLE_THROUGH_STAGE.
+  const m = src.match(/BANK_THROUGH_STAGE\s*=\s*"(\d{2})"/);
+  if (!m) throw new Error("Could not read BANK_THROUGH_STAGE from scope.ts");
   return m[1];
 }
 
@@ -117,8 +119,8 @@ function validateShape(files, solvers, through) {
   for (const f of files) {
     if (f.stage > through) {
       errors.push(
-        `${f.name}: stage ${f.stage} is beyond the examinable scope (through ${through}). ` +
-          `Widen EXAMINABLE_THROUGH_STAGE in scope.ts first, and only once the bank covers it.`,
+        `${f.name}: stage ${f.stage} is beyond the item bank's reach (through ${through}). ` +
+          `Raise BANK_THROUGH_STAGE in scope.ts first: it is the instructor's call.`,
       );
       continue;
     }
@@ -195,7 +197,7 @@ async function main() {
   const check = process.argv.includes("--check");
   console.log(c.bold("\nOCTA -- item bank\n"));
 
-  const through = await examinableThrough();
+  const through = await bankThrough();
   const solvers = await registeredSolvers();
   const files = await loadFiles();
 

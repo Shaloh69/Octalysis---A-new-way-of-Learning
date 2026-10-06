@@ -9,7 +9,7 @@ import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
 import { withTransaction } from "../db.js";
 import { resolveItem, type BankItem } from "../engine/resolve.js";
-import { EXAMINABLE_THROUGH_STAGE, isStageExaminable } from "../engine/scope.js";
+import { BANK_THROUGH_STAGE, isStageInBank } from "../engine/scope.js";
 import { listSolvers } from "../engine/solvers.js";
 import {
   countActions, planImport, toAuthored, type ExistingItem, type PlannedRow, type RowFields,
@@ -176,8 +176,8 @@ async function planAgainstBank(
     ),
     objectives: new Map(objectives.rows.map((r) => [r.id as string, r.stage_id as string])),
     solvers: new Set(listSolvers(env.ENGINE_VERSION).map((s) => s.id)),
-    examinable: isStageExaminable,
-    examinableThrough: EXAMINABLE_THROUGH_STAGE,
+    inBank: isStageInBank,
+    bankThrough: BANK_THROUGH_STAGE,
   });
 }
 

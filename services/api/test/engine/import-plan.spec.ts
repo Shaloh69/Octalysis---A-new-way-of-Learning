@@ -51,8 +51,8 @@ function ctx(existing: ExistingItem[] = []): PlanContext {
       ["04.1", "04"], ["04.3", "04"], ["04.4", "04"], ["01.1", "01"],
     ]),
     solvers: new Set(["amat"]),
-    examinable: (s) => s <= "08",
-    examinableThrough: "08",
+    inBank: (s) => s <= "12",
+    bankThrough: "12",
   };
 }
 const plan = (items: AuthoredItem[], c = ctx(), stageId = "04") =>
@@ -106,9 +106,9 @@ describe("validity — the same rules as sync-items.mjs", () => {
     expect(reasons([{ ...G, order: ["a", "b", "a"] }])).toContain("duplicate steps");
   });
 
-  it("the stage must be inside the examinable scope, and must be given", () => {
+  it("the stage must be inside the bank's reach, and must be given", () => {
     expect(reasons([{ ...S, objective: "15.1" }], ctx(), "15")).toContain(
-      "beyond the examinable scope (through 08)",
+      "beyond the item bank's reach (through 12)",
     );
     const noStage = planImport({ items: [S] }, ctx());
     expect(noStage[0]!.reasons.join(" ")).toContain("no stage");

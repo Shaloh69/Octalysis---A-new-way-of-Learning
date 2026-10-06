@@ -35,8 +35,21 @@
  * governs.
  */
 
-/** The last stage the authored item bank covers. Stage ids are zero-padded. */
+/** The last stage the EXAMS cover. Stage ids are zero-padded. */
 export const EXAMINABLE_THROUGH_STAGE = "08";
+
+/**
+ * The last stage the item BANK may hold questions for (instructor, 6 Oct 2026:
+ * questions for stages 09-12 are drafted from the textbook and approved on
+ * /items; "stop all authoring only until chapter 12").
+ *
+ * Deliberately wider than EXAMINABLE_THROUGH_STAGE. A question for stage 10 may
+ * be authored, imported, reviewed and approved, but no exam and no stage check
+ * samples it until the exam scope is widened by its own commit, because
+ * `sync-assessments` and the blueprints still read EXAMINABLE_THROUGH_STAGE.
+ * Authoring the bank and offering an exam on it are two decisions, made apart.
+ */
+export const BANK_THROUGH_STAGE = "12";
 
 /** Grading periods the bank can currently fill. Act == grading period. */
 export const EXAMINABLE_ACTS: readonly number[] = [1, 2];
@@ -66,6 +79,11 @@ export const DEFERRED_BLUEPRINTS: readonly string[] = [
  */
 export function isStageExaminable(stageId: string): boolean {
   return stageId <= EXAMINABLE_THROUGH_STAGE;
+}
+
+/** May the item bank hold questions for this stage? (Never the same question as "is it examined?") */
+export function isStageInBank(stageId: string): boolean {
+  return stageId <= BANK_THROUGH_STAGE;
 }
 
 /** Is this grading period inside the authored bank? */

@@ -570,13 +570,13 @@ describe("import: a dry run first, drafts only, and never a live item", () => {
     expect(await count("select count(*) n from items"), "all or nothing").toBe(items0);
   });
 
-  it("refuses a stage beyond the examinable scope", async () => {
+  it("refuses a stage beyond the item bank's reach (stage 15; the bank stops at 12)", async () => {
     const res = await app.inject({
       method: "POST", url: "/api/v1/console/items/import", headers: auth(teacherToken),
       payload: { dryRun: true, file: { stageId: "15", items: [{ ...NEW_S, objective: "15.1" }] } },
     });
     expect(res.json().rows[0].action).toBe("invalid");
-    expect(res.json().rows[0].reasons.join(" ")).toContain("beyond the examinable scope");
+    expect(res.json().rows[0].reasons.join(" ")).toContain("beyond the item bank's reach");
   });
 
   it("commits new items as DRAFTS authored by the importer, with the source audited", async () => {

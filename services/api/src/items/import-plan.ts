@@ -56,8 +56,9 @@ export interface PlanContext {
   /** objective id -> the stage it belongs to. */
   objectives: ReadonlyMap<string, string>;
   solvers: ReadonlySet<string>;
-  examinable: (stageId: string) => boolean;
-  examinableThrough: string;
+  /** May the bank hold this stage's questions? scope.ts `isStageInBank`, not the exams' reach. */
+  inBank: (stageId: string) => boolean;
+  bankThrough: string;
 }
 
 export interface PlannedRow extends ItemImportRow {
@@ -155,9 +156,9 @@ function shapeErrors(it: AuthoredItem, stageId: string | null, ctx: PlanContext)
 
   if (!stageId) {
     e.push("no stage: give the file a stageId, or each item one");
-  } else if (!ctx.examinable(stageId)) {
+  } else if (!ctx.inBank(stageId)) {
     e.push(
-      `stage ${stageId} is beyond the examinable scope (through ${ctx.examinableThrough})`,
+      `stage ${stageId} is beyond the item bank's reach (through ${ctx.bankThrough})`,
     );
   }
 

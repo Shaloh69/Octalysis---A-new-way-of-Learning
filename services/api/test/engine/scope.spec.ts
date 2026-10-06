@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, it, expect, afterAll } from "vitest";
 import { pool, closePool } from "../helpers/rls.js";
 import {
+  BANK_THROUGH_STAGE,
   DEFERRED_BLUEPRINTS,
   EXAMINABLE_ACTS,
   EXAMINABLE_BLUEPRINTS,
@@ -10,6 +11,7 @@ import {
   isActExaminable,
   isBlueprintExaminable,
   isStageExaminable,
+  isStageInBank,
 } from "../../src/engine/scope.js";
 
 /**
@@ -126,5 +128,40 @@ describe("examinable scope", () => {
   it("the two scope lists do not overlap", () => {
     const overlap = EXAMINABLE_BLUEPRINTS.filter((n) => DEFERRED_BLUEPRINTS.includes(n));
     expect(overlap).toEqual([]);
+  });
+});
+
+/*
+ * The bank's reach and the exams' reach are two decisions (instructor, 6 Oct
+ * 2026). Questions for 09-12 may be drafted and approved; no exam or stage
+ * check may sample them until EXAMINABLE_THROUGH_STAGE is widened on its own.
+ */
+describe("the bank reaches further than the exams, and only the bank", () => {
+  it("the bank reaches at least as far as the exams", () => {
+    expect(BANK_THROUGH_STAGE >= EXAMINABLE_THROUGH_STAGE).toBe(true);
+  });
+
+  it("the bank stops at chapter 12, by the instructor's ruling", () => {
+    expect(BANK_THROUGH_STAGE).toBe("12");
+    expect(isStageInBank("12")).toBe(true);
+    expect(isStageInBank("13")).toBe(false);
+  });
+
+  it("a stage in the bank is not thereby examined: 09 to 12 stay out of every exam", () => {
+    for (const s of ["09", "10", "11", "12"]) {
+      expect(isStageInBank(s)).toBe(true);
+      expect(isStageExaminable(s)).toBe(false);
+    }
+  });
+
+  it("what creates exams and stage checks reads the EXAMS' reach, never the bank's", () => {
+    const src = readFileSync(resolve(__dirname, "../../../../scripts/sync-assessments.mjs"), "utf8");
+    expect(src).toMatch(/EXAMINABLE_THROUGH_STAGE/);
+    expect(src).not.toMatch(/BANK_THROUGH_STAGE/);
+  });
+
+  it("what imports questions reads the bank's reach", () => {
+    const src = readFileSync(resolve(__dirname, "../../../../scripts/sync-items.mjs"), "utf8");
+    expect(src).toMatch(/BANK_THROUGH_STAGE/);
   });
 });
