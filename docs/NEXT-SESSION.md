@@ -1563,6 +1563,19 @@ pipeline (schema, sync, API, tests), `2e78512` figures in the reader and on
    `docs/AI-ASSISTANT-PROPOSAL.md`: not buildable as written; a local,
    staff-only drafting assistant feeding the existing gates is the alternative),
    then R5. `docs/FIGURES-AND-AUDIO.md` ruling 4 holds the order.
+8. **Figures reread done for 01-12** (6 Oct), 17 figures in all, each drawn,
+   previewed at 380 and 1440 with `scripts/.figure-preview.tmp.mjs` (scratch,
+   untracked) and opened: 01 top-level structure, 02 Amdahl chart, 03 instruction
+   cycle states, 04 address fields, 05 Hamming circles, 06 disk layouts, 07 I/O
+   timelines, 08 process states + paging, 09 IEEE formats + -6.25, 10
+   instruction format, 11 x86 format, 12 pipeline timing + branch penalty, 13
+   register windows + graph colouring. **All synced to the deployment** (dry run
+   first): 17 figures at draft, 0 served; 01-07's figure blocks are live but
+   hidden until each figure is approved. The deployed API is
+   https://octa-api-noq2.onrender.com (instructor, 6 Oct); it runs the figure
+   code (its figure route answers 401, an unknown route 404).
+   Stage 05 keeps its ASCII Venn sketch until 05-hamming-venn is approved; then
+   delete the sketch (a data-only change).
 6. **Prelim still NOT runnable** on 6 Oct: on the deployment stage 01's 15 items
    are live (the instructor began approving on 5 Oct), 02-04's 81 are at review.
 
