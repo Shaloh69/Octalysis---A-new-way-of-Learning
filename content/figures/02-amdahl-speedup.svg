@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 300">
+  <title>Amdahl's law: speedup against the number of processors</title>
+  <desc>Speedup on the vertical axis, 0 to 20, against the number of processors N on the horizontal axis, 1 to 64, doubling at each step. Three curves for three parallel fractions f, computed from speedup = 1 / ((1 - f) + f / N). With f = 0.95 the speedup reaches about 15.4 on 64 processors and can never pass 20. With f = 0.9 it reaches about 8.8 and can never pass 10. With f = 0.5 it barely moves, about 2.0, never passing 2. The point for the worked example, f = 0.95 on 8 processors, is marked: 5.93 times.</desc>
+  <line x1="56" y1="250.0" x2="360" y2="250.0" class="fig-line" stroke-width="1.5"/>
+  <text x="48" y="255.0" font-size="14" text-anchor="end" class="fig-muted fig-mono">0</text>
+  <line x1="56" y1="197.7" x2="360" y2="197.7" class="fig-line" stroke-width="0.5" stroke-dasharray="2 4"/>
+  <text x="48" y="202.7" font-size="14" text-anchor="end" class="fig-muted fig-mono">5</text>
+  <line x1="56" y1="145.5" x2="360" y2="145.5" class="fig-line" stroke-width="0.5" stroke-dasharray="2 4"/>
+  <text x="48" y="150.5" font-size="14" text-anchor="end" class="fig-muted fig-mono">10</text>
+  <line x1="56" y1="93.2" x2="360" y2="93.2" class="fig-line" stroke-width="0.5" stroke-dasharray="2 4"/>
+  <text x="48" y="98.2" font-size="14" text-anchor="end" class="fig-muted fig-mono">15</text>
+  <line x1="56" y1="40.9" x2="360" y2="40.9" class="fig-line" stroke-width="0.5" stroke-dasharray="2 4"/>
+  <text x="48" y="45.9" font-size="14" text-anchor="end" class="fig-muted fig-mono">20</text>
+  <text x="56.0" y="270" font-size="14" text-anchor="middle" class="fig-muted fig-mono">1</text>
+  <text x="106.7" y="270" font-size="14" text-anchor="middle" class="fig-muted fig-mono">2</text>
+  <text x="157.3" y="270" font-size="14" text-anchor="middle" class="fig-muted fig-mono">4</text>
+  <text x="208.0" y="270" font-size="14" text-anchor="middle" class="fig-muted fig-mono">8</text>
+  <text x="258.7" y="270" font-size="14" text-anchor="middle" class="fig-muted fig-mono">16</text>
+  <text x="309.3" y="270" font-size="14" text-anchor="middle" class="fig-muted fig-mono">32</text>
+  <text x="360.0" y="270" font-size="14" text-anchor="middle" class="fig-muted fig-mono">64</text>
+  <text x="208" y="292" font-size="14" text-anchor="middle" class="fig-muted">processors, N</text>
+  <text x="14" y="16" font-size="14" class="fig-muted">speedup</text>
+  <polyline points="56.0,239.5 106.7,230.1 157.3,213.6 208.0,188.0 258.7,154.4 309.3,118.8 360.0,88.8" class="fig-accent-line" stroke-width="2.5"/>
+  <text x="368" y="93.8" font-size="14" class="fig-ink fig-mono">f = 0.95</text>
+  <polyline points="56.0,239.5 106.7,231.0 157.3,217.8 208.0,200.8 258.7,183.1 309.3,168.4 360.0,158.3" class="fig-line" stroke-width="2.5"/>
+  <text x="368" y="163.3" font-size="14" class="fig-ink fig-mono">f = 0.9</text>
+  <polyline points="56.0,239.5 106.7,236.1 157.3,233.3 208.0,231.4 258.7,230.3 309.3,229.7 360.0,229.4" class="fig-line" stroke-width="2.5" stroke-dasharray="6 4"/>
+  <text x="368" y="234.4" font-size="14" class="fig-ink fig-mono">f = 0.5</text>
+  <circle cx="208.0" cy="188.0" r="5" class="fig-accent"/>
+  <text x="198.0" y="176.0" font-size="14" text-anchor="end" class="fig-ink fig-mono">5.93×</text>
+</svg>
