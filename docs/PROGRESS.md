@@ -19,6 +19,16 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**7 Oct 2026 (late):** phase report **238/245 (97%)**, unchanged; live R3
+87/88, R4 46/48, R5 20/24, every open box a person's. The assistant's B1 and
+B2 are built: the figure reader reads all 380 figures of the book (381 crops,
+coverage clean, chart data checked against two formulas), and the schema
+(seven `assistant_*` tables, owner-only, accepted units frozen, sealed keys,
+local Ollama paused in the database) is on the deployment with 48 denial
+tests watched red. B0 online still waits on the instructor's engine keys
+(none in `.env`). Prelim NOT runnable (deployment: stage 01 13 live, 02-04
+none). Detail: NEXT-SESSION.md 0zf.
+
 **7 Oct 2026 (night):** phase report **238/245 (97%)**; live R3 87/88, R4
 46/48, R5 20/24. Ruling 4 verified on the deployment in a real browser
 (full-screen exit and reload each hand the paper in and are recorded); the

@@ -1526,6 +1526,45 @@ left, or needing a decision:
 
 ---
 
+## 0zf. The assistant's B1 (figure reader) and B2 (schema) — 7 Oct 2026 (late)
+
+Pushed: `8c92748` B1, `24051ab` B2, then this session's docs commit. Phase
+report **238/245, 97%**, unchanged (the assistant is outside the R boxes);
+live R3 87/88, R4 46/48, R5 20/24, every open box a person's.
+
+1. **B0 online did not run: no engine key is in the root `.env`** (names
+   checked: `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`, `GROQ_API_KEY`,
+   `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, all absent). Asked for
+   in the closing message. `scripts/.b0-cloud.tmp.py` has still never run.
+2. **B1 built** (`tools/assistant/figures/`, plan §9 has the numbers):
+   **380 figures, 381 crops (6.6 continues), coverage clean**; all 21
+   contact sheets opened and looked at; chart data checked against two
+   formulas (2.4 Amdahl within 0.3%, 4.22 within 0.03 decades). 16 tests,
+   mypy strict. `pnpm book:figures <dir outside the repo>`, `pnpm
+   test:assistant`. Crops live only in the session scratchpad: NOT uploaded.
+3. **B2 built and ON THE DEPLOYMENT** (`db/addendum-assistant.sql`, the
+   eleventh file): seven `assistant_*` tables and the private
+   `assistant-figures` bucket. Checked there: RLS on, one policy each, the
+   bucket private, `as_own_key` and `as_local_ollama_paused` present,
+   invariants 0 failures. 48 denial tests watched red twice
+   (`services/api/test/assistant-rls.spec.ts`); `pnpm verify` green, API 951.
+   **The keys table carries a deny-all policy, not zero policies**: the rules
+   file said "no policy", hard rule 3 and INV-02 say at least one; the
+   `assessment_secrets` pattern satisfies both, and the rules file now says so.
+4. **Parked, found in passing (not this session's work):**
+   - `scripts/extract_book.py` **drops the captions of the seven turned
+     pages** (3.7, 3.12, 3.23, 4.15, 4.18, 10.22, 19.12) from
+     `docs/source/book`, and 12.12's hyphen. A lesson quoting those captions
+     has nothing to quote. The reader's PageView (rotation matrix) is the fix.
+   - **`/app/stage/:id/check`, the review at 380**: in
+     `design/templates/web/stage-check/current-handed-in-380.png` the
+     "Reading" bar sits over Question 1's stem. The committed capture
+     (`2404f0e`) shows it too, so it is not new. Either a fixed bar in a
+     full-page capture or a real overlap; that route's session decides,
+     looking at a viewport capture.
+5. **Prelim still NOT runnable** (deployment, checked this session): stage 01
+   13 live, 2 review, 2 retired; 02-04 none live (81 at review).
+
 ## 0ze. Ruling 4 verified live, R5 to 20/24, the assistant re-planned (v5) — 7 Oct 2026 (night)
 
 Pushed, in order: `b7bcede` reload review shows its questions, `0677d0c`
