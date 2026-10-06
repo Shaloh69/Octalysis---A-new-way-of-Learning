@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 270">
+  <title>One 24-bit address split three ways</title>
+  <desc>The same 24-bit address, for a 64 KB cache with 16-byte lines, drawn to scale under three mappings. Direct mapped: an 8-bit tag, a 12-bit line number and a 4-bit word offset. Fully associative: a 20-bit tag and the 4-bit word offset, with no line field. Four-way set associative: a 10-bit tag, a 10-bit set number and the 4-bit word offset. The tag is highlighted in each: it is what the cache must store and compare.</desc>
+  <text x="15" y="22" font-size="14" font-weight="600" class="fig-ink">Direct mapped</text>
+  <rect x="15.0" y="30" width="136.7" height="46" class="fig-accent"/>
+  <text x="83.3" y="50" font-size="14" text-anchor="middle" class="fig-ink">Tag</text>
+  <text x="83.3" y="68" font-size="14" text-anchor="middle" class="fig-muted fig-mono">8</text>
+  <rect x="151.7" y="30" width="205.0" height="46" class="fig-box"/>
+  <text x="254.2" y="50" font-size="14" text-anchor="middle" class="fig-ink">Line</text>
+  <text x="254.2" y="68" font-size="14" text-anchor="middle" class="fig-muted fig-mono">12</text>
+  <rect x="356.7" y="30" width="68.3" height="46" class="fig-box"/>
+  <text x="390.8" y="50" font-size="14" text-anchor="middle" class="fig-ink">Word</text>
+  <text x="390.8" y="68" font-size="14" text-anchor="middle" class="fig-muted fig-mono">4</text>
+  <text x="15" y="107" font-size="14" font-weight="600" class="fig-ink">Fully associative</text>
+  <rect x="15.0" y="115" width="341.7" height="46" class="fig-accent"/>
+  <text x="185.8" y="135" font-size="14" text-anchor="middle" class="fig-ink">Tag</text>
+  <text x="185.8" y="153" font-size="14" text-anchor="middle" class="fig-muted fig-mono">20</text>
+  <rect x="356.7" y="115" width="68.3" height="46" class="fig-box"/>
+  <text x="390.8" y="135" font-size="14" text-anchor="middle" class="fig-ink">Word</text>
+  <text x="390.8" y="153" font-size="14" text-anchor="middle" class="fig-muted fig-mono">4</text>
+  <text x="15" y="192" font-size="14" font-weight="600" class="fig-ink">4-way set associative</text>
+  <rect x="15.0" y="200" width="170.8" height="46" class="fig-accent"/>
+  <text x="100.4" y="220" font-size="14" text-anchor="middle" class="fig-ink">Tag</text>
+  <text x="100.4" y="238" font-size="14" text-anchor="middle" class="fig-muted fig-mono">10</text>
+  <rect x="185.8" y="200" width="170.8" height="46" class="fig-box"/>
+  <text x="271.3" y="220" font-size="14" text-anchor="middle" class="fig-ink">Set</text>
+  <text x="271.3" y="238" font-size="14" text-anchor="middle" class="fig-muted fig-mono">10</text>
+  <rect x="356.7" y="200" width="68.3" height="46" class="fig-box"/>
+  <text x="390.8" y="220" font-size="14" text-anchor="middle" class="fig-ink">Word</text>
+  <text x="390.8" y="238" font-size="14" text-anchor="middle" class="fig-muted fig-mono">4</text>
+  <text x="15" y="262" font-size="14" class="fig-muted">bits in each field, of 24</text>
+</svg>
