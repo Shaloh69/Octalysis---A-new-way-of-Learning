@@ -1526,6 +1526,41 @@ left, or needing a decision:
 
 ---
 
+## 0zd. The drafting assistant re-planned (v2) — 7 Oct 2026
+
+A planning session only: no code, no schema, nothing deployed. The instructor
+answered plan v1: "I want this AI to properly do what you were doing with all
+of the books. Summarising the Figures charts and graphs. And think about more
+features also. Planning first, come back to me first."
+
+1. **docs/AI-ASSISTANT-PLAN.md rewritten as v2, FOR APPROVAL.** It covers the
+   figure reader (crops, exact labels and chart data, no model), figure summaries
+   with a grounding check, redraw by spec through per-kind renderers, lesson
+   text whose quotes are pasted by reference, questions whose keys come from
+   code plus a blind-answer critic, and a local review page. It also lists
+   twelve more features, an engine choice (A local Ollama / B Claude API,
+   recommended / C Claude Code as now), build steps A0-A6, and five decisions
+   (§9).
+2. **Measured 7 Oct:** the book's figures are VECTOR drawings (0 embedded
+   images on the trial pages, 30-65 paths each). Their labels and chart points
+   are exact coordinates, so a chart's data can be read, not estimated by eye.
+   About 355 figure captions and 150 tables across 21 book chapters (1.8 M
+   characters). A throwaway PyMuPDF crop (scratchpad, not in the repo) found
+   2 of 4 figures, and both crops were opened and are clean (Fig 14.10, the
+   pipeline grid; Fig 2.2, processor trends). The two misses were caused by
+   captions set with non-breaking spaces ("Figure 14.10"); A0 must handle
+   them.
+3. **This laptop:** RTX 3050 Laptop GPU with 4 GB VRAM, 16 GB RAM, Python 3.13,
+   no Ollama. A 3-4 B vision model fits; a 7-8 B text model spills into RAM.
+4. **Cost estimate for engine B** (Opus 5.5 at $4/$20 per M tokens): about $3
+   per chapter, about $50 for 01-17, roughly half on the Batch API. An
+   estimate; A1 measures it on syllabus 12 (book 14).
+5. **Prelim still NOT runnable** (deployment, 7 Oct, measured): stage 01 has
+   13 live, 2 at review, 2 retired; 02 24, 03 33, 04 24, all at review.
+6. **Waiting on the instructor:** the five decisions in plan v2 §9, and the
+   Google Cloud TTS key. The rest of 0zc's queue (ruling 4 verified live, R5)
+   is untouched.
+
 ## 0zc. The class chat, ruling 4, questions 09-12, Listen, passwords — 6 Oct 2026 (evening)
 
 Pushed, in order: `46ac563` chat schema, `4c47c74` chat API, `221c0c8`

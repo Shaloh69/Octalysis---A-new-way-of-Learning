@@ -19,6 +19,14 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**7 Oct 2026:** phase report 223/245 (91%), unchanged: a planning session.
+Live R3 87/88, R4 46/48, R5 5/24. The drafting assistant was re-planned at the
+instructor's request (docs/AI-ASSISTANT-PLAN.md v2: figure catalogue and
+summaries with a grounding check, chart data read exactly from the PDF's
+vectors, redraw by spec, quotes pasted by reference, more features). It awaits
+five decisions; no code was written. Prelim NOT runnable (deployment: stage 01
+13 live, 02-04 none). Detail: NEXT-SESSION.md 0zd.
+
 **6 Oct 2026 (evening):** phase report 223/245 (91%); live R3 87/88, R4 46/48,
 R5 5/24 (INV-33 ticked on the instructor's ruling). Built and on the deployment:
 the class chat (Realtime verified there with two test accounts, since removed),

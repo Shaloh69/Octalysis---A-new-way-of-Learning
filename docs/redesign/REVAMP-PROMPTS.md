@@ -23,61 +23,69 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: verify ruling 4 live, then R5 in order
+## 1. Start here — the next session: the assistant's decisions, ruling 4 live, then R5
 
 ```
-Read docs/NEXT-SESSION.md section 0zc first (what the last session built,
-verified and left open: the class chat, live and Realtime-verified on the
-deployment; ruling 4, leaving a paper submits it; 131 questions for 09-12 at
-review; Listen on the reader, following the voice sentence by sentence
-with a progress strip along the bottom; password reset in three parts; the toaster
-heard under dialogs; the belt as dots). Then root CLAUDE.md hard rules 9
-(amended by ruling 4) and 10, .claude/rules/design.md, and
-docs/AI-ASSISTANT-PLAN.md (awaiting the instructor's approval). Do not
-re-derive what those carry.
+Read docs/NEXT-SESSION.md sections 0zd and 0zc first. 0zd is the drafting
+assistant re-planned as v2 (docs/AI-ASSISTANT-PLAN.md, five decisions in §9,
+no code yet; the book's figures are vector drawings, so chart data is read
+exactly). 0zc covers the class chat, live and Realtime-verified; ruling 4,
+leaving a paper submits it; 131 questions for 09-12 at review; Listen
+following the voice; password reset; the toaster under dialogs; the belt as
+dots. Then root CLAUDE.md hard rules 9 (amended by ruling 4) and 10, and
+.claude/rules/design.md. Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. Then
-state plainly whether Prelim-worth of data is okay to run on students,
-checking the five conditions in CLAUDE.md (on 6 Oct it was NOT: on the
-deployment stage 01 has 13 live, 2 at review, 2 retired; 02-04 none live).
+say plainly whether Prelim-worth of data is okay to run on students, checking
+the five conditions in CLAUDE.md. On 7 Oct it was NOT: on the deployment,
+stage 01 has 13 live, 2 at review and 2 retired, and 02-04 have none live.
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot start Docker Desktop first. Kill orphaned API trees and previews,
-pnpm db:reset THEN node scripts/db-demo.mjs (TEN SQL files now), ONE pnpm
-dev:api proved with a real GET (curl healthz again after every db:reset: it
-kills the API), apps/web built and previewed on 5185, apps/console on 5186,
-OCTA_WEB_URL and OCTA_CONSOLE_URL exported. Every API test run empties the
-seeded database: reset and reseed before any Playwright run. The deployment:
-API https://octa-api-noq2.onrender.com, student site
+reboot, start Docker Desktop first. Kill orphaned API trees and previews.
+Run pnpm db:reset, THEN node scripts/db-demo.mjs (TEN SQL files now). Start
+ONE pnpm dev:api and prove it with a real GET; curl healthz again after every
+db:reset, because it kills the API. Build and preview apps/web on 5185 and
+apps/console on 5186, and export OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API
+test run empties the seeded database, so reset and reseed before any
+Playwright run.
+
+The deployment: API https://octa-api-noq2.onrender.com, student site
 https://octa-web-dusky.vercel.app, Supabase ddvxkbcelpqydnjkffdr (the root
 .env's SUPABASE_DB_SESSION; never print it). Untracked scratch helpers in
-scripts/: .deploy-q.tmp.mjs, .deploy-run.tmp.mjs, .deploy-version.tmp.mjs,
-.figure-preview.tmp.mjs, .chat-realtime.tmp.mjs (setup / verify / cleanup
-of two throwaway accounts; the instructor approved that for the chat check),
-.belt-closeup.tmp.mjs (photograph the map near a planet), .tts-ref3.tmp.mjs
-(capture a read-aloud page mid-playback with a stand-in voice), and
-services/api/.submit-stale.tmp.ts.
+scripts/: .deploy-q.tmp.mjs (run it from the repo root), .deploy-run.tmp.mjs,
+.deploy-version.tmp.mjs, .figure-preview.tmp.mjs, .chat-realtime.tmp.mjs
+(setup / verify / cleanup of two throwaway accounts; the instructor approved
+that for the chat check), .belt-closeup.tmp.mjs (photograph the map near a
+planet), .tts-ref3.tmp.mjs (capture a read-aloud page mid-playback with a
+stand-in voice), and services/api/.submit-stale.tmp.ts.
 
 The work, in order:
 
-1. Ask the instructor once, together: approve docs/AI-ASSISTANT-PLAN.md, and
-   which machine runs it; and for the Google Cloud Text-to-Speech API key
-   (ruled 6 Oct: the audiobook's MP3s come from it; server-side only, the
-   root .env and Render). With the key, build the MP3s first, by the plan in
+1. Ask the instructor once, together:
+   a. the five decisions in docs/AI-ASSISTANT-PLAN.md §9: the engine (B, the
+      Claude API, recommended; A, local Ollama; or both), the machine, how
+      far "all of the books" goes past chapter 12, where it sits in this
+      order, and which §6 features;
+   b. the Google Cloud Text-to-Speech API key (ruled 6 Oct: the audiobook's
+      MP3s come from it; server-side only, in the root .env and on Render).
+   With the key, build the MP3s first, by the plan in
    docs/FIGURES-AND-AUDIO.md (schema pushed before code, approved text only,
-   through the reader's page gate). The email reset is fully verified
-   (NEXT-SESSION 0zc.11).
-2. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: one throwaway
-   student (ask before creating it, as for the chat), sit a stage check,
-   leave full screen, and see the paper handed in with its reason on the
-   console's record; then a reload mid-paper; then cleanup. Only the unit and
-   page specs and one sweep-by-script have run against ruling 4 so far.
+   through the reader's page gate). If the assistant is approved and ordered
+   now, start at its step A0 (the figure reader: no model, no schema; fix the
+   caption locator for non-breaking spaces and check all ~355 figures are
+   found), then A1 on syllabus 12 / book 14, measuring the real cost per
+   chapter. An API key, if engine B is chosen, goes in the root .env only,
+   never in a VITE_ variable.
+2. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: create one
+   throwaway student (ask first, as for the chat), sit a stage check, leave
+   full screen, and see the paper handed in with its reason on the console's
+   record. Then try a reload mid-paper, then clean up.
 3. R5 in order: R5.3's 30fps floor, R5.2 (the accessibility contract re-run),
    R5.4, R5.5, then R5.6. pnpm phase --open lists the boxes. The /app specs
-   are load-sensitive: run WebGL specs at 1-2 workers and rerun a timeout
+   are load-sensitive: run WebGL specs at 1-2 workers, and rerun a timeout
    alone before believing it.
 
-Still owed by the instructor (do not build around them): approving the 81
+Still owed by the instructor (do not build around them): approving the 83
 act-1 items at review (the Prelim needs 96 live), the 131 questions for
 09-12, the chapter drafts 08-13 and 17 figures on /content, and the planet
 summaries (R3's last box).
