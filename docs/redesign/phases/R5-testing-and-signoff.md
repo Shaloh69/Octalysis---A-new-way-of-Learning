@@ -42,17 +42,56 @@ tested rather than assumed. This phase closes the redesign, same spirit as
       `correct > 0` choosing only the partial glyph (`map/body.tsx`
       `moonGlow`); every R4.7-R4.9 addition is cosmetic and reads no state
 
-## R5.2 — Re-run `SKILL-TREE-3D.md` §7's accessibility contract in full
-- [ ] Keyboard-only, full map, curriculum focus order
-- [ ] Every planet and moon is a real labelled control
+**Re-run 7 Oct 2026** against the built app (preview :5185, reseeded):
+`web-app.spec.ts` + `web-app-look.spec.ts` **68 passed, 18 skipped** (the
+one-width behaviour tests), at 1440 and 380, two workers. Three tests added
+for the lines nothing asserted in §7's own words ("the accessibility
+contract (R5.2)").
+
+- [x] Keyboard-only, full map, curriculum focus order
+      **7 Oct:** from the top of the page Tab alone reaches the row at Stage
+      00; the arrows then walk 01 → 18 in order (each opens its planet); the
+      row's DOM order is the curriculum's. Gate 3: every control reachable,
+      each moon and the moon panel included
+- [x] Every planet and moon is a real labelled control
+      **7 Oct:** 19 radios named "Stage NN · title, state[, your next
+      stage]"; each moon a button with its id, objective and mastery in
+      words (the R4.4 ARIA snapshot); a locked one's reason verbatim
 - [ ] Screen-reader list-view equivalence, including moon data (R4.4)
-- [ ] `prefers-reduced-motion` → fully static, verified by toggling
-- [ ] All three base themes + palette variants (R2.4) pass WCAG AA, computed
-- [ ] 380px
-- [ ] WebGL disabled → map still works
-- [ ] Colour never the only signal — locked/unlocked differs in shape/label
+      **7 Oct: still open, and the instructor's**: R4.4 rules it needs a
+      person with a screen reader. The automated half is green (the
+      accessibility tree carries every planet, its state, its moons and
+      their mastery). Gap recorded: a stage's prerequisites are named in
+      text only where they gate (a locked planet's server reason); an open
+      planet's are not listed. The map draws no edge (INV-33 ruling, 6 Oct),
+      so the list says no less than the picture
+- [x] `prefers-reduced-motion` → fully static, verified by toggling
+      **7 Oct:** toggled LIVE on one page (reduce → no-preference →
+      reduce): `data-motion` still → orbit → still. Pixel-for-pixel
+      stillness with a moon open was already asserted (R4.3)
+- [x] All three base themes + palette variants (R2.4) pass WCAG AA, computed
+      **7 Oct, restated:** apps/web has no base themes since ruling 2 (30
+      Sep; the console keeps them and is not the map). Its sets (star HUD,
+      seven biomes, the paper) are AA-swept over every accent hue by
+      `packages/tokens/test/looks.spec.ts` (38 passed this session), and
+      gate 4 computes AA on the map's panels, locked and open planets and
+      moons included
+- [x] 380px
+      **7 Oct:** every test above runs at 380 too; gates 1-2 (nothing
+      clipped, no sideways scroll) green there
+- [x] WebGL disabled → map still works
+      **7 Oct, disabled for real** (Chromium `--disable-3d-apis
+      --disable-webgl`, the browser offering no webgl2), not stubbed: no
+      canvas, the one-line notice, all 19 planets in the row, a planet
+      chosen by keyboard opens its panel; captured at 1440 and 380 and
+      looked at. The spec's own test stubs getContext and also passes
+- [x] Colour never the only signal — locked/unlocked differs in shape/label
       too, restated for planets specifically (an unlit sphere vs. a dashed
       outline, not just a colour change)
+      **7 Oct:** asserted on computed style: every locked planet's dot is a
+      DASHED outline and its name says "locked"; no open one is dashed or
+      says it; the key names the shape. In the picture a locked planet is
+      its surface unlit (`--locked`, glow 0.02 vs 0.12)
 
 ## R5.3 — Performance re-check, full system
 - [x] Bundle size with everything from R1-R4 included, still ≤250 KB gz for

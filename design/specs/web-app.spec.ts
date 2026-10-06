@@ -303,6 +303,74 @@ test.describe("/app — what the map owes", () => {
 
 /* ======================= moons: WEB-REVAMP 3.1-3.3, 3.7a, 3.10; R4.2, R4.3 */
 
+/*
+ * R5.2: SKILL-TREE-3D §7's accessibility contract, the lines no other test
+ * here asserted in its own words (7 Oct 2026).
+ */
+test.describe("/app — the accessibility contract (R5.2)", () => {
+  test("keyboard only: Tab reaches the first stage, and the arrows walk the planets in curriculum order", async ({ page }, info) => {
+    test.skip(!wide(info.project.name), "behaviour, one width");
+    await map(page);
+    const order = await page.locator(".starmap-bodies input[type=radio]").evaluateAll((els) =>
+      els.map((e) => (e as HTMLInputElement).dataset.planet ?? ""),
+    );
+    expect(order, "the row's order is the curriculum's").toEqual([...order].sort());
+    expect(order[0]).toBe("00");
+    // From the top of the page, Tab alone reaches the row at its first stage.
+    let at = "";
+    for (let i = 0; i < 60 && !at; i++) {
+      await page.keyboard.press("Tab");
+      at = await page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset?.planet ?? "");
+    }
+    expect(at, "Tab never reached a planet").toBe("00");
+    const walked: string[] = [];
+    for (let i = 1; i < order.length; i++) {
+      await page.keyboard.press("ArrowRight");
+      await expect(page).toHaveURL(new RegExp(`\\?stage=${order[i]}$`));
+      walked.push(new URL(page.url()).searchParams.get("stage") ?? "");
+    }
+    expect(walked).toEqual(order.slice(1));
+  });
+
+  test("reduced motion, toggled live: the orbits stop, start again, and stop", async ({ page }, info) => {
+    test.skip(!wide(info.project.name), "behaviour, one width");
+    await map(page);
+    const motion = page.locator(".starmap");
+    await expect(motion).toHaveAttribute("data-motion", "orbit");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect(motion).toHaveAttribute("data-motion", "still");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await expect(motion).toHaveAttribute("data-motion", "orbit");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect(motion).toHaveAttribute("data-motion", "still");
+  });
+
+  test("colour is never the only signal: a locked planet is a dashed outline and says so in words", async ({ page }) => {
+    await map(page);
+    const styles = await page.locator(".starmap-planet").evaluateAll((els) =>
+      els.map((e) => ({
+        state: (e as HTMLElement).dataset.state ?? "",
+        border: getComputedStyle(e.querySelector(".starmap-dot")!).borderTopStyle,
+        name: e.querySelector(".sr-only:not(input)")?.textContent ?? "",
+      })),
+    );
+    const locked = styles.filter((s) => s.state === "locked");
+    const open = styles.filter((s) => s.state !== "locked");
+    expect(locked.length, "the demo has locked planets to look at").toBeGreaterThan(0);
+    expect(open.length).toBeGreaterThan(0);
+    for (const s of locked) {
+      expect(s.border).toBe("dashed");
+      expect(s.name).toMatch(/, locked/);
+    }
+    for (const s of open) {
+      expect(s.border).not.toBe("dashed");
+      expect(s.name).not.toMatch(/, locked/);
+    }
+    // The key names the shape for anyone who sees it.
+    await expect(page.locator(".starmap-key")).toContainText("locked");
+  });
+});
+
 test.describe("/app — the moons", () => {
   test("each moon is a button with its mastery in words; the planet says N of M mastered", async ({ page }) => {
     await moonsInEveryState(page);
