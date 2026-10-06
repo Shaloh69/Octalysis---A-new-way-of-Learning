@@ -1600,6 +1600,16 @@ captures. Range: `46ac563`..`c7afc04` (18 commits).
    web-stage-check (70), web-listen, web-stage, console-student-password,
    web-change-password, web-recovery, console item-review/students/
    assessments; /app map specs pass alone (load-sensitive at 2+ workers).
+11. **Email reset VERIFIED on the deployment (6 Oct, after the instructor set
+   the Redirect URL):** a throwaway auth user (no roster, no profile, deleted
+   after) got a recovery link from the Admin API (`generate_link`, the link the
+   email carries); a real browser opened it on the live site, landed on
+   /reset-password with the form, the token left the address bar, the new
+   password saved and went to /app, the new password signs in and the old one
+   is refused (`scripts/.reset-verify.tmp.mjs`, untracked). **Still not
+   verified: that the email itself arrives** (Supabase's sender, or a custom
+   SMTP if the instructor set one): try /forgot-password with an inbox the
+   instructor can read.
 10. **Prelim still NOT runnable:** deployment stage 01 has 13 live, 2 at
    review, 2 retired; 02-04 have none live (81 at review).
 
