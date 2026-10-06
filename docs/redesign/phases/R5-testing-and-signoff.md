@@ -125,13 +125,37 @@ contract (R5.2)").
       exists to render: R5.1's INV-33 note.)
 
 ## R5.4 — The boundary tests, run one final time
-- [ ] R2.3's test (different students, identical structure, different
+- [x] R2.3's test (different students, identical structure, different
       cosmetics) still passes
-- [ ] Grep the full diff of this redesign for any reference to
+      **7 Oct 2026:** `services/api/test/cosmetics.spec.ts` 27 passed (both
+      R2.3 blocks: the cosmetic seed is not the exam seed; cosmetics cannot
+      reach curriculum structure), `apps/web/test/layout-solar.spec.ts` 58
+      passed (INV-32: the seed moves no band, axis or orbit)
+- [x] Grep the full diff of this redesign for any reference to
       `db/schema.sql`, `is_stage_unlocked()`, or the grading service outside
       of read-only consumption — flag anything found, don't silently accept it
-- [ ] Confirm the 8 encounter themes' files are untouched — `git diff` on
+      **7 Oct 2026, diff `1e3fb09^..HEAD` (R0 began at 1e3fb09, 1 Sep).**
+      The student app: 0 added lines name `is_stage_unlocked`, no import of
+      the engine (two hits are comments), `pnpm check:boundary` holds.
+      **FLAGGED, not silently accepted: the redesign's moon work changed the
+      lock and grading layer itself**, each by a recorded ruling:
+      `16137e5` a non-gradeable prerequisite never blocks (ruling 25 Sep,
+      WEB-REVAMP 3.7; denial tests first); `403ec5b` moons open the next
+      planet, replacing 70% stage mastery in `is_stage_unlocked()` step 4
+      (WEB-REVAMP 3.7/3.7a); `5259c50` a moon's journey ('objective' scope in
+      blueprint.ts; startAttempt refuses a locked stage, hard rule 4).
+      Every other schema.sql commit since R0 is outside the redesign's scope
+      (assessments, audit, Lecture Mode, content review) or a move with no
+      change in behaviour (`b8ed4bd` moved chapter_drafts to its addendum,
+      hard rule 10). Grading itself (`grade.ts`) is untouched since R0;
+      `808d28e` fixed a check's sampling, not the redesign
+- [x] Confirm the 8 encounter themes' files are untouched — `git diff` on
       `packages/tokens/encounters.css` (or wherever they live) should be empty
+      **7 Oct 2026:** they live in `packages/tokens/tokens.css`, "THE EIGHT
+      ENCOUNTER THEMES": 145 lines and 16 `[data-encounter]` selectors at
+      `1e3fb09^` and at HEAD, byte-identical. `apps/web/src/styles/
+      encounter.css` grew for the four act-1 minigames and only CONSUMES
+      `--enc-*` tokens: 0 added lines redefine one
 
 ## R5.5 — Full page-template coverage check
 - [ ] Every route from R3's checklist has a committed template screenshot
