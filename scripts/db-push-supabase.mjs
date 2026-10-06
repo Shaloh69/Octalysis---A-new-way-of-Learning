@@ -53,6 +53,9 @@ const FILES = [
   "db/addendum-chat.sql",
   // Leaving a paper submits it (ruling 4, 6 Oct 2026): two new sitting events. Idempotent.
   "db/addendum-sitting.sql",
+  // The drafting assistant (B2, 7 Oct 2026): books, jobs, steps, briefs, frozen
+  // units, sealed keys, the private crops bucket. Idempotent.
+  "db/addendum-assistant.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 

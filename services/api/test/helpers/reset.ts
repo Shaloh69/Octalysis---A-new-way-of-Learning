@@ -60,6 +60,17 @@ export async function resetAll(): Promise<void> {
     alter table chat_messages enable trigger chat_messages_guard;
     delete from chat_members       where true;
     delete from chat_rooms         where true;
+    -- The drafting assistant (7 Oct 2026): every table points at auth.users,
+    -- and an accepted unit refuses a delete for every role. Suspended by name.
+    alter table assistant_units disable trigger assistant_units_guard;
+    delete from assistant_units        where true;
+    alter table assistant_units enable trigger assistant_units_guard;
+    delete from assistant_briefs       where true;
+    delete from assistant_steps        where true;
+    delete from assistant_engine_keys  where true;
+    delete from assistant_jobs         where true;
+    delete from assistant_figures      where true;
+    delete from assistant_books        where true;
     -- Submissions reference auth.users and stages. Same lesson as V-52: adding
     -- a table that points at an existing one silently breaks teardown for every
     -- suite that ran before it.

@@ -868,6 +868,36 @@ typed, `mypy --strict` clean; `pnpm test:assistant`, `pnpm book:figures
   owner-only bucket. The bucket is B2's schema; nothing is uploaded yet,
   and the crops live only in a scratch folder outside the repo.
 
+**B2, the schema, built (7 Oct 2026, late).** `db/addendum-assistant.sql`,
+applied eleventh, idempotent (applied three times over itself locally).
+Seven tables, each with an owning teacher and a course: `assistant_books`
+(a PDF by its hash, never the PDF), `assistant_figures` (B1's output; a crop
+path must sit in the owner's folder), `assistant_jobs`, `assistant_steps`
+(status, engine, model, prompt version, input hash, idempotency key, tokens,
+ms, cost), `assistant_briefs` (§4a), `assistant_units` (versioned; §4b) and
+`assistant_engine_keys` (sealed bytes and last four), plus the private
+`assistant-figures` bucket (Supabase only; PNG, 10 MB; no storage policy, so
+the API alone reaches it). **What the database holds, not the API:**
+
+- owner-only, staff-only reads; **no client write anywhere**;
+- keys: an explicit deny-all policy (as `assessment_secrets`), so no teacher
+  reads a key row, their own included, nor its last four;
+- a child row's owner and course are its parent's, by composite foreign keys;
+- **a step's key is its own teacher's**: FK `(key_id, owner_id)`, so teacher
+  B's job cannot run on teacher A's key, from the API's connection too;
+- **an accepted unit is frozen** (`assistant_units_guard`, every role): no
+  rewrite, no other column, no delete; born a draft; the body is always what
+  its SHA-256 names; one accepted version at a time; `accepted → superseded`
+  only once a later version exists, every other column untouched;
+- **local Ollama paused**: no step and no job chain may name `ollama_local`.
+
+`services/api/test/assistant-rls.spec.ts`: **48 tests, watched red twice**:
+first with no schema (every test blocked, "relation assistant_books does not
+exist"), then with the owner clause, the key FK and the freeze broken in the
+database (19 red, exactly those); restored, 48 green. A missing table is
+refused as a denial (`wasDenied()` alone would count it). Not tested: the
+bucket (no storage schema on the local stack, as for chat attachments).
+
 **B0's keys, for the measurement only:** in the root `.env` (gitignored,
 server-side names, never `VITE_*`): `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`,
 `GROQ_API_KEY`, `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`. The

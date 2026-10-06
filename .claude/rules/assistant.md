@@ -34,7 +34,9 @@ when the code is created, update the `paths:` above in the same commit.**
   subscription is used only through the teacher's own Claude Code and our
   plugin.
 - **Keys** are sealed by the API (AES-256-GCM, the secret only in Render's
-  environment) in a table with RLS on and no policy. Write-only from the
+  environment) in a table with RLS on and no policy that grants anything:
+  `assistant_engine_keys` carries the explicit deny-all `aek_deny_all`, as
+  `assessment_secrets` does, so INV-02 and hard rule 3 stay strict. Write-only from the
   page: no route returns a key, the page sees its last four characters.
   Never in `VITE_*`, git, a response body or a log. Denial tests red first:
   no teacher reads a key row, their own included; teacher B cannot run on

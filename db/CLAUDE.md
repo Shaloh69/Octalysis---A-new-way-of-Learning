@@ -65,4 +65,9 @@ guarantees.
   UPDATE, DELETE and TRUNCATE are refused for every role. No staff write, unlike
   `stage_progress`: a planet is opened by hand on `/locks`, never by editing mastery.
   Fixtures suspend `objective_progress_no_delete` by name, before `responses`.
+- Add a client write policy to any `assistant_*` table, or any policy but the deny-all to
+  `assistant_engine_keys` (B2, 7 Oct 2026). Teachers read their own rows; every write is the
+  API's; keys are read by the API alone. An accepted `assistant_units` row is frozen for every
+  role (`assistant_units_guard`): a change is a new version. Fixtures suspend that trigger by
+  name. `as_local_ollama_paused` stays until the instructor orders the local-Ollama update.
 - Drop an item row. Retire it.
