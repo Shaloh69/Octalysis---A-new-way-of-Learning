@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 430">
+  <title>The computer, top-level structure, at three levels</title>
+  <desc>Three panels, each a closer look at the highlighted part of the one above. The computer: I/O, main memory and the CPU, all attached to the system bus. Inside the CPU: registers, the ALU and the control unit, joined by an internal bus. Inside the control unit: sequencing logic, control unit registers and decoders, and control memory.</desc>
+  <rect x="5" y="5" width="430" height="125" class="fig-line"/>
+  <text x="15" y="25" font-size="14" font-weight="600" class="fig-ink">The computer</text>
+  <rect x="20" y="38" width="110" height="40" class="fig-box"/>
+  <rect x="160" y="38" width="120" height="40" class="fig-box"/>
+  <rect x="310" y="38" width="110" height="40" class="fig-accent"/>
+  <text x="75" y="63" font-size="14" text-anchor="middle" class="fig-ink">I/O</text>
+  <text x="220" y="63" font-size="14" text-anchor="middle" class="fig-ink">Main memory</text>
+  <text x="365" y="63" font-size="14" text-anchor="middle" class="fig-ink">CPU</text>
+  <line x1="30" y1="100" x2="410" y2="100" class="fig-line" stroke-width="3"/>
+  <line x1="75" y1="78" x2="75" y2="100" class="fig-line" stroke-width="1.5"/>
+  <line x1="220" y1="78" x2="220" y2="100" class="fig-line" stroke-width="1.5"/>
+  <line x1="365" y1="78" x2="365" y2="100" class="fig-line" stroke-width="1.5"/>
+  <text x="220" y="121" font-size="14" text-anchor="middle" class="fig-muted">system bus</text>
+  <rect x="5" y="145" width="430" height="125" class="fig-line"/>
+  <text x="15" y="165" font-size="14" font-weight="600" class="fig-ink">Inside the CPU</text>
+  <rect x="20" y="178" width="110" height="40" class="fig-box"/>
+  <rect x="165" y="178" width="110" height="40" class="fig-box"/>
+  <rect x="310" y="178" width="110" height="40" class="fig-accent"/>
+  <text x="75" y="203" font-size="14" text-anchor="middle" class="fig-ink">Registers</text>
+  <text x="220" y="203" font-size="14" text-anchor="middle" class="fig-ink">ALU</text>
+  <text x="365" y="203" font-size="14" text-anchor="middle" class="fig-ink">Control unit</text>
+  <line x1="30" y1="240" x2="410" y2="240" class="fig-line" stroke-width="3"/>
+  <line x1="75" y1="218" x2="75" y2="240" class="fig-line" stroke-width="1.5"/>
+  <line x1="220" y1="218" x2="220" y2="240" class="fig-line" stroke-width="1.5"/>
+  <line x1="365" y1="218" x2="365" y2="240" class="fig-line" stroke-width="1.5"/>
+  <text x="220" y="261" font-size="14" text-anchor="middle" class="fig-muted">internal bus</text>
+  <rect x="5" y="285" width="430" height="140" class="fig-line"/>
+  <text x="15" y="305" font-size="14" font-weight="600" class="fig-ink">Inside the control unit</text>
+  <rect x="20" y="320" width="120" height="80" class="fig-box"/>
+  <rect x="155" y="320" width="130" height="80" class="fig-box"/>
+  <rect x="300" y="320" width="120" height="80" class="fig-box"/>
+  <text x="80" y="355" font-size="14" text-anchor="middle" class="fig-ink">Sequencing</text>
+  <text x="80" y="373" font-size="14" text-anchor="middle" class="fig-ink">logic</text>
+  <text x="220" y="346" font-size="14" text-anchor="middle" class="fig-ink">Control unit</text>
+  <text x="220" y="364" font-size="14" text-anchor="middle" class="fig-ink">registers and</text>
+  <text x="220" y="382" font-size="14" text-anchor="middle" class="fig-ink">decoders</text>
+  <text x="360" y="355" font-size="14" text-anchor="middle" class="fig-ink">Control</text>
+  <text x="360" y="373" font-size="14" text-anchor="middle" class="fig-ink">memory</text>
+</svg>
