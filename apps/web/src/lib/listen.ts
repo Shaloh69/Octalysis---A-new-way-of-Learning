@@ -3,26 +3,30 @@ import { parseBlocks, plain, type Block } from "./markdown";
 
 /**
  * The audiobook (instructor rulings, 6 Oct 2026; docs/FIGURES-AND-AUDIO.md):
- * the stage's approved lesson text, read aloud by the browser's own voice
- * (the Web Speech API: free, no key, nothing stored). Recorded MP3s from
- * Google Cloud TTS are the next step (instructor, 6 Oct 2026).
+ * the stage's approved lesson text, read aloud by the browser's own voice.
+ * Recorded MP3s from Google Cloud TTS are the next step.
  *
- * "Intonation and voice quality is horrible" (instructor, 6 Oct 2026). Two
- * causes, both fixed here: no voice was ever chosen, so browsers used their
- * oldest robotic one; and every SENTENCE was its own utterance, so the voice
- * restarted its intonation at every full stop. Now the best English voice the
- * device has is chosen (a natural or online one first), the student may pick
- * another, and a whole paragraph is spoken at once where the voice allows it.
+ * Instructor, 6 Oct 2026, three rounds: "intonation and voice quality is
+ * horrible" (the best English voice is now chosen and a paragraph is spoken
+ * whole); the paragraph mark was "too close"; and "change the way it follows
+ * or highlights the SENTENCES while it reads, with animation like a line or
+ * progress bar along the bottom". So it now FOLLOWS: it knows which sentence,
+ * and where the voice reports it which word, is being spoken, and how far
+ * through the whole lesson it is (ListenBar draws all three).
  *
- * It reads the blocks in order and skips what does not survive being spoken:
- * code listings are read as nothing, a figure only as its caption. Symbols
- * are said as words. Never offered on a paper (hard rule 9).
+ * The pure half lives here and is unit-tested: the sentences of each
+ * paragraph as written (for the highlight) and as said (symbols as words),
+ * the utterance plan for a voice, and the mapping from a spoken character back
+ * to a sentence and a word.
  */
 
-/** One stretch of reading (a paragraph, a heading, a list item), and its block. */
+/** One paragraph, heading or list item, and the block it is in. */
 export interface Chunk {
   readonly block: number;
-  readonly text: string;
+  /** Its sentences exactly as the page shows them (whitespace collapsed). */
+  readonly sentences: readonly string[];
+  /** The same sentences as the voice is given them. */
+  readonly spoken: readonly string[];
 }
 
 /** Chrome's online "Google" voices stop after ~15 s of one utterance: keep them short. */
@@ -54,6 +58,31 @@ export function speechText(text: string): string {
   return s;
 }
 
+const collapse = (s: string) => s.replace(/\s+/g, " ").trim();
+
+/**
+ * Split at sentence ends: a full stop, "?" or "!" (and any closing quote or
+ * bracket) followed by a space. "3.5", "e.g." and a lone initial are not ends.
+ */
+export function splitSentences(text: string): string[] {
+  const flat = collapse(text);
+  if (!flat) return [];
+  const out: string[] = [];
+  const re = /[.!?]+["')\]]*(?=\s)/g;
+  let start = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(flat))) {
+    const end = m.index + m[0].length;
+    const piece = flat.slice(start, end);
+    if (/(^|[\s(])(e\.g|i\.e|etc|vs|cf|Fig|ed|No)\.$/i.test(piece) || /(^|\s)[A-Z]\.$/.test(piece)) continue;
+    out.push(piece.trim());
+    start = end;
+  }
+  const rest = flat.slice(start).trim();
+  if (rest) out.push(rest);
+  return out;
+}
+
 function blockText(b: Block): string[] {
   switch (b.t) {
     case "h":
@@ -65,7 +94,7 @@ function blockText(b: Block): string[] {
     case "quote":
       return b.c.flatMap(blockText);
     case "table": {
-      // A table is read row by row, each cell named by its column when there is a head.
+      // A table is read row by row; the page shows its cells, so it is followed by row.
       const head = b.head?.map((c) => plain(c).trim()) ?? null;
       return b.rows.map((row) =>
         row
@@ -82,49 +111,90 @@ function blockText(b: Block): string[] {
 }
 
 /**
- * Split text into pieces of at most `max` characters, keeping whole sentences
- * together where they fit, then breaking a long sentence at a comma or space.
- */
-export function sentences(text: string, max = SHORT_CHARS): string[] {
-  const flat = text.replace(/\s+/g, " ").trim();
-  if (!flat) return [];
-  const pieces: string[] = [];
-  for (const s of flat.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) ?? [flat]) {
-    let rest = s.trim();
-    while (rest.length > max) {
-      // Search back from just under the limit, so the piece (with its comma) still fits.
-      const cut = Math.max(rest.lastIndexOf(", ", max - 2), rest.lastIndexOf(" ", max - 1));
-      const at = cut > 40 ? cut + 1 : max;
-      pieces.push(rest.slice(0, at).trim());
-      rest = rest.slice(at).trim();
-    }
-    if (rest) pieces.push(rest);
-  }
-  // Group consecutive sentences back together up to the limit: fewer restarts, better intonation.
-  const out: string[] = [];
-  for (const p of pieces) {
-    const last = out[out.length - 1];
-    if (last !== undefined && last.length + 1 + p.length <= max) out[out.length - 1] = `${last} ${p}`;
-    else out.push(p);
-  }
-  return out;
-}
-
-/**
- * Everything to be read, in order: one chunk per paragraph, heading or list
- * item. `blocks` is the reader's own list (kind, body); an index here is the
- * reader's block index.
+ * Everything to be read, in order. `blocks` is the reader's own list (kind,
+ * body); a chunk's `block` is the reader's block index.
  */
 export function speakable(blocks: ReadonlyArray<{ kind: string; body: string }>): Chunk[] {
   const out: Chunk[] = [];
   blocks.forEach((b, block) => {
     if (b.kind === "code") return;
     for (const piece of parseBlocks(b.body ?? "").flatMap(blockText)) {
-      const text = speechText(piece);
-      if (text && text !== ".") out.push({ block, text });
+      const sentences = splitSentences(piece);
+      if (sentences.length === 0) continue;
+      out.push({ block, sentences, spoken: sentences.map(speechText) });
     }
   });
   return out;
+}
+
+/** One utterance: some consecutive sentences of a chunk, joined, and where each starts. */
+export interface Utterance {
+  readonly text: string;
+  /** Sentence indexes within the chunk. */
+  readonly sentences: readonly number[];
+  /** The start of each of those sentences within `text`. */
+  readonly starts: readonly number[];
+}
+
+/**
+ * The utterances for a chunk: as many whole sentences per utterance as fit in
+ * `max` characters (a long sentence alone is still one utterance; the voices
+ * that need short ones get `SHORT_CHARS`, which few sentences exceed).
+ */
+export function planUtterances(chunk: Chunk, max: number): Utterance[] {
+  const out: Utterance[] = [];
+  let text = "";
+  let sentences: number[] = [];
+  let starts: number[] = [];
+  chunk.spoken.forEach((s, i) => {
+    if (text && text.length + 1 + s.length > max) {
+      out.push({ text, sentences, starts });
+      text = "";
+      sentences = [];
+      starts = [];
+    }
+    if (text) text += " ";
+    starts.push(text.length);
+    sentences.push(i);
+    text += s;
+  });
+  if (text) out.push({ text, sentences, starts });
+  return out;
+}
+
+/** Which sentence of an utterance a spoken character index falls in. */
+export function sentenceAt(u: Utterance, charIndex: number): number {
+  let k = 0;
+  for (let i = 0; i < u.starts.length; i++) if (u.starts[i]! <= charIndex) k = i;
+  return u.sentences[k]!;
+}
+
+/** The nth word (0-based) of a spoken sentence that a character index falls on. */
+export function wordIndexAt(spokenSentence: string, charInSentence: number): number {
+  const before = spokenSentence.slice(0, Math.max(0, charInSentence));
+  const words = before.match(/\S+/g);
+  // A boundary sits at the START of a word, so the words before it are its index.
+  return words ? words.length - (/\S$/.test(before) ? 1 : 0) : 0;
+}
+
+/** The length, in spoken characters, of the whole lesson and of everything before a point. */
+export function progressOf(chunks: readonly Chunk[], chunk: number, sentence: number, within = 0): number {
+  let total = 0;
+  let done = 0;
+  chunks.forEach((c, ci) =>
+    c.spoken.forEach((s, si) => {
+      total += s.length;
+      if (ci < chunk || (ci === chunk && si < sentence)) done += s.length;
+      if (ci === chunk && si === sentence) done += Math.min(within, s.length);
+    }),
+  );
+  return total === 0 ? 0 : done / total;
+}
+
+/** Roughly how long a sentence takes to say, for the bar's glide where no word events come. */
+export function estimateMs(spoken: string, rate: number): number {
+  // ~14 characters a second at rate 1 for an English voice.
+  return Math.max(400, (spoken.length / 14 / rate) * 1000);
 }
 
 /* ------------------------------------------------------------------ voices */
@@ -153,7 +223,9 @@ export function rankVoices<V extends VoiceLike>(voices: readonly V[]): V[] {
     if (/^en[-_](us|gb)/i.test(v.lang)) s += 1;
     return s;
   };
-  return voices.filter((v) => /^en\b|^en[-_]/i.test(v.lang)).sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name));
+  return voices
+    .filter((v) => /^en\b|^en[-_]/i.test(v.lang))
+    .sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name));
 }
 
 /** How long one utterance may be for this voice. */
@@ -201,69 +273,138 @@ export function speechSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
 }
 
+/** Where the voice is: a chunk, a sentence in it, and (when the voice says) a word. */
+export interface Position {
+  readonly chunk: number;
+  readonly sentence: number;
+  /** The word within the sentence, or null when the voice sends no word events. */
+  readonly word: number | null;
+  /** 0..1 through the whole lesson, at the START of this sentence. */
+  readonly from: number;
+  /** 0..1 at the END of this sentence: the bar glides from one to the other. */
+  readonly to: number;
+  /** How long the glide should take; 0 when word events drive the bar instead. */
+  readonly glideMs: number;
+}
+
 /**
- * Play the chunks. Each chunk is spoken as one utterance, or as a few if the
- * voice needs them short. `generation` guards against the stale end events
- * that `cancel()` fires on the utterance it interrupts.
+ * Play the chunks, following them sentence by sentence. Word boundary events,
+ * where the voice sends them, move the sentence and the word exactly; where it
+ * does not (Google's online voices), each utterance's sentences advance on an
+ * estimate of their length, and the next utterance corrects it.
+ * `generation` guards against the stale events `cancel()` fires.
  */
 export function useListen(chunks: readonly Chunk[], voice: SpeechSynthesisVoice | null) {
   const supported = speechSupported();
   const [state, setState] = useState<ListenState>("idle");
-  const [at, setAt] = useState(0);
+  const [pos, setPos] = useState<Position | null>(null);
   const [rate, setRateState] = useState<number>(1);
   const generation = useRef(0);
   const atRef = useRef(0);
   const rateRef = useRef(1);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(voice);
   voiceRef.current = voice;
+  const timers = useRef<number[]>([]);
+  const clearTimers = () => {
+    for (const t of timers.current) window.clearTimeout(t);
+    timers.current = [];
+  };
+
+  const place = useCallback(
+    (chunk: number, sentence: number, word: number | null, glide: boolean) => {
+      const spoken = chunks[chunk]?.spoken[sentence] ?? "";
+      setPos({
+        chunk,
+        sentence,
+        word,
+        from: progressOf(chunks, chunk, sentence),
+        to: progressOf(chunks, chunk, sentence + 1),
+        glideMs: glide ? estimateMs(spoken, rateRef.current) : 0,
+      });
+    },
+    [chunks],
+  );
 
   const speakFrom = useCallback(
     (i: number) => {
       if (!supported) return;
       const gen = ++generation.current;
+      clearTimers();
       window.speechSynthesis.cancel();
       const next = (k: number) => {
         if (gen !== generation.current) return;
+        clearTimers();
         if (k >= chunks.length) {
           setState("idle");
-          setAt(0);
+          setPos(null);
           atRef.current = 0;
           return;
         }
         atRef.current = k;
-        setAt(k);
         const v = voiceRef.current;
-        const parts = sentences(chunks[k]!.text, maxCharsFor(v));
+        const plan = planUtterances(chunks[k]!, maxCharsFor(v));
         const say = (p: number) => {
           if (gen !== generation.current) return;
-          if (p >= parts.length) return next(k + 1);
-          const u = new SpeechSynthesisUtterance(parts[p]!);
-          u.rate = rateRef.current;
-          if (v) {
-            u.voice = v;
-            u.lang = v.lang;
-          } else {
-            u.lang = "en-US";
+          clearTimers();
+          if (p >= plan.length) return next(k + 1);
+          const u = plan[p]!;
+          let sawWord = false;
+          place(k, u.sentences[0]!, null, true);
+          // No word events (yet): step through this utterance's sentences on estimates.
+          let t = 0;
+          for (let q = 1; q < u.sentences.length; q++) {
+            t += estimateMs(chunks[k]!.spoken[u.sentences[q - 1]!]!, rateRef.current);
+            const s = u.sentences[q]!;
+            timers.current.push(
+              window.setTimeout(() => {
+                if (!sawWord && gen === generation.current) place(k, s, null, true);
+              }, t),
+            );
           }
-          u.onend = () => say(p + 1);
-          u.onerror = (e) => {
+          const utt = new SpeechSynthesisUtterance(u.text);
+          utt.rate = rateRef.current;
+          if (v) {
+            utt.voice = v;
+            utt.lang = v.lang;
+          } else {
+            utt.lang = "en-US";
+          }
+          utt.onboundary = (e: SpeechSynthesisEvent) => {
+            if (gen !== generation.current || e.name !== "word") return;
+            sawWord = true;
+            clearTimers();
+            const s = sentenceAt(u, e.charIndex);
+            const local = e.charIndex - u.starts[u.sentences.indexOf(s)]!;
+            const word = wordIndexAt(chunks[k]!.spoken[s]!, local);
+            setPos({
+              chunk: k,
+              sentence: s,
+              word,
+              from: progressOf(chunks, k, s, local),
+              to: progressOf(chunks, k, s, local),
+              glideMs: 0,
+            });
+          };
+          utt.onend = () => say(p + 1);
+          utt.onerror = (e) => {
             // "interrupted" and "canceled" are ours (stop, a new rate or voice); anything else skips on.
             if (e.error === "interrupted" || e.error === "canceled") return;
             say(p + 1);
           };
-          window.speechSynthesis.speak(u);
+          window.speechSynthesis.speak(utt);
         };
         say(0);
       };
       setState("playing");
       next(i);
     },
-    [chunks, supported],
+    [chunks, supported, place],
   );
 
   const play = useCallback(() => speakFrom(0), [speakFrom]);
   const pause = useCallback(() => {
     if (!supported) return;
+    clearTimers();
     window.speechSynthesis.pause();
     setState("paused");
   }, [supported]);
@@ -274,9 +415,10 @@ export function useListen(chunks: readonly Chunk[], voice: SpeechSynthesisVoice 
   }, [supported]);
   const stop = useCallback(() => {
     generation.current++;
+    clearTimers();
     if (supported) window.speechSynthesis.cancel();
     setState("idle");
-    setAt(0);
+    setPos(null);
     atRef.current = 0;
   }, [supported]);
   const setRate = useCallback(
@@ -297,10 +439,11 @@ export function useListen(chunks: readonly Chunk[], voice: SpeechSynthesisVoice 
   useEffect(
     () => () => {
       generation.current++;
+      clearTimers();
       if (speechSupported()) window.speechSynthesis.cancel();
     },
     [],
   );
 
-  return { supported, state, at, rate, play, pause, resume, stop, setRate, restart };
+  return { supported, state, pos, rate, play, pause, resume, stop, setRate, restart };
 }

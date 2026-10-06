@@ -83,19 +83,43 @@ seconds into a cold start failed 5 and is not counted).
 ## Listen — the audiobook (6 Oct 2026)
 
 Instructor rulings (`docs/FIGURES-AND-AUDIO.md`): the browser's own voice now
-(Web Speech API), MP3s later. A bar in the reader's header
-(`components/ListenBar.tsx`, `lib/listen.ts`); gate `design/specs/web-listen.spec.ts`.
+(Web Speech API), MP3s later. `components/ListenBar.tsx`, `lib/listen.ts`
+(the text and the plan, unit-tested), `lib/follow.ts` (the page half); gate
+`design/specs/web-listen.spec.ts`. Template: `template-listen.png`
+(SOURCE.md): a read-aloud page mid-playback, with the word lit and a progress
+bar.
+
+It **follows the voice** (instructor, 6 Oct 2026: "change the way it follows
+or highlights the sentences while it reads, with animation like a line or
+progress bar along the bottom"):
+
+- the **sentence** being said is tinted with the student's soft accent (the
+  CSS Custom Highlight API, so the text is never rewrapped or re-rendered);
+- the **word** being said is lit solid where the voice reports words
+  (`onboundary`; Google's online voices do not, and then only the sentence moves);
+- a **line under the sentence** fills as it is read: gliding on an estimate,
+  or jumping word to word when words are reported;
+- a **strip along the bottom**, just above the biome's bottom bar, carries
+  Pause / Resume / Stop, "Sentence N of M" and the lesson's progress line, so
+  the controls stay in reach however far the reading scrolls;
+- the block keeps a rounded accent bar at its left; a block whose sentences
+  cannot be found on the page (a table read row by row) keeps the tinted panel.
 
 | Control | Consequence | Legibility | Reversibility | Teaching |
 |---|---|---|---|---|
-| **Listen / Pause / Resume / Stop** | the lesson is read aloud, block by block | "Reading part N of M" (mono); the block being read has an accent edge | Pause, Stop | hear the lesson hands-free |
-| **Speed** 0.75× to 1.5× | the voice's rate, from the sentence being read | pressed, in mono | pick another | — |
+| **Listen** (header) | the lesson is read aloud from the start | the strip appears; the sentence is lit | Stop | hear the lesson hands-free |
+| **Pause / Resume / Stop** (strip) | the voice holds, carries on, or ends | "Paused: sentence N of M"; the lines hold still | Resume, Listen | — |
+| **Speed** 0.75× to 1.5× | the voice's rate, from the paragraph being read | pressed, in mono | pick another | — |
+| **Voice** | another of the device's English voices, from the paragraph being read; remembered per device | the select shows it | pick another | — |
 
 Reads prose, headings, list items, quotes, callouts and tables (row by row,
 cells named by column); a figure only by its caption; **never a code listing**.
-Sentence-sized utterances (some engines cut long ones off). Leaving the page
-stops the voice. No speech synthesis: no control, one line says so. Never on a
-paper (hard rule 9): only the reader mounts it.
+Whole paragraphs per utterance where the voice allows (Google voices: up to 200
+characters, whole sentences). Leaving the page stops the voice. No speech
+synthesis: no control, one line says so. Never on a paper (hard rule 9): only
+the reader mounts it.
 
 Captures (opened, 6 Oct 2026, build at 5185, student 232129006, stage 06):
-`current-listen-idle.png` / `-380`, `current-listen-playing.png` / `-380`.
+`current-listen-idle.png` / `-380`, `current-listen-playing.png` / `-380`
+(first sentence, its line starting to fill), `current-listen-follow.png` /
+`-380` (word by word, mid-paragraph).

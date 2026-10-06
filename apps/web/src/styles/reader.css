@@ -104,11 +104,15 @@
   border: var(--border-hair) solid var(--line-strong);
 }
 .rd-listen-voice select:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
-/* The block being read (6 Oct 2026: "too close to the paragraph, make it more
-   beautiful"). A soft tint of the student's own accent that reaches a little
-   past the text on every side, with a rounded bar standing clear of it at the
-   left. The tint is drawn as a spread shadow, so the page never moves when the
-   mark does; the words keep their own colour. */
+/* Following the voice (6 Oct 2026, three rounds: the mark was "too close to
+   the paragraph"; then "change the way it follows or highlights the sentences
+   while it reads, with animation like a line or progress bar along the
+   bottom"; template-listen.png). The block being read carries a rounded bar
+   standing clear of it at the left. Inside it the SENTENCE being said is
+   tinted with the student's own soft accent, the WORD (where the voice
+   reports words) is lit solid, and a line under the sentence fills as it is
+   read (lib/follow.ts). A block whose sentences cannot be found on the page
+   (a table read row by row) keeps a tinted panel instead. */
 .rd-reading [data-block] {
   --speak-pad: var(--space-2);
   /* The set's own soft accent (light on a light page, dark on a dark one), AA with the ink. */
@@ -116,14 +120,12 @@
   position: relative;
   transition: box-shadow var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out);
 }
-.rd-reading [data-speaking] {
+.rd-reading [data-speaking]:not([data-follow]) {
   border-radius: var(--radius-md);
   box-shadow: 0 0 0 var(--speak-pad) var(--speak-tint);
 }
-/* Prose and the brief have no ground of their own: tint it. Quotes, callouts
-   and figures keep theirs, and take only the ring. */
-.rd-reading .rd-prose[data-speaking],
-.rd-reading .rd-brief[data-speaking] {
+.rd-reading .rd-prose[data-speaking]:not([data-follow]),
+.rd-reading .rd-brief[data-speaking]:not([data-follow]) {
   background-color: var(--speak-tint);
 }
 .rd-reading [data-speaking]::before {
@@ -136,7 +138,60 @@
   border-radius: var(--radius-full);
   background: var(--accent);
 }
-
+::highlight(listen-sentence) { background-color: var(--accent-muted); color: var(--ink); }
+::highlight(listen-word) { background-color: var(--accent); color: var(--accent-fg); }
+.rd-follow { position: absolute; inset: 0; pointer-events: none; }
+.rd-follow-line {
+  position: absolute;
+  height: calc(var(--border-thick) * 1.5);
+  margin-top: var(--border-thick);
+  border-radius: var(--radius-full);
+  background: var(--line);
+  overflow: hidden;
+}
+.rd-follow-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur-fast) linear;
+}
+/* The strip along the bottom while the voice reads: the controls stay in reach
+   however far the reading scrolls, and its top edge is the progress line. */
+.rd-strip {
+  position: fixed;
+  left: 50%;
+  /* Just above the biome bottom bar, measured by ListenBar (--strip-lift). */
+  bottom: calc(var(--strip-lift, 0px) + var(--space-2));
+  z-index: 9;
+  transform: translateX(-50%);
+  width: min(40rem, calc(100vw - var(--space-2) * 2));
+  padding: var(--space-2) var(--space-3);
+  animation: rd-strip var(--dur-base) var(--ease-out);
+}
+@keyframes rd-strip { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translateX(-50%); } }
+.rd-strip-track {
+  height: calc(var(--border-thick) * 2);
+  margin: var(--space-1) 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--line);
+  overflow: hidden;
+}
+.rd-strip-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.rd-strip-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.rd-strip-where { flex: 1 1 auto; min-width: 0; font-size: var(--text-sm); color: var(--ink); }
+.rd-strip-pct { font-size: var(--text-sm); color: var(--ink-muted); }
+/* Room at the end of the reading, so the strip never sits over its last lines. */
+[data-reader]:has(.rd-strip) .rd-letter { padding-bottom: calc(var(--strip-h, 0px) + var(--space-8)); }
+[data-reader]:has(.rd-strip) .rd-pill { bottom: calc(5.5rem + var(--strip-h, 0px) + var(--space-2)); }
+@media (max-width: 640px) { .rd-strip-pct { display: none; } }
 
 /* ---- the reading's own blocks (ReaderBlocks.tsx) ---- */
 .rd-reading { font-size: var(--text-base); line-height: var(--lh-base); }

@@ -24,8 +24,8 @@ import { openStage, realStage } from "./_stage-fixture.ts";
 const ROUTE = "[data-reader]";
 const wide = (t: TestInfo) => t.project.name === "desktop-1440";
 
-async function fakeVoice(page: Page, ms = 300): Promise<void> {
-  await page.addInitScript((delay) => {
+async function fakeVoice(page: Page, ms = 300, words = false): Promise<void> {
+  await page.addInitScript(([delay, withWords]) => {
     const w = window as unknown as {
       __spoken: Array<{ text: string; rate: number; voice: string | null }>;
       speechSynthesis: unknown;
@@ -46,6 +46,7 @@ async function fakeVoice(page: Page, ms = 300): Promise<void> {
       lang = "";
       voice: { name: string } | null = null;
       onend: ((e: Event) => void) | null = null;
+      onboundary: ((e: { name: string; charIndex: number }) => void) | null = null;
       onerror: ((e: { error: string }) => void) | null = null;
       constructor(text: string) {
         this.text = text;
@@ -53,6 +54,7 @@ async function fakeVoice(page: Page, ms = 300): Promise<void> {
     }
     Object.defineProperty(window, "SpeechSynthesisUtterance", { configurable: true, value: Utterance });
     let timer: number | undefined;
+    let wordTimers: number[] = [];
     let current: SpeechSynthesisUtterance | null = null;
     const synth = {
       paused: false,
@@ -61,12 +63,25 @@ async function fakeVoice(page: Page, ms = 300): Promise<void> {
       speak(u: SpeechSynthesisUtterance) {
         w.__spoken.push({ text: u.text, rate: u.rate, voice: u.voice?.name ?? null });
         current = u;
+        if (withWords) {
+          // A real voice reports the start of each word as it says it.
+          const ws = [...u.text.matchAll(/\S+/g)];
+          ws.forEach((m, i) =>
+            wordTimers.push(
+              window.setTimeout(() => {
+                if (current === u) (u as unknown as Utterance).onboundary?.({ name: "word", charIndex: m.index! });
+              }, ((delay as number) * i) / ws.length),
+            ),
+          );
+        }
         timer = window.setTimeout(() => {
           if (current === u) u.onend?.(new Event("end") as SpeechSynthesisEvent);
         }, delay as number);
       },
       cancel() {
         window.clearTimeout(timer);
+        wordTimers.forEach((t) => window.clearTimeout(t));
+        wordTimers = [];
         current = null;
       },
       pause() {
@@ -81,13 +96,23 @@ async function fakeVoice(page: Page, ms = 300): Promise<void> {
       removeEventListener() {},
     };
     Object.defineProperty(window, "speechSynthesis", { configurable: true, get: () => synth });
-  }, ms);
+  }, [ms, words] as const);
 }
+/** What the page has painted with the Custom Highlight API: the sentence and the word. */
+const painted = (page: Page) =>
+  page.evaluate(() => {
+    const reg = (CSS as unknown as { highlights?: Map<string, Set<Range>> }).highlights;
+    const text = (n: string) => {
+      const h = reg?.get(n);
+      return h ? [...h].map((r) => r.toString()).join(" ") : null;
+    };
+    return { sentence: text("listen-sentence"), word: text("listen-word") };
+  });
 const spoken = (page: Page) =>
   page.evaluate(() => (window as unknown as { __spoken: Array<{ text: string; rate: number; voice: string | null }> }).__spoken);
 
-async function reader(page: Page, ms?: number): Promise<void> {
-  await fakeVoice(page, ms);
+async function reader(page: Page, ms?: number, words = false): Promise<void> {
+  await fakeVoice(page, ms, words);
   await openStage(page, "06");
   await page.locator("[data-reading]").waitFor({ timeout: 15_000 });
 }
@@ -96,7 +121,8 @@ test.describe("Listen — the gate on the reader with the bar playing", () => {
   test("1-3, 5 · nothing clipped, no sideways scroll, keyboard reachable, tokens rendered", async ({ page }) => {
     await reader(page, 60_000);
     await page.getByRole("button", { name: "Listen", exact: true }).click();
-    await expect(page.locator("[data-listen=playing]")).toBeVisible();
+    await expect(page.locator("[data-listen-strip=playing]")).toBeVisible();
+    await expect(page.locator(".rd-follow-line").first()).toBeVisible();
     expect(await clippedElements(page, ROUTE)).toEqual([]);
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     expect(await unreachableByKeyboard(page, "main")).toEqual([]);
@@ -107,6 +133,7 @@ test.describe("Listen — the gate on the reader with the bar playing", () => {
     await reader(page, 60_000);
     await page.getByRole("button", { name: "Listen", exact: true }).click();
     await expect(page.locator("[data-speaking]")).toHaveCount(1);
+    await expect(page.locator("[data-listen-strip]")).toBeVisible();
     expect(await contrastFailures(page, ROUTE)).toEqual([]);
   });
 
@@ -156,12 +183,43 @@ test.describe("Listen — what it owes", () => {
     await reader(page, 60_000);
     await page.getByRole("button", { name: "Listen", exact: true }).click();
     await page.getByRole("button", { name: "Pause", exact: true }).click();
-    await expect(page.locator("[data-listen=paused]")).toContainText(/Paused at part/);
+    await expect(page.locator("[data-listen-strip=paused]")).toContainText(/Paused: sentence 1 of \d+/);
     await page.getByRole("button", { name: "Resume", exact: true }).click();
-    await expect(page.locator("[data-listen=playing]")).toBeVisible();
+    await expect(page.locator("[data-listen-strip=playing]")).toBeVisible();
     await page.getByRole("button", { name: "Stop", exact: true }).click();
     await expect(page.locator("[data-listen=idle]")).toBeVisible();
+    await expect(page.locator("[data-listen-strip]")).toHaveCount(0);
     await expect(page.locator("[data-speaking]")).toHaveCount(0);
+    await expect(page.locator(".rd-follow")).toHaveCount(0);
+    expect(await painted(page)).toEqual({ sentence: null, word: null });
+  });
+
+  test("follows SENTENCE by sentence: the sentence tinted, a line under it, the strip filling (6 Oct 2026)", async ({ page }) => {
+    await reader(page, 1500);
+    await page.getByRole("button", { name: "Listen", exact: true }).click();
+    // One sentence of the brief is painted, and the line is drawn under it.
+    await expect.poll(async () => (await painted(page)).sentence).toMatch(/\S/);
+    const first = (await painted(page)).sentence!;
+    expect(first.trim().split(/[.!?]\s/).length, first).toBe(1);
+    await expect(page.locator("[data-speaking] .rd-follow-line").first()).toBeVisible();
+    // A followed block drops the tinted panel: only the sentence is tinted.
+    await expect(page.locator("[data-speaking]")).toHaveAttribute("data-follow", "");
+    // The next sentence takes over, and the strip moves through the lesson.
+    await expect.poll(async () => (await painted(page)).sentence, { timeout: 15_000 }).not.toBe(first);
+    await expect(page.locator("[data-listen-strip]")).toContainText(/Sentence ([2-9]|\d\d+) of \d+/);
+    const bar = page.getByRole("progressbar", { name: "Through the lesson" });
+    await expect.poll(async () => Number(await bar.getAttribute("aria-valuenow")), { timeout: 15_000 }).toBeGreaterThan(0);
+  });
+
+  test("where the voice reports words, the word being said is lit, and it moves word by word", async ({ page }) => {
+    await reader(page, 4000, true);
+    await page.getByRole("button", { name: "Listen", exact: true }).click();
+    await expect.poll(async () => (await painted(page)).word).toMatch(/^\S+$/);
+    const w0 = (await painted(page)).word;
+    await expect.poll(async () => (await painted(page)).word).not.toBe(w0);
+    // The word sits inside the sentence painted with it.
+    const p = await painted(page);
+    expect(p.sentence).toContain(p.word!);
   });
 
   test("a speed applies from the sentence being read, and is shown pressed", async ({ page }) => {
@@ -239,7 +297,17 @@ test.describe("Listen — what it owes", () => {
     await page.locator(".rd-head").screenshot({ path: `design/templates/web/stage/current-listen-idle${s}.png` });
     await page.getByRole("button", { name: "Listen", exact: true }).click();
     await expect(page.locator("[data-speaking]")).toHaveCount(1);
+    await expect(page.locator(".rd-follow-line").first()).toBeVisible();
     await page.waitForTimeout(400);
     await page.screenshot({ path: `design/templates/web/stage/current-listen-playing${s}.png` });
+  });
+
+  test("capture: following word by word, mid-paragraph, then opened", async ({ page }, info) => {
+    await reader(page, 9000, true);
+    const s = wide(info) ? "" : "-380";
+    await page.getByRole("button", { name: "Listen", exact: true }).click();
+    await expect.poll(async () => (await painted(page)).word).toMatch(/\S/);
+    await page.waitForTimeout(3500);
+    await page.screenshot({ path: `design/templates/web/stage/current-listen-follow${s}.png` });
   });
 });
