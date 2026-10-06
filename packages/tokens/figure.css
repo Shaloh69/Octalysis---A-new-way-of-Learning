@@ -37,6 +37,10 @@
 .fig-svg .fig-line { fill: none; stroke: var(--line-strong); }
 .fig-svg .fig-box { fill: var(--surface-2); stroke: var(--line-strong); }
 .fig-svg .fig-fill { fill: var(--surface-3); stroke: none; }
-.fig-svg .fig-accent { fill: var(--accent-muted); stroke: var(--accent); }
-.fig-svg .fig-accent-line { fill: none; stroke: var(--accent); }
+/* Emphasis is NOT the accent. The accent is each student's own seeded hue,
+   and it may mark only their own place (apps/web/CLAUDE.md); a figure on a
+   question's paper must be identical for everyone (WEB-REMAKE.md §4). The
+   info pair is one fixed hue in every realm and theme. */
+.fig-svg .fig-accent { fill: var(--info-bg); stroke: var(--info); }
+.fig-svg .fig-accent-line { fill: none; stroke: var(--info); }
 .fig-svg .fig-mono { font-family: var(--font-mono); }

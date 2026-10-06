@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import type { APIRequestContext, Page } from "@playwright/test";
 import { createHmac } from "node:crypto";
+import {
+  clippedElements, contrastFailures, horizontalOverflow, offTokenStyles, recordMotion, recordedMotion,
+  setTheme, THEMES, unreachableByKeyboard,
+} from "./_gate";
 
 /**
  * `/items` — the review queue, which is how the seeded bank reaches students.
@@ -254,5 +258,86 @@ test.describe("the item review queue", () => {
     } finally {
       await retire(request, made);
     }
+  });
+});
+
+/* ======================================================================
+ * A question that needs a figure (6 Oct 2026; docs/FIGURES-AND-AUDIO.md and
+ * design/templates/console/content-figure/SPEC.md). A fresh review item's
+ * preview is given the real seeded figure (stage 10's, a draft), as the API
+ * returns it for an item that names one; the figure approval is intercepted,
+ * because a spec must never serve a drawing to students. The API's half,
+ * including the refusal to go live, is services/api/test/figures.spec.ts.
+ * ==================================================================== */
+test.describe("a question that needs a figure", () => {
+  test.describe.configure({ mode: "serial" });
+  const FIG = "10-instruction-format";
+
+  async function openWithFigure(page: Page, request: APIRequestContext) {
+    const [made] = await makeReviewItems(request, 1);
+    const content = await request.get(`${API_URL}/api/v1/console/content/10`, { headers: { authorization: `Bearer ${TEACHER}` } });
+    const real = ((await content.json()) as { figures: Array<Record<string, unknown>> }).figures.find((f) => f.id === FIG)!;
+    let approved = false;
+    const posts: unknown[] = [];
+    await page.route(/\/api\/v1\/console\/figures\/[^/]+\/approve$/, async (route) => {
+      posts.push(route.request().postDataJSON());
+      approved = true;
+      await route.fulfill({ json: { ok: true, alreadyApproved: false } });
+    });
+    await page.route(new RegExp(`/api/v1/console/items/${made!.id}/preview`), async (route) => {
+      const res = await route.fetch();
+      const json = (await res.json()) as Record<string, unknown>;
+      json.figure = approved ? { ...real, status: "approved", served: true, reviewer: "Prof. Amalia R. Bontuyan" } : real;
+      await route.fulfill({ response: res, json });
+    });
+    await openReviewQueue(page);
+    await page.getByRole("button", { name: `Review ${made!.slug}` }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.locator("[data-item-figure]")).toBeVisible({ timeout: 15_000 });
+    return { made: made!, real, posts, dialog };
+  }
+
+  test("the figure sits under the stem, and Approve and publish waits for it", async ({ page, request }) => {
+    const { made, real, posts, dialog } = await openWithFigure(page, request);
+    const card = dialog.locator(`[data-figure-card="${FIG}"]`);
+    await expect(card.getByRole("img", { name: "A simple 16-bit instruction format" })).toBeVisible();
+    await expect(card).toContainText("No student sees it until you approve it.");
+    const publish = dialog.getByRole("button", { name: "Approve and publish" });
+    await expect(publish).toBeDisabled();
+    await expect(dialog.locator("[data-figure-blocks]")).toContainText(`Approve figure ${FIG} first`);
+
+    await card.getByRole("button", { name: `Approve figure ${FIG}` }).click();
+    // Found here, 6 Oct 2026: a Radix modal marks everything outside it aria-hidden, the
+    // toaster included, so a toast raised under a dialog is on screen but not announced
+    // (NEXT-SESSION 0zb). Seen on screen, then, not by role.
+    await expect(page.locator("[data-toaster]").getByText(`Figure ${FIG} approved`)).toBeVisible();
+    expect(posts).toEqual([{ hash: real.hash }]);
+    await expect(publish).toBeEnabled();
+    await expect(dialog.locator("[data-figure-blocks]")).toHaveCount(0);
+    await retire(request, [made]);
+  });
+
+  test("the gate on the dialog with a figure: clipped, keyboard, contrast on three themes, tokens, motion", async ({ page, request }, info) => {
+    test.setTimeout(240_000);
+    const { made } = await openWithFigure(page, request);
+    expect(await clippedElements(page, "[role=dialog]"), "dialog").toEqual([]);
+    expect(await horizontalOverflow(page), "dialog").toBeLessThanOrEqual(0);
+    expect(await unreachableByKeyboard(page, "[role=dialog]"), "dialog").toEqual([]);
+    expect(await offTokenStyles(page, "[role=dialog]"), "dialog").toEqual([]);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      expect(await contrastFailures(page, "[role=dialog]"), `${theme}: dialog`).toEqual([]);
+    }
+    await page.locator("[role=dialog] [data-item-figure]").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `design/templates/console/content-figure/current-items${info.project.name === "desktop-1440" ? "" : "-380"}.png` });
+    await retire(request, [made]);
+  });
+
+  test("under reduced motion the figure arrives with nothing moving", async ({ page, request }) => {
+    await recordMotion(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const { made } = await openWithFigure(page, request);
+    expect((await recordedMotion(page)).filter((m) => m.ms > 1 && /fg-|fig/.test(m.on))).toEqual([]);
+    await retire(request, [made]);
   });
 });

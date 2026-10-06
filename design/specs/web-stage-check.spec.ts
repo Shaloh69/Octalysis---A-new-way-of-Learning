@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import type { Page, TestInfo } from "@playwright/test";
 import type { ResolvedItem } from "../../services/api/src/engine/resolve.ts";
 import {
@@ -609,3 +610,85 @@ test.describe("the Register Bar and the paper", () => {
 function escape(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+/* ============================================ a question's figure (6 Oct 2026) */
+/*
+ * design/templates/web/stage-figure/SPEC.md, on the paper. The figure is the
+ * seeded one, served on question 1 through the API's own serializer as an
+ * approved drawing (services/api/test/figures.spec.ts: a question cannot be
+ * live with an unapproved figure, so a student never meets one).
+ */
+test.describe("a question's figure, on the neutral paper", () => {
+  const SVG = readFileSync(`${process.cwd()}/content/figures/10-instruction-format.svg`, "utf8");
+  const TITLE = "A simple 16-bit instruction format";
+  const withFigure = (): PaperOptions => ({ figures: new Map([[q(1).itemId, { title: TITLE, svg: SVG }]]) });
+  const figure = (page: Page) => page.locator("[data-runner=sitting] .check-figure");
+
+  test("gate 1-3, 5: nothing clipped, no sideways scroll, keyboard reachable, tokens rendered", async ({ page }) => {
+    await open(page, withFigure());
+    await expect(figure(page)).toBeVisible();
+    expect(await clippedElements(page, ROUTE), "figure").toEqual([]);
+    expect(await horizontalOverflow(page), "figure").toBeLessThanOrEqual(0);
+    expect(await unreachableByKeyboard(page, "main"), "figure").toEqual([]);
+    expect(await offTokenStyles(page, ROUTE), "figure").toEqual([]);
+  });
+
+  test("gate 4: AA contrast, computed, in all seven biomes, the drawing's text included", async ({ browser }, info) => {
+    test.setTimeout(240_000);
+    for (const biome of BIOMES) {
+      const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL });
+      const p = await ctx.newPage();
+      await forcePlanetBiome(p, STAGE, biome);
+      await open(p, withFigure());
+      expect(await contrastFailures(p, ROUTE), "figure " + biome).toEqual([]);
+      await ctx.close();
+    }
+  });
+
+  test("gate 6: under reduced motion nothing on the figure moves", async ({ page }) => {
+    await recordMotion(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await open(page, withFigure());
+    expect((await recordedMotion(page)).filter((m) => m.ms > 1 && /fig/.test(m.on))).toEqual([]);
+  });
+
+  test("one named image under the stem, the same in two biomes for two students, and readable at 380", async ({ browser }, info) => {
+    const looks: string[][] = [];
+    for (const [biome, hue] of [["jungle", "30"], ["cave", "250"]] as const) {
+      const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL });
+      const p = await ctx.newPage();
+      await forcePlanetBiome(p, STAGE, biome);
+      await open(p, withFigure());
+      // A different student: a different seeded accent hue. The figure must not care.
+      await p.evaluate((h) => document.documentElement.style.setProperty("--accent-hue", h), hue);
+      await p.waitForTimeout(400);
+      await expect(figure(p).getByRole("img", { name: TITLE })).toBeVisible();
+      await expect(figure(p).locator("svg")).toHaveAttribute("aria-hidden", "true");
+      looks.push(await figure(p).evaluate((root) => [root, ...root.querySelectorAll("*")].map((e) => {
+        const cs = getComputedStyle(e);
+        return [e.tagName, cs.color, cs.fill, cs.stroke, cs.backgroundColor].join(" ");
+      })));
+      const smallest = await figure(p).locator("svg").evaluate((svg) => {
+        const scale = svg.getBoundingClientRect().width / (svg as SVGSVGElement).viewBox.baseVal.width;
+        return Math.min(...[...svg.querySelectorAll("text")].map((t) => Number(t.getAttribute("font-size")) * scale));
+      });
+      expect(smallest).toBeGreaterThanOrEqual(9);
+      await ctx.close();
+    }
+    expect(looks[1], "the figure changed with the planet").toEqual(looks[0]);
+  });
+
+  test("the figure carries no part of the key", async ({ page }) => {
+    const served = await open(page, withFigure());
+    const start = served.bodies.find((b) => /\/attempts$/.test(b.url))!;
+    const paper = JSON.parse(start.body) as { items: Array<Record<string, unknown>> };
+    expect(Object.keys(paper.items[0]!.figure as object).sort()).toEqual(["svg", "title"]);
+    expect(JSON.stringify(paper.items[0])).not.toMatch(/correctValue|correctIndex|rationale/);
+  });
+
+  test("captures: a question with its figure, at both widths", async ({ page }, info) => {
+    await open(page, withFigure());
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: "design/templates/web/stage-figure/current-check" + (wide(info) ? "" : "-380") + ".png" });
+  });
+});

@@ -166,6 +166,8 @@ export interface PaperOptions {
   failRecord?: (ordinal: number) => boolean;
   /** Refuse the submit. */
   failSubmit?: boolean;
+  /** Approved figures by item id (6 Oct 2026), served through the API's own serializer. */
+  figures?: Map<string, { title: string; svg: string }>;
 }
 
 export interface Served {
@@ -218,7 +220,7 @@ export async function servePaper(page: Page, items: ResolvedItem[], opts: PaperO
       attemptNo: 1,
       resumed: recorded.length > 0,
       totalItems: items.length,
-      items: toStudentPaper(items),
+      items: toStudentPaper(items, opts.figures),
       answered: toStudentRecorded(items, recorded, reveal),
     });
   });
