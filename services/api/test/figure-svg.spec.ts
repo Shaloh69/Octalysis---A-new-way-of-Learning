@@ -10,7 +10,7 @@ import { checkFigureSvg } from "../../../scripts/lib/figure-svg.mjs";
  */
 
 const ID = "10-format";
-const ok = (inner = "", root = 'viewBox="0 0 480 120"') =>
+const ok = (inner = "", root = 'viewBox="0 0 440 120"') =>
   `<svg xmlns="http://www.w3.org/2000/svg" ${root}>
   <title>A 16-bit instruction format</title>
   <desc>Three fields: a 4-bit opcode and two 6-bit operand references.</desc>
@@ -60,14 +60,14 @@ describe("refused: colour and size are the page's, not the figure's", () => {
     // fig-* is not enough: it must be one figure.css actually styles.
     expect(problemsOf(ok('<rect x="0" y="0" width="1" height="1" class="fig-red"/>')).join(" ")).toMatch(/only the fig-\* classes/);
   });
-  it("text under 12 units", () => {
-    expect(problemsOf(ok('<text x="0" y="10" font-size="9">tiny</text>')).join(" ")).toMatch(/unreadable at 380px/);
+  it("text under 14 units", () => {
+    expect(problemsOf(ok('<text x="0" y="10" font-size="12">tiny</text>')).join(" ")).toMatch(/unreadable at 380px/);
   });
   it("a viewBox wider than 640", () => {
-    expect(problemsOf(ok("", 'viewBox="0 0 900 200"')).join(" ")).toMatch(/at most 640/);
+    expect(problemsOf(ok("", 'viewBox="0 0 900 200"')).join(" ")).toMatch(/at most 440/);
   });
   it("a fixed width or height on the root", () => {
-    expect(problemsOf(ok("", 'viewBox="0 0 480 120" width="480"')).join(" ")).toMatch(/no width or height/);
+    expect(problemsOf(ok("", 'viewBox="0 0 440 120" width="480"')).join(" ")).toMatch(/no width or height/);
   });
 });
 

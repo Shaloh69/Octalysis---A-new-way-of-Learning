@@ -42,8 +42,10 @@ elements (no `script`, `foreignObject`, `image`, `use` of an outside file,
 `on*` attributes, `javascript:` or outside `href`s, `style` elements); **no
 literal colours**: every fill and stroke is `currentColor`, `none`, or a
 `var(--fig-*)` token, so a figure is drawn in each realm's own colours and
-meets the same AA contrast. Text at least 12 units at a viewBox no wider than
-640, so it stays legible at 380px.
+meets the same AA contrast. Text at least 14 units at a viewBox no wider than
+440, so it stays legible at 380px (measured 6 Oct 2026: at 640 and 12 the
+console drew 8px labels at 380, and at 480 the reader drew 8.7px; at 440 the
+smallest text is 9.5px. A figure is designed for a phone first).
 
 **Storage.** Supabase Postgres, table `figures` (`db/addendum-figures.sql`),
 staff-only under RLS like `chapter_drafts`. Sync writes the file's SVG as the

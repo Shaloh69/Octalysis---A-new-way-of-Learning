@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { ContentBlock } from "../lib/api";
 import { encounterFor } from "../lib/encounters";
 import { longestLine, numberBlocks, sourceLabel, type Inline, type Numbered } from "../lib/markdown";
+import { FigureDrawing } from "./FigureDrawing";
 
 /**
  * The reading's blocks, rendered, never edited (hard rule 5).
@@ -172,6 +173,27 @@ function OneBlock({
           <code>{body}</code>
         </pre>
         {meta.caption && <figcaption>{meta.caption}</figcaption>}
+      </figure>
+    );
+  }
+
+  if (kind === "figure") {
+    // A figure drawn for the course from the book's (6 Oct 2026). The API
+    // sends only an approved drawing, and leaves an unapproved one out whole.
+    if (!block.figure) return <></>;
+    return (
+      <figure className="rd-fig" data-figure={block.figure.id ?? meta.id}>
+        <div className="rd-fig-frame">
+          <FigureDrawing svg={block.figure.svg} title={block.figure.title} />
+        </div>
+        <figcaption>
+          <Body parsed={parsed} />
+          {meta.after && (
+            <p className="rd-fig-credit">
+              After Stallings, Figure <span className="mono">{meta.after}</span>, redrawn for this course
+            </p>
+          )}
+        </figcaption>
       </figure>
     );
   }

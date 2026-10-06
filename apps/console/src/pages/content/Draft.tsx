@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, type ChapterDraft, type ContentBlock } from "@/lib/api";
+import { api, type ChapterDraft, type ContentBlock, type ContentFigure } from "@/lib/api";
 import { dayDate } from "@/lib/record-view";
 import { SUMMARY_TONE } from "@/lib/content-view";
 import { Badge } from "@/components/ui/badge";
@@ -29,13 +29,14 @@ const WORD: Record<ChapterDraft["status"], string> = {
 };
 
 export function DraftCard({
-  stageId, title, draft, liveBlocks, onChanged,
+  stageId, title, draft, liveBlocks, onChanged, figures,
 }: {
   stageId: string;
   title: string;
   draft: ChapterDraft;
   liveBlocks: number;
   onChanged: () => void;
+  figures?: ReadonlyMap<string, ContentFigure> | undefined;
 }) {
   const [busy, setBusy] = useState(false);
   const [sending, setSending] = useState(false);
@@ -111,6 +112,7 @@ export function DraftCard({
         title={`${stageId} · ${title}`}
         headingId="pv-draft-title"
         heading="The draft · as a student would read it"
+        figures={figures}
       />
 
       <DraftSendBack

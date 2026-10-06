@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dices } from "lucide-react";
 import { api, type BankItem, type ResolvedPreview } from "@/lib/api";
+import { FigureCard } from "../content/FigureCard";
 import { useAsync } from "@/lib/useAsync";
 import { TYPE_LABEL } from "@/lib/items-view";
 import { cn } from "@/lib/utils";
@@ -65,10 +66,14 @@ export function ReviewDialog({
     if (item) setShown(item);
   }, [item]);
 
-  const { data, error, loading } = useAsync<ResolvedPreview | null>(
+  const { data, error, loading, reload } = useAsync<ResolvedPreview | null>(
     () => (shown ? api.previewItem(shown.id, seed) : Promise.resolve(null)),
     [shown?.id, seed],
   );
+
+  // A question about a picture students cannot see may not go live: the API
+  // refuses it too, but the button should not offer what will be refused.
+  const figureWaits = Boolean(data?.figure && !data.figure.served);
 
   // A fresh item starts clean: nothing it did not earn carries over from the
   // last one -- above all not a ticked self-approval or a typed reason.
@@ -190,6 +195,13 @@ export function ReviewDialog({
               <p className="mb-3 whitespace-pre-wrap rounded-md border border-line bg-surface-0 p-3 text-sm text-ink">
                 {data.item.stem}
               </p>
+              {data.figure ? (
+                /* The question's figure (6 Oct 2026): approvable here, once, for
+                   the lesson and every question that names it. */
+                <div className="mb-3" data-item-figure>
+                  <FigureCard figure={data.figure} onChanged={reload} headingLevel={4} />
+                </div>
+              ) : null}
               {data.item.correctIndex < 0 ? (
                 /*
                   AN ORDERING ITEM HAS NO KEYED OPTION -- its key is a sequence.
@@ -351,8 +363,13 @@ export function ReviewDialog({
               Send back to draft
             </Button>
           ) : null}
+          {current.status === "review" && !rejecting && figureWaits ? (
+            <p className="text-sm text-ink-muted" data-figure-blocks>
+              Approve figure <span className="mono">{data!.figure!.id}</span> first: students would be asked about a picture they cannot see.
+            </p>
+          ) : null}
           {current.status === "review" && !rejecting ? (
-            <Button disabled={busy} onClick={() => void decide({ to: "live", verb: "approved" })}>
+            <Button disabled={busy || figureWaits} onClick={() => void decide({ to: "live", verb: "approved" })}>
               Approve and publish
             </Button>
           ) : null}

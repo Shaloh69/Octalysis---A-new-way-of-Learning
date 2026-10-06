@@ -20,14 +20,15 @@
   color: var(--ink);
   font-family: var(--font-body);
 }
-/* A figure's viewBox is at most 640 wide and its text at least 12 units
-   (scripts/lib/figure-svg.mjs), so at 380px it scales to no less than about
-   half size and stays readable; on a wide screen it stops at its own width. */
+/* A figure's viewBox is at most 440 wide and its text at least 14 units
+   (scripts/lib/figure-svg.mjs), so on a 380px phone, drawn near the full
+   width, its smallest text is still about 9.5px (measured); on a wide screen it
+   grows to 34rem and stops, where 14-unit text is about body size. */
 .fig-svg > svg {
   display: block;
   width: 100%;
   height: auto;
-  max-width: 640px;
+  max-width: 34rem;
   margin-inline: auto;
 }
 .fig-svg text { fill: var(--ink); }

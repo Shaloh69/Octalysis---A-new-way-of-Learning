@@ -376,6 +376,27 @@ export interface ChapterDetail {
   summary: StageSummary | null;
   /** The chapter's drafted lesson text (instructor ruling, 5 Oct 2026). Staff-only, unreviewed. */
   draft: ChapterDraft | null;
+  /** The chapter's figures (6 Oct 2026), each drawn as it is under review. */
+  figures: ContentFigure[];
+}
+
+/**
+ * A figure drawn for the course (docs/FIGURES-AND-AUDIO.md). `svg` is the
+ * drawing under review; approving is of THIS drawing, by `hash`. `served`
+ * says whether students see a drawing now (the last approved one, which may be
+ * older than this).
+ */
+export interface ContentFigure {
+  id: string;
+  title: string;
+  svg: string;
+  hash: string;
+  status: SummaryStatus;
+  note: string | null;
+  served: boolean;
+  everApproved: boolean;
+  reviewer: string | null;
+  reviewedAt: string | null;
 }
 
 /** A chapter's lesson text drafted from the textbook, waiting for review. Approving is of THIS text. */
@@ -414,6 +435,8 @@ export interface ContentStatus {
     consoleEdited: number;
     summaries: { draft: number; approved: number; sentBack: number; none: number };
     chapters: { draft: number; approved: number; sentBack: number };
+    /** Figures drawn for the course (6 Oct 2026): waiting for review, and approved. */
+    figures: { waiting: number; approved: number };
   };
 }
 
@@ -432,6 +455,8 @@ export interface BankItem {
   /** The TEMPLATE, with its `{f}` slots. Never a resolved instance. */
   stemTemplate: string;
   solverRef: string | null;
+  /** A question that needs a figure: it cannot go live until the figure is approved. */
+  figure: { id: string; status: SummaryStatus; served: boolean } | null;
   authorName: string | null;
   reviewerName: string | null;
   reviewedAt: string | null;
@@ -458,6 +483,8 @@ export interface ResolvedPreview {
     rationale: string;
     resolvedParams: Record<string, unknown>;
   } | null;
+  /** The question's figure, drawn as it is under review, approvable here. */
+  figure: ContentFigure | null;
   error?: string;
 }
 
@@ -661,6 +688,19 @@ export const api = {
     request<{ ok: true; alreadyApproved: boolean }>(
       `/api/v1/console/content/drafts/${encodeURIComponent(stageId)}/approve`,
       { method: "POST", body: JSON.stringify({ hash }) },
+    ),
+
+  /** A figure: approving serves THIS drawing to students, on the lesson and on its questions. */
+  approveFigure: (figureId: string, hash: string) =>
+    request<{ ok: true; alreadyApproved: boolean }>(
+      `/api/v1/console/figures/${encodeURIComponent(figureId)}/approve`,
+      { method: "POST", body: JSON.stringify({ hash }) },
+    ),
+
+  sendBackFigure: (figureId: string, reason: string) =>
+    request<{ ok: true }>(
+      `/api/v1/console/figures/${encodeURIComponent(figureId)}/send-back`,
+      { method: "POST", body: JSON.stringify({ reason }) },
     ),
 
   sendBackDraft: (stageId: string, reason: string) =>

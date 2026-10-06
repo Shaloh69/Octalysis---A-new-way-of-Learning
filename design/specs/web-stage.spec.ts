@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import type { Page, TestInfo } from "@playwright/test";
 import {
   clippedElements,
@@ -207,6 +208,101 @@ test.describe("the reading, verbatim and rendered (NEXT-SESSION §0j.3)", () => 
 });
 
 /* ======================================== leave, finish, resume (29 Sep 2026) */
+
+/* ====================================== a course figure (6 Oct 2026) */
+/*
+ * design/templates/web/stage-figure/SPEC.md. The seeded figure is a DRAFT and
+ * stage 10 is locked for these students, so stage 06's real reading is given a
+ * figure block exactly as the API serves an approved one (services/api/test/
+ * figures.spec.ts proves the API serves only approved drawings, and leaves an
+ * unapproved one out whole).
+ */
+const FIGURE_SVG = readFileSync(`${process.cwd()}/content/figures/10-instruction-format.svg`, "utf8");
+const FIGURE_TITLE = "A simple 16-bit instruction format";
+function withFigure(approved = true) {
+  return (body: StageBody): StageBody => {
+    const blocks = [...body.blocks];
+    const at = Math.max(1, blocks.findIndex((b) => b.kind === "prose") + 1);
+    blocks.splice(at, 0, {
+      ordinal: 9000,
+      kind: "figure",
+      body: "A simple instruction format: a 4-bit opcode and two 6-bit operand references.",
+      meta: { id: "10-instruction-format", after: "12.2" },
+      version: 1,
+      ...(approved ? { figure: { id: "10-instruction-format", title: FIGURE_TITLE, svg: FIGURE_SVG } } : {}),
+    } as StageBody["blocks"][number]);
+    return { ...body, blocks };
+  };
+}
+const fig = (page: Page) => page.locator('[data-figure="10-instruction-format"]');
+
+test.describe("a course figure in the reading", () => {
+  test("gate 1-3, 5: nothing clipped, no sideways scroll, keyboard reachable, tokens rendered", async ({ page }) => {
+    await openStage(page, "06", { patch: withFigure() });
+    await fig(page).scrollIntoViewIfNeeded();
+    expect(await clippedElements(page, ROUTE), "with a figure").toEqual([]);
+    expect(await horizontalOverflow(page), "with a figure").toBeLessThanOrEqual(0);
+    expect(await unreachableByKeyboard(page, "main"), "with a figure").toEqual([]);
+    expect(await offTokenStyles(page, ROUTE), "with a figure").toEqual([]);
+  });
+
+  test("gate 4: AA contrast, computed, in all seven biomes, the drawing's own text included", async ({ browser }, info) => {
+    for (const biome of BIOMES) {
+      const ctx = await browser.newContext({ viewport: info.project.use.viewport!, baseURL: info.project.use.baseURL });
+      const p = await ctx.newPage();
+      await forcePlanetBiome(p, "06", biome);
+      await openStage(p, "06", { patch: withFigure() });
+      await fig(p).scrollIntoViewIfNeeded();
+      expect(await contrastFailures(p, ROUTE, SPRITES), "figure " + biome).toEqual([]);
+      await ctx.close();
+    }
+  });
+
+  test("gate 6: under reduced motion the figure arrives with nothing moving", async ({ page }) => {
+    await recordMotion(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openStage(page, "06", { patch: withFigure() });
+    await fig(page).scrollIntoViewIfNeeded();
+    const moving = (await recordedMotion(page)).filter((m) => m.ms > 1 && /fig/.test(m.on));
+    expect(moving).toEqual([]);
+  });
+
+  test("one image to assistive tech, its caption, and the book's figure number", async ({ page }) => {
+    await openStage(page, "06", { patch: withFigure() });
+    const f = fig(page);
+    await expect(f.getByRole("img", { name: FIGURE_TITLE })).toBeVisible();
+    await expect(f.locator(".fig-svg svg")).toHaveAttribute("aria-hidden", "true");
+    await expect(f.locator("figcaption")).toContainText("a 4-bit opcode and two 6-bit operand references");
+    await expect(f.locator("figcaption")).toContainText("After Stallings, Figure 12.2, redrawn for this course");
+    await expect(f.locator(".rd-fig-credit .mono")).toHaveText("12.2");
+  });
+
+  test("its smallest text stays readable: at least 9px rendered, at 380 too", async ({ page }) => {
+    await openStage(page, "06", { patch: withFigure() });
+    await fig(page).scrollIntoViewIfNeeded();
+    const smallest = await fig(page).locator("svg").evaluate((svg) => {
+      const vb = (svg as SVGSVGElement).viewBox.baseVal.width;
+      const scale = svg.getBoundingClientRect().width / vb;
+      const sizes = [...svg.querySelectorAll("text")].map((t) => Number(t.getAttribute("font-size")) * scale);
+      return Math.min(...sizes);
+    });
+    expect(smallest).toBeGreaterThanOrEqual(9);
+  });
+
+  test("an unapproved figure is not there at all, caption included", async ({ page }) => {
+    await openStage(page, "06", { patch: withFigure(false) });
+    await expect(page.locator(".rd-fig")).toHaveCount(0);
+    await expect(reading(page)).not.toContainText("a 4-bit opcode and two 6-bit operand references");
+  });
+
+  test("captures: the figure in the reading, at both widths", async ({ page }, info) => {
+    await openStage(page, "06", { patch: withFigure() });
+    await fig(page).evaluate((el) => el.scrollIntoView({ block: "center" }));
+    await page.waitForTimeout(400);
+    const s = wide(info) ? "" : "-380";
+    await page.screenshot({ path: "design/templates/web/stage-figure/current" + s + ".png" });
+  });
+});
 
 test.describe("leaving, and what finishes a stage", () => {
   test("the way back is at the top (the shell's Leave planet) and at the end, over the biome", async ({ page }) => {

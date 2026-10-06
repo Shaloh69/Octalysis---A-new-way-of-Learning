@@ -34,10 +34,13 @@ export interface Writes {
   /** Drafted lesson text (5 Oct 2026). */
   approveDraft: Array<{ stageId: string; body: { hash: string } }>;
   sendBackDraft: Array<{ stageId: string; body: { reason: string } }>;
+  /** Figures (6 Oct 2026): never sent, replayed into the chapter read. */
+  approveFigure: Array<{ id: string; body: { hash: string } }>;
+  sendBackFigure: Array<{ id: string; body: { reason: string } }>;
 }
 
 export interface FixtureOpts {
-  fail?: "edit" | "stale" | "approve" | "send-back" | "approve-draft";
+  fail?: "edit" | "stale" | "approve" | "send-back" | "approve-draft" | "approve-figure";
   /** Delay every read, to see the skeleton. */
   delayMs?: number;
   /** Answer every read with this status. */
@@ -69,7 +72,22 @@ function applyBlock(b: Block, w: Writes): Block {
 }
 
 export async function useFixture(page: Page, opts: FixtureOpts = {}) {
-  const writes: Writes = { edit: [], approve: [], sendBack: [], approveDraft: [], sendBackDraft: [] };
+  const writes: Writes = { edit: [], approve: [], sendBack: [], approveDraft: [], sendBackDraft: [], approveFigure: [], sendBackFigure: [] };
+
+  // A figure approval serves a drawing to students: never for real from a spec.
+  await page.route(/\/api\/v1\/console\/figures\/[^/]+\/(approve|send-back)$/, async (route: Route) => {
+    const m = /\/figures\/([^/]+)\/(approve|send-back)$/.exec(new URL(route.request().url()).pathname)!;
+    const [, id, action] = m;
+    if (action === "approve") {
+      if (opts.fail === "approve-figure") {
+        return route.fulfill({ status: 409, json: { error: { code: "conflict", message: "This figure was redrawn since you opened it. Look at the new drawing before approving it." } } });
+      }
+      writes.approveFigure.push({ id: id!, body: route.request().postDataJSON() });
+    } else {
+      writes.sendBackFigure.push({ id: id!, body: route.request().postDataJSON() });
+    }
+    return route.fulfill({ json: { ok: true, alreadyApproved: false } });
+  });
 
   await page.route(/\/api\/v1\/console\/content(\/|\?|$)/, async (route: Route) => {
     const req = route.request();
@@ -169,6 +187,11 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
       if (d) {
         for (const a of writes.approveDraft) if (a.stageId === id) Object.assign(d, { status: "approved", note: null, everApproved: true, reviewer: REVIEWER, reviewedAt: new Date().toISOString() });
         for (const b of writes.sendBackDraft) if (b.stageId === id) Object.assign(d, { status: "sent_back", note: b.body.reason, reviewer: REVIEWER, reviewedAt: new Date().toISOString() });
+      }
+      const figs = (json.figures ?? []) as Array<{ id: string; status: string; note: string | null; served: boolean; reviewer: string | null; reviewedAt: string | null }>;
+      for (const fg of figs) {
+        for (const a of writes.approveFigure) if (a.id === fg.id) Object.assign(fg, { status: "approved", note: null, served: true, reviewer: REVIEWER, reviewedAt: new Date().toISOString() });
+        for (const b of writes.sendBackFigure) if (b.id === fg.id) Object.assign(fg, { status: "sent_back", note: b.body.reason, reviewer: REVIEWER, reviewedAt: new Date().toISOString() });
       }
       // Two replaced versions (2 and 1) means the block is now at version 3.
       if (opts.history) json.blocks = (json.blocks as Block[]).map((b) => ({ ...b, version: b.version + 2, historyCount: Math.max(2, b.historyCount) }));

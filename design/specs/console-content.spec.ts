@@ -334,6 +334,119 @@ test.describe("drafted lesson text: approval is of the exact text, and says what
 });
 
 /* ======================================================================
+ * Figures (instructor rulings, 6 Oct 2026; docs/FIGURES-AND-AUDIO.md and
+ * design/templates/console/content-figure/SPEC.md). Stage 10's simple
+ * instruction format is the seeded figure: a draft on every fresh database.
+ * ==================================================================== */
+
+const FIG = "10-instruction-format";
+async function openFigures(page: Page, opts: FixtureOpts = {}) {
+  const fx = await openChapter(page, opts, "10");
+  await page.locator("[data-figures]").waitFor({ timeout: 15_000 });
+  return fx;
+}
+const figureCard = (page: Page) => page.locator(`[data-figures] [data-figure-card="${FIG}"]`);
+
+test.describe("figures: the gate, on the Figures card", () => {
+  test("1-3 · nothing clipped, no horizontal scroll, every control by keyboard (and the send-back dialog)", async ({ page }) => {
+    await openFigures(page);
+    expect(await clippedElements(page), "figures").toEqual([]);
+    expect(await horizontalOverflow(page), "figures").toBeLessThanOrEqual(0);
+    expect(await unreachableByKeyboard(page, "main"), "figures").toEqual([]);
+    await figureCard(page).getByRole("button", { name: new RegExp("^Send back figure " + FIG) }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    expect(await clippedElements(page), "figure send-back dialog").toEqual([]);
+  });
+
+  test("4 · AA contrast, computed, on all three themes", async ({ page }) => {
+    test.setTimeout(240_000);
+    await openFigures(page);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      expect(await contrastFailures(page), theme + ": figures").toEqual([]);
+    }
+  });
+
+  test("5 · the rendered output uses the tokens, the drawing included", async ({ page }) => {
+    await openFigures(page);
+    expect(await offTokenStyles(page), "figures").toEqual([]);
+  });
+
+  test("6 · under reduced motion the send-back dialog does not animate", async ({ page }) => {
+    await recordMotion(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openFigures(page);
+    await figureCard(page).getByRole("button", { name: new RegExp("^Send back figure " + FIG) }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    expect((await recordedMotion(page)).filter((m) => m.ms > 1)).toEqual([]);
+  });
+});
+
+test.describe("figures: approval is of the exact drawing, and says what it does", () => {
+  test("the card draws the figure as one named image, and says no student sees it yet", async ({ page }) => {
+    await openFigures(page);
+    const card = figureCard(page);
+    await expect(card).toHaveAttribute("data-figure-status", "draft");
+    await expect(card).toContainText("Waiting for your review");
+    await expect(card).toContainText("No student sees it until you approve it.");
+    await expect(card.getByRole("img", { name: "A simple 16-bit instruction format" })).toBeVisible();
+    await expect(card.locator(".fig-svg svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  test("the previews draw the figure block with its caption and the book's figure number", async ({ page }) => {
+    await openFigures(page);
+    const fig = page.locator("[data-draft-card] [data-preview-figure=\"" + FIG + "\"]");
+    await expect(fig.getByRole("img", { name: "A simple 16-bit instruction format" })).toBeVisible();
+    await expect(fig).toContainText("After Stallings, Figure 12.2. Redrawn for this course.");
+    await expect(fig).toContainText("Not approved yet: students do not see this figure.");
+  });
+
+  test("approving posts the drawing's hash once and says students see it now", async ({ page }) => {
+    const fx = await openFigures(page);
+    const api = process.env.OCTA_API_URL ?? "http://localhost:8090";
+    const res = await page.request.get(api + "/api/v1/console/content/10", { headers: { authorization: "Bearer " + TEACHER } });
+    const real = ((await res.json()) as { figures: Array<{ id: string; hash: string }> }).figures.find((x) => x.id === FIG)!.hash;
+    await figureCard(page).getByRole("button", { name: new RegExp("^Approve figure " + FIG) }).click();
+    await expect(page.getByRole("status").filter({ hasText: new RegExp("Figure " + FIG + " approved") })).toContainText(/Students see this drawing now/);
+    expect(fx.writes.approveFigure).toEqual([{ id: FIG, body: { hash: real } }]);
+    await expect(figureCard(page)).toHaveAttribute("data-figure-status", "approved");
+    await expect(figureCard(page)).toContainText("Students see this drawing.");
+  });
+
+  test("an approval of a redrawn figure is refused, and the refusal stays", async ({ page }) => {
+    await openFigures(page, { fail: "approve-figure" });
+    await figureCard(page).getByRole("button", { name: new RegExp("^Approve figure " + FIG) }).click();
+    const t = page.locator("[data-toaster]").getByRole("alert");
+    await expect(t).toContainText(/redrawn since you opened it/i);
+    await page.waitForTimeout(4_500);
+    await expect(t).toBeVisible();
+  });
+
+  test("sending back needs a reason, says what happens, posts once, and shows the reason", async ({ page }) => {
+    const fx = await openFigures(page);
+    await figureCard(page).getByRole("button", { name: new RegExp("^Send back figure " + FIG) }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("What students see does not change.");
+    const confirm = dialog.getByRole("button", { name: new RegExp("^Send back figure " + FIG) });
+    await expect(confirm).toBeDisabled();
+    await dialog.getByLabel(/Reason/).fill("Mark the bit positions under each field.");
+    await confirm.click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp("Figure " + FIG + " sent back") })).toBeVisible();
+    expect(fx.writes.sendBackFigure).toEqual([{ id: FIG, body: { reason: "Mark the bit positions under each field." } }]);
+    await expect(figureCard(page)).toContainText("Mark the bit positions under each field.");
+  });
+
+  test("captures: the Figures card, at both widths", async ({ page }, info) => {
+    await openFigures(page);
+    await page.locator("[data-figures]").scrollIntoViewIfNeeded();
+    const s = wide(info.project.name) ? "" : "-380";
+    await page.locator("[data-figures]").screenshot({ path: "design/templates/console/content-figure/current" + s + ".png" });
+  });
+});
+
+/* ======================================================================
  * /content — where each chapter stands
  * ==================================================================== */
 

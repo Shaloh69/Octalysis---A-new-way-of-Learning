@@ -40,8 +40,8 @@ export const FIGURE_CLASSES = new Set([
   "fig-ink", "fig-muted", "fig-line", "fig-box", "fig-fill", "fig-accent", "fig-accent-line", "fig-mono",
 ]);
 const REF_ATTRS = new Set(["marker-start", "marker-end", "clip-path"]);
-export const MAX_VIEWBOX_WIDTH = 640;
-export const MIN_FONT_SIZE = 12;
+export const MAX_VIEWBOX_WIDTH = 440;
+export const MIN_FONT_SIZE = 14;
 
 /**
  * Check one figure. Returns `{ problems, title }`: an empty `problems` array

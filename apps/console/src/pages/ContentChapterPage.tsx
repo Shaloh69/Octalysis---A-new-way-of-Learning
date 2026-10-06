@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { api, type ContentBlock, type StageSummary } from "@/lib/api";
@@ -11,6 +11,7 @@ import { BlockRow, type Editing } from "./content/BlockRow";
 import { Preview } from "./content/Preview";
 import { SendBackDialog, SummaryEntry, useSummaryActions } from "./content/Summaries";
 import { DraftCard } from "./content/Draft";
+import { FigureCard } from "./content/FigureCard";
 
 /**
  * `/content/:stageId`: one chapter, its summary, and its blocks beside a
@@ -112,6 +113,8 @@ export function ContentChapterPage() {
 
   const st = data?.stage;
   const edited = data?.blocks.filter((b) => b.consoleEdited).length ?? 0;
+  const figureMap = useMemo(() => new Map((data?.figures ?? []).map((f) => [f.id, f])), [data]);
+  const figuresWaiting = data?.figures.filter((f) => f.status !== "approved").length ?? 0;
 
   return (
     <div ref={box} className="ct">
@@ -179,7 +182,22 @@ export function ContentChapterPage() {
           </section>
 
           {data.draft ? (
-            <DraftCard stageId={st.id} title={st.title} draft={data.draft} liveBlocks={data.blocks.length} onChanged={q.reload} />
+            <DraftCard stageId={st.id} title={st.title} draft={data.draft} liveBlocks={data.blocks.length} onChanged={q.reload} figures={figureMap} />
+          ) : null}
+
+          {data.figures.length > 0 ? (
+            <section className="ct-card fg-section" data-figures aria-labelledby="figures-title">
+              <div className="ct-pane-head">
+                <h2 id="figures-title" className="ct-h2">Figures</h2>
+                <p className="ct-faint">
+                  Drawn for this course from the book&apos;s figures, never copied.{" "}
+                  <span className="num">{figuresWaiting}</span> of <span className="num">{data.figures.length}</span> waiting for review.
+                </p>
+              </div>
+              <div className="fg-list">
+                {data.figures.map((f) => <FigureCard key={f.id} figure={f} onChanged={q.reload} />)}
+              </div>
+            </section>
           ) : null}
 
           {!split ? (
@@ -220,7 +238,7 @@ export function ContentChapterPage() {
               </section>
             ) : null}
             {split || half === "preview" ? (
-              <Preview ref={preview} blocks={data.blocks} editing={editing} title={`${st.id} · ${st.title}`} />
+              <Preview ref={preview} blocks={data.blocks} editing={editing} title={`${st.id} · ${st.title}`} figures={figureMap} />
             ) : null}
           </div>
         </>

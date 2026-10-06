@@ -9,6 +9,8 @@
 /* The shared animated backdrop. One painted surface, no markup, no state --
  * see the header of that file for why it is shared when almost nothing else is. */
 @import "@octa/tokens/backdrop.css";
+/* Course figures (6 Oct 2026): their eight fig-* classes, in this theme's tokens. */
+@import "@octa/tokens/figure.css";
 
 @tailwind base;
 @tailwind components;
@@ -2002,6 +2004,36 @@
     background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
   }
   .pv-code figcaption { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--ink-muted); }
+
+  /* ---- figures (6 Oct 2026, docs/FIGURES-AND-AUDIO.md) ---- */
+  /* A figure in the preview, as the reader draws it: the drawing on the
+     page's own surface in a hairline frame, the caption under it, the credit
+     in small type. */
+  .pv-figure { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+  .pv-figure .fig-svg { padding: var(--space-3); background: var(--surface-1); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); }
+  .pv-figure figcaption { font-size: var(--text-sm); color: var(--ink-muted); }
+  .pv-figure figcaption p { margin: 0; }
+  .pv-figure-credit { margin-top: var(--space-1) !important; font-size: var(--text-xs); color: var(--ink-faint); }
+  .pv-figure-missing { padding: var(--space-3); border: var(--border-hair) dashed var(--line-strong); border-radius: var(--radius-md); color: var(--ink-muted); font-size: var(--text-sm); }
+  .pv-figure-state { font-size: var(--text-xs); color: var(--ink-muted); }
+  .fig-refused { padding: var(--space-3); border: var(--border-hair) dashed var(--line-strong); border-radius: var(--radius-md); color: var(--ink-muted); font-size: var(--text-sm); }
+
+  /* The chapter's Figures card, and one figure under review. */
+  .fg-section { padding: 0; }
+  .fg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr)); gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+  .fg-card { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; padding: var(--space-3); background: var(--surface-1); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); }
+  .fg-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+  .fg-title { margin: 0; font-size: var(--text-base); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+  .fg-id { font-size: var(--text-sm); color: var(--ink-muted); font-weight: 400; }
+  .fg-drawing { margin: 0; padding: var(--space-3); background: var(--surface-0); border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); }
+  .fg-served { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); }
+  /* On a phone the drawing takes the card's width: every nested padding gives way. */
+  @media (max-width: 40rem) {
+    .fg-list { padding: var(--space-2); }
+    .fg-card { padding: var(--space-2); }
+    .fg-drawing, .pv-figure .fig-svg { padding: var(--space-1); }
+  }
+  .fg-note { margin: 0; padding: var(--space-2) var(--space-3); font-size: var(--text-sm); background: var(--surface-2); border-left: 3px solid var(--line-strong); border-radius: var(--radius-sm); }
 
   /* ---- loading ---- */
   .ct-skel { animation: octa-shimmer calc(var(--dur-base) * 6) ease-in-out infinite; background: var(--surface-2); }

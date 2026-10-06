@@ -20,6 +20,8 @@
 @import "@octa/tokens/tokens.css";
 @import "@octa/tokens/looks.css";
 @import "@octa/tokens/backdrop.css";
+/* Course figures (6 Oct 2026): their eight fig-* classes, in each realm's tokens. */
+@import "@octa/tokens/figure.css";
 
 /* --------------------------------------------------------------
  * Shell

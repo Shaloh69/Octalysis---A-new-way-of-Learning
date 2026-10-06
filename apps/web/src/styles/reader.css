@@ -135,6 +135,22 @@
 }
 .rd-figure figcaption { padding: var(--space-2) var(--space-4); border-top: var(--border-hair) solid var(--line); font-size: var(--text-sm); color: var(--ink-muted); }
 
+/*
+ * A course figure (6 Oct 2026, docs/FIGURES-AND-AUDIO.md): SVG drawn for the
+ * course, in the realm's own tokens (packages/tokens/figure.css). It scales to
+ * the column and stops at 34rem; its text is at least 14 units in a viewBox
+ * at most 440 wide, so it is never sideways and never unreadable. On a phone
+ * the frame gives up most of its padding so the drawing takes the width.
+ */
+.rd-fig { margin: var(--space-5) 0; }
+.rd-fig-frame { padding: var(--space-4); background: var(--surface-2); border: var(--border-hair) solid var(--line-strong); }
+.rd-fig figcaption { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--ink-muted); }
+.rd-fig figcaption p { margin: 0 0 var(--space-1); }
+.rd-fig .rd-fig-credit { font-size: var(--text-xs); color: var(--ink-muted); }
+@media (max-width: 640px) {
+  .rd-fig-frame { padding: var(--space-1); }
+}
+
 .rd-table-wrap { margin: var(--space-4) 0; }
 .rd-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .rd-table th, .rd-table td {

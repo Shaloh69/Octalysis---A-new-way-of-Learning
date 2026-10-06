@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FigureDrawing } from "./FigureDrawing";
 import {
   api,
   ApiError,
@@ -632,6 +633,12 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
           </div>
 
           <p className="check-stem">{item.stem}</p>
+          {item.figure && (
+            // The question's figure, on the neutral paper like the stem.
+            <figure className="check-figure">
+              <FigureDrawing svg={item.figure.svg} title={item.figure.title} />
+            </figure>
+          )}
 
           {item.type === "G" ? (
             <Ordering

@@ -31,6 +31,7 @@ function item(
     targetDifficulty: 0.6,
     stemTemplate: "A stem",
     solverRef: null,
+    figure: null,
     authorName: null,
     reviewerName: null,
     reviewedAt: null,

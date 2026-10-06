@@ -67,6 +67,15 @@ export interface ContentBlock {
   body: string;
   meta: Record<string, string>;
   version: number;
+  /** A figure block's drawing: only ever one an instructor approved (6 Oct 2026). */
+  figure?: CourseFigure;
+}
+
+/** A figure drawn for the course, as the API serves it: approved, inline SVG. */
+export interface CourseFigure {
+  id?: string;
+  title: string;
+  svg: string;
 }
 
 export interface StageDetail {
@@ -298,6 +307,8 @@ export interface PaperItem {
   options: string[];
   points: number;
   unit?: string;
+  /** The question's figure, when it needs one: part of the question, never of the key. */
+  figure?: CourseFigure;
 }
 
 /** An answer in the shape the grading service takes and stores. */

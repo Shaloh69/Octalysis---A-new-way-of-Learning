@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
-import type { ContentBlock } from "@/lib/api";
+import type { ContentBlock, ContentFigure } from "@/lib/api";
+import { FigureDrawing } from "@/components/FigureDrawing";
 import { shapeOf } from "@/lib/content-view";
 import { parseBlocks, type Block as MdBlock, type Inline } from "@/lib/reader-markdown";
 
@@ -63,7 +64,29 @@ function Paragraphs({ body }: { body: string }) {
   return <Md blocks={parseBlocks(body)} />;
 }
 
-function Shape({ kind, meta, body }: { kind: string; meta: Record<string, string>; body: string }) {
+function Shape({ kind, meta, body, figures }: {
+  kind: string;
+  meta: Record<string, string>;
+  body: string;
+  figures: ReadonlyMap<string, ContentFigure>;
+}) {
+  if (kind === "figure") {
+    // The drawing under review, so the preview shows what approving would
+    // serve. A student sees it only once it is approved (the Figures card).
+    const f = meta.id ? figures.get(meta.id) : undefined;
+    return (
+      <figure className="pv-figure" data-preview-figure={meta.id}>
+        {f ? <FigureDrawing svg={f.svg} title={f.title} /> : (
+          <p className="pv-figure-missing" role="note">Figure <span className="mono">{meta.id ?? "?"}</span> is not drawn yet.</p>
+        )}
+        <figcaption>
+          <Paragraphs body={body} />
+          {meta.after ? <p className="pv-figure-credit">After Stallings, Figure <span className="num">{meta.after}</span>. Redrawn for this course.</p> : null}
+        </figcaption>
+        {f && f.status !== "approved" ? <p className="pv-figure-state">Not approved yet: students do not see this figure.</p> : null}
+      </figure>
+    );
+  }
   const shape = shapeOf(kind, meta);
   if (shape === "code") {
     return (
@@ -86,6 +109,8 @@ function Shape({ kind, meta, body }: { kind: string; meta: Record<string, string
   return <div className="pv-prose"><Paragraphs body={body} /></div>;
 }
 
+const NO_FIGURES: ReadonlyMap<string, ContentFigure> = new Map();
+
 export const Preview = forwardRef<HTMLDivElement, {
   blocks: readonly ContentBlock[];
   editing: { blockId: string; text: string } | null;
@@ -93,7 +118,9 @@ export const Preview = forwardRef<HTMLDivElement, {
   /** A second preview on the page (a drafted chapter's) needs its own heading. */
   headingId?: string;
   heading?: string;
-}>(function Preview({ blocks, editing, title, headingId = "pv-title", heading = "Preview · as a student reads it" }, ref) {
+  /** The chapter's figures by id, drawn where a figure block names one. */
+  figures?: ReadonlyMap<string, ContentFigure> | undefined;
+}>(function Preview({ blocks, editing, title, headingId = "pv-title", heading = "Preview · as a student reads it", figures = NO_FIGURES }, ref) {
   return (
     <section ref={ref} className="ct-card ct-preview" data-preview tabIndex={0} aria-labelledby={headingId}>
       <div className="ct-pane-head">
@@ -111,7 +138,7 @@ export const Preview = forwardRef<HTMLDivElement, {
               data-editing={live ? "true" : undefined}
             >
               {live ? <p className="pv-editing-tag">Editing block <span className="num">{b.ordinal}</span>, not saved</p> : null}
-              <Shape kind={b.kind} meta={b.meta} body={live ? editing!.text : b.body} />
+              <Shape kind={b.kind} meta={b.meta} body={live ? editing!.text : b.body} figures={figures} />
             </div>
           );
         })}
