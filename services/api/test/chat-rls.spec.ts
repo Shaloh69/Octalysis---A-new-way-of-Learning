@@ -200,6 +200,38 @@ describe("a student with a paper open can neither read nor post (ruling 3)", () 
     expect(res.error).toBeNull();
     expect(res.rowCount).toBeGreaterThanOrEqual(2);
   });
+  it("a moon's journey is practice, not a paper: it does not close the chat", async () => {
+    // studentB, with nothing open, starts a journey: still reads and posts.
+    const res = await runAsSteps(service, [
+      [`with o as (insert into objectives (id, stage_id, code, bloom_level, description)
+                   values ('03.9', '03', '03.9', 'understand', 'A journey fixture') returning id, stage_id),
+             bp as (insert into blueprints (name, scope, stage_id, objective_id, total_items, constraints)
+                    select 'Journey', 'objective', o.stage_id, o.id, 1, '{}'::jsonb from o returning id),
+             a as (insert into assessments (blueprint_id, section_id, title) select id, $2, 'Moon journey' from bp returning id)
+        insert into attempts (user_id, assessment_id, attempt_no, seed, status)
+        select $1, id, 1, 'journey-seed', 'in_progress' from a`, [w.studentB, w.sectionId]],
+      ["select count(*)::int as n from attempts where user_id = $1 and status = 'in_progress'", [w.studentB]],
+    ]);
+    // The journey really is open (not a vacuous pass)...
+    expect(res.rows[0]).toMatchObject({ n: 1 });
+    const post = await runAsSteps(service, [
+      [`with o as (insert into objectives (id, stage_id, code, bloom_level, description)
+                   values ('03.9', '03', '03.9', 'understand', 'A journey fixture') returning id, stage_id),
+             bp as (insert into blueprints (name, scope, stage_id, objective_id, total_items, constraints)
+                    select 'Journey', 'objective', o.stage_id, o.id, 1, '{}'::jsonb from o returning id),
+             a as (insert into assessments (blueprint_id, section_id, title) select id, $2, 'Moon journey' from bp returning id)
+        insert into attempts (user_id, assessment_id, attempt_no, seed, status)
+        select $1, id, 1, 'journey-seed', 'in_progress' from a`, [w.studentB, w.sectionId]],
+      ["insert into chat_messages (room_id, author_id, body) values ($1, $2, 'mid-journey') returning id", [roomA, w.studentB]],
+    ]);
+    // ...and studentB still posts.
+    expect(post.error).toBeNull();
+    expect(post.rowCount).toBe(1);
+  });
+  it("CONTROL: a stage check in progress does close it (studentA's)", async () => {
+    const res = await runAs(studentA, "select chat_paper_open($1) as open", [w.studentA]);
+    expect(res.rows[0]).toMatchObject({ open: true });
+  });
   it("the instructor is never closed out by a paper", async () => {
     const res = await runAsSteps(service, [
       ["insert into attempts (user_id, assessment_id, attempt_no, seed, status) values ($1, $2, 9, 'staff-seed', 'in_progress')", [w.teacher, w.practiceAssessmentId]],

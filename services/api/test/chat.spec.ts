@@ -140,9 +140,11 @@ describe("GET /chat/rooms — who is in which room", () => {
     const res = await get("/api/v1/chat/rooms", tA);
     expect(res.statusCode).toBe(423);
     expect(res.json().error.code).toBe("paper_open");
-    expect(res.json().error.message).toMatch(/paper open/);
-    const unread = await get("/api/v1/chat/unread", tA);
-    expect(unread.json()).toEqual({ mentions: 0, closed: true });
+    // Named, so the student knows what to finish (6 Oct 2026).
+    expect(res.json().error.message).toMatch(/^(Stage 03 Check|Power-On Self Test) is open\. The chat opens again when you submit it\.$/);
+    const unread = (await get("/api/v1/chat/unread", tA)).json();
+    expect(unread).toMatchObject({ mentions: 0, closed: true });
+    expect(["Stage 03 Check", "Power-On Self Test"]).toContain(unread.paper.title);
   });
 
   it("the instructor sees every section's room; a private thread once it has a message", async () => {

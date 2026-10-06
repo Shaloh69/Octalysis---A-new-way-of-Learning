@@ -61,8 +61,31 @@ const RoomParams = z.object({ id: z.string().uuid() });
 const MessageParams = z.object({ id: z.string().uuid() });
 const ThreadQuery = z.object({ before: z.string().datetime({ offset: true }).optional() });
 
-const paperOpen = () =>
-  new AppError("paper_open", "You have a paper open. The chat opens again when you submit it.");
+/** The paper that closes the chat, named (the newest, if somehow two are open). */
+async function openPaper(db: Queryable, userId: string) {
+  const { rows } = await db.query(
+    `select s.title, b.stage_id, a.started_at
+       from attempts a
+       join assessments s on s.id = a.assessment_id
+       join blueprints b on b.id = s.blueprint_id
+      where a.user_id = $1 and a.status = 'in_progress' and b.scope <> 'objective'
+        and (s.closes_at is null or s.closes_at > now())
+      order by a.started_at desc limit 1`,
+    [userId],
+  );
+  const r = rows[0];
+  return r
+    ? { title: r.title as string, stageId: (r.stage_id as string | null) ?? null, startedAt: new Date(r.started_at as Date).toISOString() }
+    : null;
+}
+
+const paperOpen = (title?: string) =>
+  new AppError(
+    "paper_open",
+    title
+      ? `${title} is open. The chat opens again when you submit it.`
+      : "You have a paper open. The chat opens again when you submit it.",
+  );
 const noRoom = () => errors.notFound("That room does not exist, or you are not in it.");
 
 type Queryable = Pick<pg.PoolClient, "query"> | Db;
@@ -129,7 +152,7 @@ async function isPaperOpen(db: Queryable, userId: string): Promise<boolean> {
 
 /** Students only: a paper open closes the chat. Staff are never closed out. */
 async function guardPaper(db: Queryable, id: Identity): Promise<void> {
-  if (!isStaff(id) && (await isPaperOpen(db, id.userId))) throw paperOpen();
+  if (!isStaff(id) && (await isPaperOpen(db, id.userId))) throw paperOpen((await openPaper(db, id.userId))?.title);
 }
 
 async function requireMember(db: Queryable, id: Identity, roomId: string): Promise<void> {
@@ -282,7 +305,9 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
   /* GET /api/v1/chat/unread — the Chat nav item's count. Cheap; no rooms created. */
   app.get("/api/v1/chat/unread", async (req): Promise<ChatUnread> => {
     const id = await identityFrom(req, env);
-    if (!isStaff(id) && (await isPaperOpen(app.db, id.userId))) return { mentions: 0, closed: true };
+    if (!isStaff(id) && (await isPaperOpen(app.db, id.userId))) {
+      return { mentions: 0, closed: true, paper: await openPaper(app.db, id.userId) };
+    }
     const { rows } = await app.db.query(
       `select count(*)::int as n
          from chat_messages m
@@ -292,7 +317,7 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
           and chat_member($1, m.room_id)`,
       [id.userId],
     );
-    return { mentions: Number(rows[0]?.n ?? 0), closed: false };
+    return { mentions: Number(rows[0]?.n ?? 0), closed: false, paper: null };
   });
 
   /* POST /api/v1/chat/threads — staff open a private thread with one student. */

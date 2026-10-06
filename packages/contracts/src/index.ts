@@ -858,6 +858,12 @@ export const ChatUnread = z.object({
   mentions: z.number().int().min(0),
   /** A paper is open: chat is closed until it is submitted. */
   closed: z.boolean(),
+  /**
+   * Which paper, so the page can name it and take the student to it (6 Oct
+   * 2026: a student told only "a paper is open" could not tell which). The
+   * stage is null for a paper with no stage page (a final).
+   */
+  paper: z.object({ title: z.string(), stageId: z.string().nullable(), startedAt: z.string() }).nullable().default(null),
 });
 export type ChatUnread = z.infer<typeof ChatUnread>;
 

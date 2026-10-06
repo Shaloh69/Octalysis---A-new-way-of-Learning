@@ -155,6 +155,10 @@
 .chat-state { max-width: 40rem; }
 .chat-state-body { display: grid; gap: var(--space-3); padding: var(--space-4); justify-items: start; }
 .chat-state-body p { margin: 0; }
+/* The paper that closes the chat, named: what to finish, and since when. */
+.chat-paper { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3); padding: var(--space-2) var(--space-3); background: var(--surface-2); border-left: var(--border-thick) solid var(--line-strong); }
+.chat-paper-title { font-weight: 700; }
+.chat-paper-when { font-size: var(--text-sm); color: var(--ink-muted); }
 
 @media (max-width: 640px) {
   .chat-log { height: clamp(16rem, 52dvh, 32rem); padding: var(--space-2) var(--space-3); }

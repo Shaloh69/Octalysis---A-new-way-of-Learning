@@ -101,14 +101,21 @@ create table if not exists chat_members (
 );
 
 -- ---------- who may be in a room ----------
--- A paper is open: in progress, and its window (if it has one) still open.
+-- A paper is open: a stage check or an exam in progress, its window (if it
+-- has one) still open. NOT a moon's journey (blueprint scope 'objective'): a
+-- journey is practice, opens with no Start and is never held (ruling 3 binds a
+-- paper; AttemptRunner.tsx). Until 6 Oct 2026 a journey counted, and since
+-- nothing abandons an attempt, one opened and left closed a student's chat
+-- for good (seen on the deployment the day the chat shipped).
 create or replace function chat_paper_open(p_user uuid) returns boolean
 language sql stable security definer set search_path = public, pg_temp as $$
   select exists (
     select 1 from attempts a
       join assessments s on s.id = a.assessment_id
+      join blueprints b on b.id = s.blueprint_id
      where a.user_id = p_user
        and a.status = 'in_progress'
+       and b.scope <> 'objective'
        and (s.closes_at is null or s.closes_at > now()))
 $$;
 

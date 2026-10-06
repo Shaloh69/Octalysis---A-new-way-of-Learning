@@ -197,17 +197,28 @@ test.describe("/app/chat — what the page owes", () => {
     await expect(page.locator(".chat-compose-hint")).toContainText("Attachments are not available on this server");
   });
 
-  test("a paper open: the chat is closed, says why, and offers no way to post (ruling 3)", async ({ page }) => {
+  test("a paper open: the chat is closed, names the paper, and offers no way to post (ruling 3)", async ({ page }, info) => {
     await page.route("**/api/v1/chat/rooms", (r) =>
-      r.fulfill({ status: 423, contentType: "application/json", body: JSON.stringify({ error: { code: "paper_open", message: "You have a paper open. The chat opens again when you submit it." } }) }),
+      r.fulfill({ status: 423, contentType: "application/json", body: JSON.stringify({ error: { code: "paper_open", message: "Stage 01 Check is open. The chat opens again when you submit it." } }) }),
+    );
+    await page.route("**/api/v1/chat/unread", (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ mentions: 0, closed: true, paper: { title: "Stage 01 Check", stageId: "01", startedAt: "2026-10-06T07:15:52.379Z" } }) }),
     );
     await signIn(page, S006);
     await page.goto("/app/chat", { waitUntil: "domcontentloaded" });
     const state = page.locator("[data-chat-state=closed]");
     await expect(state).toContainText("Closed while your paper is open");
     await expect(state).toContainText("submit it");
+    // Which paper, since when, and the way to it (6 Oct 2026: unnamed, a student could not tell).
+    await expect(state.locator("[data-open-paper]")).toContainText("Stage 01 Check");
+    await expect(state.locator("[data-open-paper] time")).toHaveAttribute("datetime", "2026-10-06T07:15:52.379Z");
+    await expect(state.getByRole("link", { name: "Go to Stage 01 Check" })).toHaveAttribute("href", "/app/stage/01/check");
+    await expect(state).toContainText("journey is practice");
     await expect(page.locator(".chat-compose, .chat-msgs")).toHaveCount(0);
     await expect(state.getByRole("button", { name: "Check again" })).toBeVisible();
+    expect(await clippedElements(page, ROUTE)).toEqual([]);
+    expect(await contrastFailures(page, ROUTE)).toEqual([]);
+    await page.screenshot({ path: `design/templates/web/chat/current-closed${wide(info) ? "" : "-380"}.png`, fullPage: !wide(info) });
   });
 
   test("a failed load says so and retries, never a blank page", async ({ page }) => {

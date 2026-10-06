@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import type { ChatPerson } from "@octa/contracts";
 import { api, ApiError, putChatFile, type ChatMessage, type ChatRooms, type ChatThread } from "../lib/api";
 import { useChatLive } from "../lib/chat-live";
@@ -33,7 +33,7 @@ const TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "video/mp4"
 type Load =
   | { state: "loading" }
   | { state: "error"; message: string }
-  | { state: "closed"; message: string }
+  | { state: "closed"; message: string; paper: { title: string; stageId: string | null; startedAt: string } | null }
   | { state: "ready"; rooms: ChatRooms };
 
 const mb = (n: number) => (n / (1024 * 1024)).toFixed(n < 1024 * 1024 ? 2 : 1);
@@ -436,8 +436,15 @@ export function ChatPage(): JSX.Element {
   const roomId = rooms.find((r) => r.id === asked)?.id ?? rooms[0]?.id ?? null;
 
   const fail = useCallback((err: unknown) => {
-    if (err instanceof ApiError && err.code === "paper_open") setLoad({ state: "closed", message: err.message });
-    else
+    if (err instanceof ApiError && err.code === "paper_open") {
+      setLoad({ state: "closed", message: err.message, paper: null });
+      // Which paper, and where it is: "a paper is open" alone left a student
+      // guessing (6 Oct 2026, the day the chat shipped).
+      void api
+        .chatUnread()
+        .then((u) => setLoad((l) => (l.state === "closed" ? { ...l, paper: u.paper ?? null } : l)))
+        .catch(() => {});
+    } else
       setLoad({
         state: "error",
         message: err instanceof ApiError ? err.message : "Could not reach the server. Check your connection and try again.",
@@ -554,12 +561,25 @@ export function ChatPage(): JSX.Element {
           <h2 className="hud-caption">{closed ? "Closed while your paper is open" : "That did not load"}</h2>
           <div className="chat-state-body">
             <p>{load.message}</p>
+            {closed && load.paper && (
+              <p className="chat-paper" data-open-paper="">
+                <span className="chat-paper-title">{load.paper.title}</span>
+                <span className="chat-paper-when">
+                  started <time className="mono" dateTime={load.paper.startedAt}>{when(load.paper.startedAt)}</time>
+                </span>
+              </p>
+            )}
             {closed ? (
               <p className="note">
                 Your instructor set it this way so that a paper is your own work. Finish and submit it, and the
-                chat is here, with everything you missed.
+                chat is here, with everything you missed. A moon&apos;s journey is practice and never closes it.
               </p>
             ) : null}
+            {closed && load.paper?.stageId && (
+              <Link className="hud-button button-primary" to={`/app/stage/${load.paper.stageId}/check`}>
+                Go to {load.paper.title}
+              </Link>
+            )}
             <button
               type="button"
               className="hud-button"
