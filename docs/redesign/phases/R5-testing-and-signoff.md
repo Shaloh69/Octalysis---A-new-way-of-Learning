@@ -158,13 +158,21 @@ contract (R5.2)").
       `--enc-*` tokens: 0 added lines redefine one
 
 ## R5.5 — Full page-template coverage check
-- [ ] Every route from R3's checklist has a committed template screenshot
+- [x] Every route from R3's checklist has a committed template screenshot
       and a passing Playwright baseline
-- [ ] `npm run test:visual` (or this repo's equivalent) passes clean across
+      **7 Oct 2026:** 38 route folders (19 web, 19 console), each with a
+      committed template and a spec once names are reconciled
+      (`REDESIGN-SIGNOFF.md` §4 lists the mapping)
+- [x] `npm run test:visual` (or this repo's equivalent) passes clean across
       all 44 routes
+      **7 Oct 2026:** `pnpm qa` (all of Playwright) against the builds,
+      reseeded, two workers: 1620 passed, 2 failed, 194 skipped. The two were
+      one stale count (chapter 04 has 32 blocks since `c08fc7e`), fixed;
+      the spec reran 93 passed. **1622 passed, 0 failed.** "44" is the old
+      plan's figure; the routes that exist are the 38 counted above
 
 ## R5.6 — Sign-off report
-- [ ] Write `docs/redesign/REDESIGN-SIGNOFF.md` — what changed, what stayed
+- [x] Write `docs/redesign/REDESIGN-SIGNOFF.md` — what changed, what stayed
       the same (link back to `00-START-HERE.md`'s boundary table), the
       before/after screenshot comparison from R0/R1, and any open decisions
       surfaced along the way (following the "not mine to fix" pattern already
@@ -173,6 +181,6 @@ contract (R5.2)").
 
 ## Definition of done
 - [ ] Every checkbox above checked
-- [ ] `REDESIGN-SIGNOFF.md` committed
+- [x] `REDESIGN-SIGNOFF.md` committed (7 Oct 2026)
 - [ ] Nothing outside the declared scope boundary was touched, verified by
       diff, not by memory

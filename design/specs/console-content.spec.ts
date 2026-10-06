@@ -566,9 +566,11 @@ test.describe("summaries: approval is of the exact text, and says what it does",
 test.describe("the editor: one block at a time, the preview follows the typing", () => {
   test("every block is listed in order, and the preview renders the chapter", async ({ page }) => {
     await openChapter(page);
-    await expect(page.locator("[data-block]")).toHaveCount(31);
+    // Chapter 04 has 32 blocks since c08fc7e (6 Oct) drew the address split as
+    // a figure; the full run of 7 Oct caught this count still at 31.
+    await expect(page.locator("[data-block]")).toHaveCount(32);
     await showHalf(page, "Preview");
-    await expect(page.locator("[data-preview] [data-preview-block]")).toHaveCount(31);
+    await expect(page.locator("[data-preview] [data-preview-block]")).toHaveCount(32);
     // Code in mono, exactly as the student reader draws it.
     expect(await page.locator('[data-preview-block="3"] pre').evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/mono/i);
   });
