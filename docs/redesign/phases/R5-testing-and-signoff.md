@@ -69,9 +69,21 @@ tested rather than assumed. This phase closes the redesign, same spirit as
       whole system, 36-37 a giant chosen, 43-44 eleven moons**, at 1440 and
       380; the spec asserts ≤50 on all six. `web-app.spec.ts` 54 passed, the
       capture unchanged
-- [ ] 30fps floor re-verified on a throttled/mid-range profile with the full
+- [x] 30fps floor re-verified on a throttled/mid-range profile with the full
       system (rings + planets + moons + flight path + starfield) rendering,
       not just the R1 skeleton
+      **7 Oct 2026:** `web-app-perf.spec.ts` "the 30 fps floor": Chrome's 4x
+      CPU slowdown (Lighthouse mid-tier mobile), the whole system and the
+      eleven-moon planet, frames counted at the GL over 5 s after the guard's
+      window: **60 fps (the vsync cap), full quality, at 1440 and 380**, on
+      the RTX 3050 through ANGLE D3D11. Margin: 57.5 fps at 8x; **24.1 at 16x
+      with the guard's lower quality on**, which cuts GPU cost and so cannot
+      rescue a CPU-bound device (a finding, not a failure of the floor). The
+      default headless renderer, SwiftShader, gave ~27 fps with NO slowdown,
+      so it measures itself, not the map: the test now runs on the hardware
+      GPU and SKIPS, saying why, where only software GL exists. NOT measured:
+      a real phone's GPU, which this laptop's flatters. (No flight path
+      exists to render: R5.1's INV-33 note.)
 
 ## R5.4 — The boundary tests, run one final time
 - [ ] R2.3's test (different students, identical structure, different
