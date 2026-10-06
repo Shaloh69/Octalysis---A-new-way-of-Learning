@@ -23,8 +23,11 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 Live R3 87/88, R4 46/48, R5 5/24. The drafting assistant was re-planned at the
 instructor's request (docs/AI-ASSISTANT-PLAN.md v2: figure catalogue and
 summaries with a grounding check, chart data read exactly from the PDF's
-vectors, redraw by spec, quotes pasted by reference, more features). It awaits
-five decisions; no code was written. Prelim NOT runnable (deployment: stage 01
+vectors, redraw by spec, quotes pasted by reference, more features). The
+instructor answered (free engine, hosted on Render, for future books with
+13-17 of this book as the test, MP3s scrapped), so the plan is now v3: the
+website on Render Free, the model on this laptop through Ollama (no free
+host can run one). It awaits v3 §10; no code was written. Prelim NOT runnable (deployment: stage 01
 13 live, 02-04 none). Detail: NEXT-SESSION.md 0zd.
 
 **6 Oct 2026 (evening):** phase report 223/245 (91%); live R3 87/88, R4 46/48,

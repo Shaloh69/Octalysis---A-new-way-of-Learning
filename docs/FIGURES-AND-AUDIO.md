@@ -92,7 +92,12 @@ allows (Google's online voices get ~200 characters: they stop after ~15 s),
 symbols said as words, and the reading mark redrawn as a soft panel with
 room around the text.
 
-**MP3s, the plan (not built):** a script reads the APPROVED lesson blocks,
+**SCRAPPED (instructor, 7 Oct 2026): "Scrap the MP3s, the current
+implementation will suffice."** The browser voice Listen uses today is the
+audiobook. No TTS key, bucket or table will be made. The plan below is kept
+only as a record of what was decided against.
+
+**MP3s, the plan (scrapped, never built):** a script reads the APPROVED lesson blocks,
 asks Google Cloud TTS for one MP3 per block (a low mono bitrate keeps the
 course to tens of MB), and stores each in a private Supabase bucket under the
 block's text hash, so changed text gets new audio and unchanged text is never

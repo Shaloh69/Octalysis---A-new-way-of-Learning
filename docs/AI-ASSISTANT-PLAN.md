@@ -1,278 +1,413 @@
-# The drafting assistant — plan v2, FOR APPROVAL
+# The drafting assistant — plan v3, FOR APPROVAL
 
-**v1** (6 Oct 2026) planned a small local tool for lesson text, questions and
-figures. **v2** (7 Oct 2026) answers the instructor's reply to it:
+**History.** v1 (6 Oct 2026) planned a small local tool. v2 (7 Oct) answered
+"do what you were doing with all of the books; summarise the figures,
+charts and graphs; think about more features". **v3** (7 Oct, later the same
+day) takes in the instructor's answers to v2's five decisions:
 
-> "I want this AI to properly do what you were doing with all of the books.
-> Summarising the figures, charts and graphs. And think about more features
-> also. Planning first, before implementation: come back to me first."
+| # | Asked | The instructor's answer (7 Oct 2026) |
+|---|---|---|
+| 1 | The engine | **"I want it to be free. Will Ollama suffice?"** (answered in §3) |
+| 2 | Which machine | **Hosted: Render Free, or Railway if Render cannot do it** |
+| 3 | How far past chapter 12 | **"This AI is for future books"**, and the remaining chapters of this book are its **test** |
+| 4 | Order, and the MP3s | **The MP3s are scrapped**: the browser voice Listen uses today is enough |
+| 5 | Features | "Tell me the features and explain them" (§6) |
+| 6 | (added the same day) | **"Each teacher will use their own laptop… make this into an executable that the website checks and connects to, so the AI runs locally"** (§4) |
 
-**No code exists.** Nothing here is built until the decisions in §9 are made.
-The analysis that led here is `docs/AI-ASSISTANT-PROPOSAL.md`.
+**No code exists.** Nothing is built until §10 is answered.
 
 ---
 
-## 1. What it is, in one paragraph
+## 1. What it is now
 
-It's a staff-only tool that takes a chapter of the textbook and drafts the
-same files a session drafts today: lesson text, questions and redrawn figures.
-It adds one new kind of output, a **catalogue of every figure, chart, graph
-and table in the chapter**: what each one shows, in our own words, its exact
-labels and numbers, the objectives it serves, and whether it is worth
-redrawing. Every draft goes through the checks and approvals that already
-exist (`sync-content --verify`, `sync-items --check`, the figure checker,
-then `/content` and `/items`). A student sees nothing it produces until the
-instructor approves it.
+It is a **staff-only website for turning a textbook into course material**, with the AI running on **each teacher's own laptop** through a small app they install:
+lesson text, questions, redrawn figures, and a catalogue of every figure,
+chart, graph and table in the book. It is built for **future books**. A new
+course, or a new edition, starts by uploading the book and its syllabus.
+**The rest of this book (syllabus chapters 13-17) is its test.**
 
-## 2. The job it reproduces: what a session did with the book
+The rules OCTA already lives by still hold. Every quote is checked against
+the book, every figure passes the figure checker, every answer key is held
+by code, and **nothing reaches a student until the instructor approves it**.
 
-Chapters 08-12 and their 17 figures were drafted by Claude Code sessions,
-and this is the work the assistant has to repeat:
-
-1. Find the right book chapter through `content/book-map.json`. The
-   syllabus follows the 9th edition and the book in hand is the 10th, so
-   syllabus 12 is book 14.
-2. Read the chapter against the syllabus objectives and organise the lesson
-   around what a student must be able to *do*.
-3. Write original explanation, and **quote every definition and fact
-   verbatim** with `source="ch-NN.md §"`. `--verify` checks each quote
-   character by character.
-4. **Check every sentence that is not a quote against the book.** On 6 Oct
-   this caught three of the session's own errors in questions 09-12.
-5. Read the chapter's figures, pick the ones that teach an objective, and
-   **redraw** them as our own SVG. That means the eight `fig-*` classes, no
-   colour, a viewBox no wider than 440, text at least 14 units, a `<desc>`
-   long description, a caption, and an `after="N.N"` credit.
-6. Write at least three questions per objective, each with distractors that
-   name real misconceptions, a rationale, a source, and registered solvers
-   for computed items. A question never names a figure it does not show, and
-   its figure never draws the answer.
-7. Preview each figure at 380 and 1440, **look at it**, and only then sync it
-   at draft for the instructor to approve.
-
-## 3. Measured today (7 Oct 2026)
+## 2. Measured facts this plan rests on (7 Oct 2026)
 
 | Fact | Measured |
 |---|---|
-| Book text | 21 chapters, **1.8 M characters** (about 450 k tokens), already extracted to `docs/source/book/` (gitignored) |
-| Figures | **~355** figure captions in the text, plus **~150 tables** |
-| How the figures are stored | as **vector drawings**: the trial pages had 30-65 drawing paths and **0 embedded images**. Their labels are real text with positions, and the points on a chart are real shapes with coordinates |
-| Can a figure be cut out of the PDF? | **Yes, with a fix needed.** A 20-line trial crop found 2 of 4 figures, and both came out clean: Fig 14.10 (the pipeline timing grid) and Fig 2.2 (processor trends, a log-scale chart with four series). The other two were missed because the captions are set with non-breaking spaces, which the caption locator has to handle |
-| This laptop | RTX 3050 Laptop GPU with **4 GB VRAM**, 16 GB RAM, Python 3.13 and PyMuPDF. **No Ollama** |
+| Render Free web service | **512 MB RAM, 0.1 CPU, no GPU**; sleeps after 15 min with no traffic; 750 instance-hours a month **shared across the workspace** (OCTA's API uses the same pool); no background-worker service type on free |
+| OCTA's API on Render | **not kept awake**: the deployment has no keep-alive job (`cron.job`: item-stats, invariants, scheduled-locks only), so a second free service has room in the 750 hours |
+| Railway Free | **0.5 GB RAM, 1 vCPU, $1 of credit a month**, no GPU (the $5 trial is one-time; Hobby is $5/month) |
+| What Ollama needs | the smallest model worth trying here needs about 2-3 GB of memory on its own; a 7-8 B model about 5 GB |
+| This laptop | RTX 3050 Laptop GPU with **4 GB VRAM**, 16 GB RAM, Python 3.13 and PyMuPDF; Ollama not installed |
+| The book | 18 MB PDF, real text layer, an embedded outline. **Figures are vector drawings**, so their labels and chart points can be read exactly. About 355 figures and 150 tables |
+| Gemini API free tier | free, but Google's terms say unpaid-tier content is used "to provide, improve, and develop Google products", and human reviewers may read it. Daily limits are small and keep changing (reported 20-500 requests a day per model in September 2026) |
 
-What the vector finding means: today's extractor keeps only the text layer,
-so a figure reaches us as a caption plus scattered labels. Because the
-drawings are vectors, a chart's data can be **read exactly from the PDF**.
-Nobody, human or model, has to estimate values by eye.
+## 3. Will Ollama suffice? Two answers
 
-## 4. The design: code does everything that can be checked, the model only drafts
+**On Render Free or Railway Free: no, it cannot run there at all.** A model
+needs several GB of memory. Render Free has 512 MB and Railway Free 0.5 GB,
+and neither has a GPU. Railway's paid plans have the memory, but they cost
+money, run on CPU only, and would be very slow. "Free" and "the AI runs on
+the host" cannot both be true.
+
+**On a teacher's laptop: yes, it runs, with limits we will measure.** Ollama
+is free and keeps the model on the teacher's machine. On this laptop, the 4 GB card holds a 3-4 B vision model
+whole, and 16 GB of RAM lets a 7-14 B model run split between the card and
+memory: slowly (an estimate: a few words a second), but free. That is fine
+for a job you start in the evening and review in the morning.
+
+**How good will the drafts be?** Better than a 2 B model, and below what the
+Claude sessions produced for chapters 08-12. Much of the design exists so
+that a small model can still be useful:
+
+- The **figure reader, chart data, checks and renderers are code**. They need
+  no model, so they come out the same quality on any engine.
+- The model **never types a quote** (code pastes the book's words) and
+  **never computes a key** (the solvers do).
+- The **grounding check** refuses a figure summary that names anything not
+  in the figure, and the **claim check** flags any unsupported sentence. A
+  weak model produces more refusals, not wrong material that slips through.
+
+So Ollama will produce **usable drafts that need more of your editing**.
+How much more is exactly what the chapter 13-17 test measures (§7). If the
+answer is "too much", the engine can be swapped later without rebuilding
+anything. Every engine sits behind one interface.
+
+**Free alternatives, and why they are not recommended for the book:**
+Gemini's free tier is stronger, but its terms let Google keep and review
+what you send, which means the copyrighted book. Its limits also change
+month to month. Groq and OpenRouter have free models with daily caps. Each
+of these can be added behind the same interface if you decide to, but none
+is the default.
+
+## 4. The design: each teacher runs their own AI (the instructor's idea, 7 Oct)
+
+> "Each teacher will use their own laptop, for each teacher to run its own AI.
+> Make this into an executable that the website checks and connects to, so
+> that the AI will run locally."
+
+So there are two pieces. **The website** is shared and hosted on Render
+Free. **The OCTA Assistant app** is an executable each teacher installs on
+their own laptop. The AI runs there, on that teacher's hardware, for free.
 
 ```
- book PDF ──► [A] figure reader (code)  ──► crops + exact labels + chart data
-                          │
-                          ▼
- chapter text ─► [B] figure summaries (model, sees the crop) ──► grounding check ──► catalogue
-                          │
-                          ├─► [C] figure redraw: model writes a spec, code draws the SVG ──► figure checker ──► preview 380/1440
-                          ├─► [D] lesson text: model cites spans, code pastes the exact words ──► --verify + claim check
-                          └─► [E] questions: model drafts, code computes the keys ──► --check + blind-answer critic
-                                                   │
-                                     [F] local review page: book crop beside our draft, every check result
-                                                   │
-                                  "Accept" moves the file into content/ ─► sync at draft/review ─► /content, /items
+  ┌───────────── The website (Render Free, Node, tiny) ─────────────┐
+  │  sign-in (staff accounts) · upload a book + syllabus             │
+  │  "Your assistant: ● online · llama-3.1-8b · 4 GB GPU · v1.2"     │
+  │  start a job · progress · review side by side · Accept / Reject  │
+  │  runs the CHECKS on every result (the same JS OCTA uses today)   │
+  └──────────────┬──────────────────────────────────▲──────────────┘
+                 │ that teacher's jobs only           │ heartbeat + results
+                 ▼        (Supabase, RLS: owner)      │
+  ┌──── Teacher A's laptop ────┐   ┌──── Teacher B's laptop ────┐
+  │  OCTA Assistant app        │   │  OCTA Assistant app        │
+  │  · signs in as Teacher A   │   │  · signs in as Teacher B   │
+  │  · Ollama + a model sized  │   │  · a smaller model: no GPU │
+  │    to THIS machine         │   │                            │
+  │  · PyMuPDF: chapters,      │   │                            │
+  │    figures, chart data     │   │                            │
+  └────────────────────────────┘   └────────────────────────────┘
 ```
 
-### A. Figure reader (no model, deterministic)
+### How the website "checks and connects"
 
-`pnpm assist:figures <chapter>` runs once per chapter with PyMuPDF, in the
-same script family as `extract_book.py`. For each figure and table it saves:
+The app **calls out**; the website never calls in. Every 30 seconds it
+writes a **heartbeat** (Supabase, a staff-only table): who it is, its
+version, the model it runs, and the machine's GPU and memory. From that,
+the website shows one of five states:
 
-- a **crop** (PNG, 150 dpi) in `docs/source/book/figures/`, which is
-  gitignored because it is the book's own artwork
-- the **exact text labels** inside the figure, with their positions
-- for charts: the **axes** (ticks, scale, linear or log), the **series** (by
-  legend marker) and every **data point**, converted from page coordinates
-  to axis values
-- its page, its book number, and the syllabus chapter it belongs to (through
-  `book-map.json`)
-
-### B. Figure summaries: the core of the request
-
-For each figure, the model gets the crop, the extracted labels and data, the
-paragraphs that cite it ("Figure 14.10 shows…") and the chapter's
-objectives. It writes one catalogue entry:
-
-| Field | What it holds |
+| State | What the teacher sees |
 |---|---|
-| `kind` | block diagram · state diagram · timing/pipeline grid · bit-field format · flowchart · circuit · chart · table · listing |
-| `summary` | 2-4 sentences in **our own words**: what it shows and why it matters |
-| `takeaways` | the 1-3 facts a student should leave with |
-| `objectives` | which syllabus objectives it serves |
-| `chart` | for charts: axes, series, and the trend stated **with numbers taken from the extracted data** |
-| `verdict` | **redraw** (it teaches an objective) · **describe** (the words are enough) · **skip** (with a reason) |
-| `desc`, `caption` | drafts of the accessible long description and the caption, used if it is redrawn |
+| **Not installed** | a Download button and a 3-step setup guide |
+| **Offline** | "Last seen 2 hours ago". Jobs can still be queued; they run when the laptop is back |
+| **Online** | the model, the hardware, and an expected time per chapter |
+| **Busy** | the job running and its progress |
+| **Out of date** | "Update the app" (a version older than the website accepts) |
 
-**The grounding check** is the figure version of `--verify`. Every label
-the summary names and every number it states must exist in that figure's
-extracted labels or data. If one does not, the entry is refused and
-returned with the unmatched words marked. This is what stops a fluent,
-wrong description.
+**Why outbound, not the website talking to `localhost`:** a page on the
+internet reaching into a laptop is something browsers increasingly block or
+put behind a permission prompt (Safari blocks it outright). It only works
+while the page is open, and any other site could probe the same port.
+Outbound needs no open port, no tunnel and no firewall change, and a job
+started at 6 pm runs overnight with the browser closed.
 
-The catalogue (`content/figures/catalog/ch-NN.json`) is in our own words,
-so it can be committed. It is staff material: nothing in it reaches a
-student. Its summaries **feed** the lesson text, the questions and the
-redraws.
+### Pairing: how the app knows whose laptop it is
 
-### C. Figure redraw: the model writes a spec, code draws it
+On first run, the app shows a short code. The teacher types it into the
+website (already signed in), and the app receives **its own token for that
+teacher only**, stored in the OS's credential store. It can read that
+teacher's jobs and write that teacher's results, nothing else (RLS, with a
+denial test proving teacher B's app cannot see teacher A's jobs). The
+website can revoke a paired laptop.
 
-Asking a model to write SVG directly produces broken, off-grid art. Here
-the model writes a small **spec** (boxes, arrows, rows, fields, series), and
-one **renderer per kind** draws it. The first renderers are pipeline/timing
-grid, bit-field format, block diagram, state diagram and chart (line,
-scatter, bar; linear or log axes). Only the eight `fig-*` classes are used,
-so the result passes `figure-svg.mjs` by construction.
+### What the app contains
 
-- **Charts and graphs are re-plotted from the extracted data or the book's
-  formula** (Amdahl's law, for example), never estimated by eye. The
-  caption says which source was used.
-- Every redraw is rendered to PNG at 380 and 1440 and shown **beside the
-  book's crop**, so the reviewer compares the two directly.
-- A question's figure is drawn for that question and must never show its
-  answer (the existing rule, 6 Oct).
+- **The worker:** pulls jobs, extracts chapters, figures and chart data with
+  PyMuPDF, calls the model, and sends results back.
+- **Ollama management:** it detects Ollama (installing it from ollama.com on
+  first run if missing), measures the GPU and memory, and **downloads the
+  model that fits this machine**. A 4 GB card gets a different model than a
+  12 GB card, and a laptop with no GPU a smaller one still. It says what to
+  expect before the download (2-9 GB, once).
+- **Built as one Windows executable** with PyInstaller (Python, because
+  PyMuPDF is). macOS later, see the cost note below.
 
-### D. Lesson text: quotes pasted by reference, unquoted claims checked
+**What stays on the website, on purpose:** the **checks** (`--verify`, the
+figure checker, the item checker, grounding, solvers) run on the website
+with the same JavaScript OCTA already trusts. Putting a second copy in the
+app would let the two drift. The **previews** at 380 and 1440 are drawn by
+the teacher's own browser on the review page, so the app needs no browser
+inside it.
 
-- The model never types a quote. It cites a span
-  (`ch-14.md §14.4 ¶3 s2-s3`), and the tool pastes the book's exact words.
-  `--verify` then passes by construction, and a misquote cannot happen.
-- **Claim check:** a second pass pairs every factual sentence in our own
-  prose with a supporting span in the book. A sentence with no support is
-  **flagged for the instructor**, not silently dropped. This is step 4 of §2,
-  automated.
-- Figures are placed with the existing `figure` block, chosen from the
-  catalogue's **redraw** entries.
-- Output: `content/stages/NN.draft.md`, which goes through the same
-  `chapter_drafts` approval as today.
+### The book
 
-### E. Questions: the model drafts, code holds the keys
+The teacher picks the PDF **in the app**, and it never has to leave their
+laptop as a PDF. The app uploads the extracted chapter text and figure data
+to a **private** staff-only bucket, because the checks on the website need
+the text to verify quotes against. Crops of the book's own art go up only
+for the side-by-side review, also private. Nothing is public, and nothing
+goes into git.
 
-- Same shape as `content/items/NN.json`: slug, objective, type, bloom,
-  difficulty, stem, correct, distractors, rationale and source.
-- **Computed items use only registered solvers.** The solver computes the
-  key, never the model.
-- **Static items carry a supporting span** for the correct answer.
-- **The blind-answer critic:** a second pass answers each item from the stem
-  and options alone, without seeing the key. A disagreement, two defensible
-  answers, or an item it can answer without the course is flagged.
-- **A duplicate check** against the existing bank, so a new item does not
-  repeat a live one.
-- Output lands at `review` on `/items`, as today.
+### Honest costs and limits of this idea
 
-### F. The review page (local)
+- **Code signing is not free.** An unsigned Windows app makes SmartScreen
+  say "Windows protected your PC" (More info → Run anyway). It works, but
+  teachers need that told to them. A signing certificate costs money every
+  year. **macOS** blocks unsigned apps harder and needs an Apple developer
+  account ($99/year) to notarise. **Proposal:** Windows only, unsigned, with
+  the bypass in the setup guide; macOS when there is a budget.
+- **Each laptop sets its own quality.** A teacher with no GPU gets a small
+  model and slow runs. The app reports its tier, and the website labels
+  every draft with the model that wrote it.
+- **The first run downloads 2-9 GB** (Ollama plus a model).
+- **Render's 750 free hours are shared** with OCTA's API. The website sleeps
+  when nobody uses it, and the apps' heartbeats are writes to Supabase, not
+  requests to Render, so they don't keep it awake.
 
-This is a page served on `localhost` by the tool itself (plain HTML, not
-Streamlit, and not part of either app). You pick a chapter and a job,
-watch it run, then review: the book's crop beside our redraw, the summary
-with every grounded word marked, each check's result, and the run's cost.
-**Accept** moves a passing file into `content/`. **Reject** keeps it in the
-run folder with your note. A CLI does the same for scripted runs.
+**Railway** is still not needed: the website is light enough for Render
+Free.
 
-Every run keeps its prompts, raw outputs, check reports and cost in
-`.assistant/runs/<date>-<chapter>-<job>/` (gitignored), so a draft can
-always be traced back to what produced it.
+**Getting results into OCTA:** an accepted draft is **exported** in OCTA's
+own formats (`content/stages/NN.draft.md`, `content/items/NN.json`,
+`content/figures/<id>.svg`), as a download or a GitHub pull request. From
+there it goes through `sync-content --verify` / `sync-items --check` and
+lands at draft or review on `/content` and `/items`, exactly as today. The
+tool never writes OCTA's course tables directly.
 
-## 5. The engine: the main decision
+## 5. How each job works
 
-The tool is the same in every case: the reader, the checks, the renderers
-and the review page. The only thing that changes is which model drafts.
+### A. Book and syllabus intake (new, for future books)
 
-| | **A. Local (Ollama)** | **B. Claude API** (recommended) | **C. Claude Code, as now** |
-|---|---|---|---|
-| Quality on this material | weakest. A 7-8 B model writes plausible prose and reads dense diagrams poorly, so expect many refused drafts | the same model family that wrote 08-12 and the 17 figures, with strong vision for figures | the same as B |
-| Fits this laptop? | partly. A 3-4 B vision model fits 4 GB (`qwen2.5vl:3b`, `gemma3:4b`); a 7-8 B text model spills into RAM and is slow (a chapter's lesson draft in tens of minutes, an estimate) | yes, nothing runs locally | yes |
-| Cost | free | **about $3 per chapter** on Opus 5.5 ($4/$20 per M tokens), **about $50 for chapters 01-17**; roughly half that through the Batch API, and half again on Sonnet 5.5. Estimates, re-measured on the trial chapter | inside the existing Claude subscription |
-| Where the book goes | nowhere: it never leaves the machine | excerpts and crops are sent to Anthropic for processing, the same exposure these Claude Code sessions have had all along. Nothing is published | the same as B |
-| Who can run it | you, from the review page | you, from the review page | only from a Claude Code session; no button to press |
-| Needs | installing Ollama | an Anthropic API key in the **root `.env` only**, never a `VITE_` variable (hard rule 2) | nothing |
+Pick the PDF in the app and upload the syllabus on the website. The app splits the book into chapters
+using its outline (generalising `scripts/extract_book.py`), extracts every
+figure and table, and pulls the objectives from the syllabus. It then
+**drafts the syllabus-to-book chapter map** (this course needed one because
+the syllabus follows the 9th edition and the book is the 10th), for you to
+confirm.
 
-**Recommendation: B, with A kept as an offline fallback.** The point of the
-request is to do what the sessions did, and a 4 GB local model cannot. The
-checks catch bad drafts either way, but with A most drafts would fail them,
-and the tool would save you no time.
+Every PDF is laid out differently. `extract_book.py`'s clean-up rules
+(running heads, soft hyphens, bold bullets) were tuned to this book, so
+intake shows a **sample page before and after cleaning** for you to check.
+A scanned book with no text layer is out of scope until OCR is added.
 
-The cost per chapter is what the trial chapter (§8, A1) measures first. A
-spending cap is set in the Anthropic console before any run. C costs
-nothing to keep: the tools are plain commands, so a Claude Code session can
-drive them too.
+### B. Figure reader (code)
 
-## 6. More features: what else it can do
+For each figure and table it saves the crop (private), the exact labels with
+positions, and for charts the axes, series and every data point, read from
+the vector drawing. A trial on 7 Oct cut out Fig 14.10 and Fig 2.2 cleanly.
+Two of four were missed because captions use non-breaking spaces; that gets
+fixed first.
 
-All of these sit behind the same approvals. Nothing reaches a student
-unapproved.
+### C. Figure summaries (model + grounding check)
 
-| # | Feature | What it gives you | Reaches students? | Priority |
-|---|---|---|---|---|
-| 1 | **Figure catalogue + summaries** (§4 B) | every figure, chart, graph and table, summarised and grounded | no (staff) | **core** |
-| 2 | **Figure redraw** (§4 C) | SVG drafts with the book's crop beside them | after /content approval | **core** |
-| 3 | **Chart data recovery** (§4 A) | exact series for every chart, so a graph is re-plotted, not estimated | through #2 | **core** |
-| 4 | **Coverage map** per chapter | objectives × lesson sections × questions × figures, with gaps marked (an objective with fewer than 3 items, a figure on no objective) | no | high |
-| 5 | **Claim audit of what is already written** | runs the claim check over the lesson text of 01-13 as it stands and lists unsupported sentences. So far the claim check has been done by hand only once, on questions 09-12 | no (a report) | high |
-| 6 | **Bank critic** | the blind-answer critic and duplicate check over the existing 314 items, including the 83 act-1 items waiting at review on the deployment. It flags; you decide | no | high (it speeds up the approvals the Prelim waits on) |
-| 7 | **Planet and moon summaries** | drafts for the summaries R3's last box waits on (ruling exception 1 already allows these) | after /content approval | medium |
-| 8 | **Audiobook preparation** | a pronunciation list for the MP3s ("x86", "MIPS", hex, register names) and the text to read for each figure. The lesson text itself is unchanged | through Listen | medium, with the TTS key |
-| 9 | **Glossary** | verbatim definitions with sources, per stage. It could feed the unbuilt `/app/notebook`, but **building that page needs its own approval** | only if that page is approved | medium |
-| 10 | **Instructor's lecture aids** | slide outline, board notes, a one-page chapter review sheet (a handout like the claim-account PDF), drawn from **approved** text only | a handout only, if you choose | low |
-| 11 | **Item revision hints** | once an item has 30+ exposures, poor discrimination is flagged with a suggested new version (rule 6: a new version, never an edit) | no | later (needs real exposures) |
-| 12 | **Feedback digest** | student feedback (P8) summarised for you | no | later, and **only on engine A**: it is student data |
+From the crop, the exact labels and the paragraphs that cite the figure,
+the model writes: its kind, a 2-4 sentence summary in our own words, the
+takeaways, the objectives it serves, a verdict (redraw, describe or skip),
+and drafts of the caption and the accessible description. **Grounding
+check:** any label or number it names must exist in the figure's extracted
+labels or data, or the entry is refused and sent back with the mismatch
+marked.
 
-**Not in this plan, and why:** a **student-facing AI tutor**. It would
-answer students live, from text nobody approved, and could leak or reason
-toward answers during papers (hard rules 1, 5 and 9). If you want one, it
-needs its own proposal and rulings, and it would come after this tool has
-earned trust.
+### D. Figure redraw (model writes a spec, code draws)
 
-## 7. What it will not do
+The model describes the figure as structured data: boxes, arrows, rows,
+fields or series. A renderer per kind (pipeline grid, bit-field format,
+block diagram, state diagram, chart) draws the SVG, so it passes OCTA's
+figure checker by construction. Charts are re-plotted from the extracted
+data or the book's formula, never estimated by eye. Each redraw is shown
+beside the book's crop at 380 and 1440.
 
-- Write to the database, approve anything, or move a draft into `content/`
-  without your Accept.
-- Run where students can reach it, ship in either app's bundle, or put the
-  book, crops or extracted text into git or any public place.
-- Decide what is correct. The checks and you do.
-- Draft chapter 18 from the book. No edition covers it, so the tool stops
-  and says so (`.claude/rules/content.md`).
-- Draft lesson text past chapter 12 while the 6 Oct ruling "stop all
-  authoring only until chapter 12" stands (decision 3 below).
+### E. Lesson text (quotes by reference + claim check)
 
-## 8. Build order and effort
+The model cites passages by position, and code pastes the book's exact words.
+Every sentence in our own words is then checked for a supporting passage;
+any without one is flagged for you.
 
-| Step | What | Model? | Sessions |
-|---|---|---|---|
-| A0 | **Figure reader**: crops, labels and chart data for every figure in 01-17. Fix the caption locator (non-breaking spaces) and check that all ~355 are found | none | 1 |
-| A1 | **Engine + figure summaries + grounding check**, trialled on **syllabus 12 (book 14)**, where the session already did the work. Compare the two, and measure the real cost per chapter | yes | 1 |
-| A2 | **Redraw renderers** (grid, bit-field, block, state, chart) + previews beside the crop | spec only | 1-2 |
-| A3 | **Review page** | none | 1 |
-| A4 | **Lesson text** by reference + claim check, trialled on a chapter already drafted | yes | 1 |
-| A5 | **Questions** + blind critic + duplicate check | yes | 1 |
-| A6 | Features 4-8 from §6, in the order you choose | mixed | 1 each |
+### F. Questions (keys held by code + blind critic)
 
-A0 is useful even if nothing else is approved: it is pure code and needs no
-model. Where it fits in the work order is decision 4.
+Questions are drafted in OCTA's item format. Computed questions use only
+registered solvers. A second pass answers each question without its key and
+flags disagreements or ambiguity, and a duplicate check runs against the
+bank.
 
-**Where it lives:** `tools/assistant/` (Node + TypeScript, like the rest of
-the repo, reusing `figure-svg.mjs` and the sync scripts) and
-`scripts/book_figures.py` (PyMuPDF). It touches no table, so no schema
-change and nothing to push to Supabase (hard rule 10 is not triggered).
+## 6. The features, explained
 
-## 9. Decisions wanted
+**The core: what you asked for**
 
-1. **The engine:** B (Claude API, recommended), A (local Ollama), or both?
-   If B: who holds the API key, and what monthly cap?
-2. **Which machine:** this laptop (RTX 3050, 4 GB)? Engine A needs Ollama
-   installed there.
-3. **"All of the books":** the 6 Oct ruling stops lesson text at chapter 12.
-   Should the assistant (a) catalogue and summarise figures for **all of
-   01-17** but draft text only to 12, (b) lift the stop for 13-17 as drafts
-   at review, or (c) stay at 01-12 entirely?
-4. **Order:** start A0-A1 next, or after the current queue (the TTS MP3s,
-   ruling 4 verified live, R5)?
-5. **Which features from §6**, beyond the core three?
+1. **Book and syllabus intake.** You upload a new textbook and its syllabus,
+   and the tool splits the book into chapters, lists every section, and pulls
+   out the learning objectives. It also proposes which book chapter serves
+   which syllabus chapter; you confirm or correct it. *Why:* this is what
+   makes it work for future books, not just this one. Today this mapping was
+   worked out by hand.
+
+2. **Figure, chart and table catalogue.** A list of every figure, chart,
+   graph and table in a chapter. Each entry has a short summary in our own
+   words, the facts a student should take from it, the objectives it supports,
+   and a recommendation: redraw it, just describe it, or skip it. *Why:* you
+   can see a chapter's visuals in five minutes and choose which matter,
+   without paging through the book.
+
+3. **Exact chart reading.** For charts and graphs, the tool reads the actual
+   data points out of the PDF (the book's charts are drawn as vectors, so the
+   numbers are there), along with the axes and scales. *Why:* summaries quote
+   real numbers, and a redrawn chart plots the book's real data, not a guess.
+
+4. **Grounding check.** Before a figure summary is accepted, every label and
+   number it mentions is matched against the figure itself. *Why:* small
+   models describe confidently and wrongly, and this stops that the same way
+   `--verify` stops a misquote.
+
+5. **Figure redraw.** The tool draws the chosen figures as OCTA SVGs in the
+   course's own style (no copied artwork, credited "after Figure N.N") and
+   shows each beside the original. *Why:* this is the slow manual step behind
+   the 17 figures for chapters 01-13.
+
+6. **Lesson text drafts.** A chapter's lesson organised around its objectives,
+   original explanation plus exact quotes for definitions and facts. *Why:*
+   it's the main work behind every chapter; with quotes pasted by code, the
+   quote check passes every time.
+
+7. **Claim check.** Every sentence in our own words is matched to a passage
+   in the book that supports it; any sentence without support is highlighted
+   for you. *Why:* a session found three of its own errors this way on 6 Oct.
+   Here it runs on every draft automatically.
+
+8. **Question drafts.** At least three questions per objective, with wrong
+   options based on real misconceptions, a rationale and a source. Computed
+   questions use OCTA's solvers, so every student still gets a unique paper.
+   *Why:* this fills the bank that the exams draw from.
+
+9. **Blind-answer critic.** A second pass tries to answer each question
+   without seeing the answer key. If it picks a different answer, finds two
+   defensible answers, or can answer without knowing the course, the question
+   is flagged. *Why:* it catches broken questions before a student does.
+
+**Useful extras, in the order I'd suggest**
+
+10. **Coverage map.** A grid of objectives against lesson sections,
+    questions and figures, showing the gaps: an objective with fewer than
+    three questions, or a figure that serves no objective. *Why:* you can
+    see at a glance whether a chapter is complete.
+
+11. **Review of what already exists.** Run the claim check and the critic
+    over what is already written: the lesson text of 01-13 and the 314
+    questions, including the 83 act-1 questions waiting for your approval.
+    It only flags; you decide. *Why:* those 83 approvals are what stands
+    between the course and a runnable Prelim, and this makes them faster.
+
+12. **Planet and moon summaries.** Drafts of the one- or two-sentence planet
+    summaries, which your 25 Sep ruling already allows to be drafted. *Why:*
+    it is R3's last open box.
+
+13. **Glossary.** Every definition in a chapter, quoted exactly with its
+    source. *Why:* a ready revision aid. A student-facing glossary page
+    (`/app/notebook`) is planned but not built, and **building it needs its
+    own approval**.
+
+14. **Lecture aids, for you only.** A slide outline, board notes, or a
+    one-page review sheet, made only from text you have approved. *Why:* it
+    saves preparation time. A review sheet becomes a student handout only
+    if you choose.
+
+15. **Question revision hints (later).** Once a question has been answered
+    30+ times, questions that strong and weak students get equally right or
+    wrong are flagged, with a suggested new version. Existing questions are
+    never edited, only versioned. *Why:* it improves the bank from real
+    results. It waits until real exposures exist.
+
+16. **Feedback digest (later).** Student feedback summarised for you.
+    *Why:* it is quicker to read. It stays on the laptop's model, because it
+    is student data.
+
+**Removed since v2:** audiobook preparation (the MP3s are scrapped).
+**Not in this plan:** a student-facing AI tutor. It would answer students
+live from unapproved text, and could hint at answers during papers (hard
+rules 1, 5 and 9). It would need its own proposal.
+
+## 7. The test: syllabus chapters 13-17 of this book
+
+| Chapter | Book chapter | Why it is in the test |
+|---|---|---|
+| 13 RISC | 15 | **the benchmark**: a Claude session already drafted it (with two figures), so the two drafts can be compared side by side |
+| 14 Instruction-level parallelism | 16 | the real test: no draft exists |
+| 15 Control unit operation | 20 | the real test; also tests the chapter map, since the numbers differ most here |
+| 16 Microprogrammed control | 21 | the real test |
+| 17 Multicore | 18, also 17 | the real test, and the only one drawing on **two** book chapters |
+| 18 Distributed systems | none | no edition covers it, so the tool must **stop and say so**. That is part of the test too |
+
+**What gets measured, per chapter:** how many figures the reader found
+against the captions in the text; how many summaries passed the grounding
+check first time; whether every quote verified (it should be all of them);
+claim-check flags; questions that passed the blind critic; the time the
+laptop took; and in the end **how much you accepted, edited or rejected**.
+That last number answers "is Ollama enough?" with evidence.
+
+Test drafts stay inside the tool until you accept one. **Accepted ones go to
+OCTA at draft/review**, as usual, so the 6 Oct ruling that authoring stops at
+chapter 12 is not overridden by the test itself. Whether accepted 13-17
+material goes live is your call on `/content` and `/items`.
+
+## 8. What it will not do
+
+- Write OCTA's course tables, approve anything, or export a draft you have
+  not accepted.
+- Serve the book or its crops publicly, or commit them to git.
+- Let a student in.
+- Decide what is correct: the checks and you do.
+- Draft from a book chapter that does not exist, as with chapter 18.
+
+## 9. Build order and effort (only after approval)
+
+| Step | What | Sessions |
+|---|---|---|
+| B0 | Install Ollama on this laptop and try two or three models on one chapter's figures. **This answers "is it enough?" before anything else is built**, and sets the model tiers per hardware | 1 |
+| B1 | Figure reader + chart data for this book (fix the caption locator; check all ~355 figures are found) | 1 |
+| B2 | Schema: books, jobs, heartbeats, paired devices, catalogue, drafts. Staff-only, **owner-only** RLS with denial tests (teacher B's app is refused teacher A's jobs); pushed to Supabase first | 1 |
+| B3 | **The app**: the worker, pairing, heartbeat, Ollama detection and model download by hardware; one Windows executable; the setup guide | 2 |
+| B4 | **The website** on Render: sign-in, the five app states, upload, jobs, the review page, the checks. It is a page, so it gets a template, a spec and captures at 1440 and 380 | 2 |
+| B5 | Figure summaries + grounding check, then the redraw renderers | 2 |
+| B6 | Lesson text + claim check; questions + critic; export | 2 |
+| B7 | **The test on 13-17**, written up with the numbers | 1 |
+| B8 | Book and syllabus intake for a new book; then the extras you choose | 1 each |
+
+About 13 sessions for the whole thing. B0 and B1 need only decisions 1
+and 2 below.
+
+## 10. Decisions wanted
+
+1. **The design in §4:** the website on Render Free, and an executable per
+   teacher running Ollama on their own laptop, connecting outward. Agree?
+2. **May the next session install Ollama** on this laptop and download two or
+   three models (about 2-9 GB each) for step B0?
+3. **Windows only, unsigned, at first** (teachers click "Run anyway" once),
+   with macOS when there is a budget for Apple's $99/year?
+4. **"Future books" and "each teacher":** will OCTA itself someday serve
+   several courses and teachers, or does the tool only produce files that a
+   course like OCTA imports? (Today's database is built for one course with
+   one instructor. The tool works either way, but the first answer means a
+   much larger change to OCTA later.) And who gets a teacher account on the
+   tool: only staff you add?
+5. **Which extras** (10-16)? I suggest 10, 11 and 12 first.
+6. **Order:** start B0 next, or after verifying ruling 4 on the deployment
+   and R5?

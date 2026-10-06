@@ -23,13 +23,13 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: the assistant's decisions, ruling 4 live, then R5
+## 1. Start here — the next session: the assistant (plan v3), ruling 4 live, then R5
 
 ```
 Read docs/NEXT-SESSION.md sections 0zd and 0zc first. 0zd is the drafting
-assistant re-planned as v2 (docs/AI-ASSISTANT-PLAN.md, five decisions in §9,
-no code yet; the book's figures are vector drawings, so chart data is read
-exactly). 0zc covers the class chat, live and Realtime-verified; ruling 4,
+assistant re-planned (docs/AI-ASSISTANT-PLAN.md, now v3 after the
+instructor's answers; no code yet; the book's figures are vector drawings,
+so chart data is read exactly). 0zc covers the class chat, live and Realtime-verified; ruling 4,
 leaving a paper submits it; 131 questions for 09-12 at review; Listen
 following the voice; password reset; the toaster under dialogs; the belt as
 dots. Then root CLAUDE.md hard rules 9 (amended by ruling 4) and 10, and
@@ -61,21 +61,21 @@ stand-in voice), and services/api/.submit-stale.tmp.ts.
 
 The work, in order:
 
-1. Ask the instructor once, together:
-   a. the five decisions in docs/AI-ASSISTANT-PLAN.md §9: the engine (B, the
-      Claude API, recommended; A, local Ollama; or both), the machine, how
-      far "all of the books" goes past chapter 12, where it sits in this
-      order, and which §6 features;
-   b. the Google Cloud Text-to-Speech API key (ruled 6 Oct: the audiobook's
-      MP3s come from it; server-side only, in the root .env and on Render).
-   With the key, build the MP3s first, by the plan in
-   docs/FIGURES-AND-AUDIO.md (schema pushed before code, approved text only,
-   through the reader's page gate). If the assistant is approved and ordered
-   now, start at its step A0 (the figure reader: no model, no schema; fix the
-   caption locator for non-breaking spaces and check all ~355 figures are
-   found), then A1 on syllabus 12 / book 14, measuring the real cost per
-   chapter. An API key, if engine B is chosen, goes in the root .env only,
-   never in a VITE_ variable.
+1. The drafting assistant, docs/AI-ASSISTANT-PLAN.md v3 (the instructor
+   ruled 7 Oct: free, hosted on Render Free, for future books, this book's
+   chapters 13-17 as its test; the MP3s are scrapped). If v3 §10 is not yet
+   answered, ask it once: the design (website on Render Free; an executable
+   per teacher running Ollama on their own laptop, calling out with a
+   heartbeat and pulling that teacher's jobs), installing Ollama here,
+   Windows-only unsigned first, whether OCTA goes multi-course and who
+   gets teacher accounts, which extras (10-16), and the order. If approved and
+   ordered now, start at B0: install Ollama, try two or three models that
+   fit 4 GB VRAM / 16 GB RAM on syllabus 13's (book 15's) figures, and
+   record speed and quality before building anything else. Then B1, the
+   figure reader (fix the caption locator for non-breaking spaces; check all
+   ~355 figures are found). Any table it needs is an idempotent addendum
+   pushed to Supabase before the code (hard rule 10), staff-only, with a
+   denial test.
 2. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: create one
    throwaway student (ask first, as for the chat), sit a stage check, leave
    full screen, and see the paper handed in with its reason on the console's

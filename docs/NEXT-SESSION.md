@@ -1557,9 +1557,40 @@ features also. Planning first, come back to me first."
    estimate; A1 measures it on syllabus 12 (book 14).
 5. **Prelim still NOT runnable** (deployment, 7 Oct, measured): stage 01 has
    13 live, 2 at review, 2 retired; 02 24, 03 33, 04 24, all at review.
-6. **Waiting on the instructor:** the five decisions in plan v2 §9, and the
-   Google Cloud TTS key. The rest of 0zc's queue (ruling 4 verified live, R5)
-   is untouched.
+6. **The instructor answered v2 the same day; the plan is now v3.** (1) The
+   engine must be FREE ("will Ollama suffice?"). (2) Hosted on Render Free,
+   with Railway as the fallback. (3) "This AI is for future books"; the rest
+   of this book (syllabus 13-17) is its TEST. (4) **The MP3s are SCRAPPED**:
+   the browser voice is the audiobook (recorded in FIGURES-AND-AUDIO.md);
+   no TTS key is needed. (5) "Tell me the features and explain them" (v3 §6).
+7. **Measured for v3:** Render Free is 512 MB / 0.1 CPU / no GPU, with 750 h
+   a month shared across the workspace. The deployment has NO keep-alive job
+   (cron.job: item-stats, invariants, scheduled-locks), so the API sleeps
+   when idle and there is room for a second free service. Railway Free is
+   0.5 GB, 1 vCPU, $1 of credit a month. Ollama therefore CANNOT run on either
+   free host. Gemini's free tier trains on what it is sent, and its limits
+   are volatile. v3's design puts the website on Render and the model on
+   this laptop as a worker that PULLS jobs from Supabase (no tunnel, no
+   open port). The test plan uses syllabus 13 (book 15) as the benchmark
+   against the session's draft, 14-17 (books 16, 20, 21, 18+17) as the real
+   test, and 18 must stop with "no source".
+8. **Then the instructor's own idea, the same evening:** each teacher runs
+   their own AI on their own laptop, as an EXECUTABLE that the website checks
+   and connects to. v3 §4 now designs it: an "OCTA Assistant" app (Python,
+   PyInstaller, Windows first, unsigned) that pairs with a code, CALLS OUT
+   (a heartbeat every 30 s, and it pulls that teacher's jobs from Supabase
+   under owner-only RLS), manages Ollama and picks a model by the machine's
+   GPU and RAM. The website shows five states (not installed, offline,
+   online, busy, out of date) and runs every CHECK itself with OCTA's
+   existing JS, so the checks never fork. The browser-to-localhost route
+   was rejected: Safari blocks it, Chrome prompts for it, it only works
+   while the page is open, and other sites could probe the port.
+   Signing is not free: SmartScreen warns on an unsigned exe, and macOS
+   needs $99/year to notarise.
+9. **Waiting on the instructor:** v3 §10's six decisions (the design; may the
+   next session install Ollama here; Windows-only unsigned first; whether
+   OCTA becomes multi-course and who gets teacher accounts; which extras;
+   the order).
 
 ## 0zc. The class chat, ruling 4, questions 09-12, Listen, passwords — 6 Oct 2026 (evening)
 
