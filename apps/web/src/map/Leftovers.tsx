@@ -1,5 +1,6 @@
-import { useMemo, useRef, type MutableRefObject } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { makeDotMaterial } from "./dots";
 import { AdditiveBlending, BufferAttribute, Color, Group, InstancedMesh, Mesh, Object3D, Points, Vector3 } from "three";
 import { bodyOrbit, lagrangePoint, orbitThrough, positionAt, radiusAt, type Orbit } from "../solar-system/kepler";
 import type { SolarLayout } from "../solar-system/layout";
@@ -42,12 +43,39 @@ interface Props {
 }
 
 function Cloud({ positions, color, size, opacity, fixed = false }: { positions: Float32Array; color: Color; size: number; opacity: number; fixed?: boolean }): JSX.Element {
+  if (!fixed) return <Dots positions={positions} color={color} size={size} opacity={opacity} />;
   return (
     <points raycast={noPick}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial color={color} size={size} sizeAttenuation={!fixed} transparent opacity={opacity} depthWrite={false} />
+      <pointsMaterial color={color} size={size} sizeAttenuation={false} transparent opacity={opacity} depthWrite={false} />
+    </points>
+  );
+}
+
+/**
+ * Round dots that never grow past a few pixels up close (map/dots.ts; the
+ * belt and the Trojans were big squares when the camera came near, 6 Oct
+ * 2026). The attenuation scale follows the drawing buffer's height.
+ */
+function useDotMaterial(color: Color, size: number, opacity: number) {
+  const material = useMemo(() => makeDotMaterial(color, size, opacity), [color, size, opacity]);
+  const height = useThree((s) => s.size.height * s.viewport.dpr);
+  useEffect(() => {
+    material.uniforms.uScale!.value = height / 2;
+  }, [material, height]);
+  useEffect(() => () => material.dispose(), [material]);
+  return material;
+}
+
+function Dots({ positions, color, size, opacity }: { positions: Float32Array; color: Color; size: number; opacity: number }): JSX.Element {
+  const material = useDotMaterial(color, size, opacity);
+  return (
+    <points raycast={noPick} material={material}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
     </points>
   );
 }
@@ -62,6 +90,7 @@ export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, c
   const cometRefs = useRef<Array<Group | null>>([]);
   const wind = useRef<Points>(null);
   const trojans = useRef<Points>(null);
+  const trojanDots = useDotMaterial(colors.star, 0.4, 0.85);
 
   // Every speed from the star's mass (R4.8, orbit.ts): the belts turn at their own distance's rate.
   const beltSpeed = starAngularSpeed((layout.frost.inner + layout.frost.outer) / 2);
@@ -182,11 +211,10 @@ export function Leftovers({ pops, layout, rotation, giants, lowQuality, clock, c
       {/* The Oort cloud is as far out as the camera (R4.9), so it is drawn in pixels, as the stars are: never a square up close. */}
       <Cloud positions={pops.oort} color={colors.star} size={2} opacity={0.45} fixed />
       {/* Every giant's Trojans, at L4 and L5: one draw for all of them. */}
-      <points ref={trojans} raycast={noPick}>
+      <points ref={trojans} raycast={noPick} material={trojanDots}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[trojanPositions, 3]} />
         </bufferGeometry>
-        <pointsMaterial color={colors.star} size={0.4} sizeAttenuation transparent opacity={0.85} depthWrite={false} />
       </points>
       {/* Every centaur, one draw (R5.3: they were a mesh each). They roam the whole system, so never culled as one. */}
       <instancedMesh ref={centaurs} args={[undefined, undefined, pops.centaurs.length]} raycast={noPick} frustumCulled={false}>
