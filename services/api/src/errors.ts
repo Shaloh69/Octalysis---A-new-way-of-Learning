@@ -20,6 +20,7 @@ const STATUS: Record<ErrorCode, number> = {
   rate_limited: 429,
   stage_locked: 403,
   blueprint_unsatisfiable: 409,
+  paper_open: 423,
   internal: 500,
 };
 

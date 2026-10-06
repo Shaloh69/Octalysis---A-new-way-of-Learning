@@ -68,14 +68,21 @@ create table if not exists chat_messages (
   created_at        timestamptz not null default now(),
   deleted_at        timestamptz,
   deleted_by        uuid references auth.users(id),
-  constraint chat_msg_says_something
-    check (deleted_at is not null or body is not null or attachment_path is not null),
   constraint chat_msg_tombstone_is_empty
     check (deleted_at is null or (body is null and attachment_path is null and mentions = '{}')),
   constraint chat_msg_attachment_whole
     check ((attachment_path is null) = (attachment_mime is null)
        and (attachment_path is null) = (attachment_bytes is null))
 );
+-- A message says something: text, a file, or a file since removed to free
+-- storage (an attachment-only message keeps its place in the conversation).
+-- Dropped and re-added so a re-apply changes a live table (6 Oct 2026: the
+-- first version forgot the removed file, and pruning an attachment-only
+-- message broke on it).
+alter table chat_messages drop constraint if exists chat_msg_says_something;
+alter table chat_messages add constraint chat_msg_says_something
+  check (deleted_at is not null or body is not null or attachment_path is not null
+         or attachment_removed_at is not null);
 create index if not exists chat_messages_room_time on chat_messages (room_id, created_at);
 create index if not exists chat_messages_mentions on chat_messages using gin (mentions);
 create index if not exists chat_messages_attachments on chat_messages (created_at)
@@ -105,12 +112,11 @@ language sql stable security definer set search_path = public, pg_temp as $$
        and (s.closes_at is null or s.closes_at > now()))
 $$;
 
--- May p_user read p_room? Staff: every room. A student: their section's room
--- and their own thread, and neither while a paper is open. A deactivated
--- account reads nothing. Takes the user explicitly so the insert trigger can
--- ask it about the AUTHOR, who is not the connection's identity when the API
--- writes.
-create or replace function chat_member(p_user uuid, p_room uuid) returns boolean
+-- Does p_user belong to p_room? Staff: every room. A student: their section's
+-- room and their own thread. A deactivated account belongs nowhere. Takes the
+-- user explicitly so the insert trigger can ask it about the AUTHOR (and each
+-- person mentioned), who is not the connection's identity when the API writes.
+create or replace function chat_belongs(p_user uuid, p_room uuid) returns boolean
 language sql stable security definer set search_path = public, pg_temp as $$
   select exists (
     select 1
@@ -118,9 +124,18 @@ language sql stable security definer set search_path = public, pg_temp as $$
       join profiles p on p.id = p_user and p.deleted_at is null
      where r.id = p_room
        and (p.role in ('teacher','admin')
-            or (not chat_paper_open(p_user)
-                and ((r.kind = 'section' and r.section_id = p.section_id)
-                     or (r.kind = 'direct' and r.student_id = p_user)))))
+            or (r.kind = 'section' and r.section_id = p.section_id)
+            or (r.kind = 'direct' and r.student_id = p_user)))
+$$;
+
+-- May p_user read p_room NOW? Belonging, and for a student no paper open.
+-- A classmate sitting a paper still belongs (they can be @mentioned and will
+-- see it after submitting); they just cannot open the room until then.
+create or replace function chat_member(p_user uuid, p_room uuid) returns boolean
+language sql stable security definer set search_path = public, pg_temp as $$
+  select chat_belongs(p_user, p_room)
+     and (exists (select 1 from profiles where id = p_user and role in ('teacher','admin'))
+          or not chat_paper_open(p_user))
 $$;
 
 -- ---------- RLS ----------
@@ -163,7 +178,7 @@ begin
     if not chat_member(new.author_id, new.room_id) then
       raise exception 'the author cannot post in this room' using errcode = '42501';
     end if;
-    if exists (select 1 from unnest(new.mentions) m where not chat_member(m, new.room_id)) then
+    if exists (select 1 from unnest(new.mentions) m where not chat_belongs(m, new.room_id)) then
       raise exception 'a mention names someone outside the room' using errcode = '22023';
     end if;
     if new.attachment_path is not null

@@ -27,7 +27,8 @@ import { resetWorld, type World } from "./helpers/fixtures.js";
  * BSCPE-2B. The teacher is staff.
  *
  * Hard rule 8: watched red first (6 Oct 2026) — with the section clause taken
- * out of chat_member(), the cross-section denial went red; restored, green.
+ * out of the membership predicate (now chat_belongs()), the four cross-section
+ * denials went red; restored, green.
  */
 
 let w: World;
@@ -66,7 +67,7 @@ beforeAll(async () => {
      returning id::text`,
     [w.sectionId, w.otherSectionId, w.studentB, c],
   );
-  [roomA, roomB, threadB, threadC] = rooms.rows.map((r) => r.id as string);
+  [roomA, roomB, threadB, threadC] = rooms.rows.map((r) => r.id as string) as [string, string, string, string];
   await setup(
     `insert into chat_messages (room_id, author_id, body, mentions) values
        ($1, $2, 'Section A: is a register a kind of memory?', '{}'),
@@ -250,11 +251,11 @@ describe("mentions and attachments stay inside their room", () => {
     expect(res.error?.message).toMatch(/outside the room/);
   });
   it("POSITIVE CONTROL: a mention of a classmate and of the instructor is accepted", async () => {
+    // studentA has a paper open: still in the section, so still mentionable;
+    // they read it after submitting.
     const res = await runAs(service, "insert into chat_messages (room_id, author_id, body, mentions) values ($1, $2, 'hi', array[$3, $4]::uuid[]) returning id", [roomA, w.studentB, w.teacher, w.studentA]);
-    // studentA has a paper open, so studentA is not in the room right now.
-    expect(res.error?.message).toMatch(/outside the room/);
-    const ok = await runAs(service, "insert into chat_messages (room_id, author_id, body, mentions) values ($1, $2, 'hi', array[$3]::uuid[]) returning id", [roomA, w.studentB, w.teacher]);
-    expect(ok.error).toBeNull();
+    expect(res.error).toBeNull();
+    expect(res.rowCount).toBe(1);
   });
   it("refuses an attachment filed under another room or author", async () => {
     const res = await runAs(service,

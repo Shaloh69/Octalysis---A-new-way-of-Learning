@@ -14,6 +14,8 @@ export const ErrorCode = z.enum([
   "rate_limited",
   "stage_locked",
   "blueprint_unsatisfiable",
+  // The class chat while the student has a paper open (ruling 3, 6 Oct 2026).
+  "paper_open",
   "internal",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
@@ -734,3 +736,150 @@ export type AttemptEventBody = z.infer<typeof AttemptEventBody>;
 
 /** The kinds that count as leaving the paper, for the console's tally. */
 export const LEAVING_KINDS: readonly AttemptEventKind[] = ["left_fullscreen", "left_page"];
+
+/* ---------------------------------------------------------------------------
+ * The class chat (instructor, approved 6 Oct 2026; docs/CHAT-PLAN.md).
+ * One room per section and one private thread per student with the
+ * instructor. Writes go through the API; reads too, with Supabase Realtime
+ * saying WHEN to read again. A student with a paper open gets `paper_open`.
+ * ------------------------------------------------------------------------- */
+/** Ruling 2: 25 MB per attachment. The bucket refuses more whoever signed it. */
+export const CHAT_MAX_BYTES = 25 * 1024 * 1024;
+/** Supabase Free's whole storage, which the attachments view measures against. */
+export const CHAT_STORAGE_BYTES = 1024 * 1024 * 1024;
+export const CHAT_BODY_MAX = 4000;
+export const ChatMime = z.enum([
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]);
+export type ChatMime = z.infer<typeof ChatMime>;
+
+export const ChatPerson = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  staff: z.boolean(),
+});
+export type ChatPerson = z.infer<typeof ChatPerson>;
+
+export const ChatRoom = z.object({
+  id: z.string().uuid(),
+  kind: z.enum(["section", "direct"]),
+  /** "BSCPE-2A", or the other side of a private thread. */
+  title: z.string(),
+  /** One line saying who is in it. */
+  subtitle: z.string(),
+  /** Messages by others since you last opened it. */
+  unread: z.number().int().min(0),
+  /** Of those, how many @mention you. */
+  mentions: z.number().int().min(0),
+  lastAt: z.string().nullable(),
+});
+export type ChatRoom = z.infer<typeof ChatRoom>;
+
+export const ChatRooms = z.object({
+  me: ChatPerson,
+  rooms: z.array(ChatRoom),
+  /** False where no file storage is configured (the local stack): no attach control. */
+  attachments: z.boolean(),
+});
+export type ChatRooms = z.infer<typeof ChatRooms>;
+
+export const ChatAttachment = z.object({
+  name: z.string(),
+  mime: ChatMime,
+  bytes: z.number().int().min(1),
+  /** A short-lived signed link. null where storage is not configured. */
+  url: z.string().nullable(),
+});
+export type ChatAttachment = z.infer<typeof ChatAttachment>;
+
+export const ChatMessage = z.object({
+  id: z.string().uuid(),
+  roomId: z.string().uuid(),
+  author: ChatPerson,
+  /** null for a deleted message, or one that is only an attachment. */
+  body: z.string().nullable(),
+  mentions: z.array(z.string().uuid()),
+  attachment: ChatAttachment.nullable(),
+  /** The attachment was removed to free storage; the message stays. */
+  attachmentRemoved: z.boolean(),
+  deleted: z.boolean(),
+  mine: z.boolean(),
+  createdAt: z.string(),
+});
+export type ChatMessage = z.infer<typeof ChatMessage>;
+
+export const ChatThread = z.object({
+  room: ChatRoom,
+  /** Oldest first, the latest 100 (or the 100 before `before`). */
+  messages: z.array(ChatMessage),
+  /** Whether older messages exist before the first one sent. */
+  more: z.boolean(),
+  /** Who can be @mentioned here. */
+  members: z.array(ChatPerson),
+});
+export type ChatThread = z.infer<typeof ChatThread>;
+
+export const ChatPostBody = z
+  .object({
+    body: z.string().trim().max(CHAT_BODY_MAX).optional(),
+    mentions: z.array(z.string().uuid()).max(50).default([]),
+    /** A path the API signed for this room and this author. */
+    attachment: z.object({ path: z.string().min(1).max(400), name: z.string().trim().min(1).max(200) }).strict().optional(),
+  })
+  .strict()
+  .refine((b) => (b.body !== undefined && b.body.length > 0) || b.attachment !== undefined, {
+    message: "Write something or attach a file.",
+  });
+export type ChatPostBody = z.infer<typeof ChatPostBody>;
+
+export const ChatUploadBody = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    mime: ChatMime,
+    bytes: z.number().int().min(1).max(CHAT_MAX_BYTES),
+  })
+  .strict();
+export type ChatUploadBody = z.infer<typeof ChatUploadBody>;
+
+/** Where to PUT the file: a one-time signed upload, and the path to post with. */
+export const ChatUpload = z.object({ path: z.string(), uploadUrl: z.string().url() });
+export type ChatUpload = z.infer<typeof ChatUpload>;
+
+export const ChatUnread = z.object({
+  /** Messages that @mention you, unread. Shown on the Chat nav item. */
+  mentions: z.number().int().min(0),
+  /** A paper is open: chat is closed until it is submitted. */
+  closed: z.boolean(),
+});
+export type ChatUnread = z.infer<typeof ChatUnread>;
+
+/** The instructor's storage view: every attachment still held, oldest first. */
+export const ChatStoredAttachment = z.object({
+  messageId: z.string().uuid(),
+  room: z.string(),
+  author: z.string(),
+  name: z.string(),
+  mime: ChatMime,
+  bytes: z.number().int().min(1),
+  createdAt: z.string(),
+});
+export type ChatStoredAttachment = z.infer<typeof ChatStoredAttachment>;
+
+export const ChatAttachments = z.object({
+  usedBytes: z.number().int().min(0),
+  limitBytes: z.number().int().min(1),
+  items: z.array(ChatStoredAttachment),
+});
+export type ChatAttachments = z.infer<typeof ChatAttachments>;
+
+export const ChatPruneBody = z.object({ olderThanDays: z.number().int().min(1).max(365) }).strict();
+export type ChatPruneBody = z.infer<typeof ChatPruneBody>;
+
+export const ChatThreadBody = z.object({ userId: z.string().uuid() }).strict();
+export type ChatThreadBody = z.infer<typeof ChatThreadBody>;

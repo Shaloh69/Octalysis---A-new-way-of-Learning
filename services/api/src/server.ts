@@ -16,6 +16,8 @@ import { registerSubmissionRoutes } from "./routes/submissions.js";
 import { registerLiveRoutes } from "./routes/live.js";
 import { registerAssessmentRoutes } from "./routes/assessments.js";
 import { registerJourneyRoutes } from "./routes/journeys.js";
+import { registerChatRoutes } from "./routes/chat.js";
+import { makeChatStorage, type ChatStorage } from "./chat/storage.js";
 import type { Env } from "./env.js";
 
 /**
@@ -23,7 +25,11 @@ import type { Env } from "./env.js";
  * resolution must run where students cannot reach them. Everything scored goes
  * through here; the browser owns nothing.
  */
-export async function buildServer(env: Env): Promise<FastifyInstance> {
+export async function buildServer(
+  env: Env,
+  // Tests pass a fake; production builds the Supabase Storage client (null when unconfigured).
+  chatStorage: ChatStorage | null = makeChatStorage(env),
+): Promise<FastifyInstance> {
   const app = Fastify({
     logger: {
       level: env.NODE_ENV === "production" ? "info" : "debug",
@@ -109,6 +115,7 @@ export async function buildServer(env: Env): Promise<FastifyInstance> {
   registerLiveRoutes(app, env);
   registerAssessmentRoutes(app, env);
   registerJourneyRoutes(app, env);
+  registerChatRoutes(app, env, chatStorage);
 
   // Auth routes need the Supabase Admin API. Without a project configured they
   // are simply not mounted, rather than mounted and failing at request time.
