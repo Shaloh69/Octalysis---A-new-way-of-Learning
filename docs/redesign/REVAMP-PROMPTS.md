@@ -23,13 +23,12 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: the assistant (plan v3), ruling 4 live, then R5
+## 1. Start here — the next session: ruling 4 live, then R5 (the assistant is last)
 
 ```
 Read docs/NEXT-SESSION.md sections 0zd and 0zc first. 0zd is the drafting
-assistant re-planned (docs/AI-ASSISTANT-PLAN.md, now v3 after the
-instructor's answers; no code yet; the book's figures are vector drawings,
-so chart data is read exactly). 0zc covers the class chat, live and Realtime-verified; ruling 4,
+assistant, planned and APPROVED (docs/AI-ASSISTANT-PLAN.md v4; built last;
+no code yet; the MP3s are scrapped). 0zc covers the class chat, live and Realtime-verified; ruling 4,
 leaving a paper submits it; 131 questions for 09-12 at review; Listen
 following the voice; password reset; the toaster under dialogs; the belt as
 dots. Then root CLAUDE.md hard rules 9 (amended by ruling 4) and 10, and
@@ -61,29 +60,25 @@ stand-in voice), and services/api/.submit-stale.tmp.ts.
 
 The work, in order:
 
-1. The drafting assistant, docs/AI-ASSISTANT-PLAN.md v3 (the instructor
-   ruled 7 Oct: free, hosted on Render Free, for future books, this book's
-   chapters 13-17 as its test; the MP3s are scrapped). If v3 §10 is not yet
-   answered, ask it once: the design (website on Render Free; an executable
-   per teacher running Ollama on their own laptop, calling out with a
-   heartbeat and pulling that teacher's jobs), installing Ollama here,
-   Windows-only unsigned first, whether OCTA goes multi-course and who
-   gets teacher accounts, which extras (10-16), and the order. If approved and
-   ordered now, start at B0: install Ollama, try qwen3.5:4b, qwen3.5:9b and
-   gemma4:12b (v3 §3's tier table) on syllabus 13's (book 15's) figures, and
-   record speed and quality before building anything else. Then B1, the
-   figure reader (fix the caption locator for non-breaking spaces; check all
-   ~355 figures are found). Any table it needs is an idempotent addendum
-   pushed to Supabase before the code (hard rule 10), staff-only, with a
-   denial test.
-2. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: create one
+1. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: create one
    throwaway student (ask first, as for the chat), sit a stage check, leave
    full screen, and see the paper handed in with its reason on the console's
-   record. Then try a reload mid-paper, then clean up.
-3. R5 in order: R5.3's 30fps floor, R5.2 (the accessibility contract re-run),
+   record. Then try a reload mid-paper, then clean up. Only the unit and page
+   specs and one sweep-by-script have run against ruling 4 so far.
+2. R5 in order: R5.3's 30fps floor, R5.2 (the accessibility contract re-run),
    R5.4, R5.5, then R5.6. pnpm phase --open lists the boxes. The /app specs
    are load-sensitive: run WebGL specs at 1-2 workers, and rerun a timeout
    alone before believing it.
+3. LAST (instructor, 7 Oct: "this will be last on the implementation plan"):
+   the drafting assistant, docs/AI-ASSISTANT-PLAN.md v4, APPROVED, every
+   decision made. It is a console page /assistant plus API routes (no new
+   host), and an unsigned Windows app per teacher running Ollama on their
+   own laptop. Its heartbeats go to Supabase, never to the Render API. Every
+   table carries a course and an owner. All extras are in. Start it only
+   when 1 and 2 are done, at B0: install Ollama (approved), try qwen3.5:4b,
+   qwen3.5:9b and gemma4:12b on book 15's figures, and record speed and
+   quality before building anything else. The MP3s are scrapped: do not ask
+   for a TTS key.
 
 Still owed by the instructor (do not build around them): approving the 83
 act-1 items at review (the Prelim needs 96 live), the 131 questions for

@@ -29,7 +29,9 @@ an audiobook feature."
    (a) the reread of 01-12 to add figures; (b) questions for 09-12 only, at
    review; (c) the audiobook; (d) **the "Octalysis AI" proposal, analysed in
    `docs/AI-ASSISTANT-PROPOSAL.md`**: decide it, and build only the local drafting
-   assistant if approved; (e) R5.
+   assistant if approved; (e) R5. **Revised 7 Oct 2026:** (c)'s MP3s are
+   scrapped; (d) is decided (`docs/AI-ASSISTANT-PLAN.md` v4, approved) and is
+   built LAST, after R5.
 
 ## Figures — how they work
 

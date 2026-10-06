@@ -1,29 +1,45 @@
-# The drafting assistant — plan v3, FOR APPROVAL
+# The drafting assistant — plan v4, APPROVED (built LAST)
 
 **History.** v1 (6 Oct 2026) planned a small local tool. v2 (7 Oct) answered
 "do what you were doing with all of the books; summarise the figures,
-charts and graphs; think about more features". **v3** (7 Oct, later the same
-day) takes in the instructor's answers to v2's five decisions:
+charts and graphs; think about more features". v3 (7 Oct) took in the
+instructor's first answers. **v4** (7 Oct, evening) takes in the second
+round, and every decision is now made.
 
-| # | Asked | The instructor's answer (7 Oct 2026) |
+**Rulings, first round (7 Oct 2026):**
+
+| # | Asked | The instructor's answer |
 |---|---|---|
-| 1 | The engine | **"I want it to be free. Will Ollama suffice?"** (answered in §3) |
-| 2 | Which machine | **Hosted: Render Free, or Railway if Render cannot do it** |
-| 3 | How far past chapter 12 | **"This AI is for future books"**, and the remaining chapters of this book are its **test** |
-| 4 | Order, and the MP3s | **The MP3s are scrapped**: the browser voice Listen uses today is enough |
+| 1 | The engine | **Free.** "Will Ollama suffice?" (answered in §3) |
+| 2 | Which machine | Hosted (Render Free or Railway), refined in round two |
+| 3 | How far past chapter 12 | **"This AI is for future books"**; this book's remaining chapters are its **test** |
+| 4 | The MP3s | **Scrapped**: the browser voice Listen uses today is enough |
 | 5 | Features | "Tell me the features and explain them" (§6) |
-| 6 | (added the same day) | **"Each teacher will use their own laptop… make this into an executable that the website checks and connects to, so the AI runs locally"** (§4) |
+| 6 | (the instructor's idea) | **"Each teacher will use their own laptop… an executable that the website checks and connects to, so the AI runs locally"** (§4) |
 
-**No code exists.** Nothing is built until §10 is answered.
+**Rulings, second round (7 Oct 2026, evening):**
+
+| # | Decision | The instructor's answer |
+|---|---|---|
+| 1 | The design | **"We already have the websites": the API on Render, the student web and the console on Vercel.** So there's no new website: the assistant is a **console page** and **API routes** (§4) |
+| 2 | Install Ollama on this laptop for B0 | **Yes** |
+| 3 | Windows only, unsigned, at first | **"You decide."** Decided: **Windows only, unsigned**, with "More info → Run anyway" in the setup guide. It's free, and this laptop and the course run on Windows. macOS when there's a budget for Apple's $99/year |
+| 4 | Will OCTA serve several courses and teachers? | **Yes, one day: "a future dev plan."** So the assistant's tables carry a course and an owning teacher from the start (§4). OCTA's own move to many courses is a **separate plan, not written yet**, and not part of this one |
+| 5 | Which extras | **All of them**: 10, 11 and 12 with the core; 13-16 after it (§6) |
+| 6 | Order | **"This will be last on the implementation plan."** It's built after everything else in the queue (ruling 4 verified live, R5, and whatever comes before it) |
+
+**No code exists yet.** It is approved, and it waits its turn.
 
 ---
 
 ## 1. What it is now
 
-It is a **staff-only website for turning a textbook into course material**, with the AI running on **each teacher's own laptop** through a small app they install:
-lesson text, questions, redrawn figures, and a catalogue of every figure,
-chart, graph and table in the book. It is built for **future books**. A new
-course, or a new edition, starts by uploading the book and its syllabus.
+It is a **staff-only page in the console** for turning a textbook into
+course material: lesson text, questions, redrawn figures, and a catalogue
+of every figure, chart, graph and table in the book. Its routes live in
+the existing API, and the AI runs on **each teacher's own laptop**
+through a small app they install. It is built for **future books**: a new
+course, or a new edition, starts by giving it the book and its syllabus.
 **The rest of this book (syllabus chapters 13-17) is its test.**
 
 The rules OCTA already lives by still hold. Every quote is checked against
@@ -107,41 +123,47 @@ month to month. Groq and OpenRouter have free models with daily caps. Each
 of these can be added behind the same interface if you decide to, but none
 is the default.
 
-## 4. The design: each teacher runs their own AI (the instructor's idea, 7 Oct)
+## 4. The design: the existing console and API, plus an app on each teacher's laptop
 
 > "Each teacher will use their own laptop, for each teacher to run its own AI.
 > Make this into an executable that the website checks and connects to, so
-> that the AI will run locally."
+> that the AI will run locally." And: "We already have the websites: the API
+> on Render, the student web and the console on Vercel."
 
-So there are two pieces. **The website** is shared and hosted on Render
-Free. **The OCTA Assistant app** is an executable each teacher installs on
-their own laptop. The AI runs there, on that teacher's hardware, for free.
+**No new website and no new host.** The pieces are the ones OCTA already
+has, plus one app:
 
 ```
-  ┌───────────── The website (Render Free, Node, tiny) ─────────────┐
-  │  sign-in (staff accounts) · upload a book + syllabus             │
-  │  "Your assistant: ● online · llama-3.1-8b · 4 GB GPU · v1.2"     │
-  │  start a job · progress · review side by side · Accept / Reject  │
-  │  runs the CHECKS on every result (the same JS OCTA uses today)   │
-  └──────────────┬──────────────────────────────────▲──────────────┘
-                 │ that teacher's jobs only           │ heartbeat + results
-                 ▼        (Supabase, RLS: owner)      │
-  ┌──── Teacher A's laptop ────┐   ┌──── Teacher B's laptop ────┐
-  │  OCTA Assistant app        │   │  OCTA Assistant app        │
-  │  · signs in as Teacher A   │   │  · signs in as Teacher B   │
-  │  · Ollama + a model sized  │   │  · a smaller model: no GPU │
-  │    to THIS machine         │   │                            │
-  │  · PyMuPDF: chapters,      │   │                            │
-  │    figures, chart data     │   │                            │
-  └────────────────────────────┘   └────────────────────────────┘
+  ┌──── The console (Vercel) — new page /assistant ────────────────┐
+  │  "Your assistant: ● online · qwen3.5:9b · 4 GB GPU · v1.2"      │
+  │  pair a laptop · choose a book + syllabus · start a job          │
+  │  progress · review side by side · Accept / Reject · export       │
+  └───────────────┬─────────────────────────────────────────────────┘
+                  │ (staff sign-in, as today)
+  ┌──── The API (Render) — new /assistant routes ───────────────────┐
+  │  pairing · jobs · receives results and RUNS THE CHECKS with the  │
+  │  same JS OCTA uses (--verify, figure checker, item checker,      │
+  │  grounding, solvers) · export                                    │
+  └───────────────┬────────────────────────────────▲───────────────┘
+                  │ Supabase: jobs, heartbeats      │ results (one API call each)
+                  ▼ (owner-only RLS; Realtime)      │
+  ┌──── Teacher A's laptop ─────┐   ┌──── Teacher B's laptop ─────┐
+  │  OCTA Assistant (Windows)   │   │  OCTA Assistant (Windows)   │
+  │  · paired to Teacher A      │   │  · paired to Teacher B      │
+  │  · Ollama + the model that  │   │  · a smaller model: no GPU  │
+  │    fits THIS machine (§3)   │   │                             │
+  │  · PyMuPDF: chapters,       │   │                             │
+  │    figures, chart data      │   │                             │
+  └─────────────────────────────┘   └─────────────────────────────┘
 ```
 
-### How the website "checks and connects"
+### How the console "checks and connects"
 
-The app **calls out**; the website never calls in. Every 30 seconds it
-writes a **heartbeat** (Supabase, a staff-only table): who it is, its
-version, the model it runs, and the machine's GPU and memory. From that,
-the website shows one of five states:
+The app **calls out**; nothing calls into the laptop. It writes a
+**heartbeat** to Supabase about once a minute: who it is, its version, the
+model it runs, and the machine's GPU and memory. It hears about new jobs
+through **Supabase Realtime**, which the class chat already uses. From the
+heartbeat the console's `/assistant` page shows one of five states:
 
 | State | What the teacher sees |
 |---|---|
@@ -149,83 +171,92 @@ the website shows one of five states:
 | **Offline** | "Last seen 2 hours ago". Jobs can still be queued; they run when the laptop is back |
 | **Online** | the model, the hardware, and an expected time per chapter |
 | **Busy** | the job running and its progress |
-| **Out of date** | "Update the app" (a version older than the website accepts) |
+| **Out of date** | "Update the app" (a version older than the API accepts) |
 
-**Why outbound, not the website talking to `localhost`:** a page on the
-internet reaching into a laptop is something browsers increasingly block or
-put behind a permission prompt (Safari blocks it outright). It only works
-while the page is open, and any other site could probe the same port.
-Outbound needs no open port, no tunnel and no firewall change, and a job
-started at 6 pm runs overnight with the browser closed.
+**Why heartbeats go to Supabase, not to the API:** the API runs on Render
+Free, which sleeps after 15 minutes without traffic and has 750 hours a
+month. A heartbeat every minute would keep it awake around the clock and
+use up nearly the whole month (`db/addendum-cron.sql` §5 warns about the
+same thing for a keep-alive). The API wakes only when the app hands in a
+result, or when a teacher opens the console.
+
+**Why not the browser talking to `localhost`:** a page on the internet
+reaching into a laptop is something browsers increasingly block or put
+behind a permission prompt (Safari blocks it outright). It only works while
+the page is open, and any other site could probe the same port. Outbound
+needs no open port, no tunnel and no firewall change, and a job started at
+6 pm runs overnight with the console closed.
 
 ### Pairing: how the app knows whose laptop it is
 
-On first run, the app shows a short code. The teacher types it into the
-website (already signed in), and the app receives **its own token for that
-teacher only**, stored in the OS's credential store. It can read that
-teacher's jobs and write that teacher's results, nothing else (RLS, with a
-denial test proving teacher B's app cannot see teacher A's jobs). The
-website can revoke a paired laptop.
+On first run the app shows a short code. The teacher types it into
+`/assistant` (already signed in), and the app receives **its own session
+for that teacher only**, kept in Windows' credential store. It can read that
+teacher's jobs and write that teacher's heartbeats and results, nothing
+else (owner-only RLS, with a **denial test proving teacher B's app cannot
+see teacher A's jobs**, written red first, per hard rule 8). The console can
+revoke a paired laptop.
 
 ### What the app contains
 
 - **The worker:** pulls jobs, extracts chapters, figures and chart data with
-  PyMuPDF, calls the model, and sends results back.
-- **Ollama management:** it detects Ollama (installing it from ollama.com on
-  first run if missing), measures the GPU and memory, and **downloads the
-  model that fits this machine**. A 4 GB card gets a different model than a
-  12 GB card, and a laptop with no GPU a smaller one still. It says what to
-  expect before the download (2-9 GB, once).
-- **Built as one Windows executable** with PyInstaller (Python, because
-  PyMuPDF is). macOS later, see the cost note below.
+  PyMuPDF, calls the model, and hands results to the API.
+- **Ollama management:** it detects Ollama (installing it from ollama.com
+  on first run if missing), measures the GPU and memory, and **downloads
+  the model that fits this machine** (§3's tiers). It says what to expect
+  before the download (2-9 GB, once).
+- **One Windows executable**, built with PyInstaller (Python, because PyMuPDF
+  is), **unsigned**: the setup guide shows the "More info → Run anyway"
+  step. macOS later.
 
-**What stays on the website, on purpose:** the **checks** (`--verify`, the
-figure checker, the item checker, grounding, solvers) run on the website
-with the same JavaScript OCTA already trusts. Putting a second copy in the
-app would let the two drift. The **previews** at 380 and 1440 are drawn by
-the teacher's own browser on the review page, so the app needs no browser
-inside it.
+**What stays in the API, on purpose:** the **checks**. They are the same
+JavaScript OCTA already trusts, and a second copy in the app would drift.
+A result that fails a check is kept, with its errors, for the teacher to
+see. The **previews** at 380 and 1440 are drawn by the teacher's own
+browser on the review page, so the app needs no browser inside it.
+
+### Many courses and many teachers, from the start
+
+OCTA will one day serve several courses and teachers (ruling, 7 Oct). So
+every assistant table carries a **course** and an **owning teacher** from
+day one: books, jobs, heartbeats, paired devices, catalogue entries, and
+drafts. Nothing assumes there is one course or one instructor, and nothing
+needs rebuilding when OCTA grows. **OCTA's own course tables are not
+changed by this plan.** Moving them to many courses is the separate future
+plan.
 
 ### The book
 
-The teacher picks the PDF **in the app**, and it never has to leave their
-laptop as a PDF. The app uploads the extracted chapter text and figure data
-to a **private** staff-only bucket, because the checks on the website need
-the text to verify quotes against. Crops of the book's own art go up only
-for the side-by-side review, also private. Nothing is public, and nothing
-goes into git.
+The teacher picks the PDF **in the app**, and it never leaves the laptop as
+a PDF. The app uploads the extracted chapter text and figure data to a
+**private** staff-only bucket, because the API's checks need the text to
+verify quotes against. Crops of the book's own art go up only for the
+side-by-side review, also private. Nothing is public, and nothing goes
+into git.
 
-### Honest costs and limits of this idea
+### Honest costs and limits
 
-- **Code signing is not free.** An unsigned Windows app makes SmartScreen
-  say "Windows protected your PC" (More info → Run anyway). It works, but
-  teachers need that told to them. A signing certificate costs money every
-  year. **macOS** blocks unsigned apps harder and needs an Apple developer
-  account ($99/year) to notarise. **Proposal:** Windows only, unsigned, with
-  the bypass in the setup guide; macOS when there is a budget.
+- **Unsigned means a warning:** SmartScreen says "Windows protected your
+  PC" the first time. The setup guide shows the two clicks.
 - **Each laptop sets its own quality.** A teacher with no GPU gets a small
-  model and slow runs. The app reports its tier, and the website labels
-  every draft with the model that wrote it.
+  model and slow runs. The console labels every draft with the model that
+  wrote it.
 - **The first run downloads 2-9 GB** (Ollama plus a model).
-- **Render's 750 free hours are shared** with OCTA's API. The website sleeps
-  when nobody uses it, and the apps' heartbeats are writes to Supabase, not
-  requests to Render, so they don't keep it awake.
-
-**Railway** is still not needed: the website is light enough for Render
-Free.
+- **Render's 750 free hours:** the API is woken only by results and by
+  people using the console, never by heartbeats.
 
 **Getting results into OCTA:** an accepted draft is **exported** in OCTA's
 own formats (`content/stages/NN.draft.md`, `content/items/NN.json`,
 `content/figures/<id>.svg`), as a download or a GitHub pull request. From
 there it goes through `sync-content --verify` / `sync-items --check` and
 lands at draft or review on `/content` and `/items`, exactly as today. The
-tool never writes OCTA's course tables directly.
+assistant never writes OCTA's course tables directly.
 
 ## 5. How each job works
 
 ### A. Book and syllabus intake (new, for future books)
 
-Pick the PDF in the app and upload the syllabus on the website. The app splits the book into chapters
+Pick the PDF in the app and give the syllabus on the console's `/assistant`. The app splits the book into chapters
 using its outline (generalising `scripts/extract_book.py`), extracts every
 figure and table, and pulls the objectives from the syllabus. It then
 **drafts the syllabus-to-book chapter map** (this course needed one because
@@ -330,7 +361,7 @@ bank.
    defensible answers, or can answer without knowing the course, the question
    is flagged. *Why:* it catches broken questions before a student does.
 
-**Useful extras, in the order I'd suggest**
+**Extras: all approved (7 Oct). 10-12 are built with the core, 13-16 after it**
 
 10. **Coverage map.** A grid of objectives against lesson sections,
     questions and figures, showing the gaps: an objective with fewer than
@@ -404,37 +435,30 @@ material goes live is your call on `/content` and `/items`.
 - Decide what is correct: the checks and you do.
 - Draft from a book chapter that does not exist, as with chapter 18.
 
-## 9. Build order and effort (only after approval)
+## 9. Build order and effort — LAST in the implementation plan
+
+The instructor ruled the assistant **last**. It starts only once the queue
+before it is done: ruling 4 verified on the deployment, R5, and anything
+added ahead of it. Then:
 
 | Step | What | Sessions |
 |---|---|---|
-| B0 | Install Ollama on this laptop and try two or three models on one chapter's figures. **This answers "is it enough?" before anything else is built**, and sets the model tiers per hardware | 1 |
+| B0 | Install Ollama on this laptop (approved) and try `qwen3.5:4b`, `qwen3.5:9b` and `gemma4:12b` on book 15's figures. **This answers "is it enough?" before anything else is built**, and fixes the model tiers | 1 |
 | B1 | Figure reader + chart data for this book (fix the caption locator; check all ~355 figures are found) | 1 |
-| B2 | Schema: books, jobs, heartbeats, paired devices, catalogue, drafts. Staff-only, **owner-only** RLS with denial tests (teacher B's app is refused teacher A's jobs); pushed to Supabase first | 1 |
-| B3 | **The app**: the worker, pairing, heartbeat, Ollama detection and model download by hardware; one Windows executable; the setup guide | 2 |
-| B4 | **The website** on Render: sign-in, the five app states, upload, jobs, the review page, the checks. It is a page, so it gets a template, a spec and captures at 1440 and 380 | 2 |
+| B2 | Schema: books, jobs, heartbeats, paired devices, catalogue, drafts, **each with a course and an owner**. Staff-only, owner-only RLS with denial tests; an idempotent addendum pushed to Supabase first (hard rule 10) | 1 |
+| B3 | **The app**: the worker, pairing, heartbeat, Realtime jobs, Ollama detection and model download by hardware; one unsigned Windows executable; the setup guide | 2 |
+| B4 | **The API routes** (pairing, jobs, results with the checks, export) and **the console page `/assistant`**. A new console page, so it is born with a template, a `SPEC.md`, a spec, and captures at 1440 and 380 | 2 |
 | B5 | Figure summaries + grounding check, then the redraw renderers | 2 |
 | B6 | Lesson text + claim check; questions + critic; export | 2 |
-| B7 | **The test on 13-17**, written up with the numbers | 1 |
-| B8 | Book and syllabus intake for a new book; then the extras you choose | 1 each |
+| B7 | Extras 10, 11 and 12: the coverage map, the review of existing work, planet and moon summaries | 1-2 |
+| B8 | **The test on 13-17**, written up with the numbers | 1 |
+| B9 | Book and syllabus intake for a new book | 1 |
+| B10 | Extras 13-16: glossary, lecture aids, then question revision hints and the feedback digest when real data exists | 1 each |
 
-About 13 sessions for the whole thing. B0 and B1 need only decisions 1
-and 2 below.
+About 15 sessions in all.
 
-## 10. Decisions wanted
+## 10. Decisions
 
-1. **The design in §4:** the website on Render Free, and an executable per
-   teacher running Ollama on their own laptop, connecting outward. Agree?
-2. **May the next session install Ollama** on this laptop and download two or
-   three models (about 2-9 GB each) for step B0?
-3. **Windows only, unsigned, at first** (teachers click "Run anyway" once),
-   with macOS when there is a budget for Apple's $99/year?
-4. **"Future books" and "each teacher":** will OCTA itself someday serve
-   several courses and teachers, or does the tool only produce files that a
-   course like OCTA imports? (Today's database is built for one course with
-   one instructor. The tool works either way, but the first answer means a
-   much larger change to OCTA later.) And who gets a teacher account on the
-   tool: only staff you add?
-5. **Which extras** (10-16)? I suggest 10, 11 and 12 first.
-6. **Order:** start B0 next, or after verifying ruling 4 on the deployment
-   and R5?
+**All made, 7 Oct 2026** (the second-round table at the top). One thing is
+left for later, not for now: the separate plan for OCTA serving several
+courses and teachers.

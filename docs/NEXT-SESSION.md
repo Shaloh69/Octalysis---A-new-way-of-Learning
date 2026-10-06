@@ -1594,7 +1594,23 @@ features also. Planning first, come back to me first."
 10. **Waiting on the instructor:** v3 §10's six decisions (the design; may the
    next session install Ollama here; Windows-only unsigned first; whether
    OCTA becomes multi-course and who gets teacher accounts; which extras;
-   the order).
+   the order). ANSWERED in 11.
+11. **Second round, the same evening: every decision made; the plan is now v4,
+   APPROVED, and built LAST.** (1) "We already have the websites": there's no
+   new host. The assistant is a CONSOLE page `/assistant` (Vercel) plus API
+   routes (Render), and the API runs the checks. Heartbeats go to Supabase,
+   not the API, so the app never keeps Render Free awake (750 h/month).
+   Jobs reach the app through Supabase Realtime. (2) Installing Ollama on
+   this laptop for B0: yes. (3) "You decide": Windows only, unsigned, with
+   the Run-anyway step in the setup guide. (4) OCTA WILL serve several
+   courses and teachers one day ("a future dev plan"), so every assistant
+   table carries a course and an owning teacher. OCTA's own move to many
+   courses is a SEPARATE plan, not written, and not part of this one.
+   (5) Extras: ALL. 10-12 are built with the core, 13-16 after (the
+   instructor asked whether "10-16" meant chapters; they are the features
+   in v4 §6, and once that was clear, all were chosen). (6) "This will be last on the implementation plan": the
+   assistant waits until ruling 4 is verified live, R5 is done, and anything
+   else ahead of it. B0-B10, about 15 sessions.
 
 ## 0zc. The class chat, ruling 4, questions 09-12, Listen, passwords — 6 Oct 2026 (evening)
 
