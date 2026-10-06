@@ -89,10 +89,52 @@
 .rd-listen-rate[aria-pressed="true"] { background: var(--lit-bg); color: var(--lit-ink); border-color: var(--lit-bg); }
 .rd-listen-rate:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
 .rd-listen-note { margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--ink-muted); }
-/* The block being read: an edge beside it, the student's own place, never a colour on the text. */
+.rd-listen-voice { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); min-width: 0; max-width: 100%; }
+.rd-listen-voice-name { color: var(--ink-muted); }
+.rd-listen-voice select {
+  min-height: 44px;
+  /* The longest voice names run to 60 characters: the box never leaves the column. */
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 18rem;
+  padding: 0 var(--space-2);
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: var(--border-hair) solid var(--line-strong);
+}
+.rd-listen-voice select:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+/* The block being read (6 Oct 2026: "too close to the paragraph, make it more
+   beautiful"). A soft tint of the student's own accent that reaches a little
+   past the text on every side, with a rounded bar standing clear of it at the
+   left. The tint is drawn as a spread shadow, so the page never moves when the
+   mark does; the words keep their own colour. */
+.rd-reading [data-block] {
+  --speak-pad: var(--space-2);
+  /* The set's own soft accent (light on a light page, dark on a dark one), AA with the ink. */
+  --speak-tint: var(--accent-muted);
+  position: relative;
+  transition: box-shadow var(--dur-base) var(--ease-out), background-color var(--dur-base) var(--ease-out);
+}
 .rd-reading [data-speaking] {
-  box-shadow: calc(var(--border-thick) * -2) 0 0 0 var(--accent);
-  transition: box-shadow var(--dur-fast) var(--ease-out);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 var(--speak-pad) var(--speak-tint);
+}
+/* Prose and the brief have no ground of their own: tint it. Quotes, callouts
+   and figures keep theirs, and take only the ring. */
+.rd-reading .rd-prose[data-speaking],
+.rd-reading .rd-brief[data-speaking] {
+  background-color: var(--speak-tint);
+}
+.rd-reading [data-speaking]::before {
+  content: "";
+  position: absolute;
+  top: calc(var(--speak-pad) * -0.5);
+  bottom: calc(var(--speak-pad) * -0.5);
+  left: calc(var(--speak-pad) * -1 - var(--border-thick) * 2);
+  width: calc(var(--border-thick) * 2);
+  border-radius: var(--radius-full);
+  background: var(--accent);
 }
 
 

@@ -26,8 +26,32 @@ const wide = (t: TestInfo) => t.project.name === "desktop-1440";
 
 async function fakeVoice(page: Page, ms = 300): Promise<void> {
   await page.addInitScript((delay) => {
-    const w = window as unknown as { __spoken: Array<{ text: string; rate: number }>; speechSynthesis: unknown };
+    const w = window as unknown as {
+      __spoken: Array<{ text: string; rate: number; voice: string | null }>;
+      speechSynthesis: unknown;
+      SpeechSynthesisUtterance: unknown;
+    };
     w.__spoken = [];
+    // The device's voices: an old robotic one, a natural one, another language.
+    const voices = [
+      { name: "Microsoft David - English (United States)", lang: "en-US", localService: true, default: true, voiceURI: "david" },
+      { name: "Microsoft Aria Online (Natural) - English (United States)", lang: "en-US", localService: false, default: false, voiceURI: "aria" },
+      { name: "Google UK English Female", lang: "en-GB", localService: false, default: false, voiceURI: "gb" },
+      { name: "Google français", lang: "fr-FR", localService: false, default: false, voiceURI: "fr" },
+    ];
+    // Chrome refuses a plain object as an utterance's voice: record with a plain class instead.
+    class Utterance {
+      text: string;
+      rate = 1;
+      lang = "";
+      voice: { name: string } | null = null;
+      onend: ((e: Event) => void) | null = null;
+      onerror: ((e: { error: string }) => void) | null = null;
+      constructor(text: string) {
+        this.text = text;
+      }
+    }
+    Object.defineProperty(window, "SpeechSynthesisUtterance", { configurable: true, value: Utterance });
     let timer: number | undefined;
     let current: SpeechSynthesisUtterance | null = null;
     const synth = {
@@ -35,7 +59,7 @@ async function fakeVoice(page: Page, ms = 300): Promise<void> {
       speaking: false,
       pending: false,
       speak(u: SpeechSynthesisUtterance) {
-        w.__spoken.push({ text: u.text, rate: u.rate });
+        w.__spoken.push({ text: u.text, rate: u.rate, voice: u.voice?.name ?? null });
         current = u;
         timer = window.setTimeout(() => {
           if (current === u) u.onend?.(new Event("end") as SpeechSynthesisEvent);
@@ -52,12 +76,15 @@ async function fakeVoice(page: Page, ms = 300): Promise<void> {
       resume() {
         synth.paused = false;
       },
-      getVoices: () => [],
+      getVoices: () => voices,
+      addEventListener() {},
+      removeEventListener() {},
     };
     Object.defineProperty(window, "speechSynthesis", { configurable: true, get: () => synth });
   }, ms);
 }
-const spoken = (page: Page) => page.evaluate(() => (window as unknown as { __spoken: Array<{ text: string; rate: number }> }).__spoken);
+const spoken = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __spoken: Array<{ text: string; rate: number; voice: string | null }> }).__spoken);
 
 async function reader(page: Page, ms?: number): Promise<void> {
   await fakeVoice(page, ms);
@@ -145,6 +172,37 @@ test.describe("Listen — what it owes", () => {
     const all = await spoken(page);
     expect(all.at(-1)!.rate).toBe(1.5);
     expect(all.at(-1)!.text).toBe(all[0]!.text);
+  });
+
+  test("the most natural voice is chosen by default, and a paragraph is spoken whole (6 Oct 2026)", async ({ page }) => {
+    await reader(page, 60_000);
+    const select = page.getByLabel("Voice");
+    await expect(select).toHaveValue("Microsoft Aria Online (Natural) - English (United States)");
+    // English voices only, best first.
+    await expect(select.locator("option")).toHaveText([
+      "Microsoft Aria Online (Natural) - English (United States)",
+      "Google UK English Female",
+      "Microsoft David - English (United States)",
+    ]);
+    await page.getByRole("button", { name: "Listen", exact: true }).click();
+    const first = (await spoken(page))[0]!;
+    expect(first.voice).toBe("Microsoft Aria Online (Natural) - English (United States)");
+    // The brief's first paragraph, not just its first sentence.
+    expect((first.text.match(/[.!?](\s|$)/g) ?? []).length).toBeGreaterThan(1);
+  });
+
+  test("choosing another voice takes over the paragraph being read, and is remembered", async ({ page }) => {
+    await reader(page, 60_000);
+    await page.getByRole("button", { name: "Listen", exact: true }).click();
+    await page.getByLabel("Voice").selectOption("Google UK English Female");
+    await expect.poll(async () => (await spoken(page)).at(-1)!.voice).toBe("Google UK English Female");
+    const all = await spoken(page);
+    // The Google voice gets short pieces (it stops after ~15 s); it restarts the same paragraph.
+    expect(all.at(-1)!.text.length).toBeLessThanOrEqual(200);
+    expect(all[0]!.text.startsWith(all.at(-1)!.text.slice(0, 20))).toBe(true);
+    await page.reload();
+    await page.locator("[data-reading]").waitFor();
+    await expect(page.getByLabel("Voice")).toHaveValue("Google UK English Female");
   });
 
   test("leaving the page stops the voice", async ({ page }) => {

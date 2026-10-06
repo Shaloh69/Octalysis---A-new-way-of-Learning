@@ -78,6 +78,32 @@ approved draft. (`content_blocks.media_ref` holds the figure id.)
 credit; an unapproved one is simply absent (caption too). A question's figure
 sits above its options in the stage check and the exams, on the neutral paper.
 
+## The audiobook's voice — rulings of 6 Oct 2026 (evening)
+
+The instructor: "intonation and voice quality is horrible". Asked once:
+**both** (the better browser voice now, recorded MP3s next), and the MP3s
+from **Google Cloud Text-to-Speech** (WaveNet/Neural2; about 300,000
+characters for chapters 00-12, inside its free tier).
+
+**Done the same day:** the best English voice on the device is chosen (a
+"Natural"/"Online"/"Google" voice before the robotic defaults), a Voice choice
+remembered per device, a paragraph spoken as one utterance where the voice
+allows (Google's online voices get ~200 characters: they stop after ~15 s),
+symbols said as words, and the reading mark redrawn as a soft panel with
+room around the text.
+
+**MP3s, the plan (not built):** a script reads the APPROVED lesson blocks,
+asks Google Cloud TTS for one MP3 per block (a low mono bitrate keeps the
+course to tens of MB), and stores each in a private Supabase bucket under the
+block's text hash, so changed text gets new audio and unchanged text is never
+paid for twice. A staff-only table records (stage, ordinal, hash, path,
+bytes, voice); the reader plays the MP3s in order through signed links the
+API gives only for a stage the student may read, falling back to the browser
+voice where a block has none. Schema first, pushed before code (hard rule
+10). **Needs from the instructor:** a Google Cloud project with the
+Text-to-Speech API enabled, and an API key (server-side only: root .env and
+Render, never a VITE_ variable, hard rule 2).
+
 ## The audiobook — how it works
 
 **Built 6 Oct 2026** (`components/ListenBar.tsx`, `lib/listen.ts`; gate
