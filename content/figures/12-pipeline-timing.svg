@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 300">
+  <title>Six-stage pipeline timing, nine instructions</title>
+  <desc>A grid of time units 1 to 14 across, instructions 1 to 9 down. Each instruction passes through six stages, FI, DI, CO, FO, EI and WO, one per time unit, and each starts one unit after the one before it. The execute stage is highlighted. Instruction 1 finishes at time 6 and instruction 9 at time 14: nine instructions in 14 time units instead of 54.</desc>
+  <text x="2" y="16" font-size="14" class="fig-muted">time</text>
+  <text x="54.3" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">1</text>
+  <text x="82.8" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">2</text>
+  <text x="111.3" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">3</text>
+  <text x="139.8" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">4</text>
+  <text x="168.3" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">5</text>
+  <text x="196.8" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">6</text>
+  <text x="225.3" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">7</text>
+  <text x="253.8" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">8</text>
+  <text x="282.3" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">9</text>
+  <text x="310.8" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">10</text>
+  <text x="339.3" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">11</text>
+  <text x="367.8" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">12</text>
+  <text x="396.3" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">13</text>
+  <text x="424.8" y="32" font-size="14" text-anchor="middle" class="fig-muted fig-mono">14</text>
+  <text x="34" y="56" font-size="14" text-anchor="end" class="fig-ink fig-mono">1</text>
+  <rect x="40.0" y="42" width="28.5" height="20" class="fig-box"/>
+  <text x="54.3" y="56" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="68.5" y="42" width="28.5" height="20" class="fig-box"/>
+  <text x="82.8" y="56" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="97.0" y="42" width="28.5" height="20" class="fig-box"/>
+  <text x="111.3" y="56" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="125.5" y="42" width="28.5" height="20" class="fig-box"/>
+  <text x="139.8" y="56" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="154.0" y="42" width="28.5" height="20" class="fig-accent"/>
+  <text x="168.3" y="56" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="182.5" y="42" width="28.5" height="20" class="fig-box"/>
+  <text x="196.8" y="56" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="34" y="80" font-size="14" text-anchor="end" class="fig-ink fig-mono">2</text>
+  <rect x="68.5" y="66" width="28.5" height="20" class="fig-box"/>
+  <text x="82.8" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="97.0" y="66" width="28.5" height="20" class="fig-box"/>
+  <text x="111.3" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="125.5" y="66" width="28.5" height="20" class="fig-box"/>
+  <text x="139.8" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="154.0" y="66" width="28.5" height="20" class="fig-box"/>
+  <text x="168.3" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="182.5" y="66" width="28.5" height="20" class="fig-accent"/>
+  <text x="196.8" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="211.0" y="66" width="28.5" height="20" class="fig-box"/>
+  <text x="225.3" y="80" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="34" y="104" font-size="14" text-anchor="end" class="fig-ink fig-mono">3</text>
+  <rect x="97.0" y="90" width="28.5" height="20" class="fig-box"/>
+  <text x="111.3" y="104" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="125.5" y="90" width="28.5" height="20" class="fig-box"/>
+  <text x="139.8" y="104" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="154.0" y="90" width="28.5" height="20" class="fig-box"/>
+  <text x="168.3" y="104" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="182.5" y="90" width="28.5" height="20" class="fig-box"/>
+  <text x="196.8" y="104" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="211.0" y="90" width="28.5" height="20" class="fig-accent"/>
+  <text x="225.3" y="104" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="239.5" y="90" width="28.5" height="20" class="fig-box"/>
+  <text x="253.8" y="104" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="34" y="128" font-size="14" text-anchor="end" class="fig-ink fig-mono">4</text>
+  <rect x="125.5" y="114" width="28.5" height="20" class="fig-box"/>
+  <text x="139.8" y="128" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="154.0" y="114" width="28.5" height="20" class="fig-box"/>
+  <text x="168.3" y="128" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="182.5" y="114" width="28.5" height="20" class="fig-box"/>
+  <text x="196.8" y="128" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="211.0" y="114" width="28.5" height="20" class="fig-box"/>
+  <text x="225.3" y="128" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="239.5" y="114" width="28.5" height="20" class="fig-accent"/>
+  <text x="253.8" y="128" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="268.0" y="114" width="28.5" height="20" class="fig-box"/>
+  <text x="282.3" y="128" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="34" y="152" font-size="14" text-anchor="end" class="fig-ink fig-mono">5</text>
+  <rect x="154.0" y="138" width="28.5" height="20" class="fig-box"/>
+  <text x="168.3" y="152" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="182.5" y="138" width="28.5" height="20" class="fig-box"/>
+  <text x="196.8" y="152" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="211.0" y="138" width="28.5" height="20" class="fig-box"/>
+  <text x="225.3" y="152" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="239.5" y="138" width="28.5" height="20" class="fig-box"/>
+  <text x="253.8" y="152" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="268.0" y="138" width="28.5" height="20" class="fig-accent"/>
+  <text x="282.3" y="152" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="296.5" y="138" width="28.5" height="20" class="fig-box"/>
+  <text x="310.8" y="152" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="34" y="176" font-size="14" text-anchor="end" class="fig-ink fig-mono">6</text>
+  <rect x="182.5" y="162" width="28.5" height="20" class="fig-box"/>
+  <text x="196.8" y="176" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="211.0" y="162" width="28.5" height="20" class="fig-box"/>
+  <text x="225.3" y="176" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="239.5" y="162" width="28.5" height="20" class="fig-box"/>
+  <text x="253.8" y="176" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="268.0" y="162" width="28.5" height="20" class="fig-box"/>
+  <text x="282.3" y="176" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="296.5" y="162" width="28.5" height="20" class="fig-accent"/>
+  <text x="310.8" y="176" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="325.0" y="162" width="28.5" height="20" class="fig-box"/>
+  <text x="339.3" y="176" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="34" y="200" font-size="14" text-anchor="end" class="fig-ink fig-mono">7</text>
+  <rect x="211.0" y="186" width="28.5" height="20" class="fig-box"/>
+  <text x="225.3" y="200" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="239.5" y="186" width="28.5" height="20" class="fig-box"/>
+  <text x="253.8" y="200" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="268.0" y="186" width="28.5" height="20" class="fig-box"/>
+  <text x="282.3" y="200" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="296.5" y="186" width="28.5" height="20" class="fig-box"/>
+  <text x="310.8" y="200" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="325.0" y="186" width="28.5" height="20" class="fig-accent"/>
+  <text x="339.3" y="200" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="353.5" y="186" width="28.5" height="20" class="fig-box"/>
+  <text x="367.8" y="200" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="34" y="224" font-size="14" text-anchor="end" class="fig-ink fig-mono">8</text>
+  <rect x="239.5" y="210" width="28.5" height="20" class="fig-box"/>
+  <text x="253.8" y="224" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="268.0" y="210" width="28.5" height="20" class="fig-box"/>
+  <text x="282.3" y="224" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="296.5" y="210" width="28.5" height="20" class="fig-box"/>
+  <text x="310.8" y="224" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="325.0" y="210" width="28.5" height="20" class="fig-box"/>
+  <text x="339.3" y="224" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="353.5" y="210" width="28.5" height="20" class="fig-accent"/>
+  <text x="367.8" y="224" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="382.0" y="210" width="28.5" height="20" class="fig-box"/>
+  <text x="396.3" y="224" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="34" y="248" font-size="14" text-anchor="end" class="fig-ink fig-mono">9</text>
+  <rect x="268.0" y="234" width="28.5" height="20" class="fig-box"/>
+  <text x="282.3" y="248" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FI</text>
+  <rect x="296.5" y="234" width="28.5" height="20" class="fig-box"/>
+  <text x="310.8" y="248" font-size="14" text-anchor="middle" class="fig-ink fig-mono">DI</text>
+  <rect x="325.0" y="234" width="28.5" height="20" class="fig-box"/>
+  <text x="339.3" y="248" font-size="14" text-anchor="middle" class="fig-ink fig-mono">CO</text>
+  <rect x="353.5" y="234" width="28.5" height="20" class="fig-box"/>
+  <text x="367.8" y="248" font-size="14" text-anchor="middle" class="fig-ink fig-mono">FO</text>
+  <rect x="382.0" y="234" width="28.5" height="20" class="fig-accent"/>
+  <text x="396.3" y="248" font-size="14" text-anchor="middle" class="fig-ink fig-mono">EI</text>
+  <rect x="410.5" y="234" width="28.5" height="20" class="fig-box"/>
+  <text x="424.8" y="248" font-size="14" text-anchor="middle" class="fig-ink fig-mono">WO</text>
+  <text x="2" y="286" font-size="14" class="fig-muted">9 instructions finish in 14 time units, not 9 × 6 = 54</text>
+</svg>
