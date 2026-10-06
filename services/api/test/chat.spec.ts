@@ -70,7 +70,8 @@ const auth = (t: string) => ({ authorization: `Bearer ${t}` });
 const get = (url: string, t: string, on = app) => on.inject({ method: "GET", url, headers: auth(t) });
 const post = (url: string, t: string, payload?: object, on = app) =>
   on.inject({ method: "POST", url, headers: auth(t), ...(payload ? { payload } : {}) });
-const del = (url: string, t: string) => app.inject({ method: "DELETE", url, headers: auth(t) });
+const del = (url: string, t: string, payload?: object) =>
+  app.inject({ method: "DELETE", url, headers: auth(t), ...(payload ? { payload } : {}) });
 
 beforeAll(async () => {
   w = await resetWorld();
@@ -274,7 +275,8 @@ describe("attachments", () => {
     expect(list.limitBytes).toBe(1024 * 1024 * 1024);
     expect(list.items.map((i: { messageId: string }) => i.messageId)).toContain(withFile);
     expect(list.usedBytes).toBeGreaterThanOrEqual(4321);
-    const res = await del(`/api/v1/chat/messages/${withFile}/attachment`, tT);
+    expect((await del(`/api/v1/chat/messages/${withFile}/attachment`, tT)).statusCode).toBe(400);
+    const res = await del(`/api/v1/chat/messages/${withFile}/attachment`, tT, { reason: "storage is nearly full" });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ removed: 1, bytes: 4321 });
     expect(storage.removed.some((p) => p.startsWith(`${roomA}/${w.studentB}/`))).toBe(true);
@@ -284,7 +286,7 @@ describe("attachments", () => {
 
   it("a student cannot see the storage view or remove attachments", async () => {
     expect((await get("/api/v1/chat/attachments", tB)).statusCode).toBe(403);
-    expect((await post("/api/v1/chat/attachments/prune", tB, { olderThanDays: 1 })).statusCode).toBe(403);
+    expect((await post("/api/v1/chat/attachments/prune", tB, { olderThanDays: 1, reason: "tidy up" })).statusCode).toBe(403);
   });
 
   it("prune removes only attachments older than the days given, in one audited action", async () => {
@@ -299,7 +301,8 @@ describe("attachments", () => {
       alter table chat_messages disable trigger chat_messages_guard;
       update chat_messages set created_at = now() - interval '40 days' where id = '${old}';
       alter table chat_messages enable trigger chat_messages_guard;`);
-    const res = await post("/api/v1/chat/attachments/prune", tT, { olderThanDays: 30 });
+    expect((await post("/api/v1/chat/attachments/prune", tT, { olderThanDays: 30 })).statusCode).toBe(400);
+    const res = await post("/api/v1/chat/attachments/prune", tT, { olderThanDays: 30, reason: "end of the month" });
     expect(res.json()).toEqual({ removed: 1, bytes: 100 });
     const ids = (await get("/api/v1/chat/attachments", tT)).json().items.map((i: { messageId: string }) => i.messageId);
     expect(ids).toContain(fresh);
@@ -335,9 +338,11 @@ describe("deleting and moderating", () => {
   });
   it("the instructor removes a student's message, and /audit keeps what it said", async () => {
     const id = (await post(`/api/v1/chat/rooms/${roomA}/messages`, tB, { body: "something unkind" })).json().id;
-    expect((await del(`/api/v1/chat/messages/${id}`, tT)).statusCode).toBe(204);
+    // A reason, or nothing happens.
+    expect((await del(`/api/v1/chat/messages/${id}`, tT)).statusCode).toBe(400);
+    expect((await del(`/api/v1/chat/messages/${id}`, tT, { reason: "unkind to a classmate" })).statusCode).toBe(204);
     const a = await setup(`select payload from audit_log where action = 'chat.message.removed' and target_id = $1`, [id]);
-    expect(a.rows[0].payload).toMatchObject({ body: "something unkind", author: w.studentB });
+    expect(a.rows[0].payload).toMatchObject({ body: "something unkind", author: w.studentB, reason: "unkind to a classmate" });
     const seen = (await get(`/api/v1/chat/rooms/${roomA}`, tB)).json().messages.find((m: { id: string }) => m.id === id);
     expect(seen).toMatchObject({ deleted: true, body: null });
   });

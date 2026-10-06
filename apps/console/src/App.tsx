@@ -11,6 +11,7 @@ import { ContentChapterPage } from "./pages/ContentChapterPage";
 import { ItemsPage } from "./pages/ItemsPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { LivePage } from "./pages/LivePage";
+import { ChatPage } from "./pages/ChatPage";
 import { LivePresentPage } from "./pages/LivePresentPage";
 import { AssessmentsPage } from "./pages/AssessmentsPage";
 import { AuditPage } from "./pages/AuditPage";
@@ -68,6 +69,7 @@ export function App() {
           <Route path="/" element={<Navigate to="/locks" replace />} />
           <Route path="/locks" element={<LocksPage />} />
           <Route path="/live" element={<LivePage />} />
+          <Route path="/chat" element={<ChatPage />} />
           <Route path="/students" element={<StudentsPage />} />
           <Route path="/students/:userId" element={<StudentDetailPage />} />
           <Route path="/attempts/:attemptId" element={<AttemptPage />} />

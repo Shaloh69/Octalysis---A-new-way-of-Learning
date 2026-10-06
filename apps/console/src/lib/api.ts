@@ -3,6 +3,7 @@ import type {
   ItemImportRequest, ItemImportResult,
   SystemAudit, FeedbackBulkTriage, FeedbackQueue,
   LiveOptions, LiveSession, LiveSnapshot, LiveStartBody,
+  ChatAttachments, ChatMessage, ChatRoom, ChatRooms, ChatThread, ChatUnread, ChatUpload,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -104,6 +105,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new ApiError(code, message, res.status);
   }
+  // A 204 (a read marker, a delete) has no body to parse.
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
@@ -888,4 +891,48 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ ids } satisfies ItemExportRequest),
     }),
+  /* ---- the class chat (docs/CHAT-PLAN.md): every room, moderation, storage ---- */
+  chatRooms: () => request<ChatRooms>("/api/v1/chat/rooms"),
+  chatUnread: () => request<ChatUnread>("/api/v1/chat/unread"),
+  chatThread: (roomId: string, before?: string) =>
+    request<ChatThread>(
+      `/api/v1/chat/rooms/${encodeURIComponent(roomId)}${before ? `?before=${encodeURIComponent(before)}` : ""}`,
+    ),
+  chatRead: (roomId: string) =>
+    request<void>(`/api/v1/chat/rooms/${encodeURIComponent(roomId)}/read`, { method: "POST" }),
+  chatOpenThread: (userId: string) =>
+    request<ChatRoom>("/api/v1/chat/threads", { method: "POST", body: JSON.stringify({ userId }) }),
+  chatUpload: (roomId: string, file: { name: string; mime: string; bytes: number }) =>
+    request<ChatUpload>(`/api/v1/chat/rooms/${encodeURIComponent(roomId)}/uploads`, {
+      method: "POST",
+      body: JSON.stringify(file),
+    }),
+  chatSend: (roomId: string, input: { body?: string; mentions: string[]; attachment?: { path: string; name: string } }) =>
+    request<ChatMessage>(`/api/v1/chat/rooms/${encodeURIComponent(roomId)}/messages`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  /** Your own message: no reason. Someone else's (moderation): a reason, audited. */
+  chatDelete: (messageId: string, reason?: string) =>
+    request<void>(`/api/v1/chat/messages/${encodeURIComponent(messageId)}`, {
+      method: "DELETE",
+      ...(reason ? { body: JSON.stringify({ reason }) } : {}),
+    }),
+  chatAttachments: () => request<ChatAttachments>("/api/v1/chat/attachments"),
+  chatRemoveAttachment: (messageId: string, reason: string) =>
+    request<{ removed: number; bytes: number }>(`/api/v1/chat/messages/${encodeURIComponent(messageId)}/attachment`, {
+      method: "DELETE",
+      body: JSON.stringify({ reason }),
+    }),
+  chatPrune: (olderThanDays: number, reason: string) =>
+    request<{ removed: number; bytes: number }>("/api/v1/chat/attachments/prune", {
+      method: "POST",
+      body: JSON.stringify({ olderThanDays, reason }),
+    }),
 };
+
+/** Straight to storage, at the one-time URL the API signed (see apps/web's twin). */
+export async function putChatFile(uploadUrl: string, file: File): Promise<void> {
+  const res = await fetch(uploadUrl, { method: "PUT", headers: { "content-type": file.type, "x-upsert": "false" }, body: file });
+  if (!res.ok) throw new ApiError("upload_failed", "The file did not upload. Try attaching it again.", res.status);
+}

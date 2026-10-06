@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Users, Lock, BookOpen, Table2, ScrollText, ShieldCheck, MessageSquare,
-  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown,
+  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } from "@/lib/session";
@@ -32,6 +32,7 @@ const GROUPS = [
     items: [
       { to: "/locks", label: "Locks", icon: Lock, hint: "Open or close a stage for one student" },
       { to: "/live", label: "Live", icon: Radio, hint: "What the room is doing. Projector view: no names, ever" },
+      { to: "/chat", label: "Chat", icon: MessagesSquare, hint: "Each section's room and a private thread with each student" },
     ],
   },
   {

@@ -2864,3 +2864,150 @@
   .sitting-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); font-size: var(--text-sm); }
   .record-paper .sitting { padding: 0 0 var(--space-3); }
 }
+
+/* ============================================================
+   /chat — the class chat, the instructor side (6 Oct 2026;
+   design/templates/console/chat/SPEC.md). Zulip's structure: a
+   rooms rail, the room's log, the composer under it. `main` is the
+   only scroller at lg, so the log is sized from the viewport.
+   ============================================================ */
+@layer components {
+  .ch { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-4); }
+  .ch-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+  .ch-head p { max-width: 48rem; }
+  .ch-tabs { display: inline-flex; border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-md); overflow: hidden; }
+  .ch-tab {
+    min-height: var(--control-h-md);
+    padding: 0 var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+    background: var(--surface-1);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .ch-tab + .ch-tab { border-left: var(--border-hair) solid var(--line-strong); }
+  .ch-tab:hover { color: var(--ink); background: var(--surface-2); }
+  .ch-tab[aria-selected="true"] { color: var(--ink); background: var(--surface-2); box-shadow: inset 0 calc(var(--border-thick) * -1) 0 var(--accent); font-weight: 600; }
+  .ch-reserve { min-height: 24rem; }
+
+  .ch-grid { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); align-items: start; }
+  @container (min-width: 52rem) { .ch-grid { grid-template-columns: 15rem minmax(0, 1fr); } }
+
+  .ch-rooms, .ch-room-panel, .ch-card {
+    min-width: 0;
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+  }
+  .ch-rooms { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); }
+  .ch-h2 { font-family: var(--font-display); font-size: var(--text-sm); color: var(--ink-muted); }
+  .ch-room-list { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+  .ch-room {
+    display: grid;
+    gap: 2px;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-2);
+    text-align: left;
+    border: var(--border-hair) solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--ink);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .ch-room:hover { background: var(--surface-2); }
+  .ch-room[aria-current="true"] { background: var(--surface-2); border-color: var(--line-strong); box-shadow: inset var(--border-thick) 0 0 var(--accent); }
+  .ch-room-name { font-weight: 600; font-size: var(--text-sm); overflow-wrap: anywhere; }
+  .ch-room-sub { font-size: var(--text-xs); color: var(--ink-muted); }
+  .ch-room-count { font-size: var(--text-xs); font-weight: 600; color: var(--ink); }
+  .ch-note { font-size: var(--text-xs); color: var(--ink-muted); }
+  .ch-label { display: block; margin-bottom: var(--space-1); font-size: var(--text-sm); color: var(--ink-muted); }
+  .ch-open { margin-top: var(--space-2); padding-top: var(--space-3); border-top: var(--border-hair) solid var(--line); }
+  .ch-open-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  /* The rail is 15rem: the picker takes the row, Open sits under it (the first
+     capture clipped "Choose a student" to "Choose a studer"). */
+  .ch-select {
+    flex: 1 1 100%;
+    min-width: 0;
+    min-height: var(--control-h-md);
+    padding: 0 var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--ink);
+    background: var(--surface-0);
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-md);
+  }
+
+  .ch-room-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+  .ch-room-head { padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .ch-room-title { font-family: var(--font-display); font-size: var(--text-lg); overflow-wrap: anywhere; }
+  .ch-room-title.num { font-family: var(--font-mono); }
+  .ch-log { height: clamp(14rem, calc(100dvh - 24rem), 46rem); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-3) var(--space-4); }
+  .ch-log:focus-visible { outline: var(--border-thick) solid var(--accent); outline-offset: -3px; }
+  .ch-empty { margin: var(--space-6) auto; max-width: 44ch; text-align: center; font-size: var(--text-sm); color: var(--ink-muted); }
+  .ch-earlier { display: flex; margin: 0 auto var(--space-3); }
+  .ch-failed { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: var(--border-hair) solid var(--danger); border-radius: var(--radius-md); background: var(--danger-bg); }
+
+  .ch-msgs { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+  .ch-msg { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-left: var(--border-thick) solid transparent; border-radius: var(--radius-sm); animation: octa-rise-in var(--dur-fast) var(--ease-out); }
+  .ch-msg:hover { background: var(--surface-2); }
+  .ch-msg.is-mine { border-left-color: var(--accent); }
+  .ch-msg.is-for-me { background: var(--info-bg); }
+  .ch-msg-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+  .ch-author { font-weight: 600; font-size: var(--text-sm); }
+  .ch-time { margin-left: auto; font-size: var(--text-xs); color: var(--ink-muted); }
+  .ch-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); }
+  .ch-at { font-weight: 700; }
+  .ch-gone { font-size: var(--text-sm); font-style: italic; color: var(--ink-muted); }
+  .ch-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+  .ch-file { display: grid; gap: var(--space-1); justify-items: start; margin: var(--space-1) 0 0; }
+  .ch-media { display: block; max-width: min(100%, 22rem); max-height: 16rem; border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); }
+  .ch-file-cap { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
+
+  .ch-compose { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-top: var(--border-hair) solid var(--line); }
+  .ch-compose-field { position: relative; }
+  .ch-text { min-height: 3.5rem; max-height: 12rem; resize: vertical; }
+  .ch-mentions {
+    position: absolute; left: 0; right: 0; bottom: calc(100% + var(--space-1)); z-index: 4;
+    margin: 0; padding: var(--space-1); list-style: none;
+    background: var(--surface-1); border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-md);
+  }
+  .ch-mention-opt { padding: var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-sm); cursor: pointer; }
+  .ch-mention-opt[aria-selected="true"] { background: var(--surface-2); box-shadow: inset var(--border-thick) 0 0 var(--accent); font-weight: 600; }
+  .ch-chip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+  .ch-problem { font-size: var(--text-sm); color: var(--warning); }
+  .ch-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+  .ch-hint { flex: 1 1 14rem; margin-right: auto; font-size: var(--text-xs); color: var(--ink-muted); }
+  .ch-attach {
+    display: inline-flex; align-items: center; min-height: var(--control-h-md); padding: 0 var(--space-4);
+    font-size: var(--text-sm); font-weight: 500; color: var(--ink); cursor: pointer;
+    background: var(--surface-1); border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-md);
+  }
+  .ch-attach:hover { background: var(--surface-2); }
+  .ch-attach:has(input:focus-visible) { outline: var(--border-thick) solid var(--accent); outline-offset: 2px; }
+
+  /* ---- attachments: storage housekeeping ---- */
+  .ch-storage { display: grid; gap: var(--space-4); }
+  .ch-card { display: grid; gap: var(--space-3); padding: var(--space-4); max-width: 48rem; }
+  .ch-meter { height: 8px; border-radius: var(--radius-full); background: var(--surface-3); overflow: hidden; }
+  .ch-meter span { display: block; height: 100%; background: var(--ink-muted); }
+  .ch-prune { display: grid; gap: var(--space-1); }
+  /* The shared Input is w-full; the days field is a number of up to three digits. */
+  .ch-open-row .ch-days { width: 6rem; flex: none; }
+  .ch-files { display: grid; margin: 0; padding: 0; list-style: none; border: var(--border-hair) solid var(--line); border-radius: var(--radius-lg); background: var(--surface-1); }
+  .ch-file-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-1) var(--space-3); padding: var(--space-2) var(--space-4); }
+  .ch-file-row + .ch-file-row { border-top: var(--border-hair) solid var(--line); }
+  .ch-file-name { grid-column: 1; font-size: var(--text-sm); font-weight: 600; overflow-wrap: anywhere; }
+  .ch-file-meta { grid-column: 1; font-size: var(--text-xs); color: var(--ink-muted); }
+  .ch-file-size { grid-column: 2; grid-row: 1 / span 2; font-size: var(--text-sm); }
+  .ch-file-row > button { grid-column: 3; grid-row: 1 / span 2; }
+  .ch-quote { margin: var(--space-3) 0 0; padding: var(--space-2) var(--space-3); border-left: var(--border-thick) solid var(--line-strong); font-size: var(--text-sm); color: var(--ink); overflow-wrap: anywhere; }
+  .ch-reason { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+
+  .ch-skel { display: grid; gap: var(--space-2); padding: var(--space-4); border: var(--border-hair) solid var(--line); border-radius: var(--radius-lg); }
+  .ch-skel span { display: block; height: 1rem; border-radius: var(--radius-sm); background: var(--surface-2); }
+  .ch-skel-table { max-width: 48rem; }
+
+  @media (max-width: 640px) {
+    .ch-log { height: clamp(16rem, 55dvh, 32rem); padding: var(--space-2) var(--space-3); }
+    .ch-compose { padding: var(--space-3); }
+  }
+}

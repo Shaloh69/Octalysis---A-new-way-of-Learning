@@ -878,7 +878,12 @@ export const ChatAttachments = z.object({
 });
 export type ChatAttachments = z.infer<typeof ChatAttachments>;
 
-export const ChatPruneBody = z.object({ olderThanDays: z.number().int().min(1).max(365) }).strict();
+/** Staff moderation and storage housekeeping change what students see: a reason, audited. */
+const ChatReason = z.string().trim().min(3, "Say why, in a few words.").max(500);
+export const ChatReasonBody = z.object({ reason: ChatReason }).strict();
+export type ChatReasonBody = z.infer<typeof ChatReasonBody>;
+
+export const ChatPruneBody = z.object({ olderThanDays: z.number().int().min(1).max(365), reason: ChatReason }).strict();
 export type ChatPruneBody = z.infer<typeof ChatPruneBody>;
 
 export const ChatThreadBody = z.object({ userId: z.string().uuid() }).strict();

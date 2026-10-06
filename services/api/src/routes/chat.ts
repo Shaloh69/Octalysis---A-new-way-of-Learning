@@ -7,6 +7,7 @@ import {
   ChatMime,
   ChatPostBody,
   ChatPruneBody,
+  ChatReasonBody,
   ChatThreadBody,
   ChatUploadBody,
   type ChatAttachments,
@@ -467,6 +468,8 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
     if (!params.success) throw errors.notFound();
     const staff = isStaff(id);
     if (!staff) await guardPaper(app.db, id);
+    // Removing someone else's message needs a reason (checked once we know whose it is).
+    const reason = ChatReasonBody.safeParse(req.body ?? {});
 
     const removedPath = await withTransaction(app.db, async (tx) => {
       const { rows } = await tx.query(
@@ -480,6 +483,7 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
       const own = m.author_id === id.userId;
       if (!own && !staff) throw errors.notFound();
       if (m.deleted_at !== null) return null;
+      if (!own && !reason.success) throw errors.badRequest("Say why you are removing it, in a few words.");
       await tx.query(
         `update chat_messages
             set deleted_at = now(), deleted_by = $2, body = null, mentions = '{}',
@@ -489,6 +493,7 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
       );
       if (!own) {
         await audit(tx, id.userId, "chat.message.removed", params.data.id, {
+          reason: reason.success ? reason.data.reason : null,
           room: m.room_id,
           author: m.author_id,
           body: m.body,
@@ -564,7 +569,9 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
     requireStaff(id);
     const params = MessageParams.safeParse(req.params);
     if (!params.success) throw errors.notFound();
-    const r = await removeAttachments(id.userId, [params.data.id], "chat.attachment.removed", {});
+    const reason = ChatReasonBody.safeParse(req.body);
+    if (!reason.success) throw errors.badRequest("Say why you are removing it, in a few words.");
+    const r = await removeAttachments(id.userId, [params.data.id], "chat.attachment.removed", { reason: reason.data.reason });
     if (r.removed === 0) throw errors.notFound("That message has no attachment.");
     return r;
   });
@@ -573,7 +580,7 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
     const id = await identityFrom(req, env);
     requireStaff(id);
     const body = ChatPruneBody.safeParse(req.body);
-    if (!body.success) throw errors.badRequest("Say how many days old, from 1 to 365.");
+    if (!body.success) throw errors.badRequest("Say how many days old (1 to 365) and why, in a few words.");
     const { rows } = await app.db.query(
       `select id::text from chat_messages
         where attachment_path is not null and created_at < now() - make_interval(days => $1)`,
@@ -581,6 +588,7 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
     );
     return removeAttachments(id.userId, rows.map((r) => r.id as string), "chat.attachments.pruned", {
       olderThanDays: body.data.olderThanDays,
+      reason: body.data.reason,
     });
   });
 }
