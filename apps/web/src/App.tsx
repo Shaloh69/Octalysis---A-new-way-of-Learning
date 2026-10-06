@@ -21,6 +21,7 @@ import {
 import { SettingsPage } from "./pages/SettingsPage";
 import { StagesPage } from "./pages/StagesPage";
 import { SubmitPage } from "./pages/SubmitPage";
+import { ChatPage } from "./pages/ChatPage";
 import { useCosmetics } from "./solar-system/cosmetic-seed";
 import { currentIdentity, onAuthChange, type Identity } from "./lib/auth";
 import { useRealm } from "./lib/realm";
@@ -121,6 +122,7 @@ export default function App(): JSX.Element {
                 <Route path="/app/stages" element={<StagesPage />} />
                 <Route path="/app/progress" element={<ProgressPage />} />
                 <Route path="/app/work" element={<SubmitPage />} />
+                <Route path="/app/chat" element={<ChatPage />} />
                 <Route path="/app/settings" element={<SettingsPage />} />
               </Route>
               <Route path="/app/map" element={<MapRedirect />} />

@@ -185,14 +185,14 @@ test.describe("the shell — what it owes", () => {
     await expect(page).toHaveURL(/\/app\/stages$/);
   });
 
-  test("at 380 the tab strip is a bottom bar of the same five", async ({ page }, testInfo) => {
+  test("at 380 the tab strip is a bottom bar of the same six", async ({ page }, testInfo) => {
     test.skip(!testInfo.project.name.includes("380"), "this is the 380 form");
     await star(page);
     const nav = page.locator("nav[aria-label=Main]");
     expect(await nav.evaluate((e) => getComputedStyle(e).position)).toBe("fixed");
     const box = (await nav.boundingBox())!;
     expect(Math.round(box.y + box.height)).toBe(page.viewportSize()!.height);
-    await expect(nav.locator(".star-tab")).toHaveCount(5);
+    await expect(nav.locator(".star-tab")).toHaveCount(6);
   });
 
   test("the mission panel names the next stage and goes there", async ({ page }) => {

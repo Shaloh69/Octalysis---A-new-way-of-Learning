@@ -1,4 +1,13 @@
-import type { AttemptEventKind, Cosmetics } from "@octa/contracts";
+import type {
+  AttemptEventKind,
+  ChatMessage,
+  ChatRoom,
+  ChatRooms,
+  ChatThread,
+  ChatUnread,
+  ChatUpload,
+  Cosmetics,
+} from "@octa/contracts";
 
 /**
  * API client.
@@ -180,6 +189,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(code, message, res.status);
   }
 
+  // A 204 (a read marker, a delete) has no body to parse.
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
@@ -295,7 +306,47 @@ export const api = {
 
   submit: (attemptId: string) =>
     request<SubmitResult>(`/api/v1/attempts/${attemptId}/submit`, { method: "POST" }),
+
+  /* ---- the class chat (docs/CHAT-PLAN.md). 423 paper_open while a paper is open. ---- */
+
+  chatRooms: () => request<ChatRooms>("/api/v1/chat/rooms"),
+  chatUnread: () => request<ChatUnread>("/api/v1/chat/unread"),
+  chatThread: (roomId: string, before?: string) =>
+    request<ChatThread>(
+      `/api/v1/chat/rooms/${encodeURIComponent(roomId)}${before ? `?before=${encodeURIComponent(before)}` : ""}`,
+    ),
+  chatRead: (roomId: string) =>
+    request<void>(`/api/v1/chat/rooms/${encodeURIComponent(roomId)}/read`, { method: "POST" }),
+  chatUpload: (roomId: string, file: { name: string; mime: string; bytes: number }) =>
+    request<ChatUpload>(`/api/v1/chat/rooms/${encodeURIComponent(roomId)}/uploads`, {
+      method: "POST",
+      body: JSON.stringify(file),
+    }),
+  chatSend: (roomId: string, input: { body?: string; mentions: string[]; attachment?: { path: string; name: string } }) =>
+    request<ChatMessage>(`/api/v1/chat/rooms/${encodeURIComponent(roomId)}/messages`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  chatDelete: (messageId: string) =>
+    request<void>(`/api/v1/chat/messages/${encodeURIComponent(messageId)}`, { method: "DELETE" }),
 };
+
+export type { ChatMessage, ChatRoom, ChatRooms, ChatThread };
+
+/**
+ * The file itself goes straight to storage, to the one-time URL the API signed
+ * for this room and this author: 25 MB through Render's free tier would be
+ * slow, and the API never needs the bytes. The bucket refuses anything over
+ * 25 MB or of another type, whoever signed it.
+ */
+export async function putChatFile(uploadUrl: string, file: File): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "content-type": file.type, "x-upsert": "false" },
+    body: file,
+  });
+  if (!res.ok) throw new ApiError("upload_failed", "The file did not upload. Try attaching it again.", res.status);
+}
 
 /* ---- the paper: shapes from services/api/src/serialize/student.ts, the ONE serializer ---- */
 

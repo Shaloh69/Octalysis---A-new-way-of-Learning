@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { signOut } from "../lib/auth";
 import { FeedbackDialog } from "../components/FeedbackDialog";
@@ -9,13 +9,16 @@ import { Starfield } from "./Starfield";
 import { KeyHintBar } from "./KeyHintBar";
 import { useKeyHints } from "./keyHints";
 import { useOnline } from "./useOnline";
+import { api } from "../lib/api";
+import { useChatLive } from "../lib/chat-live";
 
 /**
  * The star system's shell (WEB-REMAKE.md §2): Starfield's HUD.
  *
  *   top      the readout strip (OCTA, the registers, Sign out)
- *   nav      a tab strip of the five hub routes, ← and → stepping between them;
- *            at 640 and under it is a bottom bar of the same five
+ *   nav      a tab strip of the six hub routes, ← and → stepping between them;
+ *            at 640 and under it is a bottom bar of the same six. Chat (6 Oct
+ *            2026, docs/CHAT-PLAN.md) carries the count of unread @mentions
  *   main     the mission panel, then the route (the map draws its own panels)
  *   hints    the key-hint bar, bottom-right at 1440, hidden on a phone
  *
@@ -27,8 +30,27 @@ const TABS = [
   { to: "/app/stages", label: "Stages", short: "Stages", end: false },
   { to: "/app/progress", label: "Progress", short: "Progress", end: false },
   { to: "/app/work", label: "Your work", short: "Work", end: false },
+  { to: "/app/chat", label: "Chat", short: "Chat", end: false },
   { to: "/app/settings", label: "Settings", short: "Settings", end: false },
 ] as const;
+
+/**
+ * Unread @mentions, for the Chat tab: read on every route change, and on any
+ * chat message where Realtime is available (no polling here: the chat page
+ * polls for itself). Silent on failure: no count is better than a wrong one.
+ */
+function useChatMentions(pathname: string): number {
+  const [n, setN] = useState(0);
+  const read = useCallback(() => {
+    void api
+      .chatUnread()
+      .then((u) => setN(u.mentions))
+      .catch(() => setN(0));
+  }, []);
+  useEffect(read, [read, pathname]);
+  useChatLive("nav", null, read, false);
+  return n;
+}
 
 function currentTab(pathname: string): number {
   const i = TABS.findIndex((t) => (t.end ? pathname === t.to || pathname === `${t.to}/` : pathname.startsWith(t.to)));
@@ -42,6 +64,7 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
   const [reporting, setReporting] = useState(false);
   const isMap = pathname === "/app" || pathname === "/app/";
   const here = currentTab(pathname);
+  const mentions = useChatMentions(pathname);
   const prev = TABS[(here + TABS.length - 1) % TABS.length]!;
   const next = TABS[(here + 1) % TABS.length]!;
 
@@ -81,11 +104,25 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
           <ul className="star-tabs">
             {TABS.map((t) => (
               <li key={t.to}>
-                <NavLink to={t.to} end={t.end} className="star-tab" aria-label={t.label}>
+                <NavLink
+                  to={t.to}
+                  end={t.end}
+                  className="star-tab"
+                  aria-label={
+                    t.to === "/app/chat" && mentions > 0
+                      ? `${t.label}, ${mentions} unread mention${mentions === 1 ? "" : "s"}`
+                      : t.label
+                  }
+                >
                   <span className="star-tab-long">{t.label}</span>
                   <span className="star-tab-short" aria-hidden="true">
                     {t.short}
                   </span>
+                  {t.to === "/app/chat" && mentions > 0 && (
+                    <span className="star-tab-count mono" aria-hidden="true" data-chat-mentions="">
+                      {mentions}
+                    </span>
+                  )}
                 </NavLink>
               </li>
             ))}
