@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 320">
+  <title>Reading one block: who is busy, for each I/O technique</title>
+  <desc>Three timelines for reading the same block, illustrative and not to scale. Programmed I/O: the processor is busy with the transfer the whole time, polling and moving each word. Interrupt-driven I/O: the processor does other work, broken by a short interrupt handler for every word. Direct memory access: the processor does other work and is interrupted once, at the end, while a separate DMA module bar shows the module moving the whole block.</desc>
+  <text x="20" y="22" font-size="14" font-weight="600" class="fig-ink">Programmed I/O</text>
+  <rect x="20.0" y="32" width="400.0" height="24" class="fig-accent"/>
+  <text x="220" y="49" font-size="14" text-anchor="middle" class="fig-ink">poll, transfer, poll, transfer, ...</text>
+  <text x="20" y="88" font-size="14" font-weight="600" class="fig-ink">Interrupt-driven I/O</text>
+  <rect x="20.0" y="98" width="400.0" height="24" class="fig-box"/>
+  <rect x="52.0" y="98" width="14.0" height="24" class="fig-accent"/>
+  <rect x="116.0" y="98" width="14.0" height="24" class="fig-accent"/>
+  <rect x="180.0" y="98" width="14.0" height="24" class="fig-accent"/>
+  <rect x="244.0" y="98" width="14.0" height="24" class="fig-accent"/>
+  <rect x="308.0" y="98" width="14.0" height="24" class="fig-accent"/>
+  <rect x="372.0" y="98" width="14.0" height="24" class="fig-accent"/>
+  <text x="220" y="141" font-size="14" text-anchor="middle" class="fig-muted">one interrupt and handler per word</text>
+  <text x="20" y="176" font-size="14" font-weight="600" class="fig-ink">Direct memory access</text>
+  <text x="20" y="198" font-size="14" class="fig-muted">processor</text>
+  <rect x="20.0" y="204" width="400.0" height="24" class="fig-box"/>
+  <rect x="396.0" y="204" width="16.0" height="24" class="fig-accent"/>
+  <text x="20" y="250" font-size="14" class="fig-muted">DMA module</text>
+  <rect x="28.0" y="256" width="368.0" height="24" class="fig-accent"/>
+  <rect x="250" y="297" width="12" height="12" class="fig-accent"/>
+  <text x="268" y="308" font-size="14" class="fig-muted">I/O work</text>
+  <rect x="340" y="297" width="12" height="12" class="fig-box"/>
+  <text x="358" y="308" font-size="14" class="fig-muted">other work</text>
+  <text x="20" y="308" font-size="14" class="fig-muted">time, not to scale</text>
+</svg>
