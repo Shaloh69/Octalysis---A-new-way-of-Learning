@@ -26,8 +26,8 @@ summaries with a grounding check, chart data read exactly from the PDF's
 vectors, redraw by spec, quotes pasted by reference, more features). The
 instructor answered (free engine, hosted on Render, for future books with
 13-17 of this book as the test, MP3s scrapped), so the plan is now v3: the
-website on Render Free, the model on this laptop through Ollama (no free
-host can run one). It awaits v3 §10; no code was written. Prelim NOT runnable (deployment: stage 01
+website on Render Free, an executable per teacher running Ollama on their
+own laptop (no free host can run a model; the instructor's idea). It awaits v3 §10; no code was written. Prelim NOT runnable (deployment: stage 01
 13 live, 02-04 none). Detail: NEXT-SESSION.md 0zd.
 
 **6 Oct 2026 (evening):** phase report 223/245 (91%); live R3 87/88, R4 46/48,
