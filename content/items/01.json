@@ -221,7 +221,7 @@
       "type": "G",
       "bloom": "understand",
       "difficulty": 0.58,
-      "stem": "Figure 1.1 nests the computer's structure. Put these in order from the outermost enclosing level to the innermost.",
+      "stem": "A computer's top-level structure is a set of levels, each one a component of the level above it. Put these in order from the outermost level to the innermost.",
       "order": [
         "Computer",
         "CPU",

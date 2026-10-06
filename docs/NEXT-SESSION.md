@@ -1576,6 +1576,16 @@ pipeline (schema, sync, API, tests), `2e78512` figures in the reader and on
    code (its figure route answers 401, an unknown route 404).
    Stage 05 keeps its ASCII Venn sketch until 05-hamming-venn is approved; then
    delete the sketch (a data-only change).
+9. **Instructor found (6 Oct): 01-structure-hierarchy-order says "Figure 1.1
+   nests..." with no figure.** It is the only item whose stem names a book
+   figure. Attaching 01-top-level-structure would show the answer (its panels
+   ARE the nesting), so the stem was reworded to stand alone in
+   content/items/01.json: "A computer's top-level structure is a set of levels,
+   each one a component of the level above it. Put these in order from the
+   outermost level to the innermost." On the deployment the item is LIVE, so
+   sync leaves it alone (rule 6): the instructor makes a New version on /items
+   with that stem and approves it. A figure on a question must never draw its
+   answer; question figures are drawn per question.
 6. **Prelim still NOT runnable** on 6 Oct: on the deployment stage 01's 15 items
    are live (the instructor began approving on 5 Oct), 02-04's 81 are at review.
 
