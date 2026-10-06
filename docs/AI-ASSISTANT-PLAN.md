@@ -27,6 +27,7 @@ round, and every decision is now made.
 | 4 | Will OCTA serve several courses and teachers? | **Yes, one day: "a future dev plan."** So the assistant's tables carry a course and an owning teacher from the start (§4). OCTA's own move to many courses is a **separate plan, not written yet**, and not part of this one |
 | 5 | Which extras | **All of them**: 10, 11 and 12 with the core; 13-16 after it (§6) |
 | 6 | Order | **"This will be last on the implementation plan."** It's built after everything else in the queue (ruling 4 verified live, R5, and whatever comes before it) |
+| 7 | (round three) A Claude subscription, and other strong free AIs | **Yes: an engine chain** with local Ollama as the final fallback. A subscription works through the teacher's own Claude Code and our plugin; a sign-in button would need Anthropic's approval (§3a) |
 
 **No code exists yet.** It is approved, and it waits its turn.
 
@@ -38,7 +39,9 @@ It is a **staff-only page in the console** for turning a textbook into
 course material: lesson text, questions, redrawn figures, and a catalogue
 of every figure, chart, graph and table in the book. Its routes live in
 the existing API, and the AI runs on **each teacher's own laptop**
-through a small app they install. It is built for **future books**: a new
+through a small app they install, or on the strong free online AIs the
+teacher switches on (local Ollama is always the last fallback), or in the
+teacher's own Claude Code. It is built for **future books**: a new
 course, or a new edition, starts by giving it the book and its syllabus.
 **The rest of this book (syllabus chapters 13-17) is its test.**
 
@@ -116,12 +119,85 @@ a draft is the right shape before a check even runs. The **content rules**
 the sessions followed (`.claude/rules/content.md`) become each job's fixed
 prompt.
 
-**Free alternatives, and why they are not recommended for the book:**
-Gemini's free tier is stronger, but its terms let Google keep and review
-what you send, which means the copyrighted book. Its limits also change
-month to month. Groq and OpenRouter have free models with daily caps. Each
-of these can be added behind the same interface if you decide to, but none
-is the default.
+**Free online engines, and a Claude subscription:** see §3a. Local Ollama
+is the last link in that chain, never the only one.
+
+## 3a. The engine chain: strong free AIs first, local Ollama last
+
+Instructor, 7 Oct 2026: "If someone has a Claude account with a subscription
+they can use that too. Or are there other free AI APIs that are actually
+strong that we can switch around, with Ollama as the final fallback?"
+
+**Yes.** Each teacher's app holds an **ordered list of engines** (the
+"chain"). Each job goes to the first engine that is switched on, has quota
+left today, and is allowed to see the book. When one runs out or fails, the
+job moves to the next. **Local Ollama is always last and always there**, so
+a job never fails for want of an engine. Every draft is labelled with the
+engine and model that wrote it. The checks are the same whoever wrote it.
+
+### The rule for an engine: it may not keep the book
+
+Every job carries pieces of a copyrighted textbook. An engine is **on by
+default** only if its terms say it does **not train on, or keep, what it is
+sent**. An engine that trains on free-tier input is **off**, and the app says
+why next to it.
+
+| Engine | Free allowance (checked 7 Oct 2026) | Strong? | Sees images? | Keeps or trains on input? | Default |
+|---|---|---|---|---|---|
+| **Ollama Cloud** | starter credits on the free plan, limits unpublished; big models such as `gpt-oss:120b` and `deepseek-v4-pro` | **yes** | some models | "Prompt or response data is never logged or trained on" | **on, first** |
+| **Groq** | about 1,000 requests a day for `gpt-oss-120b` (30 a minute) | **yes** (text) | check per model | "does not retain customer data" by default; Zero Data Retention option | **on** |
+| **Cloudflare Workers AI** | 10,000 "neurons" a day (`llama-3.3-70b`) | medium | yes (small models) | explicit commitment not to train on prompts or outputs | **on** |
+| **Claude, the teacher's own API key** | pay per use, not free | **the strongest** | yes | not used for training by default under Anthropic's commercial terms | **on if a key is added** |
+| Google Gemini (free tier) | about 15/min, ~1,500/day, changing often | yes | yes | **trains on free-tier input**, and humans may review it | **off** |
+| Mistral (free tier) | ~1 request/s, $10/month of credit | yes | yes | **may train**, with an opt-out | off unless the teacher confirms the opt-out |
+| NVIDIA NIM | 40/min, ~10,000/day reported | yes | yes | **free usage is logged** | off |
+| OpenRouter `:free` | 50/day (1,000 with $10 bought) | varies | varies | depends on the provider behind each model; some log or train | off |
+| **Ollama, local** | unlimited | as the laptop allows (§3) | yes | never leaves the laptop | **always last** |
+
+**Honest limits.** Free allowances are small and keep changing: Cerebras
+ended its permanent free tier in July 2026, and GitHub Models has
+reportedly been retired. So the app reads each engine's remaining quota
+from its replies and never assumes. A chapter takes very roughly 100-200
+model calls (figures, sections, questions, checks). So one free engine
+covers a few chapters a day, and the chain spreads the rest.
+
+**Engines that cannot see images** still summarise figures. The figure reader
+(§5 B) hands them the exact labels, the chart data and the paragraphs that
+cite the figure. Seeing the picture helps with layout, so image jobs prefer
+an engine that sees.
+
+**API keys stay on the teacher's laptop** (Windows' credential store). The
+app calls the engines directly. No key is ever sent to OCTA's servers or
+stored in Supabase (the spirit of hard rule 2).
+
+### A Claude subscription (Pro or Max): yes, through the teacher's own Claude Code
+
+Anthropic's rule (Agent SDK docs, checked 7 Oct 2026): "Unless previously
+approved, Anthropic does not allow third party developers to offer
+claude.ai login or rate limits for their products." So the app **cannot**
+have a "sign in with your Claude account" button that spends a subscription
+behind the scenes.
+
+**The legitimate route is the one this project already uses: Claude Code
+itself.** A teacher with a subscription installs Claude Code, signs in
+there, and adds the **OCTA assistant plugin** we ship. It contains:
+
+- an MCP server that lets their Claude Code **fetch** that teacher's next job
+  (the chapter's text, figures, labels and chart data) and **hand in** the
+  result, through the same API routes the app uses;
+- a skill `/octa-draft` that carries the same content rules and job
+  instructions the other engines get.
+
+The teacher opens Claude Code and types `/octa-draft`. Claude does the job
+the way these sessions did, and the result goes through the same checks and
+the same review page. It is **the teacher using their own Claude Code**, not
+our app using their login. Because the teacher starts it, it is manual, not
+an overnight background job. For automatic runs on Claude, the teacher adds
+an API key instead (the table above).
+
+If you want a "sign in with Claude" button anyway, that needs **Anthropic's
+approval first**. It's a request to Anthropic, not something to build
+around.
 
 ## 4. The design: the existing console and API, plus an app on each teacher's laptop
 
@@ -446,7 +522,8 @@ added ahead of it. Then:
 | B0 | Install Ollama on this laptop (approved) and try `qwen3.5:4b`, `qwen3.5:9b` and `gemma4:12b` on book 15's figures. **This answers "is it enough?" before anything else is built**, and fixes the model tiers | 1 |
 | B1 | Figure reader + chart data for this book (fix the caption locator; check all ~355 figures are found) | 1 |
 | B2 | Schema: books, jobs, heartbeats, paired devices, catalogue, drafts, **each with a course and an owner**. Staff-only, owner-only RLS with denial tests; an idempotent addendum pushed to Supabase first (hard rule 10) | 1 |
-| B3 | **The app**: the worker, pairing, heartbeat, Realtime jobs, Ollama detection and model download by hardware; one unsigned Windows executable; the setup guide | 2 |
+| B3 | **The app**: the worker, pairing, heartbeat, Realtime jobs, Ollama detection and model download by hardware, and the **engine chain** (§3a: Ollama Cloud, Groq, Cloudflare, a Claude API key, local Ollama last; quotas read live; keys kept on the laptop); one unsigned Windows executable; the setup guide | 2-3 |
+| B3b | **The Claude Code plugin** (§3a): an MCP server to fetch and hand in jobs, and the `/octa-draft` skill, for teachers with a Claude subscription | 1 |
 | B4 | **The API routes** (pairing, jobs, results with the checks, export) and **the console page `/assistant`**. A new console page, so it is born with a template, a `SPEC.md`, a spec, and captures at 1440 and 380 | 2 |
 | B5 | Figure summaries + grounding check, then the redraw renderers | 2 |
 | B6 | Lesson text + claim check; questions + critic; export | 2 |
@@ -455,7 +532,7 @@ added ahead of it. Then:
 | B9 | Book and syllabus intake for a new book | 1 |
 | B10 | Extras 13-16: glossary, lecture aids, then question revision hints and the feedback digest when real data exists | 1 each |
 
-About 15 sessions in all.
+About 17 sessions in all.
 
 ## 10. Decisions
 

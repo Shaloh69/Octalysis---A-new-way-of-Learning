@@ -1611,6 +1611,23 @@ features also. Planning first, come back to me first."
    in v4 §6, and once that was clear, all were chosen). (6) "This will be last on the implementation plan": the
    assistant waits until ruling 4 is verified live, R5 is done, and anything
    else ahead of it. B0-B10, about 15 sessions.
+12. **Round three (instructor, same evening): a Claude subscription, and other
+   strong free AIs, with Ollama as the final fallback.** Plan §3a: an
+   ENGINE CHAIN per teacher. On by default are only engines whose terms say
+   they do not train on or keep input (Ollama Cloud: "never logged or
+   trained on"; Groq: no retention by default; Cloudflare Workers AI: no
+   training; a Claude API key if the teacher adds one). Off by default:
+   Gemini free (trains on input), Mistral free (trains unless opted out),
+   NVIDIA NIM (logged), OpenRouter free (varies). Local Ollama is always
+   last. Keys stay on the laptop. A SUBSCRIPTION cannot be a sign-in inside
+   our app: the Agent SDK docs say "Unless previously approved, Anthropic
+   does not allow third party developers to offer claude.ai login or rate
+   limits for their products." The route is the teacher's own Claude Code
+   plus our plugin (an MCP server to fetch and hand in jobs, and an
+   `/octa-draft` skill), which the teacher starts by hand. Free tiers
+   change monthly (Cerebras ended its permanent free tier in July 2026;
+   GitHub Models was reportedly retired), so the app reads quota live.
+   Now about 17 sessions.
 
 ## 0zc. The class chat, ruling 4, questions 09-12, Listen, passwords — 6 Oct 2026 (evening)
 
