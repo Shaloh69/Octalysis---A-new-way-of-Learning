@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 390">
+  <title>The instruction cycle state diagram</title>
+  <desc>Seven states in two rows. The top row exchanges data with memory or an I/O module: instruction fetch, operand fetch, operand store. The bottom row happens inside the processor: instruction address calculation, instruction operation decoding, operand address calculation (drawn twice), data operation. The cycle zigzags: instruction address calculation, instruction fetch, decoding, operand address calculation, operand fetch, data operation, operand address calculation, operand store. A loop marked again returns from operand fetch to operand address calculation for another operand, and another from operand store for another result. From operand store, a path over the top returns to the first operand address calculation for string or vector data, and a path around the bottom returns to instruction address calculation when the instruction is complete.</desc>
+  <defs>
+    <marker id="03-instruction-cycle-states-tip" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" class="fig-ink"/>
+    </marker>
+  </defs>
+  <rect x="47.5" y="50" width="60" height="36" class="fig-accent"/>
+  <rect x="197.5" y="50" width="60" height="36" class="fig-accent"/>
+  <rect x="347.5" y="50" width="60" height="36" class="fig-accent"/>
+  <text x="77.5" y="73" font-size="14" text-anchor="middle" class="fig-ink fig-mono">if</text>
+  <text x="227.5" y="73" font-size="14" text-anchor="middle" class="fig-ink fig-mono">of</text>
+  <text x="377.5" y="73" font-size="14" text-anchor="middle" class="fig-ink fig-mono">os</text>
+  <rect x="10" y="140" width="60" height="36" class="fig-box"/>
+  <rect x="85" y="140" width="60" height="36" class="fig-box"/>
+  <rect x="160" y="140" width="60" height="36" class="fig-box"/>
+  <rect x="235" y="140" width="60" height="36" class="fig-box"/>
+  <rect x="310" y="140" width="60" height="36" class="fig-box"/>
+  <text x="40" y="163" font-size="14" text-anchor="middle" class="fig-ink fig-mono">iac</text>
+  <text x="115" y="163" font-size="14" text-anchor="middle" class="fig-ink fig-mono">iod</text>
+  <text x="190" y="163" font-size="14" text-anchor="middle" class="fig-ink fig-mono">oac</text>
+  <text x="265" y="163" font-size="14" text-anchor="middle" class="fig-ink fig-mono">do</text>
+  <text x="340" y="163" font-size="14" text-anchor="middle" class="fig-ink fig-mono">oac</text>
+  <line x1="40" y1="140" x2="66" y2="89" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <line x1="89" y1="86" x2="113" y2="137" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <line x1="145" y1="158" x2="157" y2="158" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <line x1="196" y1="140" x2="216" y2="89" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <line x1="239" y1="86" x2="263" y2="137" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <line x1="295" y1="158" x2="307" y2="158" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <line x1="346" y1="140" x2="366" y2="89" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <path d="M197.5 70 C 160 70, 160 115, 180 137" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <text x="157" y="116" font-size="14" text-anchor="end" class="fig-muted">again</text>
+  <path d="M347.5 70 C 310 70, 310 115, 330 137" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <text x="307" y="116" font-size="14" text-anchor="end" class="fig-muted">again</text>
+  <path d="M377.5 50 L377.5 30 L166 30 L166 137" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <text x="272" y="22" font-size="14" text-anchor="middle" class="fig-muted">return for string or vector data</text>
+  <path d="M407.5 68 L428 68 L428 200 L40 200 L40 179" class="fig-line" stroke-width="1.5" marker-end="url(#03-instruction-cycle-states-tip)"/>
+  <text x="234" y="220" font-size="14" text-anchor="middle" class="fig-muted">instruction complete: fetch the next</text>
+  <text x="10" y="252" font-size="14" class="fig-ink fig-mono">iac</text>
+  <text x="50" y="252" font-size="14" class="fig-ink">instruction address calculation</text>
+  <text x="10" y="272" font-size="14" class="fig-ink fig-mono">if</text>
+  <text x="50" y="272" font-size="14" class="fig-ink">instruction fetch</text>
+  <text x="10" y="292" font-size="14" class="fig-ink fig-mono">iod</text>
+  <text x="50" y="292" font-size="14" class="fig-ink">instruction operation decoding</text>
+  <text x="10" y="312" font-size="14" class="fig-ink fig-mono">oac</text>
+  <text x="50" y="312" font-size="14" class="fig-ink">operand address calculation</text>
+  <text x="10" y="332" font-size="14" class="fig-ink fig-mono">of</text>
+  <text x="50" y="332" font-size="14" class="fig-ink">operand fetch</text>
+  <text x="10" y="352" font-size="14" class="fig-ink fig-mono">do</text>
+  <text x="50" y="352" font-size="14" class="fig-ink">data operation</text>
+  <text x="10" y="372" font-size="14" class="fig-ink fig-mono">os</text>
+  <text x="50" y="372" font-size="14" class="fig-ink">operand store</text>
+</svg>
