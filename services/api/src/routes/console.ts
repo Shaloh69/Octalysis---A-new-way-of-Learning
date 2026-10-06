@@ -637,7 +637,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
               s.title as assessment_title, b.scope,
               -- Times the student left the paper (ruling 3, 30 Sep 2026).
               (select count(*)::int from attempt_events e
-                where e.attempt_id = a.id and e.kind in ('left_fullscreen', 'left_page')) as leaves
+                where e.attempt_id = a.id and e.kind in ('left_fullscreen', 'left_page', 'closed')) as leaves
          from attempts a
          join assessments s on s.id = a.assessment_id
          join blueprints  b on b.id = s.blueprint_id

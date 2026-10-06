@@ -160,8 +160,15 @@ export function setTokenProvider(fn: () => Promise<string | null>): void {
   tokenProvider = fn;
 }
 
+/**
+ * The last token a request used. `pagehide` gives no time to await a session
+ * read, so a paper handed in as the page closes (ruling 4) is sent with this.
+ */
+let lastToken: string | null = null;
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await tokenProvider();
+  lastToken = token;
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
@@ -304,8 +311,12 @@ export const api = {
       body: JSON.stringify({ kind }),
     }),
 
-  submit: (attemptId: string) =>
-    request<SubmitResult>(`/api/v1/attempts/${attemptId}/submit`, { method: "POST" }),
+  /** `left`: handed in because the student left the paper (ruling 4); the server records it. */
+  submit: (attemptId: string, left?: LeftReason) =>
+    request<SubmitResult>(`/api/v1/attempts/${attemptId}/submit`, {
+      method: "POST",
+      ...(left ? { body: JSON.stringify({ left }) } : {}),
+    }),
 
   /* ---- the class chat (docs/CHAT-PLAN.md). 423 paper_open while a paper is open. ---- */
 
@@ -332,6 +343,27 @@ export const api = {
 };
 
 export type { ChatMessage, ChatRoom, ChatRooms, ChatThread };
+
+/** Why a paper was handed in for the student (ruling 4, 6 Oct 2026). */
+export type LeftReason = "left_fullscreen" | "left_page" | "closed";
+
+/**
+ * Hand the paper in as the page goes away (`pagehide`): synchronous, with the
+ * last token, `keepalive` so the request outlives the page. Best effort: when
+ * it does not arrive, the reload marker or the server's sweep submits it.
+ */
+export function submitOnUnload(attemptId: string): void {
+  try {
+    void fetch(`${BASE}/api/v1/attempts/${attemptId}/submit`, {
+      method: "POST",
+      keepalive: true,
+      headers: { "content-type": "application/json", ...(lastToken ? { authorization: `Bearer ${lastToken}` } : {}) },
+      body: JSON.stringify({ left: "closed" }),
+    }).catch(() => {});
+  } catch {
+    /* the page is going; the server's sweep is the backstop */
+  }
+}
 
 /**
  * The file itself goes straight to storage, to the one-time URL the API signed

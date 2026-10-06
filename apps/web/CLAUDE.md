@@ -27,6 +27,9 @@ Route groups: `/` public (unauthenticated), `/app/*` student (role `student`).
   shell has no Leave, no tabs and no shortcut off it (lib/sitting.ts), Back is held; leaving full
   screen or the page covers the questions and is recorded (POST /attempts/:id/events). Every
   check and exam, and /app/live when it is built.
+- **Leaving submits it** (ruling 4, 6 Oct 2026): leaving full screen, closing or reloading,
+  or more than 15 s away hands the paper in as it stands and uses the attempt (AttemptRunner,
+  `services/api/src/sitting.ts`). Under 15 s away it stays covered and recorded.
 
 ## Never in this package
 - Any import from `services/api/src/engine/**`

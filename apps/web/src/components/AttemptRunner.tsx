@@ -3,6 +3,8 @@ import { FigureDrawing } from "./FigureDrawing";
 import {
   api,
   ApiError,
+  submitOnUnload,
+  type LeftReason,
   type PaperItem,
   type StudentAnswer,
   type SubmitResult,
@@ -50,8 +52,16 @@ import { useDelayed } from "../lib/useDelayed";
  * first. A browser cannot truly LOCK full screen (Esc always works) and an
  * iPhone cannot enter it at all, so leaving full screen or the page COVERS the
  * questions at once and is recorded for the instructor
- * (`POST /api/v1/attempts/:id/events`); the paper comes back only in full
- * screen, or on the page where full screen does not exist.
+ * (`POST /api/v1/attempts/:id/events`).
+ *
+ * **LEAVING SUBMITS** (instructor ruling 4, 6 Oct 2026, replacing ruling 3's
+ * "never auto-submit"). Leaving full screen submits the paper at once; the
+ * page hidden for more than GRACE_MS submits it (back sooner, the paper comes
+ * back and the leave stays recorded); closing or reloading the page submits it
+ * (`pagehide`, keepalive) and a reloaded tab that finds its own unfinished
+ * sitting (`sessionStorage`) hands it in before anything else. Each is a real
+ * submit with the answers recorded so far, and uses the attempt. The server
+ * submits a paper the page could not (services/api/src/sitting.ts).
  *
  * **A MOON'S JOURNEY IS PRACTICE, NOT A PAPER** (`journey` prop; instructor
  * decisions of 30 Sep 2026, WEB-REVAMP 3.7a). The same paper, Record and
@@ -65,7 +75,35 @@ import { useDelayed } from "../lib/useDelayed";
 type Phase = "ready" | "loading" | "error" | "sitting" | "done";
 
 /** Why the questions are hidden: the student left full screen, or the page. */
-type Cover = "fullscreen" | "page" | null;
+type Cover = "page" | "gone" | null;
+
+/** Ruling 4: away from the page longer than this hands the paper in. */
+const GRACE_MS = 15_000;
+
+/** This tab's unfinished sitting, so a reload can recognise it (ruling 4). */
+const SITTING_KEY = "octa:sitting";
+function markSitting(attemptId: string | null): void {
+  try {
+    if (attemptId) sessionStorage.setItem(SITTING_KEY, attemptId);
+    else sessionStorage.removeItem(SITTING_KEY);
+  } catch {
+    /* no storage: the server's sweep is the backstop */
+  }
+}
+function readSitting(): string | null {
+  try {
+    return sessionStorage.getItem(SITTING_KEY);
+  } catch {
+    return null;
+  }
+}
+
+const LEFT_WORDS: Record<LeftReason, string> = {
+  left_fullscreen: "You left full screen, so your paper was handed in with the answers you had recorded.",
+  left_page:
+    "You were away from the paper for more than 15 seconds, so it was handed in with the answers you had recorded.",
+  closed: "The page was closed or reloaded during the paper, so it was handed in with the answers you had recorded.",
+};
 
 /** What the student has chosen for a question and not yet recorded. */
 type Draft = { index: number } | { value: string } | { order: string[] };
@@ -141,6 +179,9 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
   const [tries, setTries] = useState(practice ? 1 : 0);
   const [refused, setRefused] = useState(false);
   const [cover, setCover] = useState<Cover>(null);
+  // Why the paper was handed in for the student, when it was (ruling 4).
+  const [leftReason, setLeftReason] = useState<LeftReason | null>(null);
+  const handingIn = useRef(false);
   const canFullscreen = useMemo(fullscreenSupported, []);
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -162,6 +203,33 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
   const submitRef = useRef<HTMLButtonElement>(null);
   const questionRef = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
+
+  /* --------------------------------------------- a reload mid-paper */
+
+  // This tab was sitting a paper and the page reloaded: ruling 4 says that was
+  // leaving it. Hand it in first, and show the result, never the Start prompt.
+  useEffect(() => {
+    if (practice) return;
+    const left = readSitting();
+    if (!left) return;
+    handingIn.current = true;
+    setPhase("loading");
+    void api
+      .submit(left, "closed")
+      .then((r) => {
+        markSitting(null);
+        setAttemptId(left);
+        setResult(r);
+        setLeftReason("closed");
+        setPhase("done");
+      })
+      .catch(() => {
+        // Not ours to hand in (another account's, or already gone): forget it.
+        markSitting(null);
+        handingIn.current = false;
+        setPhase("ready");
+      });
+  }, [practice]);
 
   /* ---------------------------------------------------------------- start */
 
@@ -187,6 +255,7 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
         setResumed(started.resumed);
         setAt(firstOpen === -1 ? 0 : firstOpen);
         setFlags(readFlags(started.attemptId).filter((n) => !rec[n]));
+        if (!objectiveId) markSitting(started.attemptId);
         setPhase("sitting");
       } catch (err) {
         if (!live) return;
@@ -229,6 +298,32 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
     [attemptId],
   );
 
+  /** Ruling 4: hand the paper in because the student left it. Once. */
+  const handIn = useCallback(
+    async (why: LeftReason) => {
+      if (!attemptId || handingIn.current) return;
+      handingIn.current = true;
+      setLeftReason(why);
+      setSubmitting(true);
+      try {
+        const r = await api.submit(attemptId, why);
+        markSitting(null);
+        setResult(r);
+        setCover(null);
+        setPhase("done");
+        writeFlags(attemptId, []);
+      } catch {
+        // Unreachable now: record the leave so the server's sweep hands it in,
+        // and say so. Nothing here reopens the paper.
+        report(why);
+        setCover("gone");
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [attemptId, report],
+  );
+
   // Ruling 3 binds a paper; a journey is practice and is never held or covered.
   const sittingNow = phase === "sitting" && !practice;
   useEffect(() => {
@@ -243,35 +338,52 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
       window.history.pushState({ sitting: true }, "", here);
       toast.error("The paper stays open until you submit it", "Your recorded answers are safe.");
     };
-    // A reload or a closed tab asks first; the paper resumes behind Start.
+    // A reload or a closed tab asks first (ruling 4: going on hands it in).
     const onUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
     };
-    const onFullscreen = () => {
-      if (!inFullscreen()) {
-        setCover((c) => c ?? "fullscreen");
-        report("left_fullscreen");
-      }
+    // Gone for real: hand it in on the way out. A reload also finds the
+    // sessionStorage marker and hands it in again (the server keeps one).
+    const onPageHide = () => {
+      if (attemptId && !handingIn.current) submitOnUnload(attemptId);
     };
+    // Ruling 4: leaving full screen hands the paper in at once.
+    const onFullscreen = () => {
+      if (!inFullscreen()) void handIn("left_fullscreen");
+    };
+    // Hidden: covered and recorded at once; handed in after GRACE_MS, or on
+    // coming back after it (a phone may freeze the timer).
+    let hiddenAt = 0;
+    let timer: number | undefined;
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
         setCover((c) => c ?? "page");
         report("left_page");
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => void handIn("left_page"), GRACE_MS);
+      } else if (hiddenAt) {
+        window.clearTimeout(timer);
+        if (Date.now() - hiddenAt > GRACE_MS) void handIn("left_page");
+        hiddenAt = 0;
       }
     };
     window.addEventListener("popstate", onPop);
     window.addEventListener("beforeunload", onUnload);
+    window.addEventListener("pagehide", onPageHide);
     document.addEventListener("fullscreenchange", onFullscreen);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      window.clearTimeout(timer);
       window.removeEventListener("popstate", onPop);
       window.removeEventListener("beforeunload", onUnload);
+      window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("fullscreenchange", onFullscreen);
       document.removeEventListener("visibilitychange", onVisibility);
       setSitting(false);
     };
-  }, [sittingNow, canFullscreen, report]);
+  }, [sittingNow, canFullscreen, report, handIn, attemptId]);
 
   /** Back to the paper: in full screen where it exists. */
   async function returnToPaper() {
@@ -389,6 +501,7 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
     setSubmitting(true);
     try {
       const r = await api.submit(attemptId);
+      markSitting(null);
       setResult(r);
       setConfirming(false);
       setPhase("done");
@@ -489,6 +602,7 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
         items={items}
         recorded={recorded}
         objectives={objectives}
+        leftReason={leftReason}
         onLeave={onLeave}
       />
     );
@@ -526,20 +640,34 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
     return (
       <section className="check check-state check-cover" data-runner="covered" data-paper="" aria-labelledby="check-title">
         <p className="check-eyebrow">{title}</p>
-        <h1 id="check-title">The paper is hidden</h1>
-        <p role="alert">
-          {cover === "fullscreen"
-            ? "You left full screen. That has been recorded for your instructor."
-            : "You left the page. That has been recorded for your instructor."}
-        </p>
-        <p className="check-quiet">
-          Your recorded answers are safe, and the paper is still open. It comes back when you do.
-        </p>
-        <div className="check-row">
-          <button type="button" className="check-btn check-btn-primary" onClick={() => void returnToPaper()}>
-            {canFullscreen ? "Return to full screen" : "Return to the paper"}
-          </button>
-        </div>
+        <h1 id="check-title">{cover === "gone" ? "Your paper is being handed in" : "The paper is hidden"}</h1>
+        {cover === "gone" ? (
+          <>
+            <p role="alert">{leftReason ? LEFT_WORDS[leftReason] : "Your paper is being handed in."}</p>
+            <p className="check-quiet">
+              The server could not be reached just now. It is handed in with the answers you recorded the next
+              time you are online; that uses this attempt.
+            </p>
+            <div className="check-row">
+              <button type="button" className="check-btn" onClick={onLeave}>
+                Back to the stage
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p role="alert">
+              You left the page. That has been recorded for your instructor. Come back within 15 seconds, or the
+              paper is handed in as it stands.
+            </p>
+            <p className="check-quiet">Your recorded answers are safe, and the paper is still open.</p>
+            <div className="check-row">
+              <button type="button" className="check-btn check-btn-primary" onClick={() => void returnToPaper()}>
+                {canFullscreen ? "Return to full screen" : "Return to the paper"}
+              </button>
+            </div>
+          </>
+        )}
       </section>
     );
   }
@@ -849,8 +977,9 @@ function StartPrompt({
           as you record them.
         </li>
         <li>
-          {canFullscreen ? "Leaving full screen or this page" : "Leaving this page"} hides the questions until you
-          return, and <strong>each time is recorded for your instructor</strong>.
+          {canFullscreen ? "Leaving full screen, closing or reloading this page" : "Closing or reloading this page"},
+          or being away from it for more than 15 seconds, <strong>hands the paper in as it stands and uses this
+          attempt</strong>. Away for less, the questions are hidden until you come back, and it is recorded.
         </li>
         <li>Your first recorded answer to each question is final.</li>
       </ul>
@@ -1123,6 +1252,7 @@ function Result({
   items,
   recorded,
   objectives,
+  leftReason,
   onLeave,
 }: {
   result: SubmitResult;
@@ -1131,6 +1261,7 @@ function Result({
   items: PaperItem[];
   recorded: Record<number, Recorded>;
   objectives: Record<string, string>;
+  leftReason: LeftReason | null;
   onLeave: () => void;
 }): JSX.Element {
   const pct = result.maxScore > 0 ? Math.round((result.score / result.maxScore) * 100) : 0;
@@ -1144,6 +1275,11 @@ function Result({
       <h1 id="result-title" tabIndex={-1} ref={back}>
         {title}
       </h1>
+      {leftReason && (
+        <p className="check-left" role="status" data-left={leftReason}>
+          {LEFT_WORDS[leftReason]} That used this attempt.
+        </p>
+      )}
       <p className="check-score">
         <span className="mono" data-score="">
           {result.score} / {result.maxScore}

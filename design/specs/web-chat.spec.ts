@@ -202,7 +202,7 @@ test.describe("/app/chat — what the page owes", () => {
       r.fulfill({ status: 423, contentType: "application/json", body: JSON.stringify({ error: { code: "paper_open", message: "Stage 01 Check is open. The chat opens again when you submit it." } }) }),
     );
     await page.route("**/api/v1/chat/unread", (r) =>
-      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ mentions: 0, closed: true, paper: { title: "Stage 01 Check", stageId: "01", startedAt: "2026-10-06T07:15:52.379Z" } }) }),
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ mentions: 0, closed: true, paper: { assessmentId: "a55e0000-0000-4000-8000-0000000000c1", title: "Stage 01 Check", stageId: "01", startedAt: "2026-10-06T07:15:52.379Z" } }) }),
     );
     await signIn(page, S006);
     await page.goto("/app/chat", { waitUntil: "domcontentloaded" });
@@ -212,7 +212,7 @@ test.describe("/app/chat — what the page owes", () => {
     // Which paper, since when, and the way to it (6 Oct 2026: unnamed, a student could not tell).
     await expect(state.locator("[data-open-paper]")).toContainText("Stage 01 Check");
     await expect(state.locator("[data-open-paper] time")).toHaveAttribute("datetime", "2026-10-06T07:15:52.379Z");
-    await expect(state.getByRole("link", { name: "Go to Stage 01 Check" })).toHaveAttribute("href", "/app/stage/01/check");
+    await expect(state.getByRole("link", { name: "Go to Stage 01 Check" })).toHaveAttribute("href", "/app/stage/01/check?a=a55e0000-0000-4000-8000-0000000000c1&t=Stage%2001%20Check");
     await expect(state).toContainText("journey is practice");
     await expect(page.locator(".chat-compose, .chat-msgs")).toHaveCount(0);
     await expect(state.getByRole("button", { name: "Check again" })).toBeVisible();

@@ -33,7 +33,11 @@ const TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "video/mp4"
 type Load =
   | { state: "loading" }
   | { state: "error"; message: string }
-  | { state: "closed"; message: string; paper: { title: string; stageId: string | null; startedAt: string } | null }
+  | {
+      state: "closed";
+      message: string;
+      paper: { assessmentId: string; title: string; stageId: string | null; startedAt: string } | null;
+    }
   | { state: "ready"; rooms: ChatRooms };
 
 const mb = (n: number) => (n / (1024 * 1024)).toFixed(n < 1024 * 1024 ? 2 : 1);
@@ -576,7 +580,12 @@ export function ChatPage(): JSX.Element {
               </p>
             ) : null}
             {closed && load.paper?.stageId && (
-              <Link className="hud-button button-primary" to={`/app/stage/${load.paper.stageId}/check`}>
+              // The check route needs the assessment (?a=) and its title (?t=): the
+              // first link here had neither and opened "That did not load".
+              <Link
+                className="hud-button button-primary"
+                to={`/app/stage/${load.paper.stageId}/check?a=${encodeURIComponent(load.paper.assessmentId)}&t=${encodeURIComponent(load.paper.title)}`}
+              >
                 Go to {load.paper.title}
               </Link>
             )}

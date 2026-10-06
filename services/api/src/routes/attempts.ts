@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { AttemptEventBody } from "@octa/contracts";
+import { AttemptEventBody, SubmitBody } from "@octa/contracts";
 import { identityFrom, requireOwnerOrStaff } from "../auth.js";
 import { errors } from "../errors.js";
 import { BlueprintUnsatisfiable } from "../engine/blueprint.js";
@@ -10,8 +10,6 @@ import {
   loadRecordedAnswers,
   loadResolvedPaper,
   recordAnswer,
-  submitAttempt,
-  updateStageProgress,
 } from "../repo/engine-repo.js";
 import {
   toStudentAnswer,
@@ -21,6 +19,7 @@ import {
 } from "../serialize/student.js";
 import { loadItemFigures } from "../repo/figures-repo.js";
 import type { Env } from "../env.js";
+import { finishAttempt, recordAutoSubmit, submitLeftPapers } from "../sitting.js";
 
 /**
  * The three attempt endpoints.
@@ -58,6 +57,10 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
       if (!id.studentId) {
         throw errors.forbidden("Your account is not linked to a student ID.");
       }
+
+      // Ruling 4: a paper the student left is submitted before anything is
+      // resumed or started, so a reload never reopens one.
+      await submitLeftPapers(app.db, id.userId);
 
       try {
         const { attempt, items, resumed } = await startAttempt(app.db, {
@@ -192,18 +195,16 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
     if (!attempt) throw errors.notFound("That does not exist, or you cannot see it.");
     requireOwnerOrStaff(id, attempt.userId);
 
-    const result = await submitAttempt(app.db, attempt);
+    const body = SubmitBody.safeParse(req.body ?? {});
+    if (!body.success) throw errors.badRequest("That submit could not be read.");
 
-    // Mastery feeds is_stage_unlocked(). Only for stage-scope assessments --
-    // the final does not unlock anything.
-    if (attempt.blueprintScope === "stage" && result.items.length > 0 && !result.alreadySubmitted) {
-      const stageId = result.items[0]!.stageId;
-      await updateStageProgress(app.db, {
-        userId: attempt.userId,
-        stageId,
-        mastery: result.mastery,
-        score: result.score,
-      });
+    // Mastery feeds is_stage_unlocked() (stage checks only): finishAttempt.
+    const { result } = await finishAttempt(app.db, attempt);
+    // Ruling 4: the page handed it in because the student left. Only the
+    // student's own paper, and only the first time.
+    if (body.data.left && !result.alreadySubmitted && attempt.userId === id.userId) {
+      await app.db.query("insert into attempt_events (attempt_id, kind) values ($1, $2)", [attemptId, body.data.left]);
+      await recordAutoSubmit(app.db, attemptId);
     }
 
     return reply.send({

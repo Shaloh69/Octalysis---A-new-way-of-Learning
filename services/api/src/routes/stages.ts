@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { identityFrom, isStaff } from "../auth.js";
 import { errors } from "../errors.js";
+import { submitLeftPapers } from "../sitting.js";
 import type { Env } from "../env.js";
 
 /**
@@ -185,6 +186,9 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
   app.get("/api/v1/stages", async (req, reply) => {
     const id = await identityFrom(req, env);
     const staff = isStaff(id);
+    // Ruling 4's backstop: the map is read on every app load, so a paper the
+    // student left (a closed tab) is submitted before they see their progress.
+    if (!staff) await submitLeftPapers(app.db, id.userId);
 
     const { rows } = await app.db.query<StageRow>(
       `select s.id, s.act, s.ordinal, s.title, s.summary, s.est_minutes,

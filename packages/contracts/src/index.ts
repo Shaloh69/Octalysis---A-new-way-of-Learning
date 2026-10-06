@@ -730,14 +730,22 @@ export type LiveEndBody = z.infer<typeof LiveEndBody>;
  * What the runner reports when a student leaves the paper, and when they come
  * back. The server stamps the time; the client never supplies one.
  * ------------------------------------------------------------------------- */
-export const AttemptEventKind = z.enum(["left_fullscreen", "left_page", "returned", "fullscreen_unavailable"]);
+/** What the runner reports. Ruling 4 (6 Oct 2026) adds `closed`: the page was closed, reloaded or left. */
+export const AttemptEventKind = z.enum(["left_fullscreen", "left_page", "returned", "fullscreen_unavailable", "closed"]);
 export type AttemptEventKind = z.infer<typeof AttemptEventKind>;
 
 export const AttemptEventBody = z.object({ kind: AttemptEventKind }).strict();
+
+/**
+ * `POST /attempts/:id/submit`'s optional body (ruling 4): the page is handing
+ * the paper in because the student left it. Recorded as `auto_submitted`.
+ */
+export const SubmitBody = z.object({ left: z.enum(["left_fullscreen", "left_page", "closed"]).optional() }).strict();
+export type SubmitBody = z.infer<typeof SubmitBody>;
 export type AttemptEventBody = z.infer<typeof AttemptEventBody>;
 
 /** The kinds that count as leaving the paper, for the console's tally. */
-export const LEAVING_KINDS: readonly AttemptEventKind[] = ["left_fullscreen", "left_page"];
+export const LEAVING_KINDS: readonly AttemptEventKind[] = ["left_fullscreen", "left_page", "closed"];
 
 /* ---------------------------------------------------------------------------
  * The class chat (instructor, approved 6 Oct 2026; docs/CHAT-PLAN.md).
@@ -863,7 +871,10 @@ export const ChatUnread = z.object({
    * 2026: a student told only "a paper is open" could not tell which). The
    * stage is null for a paper with no stage page (a final).
    */
-  paper: z.object({ title: z.string(), stageId: z.string().nullable(), startedAt: z.string() }).nullable().default(null),
+  paper: z
+    .object({ assessmentId: z.string().uuid(), title: z.string(), stageId: z.string().nullable(), startedAt: z.string() })
+    .nullable()
+    .default(null),
 });
 export type ChatUnread = z.infer<typeof ChatUnread>;
 

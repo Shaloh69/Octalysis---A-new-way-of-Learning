@@ -271,7 +271,10 @@ export interface AttemptDetail {
   score: number | null;
   maxScore: number | null;
   /** The sitting, in order: every leave and return (ruling 3, 30 Sep 2026). */
-  events?: Array<{ kind: "left_fullscreen" | "left_page" | "returned" | "fullscreen_unavailable"; at: string }>;
+  events?: Array<{
+    kind: "left_fullscreen" | "left_page" | "returned" | "fullscreen_unavailable" | "closed" | "auto_submitted";
+    at: string;
+  }>;
   items: Array<{
     ordinal: number;
     type: "S" | "P" | "G";

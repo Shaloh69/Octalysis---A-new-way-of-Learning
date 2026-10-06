@@ -24,6 +24,7 @@ import { AppError, errors } from "../errors.js";
 import { withTransaction, type Db } from "../db.js";
 import type { Env } from "../env.js";
 import type { ChatStorage } from "../chat/storage.js";
+import { submitLeftPapers } from "../sitting.js";
 
 /**
  * The class chat (instructor, approved 6 Oct 2026; docs/CHAT-PLAN.md).
@@ -64,7 +65,7 @@ const ThreadQuery = z.object({ before: z.string().datetime({ offset: true }).opt
 /** The paper that closes the chat, named (the newest, if somehow two are open). */
 async function openPaper(db: Queryable, userId: string) {
   const { rows } = await db.query(
-    `select s.title, b.stage_id, a.started_at
+    `select s.id::text as assessment_id, s.title, b.stage_id, a.started_at
        from attempts a
        join assessments s on s.id = a.assessment_id
        join blueprints b on b.id = s.blueprint_id
@@ -75,7 +76,7 @@ async function openPaper(db: Queryable, userId: string) {
   );
   const r = rows[0];
   return r
-    ? { title: r.title as string, stageId: (r.stage_id as string | null) ?? null, startedAt: new Date(r.started_at as Date).toISOString() }
+    ? { assessmentId: r.assessment_id as string, title: r.title as string, stageId: (r.stage_id as string | null) ?? null, startedAt: new Date(r.started_at as Date).toISOString() }
     : null;
 }
 
@@ -151,7 +152,10 @@ async function isPaperOpen(db: Queryable, userId: string): Promise<boolean> {
 }
 
 /** Students only: a paper open closes the chat. Staff are never closed out. */
-async function guardPaper(db: Queryable, id: Identity): Promise<void> {
+async function guardPaper(db: Db, id: Identity): Promise<void> {
+  // Ruling 4: a paper the student has left is submitted first, so it never
+  // keeps the chat closed after they walked away from it.
+  if (!isStaff(id)) await submitLeftPapers(db, id.userId);
   if (!isStaff(id) && (await isPaperOpen(db, id.userId))) throw paperOpen((await openPaper(db, id.userId))?.title);
 }
 
@@ -305,6 +309,7 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
   /* GET /api/v1/chat/unread — the Chat nav item's count. Cheap; no rooms created. */
   app.get("/api/v1/chat/unread", async (req): Promise<ChatUnread> => {
     const id = await identityFrom(req, env);
+    if (!isStaff(id)) await submitLeftPapers(app.db, id.userId);
     if (!isStaff(id) && (await isPaperOpen(app.db, id.userId))) {
       return { mentions: 0, closed: true, paper: await openPaper(app.db, id.userId) };
     }

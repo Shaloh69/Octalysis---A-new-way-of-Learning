@@ -81,7 +81,9 @@ every setting it would hold is currently an environment variable. It owns **API 
 - **The sitting is shown, never judged** (ruling 3, 30 Sep 2026; root hard rule 9). Every time a
   student left a paper (full screen or the page) is in `attempt_events`: `/students/:id` has a
   "Left the paper" count per attempt and the timed list in the opened paper, `/attempts/:id` a
-  "The sitting" card. A number and words, no colour, and nothing is decided automatically: the
+  "The sitting" card. A number and words, no colour. Since ruling 4 (6 Oct 2026) leaving SUBMITS
+  the paper (full screen, closing or reloading, over 15 s away), and the record says so ("Closed or
+  reloaded the page", "Handed in because they left"); beyond that nothing is decided automatically: the
   instructor reads it. When Lecture Mode's student half (`/app/live`) is built, it sits behind the
   same start prompt and full screen, and its leaves are recorded the same way.
 - Every write that changes student-visible state writes to `audit_log` with actor and reason.

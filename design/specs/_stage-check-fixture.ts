@@ -180,6 +180,8 @@ export interface Served {
   answerPosts: Array<{ ordinal: number; answer: unknown }>;
   /** Leaves and returns the runner reported (ruling 3), in order. */
   events: string[];
+  /** Why each submit said it was sent (ruling 4): the body's `left`, or null for Submit. */
+  submitReasons: Array<string | null>;
 }
 
 /**
@@ -189,7 +191,7 @@ export interface Served {
 export async function servePaper(page: Page, items: ResolvedItem[], opts: PaperOptions = {}): Promise<Served> {
   const scope = opts.scope ?? "stage";
   const reveal = scope !== "final";
-  const served: Served = { bodies: [], responses: new Map(), submitted: false, answerPosts: [], events: [] };
+  const served: Served = { bodies: [], responses: new Map(), submitted: false, answerPosts: [], events: [], submitReasons: [] };
   for (const r of opts.recorded ?? []) {
     const item = items.find((i) => i.ordinal === r.ordinal)!;
     const g = gradeResponse(item, r.answer);
@@ -262,6 +264,13 @@ export async function servePaper(page: Page, items: ResolvedItem[], opts: PaperO
       return send(route, 503, { error: { code: "unavailable", message: "The server could not take the paper just now." } });
     }
     served.submitted = true;
+    let reason: string | null = null;
+    try {
+      reason = (route.request().postDataJSON() as { left?: string } | null)?.left ?? null;
+    } catch {
+      /* no body: an ordinary Submit */
+    }
+    served.submitReasons.push(reason);
     let score = 0;
     const byObjective: Record<string, { correct: number; total: number }> = {};
     for (const item of items) {

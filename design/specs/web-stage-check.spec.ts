@@ -165,7 +165,7 @@ test.describe("the gate", () => {
 
 /* ============================ start, no way back, full screen (ruling 3) */
 
-test.describe("sitting a paper (instructor ruling 3, 30 Sep 2026)", () => {
+test.describe("sitting a paper (instructor rulings 3 and 4, 30 Sep and 6 Oct 2026)", () => {
   /** Arrive at the prompt, and stop there. */
   async function prompt(page: Page, opts: PaperOptions = {}): Promise<Served> {
     await signIn(page);
@@ -189,7 +189,10 @@ test.describe("sitting a paper (instructor ruling 3, 30 Sep 2026)", () => {
     const rules = page.locator("[data-runner=ready]");
     await expect(rules).toContainText(/full screen/i);
     await expect(rules).toContainText(/no way back/i);
-    await expect(rules).toContainText(/recorded for your instructor/i);
+    // Ruling 4, said before Start: leaving hands it in and uses the attempt.
+    await expect(rules).toContainText(/hands the paper in as it stands and uses this attempt/i);
+    await expect(rules).toContainText(/more than 15 seconds/i);
+    await expect(rules).toContainText(/recorded/i);
     await expect(page.getByRole("button", { name: "Start the paper", exact: true })).toBeFocused();
   });
 
@@ -234,27 +237,56 @@ test.describe("sitting a paper (instructor ruling 3, 30 Sep 2026)", () => {
     await expect(page.locator("[data-toaster] [role=alert]")).toContainText(/stays open until you submit/i);
   });
 
-  test("leaving full screen hides the questions and is recorded; returning brings them back", async ({ page }, info) => {
+  test("ruling 4: leaving full screen hands the paper in at once, says why, and uses the attempt", async ({ page }, info) => {
     test.skip(!wide(info), "behaviour, one width");
-    const served = await open(page);
+    const served = await open(page, { recorded: TWO_RECORDED() });
     const stem = q(1).stem.slice(0, 25);
-    await expect(page.locator("main")).toContainText(stem);
     await page.evaluate(() => document.exitFullscreen());
-    await expect(page.locator("[data-runner=covered]")).toBeVisible();
+    await expect(page.locator("[data-score]")).toBeVisible();
     await expect(page.locator("main"), "the question is still on the screen").not.toContainText(stem);
-    await expect.poll(() => served.events).toContain("left_fullscreen");
-    await page.getByRole("button", { name: "Return to full screen" }).click();
-    await expect(page.locator("main")).toContainText(stem);
-    expect(await fullscreen(page)).toBe(true);
-    await expect.poll(() => served.events).toContain("returned");
+    await expect(page.locator("[data-left=left_fullscreen]")).toContainText(/left full screen.*handed in.*used this attempt/i);
+    expect(served.submitReasons).toEqual(["left_fullscreen"]);
+    expect(await page.locator("html").getAttribute("data-sitting")).toBeNull();
   });
 
-  test("leaving the page (another tab or app) hides the questions and is recorded", async ({ page }, info) => {
+  test("leaving the page hides the questions and is recorded; back within 15 s, the paper goes on", async ({ page }, info) => {
     test.skip(!wide(info), "behaviour, one width");
+    await page.clock.install();
     const served = await open(page);
     await leavePage(page);
     await expect(page.locator("[data-runner=covered]")).toContainText(/left the page/i);
+    await expect(page.locator("[data-runner=covered]")).toContainText(/within 15 seconds/i);
     await expect.poll(() => served.events).toContain("left_page");
+    await page.clock.fastForward(10_000);
+    await page.getByRole("button", { name: /Return to/ }).click();
+    await expect(page.locator("main").getByText(/Question \d+ of/).first()).toBeVisible();
+    expect(served.submitted, "handed in inside the grace").toBe(false);
+  });
+
+  test("ruling 4: away from the page longer than 15 seconds hands the paper in", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    await page.clock.install();
+    const served = await open(page);
+    await page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await expect(page.locator("[data-runner=covered]")).toBeVisible();
+    await page.clock.fastForward(16_000);
+    await expect(page.locator("[data-score]")).toBeVisible();
+    await expect(page.locator("[data-left=left_page]")).toContainText(/more than 15 seconds/i);
+    expect(served.submitReasons).toEqual(["left_page"]);
+  });
+
+  test("ruling 4: a reload mid-paper hands it in and shows the result, never the paper again", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    page.on("dialog", (d) => void d.accept());
+    const served = await open(page, { recorded: TWO_RECORDED() });
+    await page.reload();
+    await expect(page.locator("[data-score]")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("[data-left=closed]")).toContainText(/closed or reloaded/i);
+    await expect(page.getByRole("button", { name: "Start the paper", exact: true })).toHaveCount(0);
+    expect(served.submitReasons).toContain("closed");
   });
 
   test("a device with no full screen (an iPhone) may sit it, is told so, and it is recorded", async ({ page }, info) => {
@@ -268,6 +300,27 @@ test.describe("sitting a paper (instructor ruling 3, 30 Sep 2026)", () => {
     await leavePage(page);
     await page.getByRole("button", { name: "Return to the paper" }).click();
     await expect(page.locator("main").getByText(/Question \d+ of/).first()).toBeVisible();
+  });
+
+  test("ruling 4 captures: the rules before Start, and a paper handed in because the student left", async ({ page }, info) => {
+    const w = wide(info) ? "" : "-380";
+    const served = await prompt(page);
+    await page.screenshot({ path: `design/templates/web/stage-check/current-rules-ruling4${w}.png`, fullPage: !wide(info) });
+    await page.getByRole("button", { name: "Start the paper", exact: true }).click();
+    await expect(page.locator("main").getByText(/Question \d+ of/).first()).toBeVisible({ timeout: 15_000 });
+    await page.evaluate(() => (document.fullscreenElement ? document.exitFullscreen() : undefined));
+    if (!wide(info)) {
+      // No full screen at 380 in this harness: the page leave, past the grace.
+      await page.evaluate(() => {
+        Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+    }
+    await expect(page.locator("[data-left]")).toBeVisible({ timeout: 20_000 });
+    expect(served.submitted).toBe(true);
+    expect(await clippedElements(page, ROUTE), "handed-in result clipped").toEqual([]);
+    expect(await contrastFailures(page, ROUTE), "handed-in result contrast").toEqual([]);
+    await page.screenshot({ path: `design/templates/web/stage-check/current-handed-in${w}.png`, fullPage: !wide(info) });
   });
 
   test("after Submit the sitting is over: full screen ends and the way back returns", async ({ page }, info) => {
@@ -304,6 +357,15 @@ test.describe("the paper is everyone's (WEB-REMAKE.md §4)", () => {
       await forcePlanetBiome(p, STAGE, biome);
       await open(p);
       await expect(p.locator("html")).toHaveAttribute("data-biome", biome);
+      // The settled paper: the seeded look eases every colour in after first
+      // paint, and a transition caught mid-flight differs in the fifth decimal
+      // (6 Oct 2026: 0.948975 against 0.948995). Transitions only; an infinite
+      // animation would never finish.
+      await p.evaluate(() =>
+        Promise.all(
+          document.getAnimations().filter((a) => a instanceof CSSTransition).map((a) => a.finished.catch(() => undefined)),
+        ),
+      );
       looks.push(await paperLook(p));
       chrome.push(await p.locator(".check-palette").evaluate((e) => getComputedStyle(e).borderImageSource));
       await ctx.close();

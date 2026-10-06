@@ -51,6 +51,8 @@ const FILES = [
   "db/addendum-figures.sql",
   // The class chat (6 Oct 2026): rooms, messages, Realtime, the private bucket. Idempotent.
   "db/addendum-chat.sql",
+  // Leaving a paper submits it (ruling 4, 6 Oct 2026): two new sitting events. Idempotent.
+  "db/addendum-sitting.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 
