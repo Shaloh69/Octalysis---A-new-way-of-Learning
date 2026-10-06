@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 320">
+  <title>Translating a logical address with a page table</title>
+  <desc>With 1 KB pages, logical address 1502 splits into page 1 and offset 478. The process's page table maps page 1 to frame 13. The physical address keeps the offset and replaces the page with the frame: frame 13, offset 478, which is 13 times 1024 plus 478, physical address 13790.</desc>
+  <defs>
+    <marker id="08-paging-translation-tip" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" class="fig-ink"/>
+    </marker>
+  </defs>
+  <text x="20" y="22" font-size="14" font-weight="600" class="fig-ink">Logical address <tspan class="fig-mono">1502</tspan></text>
+  <rect x="20" y="32" width="150" height="40" class="fig-accent"/>
+  <rect x="170" y="32" width="250" height="40" class="fig-box"/>
+  <text x="95" y="57" font-size="14" text-anchor="middle" class="fig-ink">page <tspan class="fig-mono">1</tspan></text>
+  <text x="295" y="57" font-size="14" text-anchor="middle" class="fig-ink">offset <tspan class="fig-mono">478</tspan></text>
+  <text x="20" y="112" font-size="14" font-weight="600" class="fig-ink">Page table</text>
+  <rect x="20" y="122" width="150" height="30" class="fig-box"/>
+  <rect x="20" y="152" width="150" height="30" class="fig-accent"/>
+  <rect x="20" y="182" width="150" height="30" class="fig-box"/>
+  <text x="40" y="142" font-size="14" class="fig-muted fig-mono">0</text>
+  <text x="40" y="172" font-size="14" class="fig-ink fig-mono">1</text>
+  <text x="40" y="202" font-size="14" class="fig-muted fig-mono">2</text>
+  <text x="110" y="142" font-size="14" text-anchor="middle" class="fig-muted">...</text>
+  <text x="110" y="172" font-size="14" text-anchor="middle" class="fig-ink">frame <tspan class="fig-mono">13</tspan></text>
+  <text x="110" y="202" font-size="14" text-anchor="middle" class="fig-muted">...</text>
+  <line x1="95" y1="72" x2="95" y2="119" class="fig-line" stroke-width="1.5" marker-end="url(#08-paging-translation-tip)"/>
+  <text x="20" y="314" font-size="14" font-weight="600" class="fig-ink">Physical address <tspan class="fig-mono">13790</tspan></text>
+  <rect x="20" y="252" width="150" height="40" class="fig-accent"/>
+  <rect x="170" y="252" width="250" height="40" class="fig-box"/>
+  <text x="95" y="277" font-size="14" text-anchor="middle" class="fig-ink">frame <tspan class="fig-mono">13</tspan></text>
+  <text x="295" y="277" font-size="14" text-anchor="middle" class="fig-ink">offset <tspan class="fig-mono">478</tspan></text>
+  <path d="M170 167 L230 167 L230 232 L95 232 L95 249" class="fig-line" stroke-width="1.5" marker-end="url(#08-paging-translation-tip)"/>
+  <line x1="295" y1="72" x2="295" y2="249" class="fig-line" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#08-paging-translation-tip)"/>
+  <text x="305" y="140" font-size="14" class="fig-muted">copied unchanged</text>
+</svg>

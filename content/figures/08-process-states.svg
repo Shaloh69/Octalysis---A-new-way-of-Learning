@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 236">
+  <title>The five-state process model</title>
+  <desc>Five states as boxes: New, Ready, Running, Exit, and Blocked below. A new process is admitted to Ready. The dispatcher moves a ready process to Running. A running process goes back to Ready on a timeout, to Exit when it is released, or to Blocked when it waits for an event such as I/O. When the event occurs, a blocked process becomes Ready again.</desc>
+  <defs>
+    <marker id="08-process-states-tip" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" class="fig-ink"/>
+    </marker>
+  </defs>
+  <rect x="10" y="50" width="70" height="36" class="fig-box"/>
+  <rect x="120" y="50" width="75" height="36" class="fig-accent"/>
+  <rect x="235" y="50" width="80" height="36" class="fig-accent"/>
+  <rect x="355" y="50" width="75" height="36" class="fig-box"/>
+  <rect x="180" y="180" width="80" height="36" class="fig-box"/>
+  <text x="45" y="73" font-size="14" text-anchor="middle" class="fig-ink">New</text>
+  <text x="157.5" y="73" font-size="14" text-anchor="middle" class="fig-ink">Ready</text>
+  <text x="275" y="73" font-size="14" text-anchor="middle" class="fig-ink">Running</text>
+  <text x="392.5" y="73" font-size="14" text-anchor="middle" class="fig-ink">Exit</text>
+  <text x="220" y="203" font-size="14" text-anchor="middle" class="fig-ink">Blocked</text>
+  <line x1="80" y1="68" x2="117" y2="68" class="fig-line" stroke-width="1.5" marker-end="url(#08-process-states-tip)"/>
+  <text x="100" y="40" font-size="14" text-anchor="middle" class="fig-muted">admit</text>
+  <line x1="195" y1="62" x2="232" y2="62" class="fig-line" stroke-width="1.5" marker-end="url(#08-process-states-tip)"/>
+  <text x="215" y="40" font-size="14" text-anchor="middle" class="fig-muted">dispatch</text>
+  <line x1="315" y1="68" x2="352" y2="68" class="fig-line" stroke-width="1.5" marker-end="url(#08-process-states-tip)"/>
+  <text x="335" y="40" font-size="14" text-anchor="middle" class="fig-muted">release</text>
+  <path d="M250 86 Q 215 118 182 89" class="fig-line" stroke-width="1.5" marker-end="url(#08-process-states-tip)"/>
+  <text x="215" y="130" font-size="14" text-anchor="middle" class="fig-muted">timeout</text>
+  <line x1="292" y1="86" x2="248" y2="177" class="fig-line" stroke-width="1.5" marker-end="url(#08-process-states-tip)"/>
+  <text x="290" y="150" font-size="14" class="fig-muted">event wait</text>
+  <line x1="194" y1="180" x2="149" y2="89" class="fig-line" stroke-width="1.5" marker-end="url(#08-process-states-tip)"/>
+  <text x="150" y="150" font-size="14" text-anchor="end" class="fig-muted">event occurs</text>
+</svg>
