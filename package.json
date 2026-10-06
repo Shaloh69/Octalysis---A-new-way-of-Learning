@@ -32,6 +32,8 @@
     "backup:verify": "node scripts/backup.mjs --verify",
     "book:extract": "python scripts/extract_book.py \"Computer Organization and Architecture 10th - William Stallings (1).pdf\" docs/source/book",
     "book:map": "node scripts/check-book-map.mjs",
+    "book:figures": "python tools/assistant/figures/read_book.py",
+    "test:assistant": "python -m mypy --config-file tools/assistant/mypy.ini tools/assistant && python -m pytest tools/assistant -q",
     "check:objectives": "node scripts/sync-objectives.mjs",
     "check:env": "node scripts/check-env-names.mjs",
     "check:boundary": "node scripts/check-redesign-boundary.mjs",

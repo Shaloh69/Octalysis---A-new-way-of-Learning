@@ -79,3 +79,8 @@ deploy/*.env
 # Playwright run artifacts and agent worktrees (a run artifact was committed by accident, 72497bf)
 test-results/
 .claude/worktrees/
+
+# Python tooling for the drafting assistant (tools/assistant)
+__pycache__/
+.pytest_cache/
+.mypy_cache/

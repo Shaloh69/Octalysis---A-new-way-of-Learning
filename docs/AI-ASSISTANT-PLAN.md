@@ -617,7 +617,8 @@ For each figure and table it saves the crop (private), the exact labels with
 positions, and for charts the axes, series and every data point, read from
 the vector drawing. A trial on 7 Oct cut out Fig 14.10 and Fig 2.2 cleanly.
 Two of four were missed because captions use non-breaking spaces; that gets
-fixed first.
+fixed first. **Built (B1, §9):** all 380 figures of this book, coverage
+clean, chart data checked against two formulas.
 
 ### C. Figure summaries (model + grounding check)
 
@@ -814,6 +815,58 @@ load), valid JSON every time, a sensible kind and a plain summary. Its two
 file", "memory traffic"), so they are the scorer's misses, not the model's.
 `qwen3.5:9b` and `gemma4:12b` were downloaded and never run. The harness and
 the crops are scratch, not in the repo; B1 makes the crop real.
+
+**B0 online: still waiting on the keys** (checked 7 Oct 2026, late: none of
+the five names below is in the root `.env`). B1 went ahead, as ordered.
+
+**B1, the figure reader, built (7 Oct 2026, late).** Code at
+`tools/assistant/figures/` (`reader.py`, `read_book.py`, `test_reader.py`;
+typed, `mypy --strict` clean; `pnpm test:assistant`, `pnpm book:figures
+<dir outside the repo>`). Measured on the whole book:
+
+- **380 figures found, 381 crops** (6.6 is printed over two pages, both
+  captioned "(Continued)"), **every one cropped; coverage clean**: every
+  chapter's captions run 1..N with no gap, every figure `docs/source/book`
+  cites was found, and every caption the extracted text holds matches.
+- **The caption locator:** a line whose first span is "Figure N.M" in a
+  bold face (the space is a no-break space). A sentence citing a figure is
+  roman and never matches. 381 such lines, all bold TimesTen.
+- **Seven landscape figures** (3.7, 3.12, 3.23, 4.15, 4.18, 10.22, 19.12)
+  sit on pages stored portrait with /Rotate 90. They are read in the turned
+  frame through the page's rotation matrix; `remove_rotation()` was tried
+  and loses the whole text layer of pages 168 and 385.
+- **Found in passing, NOT fixed (scripts/extract_book.py's, not the
+  reader's):** those seven turned captions are **absent from
+  `docs/source/book`**, and 12.12's hyphen is lost ("LittleEndian"). The
+  reader reports them; a lesson drafted from those figures has no caption
+  text to quote until the extractor reads turned pages.
+- **Crops, opened and looked at, all 21 contact sheets.** Fixed on the way:
+  the end-of-chapter problems (9 pt, a label's size) inside 2.8 and 11.35,
+  an equation number beside 2.4, a page number on a turned page, a figure
+  note at 8 pt mistaken for prose (13.7, 14.26). **Left, said here:** the
+  short equation over 2.8 is still in its crop; 11.18 holds Table 11.8 (set
+  above it on the page) and is flagged `table-inside`; 10.3 and 10.4 have no
+  text at all (flagged `no-labels`, correctly).
+- **Labels:** every word inside a crop, exactly as the PDF's text layer has
+  it (the extractor's invisible-character table), with its position.
+- **Chart data, read from the vectors:** axes from the numeric tick labels
+  (linear or log, snapped to the tick marks), each stroke as a series, small
+  filled marks as points. Four figures read as charts (2.4, 4.22, 4.23,
+  18.4). **Checked against formulas, not by eye:** 2.4's four curves lie
+  within 0.3% of Amdahl's law for f = 0.95, 0.90, 0.75, 0.5; 4.22's four
+  within 0.03 decades of e = 1/(1+(1-H)r) for r = 1, 10, 100, 1000 up to
+  H = 0.9 (past it the book's drawing leaves the formula). **Not read:**
+  bar charts (16.6's numbers are its key, so it is refused, not misread),
+  axes labelled in words or units ("100 bn", years), and 2.2's scatter.
+- **Tests:** 16, all green: a synthetic page for every rule (caption,
+  citation, header, body, short label, sub-caption, side by side, turned
+  page, a linear and a log chart) and the coverage check's planted-error
+  canary, **watched red** against a check that checks nothing; then the
+  book itself (skipped without the PDF): coverage, chapter 15's fourteen,
+  the turned pages, no problem text in 2.8 or 11.35, the two formulas.
+- **Not done, moved to B2/B3:** uploading crops and labels to a private,
+  owner-only bucket. The bucket is B2's schema; nothing is uploaded yet,
+  and the crops live only in a scratch folder outside the repo.
 
 **B0's keys, for the measurement only:** in the root `.env` (gitignored,
 server-side names, never `VITE_*`): `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`,
