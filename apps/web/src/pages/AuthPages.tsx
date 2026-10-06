@@ -105,6 +105,9 @@ export function LoginPage(): JSX.Element {
       <p className="title-alt">
         First time here? <Link to="/register">Claim your account</Link>
       </p>
+      <p className="title-alt">
+        <Link to="/forgot-password">Forgot your password?</Link>
+      </p>
     </TitleScreen>
   );
 }

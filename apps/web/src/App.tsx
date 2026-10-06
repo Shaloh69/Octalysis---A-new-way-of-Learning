@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { Toaster } from "./components/Toaster";
 import { ChangePasswordPage, LoginPage, RegisterPage } from "./pages/AuthPages";
+import { ForgotPasswordPage, ResetPasswordPage } from "./pages/RecoveryPages";
 import {
   CheckPage,
   MaintenancePage,
@@ -115,6 +116,8 @@ export default function App(): JSX.Element {
           <Route path="/" element={<Navigate to="/app" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/maintenance" element={<MaintenancePage />} />
 
           <Route element={<RequireSession />}>
