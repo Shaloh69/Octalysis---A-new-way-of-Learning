@@ -4,8 +4,9 @@ paths: ["tools/assistant/**", "services/api/src/assistant/**", "apps/console/src
 # Drafting assistant rules
 
 These bind every session that builds or changes the drafting assistant. The
-design and the reasons are in `docs/AI-ASSISTANT-PLAN.md` (v4, approved
-7 Oct 2026; §3a-§4d hold the instructor's rulings). This file is the short
+design and the reasons are in `docs/AI-ASSISTANT-PLAN.md` (v5, approved
+7 Oct 2026; §3a-§4e hold the instructor's rulings, §4-now the current
+design). This file is the short
 form, loaded whenever these paths are touched. **If the plan's paths change
 when the code is created, update the `paths:` above in the same commit.**
 
@@ -17,16 +18,27 @@ when the code is created, update the `paths:` above in the same commit.**
   quota reading and error shape. Nothing outside an adapter knows which
   engine ran.
 - **The chain order:** the Claude API first when the teacher has a key, then
-  the free engines that do not train on input, then **local Ollama, always
-  last**. An engine whose terms train on or log input (Gemini free, Mistral
-  free without opt-out, NVIDIA free, OpenRouter free) is **off by default**:
-  every job carries a copyrighted book.
+  the free engines that do not train on input (Ollama Cloud, Groq,
+  Cloudflare). **Local Ollama is PAUSED** (round five, 7 Oct 2026): it is
+  listed on `/assistant` as "a future update" and is not selectable; no
+  code may run a model on a teacher's laptop until that update is ordered.
+  With every engine out of quota a step waits and says so. An engine whose
+  terms train on or log input (Gemini free, Mistral free without opt-out,
+  NVIDIA free, OpenRouter free) is **off by default**: every job carries a
+  copyrighted book.
+- **The API calls the engines** (round five). Steps run on Render, ticked by
+  `pg_cron` + `pg_net` only while a job is running; never a Render cron, and
+  nothing that keeps the API awake while idle.
 - **No "sign in with Claude" inside the app.** Anthropic does not allow
   third-party apps to offer claude.ai login without approval. A
   subscription is used only through the teacher's own Claude Code and our
   plugin.
-- **Keys** live only in the laptop's credential store. Never in `VITE_*`,
-  never in git, Supabase or logs.
+- **Keys** are sealed by the API (AES-256-GCM, the secret only in Render's
+  environment) in a table with RLS on and no policy. Write-only from the
+  page: no route returns a key, the page sees its last four characters.
+  Never in `VITE_*`, git, a response body or a log. Denial tests red first:
+  no teacher reads a key row, their own included; teacher B cannot run on
+  teacher A's key.
 
 ## Memory and approved work
 

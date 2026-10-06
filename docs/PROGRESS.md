@@ -19,6 +19,19 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**7 Oct 2026 (night):** phase report **238/245 (97%)**; live R3 87/88, R4
+46/48, R5 20/24. Ruling 4 verified on the deployment in a real browser
+(full-screen exit and reload each hand the paper in and are recorded); the
+reloaded review's missing questions found there, fixed and re-verified live.
+R5.2-R5.5 done as far as a machine can take them; `REDESIGN-SIGNOFF.md`
+written; the full Playwright suite 1622 passed, 0 failed. The redesign is
+NOT marked complete: the screen-reader pass and the planet summaries are a
+person's, and the moon work's lock-layer changes need the instructor's
+acceptance. The assistant's plan is v5 (round five: local Ollama paused as a
+"future update"; the Render API calls the online engines); B0 online waits
+on the instructor's keys. Prelim NOT runnable (deployment: stage 01 13 live,
+02-04 none). Detail: NEXT-SESSION.md 0ze.
+
 **7 Oct 2026:** phase report 223/245 (91%), unchanged: a planning session.
 Live R3 87/88, R4 46/48, R5 5/24. The drafting assistant was re-planned at the
 instructor's request (docs/AI-ASSISTANT-PLAN.md v2: figure catalogue and

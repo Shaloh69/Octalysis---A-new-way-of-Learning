@@ -1,10 +1,25 @@
-# The drafting assistant — plan v4, APPROVED (built LAST)
+# The drafting assistant — plan v5, APPROVED (built LAST)
 
 **History.** v1 (6 Oct 2026) planned a small local tool. v2 (7 Oct) answered
 "do what you were doing with all of the books; summarise the figures,
 charts and graphs; think about more features". v3 (7 Oct) took in the
 instructor's first answers. **v4** (7 Oct, evening) takes in the second
-round, and every decision is now made.
+round, and every decision is now made. **v5** (7 Oct, night) pauses local
+Ollama: the online engines run from OCTA's own API, and local Ollama
+becomes a "future update" choice on the page (round five, below; §4-now).
+
+**Rulings, round five (7 Oct 2026, night), during B0:**
+
+> "Wait lets pause the ollama AI put that into the selection in the page if
+> they want to select that as a future update. Use the other AIs for now
+> that dont use my laptop as the host of ollama like in the checklist."
+
+| # | Decision | The instructor's answer |
+|---|---|---|
+| 1 | Local Ollama | **Paused.** It appears in `/assistant`'s engine list as **"Local Ollama, on your laptop: a future update"**, shown and not selectable. The Windows app (old B3) is deferred with it |
+| 2 | Who calls the online engines | **OCTA's API on Render.** A teacher pastes keys on `/assistant`; the API keeps them encrypted, per teacher, owner-only, and never sends one back to a browser. **Supabase Cron ticks a running job one step at a time**, so a chapter keeps drafting with every laptop closed. This replaces v4's "keys never on OCTA's servers" (§4-now says how they are kept) |
+| 3 | Which engines first | **All four:** the Claude API, Ollama Cloud (Ollama's own servers, not this laptop), Groq, Cloudflare Workers AI. The instructor gets the keys |
+| 4 | Ollama on this laptop | **Kept, paused**: installed, not running, removed from Startup (the shortcut is `D:\ollama-models\Ollama-startup.lnk.paused`); three models, 17 GB, in `D:\ollama-models` |
 
 **Rulings, first round (7 Oct 2026):**
 
@@ -40,10 +55,10 @@ round, and every decision is now made.
 It is a **staff-only page in the console** for turning a textbook into
 course material: lesson text, questions, redrawn figures, and a catalogue
 of every figure, chart, graph and table in the book. Its routes live in
-the existing API, and the AI runs on **each teacher's own laptop**
-through a small app they install, or on the strong free online AIs the
-teacher switches on (local Ollama is always the last fallback), or in the
-teacher's own Claude Code. It is built for **future books**: a new
+the existing API, and **the API calls the online AIs** the teacher has
+added keys for (v5: the Claude API, Ollama Cloud, Groq, Cloudflare), or the
+teacher drafts in their own Claude Code. Local Ollama on a teacher's laptop
+is a **future update**, listed on the page and not yet selectable. It is built for **future books**: a new
 course, or a new edition, starts by giving it the book and its syllabus.
 **The rest of this book (syllabus chapters 13-17) is its test.**
 
@@ -169,9 +184,16 @@ covers a few chapters a day, and the chain spreads the rest.
 cite the figure. Seeing the picture helps with layout, so image jobs prefer
 an engine that sees.
 
-**API keys stay on the teacher's laptop** (Windows' credential store). The
-app calls the engines directly. No key is ever sent to OCTA's servers or
-stored in Supabase (the spirit of hard rule 2).
+**v5: the API holds the keys, encrypted** (round five, ruling 2; superseding
+"keys stay on the teacher's laptop"). How, in §4-now. What has not changed:
+a key never reaches a browser, never a `VITE_*` variable, never git, never a
+log (hard rule 2's spirit).
+
+**v5: local Ollama is paused** (round five, ruling 1). Until the future
+update, the chain is the Claude API (when a key is added), then Ollama
+Cloud, Groq and Cloudflare. With every engine out of quota, a step **waits**
+and says so; it never fails silently and never falls to an engine that
+trains on the book.
 
 ### The Claude API, for a teacher who has it
 
@@ -222,7 +244,67 @@ If you want a "sign in with Claude" button anyway, that needs **Anthropic's
 approval first**. It's a request to Anthropic, not something to build
 around.
 
-## 4. The design: the existing console and API, plus an app on each teacher's laptop
+## 4-now. The design for now (v5): the console and the API, no laptop app
+
+Round five pauses the laptop. **Everything below runs on what OCTA already
+has**, and no teacher's machine hosts anything:
+
+```
+  ┌──── The console (Vercel), page /assistant ──────────────────────┐
+  │  Engines: Claude API [key ••••a1f3] · Ollama Cloud · Groq ·       │
+  │           Cloudflare · Local Ollama (future update, not yet)      │
+  │  choose a book + syllabus · start a job · progress · review       │
+  │  side by side · Accept / Reject · export                          │
+  └───────────────┬───────────────────────────────────────────────────┘
+                  │ staff sign-in, as today
+  ┌──── The API (Render), /assistant routes ─────────────────────────┐
+  │  keys (write-only) · jobs · the engine chain · RUNS EACH STEP and │
+  │  its checks with the same JS OCTA uses · export                   │
+  └───────▲───────────────────────────┬───────────────────────────────┘
+          │ POST /tick, only while     │ HTTPS to the engines
+          │ a job is running           ▼
+  ┌──── Supabase ──────────┐   Claude API · Ollama Cloud · Groq · Cloudflare
+  │ jobs, steps, briefs,   │
+  │ units, keys (sealed);  │
+  │ pg_cron + pg_net tick  │
+  └────────────────────────┘
+```
+
+- **Keys, kept by the API.** A teacher pastes a key on `/assistant`. The API
+  encrypts it (AES-256-GCM) with a secret that exists only in Render's
+  environment (`ASSISTANT_KEY_SECRET`, never `VITE_*`) and stores the sealed
+  value in a table with RLS on and **no policy** (`service_role` only, as
+  `assessment_secrets` is). The page can add, replace or remove a key and
+  sees only "added 7 Oct, ends ••••a1f3". No route returns a key. Denial
+  tests, red first: a teacher cannot read any key row, their own included;
+  teacher B cannot use teacher A's key for a job; a key never appears in a
+  response body or a log line.
+- **The steps run on Render, ticked by Supabase Cron.** Render Free has no
+  cron (CLAUDE.md), so `pg_cron` checks every minute whether any job is
+  running and, **only then**, calls `POST /api/v1/assistant/tick` through
+  `pg_net` with a shared secret. Each tick runs the next step or two (one
+  model call each, about 5-90 s) and returns. With no job running nothing
+  calls the API, so it sleeps as it does today. A running chapter keeps it
+  awake for roughly 2-4 hours of the 750 a month. A step's state is saved
+  before and after the call (§4a), so a sleep, a redeploy or a crash
+  resumes at the next unfinished step.
+- **The book.** The figure reader is Python (PyMuPDF) and Render Free has
+  512 MB, so parsing a whole PDF there is not the plan. For this book the
+  reader (B1) runs once from the repo as a script and uploads each figure's
+  crop, labels and chart data to a **private, owner-only bucket**; the
+  steps read those. A browser upload for a NEW book (B9) decides then
+  whether a lighter parser runs in the API or the same script runs once.
+- **Claude via a subscription** stays possible through the teacher's own
+  Claude Code and our plugin (B3b): Anthropic's servers run the model, not
+  the laptop.
+- **What stays from v4:** owner and course on every table, staff-only and
+  owner-only RLS, frozen accepted units, the slop lint, double-checking,
+  and every check run by the API.
+
+The rest of §4 is **v4's laptop design, kept as the future update** that
+turns "Local Ollama" on: the app, pairing, heartbeats.
+
+## 4. The future update (v4's design): an app on each teacher's laptop
 
 > "Each teacher will use their own laptop, for each teacher to run its own AI.
 > Make this into an executable that the website checks and connects to, so
@@ -704,10 +786,11 @@ added ahead of it. Then:
 
 | Step | What | Sessions |
 |---|---|---|
-| B0 | Install Ollama on this laptop (approved) and try `qwen3.5:4b`, `qwen3.5:9b` and `gemma4:12b` on book 15's figures. **This answers "is it enough?" before anything else is built**, and fixes the model tiers | 1 |
-| B1 | Figure reader + chart data for this book (fix the caption locator; check all ~355 figures are found) | 1 |
-| B2 | Schema: books, jobs, **steps**, **chapter briefs**, **versioned units** (with the trigger that freezes an accepted one), heartbeats, paired devices, catalogue, **each with a course and an owner**. Staff-only, owner-only RLS with denial tests; an idempotent addendum pushed to Supabase first (hard rule 10) | 1 |
-| B3 | **The app**: the worker, pairing, heartbeat, Realtime jobs, Ollama detection and model download by hardware, and the **engine chain** (§3a: Ollama Cloud, Groq, Cloudflare, a Claude API key, local Ollama last; quotas read live; keys kept on the laptop); one unsigned Windows executable; the setup guide | 2-3 |
+| B0 | **v5: the four online engines** (the Claude API, Ollama Cloud, Groq, Cloudflare) on book 15's 14 figures, with the same harness and scoring as the local run: label recall against the PDF's own text layer, invented labels, valid JSON, seconds per figure, tokens/s, the quota each reply reports. **Waits on the instructor's keys** (names below). Answers "which engine for which step" before anything is built | 1 |
+| B1 | Figure reader + chart data for this book (fix the caption locator; check all ~355 figures are found); crops and labels to a private owner-only bucket (§4-now) | 1 |
+| B2 | Schema: books, jobs, **steps**, **chapter briefs**, **versioned units** (with the trigger that freezes an accepted one), **sealed engine keys**, catalogue, **each with a course and an owner**. Staff-only, owner-only RLS with denial tests; an idempotent addendum pushed to Supabase first (hard rule 10). (Heartbeats and paired devices move to the future update) | 1 |
+| B3 | **v5: the engine chain in the API**: one adapter per engine behind `draft(step, context)`, quotas read live, the sealed keys (§4-now), the `/tick` route and its `pg_cron` + `pg_net` job (runs only while a job is running) | 2 |
+| later | **The future update: local Ollama.** v4's app (worker, pairing, heartbeat, Realtime jobs, Ollama detection and model download by hardware), one unsigned Windows executable, the setup guide; "Local Ollama" becomes selectable | 2-3 |
 | B3b | **The Claude Code plugin** (§3a): an MCP server to fetch and hand in jobs, and the `/octa-draft` skill, for teachers with a Claude subscription | 1 |
 | B4 | **The API routes** (pairing, jobs, results with the checks, export) and **the console page `/assistant`**. A new console page, so it is born with a template, a `SPEC.md`, a spec, and captures at 1440 and 380 | 2 |
 | B5 | The step machine and context builder (§4a), the slop lint (§4c); then figure summaries + grounding check, then the redraw renderers | 3 |
@@ -718,10 +801,31 @@ added ahead of it. Then:
 | B9 | Book and syllabus intake for a new book | 1 |
 | B10 | Extras 13-16: glossary, lecture aids, then question revision hints and the feedback digest when real data exists | 1 each |
 
-About 20 sessions in all.
+About 18 sessions in all now (the app's 2-3 move to the future update).
+
+**B0, the local run, as far as it went (7 Oct 2026, stopped by round five).**
+Ollama 0.35.1 on the RTX 3050 (CUDA, 3.2 GiB free), the 14 figures of book
+chapter 15 cropped from the PDF's vectors (all 14 found; crops opened and
+checked: no running header, no body text, no caption, every sub-caption).
+`qwen3.5:4b` read 5 of them before the stop: label recall **0.92-1.00**,
+**13.8-15.9 tokens/s**, **13-46 s** a figure once loaded (83 s with the
+load), valid JSON every time, a sensible kind and a plain summary. Its two
+"invented" words ("file", "traffic") are printed in those figures ("register
+file", "memory traffic"), so they are the scorer's misses, not the model's.
+`qwen3.5:9b` and `gemma4:12b` were downloaded and never run. The harness and
+the crops are scratch, not in the repo; B1 makes the crop real.
+
+**B0's keys, for the measurement only:** in the root `.env` (gitignored,
+server-side names, never `VITE_*`): `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`,
+`GROQ_API_KEY`, `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`. The
+assistant itself will keep teachers' keys sealed in the API (§4-now), not
+in `.env`.
 
 ## 10. Decisions
 
-**All made, 7 Oct 2026** (the second-round table at the top). One thing is
-left for later, not for now: the separate plan for OCTA serving several
-courses and teachers.
+**All made, 7 Oct 2026** (the second-round table at the top), and changed
+once since: **round five** (v5) paused local Ollama and moved the engine
+calls into the API. Left for later, not for now: the separate plan for
+OCTA serving several courses and teachers, and the future update that
+switches local Ollama on. **Waiting on the instructor:** the four engine
+keys for B0.

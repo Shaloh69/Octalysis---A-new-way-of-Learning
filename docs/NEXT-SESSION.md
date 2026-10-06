@@ -1526,6 +1526,73 @@ left, or needing a decision:
 
 ---
 
+## 0ze. Ruling 4 verified live, R5 to 20/24, the assistant re-planned (v5) — 7 Oct 2026 (night)
+
+Pushed, in order: `b7bcede` reload review shows its questions, `0677d0c`
+R5.3 30 fps, `3d5a80f` R5.2, `36f13e6` R5.4, `9f8d93f` R5.5 + sign-off,
+`2404f0e` captures, then this session's docs commit. Phase report: **238/245,
+97%**; live R3 87/88, R4 46/48, R5 20/24.
+
+1. **Ruling 4 VERIFIED ON THE DEPLOYMENT, in a real browser** (instructor
+   approved one throwaway student, "void and soft-delete"). Student
+   `TEST-SITTING-01` (octa-sitting-test@example.com, section TEST-SITTING)
+   read stage 00 and sat Stage 01 Check three times on the live site: Start
+   entered full screen; **leaving full screen handed it in 0.85 s later**,
+   the page said why, no question stayed on screen, the deployment recorded
+   `left_fullscreen, auto_submitted`; **a reload** asked first
+   (beforeunload), came back to the result with "closed or reloaded", no
+   Start, recorded `closed, auto_submitted`. Reloading also drops full
+   screen, so the page sends a `left_fullscreen` submit too; the server
+   keeps one and records one reason (by design).
+2. **Found live, fixed, re-verified live (`b7bcede`):** after a reload the
+   review listed answers with NO questions (the page held only the submit
+   result). `GET /api/v1/attempts/:id` now also returns the student's own
+   answers (`toStudentRecorded`, the resume rule; a final withholds verdicts
+   until submitted); the reload path reads the paper back. API test watched
+   red; denial test (another student cannot read it); web-stage-check 70
+   passed; live: 7 missed questions, 7 with their question.
+3. **Cleanup, as ruled:** 3 attempts voided, profile soft-deleted, sign-in
+   banned, audit_log rows. My first cleanup set the roster row `disabled`,
+   which broke INV-05 on the deployment (a soft-deleted profile keeps its
+   claim); restored to `claimed` with an audit note; **deployment
+   invariants 25 clean, 0 failures**. NOT seen: the console's record page on
+   the deployment (no staff credentials here); the events are in
+   `attempt_events` and the console's own specs render them.
+   Script: `scripts/.sitting-live.tmp.mjs` (untracked).
+4. **R5:** R5.3 (60 fps at 4x CPU slowdown on the hardware GPU; 57.5 at 8x;
+   24.1 at 16x even with the guard's lower quality, a finding; SwiftShader
+   measures itself, so the test skips without a GPU); R5.2 7 of 8 (Tab and
+   arrows in curriculum order, reduced motion toggled live, locked = dashed
+   outline + the word, WebGL disabled for real); R5.4 (R2.3 green; the moon
+   work's lock-layer changes FLAGGED with their rulings; encounter themes
+   byte-identical); R5.5 (`pnpm qa`: 1620 passed, 2 failed = one stale count
+   in console-content, chapter 04 has 32 blocks since `c08fc7e`; fixed, so
+   **1622 passed, 0 failed**); `docs/redesign/REDESIGN-SIGNOFF.md` written.
+   **R5's four open boxes are a person's:** the screen-reader pass, then
+   "mark complete" and "every box", and "nothing outside scope" needs the
+   instructor to accept the flagged lock-layer changes.
+5. **The assistant, B0, then ROUND FIVE (instructor, mid-B0):** "pause the
+   ollama AI, put that into the selection in the page as a future update,
+   use the other AIs for now that dont use my laptop as the host". Asked
+   and answered: **the Render API calls the online engines** (keys sealed
+   per teacher, Supabase Cron ticks a running job); **all four engines**
+   (Claude API, Ollama Cloud, Groq, Cloudflare), keys from the instructor;
+   **Ollama kept, paused** (not running, removed from Startup:
+   `D:\ollama-models\Ollama-startup.lnk.paused`; 3 models, 17 GB, in
+   `D:\ollama-models`; user env `OLLAMA_MODELS=D:\ollama-models`).
+   `docs/AI-ASSISTANT-PLAN.md` is now **v5** (§4-now, §9's new B0/B3) and
+   `.claude/rules/assistant.md` matches. Local B0 as far as it went:
+   qwen3.5:4b on 5 of 14 figures, recall 0.92-1.00, ~15 tok/s, 13-46 s each.
+6. **Next for the assistant: B0 online, which WAITS ON THE KEYS** (root
+   `.env`: `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`, `GROQ_API_KEY`,
+   `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`; none present on 7 Oct).
+   Untracked scripts: `scripts/.b0-crop.tmp.py <dir>` (14 crops + exact
+   labels from the PDF at the repo root), `scripts/.b0-cloud.tmp.py <dir>
+   <out.json> engine:model ...` (written, NOT yet run: no keys; `pip install
+   anthropic` first), `scripts/.b0-local.tmp.py` (the paused local run).
+7. **Prelim still NOT runnable** (deployment, 7 Oct night): stage 01 13
+   live, 2 review, 2 retired; 02-04 none live (81 at review).
+
 ## 0zd. The drafting assistant re-planned (v2) — 7 Oct 2026
 
 A planning session only: no code, no schema, nothing deployed. The instructor

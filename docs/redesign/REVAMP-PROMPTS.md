@@ -23,73 +23,75 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: ruling 4 live, then R5 (the assistant is last)
+## 1. Start here — the next session: the assistant, B0 online (or B1 while keys wait)
 
 ```
-Read docs/NEXT-SESSION.md sections 0zd and 0zc first. 0zd is the drafting
-assistant, planned and APPROVED (docs/AI-ASSISTANT-PLAN.md v4; built last;
-no code yet; the MP3s are scrapped). 0zc covers the class chat, live and Realtime-verified; ruling 4,
-leaving a paper submits it; 131 questions for 09-12 at review; Listen
-following the voice; password reset; the toaster under dialogs; the belt as
-dots. Then root CLAUDE.md hard rules 9 (amended by ruling 4) and 10, and
-.claude/rules/design.md. Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md section 0ze first: ruling 4 verified on the
+deployment (and the reload-review fix), R5 at 20/24 with the rest a
+person's, docs/redesign/REDESIGN-SIGNOFF.md, and ROUND FIVE: local Ollama
+is PAUSED (a "future update" on the page) and the Render API calls the
+online engines. Then docs/AI-ASSISTANT-PLAN.md v5 (the round-five table at
+the top, section 4-now, section 9) and .claude/rules/assistant.md, which
+binds every line of assistant code. Then root CLAUDE.md hard rules 2, 8 and
+10. Do not re-derive what those carry.
 
-Run pnpm phase. Show the table, say the percentage, name the live phase. Then
-say plainly whether Prelim-worth of data is okay to run on students, checking
-the five conditions in CLAUDE.md. On 7 Oct it was NOT: on the deployment,
-stage 01 has 13 live, 2 at review and 2 retired, and 02-04 have none live.
+Run pnpm phase. Show the table, say the percentage, name the live phase. On
+7 Oct (night) it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open
+box a person's. Then say plainly whether Prelim-worth of data is okay to run
+on students, checking the five conditions in CLAUDE.md. On 7 Oct it was NOT:
+on the deployment stage 01 has 13 live, 2 at review, 2 retired, and 02-04
+have none live; deployment invariants were clean (25, 0 failures).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
 reboot, start Docker Desktop first. Kill orphaned API trees and previews.
-Run pnpm db:reset, THEN node scripts/db-demo.mjs (TEN SQL files now). Start
-ONE pnpm dev:api and prove it with a real GET; curl healthz again after every
-db:reset, because it kills the API. Build and preview apps/web on 5185 and
-apps/console on 5186, and export OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API
-test run empties the seeded database, so reset and reseed before any
-Playwright run.
+Run pnpm db:reset, THEN node scripts/db-demo.mjs (ten SQL files). Start ONE
+pnpm dev:api and prove it with a real GET (readyz); curl again after every
+db:reset. Build and preview apps/web on 5185 and apps/console on 5186, and
+export OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test run empties the
+seeded database, so reset and reseed before any Playwright run. WebGL specs
+at 1-2 workers; web-app-perf runs on the hardware GPU (ANGLE D3D11).
+
+Do NOT start Ollama. It is installed and paused on purpose (instructor,
+round five): not running, removed from Startup, 17 GB of models in
+D:\ollama-models. No assistant code may run a model on a laptop.
 
 The deployment: API https://octa-api-noq2.onrender.com, student site
-https://octa-web-dusky.vercel.app, Supabase ddvxkbcelpqydnjkffdr (the root
-.env's SUPABASE_DB_SESSION; never print it). Untracked scratch helpers in
-scripts/: .deploy-q.tmp.mjs (run it from the repo root), .deploy-run.tmp.mjs,
-.deploy-version.tmp.mjs, .figure-preview.tmp.mjs, .chat-realtime.tmp.mjs
-(setup / verify / cleanup of two throwaway accounts; the instructor approved
-that for the chat check), .belt-closeup.tmp.mjs (photograph the map near a
-planet), .tts-ref3.tmp.mjs (capture a read-aloud page mid-playback with a
-stand-in voice), and services/api/.submit-stale.tmp.ts.
+https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
+Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
+print it). Untracked scratch helpers in scripts/: .deploy-q.tmp.mjs,
+.deploy-run.tmp.mjs, .sitting-live.tmp.mjs (the ruling-4 live check; its
+student is voided and soft-deleted), .b0-crop.tmp.py, .b0-cloud.tmp.py,
+.b0-local.tmp.py, and the older ones 0zc lists.
 
 The work, in order:
 
-1. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: create one
-   throwaway student (ask first, as for the chat), sit a stage check, leave
-   full screen, and see the paper handed in with its reason on the console's
-   record. Then try a reload mid-paper, then clean up. Only the unit and page
-   specs and one sweep-by-script have run against ruling 4 so far.
-2. R5 in order: R5.3's 30fps floor, R5.2 (the accessibility contract re-run),
-   R5.4, R5.5, then R5.6. pnpm phase --open lists the boxes. The /app specs
-   are load-sensitive: run WebGL specs at 1-2 workers, and rerun a timeout
-   alone before believing it.
-3. LAST (instructor, 7 Oct: "this will be last on the implementation plan"):
-   the drafting assistant, docs/AI-ASSISTANT-PLAN.md v4, APPROVED, every
-   decision made. It is a console page /assistant plus API routes (no new
-   host), and an unsigned Windows app per teacher running Ollama on their
-   own laptop, with an engine chain (§3a: the Claude API first when a
-   teacher has a key, then free engines that do not train on input, a
-   Claude subscription via the teacher's own Claude Code and our plugin,
-   local Ollama last). Its heartbeats go to Supabase, never to the Render
-   API. Every table carries a course and an owner. All extras are in.
-   Before any of its code, read .claude/rules/assistant.md: memory across
-   sessions and engines, frozen approvals, no-slop output, double-checking
-   and the code rules all bind it (plan §4a-§4e). Start it only
-   when 1 and 2 are done, at B0: install Ollama (approved), try qwen3.5:4b,
-   qwen3.5:9b and gemma4:12b on book 15's figures, and record speed and
-   quality before building anything else. The MP3s are scrapped: do not ask
-   for a TTS key.
+1. B0 ONLINE, if the keys are in the root .env (check the NAMES only, never
+   print a value): ANTHROPIC_API_KEY, OLLAMA_API_KEY, GROQ_API_KEY,
+   CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN. pip install anthropic. Run
+   python scripts/.b0-crop.tmp.py <scratch dir> (book 15's 14 figures plus
+   their exact labels from the PDF at the repo root; open the contact sheet
+   and look), then scripts/.b0-cloud.tmp.py over each engine with a CURRENT
+   vision model from its catalogue (Claude: claude-opus-5-5). The script is
+   written but has never run, so expect to fix it. Record recall, invented
+   labels, valid JSON, seconds, tokens and the quota each reply reports in
+   AI-ASSISTANT-PLAN.md section 9, and say which engine suits which step.
+   If some keys are missing, run the ones present and say which are not.
+2. If NO key is there yet, ask the instructor for them once, then do B1
+   instead, which needs no engine: the figure reader for the whole book
+   (about 355 figures; the crop rules in .b0-crop.tmp.py are the start:
+   captions with non-breaking spaces, the running header band, sub-captions,
+   short labels above a drawing, never body text or the caption), with a
+   check that every caption in docs/source/book is found. Code under
+   tools/assistant/ (the rules file's paths); the book never enters git.
+3. Then B2 (the schema, plan section 9): an idempotent addendum, denial tests
+   red first, pushed to Supabase before any code that reads it (hard rule
+   10). The sealed-keys table has RLS on and NO policy.
 
-Still owed by the instructor (do not build around them): approving the 83
-act-1 items at review (the Prelim needs 96 live), the 131 questions for
-09-12, the chapter drafts 08-13 and 17 figures on /content, and the planet
-summaries (R3's last box).
+Still owed by the instructor (do not build around them): the four engine
+keys; approving the 83 act-1 items at review (the Prelim needs 96 live), the
+131 questions for 09-12, the chapter drafts 08-13 and 17 figures on
+/content, and the planet summaries (R3's last box); the screen-reader pass;
+accepting the moon work's lock-layer changes (REDESIGN-SIGNOFF.md section 5).
 
 Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put
 a key in it). Any visual change goes through its page gate.
