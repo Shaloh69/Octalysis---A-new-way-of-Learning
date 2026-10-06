@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 280">
+  <title>A register interference graph coloured with three registers</title>
+  <desc>Six symbolic registers, A to F, drawn as circles. A line joins two that are live at the same time. Three registers are available, shown as three fills: A and D get R1, B and E get R2, C gets R3. F is joined to A, B, C and D, whose registers use all three, so F is left uncoloured, drawn dashed: it lives in memory and is loaded and stored when it is needed.</desc>
+  <line x1="60" y1="90" x2="190" y2="40" class="fig-line" stroke-width="1.5"/>
+  <line x1="60" y1="90" x2="130" y2="200" class="fig-line" stroke-width="1.5"/>
+  <line x1="190" y1="40" x2="130" y2="200" class="fig-line" stroke-width="1.5"/>
+  <line x1="190" y1="40" x2="300" y2="190" class="fig-line" stroke-width="1.5"/>
+  <line x1="130" y1="200" x2="300" y2="190" class="fig-line" stroke-width="1.5"/>
+  <line x1="130" y1="200" x2="260" y2="250" class="fig-line" stroke-width="1.5"/>
+  <line x1="300" y1="190" x2="260" y2="250" class="fig-line" stroke-width="1.5"/>
+  <line x1="296.1" y1="108.2" x2="60" y2="90" class="fig-line" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="298.9" y1="98.6" x2="190" y2="40" class="fig-line" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="298.3" y1="120.3" x2="130" y2="200" class="fig-line" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="314.2" y1="133.3" x2="300" y2="190" class="fig-line" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <circle cx="60" cy="90" r="24" class="fig-accent"/>
+  <circle cx="190" cy="40" r="24" class="fig-box"/>
+  <circle cx="130" cy="200" r="24" class="fig-fill"/>
+  <circle cx="300" cy="190" r="24" class="fig-accent"/>
+  <circle cx="260" cy="250" r="24" class="fig-box"/>
+  <circle cx="320" cy="110" r="24" class="fig-line" stroke-dasharray="4 3"/>
+  <text x="60" y="95" font-size="15" text-anchor="middle" class="fig-ink">A</text>
+  <text x="190" y="45" font-size="15" text-anchor="middle" class="fig-ink">B</text>
+  <text x="130" y="205" font-size="15" text-anchor="middle" class="fig-ink">C</text>
+  <text x="300" y="195" font-size="15" text-anchor="middle" class="fig-ink">D</text>
+  <text x="260" y="255" font-size="15" text-anchor="middle" class="fig-ink">E</text>
+  <text x="320" y="115" font-size="15" text-anchor="middle" class="fig-ink">F</text>
+  <text x="60" y="54" font-size="14" text-anchor="middle" class="fig-muted fig-mono">R1</text>
+  <text x="238" y="45" font-size="14" text-anchor="middle" class="fig-muted fig-mono">R2</text>
+  <text x="90" y="205" font-size="14" text-anchor="middle" class="fig-muted fig-mono">R3</text>
+  <text x="348" y="195" font-size="14" text-anchor="middle" class="fig-muted fig-mono">R1</text>
+  <text x="306" y="255" font-size="14" text-anchor="middle" class="fig-muted fig-mono">R2</text>
+  <text x="378" y="115" font-size="14" text-anchor="middle" class="fig-muted">memory</text>
+</svg>

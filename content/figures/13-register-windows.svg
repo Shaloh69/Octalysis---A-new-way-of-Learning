@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 230">
+  <title>Overlapping register windows</title>
+  <desc>Two register windows, one per procedure level, each divided into parameter, local and temporary registers. The window for level J plus 1 is shifted right so that its parameter registers sit exactly under the temporary registers of level J: they are the same physical registers, which is how parameters pass from caller to callee without moving any data.</desc>
+  <text x="10" y="30" font-size="14" class="fig-ink">Level J (the caller)</text>
+  <rect x="10" y="40" width="85" height="44" class="fig-box"/>
+  <rect x="95" y="40" width="85" height="44" class="fig-box"/>
+  <rect x="180" y="40" width="85" height="44" class="fig-accent"/>
+  <text x="52.5" y="67" font-size="14" text-anchor="middle" class="fig-ink">Parameter</text>
+  <text x="137.5" y="67" font-size="14" text-anchor="middle" class="fig-ink">Local</text>
+  <text x="222.5" y="67" font-size="14" text-anchor="middle" class="fig-ink">Temporary</text>
+  <line x1="180" y1="92" x2="180" y2="128" class="fig-line" stroke-dasharray="4 3"/>
+  <line x1="265" y1="92" x2="265" y2="128" class="fig-line" stroke-dasharray="4 3"/>
+  <text x="275" y="115" font-size="14" class="fig-muted">the same registers</text>
+  <text x="180" y="160" font-size="14" class="fig-ink">Level J + 1 (the callee)</text>
+  <rect x="180" y="170" width="85" height="44" class="fig-accent"/>
+  <rect x="265" y="170" width="85" height="44" class="fig-box"/>
+  <rect x="350" y="170" width="85" height="44" class="fig-box"/>
+  <text x="222.5" y="197" font-size="14" text-anchor="middle" class="fig-ink">Parameter</text>
+  <text x="307.5" y="197" font-size="14" text-anchor="middle" class="fig-ink">Local</text>
+  <text x="392.5" y="197" font-size="14" text-anchor="middle" class="fig-ink">Temporary</text>
+</svg>
