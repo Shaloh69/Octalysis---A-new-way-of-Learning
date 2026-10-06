@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 268">
+  <title>Hamming code on a 4-bit word, as three circles</title>
+  <desc>Two panels, each three overlapping circles A, B and C. The four data bits sit where circles overlap: 1 where all three meet, 1 in A and B only, 1 in A and C only, 0 in B and C only. Each circle's outer part holds a parity bit that makes the circle's total even: A is 1, B is 0, C is 0. In the second panel the data bit in A and C only has flipped from 1 to 0. Circles A and C now have an odd total and fail; B still passes. The only compartment inside A and C but not B is that flipped bit, so it is found and can be corrected.</desc>
+  <text x="110" y="18" font-size="14" font-weight="600" text-anchor="middle" class="fig-ink">Stored, with parity</text>
+  <circle cx="80" cy="82" r="52" class="fig-line" stroke-width="1.5"/>
+  <circle cx="140" cy="82" r="52" class="fig-line" stroke-width="1.5"/>
+  <circle cx="110" cy="134" r="52" class="fig-line" stroke-width="1.5"/>
+  <text x="32" y="38" font-size="14" text-anchor="middle" class="fig-ink">A</text>
+  <text x="188" y="38" font-size="14" text-anchor="middle" class="fig-ink">B</text>
+  <text x="162" y="184" font-size="14" text-anchor="middle" class="fig-ink">C</text>
+  <text x="110" y="102" font-size="15" font-weight="600" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <text x="110" y="62" font-size="15" font-weight="600" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <text x="82" y="122" font-size="15" font-weight="600" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <text x="138" y="122" font-size="15" font-weight="600" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <text x="55" y="74" font-size="15" text-anchor="middle" class="fig-muted fig-mono">1</text>
+  <text x="165" y="74" font-size="15" text-anchor="middle" class="fig-muted fig-mono">0</text>
+  <text x="110" y="168" font-size="15" text-anchor="middle" class="fig-muted fig-mono">0</text>
+  <text x="330" y="18" font-size="14" font-weight="600" text-anchor="middle" class="fig-ink">One bit flipped</text>
+  <circle cx="300" cy="82" r="52" class="fig-accent-line" stroke-width="2.5" stroke-dasharray="6 3"/>
+  <circle cx="360" cy="82" r="52" class="fig-line" stroke-width="1.5"/>
+  <circle cx="330" cy="134" r="52" class="fig-accent-line" stroke-width="2.5" stroke-dasharray="6 3"/>
+  <text x="252" y="38" font-size="14" text-anchor="middle" class="fig-ink">A</text>
+  <text x="408" y="38" font-size="14" text-anchor="middle" class="fig-ink">B</text>
+  <text x="382" y="184" font-size="14" text-anchor="middle" class="fig-ink">C</text>
+  <text x="330" y="102" font-size="15" font-weight="600" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <text x="330" y="62" font-size="15" font-weight="600" text-anchor="middle" class="fig-ink fig-mono">1</text>
+  <circle cx="302" cy="117" r="11" class="fig-accent"/>
+  <text x="302" y="122" font-size="15" font-weight="600" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <text x="358" y="122" font-size="15" font-weight="600" text-anchor="middle" class="fig-ink fig-mono">0</text>
+  <text x="275" y="74" font-size="15" text-anchor="middle" class="fig-muted fig-mono">1</text>
+  <text x="385" y="74" font-size="15" text-anchor="middle" class="fig-muted fig-mono">0</text>
+  <text x="330" y="168" font-size="15" text-anchor="middle" class="fig-muted fig-mono">0</text>
+  <text x="330" y="222" font-size="14" text-anchor="middle" class="fig-ink">A and C fail, B passes:</text>
+  <text x="330" y="240" font-size="14" text-anchor="middle" class="fig-ink">the bit in A and C only</text>
+  <text x="110" y="222" font-size="14" text-anchor="middle" class="fig-muted">inner: data bits</text>
+  <text x="110" y="240" font-size="14" text-anchor="middle" class="fig-muted">outer: parity bits</text>
+</svg>
