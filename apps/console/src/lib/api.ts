@@ -894,6 +894,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ ids } satisfies ItemExportRequest),
     }),
+  /** A temporary password for one student, shown once (6 Oct 2026). Never stored. */
+  resetStudentPassword: (userId: string, reason: string) =>
+    request<{ temporaryPassword: string; studentId: string; fullName: string }>(
+      `/api/v1/console/students/${encodeURIComponent(userId)}/password`,
+      { method: "POST", body: JSON.stringify({ reason }) },
+    ),
+
   /* ---- the class chat (docs/CHAT-PLAN.md): every room, moderation, storage ---- */
   chatRooms: () => request<ChatRooms>("/api/v1/chat/rooms"),
   chatUnread: () => request<ChatUnread>("/api/v1/chat/unread"),

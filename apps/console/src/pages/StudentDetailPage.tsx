@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { StatusDialog } from "./students/StatusDialog";
 import { MoveDialog } from "./students/MoveDialog";
+import { PasswordDialog } from "./students/PasswordDialog";
 import { AttemptList, AttemptTable, type PaperState } from "./record/Attempts";
 import { MoonsCard } from "./record/Moons";
 
@@ -86,6 +87,7 @@ export function StudentDetailPage() {
   /* ---- the roster's dialogs, opened from the Actions menu ---- */
   const [statusFor, setStatusFor] = useState<RosterRow | null>(null);
   const [moving, setMoving] = useState<RosterRow[] | null>(null);
+  const [resetting, setResetting] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
 
   if (record.error && !data) {
@@ -124,6 +126,10 @@ export function StudentDetailPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setMoving([row])}>Move to section…</DropdownMenuItem>
+              {/* A deactivated account is refused everywhere; a new password would not let it in. */}
+              {!student.deactivated && (
+                <DropdownMenuItem onSelect={() => setResetting(true)}>Reset password…</DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               {student.deactivated ? (
                 <DropdownMenuItem onSelect={() => setStatusFor(row)}>Reactivate…</DropdownMenuItem>
@@ -208,6 +214,11 @@ export function StudentDetailPage() {
         </div>
       </div>
 
+      <PasswordDialog
+        student={resetting ? { userId, fullName: student.fullName, studentId: student.studentId } : null}
+        onClose={() => setResetting(false)}
+        returnFocus={() => trigger.current}
+      />
       <StatusDialog
         student={statusFor}
         onClose={() => setStatusFor(null)}

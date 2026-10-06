@@ -4,7 +4,7 @@ import rateLimit from "@fastify/rate-limit";
 import pg from "pg";
 import { registerErrorHandler } from "./errors.js";
 import { registerAttemptRoutes } from "./routes/attempts.js";
-import { registerAuthRoutes, makeSupabaseAdmin } from "./routes/auth.js";
+import { registerAuthRoutes, makeSupabaseAdmin, type SupabaseAdmin } from "./routes/auth.js";
 import { registerStageRoutes } from "./routes/stages.js";
 import { registerCosmeticRoutes } from "./routes/cosmetics.js";
 import { registerConsoleRoutes } from "./routes/console.js";
@@ -17,6 +17,7 @@ import { registerLiveRoutes } from "./routes/live.js";
 import { registerAssessmentRoutes } from "./routes/assessments.js";
 import { registerJourneyRoutes } from "./routes/journeys.js";
 import { registerChatRoutes } from "./routes/chat.js";
+import { registerPasswordRoutes } from "./routes/passwords.js";
 import { makeChatStorage, type ChatStorage } from "./chat/storage.js";
 import type { Env } from "./env.js";
 
@@ -29,6 +30,8 @@ export async function buildServer(
   env: Env,
   // Tests pass a fake; production builds the Supabase Storage client (null when unconfigured).
   chatStorage: ChatStorage | null = makeChatStorage(env),
+  // Tests pass a fake Supabase Admin client; undefined builds the real one when configured.
+  authAdmin?: SupabaseAdmin | null,
 ): Promise<FastifyInstance> {
   const app = Fastify({
     logger: {
@@ -119,11 +122,19 @@ export async function buildServer(
 
   // Auth routes need the Supabase Admin API. Without a project configured they
   // are simply not mounted, rather than mounted and failing at request time.
-  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-    registerAuthRoutes(app, env, makeSupabaseAdmin(env));
+  const supabaseAdmin =
+    authAdmin !== undefined
+      ? authAdmin
+      : env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
+        ? makeSupabaseAdmin(env)
+        : null;
+  if (supabaseAdmin) {
+    registerAuthRoutes(app, env, supabaseAdmin);
   } else {
     app.log.warn("SUPABASE_URL / service role not set - auth routes not mounted");
   }
+  // Mounted either way: without a project they say so rather than 404.
+  registerPasswordRoutes(app, env, supabaseAdmin);
 
   /** Readiness DOES check the database, and is not what the keep-alive pings. */
   app.get("/readyz", async (_req, reply) => {

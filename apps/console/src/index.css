@@ -3011,3 +3011,18 @@
     .ch-compose { padding: var(--space-3); }
   }
 }
+
+/* ---- the temporary password, shown once (PasswordDialog.tsx, 6 Oct 2026) ---- */
+@layer components {
+  .pw-result { display: grid; gap: var(--space-3); justify-items: start; margin-top: var(--space-3); }
+  .pw-temp {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-2xl);
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-md);
+    user-select: all;
+  }
+}

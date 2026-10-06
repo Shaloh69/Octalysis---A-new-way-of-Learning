@@ -318,6 +318,13 @@ export const api = {
       ...(left ? { body: JSON.stringify({ left }) } : {}),
     }),
 
+  /** The student's own new password (after a temporary one, 6 Oct 2026). Sign in again after. */
+  changeOwnPassword: (password: string) =>
+    request<{ ok: true; reauthRequired: true }>("/api/v1/account/password", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+
   /* ---- the class chat (docs/CHAT-PLAN.md). 423 paper_open while a paper is open. ---- */
 
   chatRooms: () => request<ChatRooms>("/api/v1/chat/rooms"),

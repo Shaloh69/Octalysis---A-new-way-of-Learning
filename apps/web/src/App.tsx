@@ -8,7 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { Toaster } from "./components/Toaster";
-import { LoginPage, RegisterPage } from "./pages/AuthPages";
+import { ChangePasswordPage, LoginPage, RegisterPage } from "./pages/AuthPages";
 import {
   CheckPage,
   MaintenancePage,
@@ -75,6 +75,8 @@ function RequireSession(): JSX.Element {
     );
   }
   if (identity === null) return <Navigate to="/login" replace />;
+  // A temporary password from the instructor: their own first (6 Oct 2026).
+  if (identity.mustChangePassword) return <ChangePasswordPage />;
   return <Outlet />;
 }
 

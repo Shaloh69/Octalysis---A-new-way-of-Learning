@@ -251,6 +251,10 @@ export function describe(r: Row, p: Record<string, unknown>): string {
       const updated = Array.isArray(p.updated) ? p.updated.length : 0;
       return `Imported the roster for ${r.target_id ?? "a section"}: ${added} added, ${updated} updated`;
     }
+    case "roster.password_reset":
+      return `Gave ${name} a temporary password, to be changed at next sign-in`;
+    case "account.password":
+      return `${r.actor_name ?? "A student"} chose a new password`;
     case "roster.deactivate":
       return `Deactivated ${name}`;
     case "roster.reactivate":

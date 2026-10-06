@@ -126,6 +126,8 @@ export interface Identity {
   studentId: string | null;
   role: "student" | "teacher" | "admin";
   email: string | null;
+  /** The instructor gave a temporary password (6 Oct 2026): choose one before anything else. */
+  mustChangePassword: boolean;
 }
 
 /**
@@ -165,7 +167,9 @@ export async function currentIdentity(): Promise<Identity | null> {
   const claims = decodePayload(token);
   if (!claims) return null;
 
-  const meta = claims.app_metadata as { role?: unknown; student_id?: unknown } | undefined;
+  const meta = claims.app_metadata as
+    | { role?: unknown; student_id?: unknown; must_change_password?: unknown }
+    | undefined;
   const raw = typeof meta?.role === "string" ? meta.role : "";
 
   return {
@@ -175,6 +179,7 @@ export async function currentIdentity(): Promise<Identity | null> {
     // unknown claim maps to least privilege, never to more.
     role: raw === "admin" ? "admin" : raw === "teacher" ? "teacher" : "student",
     email: typeof claims.email === "string" ? claims.email : null,
+    mustChangePassword: meta?.must_change_password === true,
   };
 }
 

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TitleScreen, type MenuItem } from "../components/TitleScreen";
-import { register, signIn } from "../lib/auth";
+import { register, signIn, signOut } from "../lib/auth";
+import { api, ApiError } from "../lib/api";
+import { toast } from "../lib/toast";
 
 /**
  * Sign in and register, on the title screen (components/TitleScreen.tsx).
@@ -102,6 +104,106 @@ export function LoginPage(): JSX.Element {
       </form>
       <p className="title-alt">
         First time here? <Link to="/register">Claim your account</Link>
+      </p>
+    </TitleScreen>
+  );
+}
+
+/**
+ * Choose a new password (6 Oct 2026). Shown instead of the app while the
+ * account carries `must_change_password`: the instructor gave a temporary one
+ * from the console, and it has been seen by someone else. The API sets the new
+ * password and clears the flag in one call; the token in hand still carries
+ * the old flag, so the student signs in again.
+ */
+export function ChangePasswordPage(): JSX.Element {
+  const nav = useNavigate();
+  const [password, setPassword] = useState("");
+  const [again, setAgain] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [fault, setFault] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (password.length < 10) {
+      setFault("Choose a password of at least 10 characters.");
+      return;
+    }
+    if (password !== again) {
+      setFault("The two passwords are not the same. Type it again.");
+      return;
+    }
+    setBusy(true);
+    setFault(null);
+    try {
+      await api.changeOwnPassword(password);
+      await signOut();
+      toast.success("Password changed", "Sign in with your new password.");
+      nav("/login", { replace: true });
+    } catch (err) {
+      setFault(err instanceof ApiError ? err.message : "The password was not changed. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <TitleScreen
+      menu={[{ to: "/app", label: "New password", current: true }]}
+      panelTitle="Choose a new password"
+      card={{
+        title: "Your instructor reset your password",
+        body: (
+          <>
+            <p>You signed in with a temporary password. Choose your own before you go on; the temporary one stops working.</p>
+            <p>At least 10 characters. Nobody else, your instructor included, will see it.</p>
+          </>
+        ),
+      }}
+    >
+      <form className="title-form" onSubmit={(e) => void submit(e)} noValidate data-change-password="">
+        <label className="field-label" htmlFor="new-password">
+          New password
+        </label>
+        <input
+          id="new-password"
+          className="field"
+          type="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={10}
+        />
+        <label className="field-label" htmlFor="new-password-again">
+          Type it again
+        </label>
+        <input
+          id="new-password-again"
+          className="field"
+          type="password"
+          autoComplete="new-password"
+          value={again}
+          onChange={(e) => setAgain(e.target.value)}
+          required
+        />
+        {fault && <Fault text={fault} />}
+        <button type="submit" className="button hud-button button-primary title-go" disabled={busy}>
+          {busy ? "Saving…" : "Save and sign in again"}
+        </button>
+      </form>
+      <p className="title-alt">
+        Not you?{" "}
+        <button
+          type="button"
+          className="title-link"
+          onClick={async () => {
+            await signOut();
+            nav("/login", { replace: true });
+          }}
+        >
+          Sign out
+        </button>
       </p>
     </TitleScreen>
   );

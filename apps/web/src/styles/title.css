@@ -71,6 +71,18 @@
 .title-alt, .title-done { margin: 0; font-size: var(--text-sm); color: var(--ink-muted); }
 .title-done { font-size: var(--text-base); color: var(--ink); }
 .title-alt a, .title-panel-body a:not(.button) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+/* "Sign out" on the new-password screen is a button that reads as a link (6 Oct 2026). */
+.title-link {
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.title-link:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
 .title-warn { color: var(--warning); }
 .title-fault {
   margin: var(--space-3) 0 0;
