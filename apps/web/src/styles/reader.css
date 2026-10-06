@@ -64,6 +64,37 @@
   background: var(--surface-2);
 }
 .rd-empty { color: var(--ink-muted); }
+/* ---- Listen: the audiobook (lib/listen.ts, ListenBar.tsx) ---- */
+.rd-listen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+}
+.rd-listen-where { font-size: var(--text-sm); color: var(--ink-muted); }
+.rd-listen-speed { display: inline-flex; flex-wrap: wrap; gap: var(--space-1); }
+.rd-listen-rate {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: var(--border-hair) solid var(--line-strong);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.rd-listen-rate:hover { background: var(--surface-3); }
+.rd-listen-rate[aria-pressed="true"] { background: var(--lit-bg); color: var(--lit-ink); border-color: var(--lit-bg); }
+.rd-listen-rate:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+.rd-listen-note { margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--ink-muted); }
+/* The block being read: an edge beside it, the student's own place, never a colour on the text. */
+.rd-reading [data-speaking] {
+  box-shadow: calc(var(--border-thick) * -2) 0 0 0 var(--accent);
+  transition: box-shadow var(--dur-fast) var(--ease-out);
+}
+
 
 /* ---- the reading's own blocks (ReaderBlocks.tsx) ---- */
 .rd-reading { font-size: var(--text-base); line-height: var(--lh-base); }

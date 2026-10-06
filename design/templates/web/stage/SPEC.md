@@ -78,3 +78,24 @@ the carry (reversibility). Captures (5 Oct 2026, build at 5185):
 `current-orientation-done`, `-380`, opened. `web-stage.spec.ts` 62 passed,
 8 one-width skips, at 1440 and 380 (twice; a first run against a dev API ten
 seconds into a cold start failed 5 and is not counted).
+
+
+## Listen — the audiobook (6 Oct 2026)
+
+Instructor rulings (`docs/FIGURES-AND-AUDIO.md`): the browser's own voice now
+(Web Speech API), MP3s later. A bar in the reader's header
+(`components/ListenBar.tsx`, `lib/listen.ts`); gate `design/specs/web-listen.spec.ts`.
+
+| Control | Consequence | Legibility | Reversibility | Teaching |
+|---|---|---|---|---|
+| **Listen / Pause / Resume / Stop** | the lesson is read aloud, block by block | "Reading part N of M" (mono); the block being read has an accent edge | Pause, Stop | hear the lesson hands-free |
+| **Speed** 0.75× to 1.5× | the voice's rate, from the sentence being read | pressed, in mono | pick another | — |
+
+Reads prose, headings, list items, quotes, callouts and tables (row by row,
+cells named by column); a figure only by its caption; **never a code listing**.
+Sentence-sized utterances (some engines cut long ones off). Leaving the page
+stops the voice. No speech synthesis: no control, one line says so. Never on a
+paper (hard rule 9): only the reader mounts it.
+
+Captures (opened, 6 Oct 2026, build at 5185, student 232129006, stage 06):
+`current-listen-idle.png` / `-380`, `current-listen-playing.png` / `-380`.

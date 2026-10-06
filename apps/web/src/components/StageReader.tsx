@@ -5,6 +5,7 @@ import { parseInline, sectionsOf } from "../lib/markdown";
 import { useDelayed } from "../lib/useDelayed";
 import { WarpLink } from "../shell/RealmWarp";
 import { InlineText, ReaderBlocks, sectionId } from "./ReaderBlocks";
+import { ListenBar } from "./ListenBar";
 import { byObjectiveId } from "../map/useSelection";
 import { toast } from "../lib/toast";
 import { useShellData } from "../shell/ShellData";
@@ -321,6 +322,7 @@ function Reading({
           <p className="rd-stateline" data-state="">
             <StateWords stage={stage} />
           </p>
+          {stage.blocks.length > 0 && <ListenBar blocks={stage.blocks} />}
         </header>
 
         {resume && (

@@ -80,6 +80,10 @@ sits above its options in the stage check and the exams, on the neutral paper.
 
 ## The audiobook — how it works
 
+**Built 6 Oct 2026** (`components/ListenBar.tsx`, `lib/listen.ts`; gate
+`design/specs/web-listen.spec.ts`). The MP3 upgrade waits for a TTS key and a
+storage budget.
+
 A **Listen** control on the stage reader (`/app/stage/:id`): play, pause, speed,
 and the paragraph being read is marked and kept in view. It reads the approved
 lesson text only, in order, skipping code listings and figure drawings (it reads

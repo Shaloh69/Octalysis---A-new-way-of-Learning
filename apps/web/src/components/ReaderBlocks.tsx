@@ -154,10 +154,13 @@ function OneBlock({
   block,
   parsed,
   stageId,
+  index,
 }: {
   block: ContentBlock;
   parsed: Numbered[];
   stageId: string;
+  /** Its place in the reading, for the audiobook's highlight (lib/listen.ts). */
+  index: number;
 }): JSX.Element {
   const { kind, body, meta } = block;
 
@@ -168,7 +171,7 @@ function OneBlock({
      * a container-query calc in the CSS, so nothing is measured in script.
      */
     return (
-      <figure className="rd-figure" style={{ ["--cols" as string]: String(longestLine(body)) } as CSSProperties}>
+      <figure className="rd-figure" data-block={index} style={{ ["--cols" as string]: String(longestLine(body)) } as CSSProperties}>
         <pre className="mono">
           <code>{body}</code>
         </pre>
@@ -182,7 +185,7 @@ function OneBlock({
     // sends only an approved drawing, and leaves an unapproved one out whole.
     if (!block.figure) return <></>;
     return (
-      <figure className="rd-fig" data-figure={block.figure.id ?? meta.id}>
+      <figure className="rd-fig" data-block={index} data-figure={block.figure.id ?? meta.id}>
         <div className="rd-fig-frame">
           <FigureDrawing svg={block.figure.svg} title={block.figure.title} />
         </div>
@@ -200,7 +203,7 @@ function OneBlock({
 
   if (kind === "quote") {
     return (
-      <figure className="rd-quote">
+      <figure className="rd-quote" data-block={index}>
         <blockquote>
           <Body parsed={parsed} />
         </blockquote>
@@ -211,7 +214,7 @@ function OneBlock({
 
   if (kind === "brief") {
     return (
-      <div className="rd-brief">
+      <div className="rd-brief" data-block={index}>
         <Body parsed={parsed} />
       </div>
     );
@@ -222,14 +225,14 @@ function OneBlock({
     // never reads as a finished one.
     if (meta.kind === "planned" || meta.kind === "scaffold") {
       return (
-        <aside className="rd-callout rd-planned" role="note">
+        <aside className="rd-callout rd-planned" role="note" data-block={index}>
           <p className="rd-tag">Coming in a later update</p>
           <Body parsed={parsed} />
         </aside>
       );
     }
     return (
-      <aside className="rd-callout" data-kind={meta.kind ?? undefined}>
+      <aside className="rd-callout" data-block={index} data-kind={meta.kind ?? undefined}>
         <Body parsed={parsed} />
       </aside>
     );
@@ -239,14 +242,14 @@ function OneBlock({
     // A LAB beat wears the stage's encounter theme: four tokens and a panel
     // skin, never a redesign. No lab block exists yet; the path is kept.
     return (
-      <div data-encounter={encounterFor(stageId)} className="encounter">
+      <div data-encounter={encounterFor(stageId)} className="encounter" data-block={index}>
         <Body parsed={parsed} />
       </div>
     );
   }
 
   return (
-    <div className="rd-prose">
+    <div className="rd-prose" data-block={index}>
       <Body parsed={parsed} />
     </div>
   );
@@ -259,7 +262,7 @@ export function ReaderBlocks({ blocks, stageId }: { blocks: ContentBlock[]; stag
   return (
     <>
       {blocks.map((b, bi) => {
-        const el = <OneBlock key={b.ordinal} block={b} parsed={parsed[bi]!} stageId={stageId} />;
+        const el = <OneBlock key={b.ordinal} block={b} parsed={parsed[bi]!} stageId={stageId} index={bi} />;
         if (b.kind === "brief" && !briefSeen) {
           briefSeen = true;
           return (
