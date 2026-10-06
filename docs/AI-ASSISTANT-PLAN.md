@@ -28,6 +28,8 @@ round, and every decision is now made.
 | 5 | Which extras | **All of them**: 10, 11 and 12 with the core; 13-16 after it (§6) |
 | 6 | Order | **"This will be last on the implementation plan."** It's built after everything else in the queue (ruling 4 verified live, R5, and whatever comes before it) |
 | 7 | (round three) A Claude subscription, and other strong free AIs | **Yes: an engine chain** with local Ollama as the final fallback. A subscription works through the teacher's own Claude Code and our plugin; a sign-in button would need Anthropic's approval (§3a) |
+| 8 | (round four) The Claude API; code rules; no slop; memory across sessions and engines; approved output never mangled | **Yes to all**: the Claude API leads the chain when a key is present (§3a); memory (§4a); approved units frozen (§4b); output rules (§4c); code rules (§4d) |
+| 9 | (round four) "A feature with double checking and with tests like we had here" | **Yes**: a second engine checks the first, planted-error canaries before every job, renders at 380 and 1440 checked for overlap, a verification report on every unit, golden regression on accepted work (§4e) |
 
 **No code exists yet.** It is approved, and it waits its turn.
 
@@ -122,14 +124,15 @@ prompt.
 **Free online engines, and a Claude subscription:** see §3a. Local Ollama
 is the last link in that chain, never the only one.
 
-## 3a. The engine chain: strong free AIs first, local Ollama last
+## 3a. The engine chain: Claude if a teacher has it, strong free AIs next, local Ollama last
 
 Instructor, 7 Oct 2026: "If someone has a Claude account with a subscription
 they can use that too. Or are there other free AI APIs that are actually
 strong that we can switch around, with Ollama as the final fallback?"
 
 **Yes.** Each teacher's app holds an **ordered list of engines** (the
-"chain"). Each job goes to the first engine that is switched on, has quota
+"chain"): the Claude API first if the teacher has added a key, then the
+free engines below, then local Ollama. Each job goes to the first engine that is switched on, has quota
 left today, and is allowed to see the book. When one runs out or fails, the
 job moves to the next. **Local Ollama is always last and always there**, so
 a job never fails for want of an engine. Every draft is labelled with the
@@ -144,10 +147,10 @@ why next to it.
 
 | Engine | Free allowance (checked 7 Oct 2026) | Strong? | Sees images? | Keeps or trains on input? | Default |
 |---|---|---|---|---|---|
-| **Ollama Cloud** | starter credits on the free plan, limits unpublished; big models such as `gpt-oss:120b` and `deepseek-v4-pro` | **yes** | some models | "Prompt or response data is never logged or trained on" | **on, first** |
+| **Claude API, the teacher's own key** | pay per use, not free | **the strongest** | yes | not used for training by default under Anthropic's commercial terms | **first, whenever a key is added** |
+| **Ollama Cloud** | starter credits on the free plan, limits unpublished; big models such as `gpt-oss:120b` and `deepseek-v4-pro` | **yes** | some models | "Prompt or response data is never logged or trained on" | **on** (first of the free ones) |
 | **Groq** | about 1,000 requests a day for `gpt-oss-120b` (30 a minute) | **yes** (text) | check per model | "does not retain customer data" by default; Zero Data Retention option | **on** |
 | **Cloudflare Workers AI** | 10,000 "neurons" a day (`llama-3.3-70b`) | medium | yes (small models) | explicit commitment not to train on prompts or outputs | **on** |
-| **Claude, the teacher's own API key** | pay per use, not free | **the strongest** | yes | not used for training by default under Anthropic's commercial terms | **on if a key is added** |
 | Google Gemini (free tier) | about 15/min, ~1,500/day, changing often | yes | yes | **trains on free-tier input**, and humans may review it | **off** |
 | Mistral (free tier) | ~1 request/s, $10/month of credit | yes | yes | **may train**, with an opt-out | off unless the teacher confirms the opt-out |
 | NVIDIA NIM | 40/min, ~10,000/day reported | yes | yes | **free usage is logged** | off |
@@ -169,6 +172,26 @@ an engine that sees.
 **API keys stay on the teacher's laptop** (Windows' credential store). The
 app calls the engines directly. No key is ever sent to OCTA's servers or
 stored in Supabase (the spirit of hard rule 2).
+
+### The Claude API, for a teacher who has it
+
+Instructor, 7 Oct 2026: "Also add Claude AI API if someone actually has
+Claude." A teacher who adds an Anthropic API key (from the Claude Console,
+billed per use, separate from a Pro or Max subscription) gets Claude **at the
+front of the chain**, in the app, automatically, overnight included:
+
+- **Model:** `claude-opus-5-5` by default (the same family that wrote
+  chapters 08-12). The teacher can pick a cheaper Claude model in the app's
+  settings.
+- **Cheaper overnight:** jobs that can wait go through Anthropic's **Batch
+  API** at half price, and the chapter's text is sent with **prompt caching**,
+  so the many steps of one chapter don't pay for the same text each time.
+  The estimate in §3 (about $3 a chapter, roughly half batched) is
+  re-measured on the first real run.
+- **A spending cap** set by the teacher in the Claude Console, and every
+  step's cost shown in the console (§4d).
+- **If Claude declines or the key runs dry,** the step moves to the next
+  engine in the chain, and the draft says so.
 
 ### A Claude subscription (Pro or Max): yes, through the teacher's own Claude Code
 
@@ -327,6 +350,168 @@ own formats (`content/stages/NN.draft.md`, `content/items/NN.json`,
 there it goes through `sync-content --verify` / `sync-items --check` and
 lands at draft or review on `/content` and `/items`, exactly as today. The
 assistant never writes OCTA's course tables directly.
+
+## 4a. Memory: work survives restarts, sessions and engine switches
+
+Instructor, 7 Oct 2026: "Context management, and it should survive between
+sessions, also from Groq to Ollama etc."
+
+**The principle: no engine remembers anything. OCTA does.** A chat
+conversation is not where the work lives. Every engine, Groq, Ollama, a
+Claude API key or a teacher's Claude Code, is handed what it needs for
+**one step**, from records OCTA keeps. So switching engines halfway through
+a chapter loses nothing, and neither does a laptop that sleeps, crashes or
+is switched off for a week.
+
+**1. A job is cut into small steps, and each step is saved.** "Draft
+chapter 15" becomes one step per figure, per lesson section, per objective's
+questions, per check. Every step is a row with its status (waiting, running,
+done, failed, accepted), the engine and model that ran it, the prompt
+version, the hashes of its inputs, and its output. A restart resumes at
+**the next unfinished step**, never from the start. A step has an
+idempotency key, so handing in the same result twice changes nothing.
+
+**2. Each chapter has a brief: its memory.** It's a structured record, not
+a transcript, built up as steps are accepted:
+
+| The brief holds | Why |
+|---|---|
+| the outline: sections, in order, and the objective each serves | every step knows where it sits |
+| **the chapter's terms**, each with the exact wording used and its source | Groq and Ollama can't call the same thing by two names |
+| the figures chosen (catalogue verdicts) and their ids | the lesson and questions refer to the same figures |
+| decisions the teacher made ("teach pipelining with the laundry analogy", "skip Fig 15.7") | a later engine follows them too |
+| a short summary of each **accepted** section | a later section links back to it correctly |
+
+**3. Context is packed for the engine that will run it.** Engines have very
+different context windows (a local model about 16-32 K tokens, Groq about
+131 K, Claude 1 M). For each step, a context builder packs, in priority
+order: the job's fixed instructions, the step's **source passages from the
+book**, the brief, then neighbouring accepted text. If it doesn't fit the
+engine chosen, the builder **splits the step** or moves it to an engine with
+a larger window. **It never quietly truncates the book's text.** The same
+step, given to two engines, gets the same facts.
+
+**4. A teacher's Claude Code works the same way.** `/octa-draft` fetches the
+next step and its packed context through the plugin, and hands its result
+back. A Claude Code session that ends mid-chapter loses nothing; the next
+session picks up the next step.
+
+## 4b. Approved work is frozen: nothing mangles it
+
+Instructor, 7 Oct 2026: "Not mangling all approved output from the first
+to the second."
+
+This is the rule OCTA already applies to chapter drafts and figures (an
+approval is bound to the exact text by hash), applied to every piece the
+assistant makes:
+
+- **The unit of approval is small:** one section, one figure, one question,
+  one catalogue entry. Accepting section 2 locks section 2 only.
+- **An accepted unit is never regenerated, rewritten or "tidied".** No later
+  step and no other engine writes to it. A database trigger refuses any
+  change to an accepted unit's text, for every role, as OCTA's triggers do
+  for approved summaries and figures.
+- **A change is a new version, never an edit** (hard rule 6's spirit). Redo
+  section 2 with Ollama, and you get section 2 v2 **beside** v1, with a diff.
+  v1 stays accepted until you accept v2.
+- **Later steps see accepted text as read-only context,** verbatim. When
+  Ollama writes section 3 after Groq wrote sections 1-2, it reads 1-2 exactly
+  as you approved them and continues from them. It does not restate them.
+- **A re-run runs only what isn't accepted.** "Run chapter 15 again" redoes
+  the waiting and rejected steps and leaves every accepted unit alone.
+- **Export takes accepted units only,** each recorded with the engine,
+  model, prompt version and hash, so you can always see what made a piece
+  and whether it changed since.
+
+## 4c. No AI slop: the output rules
+
+Instructor, 7 Oct 2026: "The output will not be AI slop."
+
+Slop is text that sounds like teaching but says little: padding, stock
+phrases, vague claims, the same sentence shape over and over. The checks
+in §5 catch wrong text. These rules catch empty text. Every rule is enforced
+by **code first**, and by a critic pass second, and a draft that fails is
+flagged, not hidden.
+
+| Rule | Enforced by |
+|---|---|
+| **Every paragraph teaches something checkable**: a fact from the book, a worked step, or a link to an objective. A paragraph with none is flagged | the claim check pairs each sentence with a book passage; a paragraph with no pairing and no objective link is flagged |
+| **No stock AI phrases.** A list kept in the repo ("delve", "it's important to note", "plays a crucial role", "in today's fast-paced world", "a testament to", "in conclusion", "let's dive in", and more). It grows whenever the teacher marks a new one | a lint, like OCTA's other checks; one hit flags the paragraph |
+| **No padding:** no introduction that restates the heading, no closing paragraph that restates the section, no "In this section we will…" | lint (opening and closing patterns) + the critic |
+| **No vague quantities:** "very fast", "much larger", "significantly" must become a number from the book, or go | lint for intensifiers without a number nearby |
+| **Plain, specific words, in the course's voice.** Few-shot examples are taken from **the approved chapters 01-07**, so drafts sound like the course, not like a chatbot | the prompt; then the critic scores voice against those examples |
+| **Varied sentences**, not twenty sentences of the same shape | a measure of sentence-length spread and repeated openings |
+| **Terms used exactly as in the brief**, one name per idea | checked against the brief's term list |
+| **Questions are specific:** no "all of the above", no "none of the above", no option that's obviously longer than the rest, no stem that gives the answer away | the item lint + the blind-answer critic |
+| **No invented examples presented as the book's.** An example not in the book is labelled as ours | the claim check |
+
+The teacher sees each flag inline on the review page with its reason and
+decides. Flags are counted per engine, so the chapter 13-17 test also
+measures **which engine writes the least slop**.
+
+## 4d. How the code is built: the standing rules
+
+Instructor, 7 Oct 2026: "Always rule for the best code practices with
+proper management." These bind every session that builds the assistant.
+They are OCTA's existing conventions (root `CLAUDE.md`), plus what this tool
+specifically needs:
+
+- **TypeScript strict** in the API and console; no `any` without a `// why:`.
+  **Python typed** (type hints checked by a type checker) in the app.
+- **Zod at every boundary**, shared through `packages/contracts`: the app's
+  results, the API's routes, and the **JSON each engine must return**.
+  Engine output is parsed against the schema; malformed output is a failed
+  step, never "best effort".
+- **One engine interface.** Every engine is an adapter behind the same
+  `draft(step, context) → result` contract, with the same retries,
+  timeouts, quota reading and error shape. Adding or removing an engine
+  touches one adapter, nothing else.
+- **Prompts are code:** versioned files in the repo, reviewed like code,
+  recorded on every step that used them. Never written inline.
+- **Tests:** every check, the context builder, the router, the step machine
+  and each adapter (against recorded responses) has unit tests. Every new
+  table has **denial tests written red first** (hard rule 8). The slop lint
+  and the grounding check each have a test that watches them catch a planted
+  example.
+- **Database changes** as idempotent addenda, pushed to Supabase before the
+  code (hard rule 10).
+- **Secrets:** engine keys only in the laptop's credential store; nothing in
+  `VITE_*`, nothing in git, nothing in logs.
+- **Errors** in OCTA's shape `{ error: { code, message } }`, never a stack
+  trace. Every step failure is recorded with its reason.
+- **Small conventional commits, pushed**, each phase box ticked in the same
+  commit as its work. Pages get their template, `SPEC.md`, spec and
+  captures at 1440 and 380, and are **looked at**.
+- **Logs and cost:** every step records its engine, model, tokens, time and
+  cost (zero for free engines), so a slow or failing engine is visible, not
+  guessed.
+
+## 4e. Double-checking and tests, the way this project works
+
+Instructor, 7 Oct 2026: "Also a feature with double checking and with tests
+like we had here."
+
+The habits that kept this project honest become the assistant's own
+pipeline. No unit reaches the teacher's review as **ready** until all of
+this has run, and the result of each part is shown beside it.
+
+| What this project does | What the assistant does |
+|---|---|
+| `sync-content --verify` checks every quote character by character | the same check, run by the API on every lesson unit; quotes are pasted by code, so a failure means a bug, and the step stops |
+| the claim check by hand caught three errors in questions 09-12 | the **claim check** on every sentence in our own words (§5 E) |
+| a second look before believing anything | **a second engine checks the first.** A unit written by one engine is reviewed by a **different** engine with its own prompt: are the facts in the cited passages, does the figure summary match the figure, is the question's key right. When only one engine is available, the same engine checks with fresh context, and the unit is labelled **"single-engine check"** |
+| solvers compute the keys; 131 items previewed through the API | every computed question's key comes from its solver; every question is **previewed through the API's real item preview**, as a student would get it, before it is shown |
+| `bank-feasibility.spec.ts`: can a paper fill? | after a chapter's questions, a **paper-fill check**: can the stage check for that chapter fill, with every objective covered, from what is accepted |
+| "watch it fail before you make it pass" (hard rule 8); the figure-mention guard was watched catching a planted mention | **planted-error canaries.** Before each job, every check is fed a known-bad sample: a misquote, a wrong label in a figure summary, a stock phrase, an ambiguous question, a wrong key. **If any check fails to catch its plant, the job does not start**, and the console says which check is broken |
+| THE HARDEST RULE: capture at 1440 and 380, then open it and look | every redrawn figure is rendered at **380 and 1440**. Code measures **text overlap and clipping** in the layout; an engine that sees images is asked what it sees, compared against the figure's summary; and the teacher sees both renders beside the book's crop |
+| "say which you verified versus assumed" (definition of done) | **a verification report on every unit:** "quotes 12/12 verified · labels 9/9 grounded · key by solver · second engine (Groq) agreed · renders: no overlap · assumed: nothing". Anything not run is listed as **not checked**, never left out |
+| specs stay green before moving on | **golden regression:** accepted work (chapter 12's figures and summaries, the 09-12 questions) is kept as fixtures. A new prompt version or a new engine is first run against them and compared; a change that does worse is refused before it touches a real chapter |
+| suites at close: API, unit, specs | the assistant's own test suite (§4d) runs in CI like OCTA's, and `pnpm verify` covers it |
+
+**What the teacher sees:** each unit's card shows a short line of ticks
+and flags, with its report one click away. A unit with a failed check is
+**not** hidden: it shows the failure, so the teacher can see what an engine
+gets wrong. Those counts per engine are part of the chapter 13-17 test (§7).
 
 ## 5. How each job works
 
@@ -521,18 +706,19 @@ added ahead of it. Then:
 |---|---|---|
 | B0 | Install Ollama on this laptop (approved) and try `qwen3.5:4b`, `qwen3.5:9b` and `gemma4:12b` on book 15's figures. **This answers "is it enough?" before anything else is built**, and fixes the model tiers | 1 |
 | B1 | Figure reader + chart data for this book (fix the caption locator; check all ~355 figures are found) | 1 |
-| B2 | Schema: books, jobs, heartbeats, paired devices, catalogue, drafts, **each with a course and an owner**. Staff-only, owner-only RLS with denial tests; an idempotent addendum pushed to Supabase first (hard rule 10) | 1 |
+| B2 | Schema: books, jobs, **steps**, **chapter briefs**, **versioned units** (with the trigger that freezes an accepted one), heartbeats, paired devices, catalogue, **each with a course and an owner**. Staff-only, owner-only RLS with denial tests; an idempotent addendum pushed to Supabase first (hard rule 10) | 1 |
 | B3 | **The app**: the worker, pairing, heartbeat, Realtime jobs, Ollama detection and model download by hardware, and the **engine chain** (§3a: Ollama Cloud, Groq, Cloudflare, a Claude API key, local Ollama last; quotas read live; keys kept on the laptop); one unsigned Windows executable; the setup guide | 2-3 |
 | B3b | **The Claude Code plugin** (§3a): an MCP server to fetch and hand in jobs, and the `/octa-draft` skill, for teachers with a Claude subscription | 1 |
 | B4 | **The API routes** (pairing, jobs, results with the checks, export) and **the console page `/assistant`**. A new console page, so it is born with a template, a `SPEC.md`, a spec, and captures at 1440 and 380 | 2 |
-| B5 | Figure summaries + grounding check, then the redraw renderers | 2 |
+| B5 | The step machine and context builder (§4a), the slop lint (§4c); then figure summaries + grounding check, then the redraw renderers | 3 |
 | B6 | Lesson text + claim check; questions + critic; export | 2 |
+| B6b | **Double-checking (§4e):** the second-engine check, the planted-error canaries, the render overlap check, the paper-fill check, the verification report, golden regression on chapter 12 and the 09-12 questions | 2 |
 | B7 | Extras 10, 11 and 12: the coverage map, the review of existing work, planet and moon summaries | 1-2 |
 | B8 | **The test on 13-17**, written up with the numbers | 1 |
 | B9 | Book and syllabus intake for a new book | 1 |
 | B10 | Extras 13-16: glossary, lecture aids, then question revision hints and the feedback digest when real data exists | 1 each |
 
-About 17 sessions in all.
+About 20 sessions in all.
 
 ## 10. Decisions
 

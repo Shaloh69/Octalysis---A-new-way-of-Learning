@@ -1628,6 +1628,20 @@ features also. Planning first, come back to me first."
    change monthly (Cerebras ended its permanent free tier in July 2026;
    GitHub Models was reportedly retired), so the app reads quota live.
    Now about 17 sessions.
+13. **Round four (instructor, same evening), all added to the plan:** the
+   Claude API LEADS the chain when a teacher adds a key (claude-opus-5-5 by
+   default, the Batch API and prompt caching for overnight steps, a spending
+   cap; on a refusal or empty key the step moves down the chain). §4a memory:
+   no engine remembers, OCTA does, with saved steps, a chapter brief, and a
+   context builder that splits steps rather than truncate the book. §4b:
+   accepted units are FROZEN (trigger; a change is a new version beside it).
+   §4c: no-slop output rules, linted in code then critic-scored. §4d: the
+   standing code rules. §4e: double-checking as this project does it (a
+   second engine checks the first, planted-error canaries before every job,
+   renders at 380/1440 checked for overlap, a verification report per unit,
+   golden regression on chapter 12 and the 09-12 questions). The short form
+   is now `.claude/rules/assistant.md` (path-scoped; update its paths when
+   the code is created). About 20 sessions.
 
 ## 0zc. The class chat, ruling 4, questions 09-12, Listen, passwords — 6 Oct 2026 (evening)
 
