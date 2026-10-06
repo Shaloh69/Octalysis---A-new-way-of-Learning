@@ -287,6 +287,12 @@ test.describe("sitting a paper (instructor rulings 3 and 4, 30 Sep and 6 Oct 202
     await expect(page.locator("[data-left=closed]")).toContainText(/closed or reloaded/i);
     await expect(page.getByRole("button", { name: "Start the paper", exact: true })).toHaveCount(0);
     expect(served.submitReasons).toContain("closed");
+    // Found live, 7 Oct: the review listed answers with no questions. Question 2
+    // was answered wrong; the review names the question AND the answer given.
+    const missed = page.locator(".check-missed > li").filter({ hasText: "Question 2" });
+    await expect(missed.locator(".check-missed-stem")).toContainText(q(2).stem.slice(0, 25));
+    await expect(missed).toContainText(/You answered/);
+    await expect(page.locator(".check-missed-stem")).toHaveCount(await page.locator(".check-missed > li").count());
   });
 
   test("a device with no full screen (an iPhone) may sit it, is told so, and it is recorded", async ({ page }, info) => {

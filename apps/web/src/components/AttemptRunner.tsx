@@ -216,8 +216,20 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
     setPhase("loading");
     void api
       .submit(left, "closed")
-      .then((r) => {
+      .then(async (r) => {
         markSitting(null);
+        // The reloaded page has no paper in memory: read it back, so "What you
+        // missed" shows each question and the answer given (found live, 7 Oct).
+        // Without it the review still stands, with the answers alone.
+        const paper = await api.attempt(left).catch(() => null);
+        if (paper) {
+          const rec: Record<number, Recorded> = {};
+          for (const a of paper.answered ?? []) {
+            rec[a.ordinal] = { answer: a.answer, verdict: a.verdict ?? null, withheld: !a.verdict };
+          }
+          setItems(paper.items);
+          setRecorded(rec);
+        }
         setAttemptId(left);
         setResult(r);
         setLeftReason("closed");

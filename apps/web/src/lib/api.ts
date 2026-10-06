@@ -311,6 +311,12 @@ export const api = {
       body: JSON.stringify({ kind }),
     }),
 
+  /** One paper of the student's own: its questions (never a key) and what they recorded. */
+  attempt: (attemptId: string) =>
+    request<{ attemptId: string; status: string; items: PaperItem[]; answered?: RecordedAnswer[] }>(
+      `/api/v1/attempts/${attemptId}`,
+    ),
+
   /** `left`: handed in because the student left the paper (ruling 4); the server records it. */
   submit: (attemptId: string, left?: LeftReason) =>
     request<SubmitResult>(`/api/v1/attempts/${attemptId}/submit`, {

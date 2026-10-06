@@ -506,6 +506,49 @@ describe("POST /api/v1/attempts/:id/submit", () => {
     expect(Number(rows[0].score)).toBe(body.score);
   });
 
+  /*
+   * Ruling 4, found live 7 Oct 2026: a paper handed in by a reload came back
+   * with "What you missed" listing answers but no questions, because the page
+   * had nothing but the submit result. The reloaded page reads the paper here.
+   */
+  it("a submitted paper reads back with its questions and the student's own answers", async () => {
+    const { rows: at } = await pool.query(
+      "select id from attempts where user_id = $1 and status = 'submitted' order by submitted_at desc limit 1",
+      [w.studentA],
+    );
+    const attemptId = at[0].id as string;
+    const res = await app.inject({ method: "GET", url: `/api/v1/attempts/${attemptId}`, headers: auth(tokenA) });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as {
+      status: string;
+      items: Array<{ ordinal: number; stem: string }>;
+      answered: Array<{ ordinal: number; answer: unknown; verdict?: { isCorrect: boolean } }>;
+    };
+    expect(body.status).toBe("submitted");
+    expect(body.items.every((i) => i.stem.length > 0)).toBe(true);
+    const { rows } = await pool.query(
+      "select ordinal, raw_answer, is_correct from responses where attempt_id = $1 order by ordinal",
+      [attemptId],
+    );
+    expect(rows.length).toBe(w.stageBlueprintTotal);
+    expect(body.answered.map((a) => a.ordinal)).toEqual(rows.map((r) => Number(r.ordinal)));
+    for (const [i, a] of body.answered.entries()) {
+      expect(a.answer).toEqual(rows[i].raw_answer);
+      expect(a.verdict?.isCorrect).toBe(rows[i].is_correct);
+    }
+  });
+
+  it("DENIAL: another student cannot read that submitted paper or its answers", async () => {
+    const { rows: at } = await pool.query(
+      "select id from attempts where user_id = $1 and status = 'submitted' limit 1",
+      [w.studentA],
+    );
+    const res = await app.inject({ method: "GET", url: `/api/v1/attempts/${at[0].id}`, headers: auth(tokenB) });
+    expect([403, 404]).toContain(res.statusCode);
+    expect(res.body).not.toContain("answered");
+    expect(res.body).not.toContain("stem");
+  });
+
   it("writes stage_progress so is_stage_unlocked() can see it", async () => {
     const { rows } = await pool.query(
       "select mastery, attempts from stage_progress where user_id = $1 and stage_id = $2",

@@ -254,6 +254,23 @@ export async function servePaper(page: Page, items: ResolvedItem[], opts: PaperO
     });
   });
 
+  // GET /attempts/:id -- the paper read back, as a reloaded page does after
+  // handing it in (ruling 4). Verdicts once submitted, or on a stage check.
+  await page.route(/\/api\/v1\/attempts\/[0-9a-f-]{36}$/, async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const recorded = [...served.responses.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([ordinal, r]) => ({ ordinal, rawAnswer: r.raw, isCorrect: r.isCorrect, points: r.points }));
+    return send(route, 200, {
+      attemptId: ATTEMPT_ID,
+      status: served.submitted ? "submitted" : "in_progress",
+      totalItems: items.length,
+      answeredOrdinals: recorded.map((r) => r.ordinal),
+      items: toStudentPaper(items, opts.figures),
+      answered: toStudentRecorded(items, recorded, served.submitted || reveal),
+    });
+  });
+
   await page.route(/\/api\/v1\/attempts\/[^/]+\/events$/, async (route) => {
     served.events.push((route.request().postDataJSON() as { kind: string }).kind);
     return send(route, 201, { recorded: true });

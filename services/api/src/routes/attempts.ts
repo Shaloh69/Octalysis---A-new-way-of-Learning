@@ -241,17 +241,22 @@ export function registerAttemptRoutes(app: FastifyInstance, env: Env): void {
       attempt.engineVersion,
     );
 
-    const { rows: answered } = await app.db.query(
-      "select ordinal from responses where attempt_id = $1 order by ordinal",
-      [attemptId],
-    );
+    const recorded = await loadRecordedAnswers(app.db, attemptId);
 
     return reply.send({
       attemptId,
       status: attempt.status,
       totalItems: items.length,
-      answeredOrdinals: answered.map((r) => Number(r.ordinal)),
+      answeredOrdinals: recorded.map((r) => r.ordinal),
       items: toStudentPaper(items, await loadItemFigures(app.db, items.map((i) => i.itemId))),
+      // The student's own answers, so a paper handed in by a reload can show
+      // "You answered" beside each question (ruling 4). Verdicts follow the
+      // resume rule: a final withholds them until it is submitted.
+      answered: toStudentRecorded(
+        items,
+        recorded,
+        attempt.status === "submitted" || attempt.blueprintScope !== "final",
+      ),
     });
   });
 }
