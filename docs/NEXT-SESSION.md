@@ -1606,10 +1606,11 @@ captures. Range: `46ac563`..`c7afc04` (18 commits).
    email carries); a real browser opened it on the live site, landed on
    /reset-password with the form, the token left the address bar, the new
    password saved and went to /app, the new password signs in and the old one
-   is refused (`scripts/.reset-verify.tmp.mjs`, untracked). **Still not
-   verified: that the email itself arrives** (Supabase's sender, or a custom
-   SMTP if the instructor set one): try /forgot-password with an inbox the
-   instructor can read.
+   is refused (`scripts/.reset-verify.tmp.mjs`, untracked). **Email delivery
+   confirmed by the instructor, 6 Oct 2026: "Email reset works."** The whole
+   self-service path is verified on the deployment. Supabase's built-in sender
+   allows only a few emails an hour; a custom SMTP is the fix if a class needs
+   more.
 10. **Prelim still NOT runnable:** deployment stage 01 has 13 live, 2 at
    review, 2 retired; 02-04 have none live (81 at review).
 

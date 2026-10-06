@@ -58,11 +58,9 @@ services/api/.submit-stale.tmp.ts.
 
 The work, in order:
 
-1. Ask the instructor once, together: (a) approve docs/AI-ASSISTANT-PLAN.md,
-   and which machine runs it; (b) try /forgot-password on the live site with
-   an inbox they can read, and say whether the email arrived. The redirect
-   URL is set and the reset link and page are verified on the deployment
-   (NEXT-SESSION 0zc.11); only the email's delivery is not.
+1. Ask the instructor once: approve docs/AI-ASSISTANT-PLAN.md, and which
+   machine runs it. (The students' email reset is fully verified on the
+   deployment, delivery included: NEXT-SESSION 0zc.11.)
 2. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: one throwaway
    student (ask before creating it, as for the chat), sit a stage check,
    leave full screen, and see the paper handed in with its reason on the
