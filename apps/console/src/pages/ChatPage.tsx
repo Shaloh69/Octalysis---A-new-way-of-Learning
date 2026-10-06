@@ -428,6 +428,15 @@ function Conversations({
             const el = e.currentTarget;
             stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
           }}
+          // An image or video that loads after the scroll makes the log taller: keep
+          // the newest message in view if the reader was at the bottom (seen on the
+          // deployment, 6 Oct 2026: a screenshot pushed itself half out of view).
+          onLoadCapture={(e) => {
+            if (stick.current) e.currentTarget.scrollTop = e.currentTarget.scrollHeight;
+          }}
+          onLoadedMetadataCapture={(e) => {
+            if (stick.current) e.currentTarget.scrollTop = e.currentTarget.scrollHeight;
+          }}
         >
           {failed ? (
             <div role="alert" className="ch-failed">
