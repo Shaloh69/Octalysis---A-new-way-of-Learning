@@ -19,6 +19,15 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**6 Oct 2026 (evening):** phase report 223/245 (91%); live R3 87/88, R4 46/48,
+R5 5/24 (INV-33 ticked on the instructor's ruling). Built and on the deployment:
+the class chat (Realtime verified there with two test accounts, since removed),
+ruling 4 (leaving a paper submits it; a server sweep backs the page), 131
+questions for 09-12 at review, Listen on the reader, password reset (console
+tool, forced change, self-service by email pending two dashboard settings), the
+toaster heard under dialogs, the belt drawn as small dots. Prelim NOT runnable
+(deployment: stage 01 13 live, 02-04 none). Detail: NEXT-SESSION.md 0zc.
+
 **6 Oct 2026:** phase report 222/245 (91%), unchanged: this session's work was
 content and features outside the R boxes. Live R3 87/88, R4 46/48, R5 4/24.
 Built: lesson drafts 10-13 (authoring now stops at 12, instructor), the figure

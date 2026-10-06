@@ -1526,6 +1526,83 @@ left, or needing a decision:
 
 ---
 
+## 0zc. The class chat, ruling 4, questions 09-12, Listen, passwords — 6 Oct 2026 (evening)
+
+Pushed, in order: `46ac563` chat schema, `4c47c74` chat API, `221c0c8`
+/app/chat, `2d3b0b5` console /chat, `c1e4e85` chat audit sentences, `26ca1eb`
+storage empty-body fix, `4487ec1` journeys no longer close the chat + the
+closed chat names its paper + INV-33 text, `52d959e` late media scroll,
+`0e441cf` docs, `a34a59d` ruling 4 (leaving submits), `ddf5eb4` questions
+09-12, `5f820fe` Listen, `1043318` AI assistant plan, `5491a61` password
+reset (console tool + forced change), `4a6b69f` toaster under dialogs,
+`7deeb47` belt dots, `c518682` student self-service reset, `c7afc04`
+captures. Range: `46ac563`..`c7afc04` (18 commits).
+
+1. **The class chat is built and on the deployment** (docs/CHAT-PLAN.md has
+   the verification record). Schema `db/addendum-chat.sql` (9th SQL file) was
+   pushed before any code, three times as it changed. Verified ON THE
+   DEPLOYMENT with two throwaway accounts in a TEST-CHAT section (instructor
+   approved; all removed afterwards, bucket empty): Realtime INSERT reached the
+   other student in 279-418 ms; a private thread never reached them; an open
+   page updated 0.9 s after Enter with no reload; a screenshot travelled the
+   private bucket on a signed link and the unsigned URL is refused. Locally:
+   31 DB denials (watched red), 32 route tests, both page gates green.
+2. **Found on the deployment, fixed the same day:** every upload failed
+   (Storage refuses a JSON content type with no body; the fake storage hid
+   it, `chat-storage.spec` now pins the requests); a moon's journey closed the
+   chat for good (`chat_paper_open()` now ignores scope 'objective'); the
+   closed chat never said which paper, and its link lacked `?a=`; a picture
+   loading late pushed the newest message out of view.
+3. **Ruling 4 (instructor, 6 Oct), replacing ruling 3's "never auto-submit":**
+   leaving full screen submits AT ONCE; hidden more than 15 s submits; closing
+   or reloading submits; it uses the attempt; journeys exempt. Page:
+   AttemptRunner (pagehide keepalive, a sessionStorage reload marker).
+   Backstop: `services/api/src/sitting.ts` sweeps a LEFT paper (full-screen
+   exit, reported close, leave past the grace, 2 h idle) on Start, the map
+   and the chat. `db/addendum-sitting.sql` (10th SQL file) adds the events
+   `closed` and `auto_submitted`; pushed first. The one stale paper on the
+   deployment (23212905, Stage 01 Check, 0 answered) was submitted by script
+   as ruled ("submit them now"): 0/8, its attempt used. Hard rule 9 amended.
+   **NOT verified on the deployment in a real browser**: the sweep ran there
+   once (the script), and Vercel serves the new runner; a real sitting with a
+   full-screen exit has not been tried on the live site.
+4. **Questions 09-12: 131 at review**, local and deployment (09: 32, 10: 36,
+   11: 29, 12: 34). Every act-3 solver used once; every objective at least
+   three; every unquoted claim checked against ch-10/12/13/14.md, which caught
+   three of my own errors. All 131 previewed through the API. Exams still stop
+   at 08.
+5. **Listen (the audiobook)** on the stage reader: the browser's voice,
+   Pause/Resume/Stop, four speeds, the block being read marked; never code.
+   Verified with a recording stand-in for speechSynthesis; a real voice has
+   only been heard if the instructor tries it.
+6. **Passwords (instructor: "both, the console tool first"):** /students/:id
+   Actions > Reset password… (reason, audited, temporary password shown once)
+   and, in the student app, a forced "Choose a new password" screen; plus
+   /forgot-password and /reset-password by email. **The email path needs two
+   dashboard settings the instructor makes:** add
+   `https://octa-web-dusky.vercel.app/reset-password` under Authentication >
+   URL Configuration > Redirect URLs, and set up auth email (the built-in
+   sender allows only a few emails an hour; a custom SMTP is the fix). Until
+   then the email path is unverified. The console tool and forced change were
+   verified locally only (fake admin in the API tests; the real Admin API
+   call is the one the console's own credential change already uses).
+7. **Rulings asked once this session:** Realtime check with two test accounts
+   (done); AI: plan the local assistant (`docs/AI-ASSISTANT-PLAN.md`, awaiting
+   approval, two questions in it); INV-33: change the text (done, R5 box
+   ticked); passwords: both (done); belt squares: fix (done, map/dots.ts);
+   toasts under dialogs: fix in the toaster (done).
+8. **Local stack traps seen again:** every API test run empties the seeded DB
+   (reset + demo after); `db:reset` killed the dev API three times; Python on
+   Windows writes CRLF (harmless, Git normalises); heredocs with apostrophes
+   break (use the Write tool).
+9. **Suites at close:** API 881+ (sitting 13, passwords 12, chat 63, storage
+   3 added), web unit 302+15, console 222; specs green: web-chat, console-chat,
+   web-stage-check (70), web-listen, web-stage, console-student-password,
+   web-change-password, web-recovery, console item-review/students/
+   assessments; /app map specs pass alone (load-sensitive at 2+ workers).
+10. **Prelim still NOT runnable:** deployment stage 01 has 13 live, 2 at
+   review, 2 retired; 02-04 have none live (81 at review).
+
 ## 0zb. Figures, the authoring to chapter 12, the plan changes — 5-6 Oct 2026
 
 Pushed, in order: `e458812` ch 10, `ac48f38` ch 11, `c141a30` ch 12 (lesson

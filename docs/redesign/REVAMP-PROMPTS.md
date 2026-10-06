@@ -23,69 +23,60 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: the class chat, then questions 09-12, the audiobook, then R5
+## 1. Start here — the next session: verify ruling 4 live, then R5 in order
 
 ```
-Read docs/NEXT-SESSION.md section 0zb first (what the last session built,
-found and parked: chapters 10-13 drafted, the figure pipeline end to end, 17
-figures for 01-13 on the deployment for review, the figure-mention guards,
-the bank/exam scope split, two live items versioned, the claim handout, and
-the plan changes: authoring stops at chapter 12, the Octalysis AI proposal
-analysed, the class chat approved and ordered first). Then docs/CHAT-PLAN.md
-(its four rulings), root CLAUDE.md hard rules 3, 8, 9 and 10, and
-.claude/rules/design.md. Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md section 0zc first (what the last session built,
+verified and left open: the class chat, live and Realtime-verified on the
+deployment; ruling 4, leaving a paper submits it; 131 questions for 09-12 at
+review; Listen on the reader; password reset in three parts; the toaster
+heard under dialogs; the belt as dots). Then root CLAUDE.md hard rules 9
+(amended by ruling 4) and 10, .claude/rules/design.md, and
+docs/AI-ASSISTANT-PLAN.md (awaiting the instructor's approval). Do not
+re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. Then
 state plainly whether Prelim-worth of data is okay to run on students,
 checking the five conditions in CLAUDE.md (on 6 Oct it was NOT: on the
-deployment stage 01 has 14 live and 1 at review, 02-04 none live).
+deployment stage 01 has 13 live, 2 at review, 2 retired; 02-04 none live).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot start Docker Desktop first (the machine rebooted twice on 6 Oct). Kill
-orphaned API trees and previews, pnpm db:reset THEN node scripts/db-demo.mjs
-(EIGHT SQL files now), ONE pnpm dev:api proved with a real GET, apps/web built
-and previewed on 5185, apps/console on 5186, OCTA_WEB_URL and OCTA_CONSOLE_URL
-exported. The deployment: API https://octa-api-noq2.onrender.com, student
-site https://octa-web-dusky.vercel.app, Supabase ddvxkbcelpqydnjkffdr (the
-root .env's SUPABASE_DB_SESSION; never print it). Untracked scratch helpers in
-scripts/: .deploy-q.tmp.mjs (query the deployment), .deploy-run.tmp.mjs (run a
-script against it), .deploy-version.tmp.mjs (version a live item),
-.figure-preview.tmp.mjs (draw a figure at 380 and 1440).
+reboot start Docker Desktop first. Kill orphaned API trees and previews,
+pnpm db:reset THEN node scripts/db-demo.mjs (TEN SQL files now), ONE pnpm
+dev:api proved with a real GET (curl healthz again after every db:reset: it
+kills the API), apps/web built and previewed on 5185, apps/console on 5186,
+OCTA_WEB_URL and OCTA_CONSOLE_URL exported. Every API test run empties the
+seeded database: reset and reseed before any Playwright run. The deployment:
+API https://octa-api-noq2.onrender.com, student site
+https://octa-web-dusky.vercel.app, Supabase ddvxkbcelpqydnjkffdr (the root
+.env's SUPABASE_DB_SESSION; never print it). Untracked scratch helpers in
+scripts/: .deploy-q.tmp.mjs, .deploy-run.tmp.mjs, .deploy-version.tmp.mjs,
+.figure-preview.tmp.mjs, .chat-realtime.tmp.mjs (setup / verify / cleanup
+of two throwaway accounts; the instructor approved that for the chat check),
+.belt-closeup.tmp.mjs (photograph the map near a planet), and
+services/api/.submit-stale.tmp.ts.
 
 The work, in order:
 
-1. THE CLASS CHAT (docs/CHAT-PLAN.md, approved 6 Oct). One room per section
-   plus a private thread between each student and the instructor; mentions;
-   screenshots and videos up to 25 MB, with an instructor view to delete old
-   attachments; realtime on every open instance through Supabase Realtime; a
-   student sitting a paper cannot open or post (enforced by the database).
-   In order: capture the templates first (a public chat UI that renders
-   signed out) into design/templates/web/chat and design/templates/console/chat
-   with SOURCE.md and SPEC.md; db/addendum-chat.sql (idempotent: rooms,
-   members, messages, RLS, the storage bucket and its policies), its denial
-   tests written and watched red first, applied locally and pushed to the
-   deployment BEFORE any code (pnpm db:push --file); then the API, then
-   /app/chat and the console's /chat, each through its page gate (six
-   assertions at 1440 and 380, captures opened). The local stack has no
-   Realtime or Storage: verify the realtime path against the deployment (two
-   browser contexts, one sends, the other updates) and say what was verified
-   where.
-2. Questions for stages 09-12 only, at review (the bank reaches 12 since 6 Oct;
-   the exams stay at 08). Read content/items/01.json and scripts/sync-items.mjs
-   first; the act 3 solvers (solvers-act3.ts) cover 09, 11 and 12. A question
-   names no figure it does not show (sync-items refuses it), and a figure on a
-   question must never draw its answer.
-3. The audiobook (docs/FIGURES-AND-AUDIO.md: the browser's voice now, MP3s
-   later), through the reader's page gate.
-4. The Octalysis AI decision (docs/AI-ASSISTANT-PROPOSAL.md): ask once.
-5. R5 in order: R5.3's 30fps floor, R5.2, R5.4, R5.5, then R5.6.
+1. Ask the instructor once, together: (a) approve docs/AI-ASSISTANT-PLAN.md,
+   and which machine runs it; (b) have the two Supabase dashboard settings
+   for the students' email reset been made (Redirect URL
+   https://octa-web-dusky.vercel.app/reset-password, and auth email)? If yes,
+   verify the email path on the deployment; if no, leave it recorded.
+2. Verify ruling 4 ON THE DEPLOYMENT, in a real browser: one throwaway
+   student (ask before creating it, as for the chat), sit a stage check,
+   leave full screen, and see the paper handed in with its reason on the
+   console's record; then a reload mid-paper; then cleanup. Only the unit and
+   page specs and one sweep-by-script have run against ruling 4 so far.
+3. R5 in order: R5.3's 30fps floor, R5.2 (the accessibility contract re-run),
+   R5.4, R5.5, then R5.6. pnpm phase --open lists the boxes. The /app specs
+   are load-sensitive: run WebGL specs at 1-2 workers and rerun a timeout
+   alone before believing it.
 
-Parked for the instructor, ask once: INV-33 (the map draws no prerequisite
-line, yet Orientation says "every connection on it is a real prerequisite");
-the belt and Trojan points draw as big squares up close; students have no
-self-service password reset and the console has no tool to reset a
-student's password (today it is the Supabase dashboard); a toast raised
-while a console dialog is open is not announced to a screen reader.
+Still owed by the instructor (do not build around them): approving the 81
+act-1 items at review (the Prelim needs 96 live), the 131 questions for
+09-12, the chapter drafts 08-13 and 17 figures on /content, and the planet
+summaries (R3's last box).
 
 Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put
 a key in it). Any visual change goes through its page gate.
