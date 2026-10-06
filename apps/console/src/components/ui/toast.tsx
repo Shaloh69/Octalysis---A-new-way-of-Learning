@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,14 @@ import { cn } from "@/lib/utils";
  *
  * A module store rather than a React context: a toast is raised from event
  * handlers all over the app, and a provider would have to wrap every one.
+ *
+ * **Heard under a dialog too** (fixed 6 Oct 2026, NEXT-SESSION §0zb.4). A Radix
+ * modal marks everything outside it `aria-hidden`, this toaster included, so a
+ * toast raised while a dialog was open was on screen and silent. While a
+ * dialog is open, `DialogAnnouncer` portals a screen-reader-only copy of the
+ * live regions INTO it. The regions exist from the moment the dialog opens, so
+ * what is added to them is announced; the visible toaster, hidden from
+ * assistive technology meanwhile, is not read twice.
  */
 
 type Tone = "success" | "error";
@@ -77,10 +86,52 @@ function subscribe(l: () => void): () => void {
   return () => listeners.delete(l);
 }
 
+/** The open modal dialog, if any: the last one opened is on top. */
+function useOpenDialog(): HTMLElement | null {
+  const [el, setEl] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const find = () => {
+      const all = document.querySelectorAll<HTMLElement>(
+        '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]',
+      );
+      setEl(all.length > 0 ? all[all.length - 1]! : null);
+    };
+    find();
+    const mo = new MutationObserver(find);
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-state"] });
+    return () => mo.disconnect();
+  }, []);
+  return el;
+}
+
+/** The toasts' words, inside the open dialog, for a screen reader only. */
+function DialogAnnouncer({ list, dialog }: { list: Toast[]; dialog: HTMLElement }): JSX.Element {
+  const say = (t: Toast) => (t.body ? `${t.title}. ${t.body}` : t.title);
+  return createPortal(
+    <div className="sr-only" data-dialog-announcer="">
+      {/* aria-live without a role: an empty role="alert" in every dialog would read as one. */}
+      <div aria-live="polite" data-announce="status">
+        {list.filter((t) => t.tone === "success").map((t) => (
+          <p key={t.id}>{say(t)}</p>
+        ))}
+      </div>
+      <div aria-live="assertive" data-announce="alert">
+        {list.filter((t) => t.tone === "error").map((t) => (
+          <p key={t.id}>{say(t)}</p>
+        ))}
+      </div>
+    </div>,
+    dialog,
+  );
+}
+
 export function Toaster(): JSX.Element {
   const list = useSyncExternalStore(subscribe, () => toasts);
+  const dialog = useOpenDialog();
 
   return (
+    <>
+    {dialog ? <DialogAnnouncer list={list} dialog={dialog} /> : null}
     <div
       data-toaster=""
       aria-label="Notifications"
@@ -117,5 +168,6 @@ export function Toaster(): JSX.Element {
         );
       })}
     </div>
+    </>
   );
 }

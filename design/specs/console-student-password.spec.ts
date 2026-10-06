@@ -93,7 +93,7 @@ test.describe("what the reset owes", () => {
     const temp = d.locator("[data-temp-password]");
     await expect(temp).toHaveText("KQ7M-2PZ9-RTAX");
     expect(await temp.evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/JetBrains Mono/i);
-    await expect(d.locator("[role=status]")).toContainText("Temporary password for Kristine Joy Montebon");
+    await expect(d.locator(".pw-result[role=status]")).toContainText("Temporary password for Kristine Joy Montebon");
     await expect(d).toContainText("not shown again");
     if (wide(info.project.name)) {
       await d.getByRole("button", { name: "Done" }).click();
@@ -107,7 +107,7 @@ test.describe("what the reset owes", () => {
     const d = await openReset(page);
     await d.getByLabel(/Why/).fill("locked out");
     await d.getByRole("button", { name: "Reset password" }).click();
-    await expect(d.getByRole("alert")).toContainText("Supabase project");
+    await expect(d.getByRole("alert").filter({ hasText: "Supabase project" })).toBeVisible();
     await expect(d.locator("[data-temp-password]")).toHaveCount(0);
   });
 

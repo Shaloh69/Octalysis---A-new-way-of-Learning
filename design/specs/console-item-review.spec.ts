@@ -307,10 +307,12 @@ test.describe("a question that needs a figure", () => {
     await expect(dialog.locator("[data-figure-blocks]")).toContainText(`Approve figure ${FIG} first`);
 
     await card.getByRole("button", { name: `Approve figure ${FIG}` }).click();
-    // Found here, 6 Oct 2026: a Radix modal marks everything outside it aria-hidden, the
-    // toaster included, so a toast raised under a dialog is on screen but not announced
-    // (NEXT-SESSION 0zb). Seen on screen, then, not by role.
+    // Found 6 Oct 2026: a Radix modal marks everything outside it aria-hidden, the toaster
+    // included, so a toast under a dialog was on screen and silent. Fixed the same day: the
+    // toaster portals its live regions into the open dialog. Seen, AND heard.
     await expect(page.locator("[data-toaster]").getByText(`Figure ${FIG} approved`)).toBeVisible();
+    await expect(dialog.locator("[data-dialog-announcer] [aria-live=polite]")).toContainText(`Figure ${FIG} approved`);
+    expect(await dialog.locator("[data-dialog-announcer]").evaluate((e) => e.closest("[aria-hidden=true]") === null)).toBe(true);
     expect(posts).toEqual([{ hash: real.hash }]);
     await expect(publish).toBeEnabled();
     await expect(dialog.locator("[data-figure-blocks]")).toHaveCount(0);
