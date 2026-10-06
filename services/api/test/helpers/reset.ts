@@ -53,6 +53,13 @@ export async function resetAll(): Promise<void> {
     alter table live_sessions  enable trigger live_sessions_no_delete;
     delete from feedback           where true;
     delete from feedback_prompts   where true;
+    -- The class chat (6 Oct 2026): messages refuse a delete for every role and
+    -- point at auth.users and sections. Suspended by name, as audit_log is.
+    alter table chat_messages disable trigger chat_messages_guard;
+    delete from chat_messages      where true;
+    alter table chat_messages enable trigger chat_messages_guard;
+    delete from chat_members       where true;
+    delete from chat_rooms         where true;
     -- Submissions reference auth.users and stages. Same lesson as V-52: adding
     -- a table that points at an existing one silently breaks teardown for every
     -- suite that ran before it.

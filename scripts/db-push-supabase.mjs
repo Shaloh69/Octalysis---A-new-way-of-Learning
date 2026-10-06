@@ -49,6 +49,8 @@ const FILES = [
   "db/addendum-drafts.sql",
   // Figures, recreated as our own SVG (6 Oct 2026). Idempotent: `--file` sends it alone.
   "db/addendum-figures.sql",
+  // The class chat (6 Oct 2026): rooms, messages, Realtime, the private bucket. Idempotent.
+  "db/addendum-chat.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 
