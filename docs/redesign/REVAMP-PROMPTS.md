@@ -69,8 +69,8 @@ The work, in order:
    heartbeat and pulling that teacher's jobs), installing Ollama here,
    Windows-only unsigned first, whether OCTA goes multi-course and who
    gets teacher accounts, which extras (10-16), and the order. If approved and
-   ordered now, start at B0: install Ollama, try two or three models that
-   fit 4 GB VRAM / 16 GB RAM on syllabus 13's (book 15's) figures, and
+   ordered now, start at B0: install Ollama, try qwen3.5:4b, qwen3.5:9b and
+   gemma4:12b (v3 §3's tier table) on syllabus 13's (book 15's) figures, and
    record speed and quality before building anything else. Then B1, the
    figure reader (fix the caption locator for non-breaking spaces; check all
    ~355 figures are found). Any table it needs is an idempotent addendum

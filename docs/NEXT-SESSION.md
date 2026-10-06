@@ -1587,7 +1587,11 @@ features also. Planning first, come back to me first."
    while the page is open, and other sites could probe the port.
    Signing is not free: SmartScreen warns on an unsigned exe, and macOS
    needs $99/year to notarise.
-9. **Waiting on the instructor:** v3 §10's six decisions (the design; may the
+9. **Models (Ollama library, checked 7 Oct):** no local model matches Claude;
+   the nearest open ones need 80+ GB. For this laptop: qwen3.5:4b for
+   figures (vision, 3.3-4.0 GB) and qwen3.5:9b for text (6.6-7.6 GB, split),
+   with gemma4:12b as the comparison. Tier table in v3 §3.
+10. **Waiting on the instructor:** v3 §10's six decisions (the design; may the
    next session install Ollama here; Windows-only unsigned first; whether
    OCTA becomes multi-course and who gets teacher accounts; which extras;
    the order).

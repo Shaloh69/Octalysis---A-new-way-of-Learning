@@ -73,6 +73,33 @@ How much more is exactly what the chapter 13-17 test measures (§7). If the
 answer is "too much", the engine can be swapped later without rebuilding
 anything. Every engine sits behind one interface.
 
+**Which model (Ollama library, checked 7 Oct 2026).** No local model matches
+Claude. The open models that come nearest (`qwen3.5:122b` at 81 GB,
+`mistral-medium-3.5` at 128 B, `gpt-oss:120b`, `deepseek-v3` at 671 B) need a
+workstation with 80+ GB of memory, not a laptop. The app picks by the
+teacher's hardware:
+
+| Teacher's machine | Figures (needs vision) | Lesson text, questions, checks | Expect |
+|---|---|---|---|
+| no GPU, 8 GB RAM | `qwen3.5:2b` (2.7-3.1 GB) | not recommended | figure summaries only, slowly |
+| **4 GB GPU, 16 GB RAM (this laptop)** | **`qwen3.5:4b`** (3.3-4.0 GB, nearly all on the GPU) | **`qwen3.5:9b`** (6.6-7.6 GB, split GPU/RAM) | usable drafts, slow; overnight jobs |
+| 8 GB GPU | `qwen3.5:9b` | `qwen3.5:9b` | reported 54-58 words/s at 32 K context on 8 GB cards |
+| 16-24 GB GPU | `qwen3.5:27b` or `gemma4:26b` | the same | the closest a single PC gets |
+
+All Qwen 3.5 sizes read images, call tools, and have a thinking mode. The
+comparison model for B0 is `gemma4:12b` (7.7-8.0 GB). **B0 measures these on
+book 15's figures before anything is built on them.**
+
+**Matching the settings the Claude sessions used.** Claude read a whole
+chapter (about 25 K tokens) at once. Locally, memory limits the context to
+about 16-32 K, so the app works **one section at a time**, which the design
+already does. Thinking is **on** for questions and the claim check, and off
+for extraction. Temperature is low (about 0.2) for summaries and checks.
+Every output is constrained to a **JSON schema** (Ollama supports this), so
+a draft is the right shape before a check even runs. The **content rules**
+the sessions followed (`.claude/rules/content.md`) become each job's fixed
+prompt.
+
 **Free alternatives, and why they are not recommended for the book:**
 Gemini's free tier is stronger, but its terms let Google keep and review
 what you send, which means the copyrighted book. Its limits also change
