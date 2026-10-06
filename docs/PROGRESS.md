@@ -19,6 +19,16 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**6 Oct 2026:** phase report 222/245 (91%), unchanged: this session's work was
+content and features outside the R boxes. Live R3 87/88, R4 46/48, R5 4/24.
+Built: lesson drafts 10-13 (authoring now stops at 12, instructor), the figure
+pipeline (schema on the deployment, sync gate, approval on /content and /items,
+reader and paper), 17 figures for 01-13 waiting for review on the deployment,
+guards so nothing names a figure it does not show, the bank/exam scope split
+(bank to 12, exams to 08), and a claim handout PDF for students. Approved and
+ordered next: the class chat (docs/CHAT-PLAN.md). Prelim NOT runnable
+(deployment: stage 01 14 live, 02-04 none). Detail: NEXT-SESSION.md 0zb.
+
 **5 Oct 2026:** phase report 222/245 (91%); live R3 87/88, R4 46/48, R5 4/24.
 R4.8, R4.9, R5.1 (INV-33 open) and R5.3's draw calls done; the lesson-text
 approval gate built; chapters 08-09 drafted for review; hard rule 10 added.

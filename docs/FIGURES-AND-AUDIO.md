@@ -24,7 +24,8 @@ an audiobook feature."
    don't pursue the rest."** Lesson text is drafted for 08-12 and no further.
    Chapter 13's draft (with two figures) was already written and synced before
    this ruling, and waits unapproved on /content; whether to withdraw it is the
-   instructor's call. 14-18 keep their planned stubs. The work order is now:
+   instructor's call. 14-18 keep their planned stubs. The work order is now
+   (revised again 6 Oct: **the class chat first**, `docs/CHAT-PLAN.md`):
    (a) the reread of 01-12 to add figures; (b) questions for 09-12 only, at
    review; (c) the audiobook; (d) **the "Octalysis AI" proposal, analysed in
    `docs/AI-ASSISTANT-PROPOSAL.md`**: decide it, and build only the local drafting

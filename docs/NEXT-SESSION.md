@@ -1526,13 +1526,15 @@ left, or needing a decision:
 
 ---
 
-## 0zb. Figures, and the authoring continued — 5-6 Oct 2026 (IN PROGRESS)
+## 0zb. Figures, the authoring to chapter 12, the plan changes — 5-6 Oct 2026
 
 Pushed, in order: `e458812` ch 10, `ac48f38` ch 11, `c141a30` ch 12 (lesson
 text drafts), `b2b3a5f` the figures/audiobook plan, `c17c3a5` the figure
 pipeline (schema, sync, API, tests), `2e78512` figures in the reader and on
 /content and /items, `c4f736a` the emphasis fix and the paper and /items gates,
-`197090a` ch 13 with two figures.
+`197090a` ch 13 with two figures, then the 01-12 figures (`f9519af`..`c169dfc`),
+`cf1b7a9` the bank/exam scope split, `d38bda3` and `b8720e1` the figure-mention
+audit and guards, `0734568` the claim handout. Range pushed: `e458812`..HEAD.
 
 1. **New instructor request (6 Oct): figures and an audiobook.** Three rulings,
    asked once (`docs/FIGURES-AND-AUDIO.md` holds them and the design): figures
@@ -1586,8 +1588,38 @@ pipeline (schema, sync, API, tests), `2e78512` figures in the reader and on
    sync leaves it alone (rule 6): the instructor makes a New version on /items
    with that stem and approves it. A figure on a question must never draw its
    answer; question figures are drawn per question.
-6. **Prelim still NOT runnable** on 6 Oct: on the deployment stage 01's 15 items
-   are live (the instructor began approving on 5 Oct), 02-04's 81 are at review.
+10. **Figure-mention audit (instructor, 6 Oct): nothing names a figure it does
+   not show.** Ten mentions found: nine reworded, one kept and marked
+   about="book-figures" (01's note on the 9th edition). sync-content --verify
+   now refuses a figure number outside a figure's own caption, and sync-items
+   one in a question with no figure; both watched catching a planted mention.
+   Two live items were versioned on the deployment (01-structure-hierarchy-order
+   and 01-keyboard-path-order): v2 at review, v1 retired. The instructor said
+   resets are fine ("I only approved little of it"); only changed items were
+   touched.
+11. **The bank's reach and the exams' reach are split** (scope.ts):
+   BANK_THROUGH_STAGE = "12" (sync-items, console import), while
+   EXAMINABLE_THROUGH_STAGE = "08" still governs every exam and stage check.
+   No questions for 09-12 written yet: that is item 2 of the next prompt.
+12. **Claim handout for students**: docs/handouts/claim-your-account.pdf (two
+   A4 pages, real screenshots at phone size, QR verified to read
+   https://octa-web-dusky.vercel.app/register). Source .html beside it; rebuild
+   with scripts/.handout-pdf.tmp.mjs (untracked). Locally the claim route does
+   not exist (dev auth), so its two responses were the server's own, quoted
+   from auth.ts. A local-only fixture roster row 23290001 was added (wiped by
+   the next db:reset).
+13. **Found, for the instructor:** students have NO self-service password reset
+   (/forgot-password is not built in apps/web) and the console has NO tool to
+   reset a student's password; today it is the Supabase dashboard
+   (Authentication, Users). The handout says "tell your instructor".
+14. **New, approved: the class chat** (docs/CHAT-PLAN.md, four rulings), ordered
+   FIRST. Not started: no template, schema or code yet.
+15. **The deployment's addresses** (instructor, 6 Oct): API
+   https://octa-api-noq2.onrender.com, students https://octa-web-dusky.vercel.app.
+   The console's address is still not recorded.
+16. **Prelim still NOT runnable** on 6 Oct: on the deployment stage 01 has 14 live
+   and 1 at review (after the versioning above), 02-04 have none live (81 at
+   review).
 
 ## 0za. R4.8, R4.9, R5 begun, the approval gate, the map's new tricks — 2-5 Oct 2026
 

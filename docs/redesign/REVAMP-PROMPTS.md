@@ -23,74 +23,72 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: authoring 10-18 and questions 09-18, then R5
+## 1. Start here — the next session: the class chat, then questions 09-12, the audiobook, then R5
 
 ```
-Read docs/NEXT-SESSION.md section 0za first (what the last session built,
-found and parked: R4.8 and R4.9 done, R5.1 and R5.3's draw calls done, the
-lesson-text approval gate, Orientation finishing itself, look-around on the
-map, moons on the planets' rules, the alien easter egg, the bodiless-POST
-400 fix, hard rule 10, and the authoring begun). Then root CLAUDE.md hard
-rules 5 and 10, .claude/rules/content.md, content/book-map.json, and
-docs/redesign/phases/R5-*.md. Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md section 0zb first (what the last session built,
+found and parked: chapters 10-13 drafted, the figure pipeline end to end, 17
+figures for 01-13 on the deployment for review, the figure-mention guards,
+the bank/exam scope split, two live items versioned, the claim handout, and
+the plan changes: authoring stops at chapter 12, the Octalysis AI proposal
+analysed, the class chat approved and ordered first). Then docs/CHAT-PLAN.md
+(its four rulings), root CLAUDE.md hard rules 3, 8, 9 and 10, and
+.claude/rules/design.md. Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. Then
 state plainly whether Prelim-worth of data is okay to run on students,
-checking the five conditions in CLAUDE.md (on 5 Oct it was NOT: act 1's 96
-items at review, 0 live, locally and on the deployment, 183 items at review
-there; the instructor approves on the console's /items).
+checking the five conditions in CLAUDE.md (on 6 Oct it was NOT: on the
+deployment stage 01 has 14 live and 1 at review, 02-04 none live).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot start Docker Desktop first. Kill orphaned API trees and previews,
-pnpm db:reset THEN node scripts/db-demo.mjs (seven SQL files now), ONE
-pnpm dev:api proved with a real GET, apps/web built and previewed on 5185,
-apps/console on 5186, OCTA_WEB_URL and OCTA_CONSOLE_URL exported. The API
-suite truncates the demo data: after it, db:reset THEN db-demo, and restart
-the API (a reset kills it). Run WebGL specs at --workers=2 or 3 when the
-machine is loaded.
+reboot start Docker Desktop first (the machine rebooted twice on 6 Oct). Kill
+orphaned API trees and previews, pnpm db:reset THEN node scripts/db-demo.mjs
+(EIGHT SQL files now), ONE pnpm dev:api proved with a real GET, apps/web built
+and previewed on 5185, apps/console on 5186, OCTA_WEB_URL and OCTA_CONSOLE_URL
+exported. The deployment: API https://octa-api-noq2.onrender.com, student
+site https://octa-web-dusky.vercel.app, Supabase ddvxkbcelpqydnjkffdr (the
+root .env's SUPABASE_DB_SESSION; never print it). Untracked scratch helpers in
+scripts/: .deploy-q.tmp.mjs (query the deployment), .deploy-run.tmp.mjs (run a
+script against it), .deploy-version.tmp.mjs (version a live item),
+.figure-preview.tmp.mjs (draw a figure at 380 and 1440).
 
 The work, in order:
 
-1. AUTHORING, the instructor's request ("author everything so I can approve
-   it in the admin"; the ruling is recorded in hard rule 5). Drafted lesson
-   text for chapters 10 to 18 as content/stages/NN.draft.md, in the form of
-   08.draft.md and 09.draft.md: original teaching prose, the book's
-   definitions and claims quoted verbatim in quote blocks with
-   source="ch-NN.md section" (from clean paragraphs: the extractor put ** into
-   the book's bullet lists), original worked examples checked by hand, a
-   references callout. ALWAYS go through content/book-map.json: syllabus 10
-   = book 12, 11 = 13, 12 = 14, 13 = 15, 14 = 16, 15 = 20, 16 = 21, 17 = 18
-   (+17). Chapter 18 is in no edition of the book: its sources are the open
-   references in docs/CPE412-CURRICULUM.md 4.1; if they cannot be fetched
-   and quoted, stop and say so. Per chapter: node scripts/sync-content.mjs
-   --verify green, commit, push. Then put the drafts on the deployment for
-   review: dry run first (sync-content --check with DATABASE_URL taken from
-   the root .env's SUPABASE_DB_SESSION, which must name
-   ddvxkbcelpqydnjkffdr), then apply; never print or read the keys. Then
-   QUESTIONS for stages 09-18 at review: read content/items/01.json and
-   scripts/sync-items.mjs first; sync-items refuses stages past
-   EXAMINABLE_THROUGH_STAGE (08), so the bank's reach and the exams' reach
-   must be separated, keeping the Semi-final and Final blueprints out of
-   scope until the instructor widens them. Every question-engine function
-   needs a test.
+1. THE CLASS CHAT (docs/CHAT-PLAN.md, approved 6 Oct). One room per section
+   plus a private thread between each student and the instructor; mentions;
+   screenshots and videos up to 25 MB, with an instructor view to delete old
+   attachments; realtime on every open instance through Supabase Realtime; a
+   student sitting a paper cannot open or post (enforced by the database).
+   In order: capture the templates first (a public chat UI that renders
+   signed out) into design/templates/web/chat and design/templates/console/chat
+   with SOURCE.md and SPEC.md; db/addendum-chat.sql (idempotent: rooms,
+   members, messages, RLS, the storage bucket and its policies), its denial
+   tests written and watched red first, applied locally and pushed to the
+   deployment BEFORE any code (pnpm db:push --file); then the API, then
+   /app/chat and the console's /chat, each through its page gate (six
+   assertions at 1440 and 380, captures opened). The local stack has no
+   Realtime or Storage: verify the realtime path against the deployment (two
+   browser contexts, one sends, the other updates) and say what was verified
+   where.
+2. Questions for stages 09-12 only, at review (the bank reaches 12 since 6 Oct;
+   the exams stay at 08). Read content/items/01.json and scripts/sync-items.mjs
+   first; the act 3 solvers (solvers-act3.ts) cover 09, 11 and 12. A question
+   names no figure it does not show (sync-items refuses it), and a figure on a
+   question must never draw its answer.
+3. The audiobook (docs/FIGURES-AND-AUDIO.md: the browser's voice now, MP3s
+   later), through the reader's page gate.
+4. The Octalysis AI decision (docs/AI-ASSISTANT-PROPOSAL.md): ask once.
+5. R5 in order: R5.3's 30fps floor, R5.2, R5.4, R5.5, then R5.6.
 
-2. R5 in order, each box against the code and the running app, ticked in
-   the same commit with a dated line: R5.3's 30fps floor (measure on a
-   throttled profile; headless WebGL is software, say so), R5.2 (the
-   accessibility contract in full; decide whether the alien needs a
-   keyboard path), R5.4, R5.5, then R5.6 only when everything above is
-   true. INV-33 stays open for the instructor (the flight path).
+Parked for the instructor, ask once: INV-33 (the map draws no prerequisite
+line, yet Orientation says "every connection on it is a real prerequisite");
+the belt and Trojan points draw as big squares up close; students have no
+self-service password reset and the console has no tool to reset a
+student's password (today it is the Supabase dashboard); a toast raised
+while a console dialog is open is not announced to a screen reader.
 
-3. Parked for the instructor, ask once: INV-33 (the map draws no
-   prerequisite line since 30 Sep, yet Orientation's text says "every
-   connection on it is a real prerequisite"); the belt and Trojan points
-   draw as big squares up close.
-
-Hard rule 10 binds: any database change goes to the deployment's Supabase
-(idempotent addendum, pnpm db:push --file) before the code that uses it.
-Never stage apps/console/.env.example (the instructor put a key in it).
-Any visual change goes through its page gate (captures at 1440 and 380,
-opened).
+Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put
+a key in it). Any visual change goes through its page gate.
 
 End: pnpm phase with the percentage, the Prelim sentence checked,
 docs/NEXT-SESSION.md and PROGRESS.md updated, REVAMP-PROMPTS.md section 1
