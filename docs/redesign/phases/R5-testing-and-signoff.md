@@ -16,8 +16,13 @@ tested rather than assumed. This phase closes the redesign, same spirit as
       its own level's band; a student's rotation turns the moving system
       rigidly (every distance the same, at every t; watched failing with
       the rotation dropped from ω)
-- [ ] **INV-33** (every edge on the map = an entry in `stages.prereq`, no
+- [x] **INV-33** (every edge on the map = an entry in `stages.prereq`, no
       editorializing) — re-verify against the flight-path line specifically
+      **6 Oct 2026: SETTLED by instructor ruling (asked once): change the
+      text, not the map.** The map draws no edge and invents none; Orientation
+      no longer claims "every connection on it is a real prerequisite" (it now
+      says a planet opens once its chapters are mastered, and a locked one names
+      them: `map/body.tsx` prints the lock reason). Synced to the deployment.
       **2 Oct 2026: NOT TICKED, and the reason is a finding.** There is no
       flight-path line to verify. The 30 Sep remake (`0d6828a`, ruling 2,
       Starfield's system map) deleted `FlightPath` with the old canvas and

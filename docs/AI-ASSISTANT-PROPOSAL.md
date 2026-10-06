@@ -80,6 +80,10 @@ checked and approved like any other draft. Details at the end.
 - **The UI:** a Streamlit page on localhost is fine for this, because it is a tool, not a
   course page. It never ships to students.
 
-**Decide at the start of that session:** build the local drafting assistant, or drop the
+**DECIDED (instructor, 6 Oct 2026): plan the local drafting assistant.** The plan
+(inputs, the prompts per file type, how it calls `sync-content --verify`) is owed,
+for the instructor's approval BEFORE any code. Nothing of it reaches students.
+
+**Decide at the start of that session (done, above):** build the local drafting assistant, or drop the
 idea. If it is built, it needs its own plan (inputs, the prompts per file type, how it
 calls `sync-content --verify`), and the instructor's approval of that plan before code.

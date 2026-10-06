@@ -1,4 +1,22 @@
-# Class chat — plan, APPROVED (instructor, 6 Oct 2026)
+# Class chat — plan, APPROVED (instructor, 6 Oct 2026) — BUILT the same day
+
+**Built and on the deployment, 6 Oct 2026** (`46ac563`..`52d959e`, `4487ec1`):
+`db/addendum-chat.sql` (pushed first), `/api/v1/chat/*`, `/app/chat` (sixth star
+tab, mention count) and the console's `/chat` (under In class, moderation and the
+attachments view, every staff write with a reason, audited). Verified:
+
+- **Locally:** 31 database denials (watched red), 32 route tests, both page gates
+  green at 1440 and 380 with captures opened. Polling only (no Realtime here).
+- **On the deployment** (two throwaway accounts in a TEST-CHAT section, instructor
+  approved; all removed afterwards, nothing left): Realtime delivered A's message
+  to B's subscription in 279-418 ms; A's private thread never reached B; B's open
+  page showed A's message 0.9 s after Enter with no reload; a screenshot went
+  through the private bucket on a signed link, and the unsigned URL is refused.
+- **Found on the deployment and fixed:** every upload failed (Storage refuses a
+  JSON content type with no body); a moon's journey closed the chat for good (a
+  journey is practice, not a paper); the closed chat did not say which paper and
+  its link could not open it; a late-loading picture pushed the newest message
+  out of view.
 
 Requested by the instructor, 6 Oct 2026: "a complete new page for both the
 console teacher and students: a personalized group chat where they can mention,
