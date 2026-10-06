@@ -23,8 +23,9 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 R5 5/24 (INV-33 ticked on the instructor's ruling). Built and on the deployment:
 the class chat (Realtime verified there with two test accounts, since removed),
 ruling 4 (leaving a paper submits it; a server sweep backs the page), 131
-questions for 09-12 at review, Listen on the reader, password reset (console
-tool, forced change, self-service by email pending two dashboard settings), the
+questions for 09-12 at review, Listen on the reader (a natural voice, and it
+follows sentence by sentence with a progress strip along the bottom), password
+reset (console tool, forced change, self-service by email, verified), the
 toaster heard under dialogs, the belt drawn as small dots. Prelim NOT runnable
 (deployment: stage 01 13 live, 02-04 none). Detail: NEXT-SESSION.md 0zc.
 

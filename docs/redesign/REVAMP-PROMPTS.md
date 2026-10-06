@@ -29,7 +29,8 @@ design work at all.
 Read docs/NEXT-SESSION.md section 0zc first (what the last session built,
 verified and left open: the class chat, live and Realtime-verified on the
 deployment; ruling 4, leaving a paper submits it; 131 questions for 09-12 at
-review; Listen on the reader; password reset in three parts; the toaster
+review; Listen on the reader, following the voice sentence by sentence
+with a progress strip along the bottom; password reset in three parts; the toaster
 heard under dialogs; the belt as dots). Then root CLAUDE.md hard rules 9
 (amended by ruling 4) and 10, .claude/rules/design.md, and
 docs/AI-ASSISTANT-PLAN.md (awaiting the instructor's approval). Do not
@@ -53,7 +54,8 @@ https://octa-web-dusky.vercel.app, Supabase ddvxkbcelpqydnjkffdr (the root
 scripts/: .deploy-q.tmp.mjs, .deploy-run.tmp.mjs, .deploy-version.tmp.mjs,
 .figure-preview.tmp.mjs, .chat-realtime.tmp.mjs (setup / verify / cleanup
 of two throwaway accounts; the instructor approved that for the chat check),
-.belt-closeup.tmp.mjs (photograph the map near a planet), and
+.belt-closeup.tmp.mjs (photograph the map near a planet), .tts-ref3.tmp.mjs
+(capture a read-aloud page mid-playback with a stand-in voice), and
 services/api/.submit-stale.tmp.ts.
 
 The work, in order:

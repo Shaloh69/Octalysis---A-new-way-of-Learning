@@ -1617,6 +1617,17 @@ captures. Range: `46ac563`..`c7afc04` (18 commits).
    a soft panel (instructor: "too close to the paragraph"). **MP3s from Google
    Cloud TTS ruled next**; the plan is in docs/FIGURES-AND-AUDIO.md and waits
    for the instructor's API key (server-side only).
+13. **Listen now FOLLOWS the voice** (`1c74d72`; instructor: "change the way
+   it follows or highlights the sentences while it reads, with animation like
+   a line or progress bar along the bottom"). The sentence being said is
+   tinted (CSS Custom Highlight API), the word lit where the voice reports
+   words, a line under the sentence fills as it is read, and a strip just
+   above the biome's bottom bar carries Pause/Resume/Stop, "Sentence N of M"
+   and the lesson's progress line. Template `template-listen.png` captured
+   mid-playback (SOURCE.md). web-listen 29 passed at 1440 and 380, web-stage
+   76 passed, captures opened. **Not yet heard with a real voice on the
+   deployment:** the specs use a recording stand-in; Chrome's Google voices
+   send no word events, so on them only the sentence moves (by design).
 10. **Prelim still NOT runnable:** deployment stage 01 has 13 live, 2 at
    review, 2 retired; 02-04 have none live (81 at review).
 
