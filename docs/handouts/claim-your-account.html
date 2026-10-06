@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Claim your OCTA account</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  @page { size: A4; margin: 14mm 14mm 16mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Inter, Arial, sans-serif; color: black; font-size: 10.5pt; line-height: 1.45; }
+  .mono { font-family: Consolas, "JetBrains Mono", monospace; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8mm; border-bottom: 1.2pt solid black; padding-bottom: 4mm; }
+  h1 { font-size: 22pt; margin: 0 0 1mm; letter-spacing: 0.2pt; }
+  .course { margin: 0; color: dimgray; font-size: 10pt; }
+  .lede { margin: 3mm 0 0; font-size: 11pt; max-width: 120mm; }
+  .qr { text-align: center; font-size: 8.5pt; color: dimgray; flex: none; }
+  .qr .code svg { width: 30mm; height: 30mm; display: block; }
+  .address { margin-top: 1mm; font-size: 9pt; color: black; }
+  .need { margin: 4mm 0 3mm; padding: 3mm 4mm; border: 0.8pt solid black; border-radius: 2mm; }
+  .need h2 { margin: 0 0 1.5mm; font-size: 11.5pt; }
+  .need ol { margin: 0; padding-left: 5mm; }
+  .need li { margin: 0.8mm 0; }
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm 5mm; }
+  .keep .mono { white-space: nowrap; font-size: 8.5pt; }
+  .step { break-inside: avoid; }
+  .step h3 { font-size: 10.5pt; margin: 0 0 1mm; }
+  .step h3 .n { display: inline-block; width: 5.5mm; height: 5.5mm; line-height: 5.5mm; text-align: center; border-radius: 50%; background: black; color: white; font-size: 9pt; margin-right: 1.5mm; }
+  .step p { margin: 0 0 2mm; font-size: 9.5pt; }
+  .step img { width: 100%; height: 52mm; object-fit: cover; object-position: top; border: 0.6pt solid dimgray; border-radius: 2mm; display: block; }
+  .page2 { break-before: page; }
+  .keep { border: 0.8pt solid dimgray; border-radius: 2mm; padding: 3mm; font-size: 9.5pt; }
+  .keep p { margin: 0 0 2mm; }
+  h2.section { font-size: 13pt; margin: 0 0 3mm; border-bottom: 1.2pt solid black; padding-bottom: 1.5mm; }
+  .trouble { display: grid; grid-template-columns: 52mm 1fr; gap: 6mm; align-items: start; margin-bottom: 6mm; }
+  .trouble img { width: 100%; border: 0.6pt solid dimgray; border-radius: 2mm; display: block; }
+  .trouble h3, .rules h3 { margin: 0 0 1.5mm; font-size: 11pt; }
+  .trouble ul, .rules ul { margin: 0 0 3mm; padding-left: 5mm; }
+  .trouble li, .rules li { margin: 1mm 0; }
+  .quote { margin: 0 0 3mm; padding: 2mm 3mm; border-left: 2.5pt solid black; background: whitesmoke; font-size: 9.5pt; }
+  footer { margin-top: 6mm; padding-top: 2mm; border-top: 0.6pt solid dimgray; font-size: 8.5pt; color: dimgray; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Claim your OCTA account</h1>
+    <p class="course">CPE 412 · Computer Architecture and Organization · University of Cebu</p>
+    <p class="lede">Your instructor has already added you to the class roster. Claiming your account takes about
+      two minutes, and you only do it once. After that you sign in with your student ID.</p>
+  </div>
+  <div class="qr">
+    <div class="code" id="qr"></div>
+    <div>Scan to open</div>
+    <div class="address mono">octa-web-dusky.vercel.app</div>
+  </div>
+</header>
+
+<section class="need">
+  <h2>Before you start, have these ready</h2>
+  <ol>
+    <li><strong>Your student ID</strong>, exactly as it is on your registration form.</li>
+    <li><strong>An email address you use.</strong> You can sign in with it too.</li>
+    <li><strong>A password of at least 10 characters.</strong> A long phrase is stronger, and easier to remember,
+      than a short password full of symbols.</li>
+  </ol>
+</section>
+
+<section class="steps">
+  <div class="step">
+    <h3><span class="n">1</span>Open the site</h3>
+    <p>Go to <span class="mono">octa-web-dusky.vercel.app</span> on your phone or laptop, and tap
+      <strong>Claim your account</strong>.</p>
+    <img src="claim/2-claim-empty.png" alt="The Claim your account form, empty">
+  </div>
+  <div class="step">
+    <h3><span class="n">2</span>Fill in the form</h3>
+    <p>Your <strong>student ID</strong>, your <strong>email</strong>, then your <strong>password</strong> twice.
+      Then tap <strong>Claim account</strong>.</p>
+    <img src="claim/3-claim-filled.png" style="object-position: 0 62%" alt="The form filled in, with the Claim account button">
+  </div>
+  <div class="step">
+    <h3><span class="n">3</span>Account claimed</h3>
+    <p>You will see <strong>Account claimed</strong>. Tap <strong>Go to sign in</strong>. No confirmation email
+      is needed.</p>
+    <img src="claim/4-claimed.png" style="object-position: 0 46%" alt="The Account claimed screen">
+  </div>
+  <div class="step">
+    <h3><span class="n">4</span>Sign in</h3>
+    <p>Enter your <strong>student ID</strong> (or your email) and the password you just set, then tap
+      <strong>Sign in</strong>.</p>
+    <img src="claim/5-sign-in-filled.png" style="object-position: 0 70%" alt="The Sign in form filled in">
+  </div>
+  <div class="step">
+    <h3><span class="n">5</span>You are in</h3>
+    <p>Your star system opens: one planet for each chapter of the course. From now on, use
+      <strong>Sign in</strong> every time.</p>
+    <img src="claim/6-signed-in.png" alt="The star map after signing in">
+  </div>
+  <div class="step">
+    <h3><span class="n">6</span>Keep it safe</h3>
+    <p>Your account is yours alone: your answers and checks are graded. Never share your password, and never
+      claim a classmate's ID.</p>
+    <div class="keep">
+      <p><strong>Bookmark the site</strong> or add it to your home screen: <span class="mono">octa-web-dusky.vercel.app</span></p>
+      <p><strong>Sign out</strong> on a shared or borrowed computer, from the top right of the map.</p>
+    </div>
+  </div>
+</section>
+
+<section class="page2">
+  <h2 class="section">If something goes wrong</h2>
+  <div class="trouble">
+    <img src="claim/7-refused.png" alt="The message: That student ID could not be used">
+    <div>
+      <h3>"That student ID could not be used"</h3>
+      <p class="quote">That student ID could not be used. Check the ID on your registration form, or ask your
+        instructor if it has already been claimed.</p>
+      <ul>
+        <li><strong>Check every digit</strong> of your student ID against your registration form.</li>
+        <li>If the ID is right, it may <strong>already have been claimed</strong>, or it may not be on the roster
+          yet. <strong>Tell your instructor</strong>; do not keep trying.</li>
+        <li>The message is the same for every one of these on purpose, so nobody can use the site to find out
+          which IDs exist.</li>
+        <li>After several tries in a minute the site makes you <strong>wait a minute</strong>. That is normal.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rules">
+    <h3>Claim account will not press</h3>
+    <ul>
+      <li>A box is still empty, or your password is <strong>shorter than 10 characters</strong> (the note under
+        it changes to a warning), or the two passwords <strong>do not match</strong> yet ("These do not match yet."
+        appears under the second one).</li>
+    </ul>
+    <h3>"Check your ID and password" when you sign in</h3>
+    <ul>
+      <li>Check your student ID, and that Caps Lock is off. You can also sign in with the email you used.</li>
+      <li>Have you claimed your account yet? Sign in only works after step 3.</li>
+    </ul>
+    <h3>You forgot your password</h3>
+    <ul>
+      <li>There is no "reset by email" for students yet. <strong>Tell your instructor</strong>, who can help you
+        get back in.</li>
+    </ul>
+    <h3>Which device?</h3>
+    <ul>
+      <li>Any up-to-date phone or laptop browser works: Chrome, Edge, Safari or Firefox.</li>
+    </ul>
+  </div>
+
+  <footer>OCTA · CPE 412 · The screenshots show sample details (ID 23290001, student@example.com); use your own.</footer>
+</section>
+
+<script>
+  const URL_ = "https://octa-web-dusky.vercel.app/register";
+  const qr = qrcode(0, "M");
+  qr.addData(URL_);
+  qr.make();
+  document.getElementById("qr").innerHTML = qr.createSvgTag({ scalable: true, margin: 2 });
+  window.__qrUrl = URL_;
+</script>
+</body>
+</html>
