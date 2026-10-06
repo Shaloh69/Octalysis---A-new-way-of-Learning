@@ -22,6 +22,15 @@ const say = (over: Record<string, unknown>) => {
 };
 
 group("describe: one sentence per audited action", () => {
+  it("the class chat: a removal, an attachment, a prune (6 Oct 2026)", () => {
+    expect(say({ action: "chat.message.removed", target_type: "chat_message", payload: { body: "x", reason: "off topic" } }))
+      .toBe("Removed a student's message from the class chat");
+    expect(say({ action: "chat.attachment.removed", payload: { files: [{ name: "board.png", bytes: 10 }] } }))
+      .toBe("Removed board.png from the class chat to free storage");
+    expect(say({ action: "chat.attachments.pruned", payload: { olderThanDays: 30, files: [{}, {}, {}] } }))
+      .toBe("Removed 3 chat attachments older than 30 days");
+  });
+
   it("locks say what, for whom, and whether a schedule did it", () => {
     expect(say({ action: "lock.set", target_id: "05", payload: { scope: "section", state: "locked" }, section_code: "BSCPE - 4" }))
       .toBe("Closed stage 05 for section BSCPE - 4");

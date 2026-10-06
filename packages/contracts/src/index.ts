@@ -384,7 +384,7 @@ export type Gradebook = z.infer<typeof Gradebook>;
  * cannot group an entry differently.
  */
 export const AuditFamily = z.enum([
-  "locks", "roster", "items", "assessments", "submissions", "content", "accounts", "feedback", "live",
+  "locks", "roster", "items", "assessments", "submissions", "content", "accounts", "feedback", "live", "chat",
 ]);
 export type AuditFamily = z.infer<typeof AuditFamily>;
 
@@ -398,6 +398,7 @@ export const AUDIT_FAMILY_PREFIXES: Readonly<Record<AuditFamily, readonly string
   accounts: ["account", "admin"],
   feedback: ["feedback"],
   live: ["live"],
+  chat: ["chat"],
 };
 
 export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
@@ -410,6 +411,7 @@ export const AUDIT_FAMILY_LABELS: Readonly<Record<AuditFamily, string>> = {
   accounts: "Accounts",
   feedback: "Feedback",
   live: "Lecture Mode",
+  chat: "Class chat",
 };
 
 /**

@@ -211,6 +211,8 @@ function targetLabel(r: Row, p: Record<string, unknown>): string {
       return r.subject_name ?? `Account ${id}`;
     case "feedback":
       return `Feedback report ${id}`;
+    case "chat_message":
+      return /^\d+ messages$/.test(id) ? `${id} in the class chat` : "A message in the class chat";
     default:
       return `${r.target_type} ${id}`.trim();
   }
@@ -303,6 +305,17 @@ export function describe(r: Row, p: Record<string, unknown>): string {
     case "live.end": {
       const n = num(p.answered);
       return `Ended ${item ?? "a question"}${n !== null ? ` after ${n} ${n === 1 ? "answer" : "answers"}` : ""}`;
+    }
+    /* The class chat (6 Oct 2026). The removed text is in the payload, which Details shows. */
+    case "chat.message.removed":
+      return "Removed a student's message from the class chat";
+    case "chat.attachment.removed": {
+      const f = Array.isArray(p.files) ? (p.files[0] as { name?: unknown } | undefined) : undefined;
+      return `Removed ${str(f?.name) ?? "an attachment"} from the class chat to free storage`;
+    }
+    case "chat.attachments.pruned": {
+      const n = Array.isArray(p.files) ? p.files.length : 0;
+      return `Removed ${n} chat ${n === 1 ? "attachment" : "attachments"} older than ${num(p.olderThanDays) ?? "?"} days`;
     }
     default:
       return `${r.action}${r.target_type ? ` on ${r.target_type} ${r.target_id ?? ""}`.trimEnd() : ""}`;

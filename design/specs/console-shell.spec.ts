@@ -43,7 +43,7 @@ function teacherToken(): string {
 
 /** The four groups the instructor ruled on, 28 Sep 2026, in order. */
 const GROUPS: Array<[string, string[]]> = [
-  ["In class", ["Locks", "Live"]],
+  ["In class", ["Locks", "Live", "Chat"]],
   ["Students", ["Students", "Submissions", "Gradebook"]],
   ["Course", ["Assessments", "Items", "Content"]],
   ["Records", ["Audit log", "System health", "Feedback"]],
@@ -182,7 +182,7 @@ test.describe("the shell — the six-assertion gate", () => {
  * ==================================================================== */
 
 test.describe("the shell — what it owes every route", () => {
-  test("the nav offers all eleven routes, in the four ruled groups, each named", async ({ page }, testInfo) => {
+  test("the nav offers all twelve routes, in the four ruled groups, each named", async ({ page }, testInfo) => {
     await open(page);
     if (narrow(testInfo)) await openMenu(page);
     const nav = page.getByRole("navigation", { name: "Console sections" });
@@ -192,7 +192,7 @@ test.describe("the shell — what it owes every route", () => {
       const names = (await list.getByRole("link").allInnerTexts()).map((s) => s.trim());
       expect(names, `group "${label}"`).toEqual(items);
     }
-    expect(await nav.getByRole("link").count(), "eleven routes, no more, no fewer").toBe(11);
+    expect(await nav.getByRole("link").count(), "twelve routes (Chat joined In class, 6 Oct 2026), no more, no fewer").toBe(12);
   });
 
   test("the current route is marked, and only it", async ({ page }, testInfo) => {
