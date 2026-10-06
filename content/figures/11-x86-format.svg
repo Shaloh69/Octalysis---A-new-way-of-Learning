@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 290">
+  <title>The x86 instruction format</title>
+  <desc>An x86 instruction as six fields in order: instruction prefixes, 0 to 4 bytes; the opcode, 1 to 3 bytes; the ModR/M byte, 0 or 1; the SIB byte, 0 or 1; a displacement of 0, 1, 2 or 4 bytes; and an immediate of 0, 1, 2 or 4 bytes. Only the opcode is always present. Below, the two addressing bytes opened up, eight bits each: ModR/M is Mod (2 bits), Reg/Opcode (3 bits) and R/M (3 bits); SIB is Scale (2 bits), Index (3 bits) and Base (3 bits).</desc>
+  <text x="5" y="20" font-size="14" font-weight="600" class="fig-ink">One instruction, in bytes</text>
+  <rect x="5" y="32" width="80" height="38" class="fig-box"/>
+  <text x="45" y="56" font-size="14" text-anchor="middle" class="fig-ink">Prefixes</text>
+  <text x="45" y="88" font-size="14" text-anchor="middle" class="fig-muted fig-mono">0–4</text>
+  <rect x="85" y="32" width="72" height="38" class="fig-accent"/>
+  <text x="121" y="56" font-size="14" text-anchor="middle" class="fig-ink">Opcode</text>
+  <text x="121" y="88" font-size="14" text-anchor="middle" class="fig-muted fig-mono">1–3</text>
+  <rect x="157" y="32" width="72" height="38" class="fig-box"/>
+  <text x="193" y="56" font-size="14" text-anchor="middle" class="fig-ink">ModR/M</text>
+  <text x="193" y="88" font-size="14" text-anchor="middle" class="fig-muted fig-mono">0–1</text>
+  <rect x="229" y="32" width="56" height="38" class="fig-box"/>
+  <text x="257" y="56" font-size="14" text-anchor="middle" class="fig-ink">SIB</text>
+  <text x="257" y="88" font-size="14" text-anchor="middle" class="fig-muted fig-mono">0–1</text>
+  <rect x="285" y="32" width="76" height="38" class="fig-box"/>
+  <text x="323" y="56" font-size="14" text-anchor="middle" class="fig-ink">Disp.</text>
+  <text x="323" y="88" font-size="14" text-anchor="middle" class="fig-muted fig-mono">0,1,2,4</text>
+  <rect x="361" y="32" width="74" height="38" class="fig-box"/>
+  <text x="398" y="56" font-size="14" text-anchor="middle" class="fig-ink">Imm.</text>
+  <text x="398" y="88" font-size="14" text-anchor="middle" class="fig-muted fig-mono">0,1,2,4</text>
+  <text x="10" y="180" font-size="14" font-weight="600" class="fig-ink">ModR/M byte</text>
+  <rect x="10" y="190" width="50" height="38" class="fig-box"/>
+  <text x="35" y="214" font-size="14" text-anchor="middle" class="fig-ink">Mod</text>
+  <text x="35" y="248" font-size="14" text-anchor="middle" class="fig-muted fig-mono">2</text>
+  <rect x="60" y="190" width="75" height="38" class="fig-box"/>
+  <text x="97.5" y="206" font-size="14" text-anchor="middle" class="fig-ink">Reg/</text>
+  <text x="97.5" y="222" font-size="14" text-anchor="middle" class="fig-ink">Opcode</text>
+  <text x="97.5" y="248" font-size="14" text-anchor="middle" class="fig-muted fig-mono">3</text>
+  <rect x="135" y="190" width="75" height="38" class="fig-box"/>
+  <text x="172.5" y="214" font-size="14" text-anchor="middle" class="fig-ink">R/M</text>
+  <text x="172.5" y="248" font-size="14" text-anchor="middle" class="fig-muted fig-mono">3</text>
+  <path d="M193 96 L193 140 L110 140 L110 162" class="fig-line" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="230" y="180" font-size="14" font-weight="600" class="fig-ink">SIB byte</text>
+  <rect x="230" y="190" width="50" height="38" class="fig-box"/>
+  <text x="255" y="214" font-size="14" text-anchor="middle" class="fig-ink">Scale</text>
+  <text x="255" y="248" font-size="14" text-anchor="middle" class="fig-muted fig-mono">2</text>
+  <rect x="280" y="190" width="75" height="38" class="fig-box"/>
+  <text x="317.5" y="214" font-size="14" text-anchor="middle" class="fig-ink">Index</text>
+  <text x="317.5" y="248" font-size="14" text-anchor="middle" class="fig-muted fig-mono">3</text>
+  <rect x="355" y="190" width="75" height="38" class="fig-box"/>
+  <text x="392.5" y="214" font-size="14" text-anchor="middle" class="fig-ink">Base</text>
+  <text x="392.5" y="248" font-size="14" text-anchor="middle" class="fig-muted fig-mono">3</text>
+  <path d="M257 96 L257 140 L330 140 L330 162" class="fig-line" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="5" y="282" font-size="14" class="fig-muted">bits in each field, of 8</text>
+</svg>
