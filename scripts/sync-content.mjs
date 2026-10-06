@@ -231,6 +231,9 @@ async function loadFigures() {
   return out;
 }
 
+/** "Figure 3.6", "Figures 1.2", "Fig. 14.10": a figure named by number. */
+const FIGURE_MENTION = /\bfig(?:ure)?s?\.?\s*\d+\.\d+/i;
+
 function checkFigures(stages, figures) {
   const problems = [];
   const byId = new Map(figures.map((f) => [f.id, f]));
@@ -250,6 +253,15 @@ function checkFigures(stages, figures) {
         if (!byId.has(id)) problems.push(`${file}: figure "${id}" has no content/figures/${id}.svg`);
         else if (!id.startsWith(stage.stageId + "-")) problems.push(`${file}: figure "${id}" belongs to another chapter`);
         if (!b.body.trim()) problems.push(`${file}: figure "${id}" has no caption`);
+      }
+      // A figure's number may be named only where the figure is shown: in its
+      // own caption, which is hidden with it until it is approved (instructor,
+      // 6 Oct 2026: "check everything stating [a figure] and no figure is
+      // shown"). A block ABOUT the book's figures says so with about="book-figures".
+      for (const b of blocks) {
+        if (b.kind === "figure" || b.meta.about === "book-figures") continue;
+        const m = FIGURE_MENTION.exec(b.body);
+        if (m) problems.push(`${file}: a ${b.kind} block names "${m[0]}" but shows no figure. Say it in a figure's caption, or reword.`);
       }
     }
   }

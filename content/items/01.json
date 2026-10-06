@@ -179,7 +179,7 @@
         "System bus",
         "Main memory"
       ],
-      "rationale": "The peripheral hands data to the I/O module, which is the computer's interface to the external environment. The system bus carries it between the major components, and main memory is where it comes to rest. This is the top-level structure of Figure 1.1 traced along one operation.",
+      "rationale": "The peripheral hands data to the I/O module, which is the computer's interface to the external environment. The system bus carries it between the major components, and main memory is where it comes to rest. This is the computer's top-level structure traced along one operation.",
       "source": "ch-01.md §1.2 — Figure 1.1 top-level structure, and the I/O definition"
     },
     {

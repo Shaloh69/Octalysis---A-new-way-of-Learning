@@ -143,6 +143,13 @@ function validateShape(files, solvers, through) {
       }
 
       if (!TYPES.has(it.type)) errors.push(`${at}: type must be S, P or G`);
+      // A question may not name a figure it does not show (instructor, 6 Oct 2026).
+      // Its stem, options, ordering steps and rationale all reach the student.
+      if (it.figure === undefined) {
+        const shown = [it.stem, it.correct, ...(it.distractors ?? []), ...(it.order ?? []), it.rationale].filter(Boolean).join(" ");
+        const m = /\bfig(?:ure)?s?\.?\s*\d+\.\d+/i.exec(shown);
+        if (m) errors.push(`${at}: names "${m[0]}" but shows no figure. Reword it, or give it a "figure".`);
+      }
       if (it.figure !== undefined) {
         if (typeof it.figure !== "string" || !/^[0-9]{2}-[a-z0-9]+(-[a-z0-9]+)*$/.test(it.figure)) {
           errors.push(`${at}: figure must be a figure id like "${f.stage}-instruction-format"`);
