@@ -1,0 +1,445 @@
+{
+  "stageId": "11",
+  "chapter": "Stallings ch 13 — Instruction Sets: Addressing Modes and Formats (book chapter 13; the syllabus's chapter 11)",
+  "note": "Drafted 6 Oct 2026 under the instructor's ruling of 5 Oct (questions for 09-18 drafted from the textbook, each approved on /items before students see it). Facts from ch-13.md and the verified draft content/stages/11.draft.md; the A = 0x20 / R1 = 0x40 memory and the ARM r3 examples are the draft's own. Not yet examinable: exams stop at 08.",
+  "items": [
+    {
+      "slug": "11-effective-address-indexed-p",
+      "objective": "11.1",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "effective-address-indexed",
+      "source": "ch-13.md §13.1 — Displacement Addressing, indexing"
+    },
+    {
+      "slug": "11-effective-address-relative-p",
+      "objective": "11.1",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "effective-address-relative",
+      "source": "ch-13.md §13.1 — Displacement Addressing, relative addressing"
+    },
+    {
+      "slug": "11-why-addressing-modes",
+      "objective": "11.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "Why do instruction sets offer several addressing modes rather than always putting the operand's full address in the instruction?",
+      "correct": "Address fields are small, yet programs must reach a large range of memory, so the field holds something from which the address is worked out",
+      "distractors": [
+        "Memory chips can only be read through indirect addresses",
+        "Each mode is needed for a different data type",
+        "Full addresses would make the program counter overflow"
+      ],
+      "rationale": "A 32-bit instruction cannot hold a 32-bit address and still have room for an opcode. Each mode trades range and flexibility against extra memory references or extra calculation.",
+      "source": "ch-13.md §13.1 — 'The address field or fields in a typical instruction format are relatively small.'"
+    },
+    {
+      "slug": "11-immediate-tradeoff",
+      "objective": "11.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What are immediate addressing's advantage and disadvantage?",
+      "correct": "No memory reference beyond the instruction fetch is needed, but the value is limited to the size of the address field",
+      "distractors": [
+        "It reaches the whole of memory, but needs two memory references",
+        "It needs no address field at all, but works only on the stack",
+        "It is the fastest mode, but the operand must be in a register"
+      ],
+      "rationale": "The operand is the field itself, so nothing more has to be fetched. But the field is small compared with the word length, so only small constants fit. Two memory references describes indirect addressing.",
+      "source": "ch-13.md §13.1 — 'The advantage of immediate addressing is that no memory reference other than the instruction fetch is required'"
+    },
+    {
+      "slug": "11-indirect-cost",
+      "objective": "11.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Indirect addressing, EA = (A), reaches a full word's worth of addresses from a short field. What does it cost?",
+      "correct": "Two memory references to fetch the operand: one for its address and one for its value",
+      "distractors": [
+        "An extra register for every instruction",
+        "A longer address field than direct addressing",
+        "Nothing: it is as fast as direct addressing"
+      ],
+      "rationale": "The field points at a word that holds the operand's address, so the processor must read memory once for the address and again for the operand. Register indirect saves one of those reads by keeping the address in a register.",
+      "source": "ch-13.md §13.1 — 'instruction execution requires two memory references to fetch the operand'"
+    },
+    {
+      "slug": "11-six-modes-indirect",
+      "objective": "11.1",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "stem": "An instruction's address field holds A = 0x20. Memory holds 0x50 at address 0x20 and 0x90 at address 0x50. With indirect addressing, what is the operand?",
+      "correct": "0x90",
+      "distractors": [
+        "0x50",
+        "0x20",
+        "0x70"
+      ],
+      "rationale": "Indirect: EA = (A) = (0x20) = 0x50, and the operand is the word there, 0x90. 0x50 is what direct addressing delivers (EA = A = 0x20), and 0x20 is the immediate value.",
+      "source": "ch-13.md §13.1 — Indirect Addressing (the memory contents are the stage's own example)"
+    },
+    {
+      "slug": "11-register-indirect",
+      "objective": "11.1",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "stem": "Register R1 holds 0x40 and memory holds 0x70 at address 0x40. With register indirect addressing through R1, what is the operand?",
+      "correct": "0x70, reached with one memory reference",
+      "distractors": [
+        "0x40, reached with no memory reference",
+        "0x70, reached with two memory references",
+        "0x40, reached with one memory reference"
+      ],
+      "rationale": "Register indirect: EA = (R1) = 0x40, so one memory read fetches 0x70. 0x40 with no memory reference is register addressing; two references is the cost of plain indirect, where the address itself has to be read from memory.",
+      "source": "ch-13.md §13.1 — Register Indirect Addressing (the values are the stage's own example)"
+    },
+    {
+      "slug": "11-relative-locality",
+      "objective": "11.1",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Why does PC-relative addressing save address bits?",
+      "correct": "Most references are near the instruction being executed, so a short signed offset from the program counter usually reaches them",
+      "distractors": [
+        "The program counter holds the full operand, so no offset is needed",
+        "It addresses words rather than bytes, which needs fewer bits",
+        "It always branches to the start of the current page"
+      ],
+      "rationale": "Relative addressing exploits locality, the same principle behind caches and virtual memory: what is referenced next is usually close to what is referenced now. A few bits of offset cover the near targets.",
+      "source": "ch-13.md §13.1 — 'Relative addressing exploits the concept of locality that was discussed in Chapters 4 and 8.'"
+    },
+    {
+      "slug": "11-postindexing",
+      "objective": "11.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.4,
+      "stem": "Both indirection and indexing are used in one instruction, with the indexing done after the indirection. What is the effective address?",
+      "correct": "EA = (A) + (R)",
+      "distractors": [
+        "EA = (A + (R))",
+        "EA = A + (R)",
+        "EA = ((A) + R)"
+      ],
+      "rationale": "Postindexing fetches the word at A first, then adds the index register. Preindexing, EA = (A + (R)), adds first and then fetches, which is how a multiway branch table is read. A + (R) is plain indexing with no indirection.",
+      "source": "ch-13.md §13.1 — 'If indexing is performed after the indirection, it is termed postindexing: EA = (A) + (R)'"
+    },
+    {
+      "slug": "11-stack-implied",
+      "objective": "11.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "In stack addressing, how does an instruction find its operand?",
+      "correct": "It implicitly operates on the top of the stack; the instruction carries no memory reference",
+      "distractors": [
+        "Its address field holds the operand's depth in the stack",
+        "It names a register that holds the operand",
+        "It searches the stack for the first nonzero entry"
+      ],
+      "rationale": "Stack mode is a form of implied addressing. The stack pointer lives in a register, so a stack reference is really register indirect, and it is the zero-address machine of Stage 10.",
+      "source": "ch-13.md §13.1 — 'The stack mode of addressing is a form of implied addressing.'"
+    },
+    {
+      "slug": "11-x86-scaled-index",
+      "objective": "11.2",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "stem": "An array of 32-bit integers starts at displacement 0x1000, and ESI holds 5. With x86 scaled index with displacement, what is the effective address of element 5?",
+      "correct": "0x1014",
+      "distractors": [
+        "0x1005",
+        "0x1050",
+        "0x1028"
+      ],
+      "rationale": "EA = displacement + (index) × scale = 0x1000 + 5 × 4 = 0x1014, because each element is 4 bytes. Forgetting the scale gives 0x1005; scaling by 8, as if the elements were quadwords, gives 0x1028; and 0x1050 multiplies by 16, which is not even an x86 scale.",
+      "source": "ch-13.md §13.2 — 'the contents of the index register are multiplied by a scaling factor of 1, 2, 4, or 8, and then added to a displacement' (the values are the stage's own)"
+    },
+    {
+      "slug": "11-x86-segment-offset",
+      "objective": "11.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "On the x86, what is the effective address that an addressing mode computes?",
+      "correct": "An offset into a segment; the segment's starting address is added to it to form the linear address",
+      "distractors": [
+        "The physical address in main memory",
+        "The number of the segment register to use",
+        "The address of the next instruction"
+      ],
+      "rationale": "A segment register selects the segment, its descriptor supplies the starting address, and start + offset is the linear address. If paging is on, the linear address is then translated to a physical one, invisibly to the instruction set.",
+      "source": "ch-13.md §13.2 — x86 Addressing Modes"
+    },
+    {
+      "slug": "11-x86-scale-values",
+      "objective": "11.2",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "By which factors can the x86 scale its index register when computing an address?",
+      "correct": "1, 2, 4 or 8",
+      "distractors": [
+        "Any power of two up to 64",
+        "2, 4, 8 or 16",
+        "1 or 2 only"
+      ],
+      "rationale": "The scale matches common element sizes: bytes, 16-bit words, 32-bit doublewords and 64-bit quadwords. That is what makes the mode convenient for indexing arrays.",
+      "source": "ch-13.md §13.2 — 'multiplied by a scaling factor of 1, 2, 4, or 8'"
+    },
+    {
+      "slug": "11-arm-preindex",
+      "objective": "11.2",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.4,
+      "stem": "r3 holds 0x1000. ARM executes LDR r2, [r3, #8]! (preindex). Which address is read, and what is in r3 afterwards?",
+      "correct": "0x1008 is read, and r3 becomes 0x1008",
+      "distractors": [
+        "0x1008 is read, and r3 stays 0x1000",
+        "0x1000 is read, and r3 becomes 0x1008",
+        "0x1000 is read, and r3 stays 0x1000"
+      ],
+      "rationale": "Preindex forms the address as base + offset, uses it, and writes it back to the base: add, use, keep. Offset addressing (no !) leaves r3 alone; postindex, [r3], #8, uses 0x1000 and then adds.",
+      "source": "ch-13.md §13.2 — preindex: 'The memory address is also written back to the base register.'"
+    },
+    {
+      "slug": "11-arm-branch-addressing",
+      "objective": "11.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "How does an ARM branch instruction specify its target?",
+      "correct": "Immediate addressing: a 24-bit value, shifted left 2 bits so the address is on a word boundary",
+      "distractors": [
+        "A register holding the full 32-bit target",
+        "Indirect addressing through a branch table in memory",
+        "A 32-bit absolute address in the following word"
+      ],
+      "rationale": "Branches have only one form of addressing on ARM. The shift by 2 works because instructions are 4 bytes long and word aligned, and it turns the 24-bit field into a 26-bit byte offset.",
+      "source": "ch-13.md §13.2 — 'The only form of addressing for branch instructions is immediate addressing.'"
+    },
+    {
+      "slug": "11-opcode-bits-p",
+      "objective": "11.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "opcode-bits",
+      "source": "ch-13.md §13.3 — Allocation of Bits"
+    },
+    {
+      "slug": "11-instruction-address-bits-p",
+      "objective": "11.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "instruction-address-bits",
+      "source": "ch-13.md §13.3 — Allocation of Bits"
+    },
+    {
+      "slug": "11-opcodes-versus-addressing",
+      "objective": "11.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "For an instruction format of a given length, what is the trade-off between the number of opcodes and the addressing capability?",
+      "correct": "More opcodes need more opcode bits, leaving fewer bits for addressing",
+      "distractors": [
+        "More opcodes free up addressing bits, because each opcode implies its operands",
+        "There is none: opcode and address fields are independent",
+        "More opcodes make the instruction longer, but addressing is unaffected"
+      ],
+      "rationale": "Once the length is fixed, every bit given to one field is taken from another. Ask for 64 registers instead of 32 and each register field grows by a bit, shrinking any displacement in the same instruction.",
+      "source": "ch-13.md §13.3 — 'More opcodes obviously mean more bits in the opcode field. For an instruction format of a given length, this reduces the number of bits available for addressing.'"
+    },
+    {
+      "slug": "11-instruction-length-memory",
+      "objective": "11.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "How should an instruction's length relate to the memory transfer length?",
+      "correct": "They should be equal, or one should be a multiple of the other, so that a fetch brings in whole instructions",
+      "distractors": [
+        "The instruction should always be longer, to hold a full address",
+        "The instruction should be exactly half the transfer length",
+        "They are unrelated, because instructions come from the cache"
+      ],
+      "rationale": "If the bus delivers 32 bits at a time and instructions are 24 bits, fetches straddle instructions. The book adds that the length should be a multiple of the character length, which is why IBM moved from 36 to 32 bits for the System/360.",
+      "source": "ch-13.md §13.3 — Instruction Length"
+    },
+    {
+      "slug": "11-orthogonality",
+      "objective": "11.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "The PDP-11 attaches an addressing mode to each operand rather than to the opcode. What property does this give, and what is it called?",
+      "correct": "Any addressing mode can be used with any opcode: orthogonality",
+      "distractors": [
+        "Every instruction has the same length: regularity",
+        "Every opcode can name any register: generality",
+        "Operands can be added in any order: commutativity"
+      ],
+      "rationale": "Because the mode travels with the operand, the opcode does not restrict it, and the two choices are independent. That independence is what the book calls orthogonality.",
+      "source": "ch-13.md §13.3 — 'this independence is referred to as orthogonality'"
+    },
+    {
+      "slug": "11-variable-length-price",
+      "objective": "11.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What is the principal price of variable-length instructions?",
+      "correct": "A more complex processor",
+      "distractors": [
+        "Larger programs",
+        "Fewer available opcodes",
+        "Slower memory"
+      ],
+      "rationale": "Variable lengths buy a large repertoire and compact code, so programs get smaller, not larger. The cost is in the processor, which does not know how long the next instruction is and typically fetches as many bytes as the longest one could need.",
+      "source": "ch-13.md §13.3 — 'The principal price to pay for variable-length instructions is an increase in the complexity of the processor.'"
+    },
+    {
+      "slug": "11-x86-fields-order",
+      "objective": "11.4",
+      "type": "G",
+      "bloom": "remember",
+      "difficulty": 0.5,
+      "stem": "Put the parts of an x86 instruction in the order they appear.",
+      "order": [
+        "Instruction prefixes",
+        "Opcode",
+        "ModR/M byte",
+        "SIB byte",
+        "Displacement",
+        "Immediate"
+      ],
+      "rationale": "Zero to four prefixes come first, then the 1- or 2-byte opcode, then the address specifier (ModR/M, then SIB), then the displacement and the immediate. Only the opcode is always present; every other part is optional.",
+      "source": "ch-13.md §13.4 — 'Instructions are made up of from zero to four optional instruction prefixes, a 1- or 2-byte opcode, an optional address specifier (which consists of the ModR/M byte and the Scale Index Base byte) an optional displacement, and an optional immediate field.'"
+    },
+    {
+      "slug": "11-x86-one-memory-operand",
+      "objective": "11.4",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "Why can an x86 instruction reference only one memory operand?",
+      "correct": "Only one operand can carry address-mode information, because the mode is part of the opcode sequence rather than of each operand",
+      "distractors": [
+        "The data bus can carry only one operand per clock cycle",
+        "The x86 has only one memory address register",
+        "Memory-to-memory moves are forbidden by the operating system"
+      ],
+      "rationale": "The ModR/M byte describes one operand's addressing. The VAX, carrying a mode with every operand, can do memory-to-memory in one instruction; the x86 cannot, but its instructions are more compact.",
+      "source": "ch-13.md §13.4 — 'Because only one operand can have address-mode information, only one memory operand can be referenced in an instruction.'"
+    },
+    {
+      "slug": "11-arm-regular-format",
+      "objective": "11.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What is characteristic of the ARM instruction format?",
+      "correct": "Every instruction is 32 bits long with a regular layout, the first four bits being the condition code",
+      "distractors": [
+        "Instructions vary in length, with up to four optional prefixes",
+        "Every instruction is 16 bits long with no condition field",
+        "Instructions carry a mode field with every operand, like the VAX"
+      ],
+      "rationale": "The regular structure eases the decode units' job. Variable length with optional prefixes is the x86; 16 bits with no condition field is Thumb, a separate re-encoded subset.",
+      "source": "ch-13.md §13.4 — 'All instructions in the ARM architecture are 32 bits long and follow a regular format'"
+    },
+    {
+      "slug": "11-arm-rotated-immediate",
+      "objective": "11.4",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.35,
+      "stem": "ARM encodes an immediate as an 8-bit value and a 4-bit rotate field. The 8-bit value is 0xFF and the rotate field is 4. What constant results?",
+      "correct": "0xFF000000",
+      "distractors": [
+        "0x00000FF0",
+        "0x0FF00000",
+        "0x000000FF"
+      ],
+      "rationale": "The 8-bit value is expanded to 32 bits and rotated right by twice the rotate field: 4 × 2 = 8 bits, which moves 0xFF to the top byte. Rotating by 4 instead of 8 gives 0xF000000F, not any of these; shifting left by 4 gives 0x00000FF0.",
+      "source": "ch-13.md §13.4 — 'rotated right by a number of bits equal to twice the 4-bit rotate value'"
+    },
+    {
+      "slug": "11-thumb",
+      "objective": "11.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What is the ARM Thumb instruction set?",
+      "correct": "A re-encoded subset of the ARM instruction set, in 16-bit instructions",
+      "distractors": [
+        "A separate processor that runs beside the ARM core",
+        "An extension adding 64-bit instructions",
+        "The set of ARM instructions that can execute conditionally"
+      ],
+      "rationale": "Thumb halves instruction size by dropping the condition field, shrinking the opcode and type fields, and limiting operands to r0-r7. Thumb-2 later mixed 32-bit instructions in freely, and the book reports it ran at 98% of ARM's performance.",
+      "source": "ch-13.md §13.4 — 'The Thumb instruction set is a re-encoded subset of the ARM instruction set.'"
+    },
+    {
+      "slug": "11-machine-versus-assembly",
+      "objective": "11.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "What is the difference between machine language and assembly language?",
+      "correct": "Machine language is the binary the processor executes; assembly language is a symbolic notation for it, with mnemonics and symbolic addresses, that an assembler translates",
+      "distractors": [
+        "Machine language is for x86 and assembly language is for ARM",
+        "Assembly language is a high-level language compiled into machine language",
+        "They are the same thing; assembly is the older name"
+      ],
+      "rationale": "Each assembly statement corresponds to a machine instruction. What assembly adds is names: mnemonics for opcodes and symbols for addresses, which the assembler must also assign. A high-level language is a further step beyond that.",
+      "source": "ch-13.md §13.5 — 'Programs written in assembly language (assembly programs) are translated into machine language by an assembler.'"
+    },
+    {
+      "slug": "11-assembler-assigns-addresses",
+      "objective": "11.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Besides translating mnemonics into opcodes, what must an assembler do?",
+      "correct": "Assign memory addresses to symbolic addresses",
+      "distractors": [
+        "Allocate registers to high-level variables",
+        "Check the program's data types",
+        "Link the program with the operating system at run time"
+      ],
+      "rationale": "Symbolic addresses are the step that makes assembly language usable: inserting a line no longer moves every hand-written address after it. Register allocation and type checking are a compiler's work.",
+      "source": "ch-13.md §13.5 — 'This program must not only do the symbolic translation discussed earlier but also assign some form of memory addresses to symbolic addresses.'"
+    },
+    {
+      "slug": "11-language-rungs-order",
+      "objective": "11.5",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "The book climbs from raw bits to assembly language in four steps. Put them in order, from least to most readable.",
+      "order": [
+        "Every word written in binary",
+        "The same words written in hexadecimal",
+        "Mnemonics for opcodes, with absolute addresses",
+        "Mnemonics and symbolic names for addresses: assembly language"
+      ],
+      "rationale": "Hexadecimal is only shorter binary. Mnemonics make the operations readable, but absolute addresses still shift when a line is inserted. Symbolic addresses remove that, and with that last refinement the notation is an assembly language.",
+      "source": "ch-13.md §13.5 — 'With this last refinement, we have an assembly language.'"
+    }
+  ]
+}

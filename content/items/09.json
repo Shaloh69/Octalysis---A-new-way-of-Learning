@@ -1,0 +1,484 @@
+{
+  "stageId": "09",
+  "chapter": "Stallings ch 10 — Computer Arithmetic (book chapter 10; the syllabus's chapter 9)",
+  "note": "Drafted 6 Oct 2026 under the instructor's ruling of 5 Oct (questions for 09-18 may be drafted from the textbook; each is approved on /items before any student sees it). Facts are taken from ch-10.md and the verified draft content/stages/09.draft.md. In the bank, not yet examinable: every exam still stops at stage 08.",
+  "items": [
+    {
+      "slug": "09-alu-definition",
+      "objective": "09.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.75,
+      "stem": "What is the arithmetic and logic unit (ALU)?",
+      "correct": "The part of the computer that actually performs arithmetic and logical operations on data",
+      "distractors": [
+        "The part of the processor that decides which operation is performed next",
+        "The set of registers that holds operands between instructions",
+        "The circuit that moves data between main memory and the processor"
+      ],
+      "rationale": "The ALU does the arithmetic and logic. Deciding which operation happens is the control unit's job; registers hold the operands and results the ALU works on; moving data to and from memory is the bus and memory interface. Keeping those roles apart is the point of the chapter's first section.",
+      "source": "ch-10.md §10.1 — 'The ALU is that part of the computer that actually performs arithmetic and logical operations on data.'"
+    },
+    {
+      "slug": "09-alu-flags",
+      "objective": "09.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "Besides the result itself, what can the ALU set when it performs an operation?",
+      "correct": "Flags, such as an overflow flag set to 1 when the result exceeds the length of its register",
+      "distractors": [
+        "The address of the next instruction to be fetched",
+        "A copy of both operands in the instruction register",
+        "An interrupt request for every result it produces"
+      ],
+      "rationale": "Operands come from registers, the result goes to a register, and the ALU may also set flags that later instructions can test. The book's example is the overflow flag. The next instruction's address belongs to the program counter, not the ALU.",
+      "source": "ch-10.md §10.1 — 'The ALU may also set flags as the result of an operation.'"
+    },
+    {
+      "slug": "09-twos-complement-why",
+      "objective": "09.1",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Why is two's complement, rather than sign-magnitude, the common choice for the integer part of an ALU?",
+      "correct": "With it, signed numbers are added exactly as if they were unsigned, so one adder serves both, with no special case for signs",
+      "distractors": [
+        "It can represent more distinct values in the same number of bits",
+        "It has two representations of zero, which makes testing for zero faster",
+        "It keeps the sign in a separate register, which frees a bit in the word"
+      ],
+      "rationale": "This is the chapter's central idea: the representation is chosen to make the arithmetic algorithm cheap. Both schemes hold 2^n patterns in n bits, so neither holds more values. Two zeros is sign-magnitude's drawback, not an advantage, and neither scheme keeps the sign elsewhere: both use the leftmost bit.",
+      "source": "ch-10.md §10.2-10.3 — sign-magnitude's drawbacks; 'the most common scheme is twos complement representation'"
+    },
+    {
+      "slug": "09-sign-magnitude-drawbacks",
+      "objective": "09.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Which is a drawback of sign-magnitude representation for integers?",
+      "correct": "Addition and subtraction must consider both signs and relative magnitudes, and there are two representations of zero",
+      "distractors": [
+        "It cannot represent negative numbers at all",
+        "Its range has one more negative value than positive",
+        "Its sign bit is the rightmost bit, so it is hard to test"
+      ],
+      "rationale": "Sign-magnitude needs sign logic in every addition, and +0 and -0 are different patterns. A range with one extra negative value is two's complement's property, and both schemes put the sign in the leftmost bit.",
+      "source": "ch-10.md §10.2 — 'There are several drawbacks to sign-magnitude representation.'"
+    },
+    {
+      "slug": "09-twos-complement-max-p",
+      "objective": "09.2",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "solver": "twos-complement-max",
+      "source": "ch-10.md §10.2 — Range of twos complement integers"
+    },
+    {
+      "slug": "09-twos-msb-weight",
+      "objective": "09.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "In an 8-bit two's complement integer, what is the leftmost bit worth?",
+      "correct": "−128",
+      "distractors": [
+        "+128",
+        "−127",
+        "Nothing: it only marks the sign"
+      ],
+      "rationale": "In n bits the leftmost bit carries the weight −2^(n−1), here −128, and every other bit keeps its ordinary positive weight. +128 is the unsigned weight. −127 and 'only marks the sign' are sign-magnitude thinking, where the leftmost bit has no value of its own.",
+      "source": "ch-10.md §10.2 — twos complement representation and the value of the sign bit"
+    },
+    {
+      "slug": "09-twos-range-4bit",
+      "objective": "09.2",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "stem": "What range of values does a 4-bit two's complement integer hold?",
+      "correct": "−8 to +7",
+      "distractors": [
+        "−7 to +7",
+        "−8 to +8",
+        "0 to 15"
+      ],
+      "rationale": "n bits hold −2^(n−1) to 2^(n−1) − 1, so 4 bits hold −8 to +7: one zero, and one more negative value than positive. −7 to +7 is sign-magnitude (it spends a pattern on a second zero), and 0 to 15 is the unsigned range.",
+      "source": "ch-10.md §10.2 — Range of twos complement integers"
+    },
+    {
+      "slug": "09-twos-negate-method",
+      "objective": "09.2",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.7,
+      "stem": "How is a two's complement integer negated?",
+      "correct": "Invert every bit, then add 1",
+      "distractors": [
+        "Invert only the sign bit",
+        "Invert every bit, and stop there",
+        "Subtract 1, then invert only the sign bit"
+      ],
+      "rationale": "Taking the two's complement is a two-step process: the Boolean complement of every bit, then add 1 treating the result as unsigned. Flipping only the sign bit negates in sign-magnitude; inverting every bit without adding 1 is the ones' complement.",
+      "source": "ch-10.md §10.3 — 'This two-step process is referred to as the twos complement operation'"
+    },
+    {
+      "slug": "09-negate-most-negative",
+      "objective": "09.2",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "In 8-bit two's complement, what does negating −128 produce?",
+      "correct": "−128 again: there is no +128 for it to become",
+      "distractors": [
+        "+128",
+        "0",
+        "+127"
+      ],
+      "rationale": "10000000 inverted is 01111111, and adding 1 gives 10000000 again. The range is −128 to +127, so +128 does not exist in 8 bits. This is the price of having a single zero.",
+      "source": "ch-10.md §10.3 — negation, and the special case of the most negative number"
+    },
+    {
+      "slug": "09-twos-value-read",
+      "objective": "09.2",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "stem": "What value does the 8-bit two's complement pattern 1101 0011 hold?",
+      "correct": "−45",
+      "distractors": [
+        "211",
+        "−83",
+        "−44"
+      ],
+      "rationale": "−128 + 64 + 16 + 2 + 1 = −45. Read as unsigned it is 211. Reading the low seven bits as a magnitude (sign-magnitude) gives −83, and inverting without adding 1 (ones' complement) gives −44.",
+      "source": "ch-10.md §10.2 — twos complement representation; the value-box reading"
+    },
+    {
+      "slug": "09-twos-complement-sum-p",
+      "objective": "09.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "twos-complement-sum",
+      "source": "ch-10.md §10.3 — Addition and Subtraction"
+    },
+    {
+      "slug": "09-sign-extend-p",
+      "objective": "09.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "solver": "sign-extend",
+      "source": "ch-10.md §10.2 — Range Extension"
+    },
+    {
+      "slug": "09-subtraction-rule",
+      "objective": "09.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.65,
+      "stem": "How does two's complement hardware compute A − B?",
+      "correct": "It takes the two's complement of B and adds it to A, using the same adder",
+      "distractors": [
+        "It uses a separate subtractor circuit beside the adder",
+        "It subtracts the magnitudes and then corrects the sign",
+        "It adds B to A and then negates the result"
+      ],
+      "rationale": "The subtraction rule: negate the subtrahend and add it to the minuend. So the hardware is one adder with a complementer in front of its second input. Working on magnitudes and fixing the sign afterwards is what sign-magnitude would need.",
+      "source": "ch-10.md §10.3 — 'subtraction rule: To subtract one number (subtrahend) from another (minuend), take the twos complement (negation) of the subtrahend and add it to the minuend.'"
+    },
+    {
+      "slug": "09-overflow-rule",
+      "objective": "09.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "When does overflow occur when two two's complement numbers are added?",
+      "correct": "When both are positive or both are negative, and the result has the opposite sign",
+      "distractors": [
+        "Whenever there is a carry out of the leftmost bit",
+        "Whenever the two numbers have opposite signs",
+        "Whenever the result is negative"
+      ],
+      "rationale": "Overflow is about signs, not carries. A carry out of the top bit is normal in two's complement and is discarded (7 + (−5) produces one and is correct). Adding a positive and a negative can never overflow.",
+      "source": "ch-10.md §10.3 — 'overflow rule: If two numbers are added, and they are both positive or both negative, then overflow occurs if and only if the result has the opposite sign.'"
+    },
+    {
+      "slug": "09-overflow-which",
+      "objective": "09.3",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "stem": "In 4-bit two's complement (range −8 to +7), which of these additions overflows?",
+      "correct": "0101 + 0100  (+5 + +4)",
+      "distractors": [
+        "0111 + 1011  (+7 + −5)",
+        "1100 + 0011  (−4 + +3)",
+        "1110 + 1111  (−2 + −1)"
+      ],
+      "rationale": "+5 + +4 = +9, which does not fit: the 4-bit result 1001 reads as −7, two positives giving a negative. +7 + −5 and −2 + −1 both carry out of the top bit and are still correct (2 and −3), and a positive plus a negative can never overflow.",
+      "source": "ch-10.md §10.3 — the overflow rule"
+    },
+    {
+      "slug": "09-booth-purpose",
+      "objective": "09.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "What does Booth's algorithm do that simple shift-and-add multiplication does not?",
+      "correct": "It multiplies two's complement numbers correctly, doing one subtraction where a run of 1s in the multiplier begins and one addition where it ends",
+      "distractors": [
+        "It multiplies without any shifting at all",
+        "It is faster, but works only for unsigned numbers",
+        "It first converts both operands to sign-magnitude"
+      ],
+      "rationale": "Shift-and-add is right for unsigned numbers and wrong for two's complement, because the multiplier's top bit is worth a negative amount. Booth's algorithm treats a run of 1s as a difference of two powers of two, which handles negative multipliers with no conversion and skips whole runs.",
+      "source": "ch-10.md §10.3 — Booth's algorithm: 'performing a subtraction when the first 1 of the block is encountered (1–0) and an addition when the end of the block is encountered (0–1)'"
+    },
+    {
+      "slug": "09-booth-arithmetic-shift",
+      "objective": "09.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Why does Booth's algorithm shift its registers with an arithmetic right shift?",
+      "correct": "To preserve the sign of the partial result",
+      "distractors": [
+        "To shift a 0 into the vacated leftmost bit",
+        "To rotate the bit shifted out back into the top",
+        "To double the multiplicand on every step"
+      ],
+      "rationale": "An arithmetic shift copies the sign bit into the vacated position, so a negative partial product stays negative. Shifting in a 0 is a logical shift, which would turn it positive. A rotate keeps every bit, and doubling is a left shift.",
+      "source": "ch-10.md §10.3 — 'It is known as an arithmetic shift, because it preserves the sign bit.'"
+    },
+    {
+      "slug": "09-float-fields",
+      "objective": "09.4",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.65,
+      "stem": "A floating-point number is ± significand × base^exponent. Which three fields does the stored word hold?",
+      "correct": "A sign bit, a biased exponent, and the significand",
+      "distractors": [
+        "A sign bit, the base, and the exponent",
+        "The base, the exponent, and the significand",
+        "A sign bit, the exponent, the base and the significand"
+      ],
+      "rationale": "The base is the same for every number (2) and is never stored. The word holds what changes from number to number: the sign, the exponent (in biased form), and the significand.",
+      "source": "ch-10.md §10.4 — Floating-Point Representation, Principles"
+    },
+    {
+      "slug": "09-biased-exponent",
+      "objective": "09.4",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "stem": "A 32-bit format stores its exponent in 8 bits with a bias of 127. The stored exponent field holds 129. What is the true exponent?",
+      "correct": "2",
+      "distractors": [
+        "129",
+        "256",
+        "−2"
+      ],
+      "rationale": "The bias is subtracted from the field to get the true exponent: 129 − 127 = 2. Reading the field as the exponent itself gives 129; adding the bias instead of subtracting gives 256; −2 is the sign error.",
+      "source": "ch-10.md §10.4 — 'A fixed value, called the bias, is subtracted from the field to get the true exponent value.'"
+    },
+    {
+      "slug": "09-range-versus-precision",
+      "objective": "09.4",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "A floating-point format stays 32 bits long, but one bit moves from the significand to the exponent. What happens?",
+      "correct": "The range of expressible numbers grows and their precision falls",
+      "distractors": [
+        "Both the range and the precision grow",
+        "More distinct values become representable",
+        "The precision grows and the range shrinks"
+      ],
+      "rationale": "A wider exponent reaches further, but the same number of values is spread more thinly, so they are less dense: less precision. The only way to increase both range and precision is to use more bits.",
+      "source": "ch-10.md §10.4 — 'If we increase the number of bits in the exponent, we expand the range of expressible numbers.'"
+    },
+    {
+      "slug": "09-not-more-values",
+      "objective": "09.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "How many distinct values can a 32-bit floating-point format represent, compared with a 32-bit integer?",
+      "correct": "No more: it spreads the same number of values over a much wider range",
+      "distractors": [
+        "Many more, because the exponent multiplies the significand",
+        "Exactly twice as many, one set for each sign",
+        "Infinitely many, within its range"
+      ],
+      "rationale": "32 bits are still 2^32 patterns. Floating point trades density for range: values are crowded near zero and sparse far from it, so most real numbers are only approximated.",
+      "source": "ch-10.md §10.4 — 'It is important to note that we are not representing more individual values with floating-point notation.'"
+    },
+    {
+      "slug": "09-ieee754-stored-exponent-p",
+      "objective": "09.5",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "ieee754-stored-exponent",
+      "source": "ch-10.md §10.4 — IEEE Standard for Binary Floating-Point Representation"
+    },
+    {
+      "slug": "09-ieee-hidden-bit",
+      "objective": "09.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "IEEE 754 binary32 stores 23 significand bits, yet gives 24 bits of precision. Why?",
+      "correct": "A normal number's significand always begins with 1, so that bit is implied rather than stored",
+      "distractors": [
+        "The sign bit doubles as an extra significand bit",
+        "The exponent's lowest bit is borrowed by the significand",
+        "Rounding adds one more bit at the end of every result"
+      ],
+      "rationale": "For base 2, a normal number is one whose most significant significand bit is 1. Storing a bit that is always 1 would waste it, so the 23-bit field holds the bits after the binary point and the leading 1 is implied.",
+      "source": "ch-10.md §10.4 — 'a normal number is therefore one in which the most significant bit of the significand is one'"
+    },
+    {
+      "slug": "09-ieee-format-widths",
+      "objective": "09.5",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "IEEE 754's three basic binary formats are 32, 64 and 128 bits long. How wide are their exponent fields?",
+      "correct": "8, 11 and 15 bits",
+      "distractors": [
+        "8, 16 and 32 bits",
+        "8, 11 and 23 bits",
+        "7, 10 and 14 bits"
+      ],
+      "rationale": "binary32, binary64 and binary128 have 8, 11 and 15 exponent bits (biases 127, 1023 and 16383). The exponent does not double with the word: most of the extra bits go to the significand. 23 is binary32's stored significand width, not an exponent.",
+      "source": "ch-10.md §10.4 — 'The three basic binary formats have bit lengths of 32, 64, and 128 bits, with exponents of 8, 11, and 15 bits, respectively'"
+    },
+    {
+      "slug": "09-ieee-nan",
+      "objective": "09.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "In IEEE 754, what does an exponent field of all 1s with a nonzero fraction encode?",
+      "correct": "NaN: not a number",
+      "distractors": [
+        "Infinity",
+        "A subnormal number",
+        "The largest normal number"
+      ],
+      "rationale": "The extreme exponent values are reserved. All 1s with a zero fraction is ±infinity; all 1s with a nonzero fraction is NaN, used to signal exceptions such as 0 × ∞. An all-0s exponent with a nonzero fraction is a subnormal.",
+      "source": "ch-10.md §10.4 — 'An exponent of all ones together with a nonzero fraction is given the value NaN'"
+    },
+    {
+      "slug": "09-ieee-sign-of-zero",
+      "objective": "09.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "IEEE 754 encodes zero as an exponent of all 0s and a fraction of all 0s. What decides whether it is +0 or −0?",
+      "correct": "The sign bit",
+      "distractors": [
+        "The lowest bit of the exponent",
+        "Nothing: IEEE 754 has only one zero",
+        "Whether the implied leading bit is 1"
+      ],
+      "rationale": "IEEE 754 has both +0 and −0, told apart by the sign bit. The sign is a separate bit in front of the exponent and significand, so unlike a two's complement integer the format has room for a second zero.",
+      "source": "ch-10.md §10.4 — 'An exponent of zero together with a fraction of zero represents positive or negative zero, depending on the sign bit.'"
+    },
+    {
+      "slug": "09-float-precision-digits-p",
+      "objective": "09.6",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "float-precision-digits",
+      "source": "ch-10.md §10.4 — precision of the binary formats"
+    },
+    {
+      "slug": "09-guard-bits",
+      "objective": "09.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What are guard bits used for in floating-point arithmetic?",
+      "correct": "They pad the right end of the significand, so bits shifted out during alignment are kept until the result is rounded",
+      "distractors": [
+        "They protect the sign bit from being overwritten",
+        "They detect exponent overflow before it happens",
+        "They mark a number as subnormal"
+      ],
+      "rationale": "Aligning the smaller operand shifts bits off its right end. Guard bits catch them, so that a subtraction of two nearly equal numbers keeps its last bit of significance instead of losing it.",
+      "source": "ch-10.md §10.5 — 'The register contains additional bits, called guard bits, which are used to pad out the right end of the significand with 0s.'"
+    },
+    {
+      "slug": "09-round-to-even",
+      "objective": "09.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "Under IEEE 754's default rounding, a result lies exactly halfway between two representable values. What happens?",
+      "correct": "It is rounded to the value whose last bit is 0, so half of such ties go up and half go down",
+      "distractors": [
+        "It is always rounded up",
+        "It is always truncated toward zero",
+        "It is always rounded toward +∞"
+      ],
+      "rationale": "Round to nearest is the default, and its tie rule forces the result to be even. Always rounding ties one way, or truncating, builds a steady bias over millions of operations; rounding to even does not.",
+      "source": "ch-10.md §10.5 — 'The approach taken by the IEEE standard is to force the result to be even'"
+    },
+    {
+      "slug": "09-subnormal-purpose",
+      "objective": "09.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What problem do IEEE 754's subnormal numbers address?",
+      "correct": "Exponent underflow: they fill the gap between zero and the smallest normal number",
+      "distractors": [
+        "Exponent overflow, by standing in for infinity",
+        "Invalid results such as 0 × ∞",
+        "The loss of the sign bit during subtraction"
+      ],
+      "rationale": "A subnormal has an all-0s exponent and gives up the implied leading 1, so it can be smaller than any normal number. That is gradual underflow. Overflow is handled by infinity, and invalid operations by NaN.",
+      "source": "ch-10.md §10.5 — 'Subnormal numbers are included in IEEE 754 to handle cases of exponent underflow.'"
+    },
+    {
+      "slug": "09-alignment-lost",
+      "objective": "09.6",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Two floating-point numbers whose exponents differ greatly are added. What happens to the smaller one?",
+      "correct": "It is shifted right so far during alignment that it is lost",
+      "distractors": [
+        "The larger one is shifted left until the exponents match, so nothing is lost",
+        "An overflow is signalled",
+        "The result is NaN"
+      ],
+      "rationale": "Before adding, the exponents must match, and it is the smaller number that is shifted right. Its significant bits fall off the end; shift far enough and nothing of it is left, so the sum equals the larger number.",
+      "source": "ch-10.md §10.5 — 'Thus, if two numbers have exponents that differ significantly, the lesser number is lost.'"
+    },
+    {
+      "slug": "09-float-add-phases-order",
+      "objective": "09.6",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "Put the four phases of floating-point addition and subtraction in order.",
+      "order": [
+        "Check for zeros",
+        "Align the significands",
+        "Add or subtract the significands",
+        "Normalize the result"
+      ],
+      "rationale": "A zero operand short-circuits the whole operation, so it is checked first. Then the exponents are made equal by shifting the smaller significand; only then can the significands be added; and the sum may need shifting back into normal form. Addition is harder than multiplication precisely because of the alignment step.",
+      "source": "ch-10.md §10.5 — 'There are four basic phases of the algorithm for addition and subtraction'"
+    }
+  ]
+}

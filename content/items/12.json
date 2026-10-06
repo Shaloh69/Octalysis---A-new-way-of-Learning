@@ -1,0 +1,532 @@
+{
+  "stageId": "12",
+  "chapter": "Stallings ch 14 — Processor Structure and Function (book chapter 14; the syllabus's chapter 12)",
+  "note": "Drafted 6 Oct 2026 under the instructor's ruling of 5 Oct (questions for 09-18 drafted from the textbook, each approved on /items before students see it). Facts from ch-14.md and the verified draft content/stages/12.draft.md; the I1-I4 hazard sequence, the PC = 0x0300 trace and the loop-branch trace are the draft's own. No figure is attached: the pipeline figures would draw the answers. Not yet examinable: exams stop at 08.",
+  "items": [
+    {
+      "slug": "12-register-two-roles",
+      "objective": "12.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "Processor registers fall into two roles. Which pair is it?",
+      "correct": "User-visible registers, which programs use to minimise memory references, and control and status registers, which the control unit and privileged programs use",
+      "distractors": [
+        "Data registers, which hold numbers, and address registers, which hold pointers",
+        "Fast registers inside the ALU, and slow registers inside the cache",
+        "Registers for integer work, and registers for floating-point work"
+      ],
+      "rationale": "The split is by who uses them: the machine-language programmer, or the control unit and the operating system. Data and address registers are both kinds of user-visible register, and the cache is not a register file.",
+      "source": "ch-14.md §14.2 — Register Organization"
+    },
+    {
+      "slug": "12-user-visible-definition",
+      "objective": "12.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "What makes a register user-visible?",
+      "correct": "It may be referenced by means of the machine language that the processor executes",
+      "distractors": [
+        "Its contents are displayed to the user while the program runs",
+        "It can be read and written only in supervisor mode",
+        "It is mapped into the user's memory address space"
+      ],
+      "rationale": "Visibility is about the instruction set: an instruction can name the register. Registers reachable only in supervisor mode are control registers, not user-visible ones.",
+      "source": "ch-14.md §14.2 — 'A user-visible register is one that may be referenced by means of the machine language that the processor executes.'"
+    },
+    {
+      "slug": "12-condition-codes-readonly",
+      "objective": "12.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "How do programs usually interact with condition codes (flags)?",
+      "correct": "The processor hardware sets them as a result of operations; instructions can read them, but the programmer cannot alter them directly",
+      "distractors": [
+        "The programmer sets them before each operation to choose what it does",
+        "They are written by the operating system on every context switch only",
+        "They can be neither read nor written by user programs"
+      ],
+      "rationale": "Flags record the outcome of the last operation (zero, negative, carry, overflow) so a later conditional branch can test it. Machine instructions read them by implicit reference; setting them is the hardware's job.",
+      "source": "ch-14.md §14.2 — 'Generally, machine instructions allow these bits to be read by implicit reference, but the programmer cannot alter them.'"
+    },
+    {
+      "slug": "12-how-many-registers",
+      "objective": "12.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "How many general-purpose registers does the book say appears optimum, and why not more?",
+      "correct": "Between 8 and 32: fewer cause more memory references, and more do not noticeably reduce them",
+      "distractors": [
+        "Exactly 16, because register fields are always 4 bits",
+        "As many as possible, since registers are always faster than memory",
+        "2 to 4, because more registers slow down context switches too much"
+      ],
+      "rationale": "Below 8, values spill to memory; above 32, the extra registers rarely hold anything useful. Stage 13 meets the RISC exception, with hundreds of registers organised differently.",
+      "source": "ch-14.md §14.2 — 'somewhere between 8 and 32 registers appears optimum [LUND77]'"
+    },
+    {
+      "slug": "12-essential-registers",
+      "objective": "12.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.65,
+      "stem": "Which register holds the instruction most recently fetched?",
+      "correct": "The instruction register (IR)",
+      "distractors": [
+        "The program counter (PC)",
+        "The memory buffer register (MBR)",
+        "The memory address register (MAR)"
+      ],
+      "rationale": "The PC holds the address of the next instruction to fetch, the MAR an address on its way to memory, and the MBR the word most recently read or about to be written. The fetched instruction passes through the MBR into the IR, where it stays while it is decoded and executed.",
+      "source": "ch-14.md §14.2 — 'Four registers are essential to instruction execution'"
+    },
+    {
+      "slug": "12-mar-mbr-buses",
+      "objective": "12.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "In a bus-organised system, how are the MAR and MBR connected?",
+      "correct": "The MAR connects directly to the address bus, and the MBR to the data bus",
+      "distractors": [
+        "The MAR to the data bus, and the MBR to the address bus",
+        "Both to the control bus",
+        "Neither: they connect only to the ALU"
+      ],
+      "rationale": "The MAR holds an address, so it drives the address bus; the MBR holds the word being moved, so it sits on the data bus. That is why every memory access in the instruction cycle goes through these two.",
+      "source": "ch-14.md §14.2 — 'In a bus-organized system, the MAR connects directly to the address bus, and the MBR connects directly to the data bus.'"
+    },
+    {
+      "slug": "12-supervisor-bit",
+      "objective": "12.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What does the supervisor bit in the program status word indicate?",
+      "correct": "Whether the processor is in supervisor or user mode, which decides whether privileged instructions and protected memory may be used",
+      "distractors": [
+        "Whether an interrupt is currently being serviced",
+        "Whether the last result was negative",
+        "Whether the program counter has overflowed"
+      ],
+      "rationale": "One bit separates the operating system from user programs: certain instructions and certain memory areas are available only in supervisor mode. That bit is what makes Stage 08's protection possible.",
+      "source": "ch-14.md §14.2 — 'Indicates whether the processor is executing in supervisor or user mode.'"
+    },
+    {
+      "slug": "12-fetch-data-flow-order",
+      "objective": "12.2",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Put the data flow of an instruction fetch in order.",
+      "order": [
+        "The address in the PC is moved to the MAR and placed on the address bus",
+        "The control unit requests a memory read",
+        "The word read is placed on the data bus and copied into the MBR",
+        "The word is moved from the MBR into the IR"
+      ],
+      "rationale": "The address must reach memory before memory can answer, and the word arrives in the MBR before it is moved to the IR. Meanwhile the PC is incremented, ready for the next fetch.",
+      "source": "ch-14.md §14.3 — 'The PC contains the address of the next instruction to be fetched. This address is moved to the MAR and placed on the address bus.'"
+    },
+    {
+      "slug": "12-indirect-cycle",
+      "objective": "12.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Why does the full instruction cycle include an indirect cycle between fetch and execute?",
+      "correct": "If the instruction uses indirect addressing, its operand's address must first be fetched from memory",
+      "distractors": [
+        "Every instruction must be decoded twice",
+        "Interrupts are checked before execution as well as after",
+        "The cache must be refilled after every fetch"
+      ],
+      "rationale": "Indirect addressing (Stage 11) stores the operand's address in memory, so one extra memory read is needed before the operand itself can be fetched. Instructions without indirect operands skip this cycle.",
+      "source": "ch-14.md §14.3 — 'If so, the required operands are fetched using indirect addressing.'"
+    },
+    {
+      "slug": "12-execute-varies",
+      "objective": "12.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "Which phase of the instruction cycle takes many different forms, and why?",
+      "correct": "The execute cycle, because its form depends on which instruction is in the IR",
+      "distractors": [
+        "The fetch cycle, because instructions are stored in different memories",
+        "The indirect cycle, because addresses come in many sizes",
+        "The interrupt cycle, because each device has its own handler"
+      ],
+      "rationale": "Fetch and indirect are simple and predictable: the same register moves every time. Execute is whatever the opcode demands: an addition, a store, a branch.",
+      "source": "ch-14.md §14.3 — 'The fetch and indirect cycles are simple and predictable. The execute cycle takes many forms'"
+    },
+    {
+      "slug": "12-interrupt-save-pc",
+      "objective": "12.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "In the interrupt cycle, what must be saved first, and why?",
+      "correct": "The current contents of the PC, so the processor can resume the interrupted program afterwards",
+      "distractors": [
+        "The contents of the IR, so the interrupted instruction can be re-executed",
+        "The contents of the MAR, so memory is left unchanged",
+        "Nothing: the handler restarts the program from its beginning"
+      ],
+      "rationale": "The PC is copied through the MBR to a save location, and then loaded with the handler's address. Without the saved PC, there would be no way back to the instruction that was interrupted.",
+      "source": "ch-14.md §14.3 — 'The current contents of the PC must be saved so that the processor can resume normal activity after the interrupt.'"
+    },
+    {
+      "slug": "12-pipeline-cycles-p",
+      "objective": "12.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "solver": "pipeline-cycles",
+      "source": "ch-14.md §14.4 — Pipeline Performance"
+    },
+    {
+      "slug": "12-pipeline-speedup-p",
+      "objective": "12.3",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "pipeline-speedup",
+      "source": "ch-14.md §14.4 — Pipeline Performance"
+    },
+    {
+      "slug": "12-prefetch",
+      "objective": "12.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "In a two-stage pipeline, what does the fetch stage do while an instruction executes?",
+      "correct": "It uses the otherwise idle memory to fetch the next instruction: instruction prefetch",
+      "distractors": [
+        "It waits until execution finishes, then fetches",
+        "It fetches the operands of the instruction being executed",
+        "It decodes the instruction that is executing"
+      ],
+      "rationale": "Execution usually does not need main memory, so the fetch stage reads ahead. This is called instruction prefetch or fetch overlap, and it is the simplest form of pipelining.",
+      "source": "ch-14.md §14.4 — 'This is called instruction prefetch or fetch overlap.'"
+    },
+    {
+      "slug": "12-two-stage-not-double",
+      "objective": "12.3",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Splitting the cycle into two overlapped stages does not quite double the instruction rate. Why not?",
+      "correct": "Execution usually takes longer than fetch, so the fetch stage waits, and a conditional branch leaves the next address unknown until it executes",
+      "distractors": [
+        "The second stage needs its own copy of main memory",
+        "Instructions must be fetched twice in a pipeline",
+        "The pipeline registers halve the clock rate"
+      ],
+      "rationale": "Doubling needs equal stages and a known next instruction. Neither holds: stages are unequal, and a branch may make the prefetched instruction useless.",
+      "source": "ch-14.md §14.4 — the two-stage pipeline and its limits"
+    },
+    {
+      "slug": "12-six-stages-order",
+      "objective": "12.3",
+      "type": "G",
+      "bloom": "remember",
+      "difficulty": 0.5,
+      "stem": "Put the six stages of the book's instruction pipeline in order.",
+      "order": [
+        "Fetch instruction (FI)",
+        "Decode instruction (DI)",
+        "Calculate operands (CO)",
+        "Fetch operands (FO)",
+        "Execute instruction (EI)",
+        "Write operand (WO)"
+      ],
+      "rationale": "An instruction must be fetched before it can be decoded, its operands' effective addresses calculated before they can be fetched, and the operation executed before its result is written. Calculate operands is Stage 11's addressing modes at work.",
+      "source": "ch-14.md §14.4 — Pipelining Strategy, the six-stage decomposition"
+    },
+    {
+      "slug": "12-cycle-time",
+      "objective": "12.3",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "stem": "A four-stage pipeline has stage delays of 10, 8, 12 and 9 ns, and a latch delay of 1 ns. What is its cycle time τ?",
+      "correct": "13 ns",
+      "distractors": [
+        "10.75 ns",
+        "40 ns",
+        "9.75 ns"
+      ],
+      "rationale": "Every stage advances together, so the slowest stage sets the pace: τ = max(10, 8, 12, 9) + 1 = 13 ns. Averaging the stages (10.75 or 9.75) ignores that the others must wait; 40 ns is the unpipelined total.",
+      "source": "ch-14.md §14.4 — Pipeline Performance, cycle time (the delays are the stage's own example)"
+    },
+    {
+      "slug": "12-more-stages-cost",
+      "objective": "12.3",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Speedup approaches k as a k-stage pipeline runs more instructions. Why not simply build a very deep pipeline?",
+      "correct": "More stages add cost and delay between stages, and branches force the pipeline to be flushed",
+      "distractors": [
+        "A deep pipeline can only run one instruction at a time",
+        "Each extra stage halves the clock rate",
+        "Deep pipelines cannot execute branches at all"
+      ],
+      "rationale": "Every boundary adds latch overhead, the control logic that tracks dependencies grows enormously with depth, and a taken branch throws away more partly finished work the deeper the pipe.",
+      "source": "ch-14.md §14.4 — 'pipeline stages are countered by increases in cost, delays between stages, and the fact that branches will be encountered requiring the flushing of the pipeline'"
+    },
+    {
+      "slug": "12-branch-penalty-cpi-p",
+      "objective": "12.4",
+      "type": "P",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "solver": "branch-penalty-cpi",
+      "source": "ch-14.md §14.4 — the branch penalty"
+    },
+    {
+      "slug": "12-hazard-definition",
+      "objective": "12.4",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "What is a pipeline hazard?",
+      "correct": "A condition that forces the pipeline, or part of it, to stall; the stall is also called a bubble",
+      "distractors": [
+        "A hardware fault that corrupts an instruction in the pipeline",
+        "An instruction that cannot be decoded",
+        "A pipeline stage that is never used"
+      ],
+      "rationale": "A hazard is about conditions not permitting continued execution, not about broken hardware. The three kinds are resource, data and control.",
+      "source": "ch-14.md §14.4 — 'A pipeline hazard occurs when the pipeline, or some portion of the pipeline, must stall because conditions do not permit continued execution.'"
+    },
+    {
+      "slug": "12-resource-hazard",
+      "objective": "12.4",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "stem": "Memory has a single port. Instruction 1 reads its operand from memory in the same cycle that instruction 3 is due to be fetched, so the fetch waits. What kind of hazard is this?",
+      "correct": "A resource (structural) hazard",
+      "distractors": [
+        "A data hazard",
+        "A control hazard",
+        "A write-after-read hazard"
+      ],
+      "rationale": "Two instructions need the same resource, the memory port, at the same time, so they are served one after the other. Nothing about either instruction's data or the branch outcome is involved. The cure is more of the resource.",
+      "source": "ch-14.md §14.4 — 'A resource hazard occurs when two (or more) instructions that are already in the pipeline need the same resource.'"
+    },
+    {
+      "slug": "12-raw-classify",
+      "objective": "12.4",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "I1: ADD R1, R2, R3 (R1 ← R2 + R3) is followed by I2: SUB R4, R1, R5 (R4 ← R1 − R5). Which hazard is there between them?",
+      "correct": "Read after write (RAW), a true dependency on R1",
+      "distractors": [
+        "Write after read (WAR), an antidependency on R1",
+        "Write after write (WAW), an output dependency on R4",
+        "A resource hazard on the ALU"
+      ],
+      "rationale": "I2 reads R1, which I1 writes, so I2 must not read until I1's write is done: read after write. Only RAW bites in a simple in-order pipeline; WAR and WAW matter when instructions complete out of order.",
+      "source": "ch-14.md §14.4 — Data Hazards, the three types (the sequence is the stage's own example)"
+    },
+    {
+      "slug": "12-war-classify",
+      "objective": "12.4",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "I1: ADD R1, R2, R3 (reads R2) is followed later by I3: MOV R2, R6 (writes R2). Which data hazard relates them?",
+      "correct": "Write after read (WAR), an antidependency on R2",
+      "distractors": [
+        "Read after write (RAW), a true dependency on R2",
+        "Write after write (WAW), an output dependency on R2",
+        "There is no hazard, because I3 comes after I1"
+      ],
+      "rationale": "I3 writes the register I1 reads. If I3's write were completed before I1's read, I1 would get the wrong value: write after read. Program order alone does not protect it once instructions can complete out of order.",
+      "source": "ch-14.md §14.4 — 'Write after read (WAR), or antidependency' (the sequence is the stage's own example)"
+    },
+    {
+      "slug": "12-control-hazard",
+      "objective": "12.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What is a control hazard?",
+      "correct": "The pipeline makes the wrong decision on a branch and brings in instructions that must then be discarded",
+      "distractors": [
+        "Two instructions try to use the control unit at the same time",
+        "An instruction reads a register before it has been written",
+        "The control unit sends a signal to the wrong pipeline stage"
+      ],
+      "rationale": "Also called a branch hazard. Until a branch executes, the pipeline does not know where to fetch next; a wrong guess costs every instruction fetched down the wrong path. Reading too early is a data hazard.",
+      "source": "ch-14.md §14.4 — 'A control hazard, also known as a branch hazard, occurs when the pipeline makes the wrong decision on a branch prediction'"
+    },
+    {
+      "slug": "12-two-bit-prediction",
+      "objective": "12.4",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "A loop branch is taken every time except on loop exit. Why does a two-bit predictor do better on it than a one-bit predictor?",
+      "correct": "Two consecutive wrong predictions are needed to change its prediction, so the single exit does not flip it",
+      "distractors": [
+        "It remembers the loop's exact iteration count",
+        "It predicts both outcomes at once and keeps the right one",
+        "It never mispredicts a loop branch"
+      ],
+      "rationale": "A one-bit predictor mispredicts twice per loop run: on the exit, and again on the next entry, because the exit flipped it. A two-bit predictor misses only the exit itself.",
+      "source": "ch-14.md §14.4 — 'Thus, the algorithm requires two consecutive wrong predictions to change the prediction decision.'"
+    },
+    {
+      "slug": "12-static-dynamic-prediction",
+      "objective": "12.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Which of these branch prediction approaches is dynamic?",
+      "correct": "A branch history table",
+      "distractors": [
+        "Predict never taken",
+        "Predict always taken",
+        "Predict by opcode"
+      ],
+      "rationale": "The first three approaches are static: they ignore what the program has done so far. The taken/not-taken switch and the branch history table are dynamic, because they depend on the execution history.",
+      "source": "ch-14.md §14.4 — 'The first three approaches are static ... The latter two approaches are dynamic'"
+    },
+    {
+      "slug": "12-loop-buffer",
+      "objective": "12.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "How does a loop buffer differ from an instruction cache?",
+      "correct": "It retains only instructions in sequence, and it is much smaller and cheaper",
+      "distractors": [
+        "It holds data as well as instructions",
+        "It is larger, so whole programs fit in it",
+        "It is part of main memory rather than the processor"
+      ],
+      "rationale": "A loop buffer keeps the most recently fetched instructions, in order. A short loop runs entirely from the buffer after its first pass, with no fetches from memory, which takes the sting out of its backward branch.",
+      "source": "ch-14.md §14.4 — 'the loop buffer only retains instructions in sequence and is much smaller in size and hence lower in cost'"
+    },
+    {
+      "slug": "12-x86-interrupt-vs-exception",
+      "objective": "12.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "On the x86, how does an interrupt differ from an exception?",
+      "correct": "An interrupt is generated by a hardware signal at random times; an exception is provoked by the execution of an instruction",
+      "distractors": [
+        "An interrupt is caused by software; an exception by a hardware fault",
+        "Interrupts can be masked; exceptions are always ignored",
+        "An exception is simply an interrupt with a higher priority"
+      ],
+      "rationale": "The difference is the source. A divide error or a page fault arises from the instruction being executed; a device's signal on the INTR or NMI pin arrives whenever the device is ready.",
+      "source": "ch-14.md §14.5 — 'An interrupt is generated by a signal from hardware ... An exception is generated from software'"
+    },
+    {
+      "slug": "12-x86-mmx-aliasing",
+      "objective": "12.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "Where does the x86 keep MMX values?",
+      "correct": "In the existing floating-point registers, by aliasing; there are no separate MMX registers",
+      "distractors": [
+        "In eight dedicated 64-bit MMX registers",
+        "In the general-purpose registers EAX to EDX",
+        "In a special area of the data cache"
+      ],
+      "rationale": "MMX instructions name eight registers, but those are the low-order 64 bits (the mantissas) of the eight floating-point registers. The floating-point unit uses them as a stack; MMX accesses the same registers directly. That is how the older 32-bit architecture was extended without new registers.",
+      "source": "ch-14.md §14.5 — 'the processor does not include specific MMX registers. Rather, the processor uses an aliasing technique'"
+    },
+    {
+      "slug": "12-x86-interrupt-steps",
+      "objective": "12.5",
+      "type": "G",
+      "bloom": "understand",
+      "difficulty": 0.45,
+      "stem": "Put these steps of the x86's response to an interrupt in order.",
+      "order": [
+        "Push the current EFLAGS onto the stack",
+        "Clear the interrupt (IF) and trap (TF) flags",
+        "Push the current CS and instruction pointer onto the stack",
+        "Load CS and EIP from the interrupt vector"
+      ],
+      "rationale": "The flags are saved before they are changed, then INTR interrupts and single-stepping are disabled so the handler is not itself interrupted, then the return point is saved, and only then is control passed to the handler. IRET undoes it.",
+      "source": "ch-14.md §14.5 — Interrupt Processing, steps 2 to 4 and the vector load"
+    },
+    {
+      "slug": "12-arm-seven-modes",
+      "objective": "12.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.55,
+      "stem": "How many execution modes does the ARM architecture support, and in which do most application programs run?",
+      "correct": "Seven; most applications run in user mode",
+      "distractors": [
+        "Two; applications run in user mode",
+        "Four; applications run in system mode",
+        "Seven; applications run in supervisor mode"
+      ],
+      "rationale": "User mode is the unprivileged one. The other six are privileged: five exception modes (supervisor, abort, undefined, fast interrupt, interrupt) and system mode, which runs privileged OS tasks with the user registers.",
+      "source": "ch-14.md §14.6 — 'The ARM architecture supports seven execution modes. Most application programs execute in user mode.'"
+    },
+    {
+      "slug": "12-arm-banked-registers",
+      "objective": "12.6",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "Each ARM exception mode has its own R13, R14 and SPSR, and fast interrupt mode also has its own R8 to R12. What does this banking buy?",
+      "correct": "Speed: entering an exception switches register banks instead of saving registers to memory",
+      "distractors": [
+        "More registers visible to user programs at once",
+        "Protection: user programs cannot read the exception modes' registers",
+        "Larger address space for each exception handler"
+      ],
+      "rationale": "Only 16 numbered registers and one or two status registers are visible at any time; the mode picks the bank. A fast interrupt has enough private registers to need almost no saving at all, which is the point of the 'fast'.",
+      "source": "ch-14.md §14.6 — 'Registers are arranged in partially overlapping banks, with the current processor mode determining which bank is available.'"
+    },
+    {
+      "slug": "12-arm-register-count",
+      "objective": "12.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.5,
+      "stem": "How many 32-bit registers does the ARM processor have in total?",
+      "correct": "37: thirty-one general-purpose registers and six program status registers",
+      "distractors": [
+        "16: R0 to R15",
+        "17: R0 to R15 and the CPSR",
+        "32: R0 to R31"
+      ],
+      "rationale": "Sixteen numbered registers plus one or two status registers are visible at any moment (17 or 18), but the banks behind them bring the total to 37.",
+      "source": "ch-14.md §14.6 — 'The ARM processor has a total of 37 32-bit registers'"
+    },
+    {
+      "slug": "12-arm-conditional-pipeline",
+      "objective": "12.6",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "How does ARM's conditional execution of ordinary instructions help its pipeline?",
+      "correct": "It reduces the need for conditional branches, so the pipeline is flushed less often",
+      "distractors": [
+        "It lets two instructions execute in the same pipeline stage",
+        "It removes the need for a decode stage",
+        "It makes every branch predicted correctly"
+      ],
+      "rationale": "A short if-then can be written as a few conditionally executed instructions instead of a branch around them. No branch means no wrong guess and no flushed instructions.",
+      "source": "ch-14.md §14.6 — conditional 'execution of instructions minimizes the need for conditional branch instructions, thereby improving pipeline efficiency, because pipeline flushing is reduced'"
+    }
+  ]
+}

@@ -1,0 +1,582 @@
+{
+  "stageId": "10",
+  "chapter": "Stallings ch 12 — Instruction Sets: Characteristics and Functions (book chapter 12 with Appendix 12A; the syllabus's chapter 10)",
+  "note": "Drafted 6 Oct 2026 under the instructor's ruling of 5 Oct (questions for 09-18 drafted from the textbook, each approved on /items before students see it). Facts from ch-12.md and the verified draft content/stages/10.draft.md; the Z = (A + B) × C and 0xCAFEF00D examples are the draft's own. Not yet examinable: exams stop at 08.",
+  "items": [
+    {
+      "slug": "10-four-elements",
+      "objective": "10.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.65,
+      "stem": "Which four elements does every machine instruction have to specify, explicitly or implicitly?",
+      "correct": "The operation code, source operand references, a result operand reference, and a next instruction reference",
+      "distractors": [
+        "An opcode, a mode field, a condition code, and a register number",
+        "A mnemonic, a label, an operand, and a comment",
+        "Fetch, decode, execute, and write back"
+      ],
+      "rationale": "What to do, what to do it to, where to put the result, and where to go next. A mnemonic, label and comment are fields of an assembly-language line, and fetch-decode-execute is the instruction cycle, not the instruction.",
+      "source": "ch-12.md §12.1 — Elements of a Machine Instruction"
+    },
+    {
+      "slug": "10-next-instruction-implicit",
+      "objective": "10.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "Most instructions carry no explicit reference to the next instruction. Why not?",
+      "correct": "In most cases the next instruction immediately follows the current one, so its address is implicit",
+      "distractors": [
+        "The next instruction is always fetched from the top of the stack",
+        "The control unit chooses the next instruction at random from the cache",
+        "Each instruction stores its successor's address in the instruction register"
+      ],
+      "rationale": "Execution is sequential unless an instruction says otherwise, and the program counter already points past the current instruction. Only transfer-of-control instructions need to name the next address.",
+      "source": "ch-12.md §12.1 — 'In most cases, the next instruction to be fetched immediately follows the current instruction.'"
+    },
+    {
+      "slug": "10-contents-not-address",
+      "objective": "10.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "ADD R, Y means: add the value in data location Y to register R, where Y is a memory address. What is added to R?",
+      "correct": "The value stored at memory location Y",
+      "distractors": [
+        "The address Y itself",
+        "The address of register R",
+        "The instruction stored at location Y"
+      ],
+      "rationale": "An operand reference names where a value is; the operation acts on what is there. The book says it plainly: the operation is performed on the contents of a location, not on its address.",
+      "source": "ch-12.md §12.1 — 'Note that the operation is performed on the contents of a location, not on its address.'"
+    },
+    {
+      "slug": "10-x-plus-y-order",
+      "objective": "10.1",
+      "type": "G",
+      "bloom": "apply",
+      "difficulty": 0.6,
+      "stem": "X and Y are at memory locations 513 and 514. Put the machine instructions for X = X + Y in order.",
+      "order": [
+        "Load a register with the contents of memory location 513",
+        "Add the contents of memory location 514 to the register",
+        "Store the contents of the register in memory location 513"
+      ],
+      "rationale": "One high-level statement becomes several machine instructions, each moving data to or from a register. X must be in the register before Y can be added to it, and the sum is only written back once it exists.",
+      "source": "ch-12.md §12.1 — Instruction Types, the X = X + Y example"
+    },
+    {
+      "slug": "10-instruction-types",
+      "objective": "10.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "Which four types of instruction must an instruction set provide to express anything a high-level language can?",
+      "correct": "Data processing, data storage, data movement, and control",
+      "distractors": [
+        "Load, store, branch, and halt",
+        "Arithmetic, logical, shift, and rotate",
+        "Fetch, decode, execute, and interrupt"
+      ],
+      "rationale": "Data processing is arithmetic and logic; data storage moves data between registers and memory; data movement is I/O; control is test and branch. Shift and rotate are kinds of data processing, and fetch-decode-execute describes the cycle.",
+      "source": "ch-12.md §12.1 — Instruction Types"
+    },
+    {
+      "slug": "10-fewer-addresses-tradeoff",
+      "objective": "10.1",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "What does a design with fewer addresses per instruction gain, and what does it pay?",
+      "correct": "Shorter, more primitive instructions and a simpler processor, paid for with more instructions per program",
+      "distractors": [
+        "Shorter programs, paid for with a more complex processor",
+        "Faster execution of every program, paid for with longer instructions",
+        "More registers, paid for with fewer addressing modes"
+      ],
+      "rationale": "Each address removed makes every instruction shorter and the program longer, which generally means longer execution times. That is why most contemporary machines mix two- and three-address instructions.",
+      "source": "ch-12.md §12.1 — 'Fewer addresses per instruction result in instructions that are more primitive, requiring a less complex processor.'"
+    },
+    {
+      "slug": "10-one-address-count",
+      "objective": "10.1",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "stem": "How many instructions does a one-address (accumulator) machine need to compute Z = (A + B) × C?",
+      "correct": "4: LOAD A, ADD B, MPY C, STOR Z",
+      "distractors": [
+        "2: ADD and MPY, each naming all three operands",
+        "3: MOVE, ADD and MPY",
+        "6: PUSH, PUSH, ADD, PUSH, MPY, POP"
+      ],
+      "rationale": "The accumulator is the implied second operand and the result, so A must be loaded and Z stored explicitly. Two instructions is the three-address version, three the two-address one, and six the zero-address stack machine.",
+      "source": "ch-12.md §12.1 — Number of Addresses (worked with the stage's own example)"
+    },
+    {
+      "slug": "10-accumulator",
+      "objective": "10.1",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "In a one-address instruction, where are the second operand and the result?",
+      "correct": "In an implied processor register, the accumulator",
+      "distractors": [
+        "On the top of a stack",
+        "In the next instruction's address field",
+        "In the program counter"
+      ],
+      "rationale": "One-address machines, common in earlier computers, imply the accumulator: it holds one operand and receives the result. Operands on top of a stack are the zero-address case.",
+      "source": "ch-12.md §12.1 — 'the implied address being a processor register known as the accumulator (AC)'"
+    },
+    {
+      "slug": "10-design-issues",
+      "objective": "10.1",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.55,
+      "stem": "Which are the five fundamental design issues of an instruction set?",
+      "correct": "Operation repertoire, data types, instruction format, registers, and addressing",
+      "distractors": [
+        "Clock rate, cache size, bus width, pipeline depth, and word length",
+        "Opcode, operand, mode, register, and condition code",
+        "Speed, cost, power, size, and compatibility"
+      ],
+      "rationale": "These are what an instruction set designer decides: which operations, on what data, in what format, with how many registers, and how operands are addressed. The book adds that they are highly interrelated and must be considered together.",
+      "source": "ch-12.md §12.1 — Instruction Set Design"
+    },
+    {
+      "slug": "10-operand-categories",
+      "objective": "10.2",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.65,
+      "stem": "What are the most important general categories of data that machine instructions operate on?",
+      "correct": "Addresses, numbers, characters, and logical data",
+      "distractors": [
+        "Integers, floating-point numbers, strings, and arrays",
+        "Bytes, words, doublewords, and quadwords",
+        "Registers, immediates, memory, and I/O"
+      ],
+      "rationale": "Addresses count as data because they are often computed before use. Arrays and strings are high-level structures, bytes and words are sizes rather than kinds, and registers or memory are where operands live, not what they are.",
+      "source": "ch-12.md §12.2 — 'The most important general categories of data are'"
+    },
+    {
+      "slug": "10-machine-numbers-limited",
+      "objective": "10.2",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "How do numbers stored in a computer differ from numbers in ordinary mathematics?",
+      "correct": "Their magnitude is limited and, for floating point, so is their precision",
+      "distractors": [
+        "They can only ever be integers",
+        "They have no sign; negative values are simulated in software",
+        "They are always stored in decimal"
+      ],
+      "rationale": "A word has a fixed number of bits, so there is a largest and smallest value, and a floating-point format can only approximate most reals. That is why programmers meet rounding, overflow and underflow.",
+      "source": "ch-12.md §12.2 — 'First, there is a limit to the magnitude of numbers representable on a machine and second, in the case of floating-point numbers, a limit to their precision.'"
+    },
+    {
+      "slug": "10-type-by-operation",
+      "objective": "10.2",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "In machine language, what decides whether the byte 0x37 is the character 7, the number 55, or eight separate flags?",
+      "correct": "The operation that is performed on it",
+      "distractors": [
+        "A type tag stored in memory beside it",
+        "The address at which it is stored",
+        "The compiler, checking it as the program runs"
+      ],
+      "rationale": "Bits carry no type. The same data are treated as logical, numerical or text depending on which instruction touches them. Type checking is a high-level-language idea; the compiler is not present when the program runs.",
+      "source": "ch-12.md §12.2 — 'The “type” of a unit of data is determined by the operation being performed on it.'"
+    },
+    {
+      "slug": "10-x86-far-pointer",
+      "objective": "10.3",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.5,
+      "stem": "Among the x86 data types, what is a far pointer?",
+      "correct": "A segment selector together with an offset",
+      "distractors": [
+        "An offset within the current segment",
+        "A pointer to a location outside main memory",
+        "A 64-bit address used only in long mode"
+      ],
+      "rationale": "A near pointer is an offset within a segment; a far pointer adds the segment selector, so it can reach a different segment. The distinction comes from the x86's segmented memory.",
+      "source": "ch-12.md §12.3 — Table 12.2, x86 data types"
+    },
+    {
+      "slug": "10-x86-alignment",
+      "objective": "10.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Must an x86 doubleword be stored at an address divisible by 4?",
+      "correct": "No: the x86 does not require alignment, though a misaligned item may need more than one bus transfer",
+      "distractors": [
+        "Yes: a misaligned access raises an alignment fault",
+        "Yes: the low two address bits are forced to zero",
+        "No: the x86 stores every item in bytes, so alignment never matters"
+      ],
+      "rationale": "The x86 accepts data at any address. The cost appears on the bus, which transfers aligned units, so a misaligned request is split. An alignment fault is one of ARM's optional behaviours, not the x86's.",
+      "source": "ch-12.md §12.3 — x86 Data Types"
+    },
+    {
+      "slug": "10-word-means-two-things",
+      "objective": "10.3",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.55,
+      "stem": "How many bits is a 'word' on ARM, and on the x86?",
+      "correct": "32 on ARM, 16 on the x86",
+      "distractors": [
+        "32 on both",
+        "16 on ARM, 32 on the x86",
+        "64 on both"
+      ],
+      "rationale": "ARM's sizes are byte, halfword (16) and word (32). The x86 kept the 8086's naming: word (16), doubleword (32), quadword (64). The same word names different sizes, so always check which machine is meant.",
+      "source": "ch-12.md §12.3 — 'ARM processors support data types of 8 (byte), 16 (halfword), and 32 (word) bits in length.'"
+    },
+    {
+      "slug": "10-arm-no-fp-hardware",
+      "objective": "10.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "Most ARM processor implementations do not provide floating-point hardware. Why?",
+      "correct": "Leaving it out saves power and area",
+      "distractors": [
+        "ARM cannot represent IEEE 754 numbers",
+        "Floating-point work is always sent to an x86 coprocessor",
+        "ARM uses packed decimal for all non-integer values"
+      ],
+      "rationale": "ARM targets small, low-power devices, so hardware many programs never need is left out. Floating point is offered as an optional coprocessor that follows IEEE 754.",
+      "source": "ch-12.md §12.3 — 'The majority of ARM processor implementations do not provide floatingpoint hardware, which saves power and area.'"
+    },
+    {
+      "slug": "10-packed-simd",
+      "objective": "10.3",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What is the basic idea of the x86's packed SIMD data types?",
+      "correct": "Several operands are packed into one referenced memory item and operated on in parallel",
+      "distractors": [
+        "One operand is split across several registers for extra precision",
+        "Data are compressed to save memory and expanded before use",
+        "Two instructions are packed into one word and executed together"
+      ],
+      "rationale": "Single instruction, multiple data: one ADD on a 64-bit packed operand adds, say, eight bytes at once. The packing is of data, not of instructions.",
+      "source": "ch-12.md §12.3 — 'multiple operands are packed into a single referenced memory item and that these multiple operands are operated on in parallel'"
+    },
+    {
+      "slug": "10-packed-decimal-246",
+      "objective": "10.4",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.55,
+      "stem": "What is the decimal number 246 in packed decimal?",
+      "correct": "0000 0010 0100 0110",
+      "distractors": [
+        "1111 0110",
+        "0110 0100 0010 0000",
+        "0011 0010 0011 0100 0011 0110"
+      ],
+      "rationale": "Each decimal digit gets its own 4-bit code, padded to whole bytes: 0, 2, 4, 6. 1111 0110 is 246 in straight binary; the reversed digits are wrong; and the 0011-prefixed codes are the IRA characters '2', '4', '6'.",
+      "source": "ch-12.md §12.2 — 'Thus, the code for 246 is 0000 0010 0100 0110.'"
+    },
+    {
+      "slug": "10-packed-decimal-why",
+      "objective": "10.4",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "Packed decimal is less compact than binary. When is it still preferable?",
+      "correct": "When there is a great deal of I/O and comparatively little, simple computation, because it avoids conversion",
+      "distractors": [
+        "When calculations need the highest possible precision",
+        "When memory is scarce, because it packs two digits per byte",
+        "When numbers must be compared quickly by the ALU"
+      ],
+      "rationale": "People read and type decimal. Storing decimal digits avoids converting every value on its way in and out, which matters when there is much I/O and little arithmetic. Only 10 of each 16 codes are used, so it costs space.",
+      "source": "ch-12.md §12.2 — 'it is preferable to store and operate on the numbers in decimal form'"
+    },
+    {
+      "slug": "10-packed-decimal-sign",
+      "objective": "10.4",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.5,
+      "stem": "Packed decimal marks a negative number with an extra 4-bit sign digit. What is its standard value?",
+      "correct": "1101",
+      "distractors": [
+        "1100",
+        "1111",
+        "A 1 in the leftmost bit of the first digit"
+      ],
+      "rationale": "The standard sign digits are 1100 for + and 1101 for −, placed at either end of the digit string. Neither is a decimal digit (those use 0000 to 1001). A leading 1 bit is the binary sign-bit idea, not packed decimal's.",
+      "source": "ch-12.md §12.2 — 'Standard sign values are 1100 for positive ( + ) and 1101 for negative ( - ).'"
+    },
+    {
+      "slug": "10-ira-width",
+      "objective": "10.4",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.65,
+      "stem": "How many bits does the IRA (ASCII) code use per character, and how many characters can it represent?",
+      "correct": "7 bits, so 128 characters",
+      "distractors": [
+        "8 bits, so 256 characters",
+        "16 bits, so 65,536 characters",
+        "6 bits, so 64 characters"
+      ],
+      "rationale": "IRA is a 7-bit code. Characters are almost always stored in 8 bits, but the eighth bit is 0 or a parity bit, not part of the code. 16 bits is a different, larger code altogether.",
+      "source": "ch-12.md §12.2 — 'Each character in this code is represented by a unique 7-bit pattern; thus, 128 different characters can be represented.'"
+    },
+    {
+      "slug": "10-seven-operation-types",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.55,
+      "stem": "Which are the general types of operation found on all machines?",
+      "correct": "Data transfer, arithmetic, logical, conversion, I/O, system control, and transfer of control",
+      "distractors": [
+        "Load, store, add, subtract, branch, call, and return",
+        "Fetch, decode, execute, memory access, and write back",
+        "Integer, floating point, decimal, and character"
+      ],
+      "rationale": "The number of opcodes varies widely, but these seven types recur everywhere. Load, add and branch are individual operations within the types; fetch-decode-execute is the cycle; integer and decimal are data types.",
+      "source": "ch-12.md §12.4 — 'the same general types of operations are found on all machines'"
+    },
+    {
+      "slug": "10-and-mask",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "stem": "The character '7' is 0011 0111 in IRA. Which single operation turns it into the number 7 (0000 0111)?",
+      "correct": "AND with 0000 1111",
+      "distractors": [
+        "OR with 0000 1111",
+        "XOR with 1111 1111",
+        "Logical shift left by 4"
+      ],
+      "rationale": "AND with a mask keeps the bits where the mask is 1 and clears the rest, so the 0011 prefix goes and the digit stays. OR sets bits, XOR with all 1s inverts every bit, and a shift moves the digit out of place.",
+      "source": "ch-12.md §12.4 — 'the AND operation can be used as a mask that selects certain bits in a word and zeros out the remaining bits'"
+    },
+    {
+      "slug": "10-arithmetic-right-shift",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.45,
+      "stem": "1100 1000 is −56 in 8-bit two's complement. What does an arithmetic right shift by 2 give?",
+      "correct": "1111 0010 (−14)",
+      "distractors": [
+        "0011 0010",
+        "0010 0011",
+        "1110 0100"
+      ],
+      "rationale": "An arithmetic right shift copies the sign bit into the vacated positions, so it divides by 4 and keeps the sign: −14. 0011 0010 is the logical right shift (0s in), 0010 0011 is a left rotate, and 1110 0100 is a shift by only 1.",
+      "source": "ch-12.md §12.4 — 'On a right arithmetic shift, the sign bit is replicated into the bit position to its right.'"
+    },
+    {
+      "slug": "10-transfer-of-control",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "What does the processor do to carry out a transfer-of-control instruction?",
+      "correct": "It updates the program counter to the address of some instruction in memory",
+      "distractors": [
+        "It moves the operand from memory into a register",
+        "It switches the processor into a privileged mode",
+        "It transfers a block of data to an I/O device"
+      ],
+      "rationale": "Branches, skips and procedure calls all work by changing the PC, so the next instruction fetched is not the one in sequence. Moving operands is data transfer, and entering a privileged state belongs to system control.",
+      "source": "ch-12.md §12.4 — 'the operation performed by the processor is to update the program counter to contain the address of some instruction in memory'"
+    },
+    {
+      "slug": "10-stack-for-return",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "Return addresses could be saved in a register or at the start of the procedure. Why is the stack the general answer?",
+      "correct": "It lets procedures nest and allows a procedure to be called again before it has returned",
+      "distractors": [
+        "It is the only memory the processor can write without an address",
+        "It is faster than any register",
+        "It hides the return address from the procedure being called"
+      ],
+      "rationale": "A single register or a fixed location holds one return address, so a nested or recursive call overwrites it. A stack keeps one frame per open call, which is exactly what a reentrant procedure needs.",
+      "source": "ch-12.md §12.4 — 'A reentrant procedure is one in which it is possible to have several calls open to it at the same time.'"
+    },
+    {
+      "slug": "10-compare-versus-subtract",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "On the x86, how does CMP differ from SUB?",
+      "correct": "Both subtract, but CMP only sets the status flags while SUB also stores the result in the destination",
+      "distractors": [
+        "CMP works only on unsigned numbers, SUB on signed",
+        "CMP sets no flags; it only branches",
+        "CMP subtracts in the opposite order to SUB"
+      ],
+      "rationale": "A compare is a subtraction whose result is thrown away; what survives is the flags, which a following conditional jump tests. Whether those flags are read as signed (greater/less) or unsigned (above/below) is the jump's choice.",
+      "source": "ch-12.md §12.5 — 'a compare operation only sets status flags, whereas a subtract operation also stores the result'"
+    },
+    {
+      "slug": "10-enter-slower",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.45,
+      "stem": "From the 80286 on, one ENTER instruction replaced the PUSH, MOV, SUB sequence that opens a procedure. How did it compare?",
+      "correct": "It saved space (4 bytes against 6) but took longer to execute (10 clock cycles against 6)",
+      "distractors": [
+        "It was both smaller and faster",
+        "It was larger but faster",
+        "It was identical in size and speed, only easier to write"
+      ],
+      "rationale": "A complex instruction can cost more than the simple ones it replaces. Hold on to this: it is the RISC argument of Stage 13 in miniature.",
+      "source": "ch-12.md §12.5 — ENTER 'saves a few bytes of memory compared with the PUSH, MOV, SUB sequence (4 bytes versus 6 bytes), it actually takes longer to execute (10 clock cycles versus 6 clock cycles)'"
+    },
+    {
+      "slug": "10-saturation",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "stem": "Two unsigned 8-bit pixel values, 200 and 100, are added with MMX saturation arithmetic. What is the result?",
+      "correct": "255",
+      "distractors": [
+        "44",
+        "300",
+        "0"
+      ],
+      "rationale": "With saturation, an overflowing result is set to the largest representable value, 255. Ordinary wraparound addition gives 300 − 256 = 44, which would turn a bright pixel dark. 300 does not fit in 8 bits.",
+      "source": "ch-12.md §12.5 — 'With saturation arithmetic, if addition results in overflow or subtraction results in underflow, the result is set to the largest or smallest value representable.'"
+    },
+    {
+      "slug": "10-arm-load-store",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.6,
+      "stem": "In the ARM architecture, which instructions may access memory locations?",
+      "correct": "Only load and store instructions; arithmetic and logic work on registers and immediates",
+      "distractors": [
+        "Any instruction, through any addressing mode",
+        "Only branch instructions, to fetch their targets",
+        "Arithmetic instructions, but only with a memory destination"
+      ],
+      "rationale": "ARM is a load/store architecture: data are loaded into registers, processed there, and stored back. The x86, by contrast, lets an arithmetic instruction take a memory operand.",
+      "source": "ch-12.md §12.5 — 'only load and store instructions access memory locations; arithmetic and logical instructions are performed only on registers and immediate values encoded in the instruction'"
+    },
+    {
+      "slug": "10-arm-conditional-execution",
+      "objective": "10.5",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.5,
+      "stem": "What is unusual about how ARM uses condition codes, and what does it cost?",
+      "correct": "Every instruction carries a 4-bit condition field, so almost any instruction can execute conditionally, leaving fewer bits for opcode and operands",
+      "distractors": [
+        "Only branches carry a condition, so other instructions are shorter",
+        "Conditions are kept in a separate instruction before each operation",
+        "ARM has no condition codes at all"
+      ],
+      "rationale": "On most machines only branches are conditional. ARM puts the condition in every 32-bit instruction, which removes many branches, at the price of 4 bits in every instruction.",
+      "source": "ch-12.md §12.5 — 'All instructions, not just branch instructions, include a condition code field'"
+    },
+    {
+      "slug": "10-little-endian-byte",
+      "objective": "10.6",
+      "type": "S",
+      "bloom": "apply",
+      "difficulty": 0.5,
+      "stem": "The 32-bit value 0xCAFEF00D is stored little endian at address 0x200. Which byte is at address 0x201?",
+      "correct": "0xF0",
+      "distractors": [
+        "0xFE",
+        "0x0D",
+        "0xCA"
+      ],
+      "rationale": "Little endian puts the least significant byte at the lowest address: 0x200 holds 0D, 0x201 holds F0, 0x202 FE, 0x203 CA. 0xFE is what 0x201 holds in big endian.",
+      "source": "ch-12.md §12A — little endian 'stores the least significant byte in the lowest numerical byte address' (the value is the stage's own)"
+    },
+    {
+      "slug": "10-big-endian-definition",
+      "objective": "10.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "What is big endian?",
+      "correct": "Storing the most significant byte of a value at the lowest byte address",
+      "distractors": [
+        "Storing the least significant byte at the lowest byte address",
+        "Storing the most significant bit of each byte first",
+        "Storing every value on an address divisible by its size"
+      ],
+      "rationale": "Big endian matches the left-to-right order of Western writing: the big end comes first. The least-significant-byte-first order is little endian, bit order is a separate question, and alignment is unrelated.",
+      "source": "ch-12.md §12A — 'stores the most significant byte in the lowest numerical byte address; this is known as big endian'"
+    },
+    {
+      "slug": "10-endian-strings",
+      "objective": "10.6",
+      "type": "S",
+      "bloom": "analyze",
+      "difficulty": 0.4,
+      "stem": "The character string \"CPE\" is stored in memory on a big-endian machine and on a little-endian machine. How do the two byte orders compare?",
+      "correct": "They are the same: each character is its own one-byte item, and endianness only orders bytes within one item",
+      "distractors": [
+        "They are reversed: \"EPC\" on the little-endian machine",
+        "They differ in every second byte",
+        "They are the same only if the string's length is a multiple of 4"
+      ],
+      "rationale": "Endianness reverses the bytes inside one multibyte value; it never reorders separate items. A string is an array of one-byte characters, so both machines store it the same way.",
+      "source": "ch-12.md §12A — 'The property of endianness does not extend beyond an individual data unit.'"
+    },
+    {
+      "slug": "10-which-little-endian",
+      "objective": "10.6",
+      "type": "S",
+      "bloom": "remember",
+      "difficulty": 0.6,
+      "stem": "Which of these machines is little endian?",
+      "correct": "The Intel x86",
+      "distractors": [
+        "The IBM System/370",
+        "The Motorola 680x0",
+        "The Sun SPARC"
+      ],
+      "rationale": "The x86, VAX and Alpha are little endian; the IBM System 370/390, the Motorola 680x0, Sun SPARC and most RISC machines are big endian.",
+      "source": "ch-12.md §12A — 'Some machines, such as the Intel 80x86, x86, VAX, and Alpha, are little-endian machines'"
+    },
+    {
+      "slug": "10-bi-endian",
+      "objective": "10.6",
+      "type": "S",
+      "bloom": "understand",
+      "difficulty": 0.55,
+      "stem": "What is a bi-endian processor, and what does it allow?",
+      "correct": "One that supports both big- and little-endian modes, so software moved from another machine can keep its byte order",
+      "distractors": [
+        "One that stores the high half of a word big endian and the low half little endian",
+        "One that converts every value between orders on each memory access",
+        "One that has no byte order because it addresses only whole words"
+      ],
+      "rationale": "The PowerPC supports both modes, and developers choose one when migrating operating systems and applications. ARM's E-bit, set by SETEND, is the same idea under program control.",
+      "source": "ch-12.md §12A — 'The PowerPC is a bi-endian processor that supports both big-endian and littleendian modes.'"
+    }
+  ]
+}
