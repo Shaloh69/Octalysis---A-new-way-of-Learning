@@ -31,13 +31,17 @@ export function makeChatStorage(env: Env): ChatStorage | null {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
   const base = `${env.SUPABASE_URL.replace(/\/$/, "")}/storage/v1`;
   const key = env.SUPABASE_SERVICE_ROLE_KEY;
-  const headers = { Authorization: `Bearer ${key}`, apikey: key, "Content-Type": "application/json" };
+  const auth = { Authorization: `Bearer ${key}`, apikey: key };
   const enc = (p: string) => p.split("/").map(encodeURIComponent).join("/");
 
   async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+    // Storage is Fastify too: a JSON content type with an empty body is refused
+    // with 400 (found on the deployment, 6 Oct 2026: every upload answered 500
+    // here, while the fake storage in the tests never looked). So a request says
+    // JSON only when it carries some, and every call here carries some.
     const res = await fetch(`${base}${path}`, {
       method,
-      headers,
+      headers: body === undefined ? auth : { ...auth, "Content-Type": "application/json" },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     if (!res.ok) {
@@ -49,7 +53,7 @@ export function makeChatStorage(env: Env): ChatStorage | null {
 
   return {
     async signUpload(path) {
-      const r = await call<{ url: string }>("POST", `/object/upload/sign/${CHAT_BUCKET}/${enc(path)}`);
+      const r = await call<{ url: string }>("POST", `/object/upload/sign/${CHAT_BUCKET}/${enc(path)}`, {});
       return `${base}${r.url}`;
     },
     async signDownloads(paths, seconds) {
