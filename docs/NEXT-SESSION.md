@@ -1526,6 +1526,39 @@ left, or needing a decision:
 
 ---
 
+## 0zb. Figures, and the authoring continued — 5-6 Oct 2026 (IN PROGRESS)
+
+Pushed, in order: `e458812` ch 10, `ac48f38` ch 11, `c141a30` ch 12 (lesson
+text drafts), `b2b3a5f` the figures/audiobook plan, `c17c3a5` the figure
+pipeline (schema, sync, API, tests), `2e78512` figures in the reader and on
+/content and /items, `c4f736a` the emphasis fix and the paper and /items gates,
+`197090a` ch 13 with two figures.
+
+1. **New instructor request (6 Oct): figures and an audiobook.** Three rulings,
+   asked once (`docs/FIGURES-AND-AUDIO.md` holds them and the design): figures
+   are RECREATED as our own SVG, never screenshots; the audiobook is the
+   browser's voice now, MP3s later; the figure pipeline comes before more text,
+   then 13-18 with figures, then a reread of 01-12 for theirs, then questions,
+   then the audiobook, then R5.
+2. **The figure pipeline is built and on the deployment.** `db/addendum-figures.sql`
+   (the 8th SQL file) was pushed to ddvxkbcelpqydnjkffdr BEFORE the code (hard
+   rule 10): table `figures`, `items.figure_id`, two triggers. A figure is
+   `content/figures/<id>.svg` checked by `scripts/lib/figure-svg.mjs` (an
+   allowlist; eight `fig-*` classes, no colour; viewBox <= 440 and text >= 14
+   units, MEASURED: 9.5px at 380). Approve on /content's Figures card or under a
+   question on /items; a question cannot go live with an unapproved figure.
+3. **Found and fixed:** the figure emphasis first used the accent, which is each
+   student's hue; on a paper it differed per student. Now the fixed info pair.
+4. **Found and parked (console, all dialogs):** a Radix modal sets aria-hidden
+   on everything outside it, the toaster included, so a toast raised while a
+   dialog is open is on screen but NOT announced to a screen reader (/items
+   decisions, a figure approved on /items). Fix in the toaster (portal it into
+   the open dialog, or an aria-live region inside DialogContent), on its own gate.
+5. **Not yet on the deployment:** the chapter drafts 10-13 and the four figures.
+   `sync-content` against the deployment, dry run first, is still owed.
+6. **Prelim still NOT runnable** on 6 Oct: on the deployment stage 01's 15 items
+   are live (the instructor began approving on 5 Oct), 02-04's 81 are at review.
+
 ## 0za. R4.8, R4.9, R5 begun, the approval gate, the map's new tricks — 2-5 Oct 2026
 
 Pushed, in order: `80a8233` R4.8 (Trojans, captured moons, faint rings,
