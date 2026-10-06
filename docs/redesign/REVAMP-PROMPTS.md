@@ -73,11 +73,14 @@ The work, in order:
    the drafting assistant, docs/AI-ASSISTANT-PLAN.md v4, APPROVED, every
    decision made. It is a console page /assistant plus API routes (no new
    host), and an unsigned Windows app per teacher running Ollama on their
-   own laptop, with an engine chain (§3a: free engines that do not train on
-   input first, a Claude subscription via the teacher's own Claude Code and
-   our plugin, local Ollama last). Its heartbeats go to Supabase, never to
-   the Render API. Every
-   table carries a course and an owner. All extras are in. Start it only
+   own laptop, with an engine chain (§3a: the Claude API first when a
+   teacher has a key, then free engines that do not train on input, a
+   Claude subscription via the teacher's own Claude Code and our plugin,
+   local Ollama last). Its heartbeats go to Supabase, never to the Render
+   API. Every table carries a course and an owner. All extras are in.
+   Before any of its code, read .claude/rules/assistant.md: memory across
+   sessions and engines, frozen approvals, no-slop output, double-checking
+   and the code rules all bind it (plan §4a-§4e). Start it only
    when 1 and 2 are done, at B0: install Ollama (approved), try qwen3.5:4b,
    qwen3.5:9b and gemma4:12b on book 15's figures, and record speed and
    quality before building anything else. The MP3s are scrapped: do not ask
