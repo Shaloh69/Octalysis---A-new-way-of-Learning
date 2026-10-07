@@ -1,0 +1,273 @@
+{
+  "_about": "The changelog's written highlights, one entry per day that shipped. Written from that day's commits (git log), in plain words; the commit list itself is added by scripts/changelog.mjs. `teachers` shows on the console's /changelog; `students` (under `studentTitle`, in a student's words) on the student app's What's new, and only student-facing changes go there. An empty `students` list keeps the day off the student page. Instructor, 7 Oct 2026 (night): both written highlights and the full commit list.",
+  "updates": [
+    {
+      "date": "2026-10-07",
+      "title": "Teacher accounts, and the changelog",
+      "studentTitle": "A fix, and this page",
+      "teachers": [
+        "Teacher accounts: a teacher claims their account with their employee ID on the console's Claim page, as students claim theirs.",
+        "Subjects, books and classes: CPE 412 has its two books (Stallings 9th, the default, and 10th); each section taking it is a class.",
+        "The admin's Teachers page: every teacher, their classes, the teacher roster import, and a page per teacher.",
+        "The AI assistant's groundwork: a figure reader that has read all 380 figures of the textbook.",
+        "This changelog, with the system's progress on one page."
+      ],
+      "students": [
+        "Fixed: a check handed in by a reload now shows its questions.",
+        "What's new: this page."
+      ]
+    },
+    {
+      "date": "2026-10-06",
+      "title": "Figures, the class chat, Listen",
+      "studentTitle": "Figures, the class chat, Listen",
+      "teachers": [
+        "Course figures, drawn for the course from the textbook's, each approved before students see it (chapters 01-13).",
+        "Lesson text drafted from the textbook for chapters 11 to 13, waiting for your approval on Content.",
+        "131 questions for stages 09 to 12, at review on Items. The item bank reaches stage 12; the exams still stop at 08.",
+        "The class chat: each section's room and a private thread with each student, on the console's Chat.",
+        "You can reset a student's password; the student then chooses their own.",
+        "Leaving a check or an exam (full screen, the page, or away over 15 seconds) hands it in and uses the attempt (ruling 4)."
+      ],
+      "students": [
+        "Figures in the reader, drawn for this course.",
+        "The class chat: your section's room, and a private thread with your instructor.",
+        "Listen: the reader reads a stage aloud, following the voice sentence by sentence.",
+        "Forgot your password? Reset it yourself by email.",
+        "Leaving a check or an exam once it has started hands it in with the answers you gave."
+      ]
+    },
+    {
+      "date": "2026-10-05",
+      "title": "Drafted chapters wait for approval; the map opens up",
+      "studentTitle": "Look around the map",
+      "teachers": [
+        "Lesson text drafted from the textbook now waits for your approval before any student reads it; chapters 09 and 10 drafted.",
+        "Orientation finishes itself when a student reads it to the end.",
+        "The map draws faster (under 50 draw calls)."
+      ],
+      "students": [
+        "Zoom and look around the map; it returns home after 30 seconds.",
+        "Orientation is finished when you read it to the end.",
+        "An alien rides a comet's orbit. Click it."
+      ]
+    },
+    {
+      "date": "2026-10-02",
+      "title": "A realistic solar system",
+      "studentTitle": "A realistic solar system",
+      "teachers": [
+        "The student map's solar system made realistic: smaller planets, wider orbits, a bigger sun, distant comets."
+      ],
+      "students": [
+        "A longer warp, then an arrival screen for every planet and moon.",
+        "A more realistic solar system: smaller planets, wider orbits, a bigger sun and distant comets."
+      ]
+    },
+    {
+      "date": "2026-10-01",
+      "title": "Two more minigames, real textures",
+      "studentTitle": "Two more minigames, real textures",
+      "teachers": [
+        "Two moon minigames: Cache Tuner (moon 04.5, the book's Example 4.2) and Bus Contention (moon 03.9)."
+      ],
+      "students": [
+        "Cache Tuner, moon 04.5's drill, on the book's own Example 4.2.",
+        "Bus Contention, moon 03.9's bus wiring game.",
+        "Real textures on the map's planets, moons and sun."
+      ]
+    },
+    {
+      "date": "2026-09-30",
+      "title": "The student app becomes a game",
+      "studentTitle": "OCTA becomes a game",
+      "teachers": [
+        "The student app remade as a game: a star HUD in the solar system, each planet's own biome when opened.",
+        "A check or exam sits behind Start, in full screen, with no way back; every time a student leaves it is recorded and shown on their record.",
+        "Moons: practice journeys on each objective; their mastery opens the next planet, and each student's moons are on their record."
+      ],
+      "students": [
+        "A new look: a star HUD on the map, and each planet's biome when you open it.",
+        "A check now starts behind a Start button, in full screen, with no way back until you submit.",
+        "Moons: practise each objective on its moon; mastering them opens the next planet.",
+        "Two minigames: Two Columns (moon 01.2) and Clock Bench (moon 02.8).",
+        "A new title screen for signing in."
+      ]
+    },
+    {
+      "date": "2026-09-29",
+      "title": "The last console pages rebuilt; the reader and the check",
+      "studentTitle": "The reader and the check, rebuilt",
+      "teachers": [
+        "Feedback, Live (with the projector as its own page) and the attempt page rebuilt.",
+        "An attempt page says whose paper it is."
+      ],
+      "students": [
+        "The stage reader and the check rebuilt.",
+        "A check you come back to keeps the answers you had given.",
+        "A locked stage says what opens it."
+      ]
+    },
+    {
+      "date": "2026-09-28",
+      "title": "Submissions, gradebook, content, audit",
+      "teachers": [
+        "Submissions: a marking queue beside the work; a regrade is an explicit, audited unlock.",
+        "Gradebook: the whole grade from one computation, exportable.",
+        "Content: summary review, and a block editor that keeps every version with its reason.",
+        "Audit log: every entry, filtered, paged and exported; nobody can edit or delete it.",
+        "System health: every check named and counted, never a verdict. A new sidebar."
+      ],
+      "students": []
+    },
+    {
+      "date": "2026-09-27",
+      "title": "Students, records, assessments",
+      "teachers": [
+        "Students and each student's record rebuilt.",
+        "Assessments rebuilt, with a preview; the exam salt can be rotated; a section's scope is checked at Start."
+      ],
+      "students": []
+    },
+    {
+      "date": "2026-09-25",
+      "title": "The console rebuild begins",
+      "studentTitle": "An icon of its own",
+      "teachers": [
+        "Items and Sign in rebuilt; teachers reset their own password by email.",
+        "Locks say who changed what and when, and change in bulk.",
+        "The roster import previews every row; deactivating a student locks them out; students move between sections.",
+        "Items can be reviewed in bulk, imported and exported.",
+        "Planet summaries drafted for every stage, waiting for your review on Content."
+      ],
+      "students": [
+        "OCTA has its own icon in the browser tab."
+      ]
+    },
+    {
+      "date": "2026-09-23",
+      "title": "Deployment fixes",
+      "teachers": [
+        "Setting up a host takes one pasted environment; the first admin's temporary password must be changed."
+      ],
+      "students": []
+    },
+    {
+      "date": "2026-09-14",
+      "title": "Stage checks",
+      "studentTitle": "Stage checks",
+      "teachers": [
+        "Every stage has a check; before this no student could leave stage 00.",
+        "A stage check now draws only its own stage's questions.",
+        "Fixed: ordering questions could not be answered and were graded wrong."
+      ],
+      "students": [
+        "Each stage has a check to pass before the next one opens.",
+        "Fixed: ordering questions can now be answered."
+      ]
+    },
+    {
+      "date": "2026-09-09",
+      "title": "The exams",
+      "teachers": [
+        "56 question generators, so every student's paper is different and equivalent.",
+        "The Prelim and Midterm seeded; their window is set on Assessments.",
+        "The first staff account, with a password that must be changed on first sign-in.",
+        "The review queue can send an item back."
+      ],
+      "students": []
+    },
+    {
+      "date": "2026-09-08",
+      "title": "Fixes",
+      "studentTitle": "A fix in the check",
+      "teachers": [
+        "Fixed: every multiple-choice answer in the check was being rejected."
+      ],
+      "students": [
+        "Fixed: multiple-choice answers in a check were rejected."
+      ]
+    },
+    {
+      "date": "2026-09-07",
+      "title": "Biomes and arriving at a stage",
+      "studentTitle": "Biomes, and arriving at a stage",
+      "teachers": [
+        "Every planet type has its biome, from licensed free art, credited."
+      ],
+      "students": [
+        "New biome art for the planets: arctic, ocean, cave and more.",
+        "Opening a stage travels to it and shows where you have arrived."
+      ]
+    },
+    {
+      "date": "2026-09-02",
+      "title": "Planet panels and the stages list",
+      "studentTitle": "Planet panels and the stages list",
+      "teachers": [
+        "The console's lists became dense tables: items, the audit log, attempt history."
+      ],
+      "students": [
+        "A planet panel, with its moons.",
+        "A Stages page, and a first-run tour (press ? to see it again).",
+        "Phones in landscape work."
+      ]
+    },
+    {
+      "date": "2026-09-01",
+      "title": "The solar system",
+      "studentTitle": "The solar system",
+      "teachers": [
+        "The course map becomes a solar system: one planet per stage, a level per orbit."
+      ],
+      "students": [
+        "The map is a solar system: each stage is a planet.",
+        "Your system has its own look and callsign (see Settings).",
+        "Planets have biomes."
+      ]
+    },
+    {
+      "date": "2026-08-29",
+      "title": "Labs, Lecture Mode, assessments",
+      "studentTitle": "Chapters 2 to 7, and labs",
+      "teachers": [
+        "Labs, the project and participation (40% of the grade) can be submitted and marked.",
+        "Lecture Mode: questions put to the room, with no names on the projector.",
+        "Assessments can be created; chapters 2 to 7 written, 8 to 18 planned.",
+        "The console's sign-in page."
+      ],
+      "students": [
+        "Chapters 2 to 7 can be read.",
+        "Hand in labs and the project."
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "title": "CPE 412, the console, the item bank",
+      "studentTitle": "CPE 412, and your first assessment",
+      "teachers": [
+        "The course rebuilt for CPE 412, the syllabus's 18 chapters.",
+        "The teacher console, with feedback from students.",
+        "The item bank: every question approved by hand before a student can draw it.",
+        "The roster import accepts the format a teacher pastes. Backups rehearsed."
+      ],
+      "students": [
+        "The course follows CPE 412's 18 chapters.",
+        "Sign in and sit an assessment."
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "title": "The foundation",
+      "studentTitle": "The beginning",
+      "teachers": [
+        "The database, with access rules on every table and tests that prove the wrong user is refused.",
+        "The question engine: each student gets a different, equivalent paper, graded on the server; the answer key never reaches a browser.",
+        "Sign-in, the first stages and the stage map."
+      ],
+      "students": [
+        "Sign in and see the course as a map of stages."
+      ]
+    }
+  ]
+}

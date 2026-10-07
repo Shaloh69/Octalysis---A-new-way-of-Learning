@@ -1,0 +1,1675 @@
+{
+  "madeAt": {
+    "commit": "b64a83d",
+    "date": "2026-10-07"
+  },
+  "updates": [
+    {
+      "date": "2026-10-07",
+      "title": "Teacher accounts, and the changelog",
+      "highlights": [
+        "Teacher accounts: a teacher claims their account with their employee ID on the console's Claim page, as students claim theirs.",
+        "Subjects, books and classes: CPE 412 has its two books (Stallings 9th, the default, and 10th); each section taking it is a class.",
+        "The admin's Teachers page: every teacher, their classes, the teacher roster import, and a page per teacher.",
+        "The AI assistant's groundwork: a figure reader that has read all 380 figures of the textbook.",
+        "This changelog, with the system's progress on one page."
+      ],
+      "commits": [
+        {
+          "hash": "050b7da",
+          "type": "feat",
+          "scope": "console",
+          "subject": "/teachers/:key, the admin's page for one teacher (T1)"
+        },
+        {
+          "hash": "0a9801f",
+          "type": "feat",
+          "scope": "console",
+          "subject": "/teachers, the admin's page of every teacher (T1)"
+        },
+        {
+          "hash": "7c583e4",
+          "type": "feat",
+          "scope": "console",
+          "subject": "/claim, a teacher claims their employee ID (T1)"
+        },
+        {
+          "hash": "5632eb4",
+          "type": "feat",
+          "scope": "api",
+          "subject": "T1, the admin's teacher routes and the teacher claim"
+        },
+        {
+          "hash": "f7f81eb",
+          "type": "feat",
+          "scope": "db",
+          "subject": "T1, subjects, books, classes and the teacher roster"
+        },
+        {
+          "hash": "f1d87d3",
+          "type": "feat",
+          "scope": "assistant",
+          "subject": "B3 begun, the engine chain, sealed keys and the tick"
+        },
+        {
+          "hash": "ec33a79",
+          "type": "feat",
+          "scope": "db",
+          "subject": "the assistant tick, pg_cron + pg_net only while a job runs"
+        },
+        {
+          "hash": "78697a6",
+          "type": "feat",
+          "scope": "assistant",
+          "subject": "B1's upload, the book's figures to the private bucket"
+        },
+        {
+          "hash": "24051ab",
+          "type": "feat",
+          "scope": "db",
+          "subject": "B2, the drafting assistant's schema (owner-only, frozen units, sealed keys)"
+        },
+        {
+          "hash": "8c92748",
+          "type": "feat",
+          "scope": "assistant",
+          "subject": "B1, the figure reader for the whole book"
+        },
+        {
+          "hash": "b7bcede",
+          "type": "fix",
+          "scope": "check",
+          "subject": "a paper handed in by a reload shows its questions"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-06",
+      "title": "Figures, the class chat, Listen",
+      "highlights": [
+        "Course figures, drawn for the course from the textbook's, each approved before students see it (chapters 01-13).",
+        "Lesson text drafted from the textbook for chapters 11 to 13, waiting for your approval on Content.",
+        "131 questions for stages 09 to 12, at review on Items. The item bank reaches stage 12; the exams still stop at 08.",
+        "The class chat: each section's room and a private thread with each student, on the console's Chat.",
+        "You can reset a student's password; the student then chooses their own.",
+        "Leaving a check or an exam (full screen, the page, or away over 15 seconds) hands it in and uses the attempt (ruling 4)."
+      ],
+      "commits": [
+        {
+          "hash": "1c74d72",
+          "type": "feat",
+          "scope": "reader",
+          "subject": "Listen follows the voice sentence by sentence, with a line under it and a progress strip along the bottom"
+        },
+        {
+          "hash": "bbe05f6",
+          "type": "fix",
+          "scope": "reader",
+          "subject": "Listen picks the most natural voice, reads whole paragraphs, and marks the paragraph with room around it"
+        },
+        {
+          "hash": "c518682",
+          "type": "feat",
+          "scope": "web",
+          "subject": "students reset their own password by email"
+        },
+        {
+          "hash": "7deeb47",
+          "type": "fix",
+          "scope": "map",
+          "subject": "the belt, the Kuiper belt and the Trojans stay small round dots up close"
+        },
+        {
+          "hash": "4a6b69f",
+          "type": "fix",
+          "scope": "console",
+          "subject": "a toast raised under a dialog is heard, not only seen"
+        },
+        {
+          "hash": "5491a61",
+          "type": "feat",
+          "scope": "accounts",
+          "subject": "the instructor resets a student's password; the student chooses their own"
+        },
+        {
+          "hash": "5f820fe",
+          "type": "feat",
+          "scope": "reader",
+          "subject": "Listen, the audiobook in the browser's own voice"
+        },
+        {
+          "hash": "ddf5eb4",
+          "type": "content",
+          "scope": "items",
+          "subject": "questions for stages 09-12, at review (131)"
+        },
+        {
+          "hash": "a34a59d",
+          "type": "feat",
+          "scope": "sitting",
+          "subject": "leaving a check or exam hands it in and uses the attempt (ruling 4)"
+        },
+        {
+          "hash": "52d959e",
+          "type": "fix",
+          "scope": "chat",
+          "subject": "a picture or video that loads late no longer pushes the newest message out of view"
+        },
+        {
+          "hash": "4487ec1",
+          "type": "fix",
+          "scope": "chat",
+          "subject": "a moon's journey no longer closes the chat, and a closed chat names the paper"
+        },
+        {
+          "hash": "26ca1eb",
+          "type": "fix",
+          "scope": "api",
+          "subject": "chat uploads failed on the deployment: storage refuses an empty JSON body"
+        },
+        {
+          "hash": "c1e4e85",
+          "type": "feat",
+          "scope": "audit",
+          "subject": "the class chat's removals read as sentences, under their own filter"
+        },
+        {
+          "hash": "2d3b0b5",
+          "type": "feat",
+          "scope": "console",
+          "subject": "/chat, the instructor's side of the class chat"
+        },
+        {
+          "hash": "221c0c8",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app/chat, the class chat in the star HUD"
+        },
+        {
+          "hash": "4c47c74",
+          "type": "feat",
+          "scope": "api",
+          "subject": "the class chat's routes, with signed attachments and the paper guard"
+        },
+        {
+          "hash": "46ac563",
+          "type": "feat",
+          "scope": "db",
+          "subject": "the class chat's schema, applied locally and to the deployment"
+        },
+        {
+          "hash": "b8720e1",
+          "type": "fix",
+          "scope": "content",
+          "subject": "nothing names a figure it does not show, and sync refuses it"
+        },
+        {
+          "hash": "d38bda3",
+          "type": "fix",
+          "scope": "items",
+          "subject": "01-structure-hierarchy-order no longer leans on a figure students cannot see"
+        },
+        {
+          "hash": "cf1b7a9",
+          "type": "feat",
+          "scope": "scope",
+          "subject": "the item bank reaches stage 12; the exams still stop at 08"
+        },
+        {
+          "hash": "c169dfc",
+          "type": "content",
+          "scope": "12",
+          "subject": "pipeline timing and the branch penalty, drawn"
+        },
+        {
+          "hash": "87cd7e4",
+          "type": "content",
+          "scope": "11",
+          "subject": "the x86 instruction format with ModR/M and SIB opened up, drawn"
+        },
+        {
+          "hash": "71c6ae7",
+          "type": "content",
+          "scope": "09",
+          "subject": "the IEEE 754 formats and -6.25 bit by bit, drawn"
+        },
+        {
+          "hash": "2ecbadc",
+          "type": "content",
+          "scope": "08",
+          "subject": "the five-state process model and a page-table translation, drawn"
+        },
+        {
+          "hash": "807cf20",
+          "type": "content",
+          "scope": "07",
+          "subject": "who is busy while a block is read, for each I/O technique"
+        },
+        {
+          "hash": "d8b57c6",
+          "type": "content",
+          "scope": "06",
+          "subject": "constant angular velocity against zone recording, drawn for the course"
+        },
+        {
+          "hash": "6c9b2b8",
+          "type": "content",
+          "scope": "05",
+          "subject": "Hamming code as three circles, with a flipped bit found"
+        },
+        {
+          "hash": "c08fc7e",
+          "type": "content",
+          "scope": "04",
+          "subject": "one address split three ways, drawn to scale"
+        },
+        {
+          "hash": "9e384f5",
+          "type": "content",
+          "scope": "02",
+          "subject": "Amdahl's law as a chart, computed from the formula"
+        },
+        {
+          "hash": "bd35362",
+          "type": "content",
+          "scope": "01",
+          "subject": "the computer's top-level structure at three levels, drawn for the course"
+        },
+        {
+          "hash": "f9519af",
+          "type": "content",
+          "scope": "03",
+          "subject": "the instruction cycle state diagram, drawn for the course"
+        },
+        {
+          "hash": "197090a",
+          "type": "content",
+          "scope": "13",
+          "subject": "drafted lesson text for Reduced Instruction Set Computers, with two figures"
+        },
+        {
+          "hash": "c4f736a",
+          "type": "fix",
+          "scope": "figures",
+          "subject": "emphasis is a fixed hue, and the paper and /items gates cover figures"
+        },
+        {
+          "hash": "2e78512",
+          "type": "feat",
+          "scope": null,
+          "subject": "figures drawn in the reader, reviewed on /content and /items"
+        },
+        {
+          "hash": "c17c3a5",
+          "type": "feat",
+          "scope": null,
+          "subject": "course figures, recreated as SVG and approved before students see them"
+        },
+        {
+          "hash": "c141a30",
+          "type": "content",
+          "scope": "12",
+          "subject": "drafted lesson text for Processor Structure and Function, for review"
+        },
+        {
+          "hash": "ac48f38",
+          "type": "content",
+          "scope": "11",
+          "subject": "drafted lesson text for Instruction Sets: Addressing and Formats, for review"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-05",
+      "title": "Drafted chapters wait for approval; the map opens up",
+      "highlights": [
+        "Lesson text drafted from the textbook now waits for your approval before any student reads it; chapters 09 and 10 drafted.",
+        "Orientation finishes itself when a student reads it to the end.",
+        "The map draws faster (under 50 draw calls)."
+      ],
+      "commits": [
+        {
+          "hash": "e458812",
+          "type": "content",
+          "scope": "10",
+          "subject": "drafted lesson text for Instruction Sets: Characteristics, for review"
+        },
+        {
+          "hash": "9a95834",
+          "type": "content",
+          "scope": "09",
+          "subject": "drafted lesson text for Computer Arithmetic, for review"
+        },
+        {
+          "hash": "204788a",
+          "type": "feat",
+          "scope": "web",
+          "subject": "the alien on a comet's orbit, focused on a click"
+        },
+        {
+          "hash": "b8ed4bd",
+          "type": "fix",
+          "scope": null,
+          "subject": "bodiless POSTs, moons on the planets' rules, quieter orbit lines"
+        },
+        {
+          "hash": "9ac1058",
+          "type": "feat",
+          "scope": null,
+          "subject": "drafted lesson text waits for the instructor's approval"
+        },
+        {
+          "hash": "943aef0",
+          "type": "feat",
+          "scope": "web",
+          "subject": "zoom and look around the map, home after 30 seconds"
+        },
+        {
+          "hash": "2c0b929",
+          "type": "feat",
+          "scope": null,
+          "subject": "Orientation finishes itself when it is read to the end"
+        },
+        {
+          "hash": "444e063",
+          "type": "perf",
+          "scope": "web",
+          "subject": "R5.3, the map back under 50 draw calls"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-02",
+      "title": "A realistic solar system",
+      "highlights": [
+        "The student map's solar system made realistic: smaller planets, wider orbits, a bigger sun, distant comets."
+      ],
+      "commits": [
+        {
+          "hash": "f578165",
+          "type": "feat",
+          "scope": "web",
+          "subject": "R4.9, smaller planets, wider orbits, a bigger sun, distant comets"
+        },
+        {
+          "hash": "80a8233",
+          "type": "feat",
+          "scope": "web",
+          "subject": "R4.8, the rest of the solar-system brief"
+        },
+        {
+          "hash": "f79b305",
+          "type": "fix",
+          "scope": "build",
+          "subject": "update the lockfile to apps/web's phaser range"
+        },
+        {
+          "hash": "f1c14ca",
+          "type": "feat",
+          "scope": "web",
+          "subject": "a realistic solar system on the map (R4.7)"
+        },
+        {
+          "hash": "d4b9f32",
+          "type": "feat",
+          "scope": "web",
+          "subject": "a longer warp, then an arrival screen for every planet and moon"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-01",
+      "title": "Two more minigames, real textures",
+      "highlights": [
+        "Two moon minigames: Cache Tuner (moon 04.5, the book's Example 4.2) and Bus Contention (moon 03.9)."
+      ],
+      "commits": [
+        {
+          "hash": "b041de8",
+          "type": "feat",
+          "scope": "web",
+          "subject": "Bus Contention, moon 03.9's Bus wiring, in Phaser"
+        },
+        {
+          "hash": "3ac7b78",
+          "type": "feat",
+          "scope": "web",
+          "subject": "the star map shows only while no planet is chosen"
+        },
+        {
+          "hash": "95c482f",
+          "type": "feat",
+          "scope": "web",
+          "subject": "real textures on the map's planets, moons and sun"
+        },
+        {
+          "hash": "f5b293d",
+          "type": "feat",
+          "scope": "web",
+          "subject": "Cache Tuner, moon 04.5's Cache drill, on the book's Example 4.2"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-30",
+      "title": "The student app becomes a game",
+      "highlights": [
+        "The student app remade as a game: a star HUD in the solar system, each planet's own biome when opened.",
+        "A check or exam sits behind Start, in full screen, with no way back; every time a student leaves it is recorded and shown on their record.",
+        "Moons: practice journeys on each objective; their mastery opens the next planet, and each student's moons are on their record."
+      ],
+      "commits": [
+        {
+          "hash": "4410670",
+          "type": "feat",
+          "scope": "web",
+          "subject": "Clock Bench, moon 02.8's Drill, on the book's own example"
+        },
+        {
+          "hash": "513988d",
+          "type": "feat",
+          "scope": "web",
+          "subject": "Two Columns, moon 01.2's Sort, beside its journey"
+        },
+        {
+          "hash": "11dc66d",
+          "type": "feat",
+          "scope": "console,api",
+          "subject": "each student's moon mastery on the record"
+        },
+        {
+          "hash": "403ec5b",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "moons open the next planet"
+        },
+        {
+          "hash": "e521fdc",
+          "type": "feat",
+          "scope": "web",
+          "subject": "moons on the map, a moon's panel, and Orientation's asteroids"
+        },
+        {
+          "hash": "16512f0",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "a moon's mastery, defined once and served per moon"
+        },
+        {
+          "hash": "dc523f6",
+          "type": "feat",
+          "scope": "web",
+          "subject": "a moon's journey, practice on the runner's own paper"
+        },
+        {
+          "hash": "5259c50",
+          "type": "feat",
+          "scope": "api",
+          "subject": "a moon's journey, and no check on a locked stage"
+        },
+        {
+          "hash": "5cbd823",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "objective_progress, a moon's mastery written by grading alone"
+        },
+        {
+          "hash": "16137e5",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "a non-gradeable prerequisite never blocks"
+        },
+        {
+          "hash": "9674cb7",
+          "type": "feat",
+          "scope": "console",
+          "subject": "show the instructor every time a student left a paper"
+        },
+        {
+          "hash": "e608208",
+          "type": "feat",
+          "scope": "web",
+          "subject": "a paper sits behind Start, with no way back, in full screen"
+        },
+        {
+          "hash": "23fda7b",
+          "type": "feat",
+          "scope": "api",
+          "subject": "record every time a student leaves a paper (ruling 3)"
+        },
+        {
+          "hash": "04f8ffe",
+          "type": "feat",
+          "scope": "web",
+          "subject": "the title screen for /login, /register, /maintenance and 404"
+        },
+        {
+          "hash": "061464c",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app/settings in the HUD's panels: accent, keyboard, motion"
+        },
+        {
+          "hash": "943c615",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app/work, Starfield's inventory: hand-ins, score column, card"
+        },
+        {
+          "hash": "545f2a1",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app/progress, Starfield's character menu: depth and 21 meters"
+        },
+        {
+          "hash": "2fd1157",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app/stages, No Man's Sky's discoveries: systems and planets"
+        },
+        {
+          "hash": "886007a",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app/stage/:id/check, biome chrome around one neutral paper"
+        },
+        {
+          "hash": "c50376e",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app/stage/:id, the reader remade as a letter in the planet"
+        },
+        {
+          "hash": "0d6828a",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app, the 3D map and the only map, Starfield's system map"
+        },
+        {
+          "hash": "862a60e",
+          "type": "feat",
+          "scope": "web",
+          "subject": "the shell, remade: Starfield's HUD and the biome's sprites"
+        },
+        {
+          "hash": "140c516",
+          "type": "feat",
+          "scope": "tokens",
+          "subject": "one star HUD, sprite bars and buttons, the neutral paper"
+        },
+        {
+          "hash": "ac9ca61",
+          "type": "feat",
+          "scope": "web",
+          "subject": "the realm on <html>, per-planet biomes, and the faces loading"
+        },
+        {
+          "hash": "2d9eba1",
+          "type": "feat",
+          "scope": "api",
+          "subject": "a biome for every planet, and the env schema off the shared entry"
+        },
+        {
+          "hash": "4d9c832",
+          "type": "feat",
+          "scope": "tokens",
+          "subject": "the remake's look system: ten colour sets, faces, frames"
+        },
+        {
+          "hash": "a9726fa",
+          "type": "feat",
+          "scope": "web",
+          "subject": "rebuild /app/map, the flat map, with the planet panel"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-29",
+      "title": "The last console pages rebuilt; the reader and the check",
+      "highlights": [
+        "Feedback, Live (with the projector as its own page) and the attempt page rebuilt.",
+        "An attempt page says whose paper it is."
+      ],
+      "commits": [
+        {
+          "hash": "d513e74",
+          "type": "feat",
+          "scope": "web",
+          "subject": "rebuild /app/stage/:id, the stage reader"
+        },
+        {
+          "hash": "f481319",
+          "type": "feat",
+          "scope": "api",
+          "subject": "the reader's lock reason, from the map's own author"
+        },
+        {
+          "hash": "8a9cadb",
+          "type": "feat",
+          "scope": "web",
+          "subject": "rebuild /app/stage/:id/check, the attempt runner"
+        },
+        {
+          "hash": "b6aa28d",
+          "type": "feat",
+          "scope": "api",
+          "subject": "a resumed paper carries the student's own recorded answers"
+        },
+        {
+          "hash": "00f448c",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /attempts/:attemptId, the last console route"
+        },
+        {
+          "hash": "8f6baeb",
+          "type": "feat",
+          "scope": "api",
+          "subject": "the attempt drill-down says whose paper it is; a bad id is 404"
+        },
+        {
+          "hash": "ae01e8b",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /live, and the projector as its own route"
+        },
+        {
+          "hash": "c4bd3c9",
+          "type": "feat",
+          "scope": "api",
+          "subject": "Lecture Mode sessions, audited, and small groups withheld"
+        },
+        {
+          "hash": "066cc69",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /feedback: one queue, repeats grouped, triaged together"
+        },
+        {
+          "hash": "3945556",
+          "type": "fix",
+          "scope": "console",
+          "subject": "/assessments keeps Create on screen after a refused create"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-28",
+      "title": "Submissions, gradebook, content, audit",
+      "highlights": [
+        "Submissions: a marking queue beside the work; a regrade is an explicit, audited unlock.",
+        "Gradebook: the whole grade from one computation, exportable.",
+        "Content: summary review, and a block editor that keeps every version with its reason.",
+        "Audit log: every entry, filtered, paged and exported; nobody can edit or delete it.",
+        "System health: every check named and counted, never a verdict. A new sidebar."
+      ],
+      "commits": [
+        {
+          "hash": "bdd8cd8",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /system: every check named, counted, never a verdict"
+        },
+        {
+          "hash": "7b0c9e8",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /audit: every entry, filtered, paged and exported"
+        },
+        {
+          "hash": "b265c93",
+          "type": "feat",
+          "scope": "api",
+          "subject": "filter the audit log on the server, page it, export it as CSV"
+        },
+        {
+          "hash": "d23fd6e",
+          "type": "feat",
+          "scope": "db",
+          "subject": "make audit_log append-only for every role"
+        },
+        {
+          "hash": "fdb71b5",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /content, with summary review and the block editor"
+        },
+        {
+          "hash": "bf739a7",
+          "type": "feat",
+          "scope": "content",
+          "subject": "block editing and summary review, held below the API"
+        },
+        {
+          "hash": "6b8b948",
+          "type": "fix",
+          "scope": "console",
+          "subject": "the template's frame, and only the page scrolls"
+        },
+        {
+          "hash": "e935aaf",
+          "type": "fix",
+          "scope": "console",
+          "subject": "the sidebar is only as tall as what it holds"
+        },
+        {
+          "hash": "59ae5df",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild the shell against shadcn-admin's sidebar"
+        },
+        {
+          "hash": "30e2a77",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /gradebook against shadcn-admin's Dashboard and a heatmap table"
+        },
+        {
+          "hash": "da38990",
+          "type": "feat",
+          "scope": "api",
+          "subject": "the gradebook counts the whole grade, from one computation"
+        },
+        {
+          "hash": "bd496e6",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /submissions against shadcn-admin's Inbox"
+        },
+        {
+          "hash": "3f82fbd",
+          "type": "fix",
+          "scope": "api",
+          "subject": "a regrade is an explicit, audited unlock for staff too"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-27",
+      "title": "Students, records, assessments",
+      "highlights": [
+        "Students and each student's record rebuilt.",
+        "Assessments rebuilt, with a preview; the exam salt can be rotated; a section's scope is checked at Start."
+      ],
+      "commits": [
+        {
+          "hash": "11a540b",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /assessments against shadcn.io's form-with-preview"
+        },
+        {
+          "hash": "2e02df8",
+          "type": "feat",
+          "scope": "api",
+          "subject": "rotate the exam salt, enforce section scope at Start, bank per row"
+        },
+        {
+          "hash": "b9e806f",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /students/:userId against TanStack's sub-component row"
+        },
+        {
+          "hash": "d23aa08",
+          "type": "feat",
+          "scope": "api",
+          "subject": "the student record carries registration and sections, for students only"
+        },
+        {
+          "hash": "b1f388b",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /students against shadcn-admin's users table"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-25",
+      "title": "The console rebuild begins",
+      "highlights": [
+        "Items and Sign in rebuilt; teachers reset their own password by email.",
+        "Locks say who changed what and when, and change in bulk.",
+        "The roster import previews every row; deactivating a student locks them out; students move between sections.",
+        "Items can be reviewed in bulk, imported and exported.",
+        "Planet summaries drafted for every stage, waiting for your review on Content."
+      ],
+      "commits": [
+        {
+          "hash": "ec418ee",
+          "type": "feat",
+          "scope": "console",
+          "subject": "parseRoster reads an optional section_code column"
+        },
+        {
+          "hash": "55b4603",
+          "type": "feat",
+          "scope": "api",
+          "subject": "roster preview per row, deactivate as a real lock-out, section move"
+        },
+        {
+          "hash": "88d3579",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /locks against a permission matrix, and dim every dialog"
+        },
+        {
+          "hash": "6af762d",
+          "type": "feat",
+          "scope": "api",
+          "subject": "/locks says who and when, writes in bulk, and lists section overrides"
+        },
+        {
+          "hash": "d63e4dc",
+          "type": "feat",
+          "scope": "console",
+          "subject": "self-service password reset, and wake the API while a teacher types"
+        },
+        {
+          "hash": "385c05a",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /signin against its template — the gate, in one frame"
+        },
+        {
+          "hash": "94931dc",
+          "type": "feat",
+          "scope": "console",
+          "subject": "rebuild /items against its template — the first route through the gate"
+        },
+        {
+          "hash": "4ea94ed",
+          "type": "feat",
+          "scope": "api",
+          "subject": "bulk review, import and export for the item bank"
+        },
+        {
+          "hash": "066bb79",
+          "type": "fix",
+          "scope": "demo",
+          "subject": "seed the flagged item after the bank exists"
+        },
+        {
+          "hash": "a895bb9",
+          "type": "feat",
+          "scope": "content",
+          "subject": "planet summaries, moons that hold minigames and unlock the next planet"
+        },
+        {
+          "hash": "f946144",
+          "type": "fix",
+          "scope": "local",
+          "subject": "move the local database off 54329, which Windows reserved"
+        },
+        {
+          "hash": "b77ca79",
+          "type": "feat",
+          "scope": "redesign",
+          "subject": "student app revamp, planet zoom, Keplerian orbits, shared icon"
+        },
+        {
+          "hash": "767bcd0",
+          "type": "feat",
+          "scope": "phase",
+          "subject": "table-form report, plus the rules that keep the next session honest"
+        },
+        {
+          "hash": "4d6a8c6",
+          "type": "fix",
+          "scope": "deploy",
+          "subject": "refuse to push when the connection and SUPABASE_URL differ"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-23",
+      "title": "Deployment fixes",
+      "highlights": [
+        "Setting up a host takes one pasted environment; the first admin's temporary password must be changed."
+      ],
+      "commits": [
+        {
+          "hash": "68f1496",
+          "type": "fix",
+          "scope": "test",
+          "subject": "resetAll left fixture accounts behind, so verify disagreed with itself"
+        },
+        {
+          "hash": "7b5a6c7",
+          "type": "fix",
+          "scope": "api",
+          "subject": "the bootstrap defaults could be submitted straight back"
+        },
+        {
+          "hash": "9ec0345",
+          "type": "feat",
+          "scope": "deploy",
+          "subject": "one env paste per host, with the admin defaults in it"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-14",
+      "title": "Stage checks",
+      "highlights": [
+        "Every stage has a check; before this no student could leave stage 00.",
+        "A stage check now draws only its own stage's questions.",
+        "Fixed: ordering questions could not be answered and were graded wrong."
+      ],
+      "commits": [
+        {
+          "hash": "da5831b",
+          "type": "fix",
+          "scope": "web",
+          "subject": "ordering items were unanswerable and graded wrong every time"
+        },
+        {
+          "hash": "efd50a0",
+          "type": "fix",
+          "scope": "db",
+          "subject": "two invariants no authored item could satisfy, and a count capped at 5"
+        },
+        {
+          "hash": "808d28e",
+          "type": "fix",
+          "scope": "engine",
+          "subject": "a stage check sampled the whole bank, not its own stage"
+        },
+        {
+          "hash": "365d116",
+          "type": "fix",
+          "scope": "curriculum",
+          "subject": "stage checks, without which no student leaves stage 00"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-09",
+      "title": "The exams",
+      "highlights": [
+        "56 question generators, so every student's paper is different and equivalent.",
+        "The Prelim and Midterm seeded; their window is set on Assessments.",
+        "The first staff account, with a password that must be changed on first sign-in.",
+        "The review queue can send an item back."
+      ],
+      "commits": [
+        {
+          "hash": "d98ed0d",
+          "type": "fix",
+          "scope": "deploy",
+          "subject": "the Supabase push omitted 40% of the grade"
+        },
+        {
+          "hash": "62a67f7",
+          "type": "feat",
+          "scope": "auth",
+          "subject": "a seeded bootstrap password, and a console that blocks until it changes"
+        },
+        {
+          "hash": "79896f1",
+          "type": "feat",
+          "scope": "deploy",
+          "subject": "create the first staff account, which nothing could do"
+        },
+        {
+          "hash": "087f05a",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the exam window, where the instructor said it would be"
+        },
+        {
+          "hash": "492ab36",
+          "type": "feat",
+          "scope": "assessments",
+          "subject": "both exams seeded, five attempts, and the window you can move"
+        },
+        {
+          "hash": "b1cb5b0",
+          "type": "feat",
+          "scope": "items",
+          "subject": "the bank F-41 asked for, and the test that proves it fills"
+        },
+        {
+          "hash": "056ce83",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the review queue could not reject, and advanced nowhere"
+        },
+        {
+          "hash": "1c3ea5f",
+          "type": "feat",
+          "scope": "engine",
+          "subject": "fifty-six solvers, and a scope flag that stops at the Midterm"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-08",
+      "title": "Fixes",
+      "highlights": [
+        "Fixed: every multiple-choice answer in the check was being rejected."
+      ],
+      "commits": [
+        {
+          "hash": "ef5a759",
+          "type": "feat",
+          "scope": "minigames",
+          "subject": "five deferred with measured reasons, and two more pages with no h1"
+        },
+        {
+          "hash": "2f046ab",
+          "type": "fix",
+          "scope": "runner",
+          "subject": "every multiple-choice answer was rejected, and the test said otherwise"
+        },
+        {
+          "hash": "2192cc9",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the fifth card list, /live proved rather than trusted, and a seed guard"
+        },
+        {
+          "hash": "f91ce64",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the fourth card list, and two pages that needed nothing"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-07",
+      "title": "Biomes and arriving at a stage",
+      "highlights": [
+        "Every planet type has its biome, from licensed free art, credited."
+      ],
+      "commits": [
+        {
+          "hash": "3f5a1dc",
+          "type": "feat",
+          "scope": "map",
+          "subject": "entering a stage travels, and the 3D map was the one that jumped"
+        },
+        {
+          "hash": "56e04cf",
+          "type": "feat",
+          "scope": "web",
+          "subject": "arriving at a stage shows the destination, and the API default stops pointing at Adminer"
+        },
+        {
+          "hash": "65c2ea3",
+          "type": "fix",
+          "scope": "docs,db",
+          "subject": "the biome docs had stopped being true, and the alpha gate cited checks that did not exist"
+        },
+        {
+          "hash": "3516d95",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "three bland biomes rebuilt from pre-cut packs, and F-40 closed"
+        },
+        {
+          "hash": "cfccd9b",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "a template with six slots, and fourteen sprites that were quietly squashed"
+        },
+        {
+          "hash": "76641e9",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "the biome becomes the page background, and D-2 returns a fourth time"
+        },
+        {
+          "hash": "89fe6d2",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "cave sourced from OpenGameArt, because itch could not prove a licence"
+        },
+        {
+          "hash": "7a24647",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "arctic and ocean vendored, and a pack that lied about being layers"
+        },
+        {
+          "hash": "a79ffce",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "three vendored from CC0 art, and two packs the spec named could not be used"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-02",
+      "title": "Planet panels and the stages list",
+      "highlights": [
+        "The console's lists became dense tables: items, the audit log, attempt history."
+      ],
+      "commits": [
+        {
+          "hash": "d043790",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the item bank was the third card list, and .table-scroll was the real bug"
+        },
+        {
+          "hash": "dc33eaa",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the audit log repeated D-4, and it was worse than D-4"
+        },
+        {
+          "hash": "e7a667d",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the attempt history expands in place, and the fixture gap it exposed"
+        },
+        {
+          "hash": "bb87083",
+          "type": "feat",
+          "scope": "r3",
+          "subject": "the universal gate becomes mechanical, and it found four things"
+        },
+        {
+          "hash": "b6aab29",
+          "type": "feat",
+          "scope": "curriculum",
+          "subject": "the ruled act grouping, Stage 00's objectives, and a random sun burst"
+        },
+        {
+          "hash": "f41156c",
+          "type": "feat",
+          "scope": "map",
+          "subject": "the flat map becomes the same galaxy, drawn still"
+        },
+        {
+          "hash": "aa05148",
+          "type": "fix",
+          "scope": "map",
+          "subject": "the 2D map kept coming back, and four stale tests said everything was fine"
+        },
+        {
+          "hash": "bdf883c",
+          "type": "feat",
+          "scope": "web",
+          "subject": "the first-run copy becomes a labelled placeholder, and a ? replays it"
+        },
+        {
+          "hash": "94bfbcc",
+          "type": "feat",
+          "scope": "solar-system",
+          "subject": "the planet sidebar, with selectable moons"
+        },
+        {
+          "hash": "f7564ab",
+          "type": "feat",
+          "scope": "web",
+          "subject": "stages page, first-run tour, landscape phones, sun raised"
+        },
+        {
+          "hash": "19f700b",
+          "type": "feat",
+          "scope": "console",
+          "subject": "R3 route inventory, and D-4 finally fixed"
+        }
+      ]
+    },
+    {
+      "date": "2026-09-01",
+      "title": "The solar system",
+      "highlights": [
+        "The course map becomes a solar system: one planet per stage, a level per orbit."
+      ],
+      "commits": [
+        {
+          "hash": "3f7c662",
+          "type": "feat",
+          "scope": "solar-system",
+          "subject": "both loading screens, and the last rung of the ladder"
+        },
+        {
+          "hash": "bc7faa4",
+          "type": "feat",
+          "scope": "solar-system",
+          "subject": "the system becomes the page, with a connections toggle"
+        },
+        {
+          "hash": "02b5858",
+          "type": "feat",
+          "scope": "solar-system",
+          "subject": "progressive reveal, biome-tinted planets, and a living sun"
+        },
+        {
+          "hash": "f77178f",
+          "type": "feat",
+          "scope": "solar-system",
+          "subject": "the planet HUD, and two missing rungs of the ladder"
+        },
+        {
+          "hash": "26bb738",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "carry the verified licences into the manifests and CREDITS"
+        },
+        {
+          "hash": "d0b9cfe",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "vendor the Kenney CC0 pack and render the neutral landing"
+        },
+        {
+          "hash": "ca21cbf",
+          "type": "feat",
+          "scope": "solar-system",
+          "subject": "real controls positioned over their planets"
+        },
+        {
+          "hash": "5dfd15b",
+          "type": "feat",
+          "scope": "cosmetics",
+          "subject": "show the system callsign on /app/settings"
+        },
+        {
+          "hash": "b9d32f7",
+          "type": "feat",
+          "scope": "biomes",
+          "subject": "real parallax art as the default, procedural as the exception"
+        },
+        {
+          "hash": "529119d",
+          "type": "feat",
+          "scope": "cosmetics",
+          "subject": "R2 — every student's system is theirs, and the map is everyone's"
+        },
+        {
+          "hash": "b5ea04c",
+          "type": "feat",
+          "scope": "solar-system",
+          "subject": "R1.2-R1.4 — the map renders, and it is on by default"
+        },
+        {
+          "hash": "c7a7f11",
+          "type": "feat",
+          "scope": "solar-system",
+          "subject": "R1.1 — the layout function, with the four R0 rulings in it"
+        },
+        {
+          "hash": "3b420b2",
+          "type": "fix",
+          "scope": "design",
+          "subject": "first pass with an actual browser, and it found four things"
+        },
+        {
+          "hash": "3735ea2",
+          "type": "fix",
+          "scope": "console",
+          "subject": "every control was drawn at the wrong size, and nobody had looked"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-29",
+      "title": "Labs, Lecture Mode, assessments",
+      "highlights": [
+        "Labs, the project and participation (40% of the grade) can be submitted and marked.",
+        "Lecture Mode: questions put to the room, with no names on the projector.",
+        "Assessments can be created; chapters 2 to 7 written, 8 to 18 planned.",
+        "The console's sign-in page."
+      ],
+      "commits": [
+        {
+          "hash": "b302a2f",
+          "type": "feat",
+          "scope": "design",
+          "subject": "an animated backdrop, shared by both apps"
+        },
+        {
+          "hash": "0ad292a",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the sign-in page that was never built, and two deploy fixes"
+        },
+        {
+          "hash": "b60d0ec",
+          "type": "fix",
+          "scope": "deploy",
+          "subject": "the Vercel build was missing two thirds of the repo"
+        },
+        {
+          "hash": "7560e2f",
+          "type": "fix",
+          "scope": "deploy",
+          "subject": "the Render build would have failed on its first command"
+        },
+        {
+          "hash": "cf4a104",
+          "type": "feat",
+          "scope": "console",
+          "subject": "assessments, the gap that made the whole engine unreachable"
+        },
+        {
+          "hash": "6509256",
+          "type": "feat",
+          "scope": null,
+          "subject": "chapters 5-7 authored, 8-18 declared planned, and deploy config"
+        },
+        {
+          "hash": "bd5d5c5",
+          "type": "feat",
+          "scope": "content",
+          "subject": "chapters 2, 3 and 4, and the gate that caught me rewording a syllabus"
+        },
+        {
+          "hash": "bc2192a",
+          "type": "feat",
+          "scope": "design",
+          "subject": "the eight encounter themes, and a gate that has already rejected one"
+        },
+        {
+          "hash": "0f2a219",
+          "type": "feat",
+          "scope": "console",
+          "subject": "Lecture Mode, where 'no names, ever' is a payload guarantee"
+        },
+        {
+          "hash": "779edd4",
+          "type": "feat",
+          "scope": "submissions",
+          "subject": "the 40% of the grade that had nowhere to go"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "title": "CPE 412, the console, the item bank",
+      "highlights": [
+        "The course rebuilt for CPE 412, the syllabus's 18 chapters.",
+        "The teacher console, with feedback from students.",
+        "The item bank: every question approved by hand before a student can draw it.",
+        "The roster import accepts the format a teacher pastes. Backups rehearsed."
+      ],
+      "commits": [
+        {
+          "hash": "952c4b1",
+          "type": "feat",
+          "scope": "web",
+          "subject": "a student can sign in and sit an assessment"
+        },
+        {
+          "hash": "bc4aa5a",
+          "type": "feat",
+          "scope": "roster",
+          "subject": "accept the format a teacher actually pastes, and the Project brief"
+        },
+        {
+          "hash": "8557b72",
+          "type": "feat",
+          "scope": "items",
+          "subject": "self-approval that degrades honestly, and a cumulative Finals"
+        },
+        {
+          "hash": "01b17f4",
+          "type": "feat",
+          "scope": "content",
+          "subject": "the textbook becomes a verified source, and Chapter 1 is written"
+        },
+        {
+          "hash": "45318af",
+          "type": "feat",
+          "scope": "items",
+          "subject": "the item bank, where \"approve every one by hand\" becomes possible"
+        },
+        {
+          "hash": "c7b619c",
+          "type": "feat",
+          "scope": "ops",
+          "subject": "backups that are rehearsed, and a runbook for the person it breaks on"
+        },
+        {
+          "hash": "202470c",
+          "type": "feat",
+          "scope": "a11y",
+          "subject": "the contrast check P9 required, and the four failures it found"
+        },
+        {
+          "hash": "944b247",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the teacher console, and P8 feedback end to end"
+        },
+        {
+          "hash": "5b548e8",
+          "type": "fix",
+          "scope": "curriculum",
+          "subject": "the syllabus has eighteen chapters, not seventeen"
+        },
+        {
+          "hash": "c5c137a",
+          "type": "fix",
+          "scope": "auth",
+          "subject": "ES256/JWKS verification, and a linear curriculum"
+        },
+        {
+          "hash": "59c3e4a",
+          "type": "feat",
+          "scope": "curriculum",
+          "subject": "rebuild for CPE 412 - Computer Architecture and Organization"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "title": "The foundation",
+      "highlights": [
+        "The database, with access rules on every table and tests that prove the wrong user is refused.",
+        "The question engine: each student gets a different, equivalent paper, graded on the server; the answer key never reaches a browser.",
+        "Sign-in, the first stages and the stage map."
+      ],
+      "commits": [
+        {
+          "hash": "d0404fd",
+          "type": "fix",
+          "scope": "db",
+          "subject": "restore default privileges after a Supabase schema reset"
+        },
+        {
+          "hash": "cc377ad",
+          "type": "feat",
+          "scope": null,
+          "subject": "console API, CI, scheduled work on pg_cron, and the status accounting"
+        },
+        {
+          "hash": "6a422ef",
+          "type": "feat",
+          "scope": "web",
+          "subject": "the skill tree - 2D canonical map, 3D galaxy, reader, progress grid"
+        },
+        {
+          "hash": "322498e",
+          "type": "feat",
+          "scope": "content",
+          "subject": "P2 content pipeline, stage map API, and Stages 00-05"
+        },
+        {
+          "hash": "d3094b3",
+          "type": "feat",
+          "scope": "api",
+          "subject": "P3 attempt endpoints and P1 auth - both phases complete"
+        },
+        {
+          "hash": "8e5a253",
+          "type": "feat",
+          "scope": "engine",
+          "subject": "P3 question engine core - seeded, blueprinted, server-graded"
+        },
+        {
+          "hash": "aa43d01",
+          "type": "feat",
+          "scope": "db",
+          "subject": "apply schema to Supabase and verify the denial suite against it"
+        },
+        {
+          "hash": "bbc78d7",
+          "type": "feat",
+          "scope": "p0",
+          "subject": "foundation and security harness"
+        }
+      ]
+    }
+  ],
+  "phases": {
+    "redesign": [
+      {
+        "id": "R0",
+        "label": "scope and guardrails",
+        "done": 28,
+        "todo": 0
+      },
+      {
+        "id": "R1",
+        "label": "solar system foundation",
+        "done": 36,
+        "todo": 0
+      },
+      {
+        "id": "R2",
+        "label": "per student seeded cosmetics",
+        "done": 21,
+        "todo": 0
+      },
+      {
+        "id": "R3",
+        "label": "page templates and redesign",
+        "done": 87,
+        "todo": 1
+      },
+      {
+        "id": "R4",
+        "label": "moons subtopics integration",
+        "done": 46,
+        "todo": 2
+      },
+      {
+        "id": "R5",
+        "label": "testing and signoff",
+        "done": 20,
+        "todo": 4
+      }
+    ],
+    "build": [
+      {
+        "id": "P0",
+        "label": "Foundation & security harness",
+        "status": "DONE"
+      },
+      {
+        "id": "P1",
+        "label": "Auth",
+        "status": "1 week"
+      },
+      {
+        "id": "P2",
+        "label": "Content pipeline + Stages 00–07",
+        "status": "2 weeks"
+      },
+      {
+        "id": "P3",
+        "label": "The question engine",
+        "status": "2 weeks · the important one · ENGINE CORE DONE"
+      },
+      {
+        "id": "P4",
+        "label": "Console v1",
+        "status": "DONE"
+      },
+      {
+        "id": "P5",
+        "label": "Stages 06–11",
+        "status": "2 weeks"
+      },
+      {
+        "id": "P6",
+        "label": "Simulators",
+        "status": "2 weeks"
+      },
+      {
+        "id": "P7",
+        "label": "Item analytics",
+        "status": "DONE"
+      },
+      {
+        "id": "P8",
+        "label": "Feedback system",
+        "status": "API + TRIAGE UI DONE"
+      },
+      {
+        "id": "P9",
+        "label": "Themes, audio, accessibility",
+        "status": "1 week"
+      },
+      {
+        "id": "P10",
+        "label": "Pilot, hardening, launch",
+        "status": "2 weeks"
+      }
+    ],
+    "done": 238,
+    "total": 245,
+    "pct": 97
+  },
+  "roadmap": {
+    "next": [
+      {
+        "id": "CS1",
+        "title": "Course Studio, without the AI",
+        "what": "One console page for subjects, books and chapters: the chapter editor, summaries, figures and drafted text, with the new approval rule (a subject's teachers approve, never their own edit; the admin may, recorded).",
+        "plan": "docs/COURSE-STUDIO-PLAN.md",
+        "state": "in progress"
+      },
+      {
+        "id": "Profiles",
+        "title": "Profile pages",
+        "what": "A profile page with an uploaded picture for students, teachers and the admin.",
+        "plan": "docs/PROFILES-PLAN.md",
+        "state": "planned"
+      },
+      {
+        "id": "T2",
+        "title": "Teachers see their own classes",
+        "what": "A teacher's students, gradebook, locks, submissions and chat show only the classes they hold; the admin sees all.",
+        "plan": "docs/TEACHERS-AND-SUBJECTS-PLAN.md",
+        "state": "planned"
+      },
+      {
+        "id": "CS2",
+        "title": "A subject as its own star system",
+        "what": "A second subject (CPE 413) gets its own planets, questions and grades; a student with two or more subjects sees their systems orbiting a black hole.",
+        "plan": "docs/COURSE-STUDIO-PLAN.md §5",
+        "state": "planned"
+      },
+      {
+        "id": "Bot",
+        "title": "The study bot and the Study Session",
+        "what": "The assistant as a chat bot for students and teachers, and shareable study sheets.",
+        "plan": "docs/STUDY-AND-BOT-PLAN.md",
+        "state": "planned"
+      },
+      {
+        "id": "CS3",
+        "title": "The AI Assistant app, and Course Studio's AI sidebar",
+        "what": "Each teacher's own app holds their keys; Course Studio's AI checks a chapter against the book, the syllabus, student results and its writing, as proposals you accept or discard.",
+        "plan": "docs/AI-ASSISTANT-PLAN.md",
+        "state": "planned"
+      }
+    ],
+    "owed": [
+      "Approve the 83 act-1 questions at review on Items (the Prelim needs all 96 live).",
+      "Approve the planet summaries (the redesign's last R3 box), the drafted chapters 08 to 13 and 17 figures on Content.",
+      "Review the 131 questions for stages 09 to 12 on Items.",
+      "Import the first teacher roster on Teachers, and have a teacher make the first real claim at Claim.",
+      "Say whether Teachers should leave Records for a nav group of its own.",
+      "Choose which of the study plan's features to build (STUDY-AND-BOT-PLAN.md §4), and supply the four AI engine keys.",
+      "The screen-reader pass, and accepting the moon work's lock-layer changes (REDESIGN-SIGNOFF.md §5)."
+    ]
+  }
+}

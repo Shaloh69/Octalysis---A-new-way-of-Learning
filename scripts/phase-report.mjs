@@ -26,12 +26,7 @@
  *   node scripts/phase-report.mjs --open    also list every open R-phase box
  */
 
-import { readFileSync, readdirSync } from "node:fs";
-import { resolve, dirname, basename } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PHASE_DIR = resolve(ROOT, "docs/redesign/phases");
+import { buildPhases, redesignPhases } from "./lib/phases.mjs";
 
 const c = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
@@ -40,38 +35,6 @@ const c = {
   cyan: (s) => `\x1b[36m${s}\x1b[0m`,
   bold: (s) => `\x1b[1m${s}\x1b[0m`,
 };
-
-const DONE = /^[ \t]*-[ \t]+\[[xX]\]/;
-const TODO = /^[ \t]*-[ \t]+\[[ \t]\]/;
-
-function redesignPhases() {
-  return readdirSync(PHASE_DIR)
-    .filter((f) => /^R\d-.*\.md$/.test(f))
-    .sort()
-    .map((f) => {
-      const lines = readFileSync(resolve(PHASE_DIR, f), "utf8").split(/\r?\n/);
-      const done = lines.filter((l) => DONE.test(l)).length;
-      const todo = lines.filter((l) => TODO.test(l)).length;
-      const open = [];
-      let heading = "";
-      for (const l of lines) {
-        if (/^#{2,3} /.test(l)) heading = l.replace(/^#+\s*/, "").trim();
-        if (TODO.test(l)) open.push({ heading, text: l.replace(/^[ \t]*-[ \t]*\[[ \t]\][ \t]*/, "").trim() });
-      }
-      const name = basename(f, ".md");
-      return { id: name.slice(0, 2), label: name.slice(3).replace(/-/g, " "), done, todo, open };
-    });
-}
-
-/** P0-P10 statuses, read verbatim from the headings rather than interpreted. */
-function buildPhases() {
-  const src = readFileSync(resolve(ROOT, "docs/PHASES.md"), "utf8");
-  return [...src.matchAll(/^##\s+(P\d+)\s+—\s+([^\n·]+?)(?:\s*·\s*(.+))?$/gm)].map((m) => ({
-    id: m[1],
-    label: m[2].trim(),
-    status: (m[3] ?? "").replace(/\*\*/g, "").trim(),
-  }));
-}
 
 const bar = (done, total, width = 22) => {
   if (total === 0) return c.dim("—".repeat(width));

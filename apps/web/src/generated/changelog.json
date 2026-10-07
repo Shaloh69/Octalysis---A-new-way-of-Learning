@@ -1,0 +1,149 @@
+{
+  "madeAt": {
+    "commit": "b64a83d",
+    "date": "2026-10-07"
+  },
+  "progress": {
+    "done": 238,
+    "total": 245,
+    "pct": 97
+  },
+  "updates": [
+    {
+      "date": "2026-10-07",
+      "title": "A fix, and this page",
+      "items": [
+        "Fixed: a check handed in by a reload now shows its questions.",
+        "What's new: this page."
+      ]
+    },
+    {
+      "date": "2026-10-06",
+      "title": "Figures, the class chat, Listen",
+      "items": [
+        "Figures in the reader, drawn for this course.",
+        "The class chat: your section's room, and a private thread with your instructor.",
+        "Listen: the reader reads a stage aloud, following the voice sentence by sentence.",
+        "Forgot your password? Reset it yourself by email.",
+        "Leaving a check or an exam once it has started hands it in with the answers you gave."
+      ]
+    },
+    {
+      "date": "2026-10-05",
+      "title": "Look around the map",
+      "items": [
+        "Zoom and look around the map; it returns home after 30 seconds.",
+        "Orientation is finished when you read it to the end.",
+        "An alien rides a comet's orbit. Click it."
+      ]
+    },
+    {
+      "date": "2026-10-02",
+      "title": "A realistic solar system",
+      "items": [
+        "A longer warp, then an arrival screen for every planet and moon.",
+        "A more realistic solar system: smaller planets, wider orbits, a bigger sun and distant comets."
+      ]
+    },
+    {
+      "date": "2026-10-01",
+      "title": "Two more minigames, real textures",
+      "items": [
+        "Cache Tuner, moon 04.5's drill, on the book's own Example 4.2.",
+        "Bus Contention, moon 03.9's bus wiring game.",
+        "Real textures on the map's planets, moons and sun."
+      ]
+    },
+    {
+      "date": "2026-09-30",
+      "title": "OCTA becomes a game",
+      "items": [
+        "A new look: a star HUD on the map, and each planet's biome when you open it.",
+        "A check now starts behind a Start button, in full screen, with no way back until you submit.",
+        "Moons: practise each objective on its moon; mastering them opens the next planet.",
+        "Two minigames: Two Columns (moon 01.2) and Clock Bench (moon 02.8).",
+        "A new title screen for signing in."
+      ]
+    },
+    {
+      "date": "2026-09-29",
+      "title": "The reader and the check, rebuilt",
+      "items": [
+        "The stage reader and the check rebuilt.",
+        "A check you come back to keeps the answers you had given.",
+        "A locked stage says what opens it."
+      ]
+    },
+    {
+      "date": "2026-09-25",
+      "title": "An icon of its own",
+      "items": [
+        "OCTA has its own icon in the browser tab."
+      ]
+    },
+    {
+      "date": "2026-09-14",
+      "title": "Stage checks",
+      "items": [
+        "Each stage has a check to pass before the next one opens.",
+        "Fixed: ordering questions can now be answered."
+      ]
+    },
+    {
+      "date": "2026-09-08",
+      "title": "A fix in the check",
+      "items": [
+        "Fixed: multiple-choice answers in a check were rejected."
+      ]
+    },
+    {
+      "date": "2026-09-07",
+      "title": "Biomes, and arriving at a stage",
+      "items": [
+        "New biome art for the planets: arctic, ocean, cave and more.",
+        "Opening a stage travels to it and shows where you have arrived."
+      ]
+    },
+    {
+      "date": "2026-09-02",
+      "title": "Planet panels and the stages list",
+      "items": [
+        "A planet panel, with its moons.",
+        "A Stages page, and a first-run tour (press ? to see it again).",
+        "Phones in landscape work."
+      ]
+    },
+    {
+      "date": "2026-09-01",
+      "title": "The solar system",
+      "items": [
+        "The map is a solar system: each stage is a planet.",
+        "Your system has its own look and callsign (see Settings).",
+        "Planets have biomes."
+      ]
+    },
+    {
+      "date": "2026-08-29",
+      "title": "Chapters 2 to 7, and labs",
+      "items": [
+        "Chapters 2 to 7 can be read.",
+        "Hand in labs and the project."
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "title": "CPE 412, and your first assessment",
+      "items": [
+        "The course follows CPE 412's 18 chapters.",
+        "Sign in and sit an assessment."
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "title": "The beginning",
+      "items": [
+        "Sign in and see the course as a map of stages."
+      ]
+    }
+  ]
+}
