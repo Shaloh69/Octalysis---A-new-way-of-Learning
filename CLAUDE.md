@@ -159,7 +159,10 @@ SYSTEM panel's row of bodies) and the selected planet's panel is real DOM. Reduc
 the orbits and cuts the camera; a portrait phone keeps the 3D map; no WebGL keeps the whole
 accessible layer with a one-line notice.
 **`docs/VISUAL-SYSTEM-3D.md` §5's degradation ladder owns this rule; every other document points
-at it.** See `docs/SKILL-TREE-3D.md` and `docs/GAME-DESIGN.md` §2.
+at it.** **Amended 7 Oct 2026 (night), for CS2 (`docs/COURSE-STUDIO-PLAN.md` §5):** a student with
+two or more subjects gets `/app` as a GALAXY (each subject's system orbiting a black hole, Enter
+Journey, zoom in and out) and each system moves to `/app/<subject>`; one subject, straight to its
+system. Until CS2 is built, the rule above stands as written. See `docs/SKILL-TREE-3D.md` and `docs/GAME-DESIGN.md` §2.
 
 ## Structure of the domain
 

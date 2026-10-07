@@ -1536,9 +1536,20 @@ their own edit; a new subject is its own star system (T3 = CS2); the AI checks
 the book, the syllabus, student results and writing. **Split:** CS1 (no AI)
 NOW, before profiles; CS3 (the AI sidebar) with the app. Templates captured
 and opened: `design/templates/console/studio/` (shadcn sidebar-15; BlockNote's
-AI menu and editor; Prodly rejected, behind a sign-in). **Two things to
-confirm:** CS2's place in the order (proposed after T2), and whether the
-admin may approve their own edit (proposed yes, audited as self-approved).
+AI menu and editor; Prodly rejected, behind a sign-in). **Confirmed the same
+night:** CS2 comes after T2; the admin may approve their own edit (audited
+as self-approved), no other teacher may. The order: T1 (done) -> CS1 ->
+profiles -> T2 -> CS2 -> the student bot and Study Session -> the app with CS3.
+
+**Then (same night): the student's many star systems** (CS2's student side,
+`docs/COURSE-STUDIO-PLAN.md` §5): with two or more subjects `/app` is a galaxy,
+each subject's system orbiting a black hole, Enter Journey, zoom in and out;
+one subject goes straight to its system; inside a system Stages, Progress,
+Your Work, Chat, Settings and all summaries are that subject's; the galaxy has
+its own Progress and Your Work. Amends the 30 Sep "/app is the only map"
+ruling (CLAUDE.md notes it). Templates: `design/templates/web/galaxy/`
+(Singularity's black hole; Galaxy Template's orbs and card; Orion Realms
+rejected, its explorer never finished loading).
 
 ## 0zh. T1 built: teacher accounts, subjects and classes — 7 Oct 2026 (night, third part)
 

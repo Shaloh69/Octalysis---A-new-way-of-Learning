@@ -23,22 +23,24 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: profile pages and profile pictures
+## 1. Start here — the next session: Course Studio, CS1 (no AI yet)
 
 ```
-Read docs/NEXT-SESSION.md section 0zh first: T1 (teacher accounts, subjects
-and classes) is built and on the deployment, the THIRTEENTH SQL file is
-addendum-teachers.sql, and the approved order is T1 -> PROFILES -> T2 -> the
-student bot and the Study Session -> the assistant's app. Then
-docs/PROFILES-PLAN.md in full (it is this session's work), and the rulings
-tables only of docs/TEACHERS-AND-SUBJECTS-PLAN.md and docs/STUDY-AND-BOT-
-PLAN.md. Then root CLAUDE.md: hard rules 3, 8, 9 and 10, "Templates are
-ARTIFACTS", "THE HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE", the Design
-section (two realms in apps/web; [data-paper] identical for everyone);
-docs/DESIGN-MANDATE.md section 4 (AMENDED: uploads allowed, the seeded avatar
-the fallback); docs/redesign/WEB-REMAKE.md for the star HUD realm;
-db/CLAUDE.md (V-29: column grants); services/api/src/chat/storage.ts (the
-private-bucket pattern to copy). Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md sections 0zi and 0zh first: T1 (teacher accounts,
+subjects, classes) is built and deployed; Course Studio is planned and its
+rulings approved; the order is T1 (done) -> CS1 -> profiles -> T2 -> CS2 ->
+the student bot and Study Session -> the app with CS3. Then
+docs/COURSE-STUDIO-PLAN.md in full (CS1 is this session's work; section 5,
+the student's many star systems, is CS2's and is only read), the rulings
+tables of docs/TEACHERS-AND-SUBJECTS-PLAN.md and AI-ASSISTANT-PLAN.md
+(rounds six to eight), design/templates/console/studio/SOURCE.md, and the
+existing /content: design/templates/console/content/SPEC.md and
+apps/console/CLAUDE.md's /content row (what moves into the Studio, and every
+rule it already keeps: an approval is of one exact text, saves need a reason
+and the version opened, quotes are read-only, sync-content never overwrites
+a console edit). Then root CLAUDE.md: hard rules 3, 5, 8 and 10, "Templates
+are ARTIFACTS", "THE HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE", "REDO
+THE PAGE". Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. On
 7 Oct (night) it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open
@@ -51,57 +53,50 @@ Confirm everything is green before touching anything, AGAINST BUILDS. After a
 reboot, start Docker Desktop first. Kill orphaned API trees and previews.
 Run pnpm db:reset, THEN node scripts/db-demo.mjs (THIRTEEN SQL files:
 addendum-teachers.sql is the last). Start ONE pnpm dev:api and prove it with
-a real GET (readyz); curl again after EVERY db:reset (on 7 Oct a reset killed
-it and a /claim capture showed "server did not answer" until it was
-noticed). Build and preview apps/web on 5185 and apps/console on 5186
-(restart a preview after each build), and export OCTA_WEB_URL and
-OCTA_CONSOLE_URL. Every API test run empties the seeded database: reset and
-reseed before any Playwright run (global-setup refuses otherwise).
+a real GET (readyz); curl again after EVERY db:reset (a reset can kill it).
+Build and preview apps/web on 5185 and apps/console on 5186 (restart a
+preview after each build), and export OCTA_WEB_URL and OCTA_CONSOLE_URL.
+Every API test run empties the seeded database: reset and reseed before any
+Playwright run. Capture a dialog only after its ease-in (a capture mid-fade
+looks translucent). Any script with an apostrophe, backtick or backslash goes
+through the Write tool, never a heredoc.
 
 The deployment: API https://octa-api-noq2.onrender.com, student site
 https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
 Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
 print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project).
-scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref;
-scripts/.capture-click.tmp.mjs captures a reference page at a width,
-clicking first if asked (xy:X,Y for an unlabelled control).
+scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref.
 
-The work, profiles (PROFILES-PLAN.md sections 1-3), in this order:
+The work, CS1 (COURSE-STUDIO-PLAN.md sections 1-3), in this order:
 
-1. Templates first, as artifacts: /app/profile (apps/web, the star HUD realm;
-   a profile with a picture, upload / replace / remove, and the read-only
-   name, ID, section and classes) and console /profile (the same for a
-   teacher or the admin). Capture each reference to design/templates/<app>/
-   <route>/template.png with SOURCE.md, OPEN it, then SPEC.md with every
-   control and the four tests.
-2. The schema, one idempotent addendum (the fourteenth): profiles.avatar_path
-   and avatar_updated_at written by the API only (decide the column grant on
-   purpose, V-29), the private profile-images bucket (Supabase only, as
-   chat-attachments; PNG/WebP, a size limit), and whatever a viewer check
-   needs (same section or class, their teacher, the admin). Denial tests
-   WRITTEN RED FIRST: a student cannot set another's picture, read one
-   outside their classes, or remove one; anon nothing. On Supabase BEFORE
-   the code (hard rule 10), checked there.
-3. The API: sign one upload to a path the API chooses (<user_id>/<random>.webp);
-   confirm it (the bytes really WebP, at most 300 KB) and record it; signed,
-   short-lived downloads only for a viewer allowed to see that person; remove
-   (the owner; a teacher of that student; the admin), audited, the student
-   told. The browser crops square and re-encodes to 512x512 WebP on a canvas
-   (that drops EXIF and a phone's GPS). Locally there is no Storage: say
-   pictures are unavailable there, as the chat says of attachments.
-4. The fallback avatar: drawn in code from the seed /cosmetics already
-   derives (routes/cosmetics.ts says the avatar must read it, not derive a
-   second one). DESIGN-MANDATE section 4 names DiceBear, but CLAUDE.md's
-   allowed-libraries list does not include it: draw it without a new
-   dependency unless the instructor approves DiceBear.
-5. The pages, each through its gate (spec at 1440 and 380, six assertions
-   green, screenshots OPENED): /app/profile, then console /profile. Then the
-   picture where the plan says it appears (nav, chat, roster, student page,
-   console shell), never on a stage check or exam ([data-paper]). Each
-   touched page's spec must stay green.
+1. SPEC.md for /studio from the captured templates (three panes; at 380 the
+   outline and the AI are sheets), every control and the four tests. The AI
+   pane is LOCKED in CS1 and must not be a dead end: there is no app to
+   download yet, so it says the AI Assistant app is not released yet (the
+   "Download here and install" prompt arrives with the app, CS3).
+2. Subjects and books for every teacher: API routes under requireStaff()
+   (add a subject: code and title; rename; add, edit and set the default
+   book), each with a reason and an audit_log row; RLS stays "no client
+   write". Denial tests red first (a student and anon refused; a teacher
+   cannot write a subject or book straight to the table).
+3. The approval rule (plan section 3): the approver must not be the author
+   of the version approved, for chapter drafts, summaries, figures and
+   items; the ADMIN may approve their own edit, recorded as self-approved.
+   Read how each is approved today first; put the rule in the database
+   where the author is known (an idempotent addendum, the fourteenth, on
+   Supabase BEFORE the code), denial tests red first.
+4. The page /studio, REDONE from its template, carrying over everything
+   /content does (read the old pages as a requirements document, then build):
+   the outline (subjects -> books, chapters), the editor pane (today's
+   chapter editor and its rules), summaries, figures, chapter drafts, the
+   approvals with the new rule. /content and /content/:stageId redirect to
+   it so old links work. Its gate: spec at 1440 and 380, six assertions,
+   screenshots OPENED; the old console-content spec moved or rewritten,
+   green. Probably two sessions; say so rather than rush it.
 
-Not this phase (do not start): T2 (a teacher seeing only their own classes);
-the chat bot and the Study Session; the assistant's app.
+Not CS1 (do not start): CS2 (a new subject as its own star system, the
+black-hole galaxy page and per-subject chat, summaries and progress), CS3
+(the AI sidebar's work), profiles, T2.
 
 Still owed by the instructor (do not build around them): the first teacher
 roster import on /teachers and a first real claim at /claim; whether

@@ -54,7 +54,7 @@ kept, so old links work) and `/assistant`.
 | Phase | What | When |
 |---|---|---|
 | **CS1** | Course Studio without AI: subjects (add, rename; a code and a title), their books (add, edit, set the default), the outline, and today's `/content` work moved in (chapter status, the block editor, summaries, figures, chapter drafts), with the **new approval rule** (the subject's teachers, never your own edit). For CPE 412 only, because only CPE 412 has a star system | **NOW**, before profiles |
-| **CS2 = T3** | A subject is its own star system: stages, objectives, items, blueprints, assessments and the student map keyed by subject; a new subject's chapters are created in Studio; a CPE 413 class's students see CPE 413's map. Touches nearly every table and the student app | Order to be confirmed (proposed: after T2) |
+| **CS2 = T3** | A subject is its own star system: stages, objectives, items, blueprints, assessments and the student map keyed by subject; a new subject's chapters are created in Studio; a CPE 413 class's students see CPE 413's map. Touches nearly every table and the student app | After T2 (approved) |
 | **CS3** | The AI sidebar, through the teacher's app: the four checks, proposals with diffs, chapter drafting (the assistant plan's B5-B6 inside Studio) | With the assistant's app |
 
 ## 3. What CS1 changes in rules already built
@@ -66,12 +66,36 @@ kept, so old links work) and `/assistant`.
   drafts, summaries, figures, items): the approver must not be the author of
   the version approved. Today `/items` already gates self-approval on
   authorship; CS1 makes it the rule for all, in the database where it can be.
-  **Open:** with one teacher (today's deployment), the admin is the only
-  approver; whether the admin may approve their OWN edit is the
-  instructor's call (proposed: yes for the admin, so a one-teacher
-  department is not stuck; recorded in the audit log as self-approved).
+  **Decided (instructor, 7 Oct 2026, night): the ADMIN may approve their own
+  edit**, so a one-teacher department is never stuck; every such approval is
+  recorded in the audit log as self-approved. No other teacher may.
 
-## 4. Order (proposed, to confirm)
+## 5. The student side of CS2: many star systems around a black hole
+
+Instructor, 7 Oct 2026 (night): "If a student has different teachers, each
+with its own star system, it will be a different page. For the map it will
+be the solar systems orbiting a huge black hole, with Enter Journey
+explaining: this star system is for the subject, etc." And: "chats,
+summarization and course progress will update depending on that star
+system." Templates captured and opened: `design/templates/web/galaxy/`.
+
+| # | Asked | The instructor's answer |
+|---|---|---|
+| 1 | A student with ONE subject | **Straight to their system**, as today; the galaxy appears with two or more |
+| 2 | What `/app` is with several systems | **`/app` is the galaxy**: the black hole with each subject's system on its own orbit; each system's map moves to **`/app/<subject>`** (e.g. `/app/cpe-412`); old links redirect. **Amends the 30 Sep ruling** "/app is the 3D map and the ONLY map": the galaxy is a second 3D view, above the systems |
+| 3 | What follows the star system | **Everything inside a system is that subject's:** Stages, Progress, Your Work, Chat and Settings; its planet summaries, the student bot's study summaries and sheets, and the progress summary |
+| 4 | The galaxy's own pages | With more than one subject, the main level has **its own Progress and Your Work** (across the subjects), **with the black hole as the main view** |
+| 5 | Motion | **It zooms out and zooms in**: entering a system zooms into it from the black hole; leaving zooms back out (a cut under reduced motion) |
+
+The page (to its SPEC when built): the black hole at the centre, each
+system an orb on an orbit that keeps the Kepler rule; choosing one opens a
+card ("This star system is CPE 412 · Computer Architecture and Organization,
+taught by …, section …; N planets, you are P% through") with **Enter
+Journey**. The accessible layer binds (`VISUAL-SYSTEM-3D.md` §5): every system
+is also a real button, reduced motion freezes the orbits and cuts the zoom,
+no WebGL keeps the list. Chat rooms become per class (section x subject).
+
+## 4. Order (APPROVED, 7 Oct 2026, night)
 
 T1 (done) → **CS1** → profiles → T2 → **CS2 (T3)** → the student bot and the
 Study Session → the assistant's app with **CS3**.
