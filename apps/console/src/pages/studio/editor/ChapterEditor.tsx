@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
 import {
-  ArrowDown, ArrowUp, Bold, ChevronDown, Code, Eye, FilePlus2, Italic, List, ListOrdered, Redo2, Trash2, Undo2,
+  ArrowDown, ArrowUp, Bold, ChevronDown, Code, Eye, FilePlus2, History, Italic, List, ListOrdered, Redo2, Trash2, Undo2,
 } from "lucide-react";
 import type { WorkingCopy } from "@octa/contracts";
 import { api, ApiError, type ContentBlock, type ContentFigure } from "@/lib/api";
@@ -21,6 +21,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Preview } from "../../content/Preview";
 import { currentTopicPos, deleteTopic, insertTopic, moveTopic, topicCount } from "./commands";
 import { Studio, extensions } from "./extensions";
+import { TopicHistory } from "./TopicHistory";
 
 /**
  * The chapter as a document you click into and type in (docs/STUDIO-EDITOR-PLAN.md,
@@ -34,6 +35,30 @@ import { Studio, extensions } from "./extensions";
  */
 
 const AUTOSAVE_MS = 900;
+
+/** The topic at `pos`: its id (a topic not yet saved has none that History knows), its kind, and whether it is locked. */
+function topicAt(ed: Editor, pos: number | null): { id: string; kind: string; locked: boolean } | null {
+  if (pos === null) return null;
+  const node = ed.state.doc.nodeAt(pos);
+  const id = node?.attrs.id as string | undefined;
+  if (!node || !id) return null;
+  const kind = String(node.attrs.kind ?? "prose");
+  return { id, kind, locked: kind === "quote" || kind === "figure" };
+}
+
+/** Put an earlier version's text back into the topic: one transaction (Undo takes it back), saved by autosave as a draft. */
+function placeVersion(editor: Editor, id: string, body: string): void {
+  let at: number | null = null;
+  editor.state.doc.forEach((n, offset) => { if (n.attrs.id === id) at = offset; });
+  if (at === null) return;
+  const old = editor.state.doc.nodeAt(at);
+  if (!old) return;
+  const kind = String(old.attrs.kind ?? "prose") as TopicKind;
+  const fresh = topicsToDoc([{ id, kind, body, meta: (old.attrs.meta ?? {}) as Record<string, string> }]);
+  const node = editor.schema.nodeFromJSON(fresh.content![0]!);
+  editor.view.dispatch(editor.state.tr.replaceWith(at, at + old.nodeSize, node).scrollIntoView());
+  editor.view.focus();
+}
 
 interface Props {
   stageId: string;
@@ -73,10 +98,13 @@ export function ChapterEditor({ stageId, title, initial, live, figures, onChange
   const [student, setStudent] = useState<Topic[] | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  const [history, setHistory] = useState<{ id: string; kind: string; locked: boolean; pos: number } | null>(null);
   const timer = useRef<number | null>(null);
   const inflight = useRef(false);
   const again = useRef(false);
   const gate = useApprovalGate(null);
+
+  const historyCounts = useMemo(() => new Map(live.map((b) => [b.id, b.historyCount])), [live]);
 
   const exts = useMemo(
     () => extensions.map((e) => (e === Studio ? Studio.extend({ addStorage: () => ({ figures }) }) : e)),
@@ -173,6 +201,7 @@ export function ChapterEditor({ stageId, title, initial, live, figures, onChange
             canList: ed.can().toggleBulletList(),
             canHeading: ed.can().toggleHeading({ level: 2 }),
             pos: currentTopicPos(ed.state),
+            topic: topicAt(ed, currentTopicPos(ed.state)),
             count: topicCount(ed),
           }
         : null,
@@ -239,6 +268,13 @@ export function ChapterEditor({ stageId, title, initial, live, figures, onChange
           </DropdownMenu>
           <Tool label="Move this topic up" disabled={ui.pos === null || !!student} onClick={topicAction((p) => moveTopic(editor, p, -1))}><ArrowUp className="h-4 w-4" aria-hidden="true" /></Tool>
           <Tool label="Move this topic down" disabled={ui.pos === null || !!student} onClick={topicAction((p) => moveTopic(editor, p, 1))}><ArrowDown className="h-4 w-4" aria-hidden="true" /></Tool>
+          <Tool
+            label="History of this topic"
+            disabled={!!student || !ui.topic || !(historyCounts.get(ui.topic.id) ?? 0)}
+            onClick={() => ui.topic && ui.pos !== null && setHistory({ ...ui.topic, pos: ui.pos })}
+          >
+            <History className="h-4 w-4" aria-hidden="true" />
+          </Tool>
           <Tool label="Delete this topic" disabled={ui.pos === null || ui.count <= 1 || !!student} onClick={topicAction((p) => deleteTopic(editor, p))}><Trash2 className="h-4 w-4" aria-hidden="true" /></Tool>
         </span>
         <span className="ed-actions">
@@ -311,6 +347,19 @@ export function ChapterEditor({ stageId, title, initial, live, figures, onChange
         warnings={warnings}
         onClose={() => setPublishing(false)}
         onDone={onChanged}
+      />
+      <TopicHistory
+        open={history !== null}
+        blockId={history?.id ?? null}
+        kind={history?.kind ?? ""}
+        locked={history?.locked ?? false}
+        onClose={() => setHistory(null)}
+        onCloseFocus={() => editor.view.focus()}
+        onUse={(v) => {
+          if (history) placeVersion(editor, history.id, v.body);
+          toast.success(`Version ${v.version} placed in the topic`, "It saves as a draft. Students read it only after you publish.");
+          setHistory(null);
+        }}
       />
       <DiscardDialog open={discarding} stageId={stageId} onClose={() => setDiscarding(false)} onDone={onChanged} />
     </div>

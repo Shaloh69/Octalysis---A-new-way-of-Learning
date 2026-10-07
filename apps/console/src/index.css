@@ -2006,6 +2006,8 @@
   .ct-editor-reason { display: flex; flex-direction: column; gap: var(--space-1); }
   .ct-editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
   .ct-history { margin-top: var(--space-3); padding-left: var(--space-3); border-left: var(--border-hair) solid var(--line-strong); }
+  .th-list { max-height: 60vh; overflow-y: auto; padding-right: var(--space-2); }
+  .th-use { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
   .ct-versions { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
   .ct-version { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
   .ct-version-head { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
@@ -3289,6 +3291,35 @@
   .st-waiting li { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: var(--space-1) var(--space-3); padding: var(--space-3) var(--space-4); border-top: var(--border-hair) solid var(--line); }
   .st-waiting li:first-child { border-top: 0; }
   .st-waiting li > :nth-child(3) { grid-column: 2; }
+
+  /* ---- the moons editor (E2): a row is a code, a sentence, a status in a shape and a word ---- */
+  .mn-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+  .mn-head .st-head-col { flex: 1 1 18rem; min-width: 0; }
+  .mn-head-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .mn-list { display: flex; flex-direction: column; }
+  .mn-list > li {
+    display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); gap: var(--space-3);
+    padding: var(--space-3) 0; border-top: var(--border-hair) solid var(--line);
+  }
+  .mn-list > li:first-child { border-top: 0; }
+  .mn-retired { opacity: 0.85; }
+  .mn-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); }
+  .mn-line .inline-flex { max-width: 100%; white-space: normal; }
+  .mn-change {
+    margin-top: var(--space-1); padding: var(--space-1) var(--space-2); font-size: var(--text-sm); color: var(--ink);
+    background: var(--info-bg); border-left: var(--border-thick) solid var(--info); border-radius: var(--radius-sm);
+  }
+  .mn-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+  .mn-form { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-1); min-width: 0; }
+  .mn-selects { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+  @media (min-width: 36rem) { .mn-selects { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .mn-pick { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-3); border: 0; padding: 0; min-width: 0; }
+  .mn-pick-row { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); color: var(--ink); }
+  .mn-pick-row input { margin-top: var(--space-1); }
+  .mn-summary {
+    margin-bottom: var(--space-3); padding: var(--space-2) var(--space-3); font-size: var(--text-sm); color: var(--ink);
+    background: var(--surface-2); border: var(--border-hair) solid var(--line); border-radius: var(--radius-md);
+  }
 }
 
 /*

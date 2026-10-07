@@ -1,15 +1,15 @@
 import { Suspense, lazy, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, type ChapterDetail, type StageSummary } from "@/lib/api";
+import { api, type StageSummary } from "@/lib/api";
 import { useAsync } from "@/lib/useAsync";
 import { useDelayed } from "@/lib/useDelayed";
 import { ACT_NAMES, AUTHORING_WORD } from "@/lib/content-view";
 import { subjectFromSlug, subjectPath } from "@/lib/studio-view";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SendBackDialog, SummaryEntry, useSummaryActions } from "../content/Summaries";
 import { DraftSendBack } from "../content/Draft";
 import { FigureCard } from "../content/FigureCard";
+import { MoonsEditor } from "./MoonsEditor";
 import { NotFound } from "./NotFound";
 import { useStudio } from "./context";
 
@@ -17,8 +17,8 @@ import { useStudio } from "./context";
  * `/studio/:subject/:stageId`: one chapter, as a document (docs/STUDIO-EDITOR-PLAN.md,
  * E1.3; instructor rulings, 8 Oct 2026). A page you click into and type in, under
  * one toolbar, autosaved as a draft students never see, and Publish. Under the
- * page: the planet summary, the chapter's moons (its objectives, in the
- * syllabus's words) and its figures, each reviewed where it can be read.
+ * page: the planet summary, the chapter's moons (an editor: edit, add as a
+ * draft, retire, then publish; E2) and its figures, each reviewed where it can be read.
  *
  * What it keeps from `/content`: an approval is of one exact text, by its hash;
  * every replaced topic is kept by the database (History); a quote from the book is
@@ -157,7 +157,7 @@ export function ChapterView() {
             )}
           </section>
 
-          <Moons data={data} stage={content?.stages.find((s) => s.id === st.id)} />
+          <MoonsEditor stageId={st.id} onChanged={reloadContent} />
 
           {data.figures.length > 0 ? (
             <section className="ct-card fg-section" data-figures aria-labelledby="figures-title">
@@ -194,48 +194,5 @@ export function ChapterView() {
         />
       ) : null}
     </div>
-  );
-}
-
-/** The chapter's moons: its objectives, in the syllabus's words. Read-only until E2 (docs/STUDIO-EDITOR-PLAN.md). */
-function Moons({ data, stage }: { data: ChapterDetail; stage: { liveItems: number; draftItems: number } | undefined }) {
-  const objectives = data.objectives ?? [];
-  return (
-    <section className="ct-card st-card" aria-labelledby="ob-title" data-objectives>
-      <div className="st-head-col">
-        <h2 id="ob-title" className="ct-h2">Moons <span className="num text-ink-muted">{objectives.length}</span></h2>
-        <p className="ct-faint">
-          Each moon is an objective of this chapter, in the syllabus&apos;s own words. Editing, adding and retiring moons is the
-          next piece of the Studio&apos;s work: it changes what opens a planet, so it comes with its own plan.
-        </p>
-      </div>
-      {objectives.length === 0 ? (
-        <p className="ct-group-empty">This chapter has no moons recorded.</p>
-      ) : (
-        <ol className="st-objectives">
-          {objectives.map((o) => (
-            <li key={o.code} data-objective={o.code}>
-              <span className="num st-ob-code">{o.code}</span>
-              <div className="min-w-0">
-                <p className="text-sm text-ink">{o.description}</p>
-                <p className="ct-faint">
-                  {o.bloom}
-                  {o.competency ? <> · {o.competency}</> : null}
-                  {o.level !== null ? <> · level <span className="num">{o.level}</span></> : null}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
-      {stage ? (
-        <p className="text-sm text-ink" data-chapter-items>
-          <span className="num">{stage.liveItems}</span> live {stage.liveItems === 1 ? "question" : "questions"}
-          {stage.draftItems > 0 ? <> and <span className="num">{stage.draftItems}</span> in review</> : null}.{" "}
-          <Link className="ct-link" to="/items">Open Items</Link> to review them.
-        </p>
-      ) : null}
-      <Badge tone="neutral" className="self-start">Read-only for now</Badge>
-    </section>
   );
 }

@@ -8,6 +8,7 @@ import type {
   TeacherStatusBody, TeachersResponse, ProgressResponse,
   BookCreateBody, BookDefaultBody, BookUpdateBody, StudioSubjectsResponse, SubjectCreateBody, SubjectRenameBody,
   WorkingCopy, WorkingCopyPublishBody, WorkingCopyPutBody,
+  MoonAddBody, MoonPendingBody, MoonsPublishBody, MoonsPublishResult, StudioMoonsResponse,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -709,6 +710,18 @@ export const api = {
       `/api/v1/console/content/${encodeURIComponent(stageId)}/publish`,
       { method: "POST", body: JSON.stringify(body) },
     ),
+  /** The Studio's moons (E2): a chapter's objectives, edits waiting to publish, drafts, and Publish. */
+  moons: (stageId: string) => request<StudioMoonsResponse>(`/api/v1/console/content/${encodeURIComponent(stageId)}/moons`),
+  addMoon: (stageId: string, body: MoonAddBody) =>
+    request<{ ok: true; id: string }>(`/api/v1/console/content/${encodeURIComponent(stageId)}/moons`, { method: "POST", body: JSON.stringify(body) }),
+  saveMoonPending: (id: string, body: MoonPendingBody) =>
+    request<{ ok: true; version: number }>(`/api/v1/console/content/moons/${encodeURIComponent(id)}/pending`, { method: "PUT", body: JSON.stringify(body) }),
+  discardMoonPending: (id: string) =>
+    request<{ ok: true; removed: boolean }>(`/api/v1/console/content/moons/${encodeURIComponent(id)}/pending`, { method: "DELETE" }),
+  deleteMoon: (id: string) =>
+    request<{ ok: true }>(`/api/v1/console/content/moons/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  publishMoons: (stageId: string, body: MoonsPublishBody) =>
+    request<MoonsPublishResult>(`/api/v1/console/content/${encodeURIComponent(stageId)}/moons/publish`, { method: "POST", body: JSON.stringify(body) }),
   /** The /changelog page's course readiness: the Prelim's five conditions, live. */
   progress: () => request<ProgressResponse>("/api/v1/console/progress"),
 

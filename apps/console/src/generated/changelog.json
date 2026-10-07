@@ -1,6 +1,6 @@
 {
   "madeAt": {
-    "commit": "07028ed",
+    "commit": "f6f9656",
     "date": "2026-10-08"
   },
   "updates": [
@@ -14,7 +14,12 @@
         "To review gathers summaries, drafted lesson text and figures in one place.",
         "Every teacher can add a subject, rename it, and add, edit or default its books, each with a reason in the audit log.",
         "A new approval rule, held in the database: a teacher of the subject approves, never the author of the version; the admin may approve their own edit, recorded as self-approved. An Approve you may not use is disabled, with the reason beside it.",
-        "The AI Assistant pane is there, locked, and says the app is not released yet."
+        "The AI Assistant pane is there, locked, and says the app is not released yet.",
+        "Moons are an editor now. On a chapter, each moon is a row you can edit (its sentence, its ring, its kind of skill), retire, or add to: a new moon is a draft that students never see and that does not hold the next planet shut until it has three live questions.",
+        "Typing a change to a moon changes nothing for students. One dialog, Review moon changes, publishes them and says first what will happen: what moves on the map, which minigame leaves it, and how many students would see a planet close until they master a new moon. It asks you for a reason.",
+        "Retiring a moon takes it off the map and out of what opens a planet, and keeps every question and every student's record of it. The last moon of a chapter, or one a stage check needs to fill, cannot be retired.",
+        "A moon you have edited or added is yours: syncing the chapter files no longer rewords it or brings a retired one back, and the export now writes moons too.",
+        "A topic's History is back in the editor: the clock button lists its earlier versions and Use this text puts one back as a draft."
       ],
       "commits": [
         {
@@ -1633,8 +1638,8 @@
       {
         "id": "R5",
         "label": "testing and signoff",
-        "done": 20,
-        "todo": 4
+        "done": 21,
+        "todo": 3
       }
     ],
     "build": [
@@ -1694,26 +1699,12 @@
         "status": "2 weeks"
       }
     ],
-    "done": 238,
+    "done": 239,
     "total": 245,
-    "pct": 97
+    "pct": 98
   },
   "roadmap": {
     "next": [
-      {
-        "id": "E1",
-        "title": "Studio as an editor: type in place, topics, Draft then Publish",
-        "what": "The chapter is a page you click into and type, under one toolbar, with the outline and the AI in a right sidebar. Add, delete and reorder topics. What you type is a draft students never see until you publish it.",
-        "plan": "docs/STUDIO-EDITOR-PLAN.md",
-        "state": "built, history on a topic still owed"
-      },
-      {
-        "id": "E2",
-        "title": "Moons you can edit, add and retire",
-        "what": "Edit a moon's wording; add a moon as a draft that opens nothing until it has questions; retire one without losing anyone's progress. Touches the lock that opens a planet, so it gets its own plan first.",
-        "plan": "docs/STUDIO-EDITOR-PLAN.md",
-        "state": "planned"
-      },
       {
         "id": "Profiles",
         "title": "Profile pages",
@@ -1757,7 +1748,7 @@
       "Import the first teacher roster on Teachers, and have a teacher make the first real claim at Claim.",
       "Say whether Teachers should leave Records for a nav group of its own.",
       "Choose which of the study plan's features to build (STUDY-AND-BOT-PLAN.md §4), and supply the four AI engine keys.",
-      "The screen-reader pass, and accepting the moon work's lock-layer changes (REDESIGN-SIGNOFF.md §5)."
+      "The screen-reader pass."
     ]
   }
 }

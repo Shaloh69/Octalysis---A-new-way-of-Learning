@@ -300,3 +300,45 @@ Captures `current.png` and `current-380.png` here, opened.
    WAI-ARIA tablist as one Tab stop, as it already counted a radio group
    (the chapter tabs use the roving `tabindex`; their arrow-key test is in the
    Studio spec).
+
+## As built, E1.5 and E2 (8 Oct 2026, night)
+
+Templates: `design/templates/console/studio-moons/` (shadcn's Tasks: a row is a code, a
+sentence, a status in a shape AND a word, row actions, one Add) and `studio-history/`
+(Wikipedia's revision history: newest first, when, who, why, one action per row). Specs:
+`console-studio-moons.spec.ts` (30, both widths) and `console-studio-history.spec.ts` (18).
+
+**The Moons card is an editor** (`pages/studio/MoonsEditor.tsx`), replacing the read-only
+list. A moon is a row: its code, a status chip (Live, Draft, Retired, "Edit waiting to
+publish", "Retirement waiting to publish"), the minigame it carries, its sentence, and its
+facts (bloom, competency, ring, live questions, how many are waiting for review). Per row:
+Edit (an inline form: wording, bloom, level, competency), Retire, Discard change / Keep this
+moon, Delete draft (only a draft with no questions and no record). **Add a moon** opens a
+form and makes a DRAFT. **Review moon changes (n)** opens ONE dialog that lists the moons to
+publish, runs the server's dry run and says in words what changes ("moves from ring 2 to
+ring 3"), **who would see a planet close** (the lock's own answer, rolled back), and which
+minigame leaves the map; it asks a reason. A draft with fewer than three live questions is
+listed as not ready and cannot be ticked. Typing changes nothing a student reads.
+
+**Departures from `docs/STUDIO-EDITOR-PLAN.md` "E2":**
+1. **The button is "Review moon changes", not "Publish moons…"**: the editor spec already
+   selects `/^Publish/` for the chapter's own Publish, and two buttons answering to one
+   name would have been a trap for a person with a screen reader too.
+2. **Publish names its moons** (`ids`), instead of "all pending": a draft that is not ready
+   stays a draft, and the dialog lists it with the reason. A named draft that is not ready
+   is a 409; the plan said "refuses a draft with 2 live questions" and that still holds.
+3. **No new invariant.** The plan listed a warning "a console-owned live moon with fewer than
+   3 live questions". It would have warned on every act-1 moon (the deployment has 14 of the
+   bank's 96 questions live); the Studio shows each moon's count instead.
+4. **A draft moon's edits are pending changes like any other** (one mechanism), rather than
+   edits applied straight to a row nobody can see.
+5. **The ring/competency of a moon is editable, and the Publish summary says it moved**; the
+   plan said so, and the server's `moves` carries the sentence.
+
+**History (E1.5):** a clock tool in the toolbar's Topics group, enabled when the topic under
+the cursor has earlier versions (`historyCount`); a dialog lists them (`GET
+/console/content/blocks/:id/history`, which never went away); **Use this text** puts a
+version back in the topic as one editor transaction (Undo takes it back; autosave makes it a
+draft); a quote or a figure can be read and not used; a version of a different kind says why.
+Closing the dialog returns focus to the editor (found by the Undo check: it had gone to the
+toolbar button, so Ctrl+Z did nothing).
