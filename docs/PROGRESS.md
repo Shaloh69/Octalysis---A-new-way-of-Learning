@@ -19,6 +19,12 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**7 Oct 2026 (night, fourth part):** Course Studio planned
+(`COURSE-STUDIO-PLAN.md`): subjects, books, chapters and the AI sidebar in one
+console page, taking in `/content` and `/assistant`; CS1 (no AI) is next,
+before profiles. Templates captured. Phase 238/245 (97%), unchanged.
+
+
 **7 Oct 2026 (night, third part):** phase report **238/245 (97%)**,
 unchanged (T1 is outside the R boxes). **T1 is built and on the
 deployment:** subjects, books, classes and the teacher roster

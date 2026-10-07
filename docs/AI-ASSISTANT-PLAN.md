@@ -27,6 +27,13 @@ APPROVED (§4-six), superseding §4-now wherever they differ:**
 | 6 | Today's API-side B3 pieces | **Retired**: the sealed-keys table, `seal.ts`/`keys.ts`, the server tick, its cron job and Vault secrets, the TypeScript adapters and the Anthropic SDK in the API. `CRON_SECRET` and `ASSISTANT_KEY_SECRET` are no longer needed on Render |
 | 7 | Order | **Teacher accounts (T1) first**, then the assistant's app |
 
+**Round eight (7 Oct 2026, night): Course Studio.** The teacher's assistant
+lives in **Course Studio**'s AI sidebar (`docs/COURSE-STUDIO-PLAN.md`), which
+takes in `/content` and the planned `/assistant`: one page for subjects,
+books, chapters and the AI. Still through the teacher's app, still locked
+until it is connected; its checks look at the book, the syllabus, student
+results and writing quality.
+
 **Round seven (7 Oct 2026, night): the assistant is also a chat bot**, for
 teachers (through their app) and for **students (on the API on Render, with
 the instructor's keys in Render's environment and the same engine chain,

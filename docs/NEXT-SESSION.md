@@ -1526,6 +1526,20 @@ left, or needing a decision:
 
 ---
 
+## 0zi. Course Studio planned — 7 Oct 2026 (night, fourth part)
+
+The gap "no screen to add a subject or a book" became **Course Studio**
+(`docs/COURSE-STUDIO-PLAN.md`, rulings approved): one console page for
+subjects, books, chapters and the AI sidebar, taking in `/content` and the
+planned `/assistant`; every teacher edits; a subject's teachers approve, never
+their own edit; a new subject is its own star system (T3 = CS2); the AI checks
+the book, the syllabus, student results and writing. **Split:** CS1 (no AI)
+NOW, before profiles; CS3 (the AI sidebar) with the app. Templates captured
+and opened: `design/templates/console/studio/` (shadcn sidebar-15; BlockNote's
+AI menu and editor; Prodly rejected, behind a sign-in). **Two things to
+confirm:** CS2's place in the order (proposed after T2), and whether the
+admin may approve their own edit (proposed yes, audited as self-approved).
+
 ## 0zh. T1 built: teacher accounts, subjects and classes — 7 Oct 2026 (night, third part)
 
 The instructor approved the order (T1 → profiles → T2 → the student bot and

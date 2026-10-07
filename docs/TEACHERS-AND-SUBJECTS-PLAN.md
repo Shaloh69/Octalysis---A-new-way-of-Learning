@@ -31,6 +31,7 @@ Instructor, 7 Oct 2026 (night):
 | 5 | "A section can have the same subject too" | **Many sections, one subject**: BSCPE-2A and BSCPE-2B can both take CPE 412, each its own class, possibly with different teachers |
 | 6 | "Expound the current admin to handle individual teachers" | **The roster import AND a page per teacher**, `/teachers/:id`: their classes, token totals and controls |
 | 7 | Profile pictures, for teachers and the admin too | A separate plan: `docs/PROFILES-PLAN.md` |
+| 9 | Who adds subjects and books (7 Oct, night, Course Studio) | **Every teacher, in Course Studio** (`docs/COURSE-STUDIO-PLAN.md`), with a reason, audited. T3 (a subject's own star system) is that plan's CS2 |
 | 8 | Books (question C) | **A subject may have two or more books** ("some subjects have different books"), **and a class may still choose its own: support both** |
 
 This supersedes decision **D4** ("teacher and admin are one role in this
