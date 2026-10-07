@@ -124,6 +124,165 @@ when **every** moon is mastered (`is_stage_unlocked()`, the lock layer).
   (and the instructor's still-owed sign-off on the moon work's lock layer,
   REDESIGN-SIGNOFF.md §5, is a dependency worth settling first).
 
+### E2 — the moons plan (v1, written 8 Oct 2026 night; NOT APPROVED — nothing below is built)
+
+Written before any code, because it changes `is_stage_unlocked()`. Read from the
+code, not from the docs: `objectives` (schema.sql:91), `is_stage_unlocked()` step 4
+(:561-590), `moon_correct/moon_mastered` (addendum-audit.sql), `ensureJourney`
+(engine-repo.ts:325), `routes/journeys.ts`, `routes/stages.ts`, `sync-content.mjs:533`,
+`MOON_ENCOUNTERS` (apps/web/src/encounters/registry.ts), `ob_read`/`ob_staff`.
+
+**What a moon is wired to today.** `objectives` row `NN.k` (text id, never reused).
+Items point at it (`items.objective_id`), one journey blueprint per moon
+(`blueprints_one_journey_per_moon`), mastery rows in `objective_progress`
+(append-only, rule 7), the map's ring/competency cell (`level`, `competency`), and,
+for four moons (01.2, 02.8, 03.9, 04.5), a minigame **in the web code** keyed by id.
+A gradeable stage opens its successors when **every** `objectives` row of it is
+mastered (2 distinct questions right) and **has a live question** (fail-closed).
+About 20 queries in 9 files read `objectives` directly.
+
+#### 1. What editing a moon changes, and what it must not
+
+| Edit | Changes | Must not change |
+|---|---|---|
+| **Wording** (`description`) | what the map, the stage page and a lock reason print | items, journey, mastery, the lock, any id |
+| **Bloom level** | metadata only (nothing draws from it) | — |
+| **Level 0-6 / read-trace-build** | the moon's ring and its cell on the competency grid | mastery, the lock. The Publish summary says "moves 05.3 from ring 2 to ring 3" |
+| **Add** | a new `NN.k` (next free `k` in the chapter, counting retired ones; never reused) | nothing a student sees, until it is published |
+| **Retire** | the moon leaves the map, the stage page, the grid, the lock's count and every draw | `objective_progress`, items, blueprints, assessments, attempts (rules 6 and 7) |
+
+`sync-content` stops overwriting an edited moon: `objectives.owner` ('file' | 'console'),
+set to `console` at the first Studio publish that touches the moon (and at creation for
+an added one). The upsert becomes `... do update ... where objectives.owner = 'file'`.
+A moon retired in the Studio is never resurrected by a file: status is not in the
+upsert's set list, and owner holds it. `check:objectives` still diffs the **files**
+against the syllabus (unchanged: the syllabus is where the moons started).
+`pnpm content:export` also writes `content/export/NN.moons.json` for any chapter with a
+console-owned moon, because Supabase Free has no backups.
+
+#### 2. The schema (the SIXTEENTH file, `db/addendum-studio-moons.sql`, idempotent, on Supabase BEFORE the code)
+
+- `objectives.status text not null default 'live' check in ('draft','live','retired')`,
+  `objectives.owner text not null default 'file' check in ('file','console')`,
+  `retired_at`, `edited_by`. Every existing row becomes `live`/`file`: no behaviour change.
+- `objective_edits` — **one pending change per moon**: `objective_id` pk, `action`
+  ('edit' | 'retire'), the proposed `description / bloom_level / level / competency`,
+  `base_hash` (the live moon's fields when the change began), `version`, `edited_by/at`.
+  RLS on, staff **read**, no client write; the API is the only writer. Column grants decided
+  on purpose (V-29); the policy needs no cross-table subquery (V-30).
+- `view live_objectives` = `objectives where status = 'live'`. **Every student-facing reader
+  moves to it** and a static test (`moon-readers.spec.ts`, like `check:boundary`) fails if a
+  student route's SQL names `objectives` outside an allow-list, so a 21st query cannot forget.
+- `is_stage_unlocked()` step 4 reads `live_objectives`: "has a live moon, and none of them
+  unmastered". A **draft** moon is not counted; a **retired** one is not counted.
+  `moon_correct/moon_mastered` are unchanged. A gradeable prerequisite left with **no** live
+  moon still blocks (fail-closed, as today).
+- `moon_publishable(objective_id)`: **at least 3 distinct live questions (families)**; one
+  definition, read by Publish and the console. (2 right masters a moon; a third leaves room
+  for one miss. A moon with 1 live question could never be mastered and would shut its
+  planet forever.)
+- `ob_read` (students) becomes `status = 'live' and stage published`; staff see all.
+  **`ob_staff` is dropped**, as `cb_staff` was in E1: a staff client can no longer write
+  `objectives`; the API (service role) is the only writer, so Publish cannot be bypassed.
+- INV-28 reads live moons; one new **warning** invariant: a console-owned live moon with
+  fewer than 3 live questions (it can only get there by questions being retired later).
+
+#### 3. A NEW moon is a draft the lock does not count
+
+Add creates `objectives` row `status = 'draft'` at once (questions must be able to point at
+it before it is published). A teacher writes or assigns questions to it through the usual
+items flow (the item editor's moon picker lists live **and draft** moons of the stage). Draft
+moons are invisible to students (RLS and `live_objectives`), absent from the lock, from the
+map, the grid, `/progress`, journeys (404), and from **every draw**: stage checks sample only
+items whose moon is live, so a draft moon's approved questions cannot appear in a paper
+before the moon does. **Publish** flips `draft -> live` only if `moon_publishable()` says
+yes; otherwise 409, naming the moon and how many questions it has (3 needed). Discard on a
+draft with no items and no evidence **deletes** the row (nothing exists to protect);
+otherwise it **retires** it.
+
+*The consequence, stated plainly:* publishing a moon into a planet some students have
+already mastered **re-closes that planet's successors for them** until they master the new
+moon (the lock is evaluated live). So Publish runs in a transaction, computes
+before-and-after `is_stage_unlocked()` for every student, and the dialog says "**N students
+who have 06 open would see it close until they master 05.9**". Preview = the same function
+rolled back.
+
+#### 4. RETIRE = the moon disappears, the evidence stays
+
+- Gone for students: map, stage page, "N of M moons", the grid, journeys (404), the lock's
+  count. Opens planets, never closes them (so retiring needs no re-lock warning).
+- Kept: the row (`status = 'retired'`), its items (still `live`/whatever they were, but
+  excluded from draws by the live-moon join; reassigning one is a new item version, rule 6),
+  blueprints, assessments, every `objective_progress` row (append-only, DB-enforced), and an
+  in-flight journey attempt can still be submitted.
+- **Refused (409, in words):** retiring the **last live moon** of a gradeable stage (its
+  successors would be held shut forever; the instructor opens a planet by hand on /locks
+  instead); retiring a moon whose removal leaves a **stage check unable to fill** (the
+  engine's own feasibility function, run before commit).
+- **A moon with a minigame says so.** The four games are keyed by moon id in the web code,
+  and reachable only through that moon's journey. The list of ids moves into
+  `packages/contracts` (`MOON_GAMES`, id -> name) so the API can say "01.2 carries **Two
+  Columns**; retiring it takes the game off the map; the game's code stays". A test pins the
+  web registry's keys to that list.
+
+#### 5. Who may do what
+
+| Act | Who |
+|---|---|
+| Type a moon's wording, add a draft moon, save a pending edit/retire, discard it | any staff (a teacher of the subject or the admin), as with a topic: it changes nothing a student reads |
+| **Publish** (edit, add, retire; one chapter's moon changes at a time, a reason, the hash read) | **a teacher of the subject or the admin** (`approval_verdict`); the editing teacher may publish their own typed edit and it is recorded `self_approved`. A teacher of another subject, a student, an unclaimed account: 403 |
+| The AI's proposed moon (E3) | the author rule (never its proposer; ruling 6): not built, the schema leaves `authored_by` for it |
+
+Audit: one `moon.publish` row per publish (what changed per moon, the reason, the impact
+counts), `moon.discard`, `moon.add`.
+
+#### 6. The Studio (after approval, from a captured template)
+
+The chapter's Moons card (today read-only, `current-moons.png`) is REDONE as an editor:
+each moon a row you type in (wording), with its ring/competency/bloom as small selects,
+a status chip (Live, Draft, Retired, "edited, unpublished"), live-question count with the
+"needs 3" gap, the minigame badge, **Retire**; **Add a moon** at the foot (wording, bloom,
+level 0-6, read/trace/build); one **Publish moons…** dialog (what changes, the re-lock
+count, a reason). Template first (captured and opened, in `design/templates/console/
+studio-moons/`), then `console-studio-editor.spec.ts` gains the moon claims at 1440 and 380.
+
+#### 7. Denial tests, written RED FIRST
+
+1. A student token cannot INSERT/UPDATE/DELETE `objectives` or `objective_edits` (RLS).
+2. **A staff token cannot either** (`ob_staff` dropped): only the API writes; watched red
+   with `ob_staff` still in place.
+3. A student cannot read a `draft` or `retired` moon (RLS) nor see it in `/stages`,
+   `/stages/:id`, `/progress`, the lock reason; `POST /objectives/:id/journey` on one is 404.
+4. **A draft moon does not hold a planet shut:** every live moon mastered + a draft moon with
+   0 questions -> `is_stage_unlocked()` stays true. Watched red against the old function.
+5. **A published moon does:** after Publish the planet closes for a student who has not
+   mastered it; the Publish response counted that student.
+6. Publish refuses a draft with 2 live questions (409); with 3 it goes live.
+7. **A retired moon's evidence survives:** `objective_progress`, items, blueprint and
+   assessment rows are all still there; the lock ignores it; UPDATE/DELETE on
+   `objective_progress` still raises; a stage check no longer draws its items.
+8. Retiring the last live moon of a gradeable stage -> 409; so does retiring the moon a
+   stage check needs to fill.
+9. **A teacher of another subject cannot publish** (403, and nothing changed); a student
+   cannot; an unauthenticated call is 401.
+10. `sync-content` leaves a console-owned moon's wording alone and does not resurrect a
+    retired one.
+11. A stale save (the version moved) is 409 and keeps the typing; Publish of a hash that
+    moved is 409.
+12. The static `moon-readers` test: no student SQL names `objectives`.
+
+#### 8. Open decisions for the instructor
+
+1. **Sign off the moon work's lock layer** (REDESIGN-SIGNOFF §5, still open) — E2 is built
+   on it and changes it again (step 4 reads live moons only).
+2. **Minimum questions to publish a moon: 3** (recommended) — or another number?
+3. **Publishing a new moon into a planet students already mastered re-closes the planets
+   after it for them** until they master it (recommended: allow, with the count shown in the
+   Publish dialog; the teacher may open a planet by hand on /locks). The alternative —
+   grandfather those students — needs a per-student exemption table and is not in this plan.
+4. Edits to an existing live moon's wording go through Publish too (ruling 3), though no
+   student's progress depends on a sentence. Recommended: yes, keep one rule.
+
 ### The AI's side (E3, with CS3)
 
 The proposal model is the draft model: a proposal is a diff against the working
@@ -158,7 +317,7 @@ proposal is published like any typed edit. Nothing here builds the app.
 | **E1.3** *(built 8 Oct; gate green)* | The editor page: right sidebar tabs, page, toolbar, topic controls, Publish and Discard, REDONE from the templates; SPEC rewritten | spec at 1440 and 380, six assertions, captures opened |
 | **E1.4** *(built 8 Oct)* | `export-content.mjs` (`pnpm content:export`); docs | test |
 | **E1.5** *(not built)* | Per-topic History in the editor: what the old block editor's History and Use this text did, on a topic | spec at 1440 and 380 |
-| **E2** | Moons: its own plan first | its own gate |
+| **E2** *(plan v1 written 8 Oct, awaiting approval)* | Moons: see "E2 — the moons plan" above | its own gate |
 | **E3** | AI proposals, with CS3 | with the app |
 
 Templates, captured and opened 8 Oct 2026: `design/templates/console/studio-editor/`
