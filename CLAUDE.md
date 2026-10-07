@@ -53,6 +53,12 @@ other documents — check it before believing any claim that something is built.
    is approved before students see it: questions land at `review` on /items,
    lesson text in `content/stages/NN.draft.md` → the staff-only
    `chapter_drafts`, approved per chapter on /content, bound to its hash.
+   **A third, instructor ruling 8 Oct 2026:** teachers may **write** course
+   content in the Studio (type in place, add, delete and reorder topics, edit
+   and add moons), and the AI may **propose** topics and moons from the book,
+   because each is a draft students never see until a teacher publishes it
+   (`docs/STUDIO-EDITOR-PLAN.md`). Nothing a student reads is ever written
+   without that publish.
 6. **Items are versioned, never edited in place.** New version = new row sharing `family_id`.
    Old version is retired, not deleted.
 7. **`responses` and `attempt_items` are written only by the grading service, and `responses` is

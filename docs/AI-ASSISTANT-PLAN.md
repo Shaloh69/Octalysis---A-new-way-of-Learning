@@ -27,6 +27,16 @@ APPROVED (§4-six), superseding §4-now wherever they differ:**
 | 6 | Today's API-side B3 pieces | **Retired**: the sealed-keys table, `seal.ts`/`keys.ts`, the server tick, its cron job and Vault secrets, the TypeScript adapters and the Anthropic SDK in the API. `CRON_SECRET` and `ASSISTANT_KEY_SECRET` are no longer needed on Render |
 | 7 | Order | **Teacher accounts (T1) first**, then the assistant's app |
 
+**Round nine (8 Oct 2026): what it may author.** Asked "does it have the
+ability to create and author topics for review, everything from the book?" and
+answered **"Also propose moons"**: besides lesson text, questions, redrawn
+figures and figure summaries, the assistant may **propose moons** (objectives)
+for a chapter. Every one is a proposal with a diff; a teacher accepts it into a
+draft and publishes it (`docs/STUDIO-EDITOR-PLAN.md`; hard rule 5's third
+exception). A moon needs questions before it can open anything, so a proposed
+moon stays a draft until its bank can fill its journey (E2). The app is still
+unbuilt: today nothing here can be pressed.
+
 **Round eight (7 Oct 2026, night): Course Studio.** The teacher's assistant
 lives in **Course Studio**'s AI sidebar (`docs/COURSE-STUDIO-PLAN.md`), which
 takes in `/content` and the planned `/assistant`: one page for subjects,
