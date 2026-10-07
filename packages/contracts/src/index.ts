@@ -1071,3 +1071,61 @@ export const ProgressResponse = z.object({
   }),
 });
 export type ProgressResponse = z.infer<typeof ProgressResponse>;
+
+/* ============================================================
+ * Course Studio, CS1 (docs/COURSE-STUDIO-PLAN.md §3): subjects and their
+ * books, written by EVERY teacher through the API, with a reason.
+ * ========================================================== */
+
+const StudioReason = z.string().trim().min(3, "Say why, in a few words.").max(500);
+/** A course code as the database holds it: 'CPE 412', 'CPE 413A'. */
+export const SubjectCode = z.string().trim().regex(/^[A-Z]{2,6} [0-9]{2,4}[A-Z]?$/, "a course code, like CPE 413");
+
+export const SubjectCreateBody = z.object({
+  code: SubjectCode,
+  title: z.string().trim().min(1).max(200),
+  reason: StudioReason,
+}).strict();
+export type SubjectCreateBody = z.infer<typeof SubjectCreateBody>;
+
+export const SubjectRenameBody = z.object({ title: z.string().trim().min(1).max(200), reason: StudioReason }).strict();
+export type SubjectRenameBody = z.infer<typeof SubjectRenameBody>;
+
+const BookText = z.string().trim().min(1).max(300);
+export const BookCreateBody = z.object({
+  title: BookText,
+  author: BookText.nullable().optional(),
+  edition: z.string().trim().min(1).max(40).nullable().optional(),
+  /** Make it the subject's default. A subject's first book is its default regardless. */
+  isDefault: z.boolean().optional(),
+  reason: StudioReason,
+}).strict();
+export type BookCreateBody = z.infer<typeof BookCreateBody>;
+
+export const BookUpdateBody = z.object({
+  title: BookText.optional(),
+  author: BookText.nullable().optional(),
+  edition: z.string().trim().min(1).max(40).nullable().optional(),
+  reason: StudioReason,
+}).strict();
+export type BookUpdateBody = z.infer<typeof BookUpdateBody>;
+
+export const BookDefaultBody = z.object({ reason: StudioReason }).strict();
+export type BookDefaultBody = z.infer<typeof BookDefaultBody>;
+
+export const StudioSubject = Subject.extend({
+  classes: z.object({ total: z.number().int(), assigned: z.number().int() }),
+  /** Only CPE 412 has a star system until CS2. */
+  hasChapters: z.boolean(),
+});
+export type StudioSubject = z.infer<typeof StudioSubject>;
+
+export const StudioSubjectsResponse = z.object({
+  subjects: z.array(StudioSubject),
+  me: z.object({
+    role: z.enum(["teacher", "admin"]),
+    /** The subjects whose content this reader may approve (a class of it, or the admin: all). */
+    approves: z.array(z.string()),
+  }),
+});
+export type StudioSubjectsResponse = z.infer<typeof StudioSubjectsResponse>;
