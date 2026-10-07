@@ -62,7 +62,7 @@ const CONSOLE_ROUTES: Array<[string, string]> = [
   ["/students", "console-roster"],
   ["/items", "console-items"],
   ["/assessments", "console-assessments"],
-  ["/content", "console-content"],
+  ["/studio", "console-studio"],
   ["/gradebook", "console-gradebook"],
   ["/submissions", "console-submissions"],
   ["/audit", "console-audit"],

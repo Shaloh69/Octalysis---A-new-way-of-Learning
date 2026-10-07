@@ -7,8 +7,12 @@ import { ChangelogPage } from "./pages/ChangelogPage";
 import { StudentsPage } from "./pages/StudentsPage";
 import { StudentDetailPage } from "./pages/StudentDetailPage";
 import { AttemptPage } from "./pages/AttemptPage";
-import { ContentPage } from "./pages/ContentPage";
-import { ContentChapterPage } from "./pages/ContentChapterPage";
+import { StudioLayout } from "./pages/studio/StudioLayout";
+import { OverviewView } from "./pages/studio/OverviewView";
+import { ReviewView } from "./pages/studio/ReviewView";
+import { SubjectView } from "./pages/studio/SubjectView";
+import { ChapterView } from "./pages/studio/ChapterView";
+import { ChapterRedirect, ContentRedirect } from "./pages/studio/redirects";
 import { ItemsPage } from "./pages/ItemsPage";
 import { SubmissionsPage } from "./pages/SubmissionsPage";
 import { LivePage } from "./pages/LivePage";
@@ -90,8 +94,15 @@ export function App() {
           <Route path="/assessments" element={<AssessmentsPage />} />
           <Route path="/items" element={<ItemsPage />} />
           <Route path="/submissions" element={<SubmissionsPage />} />
-          <Route path="/content" element={<ContentPage />} />
-          <Route path="/content/:stageId" element={<ContentChapterPage />} />
+          {/* Course Studio (CS1, 7 Oct 2026) took in /content; both addresses still land. */}
+          <Route path="/studio" element={<StudioLayout />}>
+            <Route index element={<OverviewView />} />
+            <Route path="review" element={<ReviewView />} />
+            <Route path=":subject" element={<SubjectView />} />
+            <Route path=":subject/:stageId" element={<ChapterView />} />
+          </Route>
+          <Route path="/content" element={<ContentRedirect />} />
+          <Route path="/content/:stageId" element={<ChapterRedirect />} />
           <Route path="/audit" element={<AuditPage />} />
           <Route path="/system" element={<SystemPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />

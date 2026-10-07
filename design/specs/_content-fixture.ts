@@ -1,7 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 
 /**
- * `/content` and `/content/:stageId`, on the REAL seeded responses.
+ * Course Studio (`/studio`, which took in `/content`), on the REAL seeded responses.
  *
  * Every read goes to the API and comes back as the seed has it: 19 chapters, 19
  * draft summaries, 217 blocks. Every WRITE is intercepted and never sent, for
@@ -27,7 +27,12 @@ export interface Block {
   lastEdit: { via: string; at: string; reason: string | null; editor: string | null } | null;
 }
 
+/** The fixture teacher's user id: the token's `sub`, and what `authoredBy: "me"` is set to. */
+export const TEACHER_ID = "dddddddd-0000-4000-8000-000000000001";
+
 export interface Writes {
+  /** Subjects and books (CS1): never sent, replayed into the next read. */
+  studio: Array<{ method: string; path: string; body: Record<string, unknown> }>;
   edit: Array<{ id: string; body: { body: string; version: number; reason: string } }>;
   approve: Array<{ stageId: string; body: { hash: string } }>;
   sendBack: Array<{ stageId: string; body: { reason: string } }>;
@@ -40,7 +45,14 @@ export interface Writes {
 }
 
 export interface FixtureOpts {
-  fail?: "edit" | "stale" | "approve" | "send-back" | "approve-draft" | "approve-figure";
+  fail?: "edit" | "stale" | "approve" | "send-back" | "approve-draft" | "approve-figure" | "subject";
+  /**
+   * Who the reader is, for the approval rule: the API says it in `/console/subjects`
+   * (`me`). Default: a teacher of CPE 412, so an Approve is offered, as it always was.
+   */
+  me?: { role: "teacher" | "admin"; approves: string[] };
+  /** Every summary, drafted chapter and figure was written by the reader (the author rule). */
+  authoredBy?: "me";
   /** Delay every read, to see the skeleton. */
   delayMs?: number;
   /** Answer every read with this status. */
@@ -72,7 +84,60 @@ function applyBlock(b: Block, w: Writes): Block {
 }
 
 export async function useFixture(page: Page, opts: FixtureOpts = {}) {
-  const writes: Writes = { edit: [], approve: [], sendBack: [], approveDraft: [], sendBackDraft: [], approveFigure: [], sendBackFigure: [] };
+  const writes: Writes = { studio: [], edit: [], approve: [], sendBack: [], approveDraft: [], sendBackDraft: [], approveFigure: [], sendBackFigure: [] };
+
+  // Subjects and books (CS1). Reads are the real API with `me` set by the spec; writes are never sent.
+  await page.route(/\/api\/v1\/console\/(subjects|books)(\/|\?|$)/, async (route: Route) => {
+    const req = route.request();
+    const path = new URL(req.url()).pathname.replace(/^.*\/api\/v1\/console/, "");
+    if (req.method() !== "GET") {
+      if (opts.fail === "subject") {
+        return route.fulfill({ status: 409, json: { error: { code: "conflict", message: "CPE 413 already exists. Rename it instead." } } });
+      }
+      const body = (req.postDataJSON() ?? {}) as Record<string, unknown>;
+      writes.studio.push({ method: req.method(), path: decodeURIComponent(path), body });
+      return route.fulfill({ status: req.method() === "POST" ? 201 : 200, json: { ok: true, id: "fixture-book-" + writes.studio.length, code: body.code } });
+    }
+    let res: Awaited<ReturnType<Route["fetch"]>>;
+    let json: { subjects: Array<{ code: string; title: string; books: Array<Record<string, unknown>>; classes: { total: number; assigned: number }; hasChapters: boolean }>; me: Record<string, unknown> };
+    try {
+      res = await route.fetch();
+      json = (await res.json()) as typeof json;
+    } catch (e) {
+      if (/Test ended|closed|disposed/i.test(String(e))) return;
+      throw e;
+    }
+    json.me = opts.me ?? { role: "teacher", approves: ["CPE 412"] };
+    for (const w of writes.studio) {
+      const m = /^\/subjects(?:\/([^/]+))?(?:\/(books))?$/.exec(w.path);
+      if (m && w.method === "POST" && !m[1]) {
+        json.subjects.push({ code: String(w.body.code), title: String(w.body.title), books: [], classes: { total: 0, assigned: 0 }, hasChapters: false });
+      } else if (m && m[1] && w.method === "PATCH") {
+        const s = json.subjects.find((x) => x.code === m[1]);
+        if (s) s.title = String(w.body.title);
+      } else if (m && m[1] && m[2] === "books") {
+        const s = json.subjects.find((x) => x.code === m[1]);
+        if (s) {
+          const makeDefault = w.body.isDefault === true || s.books.length === 0;
+          if (makeDefault) s.books.forEach((b) => { b.isDefault = false; });
+          s.books.push({ id: "fixture-book-new", title: w.body.title, author: w.body.author ?? null, edition: w.body.edition ?? null, isDefault: makeDefault });
+        }
+      } else {
+        const b = /^\/books\/([^/]+)(\/default)?$/.exec(w.path);
+        if (b) {
+          for (const s of json.subjects) {
+            const book = s.books.find((x) => x.id === b[1]);
+            if (!book) continue;
+            if (b[2]) { s.books.forEach((x) => { x.isDefault = false; }); book.isDefault = true; }
+            else Object.assign(book, { title: w.body.title ?? book.title, author: w.body.author === undefined ? book.author : w.body.author, edition: w.body.edition === undefined ? book.edition : w.body.edition });
+          }
+        }
+      }
+    }
+    return route.fulfill({ response: res, json }).catch((e: unknown) => {
+      if (!/Test ended|closed|disposed/i.test(String(e))) throw e;
+    });
+  });
 
   // A figure approval serves a drawing to students: never for real from a spec.
   await page.route(/\/api\/v1\/console\/figures\/[^/]+\/(approve|send-back)$/, async (route: Route) => {
@@ -169,6 +234,9 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
       throw e;
     }
 
+    // A refusal (404 for a chapter that does not exist) passes through as it came.
+    if (res.status() >= 400) return route.fulfill({ response: res }).catch(() => undefined);
+
     if (path === "" || path === "/") {
       const stages = json.stages as Array<{ id: string; summaryStatus: string | null; consoleEdited: number }>;
       const summary = json.summary as { summaries: Record<string, number>; consoleEdited: number };
@@ -178,10 +246,17 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
       summary.summaries = { draft: n("draft"), approved: n("approved"), sentBack: n("sent_back"), none: n(null) };
       summary.consoleEdited += writes.edit.length;
     } else if (path === "/summaries") {
-      json.summaries = (json.summaries as Summary[]).map((s) => applySummary(s, writes));
+      json.summaries = (json.summaries as Summary[]).map((s) => ({
+        ...applySummary(s, writes), ...(opts.authoredBy === "me" ? { authoredBy: TEACHER_ID } : {}),
+      }));
     } else if (/^\/\d\d$/.test(path)) {
       json.blocks = (json.blocks as Block[]).map((b) => applyBlock(b, writes));
       if (json.summary) json.summary = applySummary(json.summary as Summary, writes);
+      if (opts.authoredBy === "me") {
+        if (json.summary) (json.summary as Record<string, unknown>).authoredBy = TEACHER_ID;
+        if (json.draft) (json.draft as Record<string, unknown>).authoredBy = TEACHER_ID;
+        for (const f of (json.figures ?? []) as Array<Record<string, unknown>>) f.authoredBy = TEACHER_ID;
+      }
       const id = path.slice(1);
       const d = json.draft as { status: string; note: string | null; reviewer: string | null; reviewedAt: string | null; everApproved: boolean } | null;
       if (d) {

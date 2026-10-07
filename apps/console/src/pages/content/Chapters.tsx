@@ -4,6 +4,7 @@ import {
   ACT_NAMES, AUTHORING_TONE, AUTHORING_WORD, SUMMARY_TONE, SUMMARY_WORD, archetypeName, levelsText,
 } from "@/lib/content-view";
 import { Badge } from "@/components/ui/badge";
+import { chapterPath } from "@/lib/studio-view";
 
 /**
  * Every chapter and where it stands. The facts a teacher opens this for
@@ -55,7 +56,7 @@ function Live({ s }: { s: ContentStage }) {
 function Title({ s }: { s: ContentStage }) {
   return (
     <>
-      <Link className="ct-link ct-chapter-link" to={`/content/${s.id}`}>{s.title}</Link>
+      <Link className="ct-link ct-chapter-link" to={chapterPath(s.id)}>{s.title}</Link>
       {!s.gradeable ? <span className="ct-faint"> · not graded</span> : null}
     </>
   );

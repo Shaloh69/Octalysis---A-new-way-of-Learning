@@ -206,7 +206,7 @@ function Readiness() {
             </dl>
           ) : null}
           <p className="cg-faint">
-            Approve what waits on <Link className="cg-link" to="/content">Content</Link> and{" "}
+            Approve what waits on <Link className="cg-link" to="/studio/review">To review</Link> and{" "}
             <Link className="cg-link" to="/items">Items</Link>. Counted from this deployment&apos;s database just now.
           </p>
         </div>

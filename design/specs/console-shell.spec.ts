@@ -45,7 +45,8 @@ function teacherToken(): string {
 const GROUPS: Array<[string, string[]]> = [
   ["In class", ["Locks", "Live", "Chat"]],
   ["Students", ["Students", "Submissions", "Gradebook"]],
-  ["Course", ["Assessments", "Items", "Content"]],
+  // Content became Studio, 8 Oct 2026 (Course Studio, CS1): one page for subjects, books and chapters.
+  ["Course", ["Assessments", "Items", "Studio"]],
   // Changelog joined Records, 7 Oct 2026 (night): the instructor asked for it.
   ["Records", ["Audit log", "System health", "Feedback", "Changelog"]],
 ];

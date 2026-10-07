@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { GateNote, useApprovalGate } from "@/lib/approval-gate";
 import { FigureDrawing } from "@/components/FigureDrawing";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -38,6 +39,7 @@ export function FigureCard({
   const [sending, setSending] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   const when = dayDate(figure.reviewedAt);
+  const gate = useApprovalGate(figure.authoredBy);
   const H = headingLevel === 3 ? "h3" : "h4";
 
   async function approve() {
@@ -83,7 +85,8 @@ export function FigureCard({
       ) : null}
       {figure.status !== "approved" ? (
         <div className="ct-summary-actions">
-          <Button size="sm" data-approve-figure={figure.id} onClick={() => void approve()} disabled={busy}>
+          <Button size="sm" data-approve-figure={figure.id} onClick={() => void approve()} disabled={busy || !gate.allowed}
+                  aria-describedby={gate.reason || gate.selfApproved ? `gate-fig-${figure.id}` : undefined}>
             {busy ? "Approving…" : `Approve figure ${figure.id}`}
           </Button>
           {figure.status === "draft" ? (
@@ -91,6 +94,7 @@ export function FigureCard({
               {`Send back figure ${figure.id}`}
             </Button>
           ) : null}
+          <GateNote id={`gate-fig-${figure.id}`} gate={gate} />
         </div>
       ) : null}
       <FigureSendBack

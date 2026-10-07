@@ -204,8 +204,21 @@ export async function unreachableByKeyboard(page: Page, scope = "main"): Promise
     document.querySelectorAll<HTMLInputElement>("input[type=radio][data-kb]").forEach((el) => {
       if (el.name && got.includes(el.getAttribute("data-kb")!)) radioGroups.add(el.name);
     });
+    /*
+     * A WAI-ARIA tablist is ONE Tab stop in the same way: the selected tab has
+     * `tabindex=0`, the others `-1`, and the arrow keys (with Home and End) move
+     * between them. A tab counts as reached when another tab of its tablist
+     * was. Added 8 Oct 2026 for Course Studio's chapter tabs;
+     * `console-studio.spec.ts` separately proves the arrows move and select.
+     */
+    const tablists = new Set<Element>();
+    document.querySelectorAll<HTMLElement>("[role=tab][data-kb]").forEach((el) => {
+      const list = el.closest("[role=tablist]");
+      if (list && got.includes(el.getAttribute("data-kb")!)) tablists.add(list);
+    });
     const missed: string[] = [];
     document.querySelectorAll<HTMLElement>("[data-kb]").forEach((el) => {
+      if (el.getAttribute("role") === "tab" && tablists.has(el.closest("[role=tablist]")!)) return;
       if (el instanceof HTMLInputElement && el.type === "radio" && el.name && radioGroups.has(el.name)) return;
       if (!got.includes(el.getAttribute("data-kb")!)) {
         missed.push(

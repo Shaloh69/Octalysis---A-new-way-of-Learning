@@ -1,5 +1,9 @@
 # `/content` — SPEC
 
+> **SUPERSEDED 8 Oct 2026 by Course Studio** (`../studio/SPEC.md`): `/content` and
+> `/content/:stageId` redirect to `/studio` and `/studio/cpe-412/:stageId`. This
+> file stays as the requirements document every rule the Studio kept came from.
+
 Two routes, one job: **is the course text ready, and is it right.**
 
 - `/content` — every chapter's authoring state, and the planet summaries

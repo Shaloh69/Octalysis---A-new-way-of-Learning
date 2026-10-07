@@ -1950,6 +1950,15 @@
   .ct-fact { display: flex; justify-content: space-between; gap: var(--space-2); min-width: 0; }
   .ct-fact dt { color: var(--ink-muted); }
   .ct-fact dd { margin: 0; color: var(--ink); text-align: right; min-width: 0; overflow-wrap: anywhere; }
+  /* Between the list's width and the table's (the Studio's docked outline lands here at 1440):
+     one dense row per chapter, the same facts, each still visible. */
+  @container (min-width: 38rem) {
+    .ct-item { display: grid; grid-template-columns: minmax(0, 1.5fr) auto minmax(0, 1fr); align-items: center; column-gap: var(--space-4); padding-block: var(--space-2); }
+    .ct-item-badges { justify-self: start; }
+    .ct-facts { grid-template-columns: repeat(3, auto); justify-content: end; gap: var(--space-4); }
+    .ct-fact { flex-direction: column; justify-content: flex-start; gap: 0; }
+    .ct-fact dd { text-align: left; }
+  }
 
   /* ---- summaries ---- */
   .ct-groups { display: flex; flex-direction: column; gap: var(--space-3); }
@@ -3161,4 +3170,122 @@
   .cg-index a { display: inline-block; padding: var(--space-1) 0; color: var(--ink-muted); border-radius: var(--radius-sm); }
   .cg-index a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
   .cg-index-sub { padding-left: var(--space-3); }
+}
+
+/*
+ * ------------------------------------------------------------ /studio
+ *
+ * `design/templates/console/studio/SPEC.md`: shadcn's sidebar-15, three panes.
+ * The Studio chooses on its OWN width (a ResizeObserver): at 60rem and up the
+ * outline (and, on demand, the AI pane) are docked beside the editor; below,
+ * both are sheets. The editor's own views keep the `ct-*` classes they had as
+ * /content, and choose their own layout on their own width in turn.
+ */
+@layer components {
+  .st { container-type: inline-size; display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .st-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .st-panes { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); align-items: start; min-width: 0; }
+  .st-panes.has-outline { grid-template-columns: 15rem minmax(0, 1fr); }
+  .st-panes.has-ai { grid-template-columns: minmax(0, 1fr) 17rem; }
+  .st-panes.has-outline.has-ai { grid-template-columns: 15rem minmax(0, 1fr) 17rem; }
+  .st-editor { min-width: 0; }
+  .st-pane {
+    position: sticky; top: 0; align-self: start; min-width: 0;
+    max-height: calc(100dvh - var(--space-8)); overflow-y: auto;
+    padding: var(--space-3);
+    border: var(--border-hair) solid var(--line); border-radius: var(--radius-lg); background: var(--surface-1);
+  }
+  .st-section { display: flex; flex-direction: column; gap: var(--space-3); }
+  .st-card { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); }
+  .st-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+  .st-head-col { display: flex; flex-direction: column; gap: var(--space-1); }
+  .st-field { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+  .st-check { display: flex; align-items: center; gap: var(--space-2); min-height: 2.75rem; font-size: var(--text-sm); color: var(--ink); margin-bottom: var(--space-3); }
+  .st-crumb { font-size: var(--text-sm); color: var(--ink-muted); overflow-wrap: anywhere; }
+  .st-crumb [aria-current] { color: var(--ink); }
+
+  /* ---- the outline ---- */
+  .st-outline { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .st-outline-top, .st-subjects, .st-chapters { display: flex; flex-direction: column; gap: 2px; }
+  .st-outline-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .st-outline-h2 { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+  .st-outline-link {
+    display: flex; align-items: baseline; gap: var(--space-2); min-height: 2.25rem; padding: var(--space-1) var(--space-2);
+    font-size: var(--text-sm); color: var(--ink); border-radius: var(--radius-sm);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .st-outline-link:hover { background: var(--surface-2); }
+  .st-outline-link.is-current { background: var(--surface-3); font-weight: 600; }
+  .st-count { margin-left: auto; color: var(--ink-muted); font-size: var(--text-xs); }
+  .st-icon-btn {
+    display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem;
+    color: var(--ink); background: none; border: var(--border-hair) solid var(--line); border-radius: var(--radius-md); cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .st-icon-btn:hover { background: var(--surface-2); }
+  .st-subject-btn {
+    display: flex; align-items: center; gap: var(--space-2); width: 100%; min-height: 2.25rem; padding: var(--space-1) var(--space-2);
+    font-size: var(--text-sm); color: var(--ink); text-align: left; background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .st-subject-btn:hover { background: var(--surface-2); }
+  .st-subject-btn { align-items: flex-start; }
+  .st-subject-btn svg { flex: none; margin-top: 2px; }
+  .st-subject-text { display: flex; flex-direction: column; min-width: 0; }
+  .st-subject-code { font-weight: 600; }
+  .st-subject-title { min-width: 0; overflow-wrap: break-word; color: var(--ink-muted); font-size: var(--text-xs); }
+  .st-subject-body { display: flex; flex-direction: column; gap: 2px; padding-left: var(--space-3); }
+  /* The note sits under the title, so the title keeps the whole width and breaks at words. */
+  .st-chapter { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); column-gap: var(--space-2); align-items: baseline; }
+  .st-chapter-id { color: var(--ink-muted); }
+  .st-chapter-title { min-width: 0; overflow-wrap: break-word; }
+  .st-note { grid-column: 2; font-size: var(--text-xs); color: var(--info); }
+  .st-nochap { padding: var(--space-1) var(--space-2); }
+  .st-outline-foot { padding-top: var(--space-2); border-top: var(--border-hair) solid var(--line); }
+  .st-skel { border-radius: var(--radius-md); background: var(--surface-2); }
+  .st-skel-outline { height: 4rem; }
+  .st-skel-chapters { height: 16rem; }
+
+  /* ---- the AI pane ---- */
+  .st-ai-body { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .st-ai-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .st-ai-lede { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
+  .st-ai-text { max-width: 36rem; }
+  .st-ai-h3 { margin-top: var(--space-2); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); }
+  .st-ai-list { list-style: disc; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-sm); color: var(--ink); }
+
+  /* ---- the sheets (below 60rem) ---- */
+  .st-sheet { overflow-y: auto; border-radius: 0; }
+  .st-sheet-left { border-left: 0; }
+  .st-sheet-right { border-right: 0; }
+
+  /* ---- a chapter's tabs ---- */
+  .st-tabs { display: flex; flex-wrap: wrap; gap: var(--space-1); border-bottom: var(--border-hair) solid var(--line); }
+  .st-tab {
+    display: inline-flex; align-items: baseline; gap: var(--space-2); min-height: 2.75rem; padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm); color: var(--ink-muted); background: none; border: 0; border-bottom: var(--border-thick) solid transparent;
+    cursor: pointer; margin-bottom: -1px;
+    transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .st-tab:hover { color: var(--ink); background: var(--surface-2); }
+  .st-tab[aria-selected="true"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
+  .st-tab-note { font-size: var(--text-xs); font-weight: 400; color: var(--info); }
+  .st-panel { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+  .st-panel:focus { outline: none; }
+
+  /* ---- books, objectives, waiting ---- */
+  .st-books, .st-objectives { display: flex; flex-direction: column; }
+  .st-books li {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3);
+    padding: var(--space-3) 0; border-top: var(--border-hair) solid var(--line);
+  }
+  .st-books li:first-child { border-top: 0; padding-top: 0; }
+  .st-book-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .st-objectives li { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); gap: var(--space-3); padding: var(--space-2) 0; border-top: var(--border-hair) solid var(--line); }
+  .st-objectives li:first-child { border-top: 0; }
+  .st-ob-code { font-weight: 600; color: var(--ink); }
+  .st-waiting { display: flex; flex-direction: column; }
+  .st-waiting li { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: var(--space-1) var(--space-3); padding: var(--space-3) var(--space-4); border-top: var(--border-hair) solid var(--line); }
+  .st-waiting li:first-child { border-top: 0; }
+  .st-waiting li > :nth-child(3) { grid-column: 2; }
 }

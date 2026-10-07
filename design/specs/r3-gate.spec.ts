@@ -83,7 +83,7 @@ const CONSOLE: string[] = [
   "/students",
   "/items",
   "/assessments",
-  "/content",
+  "/studio",
   "/gradebook",
   "/submissions",
   "/audit",

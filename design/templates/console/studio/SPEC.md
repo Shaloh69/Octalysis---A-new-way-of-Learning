@@ -1,4 +1,9 @@
-# `/studio` — Course Studio — SPEC (CS1)
+# `/studio` — Course Studio — SPEC (CS1) — BUILT 8 Oct 2026
+
+> **Built.** Where the build departs from this plan, the text below says so in
+> place and the "As built" section at the end lists them. Gate:
+> `design/specs/console-studio.spec.ts`, 164 passing with the teaching spec at
+> 1440 and 380; captures `current*.png` here, opened and looked at.
 
 One page for a course's material: **is it there, is it right, and who has
 read it.** It takes in `/content` and `/content/:stageId` (both redirect here,
@@ -55,14 +60,17 @@ line in the editor pane with a link to the Overview, never a blank.
  └─────────────────────┴─────────────────────────────────────┴──────────────────────┘
 ```
 
-**At 1440** (the page's own width at 72rem and up): all three panes. The bar
-over the editor holds **Outline** and **AI** toggles that hide and show their
-pane (pressed = shown); the editor takes the room.
+**At 1440** (the page's own width at **60rem** and up; `<main>` is 70rem there):
+the outline is a pane beside the editor, and the AI pane opens beside it on
+demand. The bar over the editor holds **Outline** and **AI Assistant** toggles
+that hide and show their pane (pressed = shown). **The AI pane starts closed**:
+it is locked until its app exists, and a chapter's blocks beside their preview
+need about 52rem, which three open panes would not leave. One press opens it.
 
-**At 380** (below 72rem of its own width): the editor is the page. **Outline**
+**At 380** (below 60rem of its own width): the editor is the page. **Outline**
 and **AI** open as sheets from the left and right (a modal dialog: focus
 moves in, Escape closes, focus returns to the button). Choosing a chapter in
-the outline sheet closes it.
+the outline sheet closes it, and so does adding a subject.
 
 The console's own nav stays: Studio replaces **Content** in the Course group.
 
@@ -86,9 +94,12 @@ The console's own nav stays: Studio replaces **Content** in the Course group.
 for; the four KPI tiles (chapters authored, summaries approved, edits not in
 git, live items) with their qualifiers exactly as `/content` had them; *The
 item bank is the schedule*; the chapters as a table at 56rem of its own width
-and up, a list below (columns as `/content`: Stage, Chapter, Period, Status,
-Text, Summary, Blocks, Figures, Objectives, Live items). The caption on where
-text comes from.
+and up, and below it a list (columns as `/content` had them: Stage, Chapter,
+Period, Type, Status with its text state, Summary, Objectives, Blocks, Live
+items). **With the outline docked the pane is narrower than the table needs, so
+at 1440 the chapters are the list in its dense form**: one row each (about 57px),
+the same facts, every one visible; the stacked card is the 380 form. The
+caption on where text comes from.
 
 **To review** (`/studio/review`): h1 *To review*; three sections, each an h2
 with its count: **Summaries** (to review / sent back / approved, as
@@ -98,10 +109,10 @@ chapter's Figures tab). An empty section says so in words.
 
 **A subject** (`/studio/cpe-412`): h1 `CPE 412 · Computer Architecture and
 Organization`; **Rename**; **Books**: one row each (title, author, edition in
-mono, *Default* as a word), **Edit** and **Make default** on each, **Add
-book**; **Classes**: how many classes take it, how many have a teacher, and a
-line that classes are assigned on Teachers (the admin's page). A subject with
-no chapters says what CS2 will add.
+mono, *Default* as a word), **Edit** on each and **Make default** on the ones
+that are not, **Add book**; **Classes**: how many classes take it, how many
+have a teacher, and a line that classes are assigned on Teachers (the admin's
+page). A subject with no chapters says what CS2 will add.
 
 **A chapter** (`/studio/cpe-412/04`): a breadcrumb (`CPE 412 › 04 Cache
 Memory`), h1 `04 · Cache Memory`, a line (period, authoring state, block
@@ -165,12 +176,12 @@ decided here.
 | Control | Consequence | Legibility | Reversibility | Teaching |
 |---|---|---|---|---|
 | **Overview / To review / a chapter** (outline links) | the editor answers a different question | `aria-current`; the address says it | Back | — |
-| **Outline / AI** (bar toggles) | a pane appears or goes (1440), or opens as a sheet (380) | pressed state; the sheet is titled | press again / Escape | — |
+| **Outline / AI Assistant** (bar toggles) | a pane appears or goes (1440), or opens as a sheet (380) | pressed state (1440) or `aria-haspopup` (380); the sheet is titled; the AI one says (locked) to a screen reader | press again / Escape | — |
 | **Subject disclosure** | its books and chapters show or hide | `aria-expanded`, a chevron | press again | — |
 | **Add subject** (dialog: code, title, reason) | a subject exists; books can be added and classes assigned to it; audit row | the dialog says it has no chapters until CS2 | Rename; a subject is never deleted (classes refer to it) | — |
 | **Rename** (dialog: title, reason) | the subject's title changes everywhere it is shown; audit row | the old and new title in the dialog | rename again | — |
 | **Add book / Edit** (dialog: title, author, edition, reason; *make it the default* on Add) | the subject's book list changes; audit row | the dialog names the subject | Edit again | which book a class reads is the book the AI checks against (CS3) |
-| **Make default** (dialog: reason) | classes with no book of their own now read this one; audit row | the dialog says how many classes follow the default | make the other one default | — |
+| **Make default** (dialog: reason) | classes with no book of their own now read this one; audit row | the dialog says what follows (the classes that chose no book, and which book stops being the default) | make the other one default | — |
 | **Tabs** (chapter) | shows another part of the chapter | `aria-selected`; the address says it | another tab | — |
 | **Approve** (summary, draft, figure) | students see this exact text or drawing; audit row (self-approved when the admin approves their own) | labelled with the stage or figure; disabled with the reason in words when the viewer may not | **Send back** withdraws it | the teacher reads the exact words first |
 | **Send back** (dialog, reason required) | it leaves or never reaches students; the reason is kept | the dialog says what students will see | a new draft in the file returns it to review | the reason tells the author what to change |
@@ -221,3 +232,28 @@ chapter, a subject, To review, and the AI pane / sheets; plus the behaviour
 `console-content.spec.ts` held (moved here), the redirects, the subject and
 book dialogs, and the approval rule's disabled Approve with its reason.
 Captures `current.png` and `current-380.png` here, opened.
+
+## As built (8 Oct 2026): where it departs from the plan above
+
+1. **60rem, not 72rem**, for docking the panes: `<main>` is 70rem at 1440, so
+   72rem would never have docked anything.
+2. **The AI pane starts closed** (see "At 1440"), because the editor needs the
+   room and the pane is locked. Opening it is one press.
+3. **At 1440 the Overview's chapters are the dense list, not the table**, for
+   the same reason (the table needs 56rem and the editor pane has about 53).
+   Looking at the first capture found tall one-chapter cards and a mid-word
+   break ("Microprogramm ed Control") in the outline; the rows are dense now and
+   an outline chapter's "to review" sits under its title.
+4. **The approval rule bites only where an author is known.** `authored_by` is
+   null on summaries, drafted chapters and figures written from the files by
+   sync-content (no teacher wrote them), so today the author check acts on
+   items (`items.author_id`) and the *teacher of the subject* check acts on all
+   four. The columns are ready for the proposals CS3 lets a teacher accept.
+5. **A block edit is still not gated by the rule.** A saved block reaches
+   students at once ("fix a typo now", 28 Sep 2026). Whether ruling 6 should
+   put a second teacher in front of those too is **the instructor's question**,
+   recorded here and not decided.
+6. **Gate fix in the shared helper:** `unreachableByKeyboard` now counts a
+   WAI-ARIA tablist as one Tab stop, as it already counted a radio group
+   (the chapter tabs use the roving `tabindex`; their arrow-key test is in the
+   Studio spec).

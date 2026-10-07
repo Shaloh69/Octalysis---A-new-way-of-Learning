@@ -6,6 +6,7 @@ import type {
   ChatAttachments, ChatMessage, ChatRoom, ChatRooms, ChatThread, ChatUnread, ChatUpload,
   ClassAssignBody, ClassUpdateBody, TeacherClaimBody, TeacherDetail, TeacherImportBody,
   TeacherStatusBody, TeachersResponse, ProgressResponse,
+  BookCreateBody, BookDefaultBody, BookUpdateBody, StudioSubjectsResponse, SubjectCreateBody, SubjectRenameBody,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -325,13 +326,16 @@ export interface ContentStage {
   objectives: number;
   liveItems: number;
   draftItems: number;
-  /** `planned` is not a bug -- see the note in pages/ContentPage.tsx. */
+  /** `planned` is not a bug -- see the note in pages/studio/OverviewView.tsx. */
   authoring: "authored" | "planned" | "empty";
   /** Blocks edited in the console and not yet written back into the .md. */
   consoleEdited: number;
   summaryStatus: SummaryStatus | null;
   /** Drafted lesson text waiting on /content (5 Oct 2026), or null when the chapter has none. */
   draftStatus: SummaryStatus | null;
+  /** Figures drawn for this chapter: waiting for review, and approved (6 Oct 2026). Optional: older fixtures omit them. */
+  figuresWaiting?: number;
+  figuresApproved?: number;
 }
 
 export type SummaryStatus = "draft" | "approved" | "sent_back";
@@ -349,6 +353,8 @@ export interface StageSummary {
   reviewer: string | null;
   reviewedAt: string | null;
   updatedAt: string;
+  /** The teacher who wrote this version in the console; null: from the files (sync). */
+  authoredBy?: string | null;
 }
 
 export type EditVia = "sync" | "console" | "direct";
@@ -386,6 +392,8 @@ export interface ChapterDetail {
   draft: ChapterDraft | null;
   /** The chapter's figures (6 Oct 2026), each drawn as it is under review. */
   figures: ContentFigure[];
+  /** The syllabus's objectives for this chapter, verbatim (Studio's Objectives tab). */
+  objectives?: Array<{ code: string; description: string; bloom: string; level: number | null; competency: string | null }>;
 }
 
 /**
@@ -405,6 +413,7 @@ export interface ContentFigure {
   everApproved: boolean;
   reviewer: string | null;
   reviewedAt: string | null;
+  authoredBy?: string | null;
 }
 
 /** A chapter's lesson text drafted from the textbook, waiting for review. Approving is of THIS text. */
@@ -418,6 +427,7 @@ export interface ChapterDraft {
   reviewer: string | null;
   reviewedAt: string | null;
   updatedAt: string;
+  authoredBy?: string | null;
 }
 
 export interface BlockVersion {
@@ -669,6 +679,18 @@ export const api = {
     }>("/api/v1/stages"),
 
   content: () => request<ContentStatus>("/api/v1/console/content"),
+  /** Course Studio (CS1): subjects, their books and classes, and what this reader may approve. */
+  studioSubjects: () => request<StudioSubjectsResponse>("/api/v1/console/subjects"),
+  createSubject: (b: SubjectCreateBody) =>
+    request<{ ok: true; code: string }>("/api/v1/console/subjects", { method: "POST", body: JSON.stringify(b) }),
+  renameSubject: (code: string, b: SubjectRenameBody) =>
+    request<{ ok: true }>(`/api/v1/console/subjects/${encodeURIComponent(code)}`, { method: "PATCH", body: JSON.stringify(b) }),
+  createBook: (code: string, b: BookCreateBody) =>
+    request<{ ok: true; id: string }>(`/api/v1/console/subjects/${encodeURIComponent(code)}/books`, { method: "POST", body: JSON.stringify(b) }),
+  updateBook: (id: string, b: BookUpdateBody) =>
+    request<{ ok: true }>(`/api/v1/console/books/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(b) }),
+  defaultBook: (id: string, b: BookDefaultBody) =>
+    request<{ ok: true }>(`/api/v1/console/books/${encodeURIComponent(id)}/default`, { method: "POST", body: JSON.stringify(b) }),
   /** The /changelog page's course readiness: the Prelim's five conditions, live. */
   progress: () => request<ProgressResponse>("/api/v1/console/progress"),
 

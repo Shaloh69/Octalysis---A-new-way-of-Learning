@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type StageSummary } from "@/lib/api";
 import { dayDate } from "@/lib/record-view";
+import { chapterPath } from "@/lib/studio-view";
 import { GROUPS, SUMMARY_TONE, SUMMARY_WORD, nextToReview } from "@/lib/content-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { GateNote, useApprovalGate } from "@/lib/approval-gate";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -68,12 +70,13 @@ export function SummaryEntry({
   onApprove: (s: StageSummary, all: readonly StageSummary[]) => void;
   onSendBack: (s: StageSummary, opener: HTMLElement) => void;
   linkTitle?: boolean;
-  headingLevel?: 2 | 3;
+  headingLevel?: 2 | 3 | 4;
   /** Replaces the stage and title, where the page already names them (the chapter page). */
   heading?: string;
 }) {
-  const H = headingLevel === 2 ? "h2" : "h3";
+  const H = headingLevel === 2 ? "h2" : headingLevel === 4 ? "h4" : "h3";
   const when = dayDate(s.reviewedAt);
+  const gate = useApprovalGate(s.authoredBy);
   return (
     <article className="ct-summary" data-summary={s.stageId} data-hash={s.hash} aria-labelledby={`sum-${s.stageId}`}>
       <div className="ct-summary-head">
@@ -81,7 +84,7 @@ export function SummaryEntry({
           {heading ?? (
             <>
               <span className="num">{s.stageId}</span>{" "}
-              {linkTitle ? <Link className="ct-link" to={`/content/${s.stageId}`}>{s.title}</Link> : s.title}
+              {linkTitle ? <Link className="ct-link" to={chapterPath(s.stageId)}>{s.title}</Link> : s.title}
             </>
           )}
         </H>
@@ -104,13 +107,15 @@ export function SummaryEntry({
       {s.status !== "sent_back" ? (
         <div className="ct-summary-actions">
           {s.status === "draft" ? (
-            <Button size="sm" data-approve onClick={() => onApprove(s, all)} disabled={busy === s.stageId}>
+            <Button size="sm" data-approve onClick={() => onApprove(s, all)} disabled={busy === s.stageId || !gate.allowed}
+                    aria-describedby={gate.reason || gate.selfApproved ? `gate-sum-${s.stageId}` : undefined}>
               {busy === s.stageId ? "Approving…" : `Approve stage ${s.stageId}`}
             </Button>
           ) : null}
           <Button size="sm" variant="outline" onClick={(e) => onSendBack(s, e.currentTarget)} disabled={busy === s.stageId}>
             {`Send back stage ${s.stageId}`}
           </Button>
+          {s.status === "draft" ? <GateNote id={`gate-sum-${s.stageId}`} gate={gate} /> : null}
         </div>
       ) : null}
     </article>
@@ -119,8 +124,10 @@ export function SummaryEntry({
 
 /** The Summaries view: three groups, in the order a reviewer works them. */
 export function SummaryGroups({
-  summaries, busy, onApprove, onSendBack,
+  summaries, busy, onApprove, onSendBack, nested = false,
 }: {
+  /** Under a page section of its own: the groups are h3 and each entry h4. */
+  nested?: boolean;
   summaries: readonly StageSummary[];
   busy: string | null;
   onApprove: (s: StageSummary, all: readonly StageSummary[]) => void;
@@ -132,14 +139,20 @@ export function SummaryGroups({
         const list = summaries.filter((s) => s.status === g.status);
         return (
           <section key={g.status} className="ct-card ct-group" data-group={g.status} aria-labelledby={`grp-${g.status}`}>
-            <h2 id={`grp-${g.status}`} className="ct-h2">
-              {g.title} <span className="num text-ink-muted">{list.length}</span>
-            </h2>
+            {nested ? (
+              <h3 id={`grp-${g.status}`} className="ct-h2">
+                {g.title} <span className="num text-ink-muted">{list.length}</span>
+              </h3>
+            ) : (
+              <h2 id={`grp-${g.status}`} className="ct-h2">
+                {g.title} <span className="num text-ink-muted">{list.length}</span>
+              </h2>
+            )}
             {list.length === 0 ? (
               <p className="ct-group-empty">{g.empty}</p>
             ) : (
               list.map((s) => (
-                <SummaryEntry key={s.stageId} s={s} all={summaries} busy={busy} onApprove={onApprove} onSendBack={onSendBack} />
+                <SummaryEntry key={s.stageId} s={s} all={summaries} busy={busy} onApprove={onApprove} onSendBack={onSendBack} headingLevel={nested ? 4 : 3} />
               ))
             )}
           </section>

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Users, Lock, BookOpen, Table2, ScrollText, ShieldCheck, MessageSquare,
-  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare, UserCog, History,
+  Users, Lock, Table2, ScrollText, ShieldCheck, MessageSquare,
+  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare, UserCog, History, Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } from "@/lib/session";
@@ -50,7 +50,7 @@ const GROUPS = [
     items: [
       { to: "/assessments", label: "Assessments", icon: FileCheck2, hint: "What a student can open. Nothing to sit without one" },
       { to: "/items", label: "Items", icon: Boxes, hint: "The bank: preview, review, approve, retire" },
-      { to: "/content", label: "Content", icon: BookOpen, hint: "Stages, objectives, authoring status" },
+      { to: "/studio", label: "Studio", icon: Library, hint: "Subjects, books and chapters: the course's material, and its review" },
     ],
   },
   {

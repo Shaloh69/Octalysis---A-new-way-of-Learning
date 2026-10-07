@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { GateNote, useApprovalGate } from "@/lib/approval-gate";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -42,6 +43,7 @@ export function DraftCard({
   const [sending, setSending] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   const when = dayDate(draft.reviewedAt);
+  const gate = useApprovalGate(draft.authoredBy);
   // The preview draws blocks with ids and ordinals; a draft's are its positions.
   const blocks = useMemo<ContentBlock[]>(
     () =>
@@ -97,12 +99,14 @@ export function DraftCard({
       ) : null}
       {draft.status === "draft" ? (
         <div className="ct-summary-actions">
-          <Button size="sm" data-approve-draft onClick={() => void approve()} disabled={busy}>
+          <Button size="sm" data-approve-draft onClick={() => void approve()} disabled={busy || !gate.allowed}
+                  aria-describedby={gate.reason || gate.selfApproved ? "gate-draft" : undefined}>
             {busy ? "Approving…" : `Approve stage ${stageId} lesson text`}
           </Button>
           <Button ref={opener} size="sm" variant="outline" onClick={() => setSending(true)} disabled={busy}>
             {`Send back stage ${stageId} lesson text`}
           </Button>
+          <GateNote id="gate-draft" gate={gate} />
         </div>
       ) : null}
 

@@ -134,7 +134,10 @@ test.describe("/assessments — the fourth card list, converted", () => {
   });
 });
 
-test.describe("/content — where each chapter stands", () => {
+// /content became the Studio's Overview on 8 Oct 2026 (Course Studio, CS1); the claims stand,
+// asked of the new address. With the outline docked the chapters are one dense row each
+// (the table needs 56rem the pane no longer has), so rows are counted as chapters.
+test.describe("/studio — where each chapter stands (was /content)", () => {
   test("tells the truth about how much is written", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
 
@@ -144,21 +147,27 @@ test.describe("/content — where each chapter stands", () => {
      * outline only. A console that rounded that up to "19 chapters" would make
      * the gap invisible to the one person who can close it.
      */
-    await open(page, "/content");
+    await open(page, "/studio");
+    await page.locator("[data-chapter]").first().waitFor();
 
     const text = await page.locator("main").innerText();
     expect(text, "the authored-vs-total count is missing").toMatch(/\d+\s*\/\s*19/);
     expect(text.toLowerCase()).toContain("planned");
 
-    // And the per-chapter table, with a status for each of the 19.
-    const rows = await page.locator("table tbody tr").count();
+    // And a row per chapter, with a status for each of the 19.
+    const rows = await page.locator("[data-chapter]").count();
     expect(rows, "every chapter should have a row").toBeGreaterThanOrEqual(19);
+    expect(await page.locator('[data-chapter] [data-fact="status"]').count(), "a status for each").toBeGreaterThanOrEqual(19);
   });
 
   test("is dense enough to scan 19 chapters", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop-1440", "one width is enough");
-    await open(page, "/content");
-    const px = await perRow(page);
+    await open(page, "/content"); // the old address: it must land here, and be this dense
+    await page.locator("[data-chapter]").first().waitFor();
+    const px = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll("main [data-chapter]")];
+      return rows.length === 0 ? Infinity : rows.reduce((t, r) => t + r.getBoundingClientRect().height, 0) / rows.length;
+    });
     expect(px, `${Math.round(px)}px per chapter`).toBeLessThan(60);
   });
 });
