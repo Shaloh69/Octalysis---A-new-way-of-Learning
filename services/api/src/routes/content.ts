@@ -73,7 +73,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
               (select count(*)::int from content_blocks cb
                 where cb.stage_id = s.id and cb.console_edited)
                 as console_edited,
-              (select count(*)::int from objectives o where o.stage_id = s.id)
+              (select count(*)::int from live_objectives o where o.stage_id = s.id)
                 as objectives,
               (select count(*)::int from items i
                 where i.stage_id = s.id and i.status = 'live')
@@ -239,7 +239,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
     // The syllabus's objectives for this chapter, read-only (Studio's Objectives tab): they are the
     // syllabus's contract, transcribed verbatim, and check:objectives guards them.
     const { rows: objs } = await app.db.query(
-      `select code, description, bloom_level, level, competency from objectives where stage_id = $1 order by code`,
+      `select code, description, bloom_level, level, competency from live_objectives where stage_id = $1 order by code`,
       [stageId],
     );
 

@@ -71,7 +71,7 @@ async function openSession(db: Queryable): Promise<LiveSession | null> {
        from live_sessions s
        join items i       on i.id = s.item_id
        join stages st     on st.id = i.stage_id
-       left join objectives o on o.id = i.objective_id
+       left join live_objectives o on o.id = i.objective_id
        left join sections sec on sec.id = s.section_id
       where s.ended_at is null`,
   );
@@ -156,7 +156,7 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
                 st.title as stage_title, o.description as objective
            from items i
            join stages st on st.id = i.stage_id
-           left join objectives o on o.id = i.objective_id
+           left join live_objectives o on o.id = i.objective_id
           where i.status = 'live'
           order by i.stage_id, i.slug`,
       ),

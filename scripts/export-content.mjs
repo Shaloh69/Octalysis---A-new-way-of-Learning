@@ -80,7 +80,12 @@ async function main() {
     const { rows: stages } = await client.query(
       "select id, title from stages where content_owner = 'console' order by id",
     );
-    if (stages.length === 0) {
+    // A chapter's MOONS the Studio owns (edited, added or retired there, E2) are written too, as
+    // NN.moons.json: every moon of the chapter with its status, so a retired one is kept.
+    const { rows: moonStages } = await client.query(
+      "select distinct stage_id from objectives where owner = 'console' order by stage_id",
+    );
+    if (stages.length === 0 && moonStages.length === 0) {
       console.log(c.dim("  No chapter is owned by the Studio yet: nothing to export. The files are the source.\n"));
       return;
     }
@@ -98,8 +103,24 @@ async function main() {
       if (a || b) changed++;
       console.log(`  ${s.id}  ${blocks.length} block(s)  ${a || b ? c.green(check ? "would change" : "written") : c.dim("unchanged")}`);
     }
+    for (const m of moonStages) {
+      const { rows } = await client.query(
+        `select id, status, owner, description, bloom_level, level, competency, retired_at
+           from objectives where stage_id = $1
+          order by split_part(id, '.', 1), split_part(id, '.', 2)::int`,
+        [m.stage_id],
+      );
+      const moons = rows.map((r) => ({
+        id: r.id, status: r.status, owner: r.owner, description: r.description, bloom: r.bloom_level,
+        level: r.level === null ? null : Number(r.level), competency: r.competency,
+        retiredAt: r.retired_at ? new Date(r.retired_at).toISOString() : null,
+      }));
+      const wrote = await writeIfChanged(join(OUT, `${m.stage_id}.moons.json`), JSON.stringify({ stageId: m.stage_id, moons }, null, 2) + "\n");
+      if (wrote) changed++;
+      console.log(`  ${m.stage_id}  ${moons.length} moon(s)  ${wrote ? c.green(check ? "would change" : "written") : c.dim("unchanged")}`);
+    }
     console.log(
-      c.dim(`\n  ${stages.length} chapter(s), ${changed} ${check ? "would change" : "changed"}. ${check ? "--check: nothing written." : `In ${OUT}. Commit them.`}\n`),
+      c.dim(`\n  ${stages.length} chapter(s) and ${moonStages.length} chapter(s) of moons, ${changed} ${check ? "would change" : "changed"}. ${check ? "--check: nothing written." : `In ${OUT}. Commit them.`}\n`),
     );
   } finally {
     await client.end();

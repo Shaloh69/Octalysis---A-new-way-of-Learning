@@ -22,6 +22,7 @@ import { registerTeacherRoutes } from "./routes/teachers.js";
 import { registerProgressRoutes } from "./routes/progress.js";
 import { registerSubjectRoutes } from "./routes/subjects.js";
 import { registerWorkingCopyRoutes } from "./routes/working-copy.js";
+import { registerMoonRoutes } from "./routes/moons.js";
 import { makeChatStorage, type ChatStorage } from "./chat/storage.js";
 import type { Env } from "./env.js";
 
@@ -126,6 +127,7 @@ export async function buildServer(
   registerProgressRoutes(app, env);
   registerSubjectRoutes(app, env);
   registerWorkingCopyRoutes(app, env);
+  registerMoonRoutes(app, env);
 
   // Auth routes need the Supabase Admin API. Without a project configured they
   // are simply not mounted, rather than mounted and failing at request time.

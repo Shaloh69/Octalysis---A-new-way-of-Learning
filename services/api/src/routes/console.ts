@@ -669,7 +669,7 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
               moon_correct($1, o.id) as correct, moon_mastered($1, o.id) as mastered,
               (select count(distinct i.family_id)::int from items i
                 where i.objective_id = o.id and i.status = 'live') as questions
-         from stages s join objectives o on o.stage_id = s.id
+         from stages s join live_objectives o on o.stage_id = s.id
         where s.gradeable and s.published
         order by s.ordinal,
                  split_part(o.id, '.', 1), nullif(split_part(o.id, '.', 2), '')::int`,

@@ -93,4 +93,19 @@ describe("export-content", () => {
     expect(text).toContain("nothing to export");
     expect(await readFile(join(out, "00.json"), "utf8")).toBe(before);
   });
+
+  it("writes the moons the Studio owns, retired ones too, and nothing for moons the file still owns", async () => {
+    await setup(`insert into objectives (id, stage_id, code, bloom_level, level, competency, description, status, owner, retired_at) values
+      ('01.1','01','01.1','remember',6,'read','Still the file''s moon','live','file',null),
+      ('01.2','01','01.2','understand',5,'trace','A moon a teacher reworded','live','console',null),
+      ('01.3','01','01.3','apply',4,'trace','A moon a teacher retired','retired','console', now())`);
+    const text = await exportContent();
+    expect(text).toContain("01  3 moon(s)");
+    const json = JSON.parse(await readFile(join(out, "01.moons.json"), "utf8"));
+    expect(json.stageId).toBe("01");
+    expect(json.moons.map((m: { id: string; status: string }) => [m.id, m.status])).toEqual([["01.1", "live"], ["01.2", "live"], ["01.3", "retired"]]);
+    expect(json.moons[2].retiredAt).toMatch(/^[0-9]{4}-/);
+    expect((await readdir(out)).includes("00.json")).toBe(true);
+    expect(await exportContent()).toContain("0 changed");
+  });
 });

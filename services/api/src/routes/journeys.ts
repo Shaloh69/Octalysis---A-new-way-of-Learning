@@ -46,7 +46,7 @@ export function registerJourneyRoutes(app: FastifyInstance, env: Env): void {
         `select o.stage_id, s.published, is_stage_unlocked($1, o.stage_id) as unlocked,
                 (select count(*)::int from items i
                   where i.objective_id = o.id and i.status = 'live') as live
-           from objectives o join stages s on s.id = o.stage_id
+           from live_objectives o join stages s on s.id = o.stage_id
           where o.id = $2`,
         [id.userId, objectiveId],
       );

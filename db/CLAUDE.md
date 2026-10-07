@@ -73,4 +73,10 @@ guarantees.
   in each teacher's app, in Windows Credential Manager; `addendum-assistant-v6.sql` retired
   B2's `assistant_engine_keys`, a step's `key_id` and the server tick, and
   `assistant-rls.spec.ts` fails if a key table or key column comes back.
+- Add a client write policy to `objectives` or `objective_edits` (Studio E2, 8 Oct 2026).
+  `ob_staff` was DROPPED, as `cb_staff` was: a staff token cannot write a moon, so Publish
+  cannot be bypassed; the API (the service role) is the only writer, and `studio-moons-api.spec.ts`
+  proves a teacher's token is refused. A student reads only a `live` moon (`ob_read`,
+  `live_objectives`); `is_stage_unlocked()` counts live moons only. Never DELETE a moon that has
+  questions or a record: retire it (`status = 'retired'`).
 - Drop an item row. Retire it.

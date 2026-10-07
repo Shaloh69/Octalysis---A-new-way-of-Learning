@@ -1198,3 +1198,128 @@ export const WorkingCopy = z.object({
   blocks: z.array(WorkingBlock),
 });
 export type WorkingCopy = z.infer<typeof WorkingCopy>;
+
+/* ============================================================
+ * The Studio's moons, E2 (docs/STUDIO-EDITOR-PLAN.md "E2 -- the moons plan";
+ * instructor approval, 8 Oct 2026). A moon is an objective: a teacher may edit
+ * its wording, add one as a DRAFT the lock does not count, and RETIRE one
+ * (its evidence stays). Typing is any staff member's; Publish is a teacher of
+ * the subject's or the admin's. Staff only.
+ * ========================================================== */
+
+/** A draft moon goes live only with at least this many distinct live questions (`moon_publishable`). */
+export const MOON_MIN_QUESTIONS = 3;
+
+/**
+ * The four moons that carry a minigame. The games' code is in apps/web
+ * (`encounters/registry.ts`, which a test pins to these keys); the API reads the
+ * names here so a retirement can say which game it takes off the map.
+ */
+export const MOON_GAMES: Readonly<Record<string, string>> = {
+  "01.2": "Two Columns",
+  "02.8": "Clock Bench",
+  "03.9": "Bus Contention",
+  "04.5": "Cache Tuner",
+};
+
+export const MoonStatus = z.enum(["draft", "live", "retired"]);
+export type MoonStatus = z.infer<typeof MoonStatus>;
+export const MoonBloom = z.enum(["remember", "understand", "apply", "analyze"]);
+export type MoonBloom = z.infer<typeof MoonBloom>;
+export const MoonCompetency = z.enum(["read", "trace", "build"]);
+export type MoonCompetency = z.infer<typeof MoonCompetency>;
+
+const MoonFields = {
+  description: z.string().trim().min(8, "A moon needs a sentence of at least a few words.").max(600),
+  bloom: MoonBloom,
+  /** The abstraction level 0-6: which ring the moon sits on, and its row on the competency grid. */
+  level: z.number().int().min(0).max(6),
+  competency: MoonCompetency,
+};
+
+export const MoonAddBody = z.object(MoonFields).strict();
+export type MoonAddBody = z.infer<typeof MoonAddBody>;
+
+/** Save (or replace) the one pending change on a moon. `version` is the pending change the editor loaded: 0 when there is none. */
+export const MoonPendingBody = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("edit"), version: z.number().int().min(0), ...MoonFields }).strict(),
+  z.object({ action: z.literal("retire"), version: z.number().int().min(0) }).strict(),
+]);
+export type MoonPendingBody = z.infer<typeof MoonPendingBody>;
+
+export const MoonsPublishBody = z.object({
+  /** The state the teacher read (every moon's fields and pending change): Publish is of THAT. */
+  hash: z.string().min(1).max(128),
+  /** What changed, for the audit log. */
+  reason: z.string().trim().min(3).max(500),
+  /** Which moons to publish: edited, retired or draft. A draft that is not ready is refused when named. */
+  ids: z.array(z.string().regex(/^\d{2}\.\d{1,2}$/)).min(1).max(60),
+  /** Compute the effect (who would see a planet close) and roll everything back. */
+  dryRun: z.boolean().default(false),
+}).strict();
+export type MoonsPublishBody = z.infer<typeof MoonsPublishBody>;
+
+export const MoonPending = z.object({
+  action: z.enum(["edit", "retire"]),
+  description: z.string().nullable(),
+  bloom: MoonBloom.nullable(),
+  level: z.number().int().nullable(),
+  competency: MoonCompetency.nullable(),
+  version: z.number().int(),
+  editedBy: z.string().nullable(),
+  editedAt: z.string(),
+});
+export type MoonPending = z.infer<typeof MoonPending>;
+
+export const StudioMoon = z.object({
+  id: z.string(),
+  status: MoonStatus,
+  /** Who writes it: the chapter's file (sync-content) or the console. */
+  owner: z.enum(["file", "console"]),
+  description: z.string(),
+  bloom: MoonBloom,
+  level: z.number().int().nullable(),
+  competency: MoonCompetency.nullable(),
+  /** Distinct live questions (families): what the journey is made of. */
+  questions: z.number().int(),
+  /** Questions of this moon that are not live yet (at review, in draft). */
+  notLive: z.number().int(),
+  /** A draft moon may go live: at least `MOON_MIN_QUESTIONS` live questions. */
+  publishable: z.boolean(),
+  /** The minigame this moon carries, if any: retiring the moon takes it off the map. */
+  game: z.string().nullable(),
+  /** A draft with no questions and no evidence may be deleted outright. */
+  removable: z.boolean(),
+  pending: MoonPending.nullable(),
+});
+export type StudioMoon = z.infer<typeof StudioMoon>;
+
+export const StudioMoonsResponse = z.object({
+  stageId: z.string(),
+  gradeable: z.boolean(),
+  minQuestions: z.number().int(),
+  /** Binds Publish to the state read. */
+  hash: z.string(),
+  moons: z.array(StudioMoon),
+});
+export type StudioMoonsResponse = z.infer<typeof StudioMoonsResponse>;
+
+export const MoonsPublishResult = z.object({
+  ok: z.literal(true),
+  dryRun: z.boolean(),
+  applied: z.array(z.object({
+    id: z.string(),
+    change: z.enum(["edit", "retire", "publish"]),
+    /** What moved on the map or the grid, in words ("ring 2 to ring 3"). */
+    moves: z.array(z.string()),
+  })),
+  /** Minigames taken off the map by a retirement. */
+  gamesRemoved: z.array(z.object({ id: z.string(), name: z.string() })),
+  impact: z.object({
+    /** Students who have a planet open now that would see it close until they master the new moon. */
+    relocked: z.number().int(),
+    stages: z.array(z.object({ stageId: z.string(), students: z.number().int() })),
+  }),
+  selfApproved: z.boolean(),
+});
+export type MoonsPublishResult = z.infer<typeof MoonsPublishResult>;

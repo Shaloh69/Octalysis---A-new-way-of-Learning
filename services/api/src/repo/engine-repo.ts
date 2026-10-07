@@ -34,11 +34,16 @@ export interface AttemptContext {
  * ========================================================== */
 
 export async function loadLivePool(
-  db: Db,
+  db: Db | pg.PoolClient,
   opts: { stageId?: string; objectiveId?: string } = {},
 ): Promise<PoolItem[]> {
   const params: unknown[] = [];
-  let where = "i.status = 'live'";
+  // A question is drawn only while its moon is LIVE (Studio E2, 8 Oct 2026): a draft moon's
+  // approved questions wait for the moon, and a retired moon's questions stay in the bank
+  // (rule 6) but leave every paper. A question with no moon is unaffected.
+  let where =
+    "i.status = 'live' and (i.objective_id is null or exists " +
+    "(select 1 from live_objectives lo where lo.id = i.objective_id))";
   if (opts.stageId) {
     params.push(opts.stageId);
     where += ` and i.stage_id = $${params.length}`;

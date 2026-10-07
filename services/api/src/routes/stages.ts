@@ -202,7 +202,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
                                                      ${MOON_SQL})
                                   order by o.id),
                         '[]'::jsonb)
-                 from objectives o where o.stage_id = s.id) as objectives
+                 from live_objectives o where o.stage_id = s.id) as objectives
          from stages s
          left join stage_progress sp on sp.user_id = $1 and sp.stage_id = s.id
         where s.published or $2
@@ -318,7 +318,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
               moon_correct($2, o.id) as correct, moon_mastered($2, o.id) as mastered,
               (select count(distinct i.family_id)::int from items i
                 where i.objective_id = o.id and i.status = 'live') as questions
-         from objectives o where o.stage_id = $1 order by o.id`,
+         from live_objectives o where o.stage_id = $1 order by o.id`,
       [stageId, id.userId],
     );
     const moonOf = (o: { correct: number; mastered: boolean; questions: number }) => ({
@@ -346,7 +346,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
         `select o.stage_id, o.id, moon_correct($1, o.id) as correct, moon_mastered($1, o.id) as mastered,
                 (select count(distinct i.family_id)::int from items i
                   where i.objective_id = o.id and i.status = 'live') as questions
-           from objectives o where o.stage_id = any($2)`,
+           from live_objectives o where o.stage_id = any($2)`,
         [id.userId, prereq],
       );
       return reply.send({
@@ -514,7 +514,7 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
       `select o.level, o.competency,
               avg(coalesce(sp.mastery, 0))::numeric(4,3) as mastery,
               count(*)::int as objectives
-         from objectives o
+         from live_objectives o
          join stages s on s.id = o.stage_id
          left join stage_progress sp on sp.user_id = $1 and sp.stage_id = o.stage_id
         where o.level is not null and o.competency is not null and s.published

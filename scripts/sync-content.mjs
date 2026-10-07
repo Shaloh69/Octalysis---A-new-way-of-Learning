@@ -530,7 +530,8 @@ async function sync(client, stages, { dryRun, pull = false, takeFile = false }) 
       summariesPending++;
     }
 
-    // Objectives
+    // Objectives. A moon the Studio has taken over (owner = 'console': edited, added or retired
+    // there, E2, 8 Oct 2026) is the database's: the file never rewords it and never revives it.
     for (const o of stage.fm.objectives ?? []) {
       objectives++;
       if (dryRun) continue;
@@ -541,7 +542,8 @@ async function sync(client, stages, { dryRun, pull = false, takeFile = false }) 
            set bloom_level = excluded.bloom_level,
                level       = excluded.level,
                competency  = excluded.competency,
-               description = excluded.description`,
+               description = excluded.description
+         where objectives.owner = 'file'`,
         [o.id, stage.stageId, o.bloom, o.level ?? null, o.competency ?? null, o.description],
       );
     }
