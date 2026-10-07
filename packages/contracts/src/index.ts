@@ -1042,3 +1042,32 @@ export const TeacherClaimBody = z.object({
   password: z.string().min(12).max(128),
 });
 export type TeacherClaimBody = z.infer<typeof TeacherClaimBody>;
+
+/* ============================================================
+ * The console's /changelog, course readiness (7 Oct 2026, night):
+ * GET /api/v1/console/progress, staff only.
+ * ========================================================== */
+
+export const PrelimCondition = z.object({
+  id: z.enum(["stages", "items", "fill", "student", "invariants"]),
+  /** How it is known: counted here, proved by a test, or checked by a person. */
+  how: z.enum(["measured", "test", "person"]),
+  /** Null when only a person can say. */
+  ok: z.boolean().nullable(),
+  label: z.string(),
+  detail: z.string(),
+});
+export type PrelimCondition = z.infer<typeof PrelimCondition>;
+
+export const ProgressResponse = z.object({
+  checkedAt: z.string(),
+  prelim: z.object({
+    stages: z.array(z.object({ id: z.string(), title: z.string(), authoring: z.enum(["empty", "planned", "authored"]) })),
+    act1: z.object({ live: z.number().int(), bank: z.number().int(), review: z.number().int(), draft: z.number().int() }),
+    invariants: z.object({ failures: z.number().int(), warnings: z.number().int() }),
+    conditions: z.array(PrelimCondition),
+    /** Every condition that can be measured or proved holds. Never "ready": a person's check remains. */
+    measuredOk: z.boolean(),
+  }),
+});
+export type ProgressResponse = z.infer<typeof ProgressResponse>;

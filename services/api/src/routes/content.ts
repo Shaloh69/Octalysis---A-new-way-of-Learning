@@ -40,9 +40,9 @@ const EditBody = z.object({
   reason: z.string().trim().min(3).max(300),
 });
 
-type Authoring = "empty" | "planned" | "authored";
+export type Authoring = "empty" | "planned" | "authored";
 
-function authoringOf(blocks: number, scaffold: number): Authoring {
+export function authoringOf(blocks: number, scaffold: number): Authoring {
   // Three states, and they are genuinely different:
   //   empty     nothing synced at all
   //   planned   objectives and a topic outline, no teaching text
