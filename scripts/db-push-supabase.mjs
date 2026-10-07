@@ -56,7 +56,7 @@ const FILES = [
   // The drafting assistant (B2, 7 Oct 2026): books, jobs, steps, briefs, frozen
   // units, sealed keys, the private crops bucket. Idempotent.
   "db/addendum-assistant.sql",
-  "db/addendum-assistant-tick.sql",
+  "db/addendum-assistant-v6.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 

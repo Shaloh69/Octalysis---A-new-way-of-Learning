@@ -1,9 +1,14 @@
 import { z } from "zod";
 
 /*
- * The drafting assistant's contracts (docs/AI-ASSISTANT-PLAN.md v5, §3a, §4-now;
+ * The drafting assistant's contracts (docs/AI-ASSISTANT-PLAN.md v6, §3a, §4-six;
  * .claude/rules/assistant.md). Their own subpath, `@octa/contracts/assistant`,
  * so no app compiles the engines' reply schemas in by importing the main entry.
+ *
+ * Round six (7 Oct 2026): the engines are called by each teacher's app, on
+ * their laptop, with their own keys; never by the API. These schemas are the
+ * one definition both sides use: the app checks each engine's reply against
+ * them (exported as JSON Schema), and the API checks what the app hands in.
  *
  * Two kinds of schema live here:
  *   - OCTA's own: which engines exist, a step's result, the one error shape
@@ -14,9 +19,9 @@ import { z } from "zod";
 
 /* ------------------------------------------------------------------ engines */
 
-/** The engines the API can call. Local Ollama is PAUSED (round five) and is
- *  not here: the database refuses a step on `ollama_local` too. `claude_code`
- *  is the teacher's own Claude Code (B3b), run by hand, never by the API. */
+/** The online engines a teacher's app can call. Local Ollama is PAUSED (round
+ *  five) and is not here: the database refuses a step on `ollama_local` too.
+ *  `claude_code` is the teacher's own Claude Code (B3b), run by hand. */
 export const ApiEngineId = z.enum(["claude_api", "ollama_cloud", "groq", "cloudflare"]);
 export type ApiEngineId = z.infer<typeof ApiEngineId>;
 

@@ -67,7 +67,6 @@ export async function resetAll(): Promise<void> {
     alter table assistant_units enable trigger assistant_units_guard;
     delete from assistant_briefs       where true;
     delete from assistant_steps        where true;
-    delete from assistant_engine_keys  where true;
     delete from assistant_jobs         where true;
     delete from assistant_figures      where true;
     delete from assistant_books        where true;

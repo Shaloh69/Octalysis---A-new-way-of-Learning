@@ -17,7 +17,6 @@
 --                          the teacher's decisions, accepted summaries (§4a)
 --   assistant_units        what a step made: one section, one figure summary,
 --                          one question. Versioned; ACCEPTED IS FROZEN (§4b)
---   assistant_engine_keys  a teacher's engine keys, sealed by the API
 --
 -- Every table carries an owning teacher and a course from day one (ruling,
 -- 7 Oct 2026: OCTA will one day serve several courses and teachers). A child
@@ -30,13 +29,9 @@
 --   * No client writes anything. Every write is the API's (service_role), as
 --     for chat_messages and figures: a staff token behind the API's back
 --     matches no write policy.
---   * The sealed keys: nobody but the API, the owner included. The rules file
---     says "RLS on and no policy"; written as assessment_secrets is, with an
---     explicit deny-all policy, which grants exactly as much (nothing) and
---     keeps INV-02 and hard rule 3 strict (db/CLAUDE.md).
---   * Running on a teacher's key: a step names the key it ran on, and the
---     foreign key (key_id, owner_id) makes it the step's own teacher's key.
---     Teacher B's job cannot run on teacher A's key, for service_role too.
+--   * Engine keys are NOT here (round six, 7 Oct 2026): each teacher's keys
+--     live in their own app, in Windows Credential Manager, and never reach
+--     OCTA. B2's sealed-keys table was retired by addendum-assistant-v6.sql.
 --   * Local Ollama is PAUSED (round five, 7 Oct 2026): no step may name it.
 --     The future update that turns it on drops `as_local_ollama_paused`.
 
@@ -102,22 +97,6 @@ create table if not exists assistant_jobs (
   constraint aj_known_engines check (engines <@ array['claude_api','ollama_cloud','groq','cloudflare','claude_code']::text[])
 );
 
--- ---------- sealed engine keys ----------
--- `sealed` is AES-256-GCM output (12-byte nonce, 16-byte tag, ciphertext),
--- made by the API with ASSISTANT_KEY_SECRET, which exists only in Render's
--- environment. The page sees `last4`, from the API, never the key.
-create table if not exists assistant_engine_keys (
-  id          uuid primary key default gen_random_uuid(),
-  owner_id    uuid not null references auth.users(id) on delete cascade,
-  engine      text not null check (engine in ('claude_api','ollama_cloud','groq','cloudflare')),
-  sealed      bytea not null check (octet_length(sealed) between 29 and 8192),
-  last4       text not null check (length(last4) = 4),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-  constraint aek_one_per_engine unique (owner_id, engine),
-  constraint aek_owner unique (id, owner_id)
-);
-
 -- ---------- steps ----------
 create table if not exists assistant_steps (
   id              uuid primary key default gen_random_uuid(),
@@ -131,7 +110,6 @@ create table if not exists assistant_steps (
                     check (status in ('waiting','running','done','failed','skipped')),
   engine          text check (engine in ('claude_api','ollama_cloud','groq','cloudflare','claude_code','ollama_local')),
   model           text,
-  key_id          uuid,
   prompt_version  text,
   input_hash      text,
   idempotency_key text not null,
@@ -149,10 +127,6 @@ create table if not exists assistant_steps (
   constraint as_idempotent unique (idempotency_key),
   constraint as_job foreign key (job_id, owner_id, course)
     references assistant_jobs (id, owner_id, course) on delete cascade,
-  -- The key a step ran on is its own teacher's: (key_id, owner_id) must name
-  -- one row of assistant_engine_keys. Deleting the key clears key_id only.
-  constraint as_own_key foreign key (key_id, owner_id)
-    references assistant_engine_keys (id, owner_id) on delete set null (key_id),
   constraint as_local_ollama_paused check (engine is distinct from 'ollama_local'),
   constraint as_ran_on_something check (status not in ('running','done') or (engine is not null and model is not null)),
   constraint as_done_records_cost check (status <> 'done' or (tokens_in is not null and tokens_out is not null and ms is not null))
@@ -262,7 +236,6 @@ alter table assistant_jobs        enable row level security;
 alter table assistant_steps       enable row level security;
 alter table assistant_briefs      enable row level security;
 alter table assistant_units       enable row level security;
-alter table assistant_engine_keys enable row level security;
 
 drop policy if exists abk_owner_read on assistant_books;
 create policy abk_owner_read on assistant_books for select to authenticated
@@ -282,12 +255,6 @@ create policy abr_owner_read on assistant_briefs for select to authenticated
 drop policy if exists aun_owner_read on assistant_units;
 create policy aun_owner_read on assistant_units for select to authenticated
   using (is_staff() and owner_id = auth.uid());
-
--- The keys: service_role only. Grants NOTHING, written down (db/CLAUDE.md).
-drop policy if exists aek_deny_all on assistant_engine_keys;
-create policy aek_deny_all on assistant_engine_keys for all to authenticated
-  using (false) with check (false);
-revoke all on assistant_engine_keys from authenticated, anon;
 
 -- ---------- the private bucket for the figure reader's crops ----------
 -- Supabase's storage schema; absent on the local stack. The book's own pages

@@ -23,7 +23,7 @@ other documents — check it before believing any claim that something is built.
 - `packages/contracts` — Zod schemas shared across all three
 - `packages/tokens` — three themes + accent derivation, as CSS custom properties
 - `db` — Supabase Postgres. Apply in order: `schema.sql` → `addendum-feedback.sql` →
-  **`addendum-submissions.sql`** → `addendum-audit.sql` → `addendum-cron.sql` → `addendum-drafts.sql` → `addendum-figures.sql` → `addendum-chat.sql` → `addendum-sitting.sql` → `addendum-assistant.sql` → `addendum-assistant-tick.sql` (local
+  **`addendum-submissions.sql`** → `addendum-audit.sql` → `addendum-cron.sql` → `addendum-drafts.sql` → `addendum-figures.sql` → `addendum-chat.sql` → `addendum-sitting.sql` → `addendum-assistant.sql` → `addendum-assistant-v6.sql` (local
   prepends `local-bootstrap.sql`). `addendum-submissions.sql` carries labs, project and
   participation — **40% of the grade** — and was missing from this list while
   `scripts/db-reset.mjs` had been applying it all along.

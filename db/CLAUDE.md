@@ -65,13 +65,12 @@ guarantees.
   UPDATE, DELETE and TRUNCATE are refused for every role. No staff write, unlike
   `stage_progress`: a planet is opened by hand on `/locks`, never by editing mastery.
   Fixtures suspend `objective_progress_no_delete` by name, before `responses`.
-- Add a client write policy to any `assistant_*` table, or any policy but the deny-all to
-  `assistant_engine_keys` (B2, 7 Oct 2026). Teachers read their own rows; every write is the
-  API's; keys are read by the API alone. An accepted `assistant_units` row is frozen for every
+- Add a client write policy to any `assistant_*` table (B2, 7 Oct 2026). Teachers read their
+  own rows; every write is the API's. An accepted `assistant_units` row is frozen for every
   role (`assistant_units_guard`): a change is a new version. Fixtures suspend that trigger by
   name. `as_local_ollama_paused` stays until the instructor orders the local-Ollama update.
-- Grant a client role EXECUTE on `assistant_tick()` or `assistant_tick_due()`, or make the
-  tick call the API while no job is running (B3, 8 Oct 2026; `addendum-assistant-tick.sql`).
-  Cron runs it as the owner; its URL and secret live in Vault (`octa_api_url`,
-  `octa_cron_secret`), never in a file, and `octa_cron_secret` must equal Render's `CRON_SECRET`.
+- Put an engine key, sealed or not, in any table or column (round six, 7 Oct 2026). Keys live
+  in each teacher's app, in Windows Credential Manager; `addendum-assistant-v6.sql` retired
+  B2's `assistant_engine_keys`, a step's `key_id` and the server tick, and
+  `assistant-rls.spec.ts` fails if a key table or key column comes back.
 - Drop an item row. Retire it.

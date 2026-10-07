@@ -19,7 +19,6 @@ import { registerJourneyRoutes } from "./routes/journeys.js";
 import { registerChatRoutes } from "./routes/chat.js";
 import { registerPasswordRoutes } from "./routes/passwords.js";
 import { makeChatStorage, type ChatStorage } from "./chat/storage.js";
-import { registerAssistantTick } from "./assistant/tick.js";
 import type { Env } from "./env.js";
 
 /**
@@ -120,7 +119,6 @@ export async function buildServer(
   registerAssessmentRoutes(app, env);
   registerJourneyRoutes(app, env);
   registerChatRoutes(app, env, chatStorage);
-  registerAssistantTick(app, env);
 
   // Auth routes need the Supabase Admin API. Without a project configured they
   // are simply not mounted, rather than mounted and failing at request time.

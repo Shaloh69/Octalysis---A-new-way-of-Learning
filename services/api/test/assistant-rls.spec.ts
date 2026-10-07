@@ -18,8 +18,9 @@ import { resetWorld, type World } from "./helpers/fixtures.js";
  * The drafting assistant's denials (db/addendum-assistant.sql; plan v5 §4-now,
  * §4b; .claude/rules/assistant.md).
  *
- * The rules file names two: no teacher reads a key row, their own included,
- * and teacher B cannot run on teacher A's key. The schema adds: a teacher's
+ * Round six (7 Oct 2026) took engine keys off OCTA altogether: they live in
+ * each teacher's app, so this suite proves no table or column holds one.
+ * The schema adds: a teacher's
  * books, figures, jobs, steps, briefs and units are owner-only and staff-only;
  * no client writes any of them; an accepted unit is frozen for every role;
  * local Ollama is paused; nothing is filed under another teacher's book.
@@ -59,8 +60,6 @@ let bookA = "";
 let bookB = "";
 let jobA = "";
 let jobB = "";
-let keyA = "";
-let keyB = "";
 
 beforeAll(async () => {
   w = await resetWorld();
@@ -95,19 +94,11 @@ beforeAll(async () => {
     [bookA, w.teacher, bookB, idB],
   );
   [jobA, jobB] = jobs.rows.map((r) => r.id as string) as [string, string];
-  const keys = await setup(
-    `insert into assistant_engine_keys (owner_id, engine, sealed, last4) values
-       ($1, 'groq', decode(repeat('ab', 40), 'hex'), 'a1f3'),
-       ($2, 'groq', decode(repeat('cd', 40), 'hex'), 'b2e4')
-     returning id::text`,
-    [w.teacher, idB],
-  );
-  [keyA, keyB] = keys.rows.map((r) => r.id as string) as [string, string];
   await setup(
-    `insert into assistant_steps (job_id, owner_id, course, seq, kind, idempotency_key, engine, model, key_id) values
-       ($1, $2, 'CPE 412', 0, 'figure_summary', 'a-0', 'groq', 'llama-4', $3),
-       ($4, $5, 'CPE 412', 0, 'figure_summary', 'b-0', 'groq', 'llama-4', $6)`,
-    [jobA, w.teacher, keyA, jobB, idB, keyB],
+    `insert into assistant_steps (job_id, owner_id, course, seq, kind, idempotency_key, engine, model) values
+       ($1, $2, 'CPE 412', 0, 'figure_summary', 'a-0', 'groq', 'llama-4'),
+       ($3, $4, 'CPE 412', 0, 'figure_summary', 'b-0', 'groq', 'llama-4')`,
+    [jobA, w.teacher, jobB, idB],
   );
   await setup(
     `insert into assistant_briefs (book_id, owner_id, course, chapter) values
@@ -154,59 +145,24 @@ describe("a teacher's assistant work is theirs alone", () => {
   }
 });
 
-describe("no teacher reads a key row, their own included", () => {
-  it("denies teacher A their own sealed key", async () => {
-    const res = await runAs(teacherA, "select sealed from assistant_engine_keys where owner_id = $1", [w.teacher]);
-    expect(denied(res), denialReason(res)).toBe(true);
-  });
-  it("denies teacher A even the last four characters", async () => {
-    const res = await runAs(teacherA, "select last4 from assistant_engine_keys where owner_id = $1", [w.teacher]);
-    expect(denied(res), denialReason(res)).toBe(true);
-  });
-  it("denies teacher B teacher A's key, and a student and anon every key", async () => {
-    for (const who of [teacherB, student, anon]) {
-      const res = await runAs(who, "select id from assistant_engine_keys");
-      expect(denied(res), `${who.label}: ${denialReason(res)}`).toBe(true);
-    }
-  });
-  it("denies teacher A writing a key straight to the table", async () => {
-    const res = await runAs(
-      teacherA,
-      "insert into assistant_engine_keys (owner_id, engine, sealed, last4) values ($1, 'claude_api', decode(repeat('ef', 40), 'hex'), 'zzzz') returning id",
-      [w.teacher],
-    );
-    expect(denied(res), denialReason(res)).toBe(true);
-  });
-  it("POSITIVE CONTROL: the API's connection reads both sealed keys", async () => {
-    const res = await runAs(service, "select sealed from assistant_engine_keys");
+describe("engine keys never live on OCTA (round six, 7 Oct 2026)", () => {
+  // Each teacher's keys are in their own app, in Windows Credential Manager
+  // (plan section 4-six). B2's sealed-keys table and a step's key_id were
+  // retired by addendum-assistant-v6.sql; neither may come back.
+  it("has no table that could hold a key", async () => {
+    const res = await runAs(service, "select to_regclass('public.assistant_engine_keys')::text as t");
     expect(res.error).toBeNull();
-    expect(res.rowCount).toBe(2);
+    expect(res.rows[0]!.t).toBeNull();
   });
-});
-
-describe("teacher B cannot run on teacher A's key", () => {
-  it("refuses a step of B's job naming A's key, from the API's own connection", async () => {
+  it("has no column on a step that names a key", async () => {
     const res = await runAs(
       service,
-      `insert into assistant_steps (job_id, owner_id, course, seq, kind, idempotency_key, engine, model, key_id)
-       values ($1, $2, 'CPE 412', 1, 'section', 'b-1', 'groq', 'llama-4', $3) returning id`,
-      [jobB, idB, keyA],
-    );
-    expect(res.error?.code, denialReason(res)).toBe("23503"); // foreign_key_violation
-  });
-  it("refuses moving B's existing step onto A's key", async () => {
-    const res = await runAs(service, "update assistant_steps set key_id = $1 where job_id = $2 returning id", [keyA, jobB]);
-    expect(res.error?.code, denialReason(res)).toBe("23503");
-  });
-  it("POSITIVE CONTROL: B's step on B's own key is accepted", async () => {
-    const res = await runAs(
-      service,
-      `insert into assistant_steps (job_id, owner_id, course, seq, kind, idempotency_key, engine, model, key_id)
-       values ($1, $2, 'CPE 412', 2, 'section', 'b-2', 'groq', 'llama-4', $3) returning id`,
-      [jobB, idB, keyB],
+      `select column_name from information_schema.columns
+        where table_schema = 'public' and table_name like 'assistant\_%' and column_name ilike '%key%'
+          and column_name not in ('idempotency_key', 'figure_key', 'unit_key')`,
     );
     expect(res.error).toBeNull();
-    expect(res.rowCount).toBe(1);
+    expect(res.rows).toEqual([]);
   });
 });
 

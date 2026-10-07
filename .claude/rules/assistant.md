@@ -4,9 +4,9 @@ paths: ["tools/assistant/**", "services/api/src/assistant/**", "apps/console/src
 # Drafting assistant rules
 
 These bind every session that builds or changes the drafting assistant. The
-design and the reasons are in `docs/AI-ASSISTANT-PLAN.md` (v5, approved
-7 Oct 2026; §3a-§4e hold the instructor's rulings, §4-now the current
-design). This file is the short
+design and the reasons are in `docs/AI-ASSISTANT-PLAN.md` (v6, approved
+7 Oct 2026; the round tables at the top and §3a-§4e hold the instructor's
+rulings, §4-six the current design, superseding §4-now where they differ). This file is the short
 form, loaded whenever these paths are touched. **If the plan's paths change
 when the code is created, update the `paths:` above in the same commit.**
 
@@ -26,27 +26,27 @@ when the code is created, update the `paths:` above in the same commit.**
   terms train on or log input (Gemini free, Mistral free without opt-out,
   NVIDIA free, OpenRouter free) is **off by default**: every job carries a
   copyrighted book.
-- **The API calls the engines** (round five). Steps run on Render, ticked by
-  `pg_cron` + `pg_net` only while a job is running; never a Render cron, and
-  nothing that keeps the API awake while idle. Built in B3 (8 Oct 2026):
-  `services/api/src/assistant/` (`engines/core.ts` is the one `draft()`;
-  `chain.ts`; `tick.ts` behind `CRON_SECRET`; `db/addendum-assistant-tick.sql`).
+- **Each teacher's app calls the engines** (round six, 7 Oct 2026; plan
+  §4-six), from their laptop, with their own keys; the API never does. The
+  app hands each step's result to the API, which runs the checks and records
+  engine, model, tokens, ms and cost on the step: the teacher's token log.
+  `/assistant` is **locked** ("No AI Assistant connected with this device.
+  Download here and install") until one of the teacher's paired apps has
+  sent a heartbeat in the last 2 minutes; no `localhost` probe. B3's
+  server-side chain, sealing and tick (built and retired the same night)
+  are in git history at `f1d87d3`: the reference for the app's port.
   An adapter's tests run on recorded replies; until a key exists, fixtures
   follow the provider's documented shape and **say they are not recorded**.
 - **No "sign in with Claude" inside the app.** Anthropic does not allow
   third-party apps to offer claude.ai login without approval. A
   subscription is used only through the teacher's own Claude Code and our
   plugin.
-- **Keys** are sealed by the API (AES-256-GCM, the secret only in Render's
-  environment) in a table with RLS on and no policy that grants anything:
-  `assistant_engine_keys` carries the explicit deny-all `aek_deny_all`, as
-  `assessment_secrets` does, so INV-02 and hard rule 3 stay strict. Write-only from the
-  page: no route returns a key, the page sees its last four characters.
-  Never in `VITE_*`, git, a response body or a log; an engine's error text is
-  scrubbed of the key (`scrub()`). The owner and engine are the cipher's
-  associated data, so a sealed key copied to another row does not open. Denial tests red first:
-  no teacher reads a key row, their own included; teacher B cannot run on
-  teacher A's key.
+- **Keys never reach OCTA** (round six). The app keeps each teacher's keys
+  in Windows Credential Manager under the paired teacher, sends a key only
+  to the engine it belongs to, and never to the API, the browser, a log or
+  git. Two teachers on one laptop pair separately and keep separate keys.
+  No table or column on OCTA holds a key, sealed or not (a test enforces it).
+  The admin sees each teacher's token **totals** only, never their drafts.
 
 ## Memory and approved work
 

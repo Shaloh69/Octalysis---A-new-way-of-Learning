@@ -19,7 +19,7 @@ import { ServerEnv, SERVER_ONLY_SECRETS } from "@octa/contracts/env";
 const CLIENT_PREFIX = "VITE" + "_";
 
 /** Secret-shaped fragments that must never appear under the client prefix. */
-const SECRET_SHAPED = /SERVICE_ROLE|JWT_SECRET|EXAM_SALT|DATABASE_URL|CRON_SECRET|ASSISTANT_KEY/;
+const SECRET_SHAPED = /SERVICE_ROLE|JWT_SECRET|EXAM_SALT|DATABASE_URL|CRON_SECRET/;
 
 function assertNoLeakedSecrets(source: NodeJS.ProcessEnv): void {
   const leaked = new Set<string>();
