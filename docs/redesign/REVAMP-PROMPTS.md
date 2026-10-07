@@ -23,21 +23,22 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: T1, teacher accounts, subjects and classes
+## 1. Start here — the next session: profile pages and profile pictures
 
 ```
-Read docs/NEXT-SESSION.md section 0zg first, item 7 above all: round six
-moved the assistant's keys and engine calls into each teacher's app (plan
-v6, retired B3's server half), and the instructor approved a new plan,
-docs/TEACHERS-AND-SUBJECTS-PLAN.md, with T1 FIRST. Read that plan in full
-(the rulings table, sections 1-4). docs/PROFILES-PLAN.md is approved too and
-comes AFTER T1: read its rulings only, do not start it. So does
-docs/STUDY-AND-BOT-PLAN.md (the chat bot and the Study Session): its
-rulings table only. Then root CLAUDE.md: hard rules 3, 8 and 10, "AUDIT
-EVERY PAGE AGAINST ITS SPEC", "Templates are ARTIFACTS", "THE HARDEST RULE"
-and "NEVER PROCEED TO ANOTHER PAGE"; db/CLAUDE.md; .claude/rules/rls.md;
-services/api/CLAUDE.md (one generic error for unknown and already-claimed
-IDs). Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md section 0zh first: T1 (teacher accounts, subjects
+and classes) is built and on the deployment, the THIRTEENTH SQL file is
+addendum-teachers.sql, and the approved order is T1 -> PROFILES -> T2 -> the
+student bot and the Study Session -> the assistant's app. Then
+docs/PROFILES-PLAN.md in full (it is this session's work), and the rulings
+tables only of docs/TEACHERS-AND-SUBJECTS-PLAN.md and docs/STUDY-AND-BOT-
+PLAN.md. Then root CLAUDE.md: hard rules 3, 8, 9 and 10, "Templates are
+ARTIFACTS", "THE HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE", the Design
+section (two realms in apps/web; [data-paper] identical for everyone);
+docs/DESIGN-MANDATE.md section 4 (AMENDED: uploads allowed, the seeded avatar
+the fallback); docs/redesign/WEB-REMAKE.md for the star HUD realm;
+db/CLAUDE.md (V-29: column grants); services/api/src/chat/storage.ts (the
+private-bucket pattern to copy). Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. On
 7 Oct (night) it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open
@@ -48,65 +49,68 @@ have none live; deployment invariants 0 failures (3 warnings).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
 reboot, start Docker Desktop first. Kill orphaned API trees and previews.
-Run pnpm db:reset, THEN node scripts/db-demo.mjs (TWELVE SQL files:
-addendum-assistant-v6.sql is the last). Start ONE pnpm dev:api and prove it
-with a real GET (readyz); curl again after every db:reset. Build and
-preview apps/web on 5185 and apps/console on 5186, and export OCTA_WEB_URL
-and OCTA_CONSOLE_URL. Every API test run empties the seeded database, so
-reset and reseed before any Playwright run.
+Run pnpm db:reset, THEN node scripts/db-demo.mjs (THIRTEEN SQL files:
+addendum-teachers.sql is the last). Start ONE pnpm dev:api and prove it with
+a real GET (readyz); curl again after EVERY db:reset (on 7 Oct a reset killed
+it and a /claim capture showed "server did not answer" until it was
+noticed). Build and preview apps/web on 5185 and apps/console on 5186
+(restart a preview after each build), and export OCTA_WEB_URL and
+OCTA_CONSOLE_URL. Every API test run empties the seeded database: reset and
+reseed before any Playwright run (global-setup refuses otherwise).
 
 The deployment: API https://octa-api-noq2.onrender.com, student site
 https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
 Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
-print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project). It has ONE
-staff account, the admin (Engr. MJ Butaya). scripts/.deploy-q.tmp.mjs runs
-SQL there after checking the ref.
+print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project).
+scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref;
+scripts/.capture-click.tmp.mjs captures a reference page at a width,
+clicking first if asked (xy:X,Y for an unlabelled control).
 
-The work, T1 (plan section 3), in this order:
+The work, profiles (PROFILES-PLAN.md sections 1-3), in this order:
 
-1. Templates first, as artifacts: /teachers (an admin's team page: a count,
-   people with their classes, an import, assign, disable), /teachers/:id
-   (one teacher: classes, token totals, disable) and /claim (a console
-   sign-up by employee ID). Capture each reference to
-   design/templates/console/<route>/template.png with SOURCE.md, OPEN it and
-   look, then write SPEC.md listing every control and the four tests of
-   docs/DESIGN-MANDATE.md section 1.
-2. The schema: one idempotent addendum (the thirteenth): subjects (CPE 412
-   seeded), subject_books (two or more per subject; Stallings the default
-   for CPE 412), classes (section x subject x teacher x term, many sections
-   per subject, book_id one of the subject's books or null for its
-   default; question C is ANSWERED: both), teacher_directory
-   (employee ID, name, email, role, claim status), is_admin(). RLS on, admin
-   only; denial tests WRITTEN RED FIRST (a teacher, a student and anon read
-   no teacher_directory row and write none; a teacher cannot make a class).
-   Existing sections become CPE 412 classes of their current teacher. On
-   Supabase BEFORE the code (hard rule 10), checked there.
-3. The API: requireAdmin() beside requireStaff(); GET
-   /api/v1/console/teachers and /teachers/:id (admin), the teacher roster import (dry run by
-   default; new / existing / conflicting, as the student import), assign a
-   class, disable a teacher; POST /api/v1/auth/claim-teacher (one generic
-   error for unknown and already-claimed IDs, rate limited, the role from
-   the roster only). Denial tests: a teacher calling each admin route gets
-   403; the positive control as the admin.
-4. The pages /claim, /teachers and /teachers/:id (the last two admin only
-   in the nav and the route),
-   each through the gate: spec at 1440 and 380, all six assertions green,
-   screenshots OPENED and looked at, one route at a time. Probably the
-   second T1 session; say so rather than rush it.
+1. Templates first, as artifacts: /app/profile (apps/web, the star HUD realm;
+   a profile with a picture, upload / replace / remove, and the read-only
+   name, ID, section and classes) and console /profile (the same for a
+   teacher or the admin). Capture each reference to design/templates/<app>/
+   <route>/template.png with SOURCE.md, OPEN it, then SPEC.md with every
+   control and the four tests.
+2. The schema, one idempotent addendum (the fourteenth): profiles.avatar_path
+   and avatar_updated_at written by the API only (decide the column grant on
+   purpose, V-29), the private profile-images bucket (Supabase only, as
+   chat-attachments; PNG/WebP, a size limit), and whatever a viewer check
+   needs (same section or class, their teacher, the admin). Denial tests
+   WRITTEN RED FIRST: a student cannot set another's picture, read one
+   outside their classes, or remove one; anon nothing. On Supabase BEFORE
+   the code (hard rule 10), checked there.
+3. The API: sign one upload to a path the API chooses (<user_id>/<random>.webp);
+   confirm it (the bytes really WebP, at most 300 KB) and record it; signed,
+   short-lived downloads only for a viewer allowed to see that person; remove
+   (the owner; a teacher of that student; the admin), audited, the student
+   told. The browser crops square and re-encodes to 512x512 WebP on a canvas
+   (that drops EXIF and a phone's GPS). Locally there is no Storage: say
+   pictures are unavailable there, as the chat says of attachments.
+4. The fallback avatar: drawn in code from the seed /cosmetics already
+   derives (routes/cosmetics.ts says the avatar must read it, not derive a
+   second one). DESIGN-MANDATE section 4 names DiceBear, but CLAUDE.md's
+   allowed-libraries list does not include it: draw it without a new
+   dependency unless the instructor approves DiceBear.
+5. The pages, each through its gate (spec at 1440 and 380, six assertions
+   green, screenshots OPENED): /app/profile, then console /profile. Then the
+   picture where the plan says it appears (nav, chat, roster, student page,
+   console shell), never on a stage check or exam ([data-paper]). Each
+   touched page's spec must stay green.
 
-Not T1 (do not start): the profile pages and pictures (PROFILES-PLAN.md,
-next after T1); the chat bot and the Study Session (STUDY-AND-BOT-PLAN.md); T2, a teacher seeing only their own classes (RLS across
-students, gradebook, locks, submissions, chat); T3, a second subject's
-curriculum; the assistant's app.
+Not this phase (do not start): T2 (a teacher seeing only their own classes);
+the chat bot and the Study Session; the assistant's app.
 
-Still owed by the instructor (do not build around them): which of
-STUDY-AND-BOT-PLAN.md section 4's proposed features to build; the four
-engine keys (the teacher's go into their app; the student bot's into
-Render's environment); approving the 83 act-1 items at review (the
-Prelim needs 96 live), the 131 questions for 09-12, the chapter drafts 08-13
-and 17 figures on /content, and the planet summaries (R3's last box); the
-screen-reader pass; accepting the moon work's lock-layer changes
-(REDESIGN-SIGNOFF.md section 5).
+Still owed by the instructor (do not build around them): the first teacher
+roster import on /teachers and a first real claim at /claim; whether
+/teachers leaves Records for a nav group of its own; which of
+STUDY-AND-BOT-PLAN.md section 4's features to build; the four engine keys;
+approving the 83 act-1 items at review (the Prelim needs 96 live), the 131
+questions for 09-12, the chapter drafts 08-13 and 17 figures on /content,
+and the planet summaries (R3's last box); the screen-reader pass; accepting
+the moon work's lock-layer changes (REDESIGN-SIGNOFF.md section 5).
 
 Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put
 a key in it). Any visual change goes through its page gate.

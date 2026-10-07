@@ -19,6 +19,15 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**7 Oct 2026 (night, third part):** phase report **238/245 (97%)**,
+unchanged (T1 is outside the R boxes). **T1 is built and on the
+deployment:** subjects, books, classes and the teacher roster
+(`addendum-teachers.sql`, the thirteenth file), the admin's routes and the
+teacher claim, and `/claim`, `/teachers`, `/teachers/:key`, each through the
+gate with captures opened. Next: profile pages (`PROFILES-PLAN.md`). Prelim
+NOT runnable. Detail: NEXT-SESSION.md 0zh.
+
+
 **7 Oct 2026 (night, second session):** phase report **238/245 (97%)**,
 unchanged; live R3 87/88, R4 46/48, R5 20/24, every open box a person's.
 B1's upload done (381 figure crops in the private bucket on the deployment;

@@ -1526,6 +1526,40 @@ left, or needing a decision:
 
 ---
 
+## 0zh. T1 built: teacher accounts, subjects and classes — 7 Oct 2026 (night, third part)
+
+The instructor approved the order (T1 → profiles → T2 → the student bot and
+the Study Session → the assistant's app). T1, in five pushed steps:
+
+1. **Templates** (`7c42383`): `/teachers` (shadcn-admin Users, re-captured),
+   `/teachers/:id` (shadcn/ui dashboard-01; examples/dashboard rejected, a
+   framed example under a hero; view/dashboard-01 404), `/claim` (shadcn-admin
+   Sign up). SOURCE + SPEC each, opened at 1440 and 380.
+2. **Schema** (`f7f81eb`): `db/addendum-teachers.sql`, the THIRTEENTH file:
+   `subjects` (CPE 412), `subject_books` (Stallings 9th, the syllabus's, the
+   default; 10th, the one the assistant reads), `classes` (book_id one of THAT
+   subject's books), `teacher_directory`, `is_admin()`, `my_section_id()`.
+   **On the deployment first**: its 3 sections became unassigned CPE 412
+   classes; invariants 0 failures. 20 RLS tests (red with no schema; 5 red
+   with two policies opened; green).
+3. **API** (`5632eb4`): `requireAdmin()`; the admin's routes; the teacher
+   claim (roster role, name match, one message); a disabled teacher refused
+   on every request and banned in Supabase. 22 tests (19 red with no routes;
+   9 red with requireAdmin letting staff through; green).
+4. **Pages** (`7c583e4`, `0a9801f`, `050b7da`): `/claim` (22 green),
+   `/teachers` (30), `/teachers/:key` (24). Found by LOOKING, not by the
+   gate: a translucent dialog (capture mid ease-in; now captured after), a
+   clipped subject select, and AI-use figures wrapping mid-number at 380
+   (now a list below sm). `/signin` links to `/claim` (its spec 37 green).
+5. **Deployed:** Render answers the new routes (401 / 400 without a token);
+   the deployed console bundle has the three pages.
+
+`pnpm verify` green (API 987, console 231). **Owed by the instructor:**
+import the first teacher roster on `/teachers` and have a teacher claim at
+`/claim` (the first real claim; it creates a live account, so not done for
+you); say whether `/teachers` should leave Records for a group of its own (a
+new nav group is your call). **Next: profiles** (`docs/PROFILES-PLAN.md`).
+
 ## 0zg. B1's upload done; B3 built then retired by round six; the teachers plan — 7 Oct 2026 (night, second session)
 
 Pushed: `78697a6` B1's upload, `ec33a79` the tick addendum, `f1d87d3` B3,

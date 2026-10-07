@@ -1,4 +1,16 @@
-# Teachers, subjects and classes — plan v1, APPROVED 7 Oct 2026 (night)
+# Teachers, subjects and classes — plan v1, APPROVED 7 Oct 2026 (night); **T1 BUILT the same night**
+
+**T1 status (7 Oct 2026, night):** built and on the deployment.
+`db/addendum-teachers.sql` (thirteenth; on Supabase first), the admin's API
+(`services/api/src/routes/teachers.ts`, `requireAdmin()`) and the teacher
+claim (`POST /api/v1/auth/claim-teacher`), and three console pages through
+the gate: `/claim`, `/teachers`, `/teachers/:key`. 20 RLS tests + 22 API
+tests, each watched red; page specs 22 + 30 + 24 green at 1440 and 380,
+captures opened. **Not built, recorded:** linking a staff account that has
+no employee ID (the bootstrapped admin) to a roster row; the AI-use chart
+(a table until real totals exist). **Not yet done on the deployment, by
+choice:** a real claim (it creates a live account; the instructor imports
+the first teacher roster and a teacher claims).
 
 Instructor, 7 Oct 2026 (night):
 
