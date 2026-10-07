@@ -1,4 +1,4 @@
-# The drafting assistant — plan v5, APPROVED (built LAST)
+# The drafting assistant — plan v6, APPROVED (built after teacher accounts, T1)
 
 **History.** v1 (6 Oct 2026) planned a small local tool. v2 (7 Oct) answered
 "do what you were doing with all of the books; summarise the figures,
@@ -7,6 +7,25 @@ instructor's first answers. **v4** (7 Oct, evening) takes in the second
 round, and every decision is now made. **v5** (7 Oct, night) pauses local
 Ollama: the online engines run from OCTA's own API, and local Ollama
 becomes a "future update" choice on the page (round five, below; §4-now).
+
+**Rulings, round six (7 Oct 2026, night, after B3's first session) — v6,
+APPROVED (§4-six), superseding §4-now wherever they differ:**
+
+> "I want the AI keys to be different with every teacher because every
+> teacher needs a different log to have independent tokens … to use the new
+> page in the Console the AI Assistance it will be locked and will be
+> prompted when opening: No AI Assistant connected with this device.
+> Download Here and Install."
+
+| # | Asked | The instructor's answer |
+|---|---|---|
+| 1 | What the installed app does | **Holds that teacher's keys and calls the online AIs** (Claude API, Ollama Cloud, Groq, Cloudflare) **from the laptop**. Keys never stored on OCTA. No local model (local Ollama stays paused). Drafting runs only while the laptop is on. **Reverses round five's ruling 2** (the API holding sealed keys and calling the engines) |
+| 2 | Token logs | **Each teacher sees their own full log; the admin also sees every teacher's totals** (tokens, cost, engine), never their drafts |
+| 3 | The page | `/assistant` is **locked** until an app is connected: "No AI Assistant connected with this device. Download here and install" |
+| 4 | Teachers, subjects, the roster | A separate plan: `docs/TEACHERS-AND-SUBJECTS-PLAN.md` |
+| 5 | The unlock rule ("connected with this device") | **One of this teacher's paired apps is online** (a heartbeat in the last 2 minutes), and the page names it. No `localhost` probe |
+| 6 | Today's API-side B3 pieces | **Retired**: the sealed-keys table, `seal.ts`/`keys.ts`, the server tick, its cron job and Vault secrets, the TypeScript adapters and the Anthropic SDK in the API. `CRON_SECRET` and `ASSISTANT_KEY_SECRET` are no longer needed on Render |
+| 7 | Order | **Teacher accounts (T1) first**, then the assistant's app |
 
 **Rulings, round five (7 Oct 2026, night), during B0:**
 
@@ -46,9 +65,10 @@ becomes a "future update" choice on the page (round five, below; §4-now).
 | 8 | (round four) The Claude API; code rules; no slop; memory across sessions and engines; approved output never mangled | **Yes to all**: the Claude API leads the chain when a key is present (§3a); memory (§4a); approved units frozen (§4b); output rules (§4c); code rules (§4d) |
 | 9 | (round four) "A feature with double checking and with tests like we had here" | **Yes**: a second engine checks the first, planted-error canaries before every job, renders at 380 and 1440 checked for overlap, a verification report on every unit, golden regression on accepted work (§4e) |
 
-**Building, in §9's order** (8 Oct 2026): B1 (the figure reader, and the
-book's figures uploaded), B2 (the schema) and the first half of B3 (the
-engine chain, sealed keys, the tick) exist; B0 online waits on the keys.
+**Where it stands** (7 Oct 2026, night): B1 (the figure reader, and the
+book's figures uploaded) and B2 (the schema) exist. B3's server-side chain
+was built and retired the same night by round six; the app replaces it,
+**after the teacher accounts (T1)**. B0 online waits on the keys.
 
 ---
 
@@ -245,6 +265,64 @@ an API key instead (the table above).
 If you want a "sign in with Claude" button anyway, that needs **Anthropic's
 approval first**. It's a request to Anthropic, not something to build
 around.
+
+## 4-six. APPROVED (v6, round six): the app holds the keys and calls the engines
+
+Approved 7 Oct 2026 (night), with the unlock rule below as proposed. Not built. It brings back
+v4's app (§4: pairing, heartbeat, the outbound-only design) **without its
+local model**, and takes engine calls and keys out of the API again.
+
+```
+  ┌── Console /assistant (Vercel) ──────────────────────────────────┐
+  │ LOCKED until an app is connected:                                │
+  │   "No AI Assistant connected with this device.                   │
+  │    Download here and install."  [Download] [3-step setup guide]  │
+  │ unlocked: jobs · progress · review · Accept/Reject · export ·    │
+  │           MY TOKEN LOG (per step, per day, per engine)           │
+  └─────────────┬────────────────────────────────────────────────────┘
+                │ staff sign-in                      ▲ heartbeat, jobs (Supabase,
+  ┌── API (Render) ──────────────┐                   │ owner-only RLS, Realtime)
+  │ pairing · jobs · RECEIVES     │◄── results ──┐   │
+  │ results, runs the CHECKS,     │              │   │
+  │ records tokens/ms/cost        │   ┌── Teacher A's laptop: OCTA Assistant ──┐
+  └───────────────────────────────┘   │ paired to Teacher A only                │
+                                      │ A's keys in Windows Credential Manager  │
+                                      │ the engine chain → Claude / Ollama      │
+                                      │   Cloud / Groq / Cloudflare (HTTPS)     │
+                                      │ B1's figure reader (PyMuPDF)            │
+                                      └─────────────────────────────────────────┘
+```
+
+- **Keys:** entered in the app, kept in **Windows Credential Manager under
+  the paired teacher**, sent only to the engine they belong to. Never to
+  OCTA, never to the browser. Two teachers on one laptop pair separately and
+  keep separate keys. So each teacher's tokens are their own account's.
+- **The token log:** the app hands each step's result to the API with its
+  engine, model, tokens, ms and cost; the API records them on the step
+  (`assistant_steps` already has the columns, owner-only). `/assistant`
+  shows the teacher their log; the admin's `/teachers` page shows each
+  teacher's **totals** only, through an admin-only route (TEACHERS plan).
+- **The lock ("connected with this device"):** the app writes a heartbeat
+  to Supabase (a new `assistant_devices` table: owner, device name, app
+  version, last seen). **A browser cannot prove the app runs on the same
+  machine** without reaching into `localhost`, which §4 rejected (Safari
+  blocks it; Chrome and Edge prompt; any site could probe the port).
+  **Proposed:** the page unlocks when one of **this teacher's** paired apps
+  has been seen in the last 2 minutes, and names it ("Teaching laptop,
+  online"). Not installed, or offline, shows the locked screen.
+- **The engine chain moves into the app** (Python, beside B1's reader, one
+  PyInstaller executable, unsigned, Windows first). Same contract as B3's:
+  one `draft(step, context)`, retries, timeouts, quota, one error shape;
+  each engine's reply checked against the same schemas (exported as JSON
+  Schema from `@octa/contracts/assistant` so the two cannot drift).
+- **The checks stay in the API** (§4: one copy of the JS OCTA trusts).
+- **What today's B3 build becomes:** RETIRED: `assistant_engine_keys`,
+  `seal.ts`, `keys.ts` (keys never on OCTA), the server tick, its cron job
+  and Vault secrets, `CRON_SECRET`/`ASSISTANT_KEY_SECRET` on Render (no
+  longer needed), the TypeScript adapters and the Anthropic SDK in the API.
+  KEPT: `@octa/contracts/assistant` (the result and error shapes, each
+  engine's reply schema), the step and job tables, the B1 upload. A drop
+  addendum goes to Supabase first (hard rule 10), the code after.
 
 ## 4-now. The design for now (v5): the console and the API, no laptop app
 
@@ -819,7 +897,7 @@ file", "memory traffic"), so they are the scorer's misses, not the model's.
 the crops are scratch, not in the repo; B1 makes the crop real.
 
 **B0 online: still waiting on the keys** (checked 7 Oct 2026, late, and again
-8 Oct: none of the five names below is in the root `.env`, nor any other env
+later the same night: none of the five names below is in the root `.env`, nor any other env
 file). B1 and B3 went ahead, as ordered.
 
 **B1, the figure reader, built (7 Oct 2026, late).** Code at
@@ -901,7 +979,7 @@ database (19 red, exactly those); restored, 48 green. A missing table is
 refused as a denial (`wasDenied()` alone would count it). Not tested: the
 bucket (no storage schema on the local stack, as for chat attachments).
 
-**B1's upload, done (8 Oct 2026; the instructor approved it once, in the
+**B1's upload, done (7 Oct 2026; the instructor approved it once, in the
 session).** `tools/assistant/upload/upload_figures.py` (`pnpm book:upload
 <out dir> --ref <project> --owner <staff uuid>`) runs the reader, then writes
 with the service role from the root `.env`: one `assistant_books` row (owner,
@@ -923,7 +1001,7 @@ there and writes only the difference. Refuses a URL that does not name
 - 9 tests on `plan()`, the unchanged state as the canary; watched red
   against two planted bugs. `pnpm test:assistant` now 25.
 
-**B3, the engine chain, session 1 of 2 (8 Oct 2026).**
+**B3, the engine chain, session 1 of 2 (7 Oct 2026) — RETIRED the same night by round six** (`eb90e63`; the code stays in git at `f1d87d3` as the reference for the app's Python port). What it was:
 `services/api/src/assistant/`:
 
 - `engines/core.ts`: the one `draft(step, context)`. Timeout per call
@@ -970,13 +1048,12 @@ there and writes only the difference. Refuses a URL that does not name
   against three more (an unset secret accepted, a non-running job claimed,
   execute granted to `authenticated`). `pnpm verify` green, API 996.
 
-**B3's second session owes:** the chain wired into a step (open the owner's
-keys, run the chain, record engine, model, key, tokens, ms, cost on the
-step); **a `not_before` on a waiting step** (a schema change, its own
-addendum first) so an out-of-quota step is not re-claimed every minute;
-recorded replies once a key exists; and the tick proved end to end on the
-deployment once Render has `CRON_SECRET` (a throwaway running job whose one
-step should come back `no_handler`, then deleted).
+**What replaces B3 (round six):** the app (§4-six), after the teacher
+accounts (T1, `TEACHERS-AND-SUBJECTS-PLAN.md`): pairing, heartbeats to an
+`assistant_devices` table, the locked `/assistant`, the keys in Windows
+Credential Manager, the engine chain in Python beside B1's reader, results
+handed to the API with their tokens and cost, the token log. Sized when T1
+is done.
 
 **B0's keys, for the measurement only:** in the root `.env` (gitignored,
 server-side names, never `VITE_*`): `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`,
@@ -991,7 +1068,7 @@ once since: **round five** (v5) paused local Ollama and moved the engine
 calls into the API. Left for later, not for now: the separate plan for
 OCTA serving several courses and teachers, and the future update that
 switches local Ollama on. **Waiting on the instructor:** the four engine
-keys for B0; `ASSISTANT_KEY_SECRET` in Render's environment (any random
-string of 32+ characters, e.g. `openssl rand -base64 48`; "I will set it
-later", 8 Oct); and `CRON_SECRET` in Render's environment, copied from the
-root `.env` (Vault already holds the same value).
+keys for B0 (they now go into the app, not OCTA; B0 can still read them
+from the root `.env` for the measurement); and question C of the teachers
+plan (one book per subject, or per class). `ASSISTANT_KEY_SECRET` and
+`CRON_SECRET` on Render are **no longer needed** (round six).

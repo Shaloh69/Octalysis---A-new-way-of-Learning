@@ -19,16 +19,17 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
-**8 Oct 2026:** phase report **238/245 (97%)**, unchanged; live R3 87/88, R4
-46/48, R5 20/24, every open box a person's. The assistant: B1's upload is
-done (the book's 381 figure crops, rows and labels in the private bucket on
-the deployment, under the instructor's account; a re-run writes nothing), and
-B3's first session built the engine chain (one `draft()`, four adapters, the
-chain), the key seal, and the tick (`/internal/assistant/tick`, and
-`addendum-assistant-tick.sql`, the twelfth file, on the deployment first).
-B0 online still waits on the engine keys; Render still needs `CRON_SECRET`
-and `ASSISTANT_KEY_SECRET`. Prelim NOT runnable (deployment: stage 01 13
-live, 02-04 none). Detail: NEXT-SESSION.md 0zg.
+**7 Oct 2026 (night, second session):** phase report **238/245 (97%)**,
+unchanged; live R3 87/88, R4 46/48, R5 20/24, every open box a person's.
+B1's upload done (381 figure crops in the private bucket on the deployment;
+a re-run writes nothing). B3's server-side engine chain was built, then
+**retired the same night by round six**: each teacher's app will hold their
+own keys and call the engines from the laptop, and `/assistant` stays
+locked until their app is connected (plan v6). New approved plan
+`TEACHERS-AND-SUBJECTS-PLAN.md`: subjects, classes, teacher accounts claimed
+by employee ID, an admin-only `/teachers`; **T1 is next**, before the
+assistant's app. Prelim NOT runnable (deployment: stage 01 13 live, 02-04
+none). Detail: NEXT-SESSION.md 0zg.
 
 **7 Oct 2026 (late):** phase report **238/245 (97%)**, unchanged; live R3
 87/88, R4 46/48, R5 20/24, every open box a person's. The assistant's B1 and

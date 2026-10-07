@@ -23,92 +23,82 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: the assistant, B0 online if keys, then B3's second half
+## 1. Start here — the next session: T1, teacher accounts, subjects and classes
 
 ```
-Read docs/NEXT-SESSION.md section 0zg first: B1's upload is done (381
-figures on the deployment), B3's first half is built (the one draft(),
-four adapters, the chain, the key seal, the tick and its addendum, the
-TWELFTH SQL file, on the deployment), B0 online still waits on keys, one
-thing parked. Then docs/AI-ASSISTANT-PLAN.md v5 (section 4-now, and section
-9: the B1 upload and B3 records, and "B3's second session owes") and
-.claude/rules/assistant.md, which binds every line of assistant code. Then
-root CLAUDE.md hard rules 2, 8 and 10, and db/CLAUDE.md's last two "Never"
-entries. Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md section 0zg first, item 7 above all: round six
+moved the assistant's keys and engine calls into each teacher's app (plan
+v6, retired B3's server half), and the instructor approved a new plan,
+docs/TEACHERS-AND-SUBJECTS-PLAN.md, with T1 FIRST. Read that plan in full
+(sections 1-4: what exists, the proposed shape, the phases, what is decided
+and what is still open). Then root CLAUDE.md: hard rules 3, 8 and 10, "AUDIT
+EVERY PAGE AGAINST ITS SPEC", "Templates are ARTIFACTS", "THE HARDEST RULE"
+and "NEVER PROCEED TO ANOTHER PAGE"; db/CLAUDE.md; .claude/rules/rls.md;
+services/api/CLAUDE.md (one generic error for unknown and already-claimed
+IDs). Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. On
-8 Oct it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open box a
-person's. Then say plainly whether Prelim-worth of data is okay to run on
-students, checking the five conditions in CLAUDE.md. On 8 Oct it was NOT:
+7 Oct (night) it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open
+box a person's. Then say plainly whether Prelim-worth of data is okay to run
+on students, checking the five conditions in CLAUDE.md. On 7 Oct it was NOT:
 on the deployment stage 01 has 13 live, 2 at review, 2 retired, and 02-04
 have none live; deployment invariants 0 failures (3 warnings).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot, start Docker Desktop first. Kill orphaned API trees and previews
-(8 Oct found three dev-api trees and both previews still running). Run pnpm
-db:reset, THEN node scripts/db-demo.mjs (TWELVE SQL files now:
-addendum-assistant-tick.sql is the last). Start ONE pnpm dev:api and prove
-it with a real GET (readyz); curl again after every db:reset. Build and
+reboot, start Docker Desktop first. Kill orphaned API trees and previews.
+Run pnpm db:reset, THEN node scripts/db-demo.mjs (TWELVE SQL files:
+addendum-assistant-v6.sql is the last). Start ONE pnpm dev:api and prove it
+with a real GET (readyz); curl again after every db:reset. Build and
 preview apps/web on 5185 and apps/console on 5186, and export OCTA_WEB_URL
 and OCTA_CONSOLE_URL. Every API test run empties the seeded database, so
-reset and reseed before any Playwright run. pnpm test:assistant runs the
-Python tests (25, about 45 s, the book PDF at the repo root).
-
-Do NOT start Ollama. It is installed and paused on purpose (round five).
-No assistant code may run a model on a laptop; the database refuses a step
-on ollama_local.
+reset and reseed before any Playwright run.
 
 The deployment: API https://octa-api-noq2.onrender.com, student site
 https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
 Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
-print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project, parked).
-Untracked scratch helpers in scripts/: .deploy-q.tmp.mjs (runs SQL on the
-deployment after checking the ref), .vault-tick.tmp.mjs (set the tick's two
-Vault secrets), .b0-crop.tmp.py, .b0-cloud.tmp.py, .b0-local.tmp.py, and
-the older ones 0zc lists.
+print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project). It has ONE
+staff account, the admin (Engr. MJ Butaya). scripts/.deploy-q.tmp.mjs runs
+SQL there after checking the ref.
 
-First, check what the instructor has done (names only, never a value):
-the four engine keys in the root .env (ANTHROPIC_API_KEY, OLLAMA_API_KEY,
-GROQ_API_KEY, CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN), and on Render
-CRON_SECRET (equal to the root .env's) and ASSISTANT_KEY_SECRET. Render's
-values cannot be read from here: POST /internal/assistant/tick with the
-root .env's CRON_SECRET as x-cron-secret answers 202 once Render has it,
-401 until then.
+The work, T1 (plan section 3), in this order:
 
-The work, in order:
+1. Templates first, as artifacts: /teachers (an admin's team page: a count,
+   people with their classes, an import, assign, disable) and /claim (a
+   console sign-up by employee ID). Capture each reference to
+   design/templates/console/<route>/template.png with SOURCE.md, OPEN it and
+   look, then write SPEC.md listing every control and the four tests of
+   docs/DESIGN-MANDATE.md section 1.
+2. The schema: one idempotent addendum (the thirteenth): subjects (CPE 412
+   seeded, its book), classes (section x subject x teacher x term, a
+   nullable book override until question C is answered), teacher_directory
+   (employee ID, name, email, role, claim status), is_admin(). RLS on, admin
+   only; denial tests WRITTEN RED FIRST (a teacher, a student and anon read
+   no teacher_directory row and write none; a teacher cannot make a class).
+   Existing sections become CPE 412 classes of their current teacher. On
+   Supabase BEFORE the code (hard rule 10), checked there.
+3. The API: requireAdmin() beside requireStaff(); GET
+   /api/v1/console/teachers (admin), the teacher roster import (dry run by
+   default; new / existing / conflicting, as the student import), assign a
+   class, disable a teacher; POST /api/v1/auth/claim-teacher (one generic
+   error for unknown and already-claimed IDs, rate limited, the role from
+   the roster only). Denial tests: a teacher calling each admin route gets
+   403; the positive control as the admin.
+4. The pages /claim and /teachers (admin only in the nav and the route),
+   each through the gate: spec at 1440 and 380, all six assertions green,
+   screenshots OPENED and looked at, one route at a time. Probably the
+   second T1 session; say so rather than rush it.
 
-1. B0 ONLINE, if any key is there: pip install anthropic; python
-   scripts/.b0-crop.tmp.py <scratch dir>, open the contact sheet, then
-   scripts/.b0-cloud.tmp.py over each engine with a CURRENT vision model
-   (Claude: claude-opus-5-5). It has never run; expect to fix it. Record
-   recall, invented labels, valid JSON, seconds, tokens and the quota each
-   reply reports in plan section 9, say which engine suits which step, and
-   update services/api/src/assistant/engines/catalogue.ts (provisional for
-   the free engines until then). RECORD one real reply per engine (key
-   scrubbed) and move the adapter tests in
-   services/api/test/assistant-engines.spec.ts onto them.
-2. The tick end to end on the deployment, once Render has CRON_SECRET: a
-   throwaway running job under the instructor's book with one step; within
-   two minutes cron -> pg_net -> Render should claim it and settle it
-   no_handler, and close the job failed. Check net._http_response for the
-   202. Then delete the job.
-3. B3's second half (plan section 9, "B3's second session owes"): a
-   not_before column on a waiting step, in its own idempotent addendum
-   (the thirteenth), pushed to Supabase BEFORE the code, so an
-   out-of-quota step is not re-claimed every minute (claimNext must skip
-   it); and the chain wired into a step: open the owner's keys (openKeys),
-   run the chain (runChain), and settle the step with what ran (engine,
-   model, key_id, tokens, ms, cost) or put it back waiting with not_before
-   from the shortest retry-after. Tests red first; one denial at least
-   (a step never runs on another teacher's key: as_own_key in the DB, and
-   openKeys only ever reads the step's owner).
+Not T1 (do not start): T2, a teacher seeing only their own classes (RLS
+across students, gradebook, locks, submissions, chat); T3, a second
+subject's curriculum; the assistant's app (after T1).
 
-Still owed by the instructor (do not build around them): the four engine
-keys; CRON_SECRET and ASSISTANT_KEY_SECRET on Render; approving the 83
-act-1 items at review (the Prelim needs 96 live), the 131 questions for
-09-12, the chapter drafts 08-13 and 17 figures on /content, and the planet
-summaries (R3's last box); the screen-reader pass; accepting the moon
-work's lock-layer changes (REDESIGN-SIGNOFF.md section 5).
+Still owed by the instructor (do not build around them): question C of the
+teachers plan (one book per subject, or per class); the four engine keys
+(they will go into the app); approving the 83 act-1 items at review (the
+Prelim needs 96 live), the 131 questions for 09-12, the chapter drafts 08-13
+and 17 figures on /content, and the planet summaries (R3's last box); the
+screen-reader pass; accepting the moon work's lock-layer changes
+(REDESIGN-SIGNOFF.md section 5).
 
 Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put
 a key in it). Any visual change goes through its page gate.

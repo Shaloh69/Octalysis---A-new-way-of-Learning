@@ -1526,7 +1526,7 @@ left, or needing a decision:
 
 ---
 
-## 0zg. B1's upload done, B3 begun (engine chain, sealed keys, the tick) — 8 Oct 2026
+## 0zg. B1's upload done; B3 built then retired by round six; the teachers plan — 7 Oct 2026 (night, second session)
 
 Pushed: `78697a6` B1's upload, `ec33a79` the tick addendum, `f1d87d3` B3,
 then this session's docs commit. Phase report **238/245, 97%**, unchanged
@@ -1552,10 +1552,9 @@ every open box a person's.
    each provider's documented shape and are NOT recorded.** Render deployed
    `f1d87d3`: `/readyz` up; the tick answers 401 with no secret and 401 with
    the root `.env`'s `CRON_SECRET` (Render does not have it yet).
-4. **Owed by the instructor, new this session:** copy `CRON_SECRET` from the
-   root `.env` to Render's environment (Vault already holds the same value;
-   until then the deployed tick refuses every call, which is safe: no job
-   runs). `ASSISTANT_KEY_SECRET` on Render too ("I will set it later").
+4. ~~Owed by the instructor: `CRON_SECRET` and `ASSISTANT_KEY_SECRET` on
+   Render.~~ **No longer needed** (item 7): both were for the server-side
+   path round six retired. `CRON_SECRET` is gone from the root `.env` again.
 5. **Parked, found in passing (not this session's work):** the root `.env`'s
    `SUPABASE_DB_DIRECT` and `SUPABASE_DB_POOLED` do not name the deployment
    (`ddvxkbcelpqydnjkffdr`); only `SUPABASE_DB_SESSION` does, and it is the
@@ -1565,6 +1564,27 @@ every open box a person's.
 6. **Prelim still NOT runnable** (deployment, checked this session): stage 01
    13 live, 2 review, 2 retired; 02-04 none live (81 at review). Invariants
    0 failures (3 warnings: INV-18, INV-27, INV-29).
+7. **Round six, later the same night (instructor), and two new plans:**
+   - **The assistant (plan v6, §4-six, approved):** each teacher's app holds
+     that teacher's keys (Windows Credential Manager) and calls the online
+     engines from the laptop; the API never does. `/assistant` is LOCKED
+     ("No AI Assistant connected with this device. Download here and
+     install") until one of the teacher's paired apps has sent a heartbeat in
+     the last 2 minutes (no `localhost` probe). Each teacher sees their own
+     token log; the admin sees every teacher's totals, never drafts.
+   - **So B3's server half was RETIRED** (`eb90e63`): the key table, a step's
+     `key_id`, the tick, its cron job and Vault secrets, the API's engine code
+     and the Anthropic SDK. `addendum-assistant-v6.sql` replaced
+     `addendum-assistant-tick.sql` as the twelfth file, **on the deployment
+     first**. `f1d87d3` keeps the code as the reference for the app's port.
+   - **Teachers, subjects and classes (`docs/TEACHERS-AND-SUBJECTS-PLAN.md`,
+     approved):** a subject is a course (CPE 412, CPE 413) with its book; a
+     class is a section × subject × teacher × term; teachers join by
+     **claiming an employee ID**; only the admin sees the teachers, their
+     classes and token totals, and imports the teacher roster; **the admin
+     is also a teacher**; a teacher sees **only their own classes** (T2).
+     Supersedes D4 for the admin-only powers. **T1 comes FIRST**, before the
+     assistant's app. Still open: one book per subject, or per class.
 
 ## 0zf. The assistant's B1 (figure reader) and B2 (schema) — 7 Oct 2026 (late)
 
