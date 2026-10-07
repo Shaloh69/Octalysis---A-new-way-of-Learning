@@ -27,8 +27,10 @@ a re-run writes nothing). B3's server-side engine chain was built, then
 own keys and call the engines from the laptop, and `/assistant` stays
 locked until their app is connected (plan v6). New approved plan
 `TEACHERS-AND-SUBJECTS-PLAN.md`: subjects, classes, teacher accounts claimed
-by employee ID, an admin-only `/teachers`; **T1 is next**, before the
-assistant's app. Prelim NOT runnable (deployment: stage 01 13 live, 02-04
+by employee ID, an admin-only `/teachers` and `/teachers/:id`; **T1 is
+next**, before the assistant's app. Also approved: `PROFILES-PLAN.md`
+(profile pages with uploaded pictures for students, teachers and the admin),
+proposed after T1. Prelim NOT runnable (deployment: stage 01 13 live, 02-04
 none). Detail: NEXT-SESSION.md 0zg.
 
 **7 Oct 2026 (late):** phase report **238/245 (97%)**, unchanged; live R3

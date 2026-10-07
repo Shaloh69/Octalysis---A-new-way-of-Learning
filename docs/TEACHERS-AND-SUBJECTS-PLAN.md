@@ -16,6 +16,9 @@ Instructor, 7 Oct 2026 (night):
 | 2 | How a new teacher gets an account | **Claim by employee ID**, as students claim by student ID |
 | 3 | Who sees what | **Only the admin** sees how many teachers there are, the subjects and classes each holds, and imports the teacher roster. **The admin is also a teacher**: everything a teacher can do, plus that |
 | 4 | AI token logs (the assistant plan, round six) | Each teacher sees their own; the admin sees every teacher's totals, never their drafts |
+| 5 | "A section can have the same subject too" | **Many sections, one subject**: BSCPE-2A and BSCPE-2B can both take CPE 412, each its own class, possibly with different teachers |
+| 6 | "Expound the current admin to handle individual teachers" | **The roster import AND a page per teacher**, `/teachers/:id`: their classes, token totals and controls |
+| 7 | Profile pictures, for teachers and the admin too | A separate plan: `docs/PROFILES-PLAN.md` |
 
 This supersedes decision **D4** ("teacher and admin are one role in this
 deployment", `VERIFICATION.md`, `PAGE-SPECS.md` §4.4) for the admin-only
@@ -64,6 +67,12 @@ a teacher who types the URL gets the console's forbidden screen):
   default, new / existing / conflicting, as the student import;
 - assign a class (section, subject, term, teacher); disable a teacher.
 
+**The admin's page per teacher `/teachers/:id`** (admin-only, as `/teachers`):
+one teacher's employee ID, name, email, role, claim status and last sign-in;
+their classes (assign, end); their AI token totals by engine and by month
+(round six; totals, never drafts); disable or re-enable the account. A
+teacher who types the URL gets the console's forbidden screen.
+
 **The admin as a teacher:** every teacher page works for the admin exactly
 as for a teacher, with the classes the admin holds. `/teachers` is the only
 addition. `requireAdmin()` beside `requireStaff()`, server-side; the console
@@ -73,7 +82,7 @@ hides the nav item, it never decides access.
 
 | Phase | What | Size |
 |---|---|---|
-| **T1** | Subjects, classes, the teacher roster, `/claim`, `/teachers` (admin-only), `requireAdmin`, denial tests. Only CPE 412 has content: a class on another subject shows "no content for CPE 413 yet". Existing sections are assigned to CPE 412 and their current teacher | 2 sessions |
+| **T1** | Subjects, classes, the teacher roster, `/claim`, `/teachers` and `/teachers/:id` (admin-only), `requireAdmin`, denial tests. Only CPE 412 has content: a class on another subject shows "no content for CPE 413 yet". Existing sections are assigned to CPE 412 and their current teacher | 2 sessions |
 | **T2** | **Scoping teachers to their classes** (see question B below): a teacher's `/students`, gradebook, locks, submissions and chat show their classes only; RLS by class, with denial tests | 2 sessions |
 | **T3** | **A second subject's curriculum** (CPE 413): stages, items, objectives, blueprints and the star map keyed by subject. Touches nearly every table and the student app; its own plan, written when a second subject's syllabus and book exist | many |
 
@@ -89,5 +98,5 @@ hides the nav item, it never decides access.
 
 Each new page is born with a captured template, a `SPEC.md` and a spec at
 1440 and 380 before it is built (CLAUDE.md). Templates for `/teachers`,
-`/claim` and the locked `/assistant` are captured at the start of the build
-session, after approval.
+`/teachers/:id`, `/claim` and the locked `/assistant` are captured at the
+start of the session that builds each.

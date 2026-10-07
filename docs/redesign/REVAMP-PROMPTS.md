@@ -30,8 +30,8 @@ Read docs/NEXT-SESSION.md section 0zg first, item 7 above all: round six
 moved the assistant's keys and engine calls into each teacher's app (plan
 v6, retired B3's server half), and the instructor approved a new plan,
 docs/TEACHERS-AND-SUBJECTS-PLAN.md, with T1 FIRST. Read that plan in full
-(sections 1-4: what exists, the proposed shape, the phases, what is decided
-and what is still open). Then root CLAUDE.md: hard rules 3, 8 and 10, "AUDIT
+(the rulings table, sections 1-4). docs/PROFILES-PLAN.md is approved too and
+comes AFTER T1: read its rulings only, do not start it. Then root CLAUDE.md: hard rules 3, 8 and 10, "AUDIT
 EVERY PAGE AGAINST ITS SPEC", "Templates are ARTIFACTS", "THE HARDEST RULE"
 and "NEVER PROCEED TO ANOTHER PAGE"; db/CLAUDE.md; .claude/rules/rls.md;
 services/api/CLAUDE.md (one generic error for unknown and already-claimed
@@ -63,8 +63,9 @@ SQL there after checking the ref.
 The work, T1 (plan section 3), in this order:
 
 1. Templates first, as artifacts: /teachers (an admin's team page: a count,
-   people with their classes, an import, assign, disable) and /claim (a
-   console sign-up by employee ID). Capture each reference to
+   people with their classes, an import, assign, disable), /teachers/:id
+   (one teacher: classes, token totals, disable) and /claim (a console
+   sign-up by employee ID). Capture each reference to
    design/templates/console/<route>/template.png with SOURCE.md, OPEN it and
    look, then write SPEC.md listing every control and the four tests of
    docs/DESIGN-MANDATE.md section 1.
@@ -77,20 +78,22 @@ The work, T1 (plan section 3), in this order:
    Existing sections become CPE 412 classes of their current teacher. On
    Supabase BEFORE the code (hard rule 10), checked there.
 3. The API: requireAdmin() beside requireStaff(); GET
-   /api/v1/console/teachers (admin), the teacher roster import (dry run by
+   /api/v1/console/teachers and /teachers/:id (admin), the teacher roster import (dry run by
    default; new / existing / conflicting, as the student import), assign a
    class, disable a teacher; POST /api/v1/auth/claim-teacher (one generic
    error for unknown and already-claimed IDs, rate limited, the role from
    the roster only). Denial tests: a teacher calling each admin route gets
    403; the positive control as the admin.
-4. The pages /claim and /teachers (admin only in the nav and the route),
+4. The pages /claim, /teachers and /teachers/:id (the last two admin only
+   in the nav and the route),
    each through the gate: spec at 1440 and 380, all six assertions green,
    screenshots OPENED and looked at, one route at a time. Probably the
    second T1 session; say so rather than rush it.
 
-Not T1 (do not start): T2, a teacher seeing only their own classes (RLS
-across students, gradebook, locks, submissions, chat); T3, a second
-subject's curriculum; the assistant's app (after T1).
+Not T1 (do not start): the profile pages and pictures (PROFILES-PLAN.md,
+next after T1); T2, a teacher seeing only their own classes (RLS across
+students, gradebook, locks, submissions, chat); T3, a second subject's
+curriculum; the assistant's app.
 
 Still owed by the instructor (do not build around them): question C of the
 teachers plan (one book per subject, or per class); the four engine keys

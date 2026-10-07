@@ -165,6 +165,12 @@ animation library — the vocabulary above needs none of them.
 
 ## 4. The avatar system — a character that means something
 
+> **Amended 7 Oct 2026 (night), instructor:** students, teachers and the admin
+> may UPLOAD a profile picture (`docs/PROFILES-PLAN.md`), seen by classmates
+> and teachers. The seeded avatar below remains what anyone without a
+> picture shows. Where this section says never to ask for an upload, the
+> ruling overrides it.
+
 The brainstorm template warns against a "childish arcade skin." A mascot with a face fails that.
 But a student should still have a *presence*.
 

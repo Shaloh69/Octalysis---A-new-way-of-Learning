@@ -1585,6 +1585,14 @@ every open box a person's.
      is also a teacher**; a teacher sees **only their own classes** (T2).
      Supersedes D4 for the admin-only powers. **T1 comes FIRST**, before the
      assistant's app. Still open: one book per subject, or per class.
+   - **Then (same night):** many sections may take one subject (each its own
+     class); the admin keeps the roster import AND gets a page per teacher,
+     `/teachers/:id`. **Profile pages** for students (`/app/profile`) and for
+     teachers and the admin (console `/profile`), with uploaded pictures seen
+     by classmates and teachers, shown at once, removable by a teacher or the
+     admin and audited: `docs/PROFILES-PLAN.md` (approved; reverses
+     DESIGN-MANDATE §4's "never upload"; the seeded avatar stays as the
+     fallback). Proposed order: T1, then profiles, then T2, then the app.
 
 ## 0zf. The assistant's B1 (figure reader) and B2 (schema) — 7 Oct 2026 (late)
 
