@@ -28,7 +28,11 @@ when the code is created, update the `paths:` above in the same commit.**
   copyrighted book.
 - **The API calls the engines** (round five). Steps run on Render, ticked by
   `pg_cron` + `pg_net` only while a job is running; never a Render cron, and
-  nothing that keeps the API awake while idle.
+  nothing that keeps the API awake while idle. Built in B3 (8 Oct 2026):
+  `services/api/src/assistant/` (`engines/core.ts` is the one `draft()`;
+  `chain.ts`; `tick.ts` behind `CRON_SECRET`; `db/addendum-assistant-tick.sql`).
+  An adapter's tests run on recorded replies; until a key exists, fixtures
+  follow the provider's documented shape and **say they are not recorded**.
 - **No "sign in with Claude" inside the app.** Anthropic does not allow
   third-party apps to offer claude.ai login without approval. A
   subscription is used only through the teacher's own Claude Code and our
@@ -38,7 +42,9 @@ when the code is created, update the `paths:` above in the same commit.**
   `assistant_engine_keys` carries the explicit deny-all `aek_deny_all`, as
   `assessment_secrets` does, so INV-02 and hard rule 3 stay strict. Write-only from the
   page: no route returns a key, the page sees its last four characters.
-  Never in `VITE_*`, git, a response body or a log. Denial tests red first:
+  Never in `VITE_*`, git, a response body or a log; an engine's error text is
+  scrubbed of the key (`scrub()`). The owner and engine are the cipher's
+  associated data, so a sealed key copied to another row does not open. Denial tests red first:
   no teacher reads a key row, their own included; teacher B cannot run on
   teacher A's key.
 

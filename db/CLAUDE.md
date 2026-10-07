@@ -70,4 +70,8 @@ guarantees.
   API's; keys are read by the API alone. An accepted `assistant_units` row is frozen for every
   role (`assistant_units_guard`): a change is a new version. Fixtures suspend that trigger by
   name. `as_local_ollama_paused` stays until the instructor orders the local-Ollama update.
+- Grant a client role EXECUTE on `assistant_tick()` or `assistant_tick_due()`, or make the
+  tick call the API while no job is running (B3, 8 Oct 2026; `addendum-assistant-tick.sql`).
+  Cron runs it as the owner; its URL and secret live in Vault (`octa_api_url`,
+  `octa_cron_secret`), never in a file, and `octa_cron_secret` must equal Render's `CRON_SECRET`.
 - Drop an item row. Retire it.

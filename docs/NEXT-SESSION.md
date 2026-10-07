@@ -1526,6 +1526,46 @@ left, or needing a decision:
 
 ---
 
+## 0zg. B1's upload done, B3 begun (engine chain, sealed keys, the tick) — 8 Oct 2026
+
+Pushed: `78697a6` B1's upload, `ec33a79` the tick addendum, `f1d87d3` B3,
+then this session's docs commit. Phase report **238/245, 97%**, unchanged
+(the assistant is outside the R boxes); live R3 87/88, R4 46/48, R5 20/24,
+every open box a person's.
+
+1. **B0 online did not run: still no engine key** (names checked in the root
+   `.env` and every other env file: `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`,
+   `GROQ_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, all
+   absent). `scripts/.b0-cloud.tmp.py` has still never run.
+2. **B1's upload: done, on the deployment**, after the instructor's yes
+   (asked once, in the session). `pnpm book:upload`; owner the admin account
+   (the only staff account there); **1 book, 381 rows, 381 PNGs (25.3 MB)**;
+   the full re-run wrote nothing; public, tokenless and anon reads all
+   refused; one crop pulled back byte-identical and looked at. The reader
+   is deterministic (two runs, identical crops). Plan §9 has the record.
+3. **B3, session 1 of 2: built** (plan §9 has the record). The one
+   `draft()`, four adapters, the chain, the key seal and store, the tick
+   route, and `db/addendum-assistant-tick.sql` (the TWELFTH file), which is
+   **on the deployment** with the cron job `octa-assistant-tick` and both
+   Vault secrets set. 45 new tests, watched red (10 denials against six
+   planted bugs); `pnpm verify` green, API 996. **The adapter fixtures follow
+   each provider's documented shape and are NOT recorded.** Render deployed
+   `f1d87d3`: `/readyz` up; the tick answers 401 with no secret and 401 with
+   the root `.env`'s `CRON_SECRET` (Render does not have it yet).
+4. **Owed by the instructor, new this session:** copy `CRON_SECRET` from the
+   root `.env` to Render's environment (Vault already holds the same value;
+   until then the deployed tick refuses every call, which is safe: no job
+   runs). `ASSISTANT_KEY_SECRET` on Render too ("I will set it later").
+5. **Parked, found in passing (not this session's work):** the root `.env`'s
+   `SUPABASE_DB_DIRECT` and `SUPABASE_DB_POOLED` do not name the deployment
+   (`ddvxkbcelpqydnjkffdr`); only `SUPABASE_DB_SESSION` does, and it is the
+   one `db:push` and the scratch helpers read. A script that reads either of
+   the other two reaches another project. Not touched; the instructor's
+   `.env`.
+6. **Prelim still NOT runnable** (deployment, checked this session): stage 01
+   13 live, 2 review, 2 retired; 02-04 none live (81 at review). Invariants
+   0 failures (3 warnings: INV-18, INV-27, INV-29).
+
 ## 0zf. The assistant's B1 (figure reader) and B2 (schema) — 7 Oct 2026 (late)
 
 Pushed: `8c92748` B1, `24051ab` B2, then this session's docs commit. Phase

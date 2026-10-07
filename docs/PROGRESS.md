@@ -19,6 +19,17 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**8 Oct 2026:** phase report **238/245 (97%)**, unchanged; live R3 87/88, R4
+46/48, R5 20/24, every open box a person's. The assistant: B1's upload is
+done (the book's 381 figure crops, rows and labels in the private bucket on
+the deployment, under the instructor's account; a re-run writes nothing), and
+B3's first session built the engine chain (one `draft()`, four adapters, the
+chain), the key seal, and the tick (`/internal/assistant/tick`, and
+`addendum-assistant-tick.sql`, the twelfth file, on the deployment first).
+B0 online still waits on the engine keys; Render still needs `CRON_SECRET`
+and `ASSISTANT_KEY_SECRET`. Prelim NOT runnable (deployment: stage 01 13
+live, 02-04 none). Detail: NEXT-SESSION.md 0zg.
+
 **7 Oct 2026 (late):** phase report **238/245 (97%)**, unchanged; live R3
 87/88, R4 46/48, R5 20/24, every open box a person's. The assistant's B1 and
 B2 are built: the figure reader reads all 380 figures of the book (381 crops,

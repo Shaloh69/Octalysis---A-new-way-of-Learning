@@ -46,7 +46,9 @@ becomes a "future update" choice on the page (round five, below; §4-now).
 | 8 | (round four) The Claude API; code rules; no slop; memory across sessions and engines; approved output never mangled | **Yes to all**: the Claude API leads the chain when a key is present (§3a); memory (§4a); approved units frozen (§4b); output rules (§4c); code rules (§4d) |
 | 9 | (round four) "A feature with double checking and with tests like we had here" | **Yes**: a second engine checks the first, planted-error canaries before every job, renders at 380 and 1440 checked for overlap, a verification report on every unit, golden regression on accepted work (§4e) |
 
-**No code exists yet.** It is approved, and it waits its turn.
+**Building, in §9's order** (8 Oct 2026): B1 (the figure reader, and the
+book's figures uploaded), B2 (the schema) and the first half of B3 (the
+engine chain, sealed keys, the tick) exist; B0 online waits on the keys.
 
 ---
 
@@ -816,8 +818,9 @@ file", "memory traffic"), so they are the scorer's misses, not the model's.
 `qwen3.5:9b` and `gemma4:12b` were downloaded and never run. The harness and
 the crops are scratch, not in the repo; B1 makes the crop real.
 
-**B0 online: still waiting on the keys** (checked 7 Oct 2026, late: none of
-the five names below is in the root `.env`). B1 went ahead, as ordered.
+**B0 online: still waiting on the keys** (checked 7 Oct 2026, late, and again
+8 Oct: none of the five names below is in the root `.env`, nor any other env
+file). B1 and B3 went ahead, as ordered.
 
 **B1, the figure reader, built (7 Oct 2026, late).** Code at
 `tools/assistant/figures/` (`reader.py`, `read_book.py`, `test_reader.py`;
@@ -898,6 +901,83 @@ database (19 red, exactly those); restored, 48 green. A missing table is
 refused as a denial (`wasDenied()` alone would count it). Not tested: the
 bucket (no storage schema on the local stack, as for chat attachments).
 
+**B1's upload, done (8 Oct 2026; the instructor approved it once, in the
+session).** `tools/assistant/upload/upload_figures.py` (`pnpm book:upload
+<out dir> --ref <project> --owner <staff uuid>`) runs the reader, then writes
+with the service role from the root `.env`: one `assistant_books` row (owner,
+course, the PDF's SHA-256 and page count, never the PDF), one
+`assistant_figures` row a crop, and each crop at
+`<owner_id>/<book_id>/fig-NN-MM.png` in the private bucket. It reads what is
+there and writes only the difference. Refuses a URL that does not name
+`--ref`, a non-staff owner, an out dir in the repo, unclean coverage.
+
+- **On the deployment:** owner Engr. MJ Butaya (the only staff account, the
+  admin), book `41ca1c63-…`, 864 pages: **1 book, 381 figure rows (381 keys,
+  4 charts), 381 PNG objects, 25.3 MB; every row's crop exists.** The full
+  re-run, reader included, planned "0 to insert, 0 to update, 0 to upload"
+  and wrote nothing. Denied: the bucket's public URL (400), no token (400),
+  the anon key (object 400, listing and table empty). One crop downloaded
+  back: byte-identical, and opened (15.4, the interference graph).
+- **The reader is deterministic:** two runs, 381 crops byte-identical, the
+  same `figures.json`. That is what makes "a re-run changes nothing" hold.
+- 9 tests on `plan()`, the unchanged state as the canary; watched red
+  against two planted bugs. `pnpm test:assistant` now 25.
+
+**B3, the engine chain, session 1 of 2 (8 Oct 2026).**
+`services/api/src/assistant/`:
+
+- `engines/core.ts`: the one `draft(step, context)`. Timeout per call
+  (120 s), 2 retries for overloaded / unavailable / timeout with backoff
+  (a retry-after longer than 30 s counts as out of quota), quota read from
+  any `*ratelimit*remaining*` header and `retry-after`, cost from the
+  catalogue's price, the step's JSON parsed and checked against its Zod
+  schema (a ```json fence is stripped; anything else that fails is
+  `malformed`). One error shape (`EngineErrorBody` in
+  `@octa/contracts/assistant`); the key is scrubbed from every message.
+- Adapters: **Claude** through Anthropic's SDK (0.131; its retries off so the
+  core's apply; `claude-opus-5-5`, effort high, server-side fallbacks
+  `"default"`, a `refusal` or `max_tokens` ending fails the call); **Groq**
+  (OpenAI-compatible, JSON mode, vision through image parts); **Ollama Cloud**
+  (`https://ollama.com/api/chat`, never this laptop); **Cloudflare** (the key
+  stored as `accountId:apiToken`; text-only here). Each reply checked by a
+  Zod contract.
+- `engines/catalogue.ts`: default model, vision, price. **Provisional for the
+  three free engines** until B0 measures them.
+- `chain.ts`: the first engine in the job's order with a key that can see the
+  step; failures move on, each kept for the step record; all out of quota →
+  `waiting`, saying so, with the shortest retry-after.
+- `seal.ts` + `keys.ts`: AES-256-GCM, HKDF from `ASSISTANT_KEY_SECRET` (added
+  to the server env, `SERVER_ONLY_SECRETS` and the boot leak check), the
+  owner and engine as associated data. `putKey`, `listKeys` (last four and
+  date only), `openKeys` (a key that will not open is left out and named).
+- `tick.ts`: `POST /internal/assistant/tick`, `x-cron-secret` against
+  `CRON_SECRET` (every call refused while it is unset); claims one waiting
+  step of a RUNNING job (`for update skip locked`), answers 202, runs it
+  after replying; a step past its 15-minute lease is resumed; the job closes
+  when its last step settles. **Step handlers are B5's**; until then a
+  claimed step fails with `no_handler`.
+- `db/addendum-assistant-tick.sql` (twelfth): `assistant_tick()` calls the
+  API through `pg_net` only while a job is running, reading `octa_api_url`
+  and `octa_cron_secret` from Vault; revoked from every client role;
+  scheduled each minute. **On the deployment first** (hard rule 10): job
+  scheduled, functions not executable by `authenticated` or `anon`, nothing
+  due, invariants 0 failures. Both Vault secrets set; `CRON_SECRET` is in
+  the root `.env` and **must be copied to Render** by the instructor.
+- **Tests: 28 engine tests on fixtures that follow each provider's
+  DOCUMENTED reply shape and are NOT RECORDED** (no key exists), and 17 tick
+  and key tests on the local database. Watched red: 6 denials against three
+  planted bugs (no associated data, no scrub, any engine name accepted); 4
+  against three more (an unset secret accepted, a non-running job claimed,
+  execute granted to `authenticated`). `pnpm verify` green, API 996.
+
+**B3's second session owes:** the chain wired into a step (open the owner's
+keys, run the chain, record engine, model, key, tokens, ms, cost on the
+step); **a `not_before` on a waiting step** (a schema change, its own
+addendum first) so an out-of-quota step is not re-claimed every minute;
+recorded replies once a key exists; and the tick proved end to end on the
+deployment once Render has `CRON_SECRET` (a throwaway running job whose one
+step should come back `no_handler`, then deleted).
+
 **B0's keys, for the measurement only:** in the root `.env` (gitignored,
 server-side names, never `VITE_*`): `ANTHROPIC_API_KEY`, `OLLAMA_API_KEY`,
 `GROQ_API_KEY`, `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`. The
@@ -911,4 +991,7 @@ once since: **round five** (v5) paused local Ollama and moved the engine
 calls into the API. Left for later, not for now: the separate plan for
 OCTA serving several courses and teachers, and the future update that
 switches local Ollama on. **Waiting on the instructor:** the four engine
-keys for B0.
+keys for B0; `ASSISTANT_KEY_SECRET` in Render's environment (any random
+string of 32+ characters, e.g. `openssl rand -base64 48`; "I will set it
+later", 8 Oct); and `CRON_SECRET` in Render's environment, copied from the
+root `.env` (Vault already holds the same value).

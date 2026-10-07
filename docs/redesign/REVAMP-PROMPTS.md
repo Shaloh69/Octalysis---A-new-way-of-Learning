@@ -23,35 +23,36 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: the assistant, B0 online if keys, else B1's upload and B3
+## 1. Start here — the next session: the assistant, B0 online if keys, then B3's second half
 
 ```
-Read docs/NEXT-SESSION.md section 0zf first: B1 (the figure reader, all
-380 figures, coverage clean) and B2 (the assistant's schema, ON THE
-DEPLOYMENT, 48 denial tests) are built; B0 online still waits on keys;
-two things parked. Then docs/AI-ASSISTANT-PLAN.md v5 (the round-five table
-at the top, section 4-now, section 9 with the B1 and B2 records) and
+Read docs/NEXT-SESSION.md section 0zg first: B1's upload is done (381
+figures on the deployment), B3's first half is built (the one draft(),
+four adapters, the chain, the key seal, the tick and its addendum, the
+TWELFTH SQL file, on the deployment), B0 online still waits on keys, one
+thing parked. Then docs/AI-ASSISTANT-PLAN.md v5 (section 4-now, and section
+9: the B1 upload and B3 records, and "B3's second session owes") and
 .claude/rules/assistant.md, which binds every line of assistant code. Then
-root CLAUDE.md hard rules 2, 8 and 10, and db/CLAUDE.md's last "Never"
-entry. Do not re-derive what those carry.
+root CLAUDE.md hard rules 2, 8 and 10, and db/CLAUDE.md's last two "Never"
+entries. Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. On
-7 Oct (late) it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open
-box a person's. Then say plainly whether Prelim-worth of data is okay to run
-on students, checking the five conditions in CLAUDE.md. On 7 Oct it was NOT:
+8 Oct it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open box a
+person's. Then say plainly whether Prelim-worth of data is okay to run on
+students, checking the five conditions in CLAUDE.md. On 8 Oct it was NOT:
 on the deployment stage 01 has 13 live, 2 at review, 2 retired, and 02-04
-have none live; deployment invariants 0 failures.
+have none live; deployment invariants 0 failures (3 warnings).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot, start Docker Desktop first. Kill orphaned API trees and previews.
-Run pnpm db:reset, THEN node scripts/db-demo.mjs (ELEVEN SQL files now:
-addendum-assistant.sql is the last). Start ONE pnpm dev:api and prove it
-with a real GET (readyz); curl again after every db:reset (it kills the
-API). Build and preview apps/web on 5185 and apps/console on 5186, and
-export OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test run empties the
-seeded database, so reset and reseed before any Playwright run. pnpm
-test:assistant runs the reader's tests (about 45 s, the book PDF at the
-repo root).
+reboot, start Docker Desktop first. Kill orphaned API trees and previews
+(8 Oct found three dev-api trees and both previews still running). Run pnpm
+db:reset, THEN node scripts/db-demo.mjs (TWELVE SQL files now:
+addendum-assistant-tick.sql is the last). Start ONE pnpm dev:api and prove
+it with a real GET (readyz); curl again after every db:reset. Build and
+preview apps/web on 5185 and apps/console on 5186, and export OCTA_WEB_URL
+and OCTA_CONSOLE_URL. Every API test run empties the seeded database, so
+reset and reseed before any Playwright run. pnpm test:assistant runs the
+Python tests (25, about 45 s, the book PDF at the repo root).
 
 Do NOT start Ollama. It is installed and paused on purpose (round five).
 No assistant code may run a model on a laptop; the database refuses a step
@@ -60,51 +61,54 @@ on ollama_local.
 The deployment: API https://octa-api-noq2.onrender.com, student site
 https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
 Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
-print it). Untracked scratch helpers in scripts/: .deploy-q.tmp.mjs (runs
-SQL on the deployment after checking the ref), .b0-crop.tmp.py,
-.b0-cloud.tmp.py, .b0-local.tmp.py, and the older ones 0zc lists.
+print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project, parked).
+Untracked scratch helpers in scripts/: .deploy-q.tmp.mjs (runs SQL on the
+deployment after checking the ref), .vault-tick.tmp.mjs (set the tick's two
+Vault secrets), .b0-crop.tmp.py, .b0-cloud.tmp.py, .b0-local.tmp.py, and
+the older ones 0zc lists.
+
+First, check what the instructor has done (names only, never a value):
+the four engine keys in the root .env (ANTHROPIC_API_KEY, OLLAMA_API_KEY,
+GROQ_API_KEY, CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN), and on Render
+CRON_SECRET (equal to the root .env's) and ASSISTANT_KEY_SECRET. Render's
+values cannot be read from here: POST /internal/assistant/tick with the
+root .env's CRON_SECRET as x-cron-secret answers 202 once Render has it,
+401 until then.
 
 The work, in order:
 
-1. B0 ONLINE, if the keys are in the root .env (check the NAMES only, never
-   print a value): ANTHROPIC_API_KEY, OLLAMA_API_KEY, GROQ_API_KEY,
-   CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN. pip install anthropic. Run
-   python scripts/.b0-crop.tmp.py <scratch dir> (its figures.json is the
-   format .b0-cloud.tmp.py reads; B1's reader writes a richer one), open the
-   contact sheet, then scripts/.b0-cloud.tmp.py over each engine with a
-   CURRENT vision model from its catalogue (Claude: claude-opus-5-5). It has
-   never run, so expect to fix it. Record recall, invented labels, valid
-   JSON, seconds, tokens and the quota each reply reports in plan section 9,
-   and say which engine suits which step. Run the keys present; name the
-   ones missing.
-2. B1's last piece, the upload, ONLY after asking the instructor once
-   ("upload the book's figure crops to the private assistant-figures bucket
-   on Supabase, under your account?"): a script under tools/assistant/
-   that runs the reader (pnpm book:figures) and writes one assistant_books
-   row (the instructor's staff account as owner, course 'CPE 412', the
-   PDF's SHA-256, never the PDF), 381 assistant_figures rows, and each PNG
-   to <owner_id>/<book_id>/ in the bucket, with the service role from the
-   root .env (names only). Idempotent: a re-run changes nothing. Count the
-   rows and objects on the deployment afterwards.
-3. B3, the engine chain in the API (plan section 9; 2 sessions; start it):
-   one adapter per online engine behind draft(step, context) with the same
-   retries, timeouts, quota reading and error shape; Zod for each engine's
-   JSON in packages/contracts; adapters tested against recorded responses
-   (record them when a key exists; until then, say the fixtures follow the
-   provider's documented shape and are NOT recorded). Key sealing:
-   AES-256-GCM in services/api with ASSISTANT_KEY_SECRET, which must be set
-   in Render's environment by the instructor (ask; never VITE_, never a
-   response body or a log). The /tick route and its pg_cron + pg_net job
-   come with their own idempotent addendum, pushed to Supabase BEFORE the
-   code (hard rule 10), and the job must call the API only while a job is
-   running.
+1. B0 ONLINE, if any key is there: pip install anthropic; python
+   scripts/.b0-crop.tmp.py <scratch dir>, open the contact sheet, then
+   scripts/.b0-cloud.tmp.py over each engine with a CURRENT vision model
+   (Claude: claude-opus-5-5). It has never run; expect to fix it. Record
+   recall, invented labels, valid JSON, seconds, tokens and the quota each
+   reply reports in plan section 9, say which engine suits which step, and
+   update services/api/src/assistant/engines/catalogue.ts (provisional for
+   the free engines until then). RECORD one real reply per engine (key
+   scrubbed) and move the adapter tests in
+   services/api/test/assistant-engines.spec.ts onto them.
+2. The tick end to end on the deployment, once Render has CRON_SECRET: a
+   throwaway running job under the instructor's book with one step; within
+   two minutes cron -> pg_net -> Render should claim it and settle it
+   no_handler, and close the job failed. Check net._http_response for the
+   202. Then delete the job.
+3. B3's second half (plan section 9, "B3's second session owes"): a
+   not_before column on a waiting step, in its own idempotent addendum
+   (the thirteenth), pushed to Supabase BEFORE the code, so an
+   out-of-quota step is not re-claimed every minute (claimNext must skip
+   it); and the chain wired into a step: open the owner's keys (openKeys),
+   run the chain (runChain), and settle the step with what ran (engine,
+   model, key_id, tokens, ms, cost) or put it back waiting with not_before
+   from the shortest retry-after. Tests red first; one denial at least
+   (a step never runs on another teacher's key: as_own_key in the DB, and
+   openKeys only ever reads the step's owner).
 
 Still owed by the instructor (do not build around them): the four engine
-keys; ASSISTANT_KEY_SECRET on Render; approving the 83 act-1 items at review
-(the Prelim needs 96 live), the 131 questions for 09-12, the chapter drafts
-08-13 and 17 figures on /content, and the planet summaries (R3's last box);
-the screen-reader pass; accepting the moon work's lock-layer changes
-(REDESIGN-SIGNOFF.md section 5).
+keys; CRON_SECRET and ASSISTANT_KEY_SECRET on Render; approving the 83
+act-1 items at review (the Prelim needs 96 live), the 131 questions for
+09-12, the chapter drafts 08-13 and 17 figures on /content, and the planet
+summaries (R3's last box); the screen-reader pass; accepting the moon
+work's lock-layer changes (REDESIGN-SIGNOFF.md section 5).
 
 Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put
 a key in it). Any visual change goes through its page gate.
