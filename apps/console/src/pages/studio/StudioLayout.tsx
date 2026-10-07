@@ -12,26 +12,25 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Outline } from "./Outline";
 import { AiPane } from "./AiPane";
 import { SubjectDialog } from "./dialogs";
+import { TabList } from "./TabList";
 import type { StudioCtx } from "./context";
 
 /**
- * Course Studio (CS1; `design/templates/console/studio/SPEC.md`,
- * docs/COURSE-STUDIO-PLAN.md). Three panes after shadcn's sidebar-15: the
- * outline on the left, the editor in the middle (whichever view the address
- * names), the AI Assistant on the right. It takes in `/content` and the planned
- * `/assistant`.
+ * Course Studio's frame (`design/templates/console/studio/SPEC.md`, as re-ruled
+ * 8 Oct 2026: `docs/STUDIO-EDITOR-PLAN.md`). The editor takes the page; ONE
+ * sidebar on the RIGHT holds two tabs, Outline and AI Assistant. Nothing on the
+ * left.
  *
- * Each pane chooses on the page's OWN width (a ResizeObserver, as the other
- * pages do): at 60rem and up the outline is docked and the AI opens docked on
- * demand; below it both are sheets opened from the bar, and the editor is the
- * page. The bar's two buttons are the same two controls either way. The AI
- * pane starts closed at 1440 because it is locked until its app exists, and
- * the editor needs the room (a chapter's blocks beside its preview want about
- * 52rem): one press opens it.
+ * It chooses on the page's OWN width (a ResizeObserver): at 60rem and up the
+ * sidebar is docked beside the editor and opens on demand; below it is a sheet
+ * opened from the bar, and the editor is the page. The bar's two buttons open
+ * the sidebar on that tab, and press again to close it.
  */
 
-/** At this much of its own width and up, the outline is a pane, not a sheet. */
+/** At this much of its own width and up, the sidebar is a pane, not a sheet. */
 const DOCK_PX = 960; // 60rem
+
+type Tab = "outline" | "ai";
 
 export function StudioLayout() {
   const identity = useOutletContext<Identity>();
@@ -52,29 +51,27 @@ export function StudioLayout() {
     return () => ro.disconnect();
   }, []);
 
-  const [outlineShown, setOutlineShown] = useState(true); // docked only
-  const [aiShown, setAiShown] = useState(false); // docked only
-  const [sheet, setSheet] = useState<"outline" | "ai" | null>(null);
-  // Widening past 60rem while a sheet is open: the pane takes over, the sheet goes.
+  const [open, setOpen] = useState(true); // docked only
+  const [tab, setTab] = useState<Tab>("outline");
+  const [sheet, setSheet] = useState(false);
+  // Widening past 60rem while the sheet is open: the pane takes over, the sheet goes.
   useEffect(() => {
-    if (docked) setSheet(null);
+    if (docked) setSheet(false);
   }, [docked]);
 
   const [addOpen, setAddOpen] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
 
-  const reloadSubjects = subjects.reload;
-  const reloadContent = content.reload;
   const ctx: StudioCtx = {
     subjects: subjects.data ?? undefined,
     subjectsError: subjects.error,
     content: content.data ?? undefined,
     contentError: content.error,
-    reloadSubjects,
-    reloadContent,
+    reloadSubjects: subjects.reload,
+    reloadContent: content.reload,
     reloadAll: () => {
-      reloadSubjects();
-      reloadContent();
+      subjects.reload();
+      content.reload();
     },
     addSubject: () => setAddOpen(true),
   };
@@ -88,6 +85,20 @@ export function StudioLayout() {
   );
   const reviewing = content.data ? reviewCount(content.data.summary) : undefined;
 
+  const toggle = (t: Tab) => {
+    if (docked) {
+      if (open && tab === t) setOpen(false);
+      else {
+        setTab(t);
+        setOpen(true);
+      }
+    } else {
+      setTab(t);
+      setSheet(true);
+    }
+  };
+  const pressed = (t: Tab) => (docked ? open && tab === t : sheet && tab === t);
+
   const outline = (onNavigate?: () => void) => (
     <Outline
       subjects={subjects.data?.subjects}
@@ -98,30 +109,42 @@ export function StudioLayout() {
     />
   );
 
-  const outlinePressed = docked ? outlineShown : sheet === "outline";
-  const aiPressed = docked ? aiShown : sheet === "ai";
+  const side = (onNavigate?: () => void) => (
+    <div className="st-side" data-sidebar>
+      <TabList<Tab>
+        tabs={[{ id: "outline", label: "Outline" }, { id: "ai", label: "AI Assistant", note: "locked" }]}
+        tab={tab}
+        onTab={setTab}
+        label="Sidebar"
+        prefix="st-side"
+      />
+      <div role="tabpanel" id={`st-side-panel-${tab}`} aria-labelledby={`st-side-tab-${tab}`} className="st-side-panel">
+        {tab === "outline" ? outline(onNavigate) : <AiPane />}
+      </div>
+    </div>
+  );
 
   return (
     <div ref={box} className="st" data-studio>
       <div ref={bar} className="st-bar" role="toolbar" aria-label="Studio panes">
         <Button
           size="sm"
-          variant={outlinePressed ? "default" : "outline"}
-          aria-pressed={docked ? outlinePressed : undefined}
+          variant={pressed("outline") ? "default" : "outline"}
+          aria-pressed={docked ? pressed("outline") : undefined}
           aria-haspopup={docked ? undefined : "dialog"}
           data-pane-toggle="outline"
-          onClick={() => (docked ? setOutlineShown((v) => !v) : setSheet("outline"))}
+          onClick={() => toggle("outline")}
         >
           <ListTree className="mr-1 h-4 w-4" aria-hidden="true" />
           Outline
         </Button>
         <Button
           size="sm"
-          variant={aiPressed ? "default" : "outline"}
-          aria-pressed={docked ? aiPressed : undefined}
+          variant={pressed("ai") ? "default" : "outline"}
+          aria-pressed={docked ? pressed("ai") : undefined}
           aria-haspopup={docked ? undefined : "dialog"}
           data-pane-toggle="ai"
-          onClick={() => (docked ? setAiShown((v) => !v) : setSheet("ai"))}
+          onClick={() => toggle("ai")}
         >
           <Bot className="mr-1 h-4 w-4" aria-hidden="true" />
           AI Assistant
@@ -130,31 +153,27 @@ export function StudioLayout() {
         </Button>
       </div>
 
-      <div className={cn("st-panes", docked && outlineShown && "has-outline", docked && aiShown && "has-ai")}>
-        {docked && outlineShown ? <aside className="st-pane st-pane-outline">{outline()}</aside> : null}
+      <div className={cn("st-panes", docked && open && "has-side")}>
         <div className="st-editor">
           <ApproverProvider value={me}>
             <Outlet context={ctx} />
           </ApproverProvider>
         </div>
-        {docked && aiShown ? <aside className="st-pane st-pane-ai"><AiPane /></aside> : null}
+        {docked && open ? <aside className="st-pane st-pane-side" aria-label="Sidebar">{side()}</aside> : null}
       </div>
 
-      {/* Below 60rem: the same two panes as sheets, modal: focus moves in, Escape closes, focus returns. */}
-      <Dialog open={sheet === "outline"} onOpenChange={(o) => !o && setSheet(null)}>
-        <DialogContent className="ease-dialog st-sheet st-sheet-left left-0 top-0 h-dvh max-h-none w-[min(22rem,calc(100vw-1.5rem))] max-w-none translate-x-0 translate-y-0 rounded-none p-4 pt-12"
-                       onCloseAutoFocus={(e) => { e.preventDefault(); bar.current?.querySelector<HTMLElement>('[data-pane-toggle="outline"]')?.focus(); }}>
-          <DialogTitle className="sr-only">Course outline</DialogTitle>
-          <DialogDescription className="sr-only">Subjects, their books and chapters. Choosing one closes this panel.</DialogDescription>
-          {outline(() => setSheet(null))}
-        </DialogContent>
-      </Dialog>
-      <Dialog open={sheet === "ai"} onOpenChange={(o) => !o && setSheet(null)}>
-        <DialogContent className="ease-dialog st-sheet st-sheet-right left-auto right-0 top-0 h-dvh max-h-none w-[min(22rem,calc(100vw-1.5rem))] max-w-none translate-x-0 translate-y-0 rounded-none p-4 pt-12"
-                       onCloseAutoFocus={(e) => { e.preventDefault(); bar.current?.querySelector<HTMLElement>('[data-pane-toggle="ai"]')?.focus(); }}>
-          <DialogTitle className="sr-only">AI Assistant</DialogTitle>
-          <DialogDescription className="sr-only">Locked until the AI Assistant app is released.</DialogDescription>
-          <AiPane />
+      {/* Below 60rem: the same sidebar as a sheet from the right, modal: focus moves in, Escape closes, focus returns. */}
+      <Dialog open={sheet} onOpenChange={(o) => !o && setSheet(false)}>
+        <DialogContent
+          className="ease-dialog st-sheet st-sheet-right left-auto right-0 top-0 h-dvh max-h-none w-[min(22rem,calc(100vw-1.5rem))] max-w-none translate-x-0 translate-y-0 rounded-none p-4 pt-12"
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            bar.current?.querySelector<HTMLElement>(`[data-pane-toggle="${tab}"]`)?.focus();
+          }}
+        >
+          <DialogTitle className="sr-only">Sidebar</DialogTitle>
+          <DialogDescription className="sr-only">The course outline and the AI Assistant. Choosing a chapter closes this panel.</DialogDescription>
+          {side(() => setSheet(false))}
         </DialogContent>
       </Dialog>
 
@@ -164,7 +183,7 @@ export function StudioLayout() {
         onClose={() => setAddOpen(false)}
         onSaved={(code) => {
           ctx.reloadSubjects();
-          setSheet(null); // at 380 the outline sheet was open behind the dialog: the new subject is the page now
+          setSheet(false); // at 380 the sheet was open behind the dialog: the new subject is the page now
           nav(subjectPath(code));
         }}
       />

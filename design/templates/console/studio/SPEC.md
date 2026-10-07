@@ -5,6 +5,49 @@
 > `design/specs/console-studio.spec.ts`, 164 passing with the teaching spec at
 > 1440 and 380; captures `current*.png` here, opened and looked at.
 
+> **REVISED 8 Oct 2026 (the instructor's rulings that day; `docs/STUDIO-EDITOR-PLAN.md`).**
+> The Studio became **an editor**, and where the text below disagrees with this
+> box, **this box wins**:
+>
+> 1. **One sidebar, on the RIGHT, with two tabs: Outline and AI Assistant** (the
+>    AI tab says it is locked). The old left outline and the separate AI pane are
+>    gone. At 60rem and up it is a pane beside the page (the bar's **Outline** and
+>    **AI Assistant** buttons show and hide it); below, a sheet.
+> 2. **A chapter is a page you type on** (TipTap, lazy-loaded): a topic is a block
+>    of it, drawn as the student reader draws it. Click and type in place; bold,
+>    italic, inline code, headings 2-4, bulleted and numbered lists from the
+>    toolbar; **add, delete and reorder topics** (the toolbar, the controls on the
+>    topic the cursor is in, and Alt+Up / Alt+Down). A table is edited as text. A
+>    **quote from the book and a figure are locked**: they can be moved or deleted
+>    and never typed into or over (the book's words are checked word for word).
+>    There are no tabs in a chapter any more: the page, then the summary card,
+>    the moons (read-only until E2) and the figures under it.
+> 3. **Draft, then Publish.** Typing saves a working copy on its own (900 ms
+>    after the last key; `chapter_drafts`, origin `console`), and students read
+>    **nothing** of it until **Publish…** (a reason, a summary of what changes, one
+>    transaction, block ids kept so history follows). **Discard draft** throws it
+>    away. The editing teacher may publish their own edit (typed text has no
+>    author for the author rule); the **teacher-of-the-subject** rule still binds
+>    and Publish is disabled, with the reason beside it, for anyone else. The old
+>    live "save a block" is retired (`PUT /console/content/blocks/:id` answers
+>    404): that closes the question the instructor was asked about a second
+>    teacher on block edits.
+> 4. **The student view is a toggle on the page** (Preview), not a pane beside it.
+> 5. **Moons** (objectives): editing, adding and deleting are ruled IN and are
+>    **E2, not built**; the plan says why they need their own lock-layer plan.
+>    The AI proposing topics, questions, figures, summaries and moons is **E3
+>    (with CS3), not built**; today nothing a teacher can press calls an AI.
+> 6. A chapter the Studio owns is no longer written from `content/stages/NN.md`
+>    (`stages.content_owner = 'console'`); `pnpm content:export` writes it back
+>    into `content/export/` for git, because Supabase Free keeps no backups.
+>
+> Gates: `design/specs/console-studio.spec.ts` (the six assertions on every view,
+> editor included) and `design/specs/console-studio-editor.spec.ts` (what a
+> teacher does on the page: typing and autosave, formatting, topics, locked
+> quotes, student view, Publish and Discard, every failure keeping the typing).
+> Captures `current-chapter`, `current-editing`, `current-publish`,
+> `current-student`, `current-draft` and `editor-*` here, opened at 1440 and 380.
+
 One page for a course's material: **is it there, is it right, and who has
 read it.** It takes in `/content` and `/content/:stageId` (both redirect here,
 so old links work) and, in CS3, the planned `/assistant`. Plan:

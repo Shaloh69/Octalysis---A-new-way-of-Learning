@@ -7,6 +7,7 @@ import type {
   ClassAssignBody, ClassUpdateBody, TeacherClaimBody, TeacherDetail, TeacherImportBody,
   TeacherStatusBody, TeachersResponse, ProgressResponse,
   BookCreateBody, BookDefaultBody, BookUpdateBody, StudioSubjectsResponse, SubjectCreateBody, SubjectRenameBody,
+  WorkingCopy, WorkingCopyPublishBody, WorkingCopyPutBody,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -691,6 +692,23 @@ export const api = {
     request<{ ok: true }>(`/api/v1/console/books/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(b) }),
   defaultBook: (id: string, b: BookDefaultBody) =>
     request<{ ok: true }>(`/api/v1/console/books/${encodeURIComponent(id)}/default`, { method: "POST", body: JSON.stringify(b) }),
+  /** The Studio's editor (E1): a chapter's working copy, saved as a draft students never see, and Publish. */
+  workingCopy: (stageId: string) => request<WorkingCopy>(`/api/v1/console/content/${encodeURIComponent(stageId)}/working`),
+  saveWorkingCopy: (stageId: string, body: WorkingCopyPutBody) =>
+    request<{ ok: true; version: number; hash: string; savedAt: string }>(
+      `/api/v1/console/content/${encodeURIComponent(stageId)}/working`,
+      { method: "PUT", body: JSON.stringify(body) },
+    ),
+  discardWorkingCopy: (stageId: string) =>
+    request<{ ok: true; hash: string; blocks: number }>(
+      `/api/v1/console/content/${encodeURIComponent(stageId)}/working`,
+      { method: "DELETE" },
+    ),
+  publishWorkingCopy: (stageId: string, body: WorkingCopyPublishBody) =>
+    request<{ ok: true; added: number; removed: number; edited: number; moved: number; blocks: number }>(
+      `/api/v1/console/content/${encodeURIComponent(stageId)}/publish`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
   /** The /changelog page's course readiness: the Prelim's five conditions, live. */
   progress: () => request<ProgressResponse>("/api/v1/console/progress"),
 
@@ -701,13 +719,6 @@ export const api = {
 
   contentHistory: (blockId: string) =>
     request<{ versions: BlockVersion[] }>(`/api/v1/console/content/blocks/${encodeURIComponent(blockId)}/history`),
-
-  /** Changes what students read, now. The version is the one the editor opened. */
-  saveBlock: (blockId: string, input: { body: string; version: number; reason: string }) =>
-    request<{ block: ContentBlock }>(`/api/v1/console/content/blocks/${encodeURIComponent(blockId)}`, {
-      method: "PUT",
-      body: JSON.stringify(input),
-    }),
 
   approveSummary: (stageId: string, hash: string) =>
     request<{ ok: true; alreadyApproved: boolean }>(

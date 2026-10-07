@@ -31,6 +31,10 @@ export interface Block {
 export const TEACHER_ID = "dddddddd-0000-4000-8000-000000000001";
 
 export interface Writes {
+  /** The Studio's editor (E1): a chapter's working copy saved, discarded, published. Never sent. */
+  save: Array<{ stageId: string; body: { version: number; blocks: Array<{ id?: string; kind: string; body: string; meta: Record<string, string> }> } }>;
+  discard: string[];
+  publish: Array<{ stageId: string; body: { hash: string; reason: string } }>;
   /** Subjects and books (CS1): never sent, replayed into the next read. */
   studio: Array<{ method: string; path: string; body: Record<string, unknown> }>;
   edit: Array<{ id: string; body: { body: string; version: number; reason: string } }>;
@@ -45,7 +49,9 @@ export interface Writes {
 }
 
 export interface FixtureOpts {
-  fail?: "edit" | "stale" | "approve" | "send-back" | "approve-draft" | "approve-figure" | "subject";
+  fail?: "edit" | "stale" | "approve" | "send-back" | "approve-draft" | "approve-figure" | "subject" | "save" | "save-stale" | "publish";
+  /** The working copy was begun against text that has since changed (Publish will refuse). */
+  stale?: boolean;
   /**
    * Who the reader is, for the approval rule: the API says it in `/console/subjects`
    * (`me`). Default: a teacher of CPE 412, so an Approve is offered, as it always was.
@@ -84,7 +90,11 @@ function applyBlock(b: Block, w: Writes): Block {
 }
 
 export async function useFixture(page: Page, opts: FixtureOpts = {}) {
-  const writes: Writes = { studio: [], edit: [], approve: [], sendBack: [], approveDraft: [], sendBackDraft: [], approveFigure: [], sendBackFigure: [] };
+  const writes: Writes = { save: [], discard: [], publish: [], studio: [], edit: [], approve: [], sendBack: [], approveDraft: [], sendBackDraft: [], approveFigure: [], sendBackFigure: [] };
+
+  // The working copy a spec "saved", replayed into the next read like a database would.
+  const working: { version: number; blocks: Writes["save"][number]["body"]["blocks"] } | { version: -1 } = { version: -1 };
+  const hasWorking = (w: typeof working): w is { version: number; blocks: Writes["save"][number]["body"]["blocks"] } => w.version >= 0;
 
   // Subjects and books (CS1). Reads are the real API with `me` set by the spec; writes are never sent.
   await page.route(/\/api\/v1\/console\/(subjects|books)(\/|\?|$)/, async (route: Route) => {
@@ -163,7 +173,32 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
       const fail = (status: number, message: string) =>
         route.fulfill({ status, json: { error: { code: status === 409 ? "conflict" : "internal", message } } });
 
-      let m = /^\/blocks\/([^/]+)$/.exec(path);
+      let m = /^\/(\d\d)\/working$/.exec(path);
+      if (m && method === "PUT") {
+        if (opts.fail === "save") return fail(500, "The database did not answer.");
+        const body = req.postDataJSON() as Writes["save"][number]["body"];
+        if (opts.fail === "save-stale") {
+          return fail(409, "Someone saved this chapter's draft since you opened it (it is now version 2). Reload to read their text before saving yours.");
+        }
+        writes.save.push({ stageId: m[1]!, body });
+        Object.assign(working, { version: body.version + 1, blocks: body.blocks });
+        return route.fulfill({ json: { ok: true, version: body.version + 1, hash: `fixture-draft-${writes.save.length}`, savedAt: new Date().toISOString() } });
+      }
+      if (m && method === "DELETE") {
+        writes.discard.push(m[1]!);
+        Object.assign(working, { version: -1 });
+        return route.fulfill({ json: { ok: true, hash: "fixture", blocks: 0 } });
+      }
+      m = /^\/(\d\d)\/publish$/.exec(path);
+      if (m && method === "POST") {
+        if (opts.fail === "publish") {
+          return fail(409, "The published chapter changed since this draft began (someone published, or sync-content updated it). Discard this draft and start again from the current text.");
+        }
+        writes.publish.push({ stageId: m[1]!, body: req.postDataJSON() });
+        Object.assign(working, { version: -1 });
+        return route.fulfill({ json: { ok: true, added: 1, removed: 0, edited: 1, moved: 0, blocks: 0 } });
+      }
+      m = /^\/blocks\/([^/]+)$/.exec(path);
       if (m && method === "PUT") {
         if (opts.fail === "edit") return fail(500, "The database did not answer.");
         const body = req.postDataJSON() as Writes["edit"][number]["body"];
@@ -249,6 +284,16 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}) {
       json.summaries = (json.summaries as Summary[]).map((s) => ({
         ...applySummary(s, writes), ...(opts.authoredBy === "me" ? { authoredBy: TEACHER_ID } : {}),
       }));
+    } else if (/^\/\d\d\/working$/.test(path)) {
+      if (hasWorking(working)) {
+        Object.assign(json, {
+          source: "draft", origin: "console", version: working.version, hash: `fixture-draft-${writes.save.length}`,
+          status: "draft", editedBy: "Fixture Teacher", baseHash: json.liveHash, stale: false,
+          blocks: working.blocks.map((b) => ({ id: b.id ?? null, kind: b.kind, body: b.body, meta: b.meta ?? {}, locked: b.kind === "quote" || b.kind === "figure" })),
+        });
+      } else if (opts.stale) {
+        Object.assign(json, { source: "draft", origin: "console", version: 3, hash: "fixture-stale", status: "draft", editedBy: "Fixture Teacher", baseHash: "older", stale: true });
+      }
     } else if (/^\/\d\d$/.test(path)) {
       json.blocks = (json.blocks as Block[]).map((b) => applyBlock(b, writes));
       if (json.summary) json.summary = applySummary(json.summary as Summary, writes);

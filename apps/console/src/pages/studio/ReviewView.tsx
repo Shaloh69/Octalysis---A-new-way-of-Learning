@@ -96,7 +96,7 @@ export function ReviewView() {
             {drafts.map((s) => (
               <li key={s.id} data-waiting-draft={s.id}>
                 <span className="num">{s.id}</span>
-                <Link className="ct-link" to={`${chapterPath(s.id)}?tab=draft`}>{s.title}</Link>
+                <Link className="ct-link" to={chapterPath(s.id)}>{s.title}</Link>
                 <span className="ct-faint">drafted from the textbook, waiting for your review</span>
               </li>
             ))}
@@ -115,7 +115,7 @@ export function ReviewView() {
             {withFigures.map((s) => (
               <li key={s.id} data-waiting-figures={s.id}>
                 <span className="num">{s.id}</span>
-                <Link className="ct-link" to={`${chapterPath(s.id)}?tab=figures`}>{s.title}</Link>
+                <Link className="ct-link" to={chapterPath(s.id)}>{s.title}</Link>
                 <span className="ct-faint">
                   <span className="num">{s.figuresWaiting ?? 0}</span> {s.figuresWaiting === 1 ? "figure" : "figures"} waiting
                 </span>

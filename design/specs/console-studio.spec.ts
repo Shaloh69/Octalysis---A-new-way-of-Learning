@@ -48,10 +48,6 @@ function teacherToken(): string {
 const TEACHER = teacherToken();
 const wide = (name: string) => name === "desktop-1440";
 
-/** Stage 04's block 2 is prose (editable); block 5 quotes ch-04.md 4.2 (read-only). */
-const PROSE = 2;
-const QUOTE = 5;
-
 /** The Overview (`/studio`), or To review (`/studio/review`). */
 async function openList(page: Page, opts: FixtureOpts = {}, view: "overview" | "review" = "overview") {
   await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), TEACHER);
@@ -64,35 +60,24 @@ async function openList(page: Page, opts: FixtureOpts = {}, view: "overview" | "
   return fx;
 }
 
-type TabName = "blocks" | "summary" | "draft" | "figures" | "objectives";
-/** One chapter, on the tab given; the first thing that tab draws is waited for. */
-async function openChapter(page: Page, opts: FixtureOpts = {}, id = "04", tab: TabName = "blocks") {
+/** One chapter, in the editor: the page and its toolbar are waited for. (The editor's own claims: console-studio-editor.spec.ts.) */
+async function openChapter(page: Page, opts: FixtureOpts = {}, id = "04") {
   await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), TEACHER);
   const fx = await useFixture(page, opts);
-  await page.goto(`${CONSOLE_URL}/studio/cpe-412/${id}${tab === "blocks" ? "" : `?tab=${tab}`}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${CONSOLE_URL}/studio/cpe-412/${id}`, { waitUntil: "domcontentloaded" });
   await page.locator("main h1").first().waitFor({ timeout: 15_000 });
-  const first = { blocks: "[data-block]", summary: "[data-summary-card]", draft: "[data-draft-card]", figures: "[data-figures]", objectives: "[data-objectives]" }[tab];
-  if (!opts.status && !opts.delayMs) await page.locator(first).first().waitFor({ timeout: 15_000 });
+  if (!opts.status && !opts.delayMs) await page.locator("[data-editor-shell] .ed-prose").first().waitFor({ timeout: 15_000 });
   return fx;
 }
 
-const block = (page: Page, n: number) => page.locator(`[data-block="${n}"]`);
+const saveStatus = (page: Page) => page.locator("[data-save-status]");
 
-/** At 380 the editor and the preview are one at a time. */
-async function showHalf(page: Page, half: "Blocks" | "Preview") {
-  const b = page.getByRole("button", { name: half, exact: true });
-  if (await b.isVisible()) {
-    await b.click();
-    await expect(b).toHaveAttribute("aria-pressed", "true");
-  }
-}
-
-async function startEdit(page: Page, n = PROSE) {
-  await showHalf(page, "Blocks");
-  await block(page, n).getByRole("button", { name: /^Edit block/ }).click();
-  const editor = block(page, n).getByLabel(/^Source of block/);
-  await expect(editor).toBeVisible();
-  return editor;
+/** Type into the first paragraph: the draft is saved (held by the fixture, never sent) and Publish becomes possible. */
+async function typeSomething(page: Page, text = " A sentence typed just now.") {
+  await page.locator(".ed-prose .ed-content p").first().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(text, { delay: 5 });
+  await expect(saveStatus(page)).toHaveAttribute("data-save-status", "saved", { timeout: 10_000 });
 }
 
 async function openSendBack(page: Page, stageId: string) {
@@ -107,7 +92,7 @@ async function openSendBack(page: Page, stageId: string) {
  * ==================================================================== */
 
 test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
-  test("1 · nothing is clipped: chapters, summaries, the send-back dialog, the editor, history", async ({ page }) => {
+  test("1 · nothing is clipped: chapters, summaries, the send-back dialog, the editor with its controls, Publish, the student view", async ({ page }) => {
     await openList(page);
     expect(await clippedElements(page), "chapters").toEqual([]);
     await page.unrouteAll({ behavior: "ignoreErrors" });
@@ -118,15 +103,18 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
     await page.keyboard.press("Escape");
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
-    await openChapter(page, { history: true });
+    await openChapter(page);
     expect(await clippedElements(page), "chapter").toEqual([]);
-    await startEdit(page);
-    expect(await clippedElements(page), "editing").toEqual([]);
-    await block(page, PROSE).getByRole("button", { name: /^History/ }).click();
-    await block(page, PROSE).locator("[data-version]").first().waitFor();
-    expect(await clippedElements(page), "history").toEqual([]);
-    await showHalf(page, "Preview");
-    expect(await clippedElements(page), "preview").toEqual([]);
+    await typeSomething(page);
+    expect(await clippedElements(page), "editing, the topic's controls showing").toEqual([]);
+    await page.getByRole("button", { name: /^Publish/ }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.waitForTimeout(500); // past the dialog's ease-in
+    expect(await clippedElements(page), "publish dialog").toEqual([]);
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Student view" }).click();
+    await page.locator("[data-preview]").waitFor();
+    expect(await clippedElements(page), "student view").toEqual([]);
   });
 
   test("2 · no horizontal page scroll, on every view", async ({ page }) => {
@@ -137,10 +125,11 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
     expect(await horizontalOverflow(page), "to review").toBeLessThanOrEqual(0);
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await openChapter(page);
-    await startEdit(page);
+    await typeSomething(page);
     expect(await horizontalOverflow(page), "editing").toBeLessThanOrEqual(0);
-    await showHalf(page, "Preview");
-    expect(await horizontalOverflow(page), "preview").toBeLessThanOrEqual(0);
+    await page.getByRole("button", { name: "Student view" }).click();
+    await page.locator("[data-preview]").waitFor();
+    expect(await horizontalOverflow(page), "student view").toBeLessThanOrEqual(0);
   });
 
   test("3 · every control is reachable from the keyboard alone", async ({ page }) => {
@@ -151,19 +140,15 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
     expect(await unreachableByKeyboard(page, "main"), "to review").toEqual([]);
 
     await page.unrouteAll({ behavior: "ignoreErrors" });
-    await openChapter(page, { history: true });
+    await openChapter(page);
     expect(await unreachableByKeyboard(page, "main"), "chapter").toEqual([]);
-    // Open the editor without the mouse, and Cancel returns focus to Edit.
-    await showHalf(page, "Blocks");
-    const edit = block(page, PROSE).getByRole("button", { name: /^Edit block/ });
-    await edit.focus();
+    await typeSomething(page);
+    expect(await unreachableByKeyboard(page, "main"), "editing, the topic's controls showing").toEqual([]);
+    // The toolbar works without a mouse: Bold is a real button, and Enter presses it.
+    const bold = page.getByRole("button", { name: "Bold" });
+    await bold.focus();
     await page.keyboard.press("Enter");
-    const source = block(page, PROSE).getByLabel(/^Source of block/);
-    await expect(source).toBeFocused();
-    expect(await unreachableByKeyboard(page, "main"), "editing").toEqual([]);
-    await block(page, PROSE).getByRole("button", { name: "Cancel" }).focus();
-    await page.keyboard.press("Enter");
-    await expect(edit).toBeFocused();
+    await expect(bold).toHaveAttribute("aria-pressed", "true");
   });
 
   test("4 · AA contrast, computed, on all three themes", async ({ page }) => {
@@ -180,14 +165,17 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
       expect(await contrastFailures(page), `${theme}: to review`).toEqual([]);
     }
     await page.unrouteAll({ behavior: "ignoreErrors" });
-    await openChapter(page, { history: true });
-    await startEdit(page);
+    await openChapter(page);
+    await typeSomething(page);
     for (const theme of THEMES) {
       await setTheme(page, theme);
       expect(await contrastFailures(page), `${theme}: editor`).toEqual([]);
-      await showHalf(page, "Preview");
-      expect(await contrastFailures(page), `${theme}: preview`).toEqual([]);
-      await showHalf(page, "Blocks");
+    }
+    await page.getByRole("button", { name: "Student view" }).click();
+    await page.locator("[data-preview]").waitFor();
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      expect(await contrastFailures(page), `${theme}: student view`).toEqual([]);
     }
   });
 
@@ -199,10 +187,11 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
     expect(await offTokenStyles(page), "to review").toEqual([]);
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await openChapter(page);
-    await startEdit(page);
+    await typeSomething(page);
     expect(await offTokenStyles(page), "editor").toEqual([]);
-    await showHalf(page, "Preview");
-    expect(await offTokenStyles(page), "preview").toEqual([]);
+    await page.getByRole("button", { name: "Student view" }).click();
+    await page.locator("[data-preview]").waitFor();
+    expect(await offTokenStyles(page), "student view").toEqual([]);
   });
 
   test("6 · prefers-reduced-motion is honoured, emulated rather than assumed", async ({ page }) => {
@@ -226,119 +215,6 @@ test.describe("the gate — CONSOLE-REVAMP.md §2", () => {
 });
 
 /* ======================================================================
- * Drafted lesson text — instructor ruling, 5 Oct 2026
- *
- * Chapter 08's text was drafted from book chapter 8 and waits, staff-only,
- * for approval. The six gate assertions run on its card, then what it owes:
- * approval of the exact text, a reason to send it back, and words for both.
- * ==================================================================== */
-
-async function openDraft(page: Page, opts: FixtureOpts = {}) {
-  const fx = await openChapter(page, opts, "08", "draft");
-  await page.locator("[data-draft-card]").waitFor({ timeout: 15_000 });
-  return fx;
-}
-const draftCard = (page: Page) => page.locator("[data-draft-card]");
-
-test.describe("drafted lesson text: the gate, on the draft card", () => {
-  test("1-3 · nothing clipped, no horizontal scroll, every control by keyboard (and the send-back dialog)", async ({ page }) => {
-    await openDraft(page);
-    expect(await clippedElements(page), "draft card").toEqual([]);
-    expect(await horizontalOverflow(page), "draft card").toBeLessThanOrEqual(0);
-    expect(await unreachableByKeyboard(page, "main"), "draft card").toEqual([]);
-    await draftCard(page).getByRole("button", { name: /^Send back stage 08/ }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    expect(await clippedElements(page), "send-back dialog").toEqual([]);
-  });
-
-  test("4 · AA contrast, computed, on all three themes", async ({ page }) => {
-    test.setTimeout(240_000);
-    await openDraft(page);
-    for (const theme of THEMES) {
-      await setTheme(page, theme);
-      expect(await contrastFailures(page), `${theme}: draft`).toEqual([]);
-    }
-  });
-
-  test("5 · the rendered output uses the tokens", async ({ page }) => {
-    await openDraft(page);
-    expect(await offTokenStyles(page), "draft").toEqual([]);
-  });
-
-  test("6 · under reduced motion the send-back dialog does not animate", async ({ page }) => {
-    await recordMotion(page);
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await openDraft(page);
-    await draftCard(page).getByRole("button", { name: /^Send back stage 08/ }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await page.keyboard.press("Escape");
-    const still = (await recordedMotion(page)).filter((m) => m.ms > 1);
-    expect(still).toEqual([]);
-  });
-});
-
-test.describe("drafted lesson text: approval is of the exact text, and says what it does", () => {
-  test("the card says no student reads it, counts its blocks and quotes, and draws the draft as a student would", async ({ page }) => {
-    await openDraft(page);
-    const card = draftCard(page);
-    await expect(card).toHaveAttribute("data-draft-status", "draft");
-    await expect(card).toContainText("Waiting for your review");
-    await expect(card).toContainText(/No student reads it until you approve it/);
-    await expect(card).toContainText(/quoted from the book, each checked against it by sync/);
-    await expect(card.getByRole("heading", { name: /The draft · as a student would read it/ })).toBeVisible();
-    await expect(card.locator("[data-preview]")).toContainText("An OS is a program that controls the execution of application programs");
-  });
-
-  test("approving posts the text's hash once and says students read it now", async ({ page }) => {
-    const fx = await openDraft(page);
-    const api = process.env.OCTA_API_URL ?? "http://localhost:8090";
-    const res = await page.request.get(`${api}/api/v1/console/content/08`, { headers: { authorization: `Bearer ${TEACHER}` } });
-    const real = ((await res.json()) as { draft: { hash: string } }).draft.hash;
-    await draftCard(page).getByRole("button", { name: /^Approve stage 08 lesson text/ }).click();
-    await expect(page.getByRole("status").filter({ hasText: /Stage 08 lesson text approved/ })).toContainText(/Students read these \d+ blocks now/);
-    expect(fx.writes.approveDraft).toEqual([{ stageId: "08", body: { hash: real } }]);
-    await expect(draftCard(page)).toHaveAttribute("data-draft-status", "approved");
-  });
-
-  test("an approval of a draft that has changed is refused, and the refusal stays", async ({ page }) => {
-    await openDraft(page, { fail: "approve-draft" });
-    await draftCard(page).getByRole("button", { name: /^Approve stage 08 lesson text/ }).click();
-    const t = page.locator("[data-toaster]").getByRole("alert");
-    await expect(t).toContainText(/changed since you opened it/i);
-    await page.waitForTimeout(4_500);
-    await expect(t).toBeVisible();
-  });
-
-  test("sending back needs a reason, says what happens, posts once, and shows the reason", async ({ page }) => {
-    const fx = await openDraft(page);
-    await draftCard(page).getByRole("button", { name: /^Send back stage 08/ }).click();
-    const dialog = page.getByRole("dialog");
-    await expect(dialog).toContainText(/Students read none of it/);
-    const confirm = dialog.getByRole("button", { name: /^Send back stage 08/ });
-    await expect(confirm).toBeDisabled();
-    await dialog.getByLabel(/Reason/).fill("Add the book's own paging figure, described.");
-    await confirm.click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(page.getByRole("status").filter({ hasText: /Stage 08 lesson text sent back/ })).toBeVisible();
-    expect(fx.writes.sendBackDraft).toEqual([{ stageId: "08", body: { reason: "Add the book's own paging figure, described." } }]);
-    await expect(draftCard(page)).toContainText("Add the book's own paging figure, described.");
-  });
-
-  test("the chapters list says a chapter's text is waiting, in words", async ({ page }) => {
-    await openList(page);
-    await expect(page.locator('[data-chapter="08"] [data-fact="draft"]').first()).toHaveText("Text to review");
-    await expect(page.locator('[data-chapter="04"] [data-fact="draft"]')).toHaveCount(0);
-  });
-
-  test("captures: the draft card, at both widths", async ({ page }, info) => {
-    await openDraft(page);
-    await draftCard(page).scrollIntoViewIfNeeded();
-    const s = wide(info.project.name) ? "" : "-380";
-    await page.screenshot({ path: `design/templates/console/content/current-draft${s}.png` });
-  });
-});
-
-/* ======================================================================
  * Figures (instructor rulings, 6 Oct 2026; docs/FIGURES-AND-AUDIO.md and
  * design/templates/console/content-figure/SPEC.md). Stage 10's simple
  * instruction format is the seeded figure: a draft on every fresh database.
@@ -346,7 +222,7 @@ test.describe("drafted lesson text: approval is of the exact text, and says what
 
 const FIG = "10-instruction-format";
 async function openFigures(page: Page, opts: FixtureOpts = {}) {
-  const fx = await openChapter(page, opts, "10", "figures");
+  const fx = await openChapter(page, opts, "10");
   await page.locator("[data-figures]").waitFor({ timeout: 15_000 });
   return fx;
 }
@@ -399,13 +275,12 @@ test.describe("figures: approval is of the exact drawing, and says what it does"
     await expect(card.locator(".fig-svg svg")).toHaveAttribute("aria-hidden", "true");
   });
 
-  test("the previews draw the figure block with its caption and the book's figure number", async ({ page }) => {
-    // The draft's own preview (the Draft tab) draws the figure block.
-    await openChapter(page, {}, "10", "draft");
-    const fig = page.locator("[data-draft-card] [data-preview-figure=\"" + FIG + "\"]");
+  test("the chapter's own figure topic is drawn in the editor with its caption and the book's figure number, locked", async ({ page }) => {
+    await openChapter(page, {}, "10");
+    const fig = page.locator(`[data-topic-kind="figure"] [data-preview-figure="${FIG}"]`);
     await expect(fig.getByRole("img", { name: "A simple 16-bit instruction format" })).toBeVisible();
     await expect(fig).toContainText("After Stallings, Figure 12.2. Redrawn for this course.");
-    await expect(fig).toContainText("Not approved yet: students do not see this figure.");
+    await expect(page.locator(`[data-topic-kind="figure"]`).first()).toContainText(/Locked/);
   });
 
   test("approving posts the drawing's hash once and says students see it now", async ({ page }) => {
@@ -556,8 +431,8 @@ test.describe("summaries: approval is of the exact text, and says what it does",
     await expect(page.locator('[data-group=sent_back] [data-summary="04"]')).toContainText("Name the four mapping functions.");
   });
 
-  test("the chapter's Summary tab carries its summary with the same two controls", async ({ page }) => {
-    await openChapter(page, {}, "04", "summary");
+  test("the chapter page carries its summary, under the page, with the same two controls", async ({ page }) => {
+    await openChapter(page, {}, "04");
     const card = page.locator("[data-summary-card]");
     await expect(card).toContainText("Why cache misses cost so much");
     await expect(card.getByRole("button", { name: /^Approve/ })).toBeVisible();
@@ -568,98 +443,6 @@ test.describe("summaries: approval is of the exact text, and says what it does",
 /* ======================================================================
  * /content/:stageId — the editor and its preview
  * ==================================================================== */
-
-test.describe("the editor: one block at a time, the preview follows the typing", () => {
-  test("every block is listed in order, and the preview renders the chapter", async ({ page }) => {
-    await openChapter(page);
-    // Chapter 04 has 32 blocks since c08fc7e (6 Oct) drew the address split as
-    // a figure; the full run of 7 Oct caught this count still at 31.
-    await expect(page.locator("[data-block]")).toHaveCount(32);
-    await showHalf(page, "Preview");
-    await expect(page.locator("[data-preview] [data-preview-block]")).toHaveCount(32);
-    // Code in mono, exactly as the student reader draws it.
-    expect(await page.locator('[data-preview-block="3"] pre').evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/mono/i);
-  });
-
-  test("typing changes the preview before anything is saved", async ({ page }) => {
-    await openChapter(page);
-    const src = await startEdit(page);
-    await src.fill("A new **opening** for the trade-off.");
-    await showHalf(page, "Preview");
-    const p = page.locator(`[data-preview-block="${PROSE}"]`);
-    await expect(p).toHaveAttribute("data-editing", "true");
-    await expect(p.locator("strong")).toHaveText("opening");
-  });
-
-  test("Save needs a change and a reason, posts the version it opened, and toasts the new one", async ({ page }) => {
-    const fx = await openChapter(page);
-    const version = Number(await block(page, PROSE).getAttribute("data-version"));
-    const src = await startEdit(page);
-    const save = block(page, PROSE).getByRole("button", { name: /^Save/ });
-    await expect(save).toBeDisabled();
-    await src.fill("The problem, stated as a trade, in fewer words.");
-    await expect(save, "no reason yet").toBeDisabled();
-    await block(page, PROSE).getByLabel(/What changed/).fill("tighten the opening");
-    await expect(save).toBeEnabled();
-    await save.click();
-    await expect(page.getByRole("status").filter({ hasText: new RegExp(`Stage 04, block ${PROSE} saved as version ${version + 1}`) })).toBeVisible();
-    expect(fx.writes.edit).toEqual([{
-      id: await block(page, PROSE).getAttribute("data-block-id"),
-      body: { body: "The problem, stated as a trade, in fewer words.", version, reason: "tighten the opening" },
-    }]);
-    await expect(block(page, PROSE)).toContainText(/edited in the console/i);
-  });
-
-  test("a stale save keeps the typed text and says what happened, and the message stays", async ({ page }) => {
-    await openChapter(page, { fail: "stale" });
-    const src = await startEdit(page);
-    await src.fill("My edit.");
-    await block(page, PROSE).getByLabel(/What changed/).fill("typo");
-    await block(page, PROSE).getByRole("button", { name: /^Save/ }).click();
-    const t = page.locator("[data-toaster]").getByRole("alert");
-    await expect(t).toContainText(/Someone saved this block/);
-    await expect(src).toHaveValue("My edit.");
-    await page.waitForTimeout(4_500);
-    await expect(t).toBeVisible();
-  });
-
-  test("a quote from the book has no Edit control, and says where to edit it", async ({ page }) => {
-    await openChapter(page);
-    await showHalf(page, "Blocks");
-    const q = block(page, QUOTE);
-    await expect(q.getByRole("button", { name: /^Edit block/ })).toHaveCount(0);
-    await expect(q).toContainText("ch-04.md 4.2");
-    await expect(q).toContainText("content/stages/04.md");
-  });
-
-  test("history lists what was replaced, and Use this text loads it for an ordinary edit", async ({ page }) => {
-    await openChapter(page, { history: true });
-    await showHalf(page, "Blocks");
-    await block(page, PROSE).getByRole("button", { name: /^History/ }).click();
-    const v = block(page, PROSE).locator("[data-version]");
-    await expect(v).toHaveCount(2);
-    await expect(v.first()).toContainText("typo in the second sentence");
-    await expect(v.first()).toContainText(/console/i);
-    await v.first().getByRole("button", { name: /^Use this text/ }).click();
-    await expect(block(page, PROSE).getByLabel(/^Source of block/)).toHaveValue("An earlier wording, fixed in the console.");
-  });
-
-  test("the source is mono and counts its characters", async ({ page }) => {
-    await openChapter(page);
-    const src = await startEdit(page);
-    expect(await src.evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/mono/i);
-    await src.fill("12345");
-    await expect(block(page, PROSE).locator("[data-count]")).toHaveText(/5 characters/);
-  });
-
-  test("at 1440 the blocks and the preview sit side by side", async ({ page }, info) => {
-    test.skip(!wide(info.project.name), "the split is a 1440 layout; 380 is one at a time");
-    await openChapter(page);
-    const a = (await page.locator("[data-blocks]").boundingBox())!;
-    const b = (await page.locator("[data-preview]").boundingBox())!;
-    expect(b.x, "the preview should be to the right of the blocks").toBeGreaterThan(a.x + a.width - 1);
-  });
-});
 
 /* ======================================================================
  * loading and failure — design.md
@@ -753,15 +536,18 @@ test.describe("studio: three panes, and sheets at 380", () => {
     expect(await cpe.locator(".st-chapter-id").first().evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/mono/i);
   });
 
-  test("at 1440 the outline is a pane beside the editor; at 380 it is not on the page until asked for", async ({ page }, info) => {
+  test("at 1440 the sidebar is ONE pane on the RIGHT of the editor, with two tabs; at 380 it is not on the page until asked for", async ({ page }, info) => {
     await openList(page);
     if (wide(info.project.name)) {
-      const o = (await outlineNav(page).boundingBox())!;
+      const side = (await page.locator("[data-sidebar]").boundingBox())!;
       const e = (await page.locator(".st-editor").boundingBox())!;
-      expect(e.x, "the editor sits to the right of the outline").toBeGreaterThan(o.x + o.width - 1);
+      expect(side.x, "the sidebar sits to the right of the editor").toBeGreaterThan(e.x + e.width - 1);
+      await expect(page.locator("[data-sidebar]")).toHaveCount(1);
+      await expect(page.getByRole("tablist", { name: "Sidebar" }).getByRole("tab")).toHaveText([/^Outline/, /^AI Assistant/]);
+      await expect(page.getByRole("tab", { name: /^Outline/ })).toHaveAttribute("aria-selected", "true");
       await expect(barButton(page, /^Outline/)).toHaveAttribute("aria-pressed", "true");
       await barButton(page, /^Outline/).click();
-      await expect(outlineNav(page)).toHaveCount(0);
+      await expect(page.locator("[data-sidebar]")).toHaveCount(0);
       await expect(barButton(page, /^Outline/)).toHaveAttribute("aria-pressed", "false");
     } else {
       await expect(outlineNav(page)).toHaveCount(0);
@@ -776,6 +562,23 @@ test.describe("studio: three panes, and sheets at 380", () => {
     await page.getByRole("dialog").getByRole("link", { name: /Cache Memory/ }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page).toHaveURL(/\/studio\/cpe-412\/04$/);
+  });
+
+  test("the two tabs switch with the arrow keys, and the AI tab says it is locked", async ({ page }, info) => {
+    await openList(page);
+    await showOutline(page, info);
+    const outlineTab = page.getByRole("tab", { name: /^Outline/ });
+    const aiTab = page.getByRole("tab", { name: /^AI Assistant/ });
+    await expect(aiTab).toContainText("locked");
+    await outlineTab.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(aiTab).toBeFocused();
+    await expect(aiTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("[data-ai-pane]")).toBeVisible();
+    await expect(outlineTab).toHaveAttribute("tabindex", "-1");
+    await page.keyboard.press("ArrowLeft");
+    await expect(outlineTab).toHaveAttribute("aria-selected", "true");
+    await expect(outlineNav(page)).toBeVisible();
   });
 
   test("a sheet closes on Escape and gives focus back to the button that opened it", async ({ page }, info) => {
@@ -958,18 +761,18 @@ test.describe("studio: the approval rule shows as a disabled Approve, with the r
   const NOT_SUBJECT = /Only a teacher of CPE 412 or the admin approves its content\./;
   const AUTHOR = /You wrote this version; another teacher of CPE 412 approves it\./;
 
-  test("a teacher with no class of the subject: Approve is disabled on a summary, a draft and a figure, and says why", async ({ page }) => {
+  test("a teacher with no class of the subject: Approve is disabled on a summary and a figure, and Publish on a drafted chapter, each saying why", async ({ page }) => {
     const o: FixtureOpts = { me: { role: "teacher", approves: [] } };
     await openList(page, o, "review");
     const s = page.locator('[data-summary="04"]');
     await expect(s.getByRole("button", { name: /^Approve/ })).toBeDisabled();
     await expect(s.locator("[data-gate-note]")).toHaveText(NOT_SUBJECT);
     await page.unrouteAll({ behavior: "ignoreErrors" });
-    await openChapter(page, o, "08", "draft");
-    await expect(draftCard(page).getByRole("button", { name: /^Approve stage 08/ })).toBeDisabled();
-    await expect(draftCard(page).locator("[data-gate-note]")).toHaveText(NOT_SUBJECT);
+    await openChapter(page, o, "08");
+    await expect(page.getByRole("button", { name: /^Publish/ })).toBeDisabled();
+    await expect(page.locator("#ed-gate")).toHaveText(NOT_SUBJECT);
     await page.unrouteAll({ behavior: "ignoreErrors" });
-    await openChapter(page, o, "10", "figures");
+    await openChapter(page, o, "10");
     await expect(figureCard(page).getByRole("button", { name: /^Approve figure/ })).toBeDisabled();
     await expect(figureCard(page).locator("[data-gate-note]")).toHaveText(NOT_SUBJECT);
     // Send back is not an approval: it stays.
@@ -1005,88 +808,14 @@ test.describe("studio: the approval rule shows as a disabled Approve, with the r
   });
 });
 
-test.describe("studio: a chapter's tabs", () => {
-  const tab = (page: Page, name: string) => page.getByRole("tab", { name: new RegExp(`^${name}`) });
-
-  test("Blocks, Summary and Objectives always; Draft only where a draft exists", async ({ page }) => {
-    await openChapter(page, {}, "04");
-    await expect(page.getByRole("tablist", { name: "Parts of this chapter" })).toBeVisible();
-    for (const n of ["Blocks", "Summary", "Objectives"]) await expect(tab(page, n)).toBeVisible();
-    await expect(tab(page, "Draft")).toHaveCount(0);
-    await page.unrouteAll({ behavior: "ignoreErrors" });
-    await openChapter(page, {}, "08");
-    await expect(tab(page, "Draft")).toBeVisible();
-  });
-
-  test("a tab with something waiting says so in a word", async ({ page }) => {
-    await openChapter(page, {}, "04");
-    await expect(tab(page, "Summary")).toContainText("to review");
-    await expect(tab(page, "Blocks")).not.toContainText("to review");
-  });
-
-  test("the tab is in the address, and Blocks is the default", async ({ page }) => {
-    await openChapter(page, {}, "04");
-    await expect(tab(page, "Blocks")).toHaveAttribute("aria-selected", "true");
-    await tab(page, "Summary").click();
-    await expect(page).toHaveURL(/\?tab=summary$/);
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(tab(page, "Summary")).toHaveAttribute("aria-selected", "true");
-    await page.locator("[data-summary-card]").waitFor();
-    await tab(page, "Blocks").click();
-    await expect(page).not.toHaveURL(/tab=/);
-  });
-
-  test("a tab that does not exist falls back to Blocks", async ({ page }) => {
-    await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), TEACHER);
-    await useFixture(page);
-    await page.goto(`${CONSOLE_URL}/studio/cpe-412/04?tab=history`, { waitUntil: "domcontentloaded" });
-    await page.locator("[data-block]").first().waitFor({ timeout: 15_000 });
-    await expect(tab(page, "Blocks")).toHaveAttribute("aria-selected", "true");
-  });
-
-  test("arrows, Home and End move between tabs, and only the selected one is in the Tab order", async ({ page }) => {
-    await openChapter(page, {}, "04");
-    await tab(page, "Blocks").focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(tab(page, "Summary")).toBeFocused();
-    await expect(tab(page, "Summary")).toHaveAttribute("aria-selected", "true");
-    await expect(tab(page, "Blocks")).toHaveAttribute("tabindex", "-1");
-    await page.keyboard.press("End");
-    await expect(tab(page, "Objectives")).toBeFocused();
-    await page.keyboard.press("Home");
-    await expect(tab(page, "Blocks")).toBeFocused();
-    await page.keyboard.press("ArrowLeft");
-    await expect(tab(page, "Objectives")).toBeFocused();
-  });
-
-  test("Objectives lists the syllabus's own objectives, read-only, with what the bank holds", async ({ page }) => {
-    await openChapter(page, {}, "04", "objectives");
-    const panel = page.locator("[data-objectives]");
-    expect(await panel.locator("[data-objective]").count()).toBeGreaterThan(0);
-    expect(await panel.locator(".st-ob-code").first().evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/mono/i);
-    await expect(panel).toContainText("Read-only");
-    await expect(panel.locator("textarea, input")).toHaveCount(0);
-    await expect(panel.getByRole("button")).toHaveCount(0);
-    await expect(panel.locator("[data-chapter-items]")).toContainText(/live questions?/);
-    await expect(panel.getByRole("link", { name: "Open Items" })).toHaveAttribute("href", "/items");
-  });
-
-  test("the breadcrumb names the subject and the chapter, and links back to the subject", async ({ page }) => {
-    await openChapter(page, {}, "04");
-    const crumb = page.getByRole("navigation", { name: "Breadcrumb" });
-    await expect(crumb.getByRole("link", { name: "CPE 412" })).toHaveAttribute("href", "/studio/cpe-412");
-    await expect(crumb.locator("[aria-current=page]")).toContainText("Cache Memory");
-  });
-});
-
 test.describe("studio: To review gathers summaries, drafted text and figures", () => {
-  test("three sections, each with its count, and drafted text and figures link to their chapter's tab", async ({ page }) => {
+  test("three sections, each with its count, and drafted text and figures link to their chapter", async ({ page }) => {
     await openList(page, {}, "review");
     for (const n of ["Summaries", "Drafted lesson text", "Figures"]) {
       await expect(page.getByRole("heading", { name: new RegExp(`^${n}`), level: 2 })).toBeVisible();
     }
-    await expect(page.locator('[data-waiting-draft="08"] a')).toHaveAttribute("href", "/studio/cpe-412/08?tab=draft");
-    await expect(page.locator('[data-waiting-figures="10"] a')).toHaveAttribute("href", "/studio/cpe-412/10?tab=figures");
+    await expect(page.locator('[data-waiting-draft="08"] a')).toHaveAttribute("href", "/studio/cpe-412/08");
+    await expect(page.locator('[data-waiting-figures="10"] a')).toHaveAttribute("href", "/studio/cpe-412/10");
     // The summary groups sit under their section: h3 groups, h4 entries.
     await expect(page.locator("[data-group=draft] h3").first()).toContainText("To review");
     expect(await page.locator('[data-summary="04"] h4').count()).toBe(1);
@@ -1120,15 +849,22 @@ test.describe("studio: captures, opened and looked at", () => {
     await full(page, info, "current-review");
   });
 
-  test("current: a chapter, its Summary and its Objectives", async ({ page }, info) => {
+  test("current: the editor, a chapter being typed in, Publish, the student view, and a drafted chapter", async ({ page }, info) => {
     await openChapter(page, {}, "04");
-    await full(page, info, "current-chapter");
+    await page.screenshot({ path: `${dir}/current-chapter${sfx(info)}.png` });
+    await typeSomething(page);
+    await page.screenshot({ path: `${dir}/current-editing${sfx(info)}.png` });
+    await page.getByRole("button", { name: /^Publish/ }).click();
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${dir}/current-publish${sfx(info)}.png` });
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Student view" }).click();
+    await page.locator("[data-preview]").waitFor();
+    await page.screenshot({ path: `${dir}/current-student${sfx(info)}.png` });
     await page.unrouteAll({ behavior: "ignoreErrors" });
-    await openChapter(page, {}, "08", "draft");
-    await full(page, info, "current-draft");
-    await page.unrouteAll({ behavior: "ignoreErrors" });
-    await openChapter(page, {}, "04", "objectives");
-    await full(page, info, "current-objectives");
+    await openChapter(page, {}, "08");
+    await page.screenshot({ path: `${dir}/current-draft${sfx(info)}.png` });
+    await full(page, info, "current-moons");
   });
 
   test("current: a subject, the add-book dialog, and the outline and AI panes", async ({ page }, info) => {

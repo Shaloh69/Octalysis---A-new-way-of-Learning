@@ -1,137 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { api, type ChapterDraft, type ContentBlock, type ContentFigure } from "@/lib/api";
-import { dayDate } from "@/lib/record-view";
-import { SUMMARY_TONE } from "@/lib/content-view";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
-import { GateNote, useApprovalGate } from "@/lib/approval-gate";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Preview } from "./Preview";
 
 /**
- * A chapter's DRAFTED lesson text (instructor ruling, 5 Oct 2026): written
- * from the textbook for a chapter the syllabus outline alone covered, kept in
- * the staff-only `chapter_drafts`, and read by no student until it is approved
- * here. The approval is of the text on screen (its hash; the API refuses it if
- * sync has written a different draft since), it replaces the chapter's live
- * blocks, keeps what they said in History, and writes `audit_log`. Sending back
- * needs a reason. Neither is styled as destructive: nothing is deleted.
+ * Sending a drafted chapter back (instructor ruling, 5 Oct 2026): the draft goes to its
+ * author with the reason, and what students read does not change. The chapter's own
+ * card is gone (8 Oct 2026): the Studio's editor shows the draft as a document, and
+ * Publish is its approval. Only this dialog is still needed.
  */
 
-const WORD: Record<ChapterDraft["status"], string> = {
-  draft: "Waiting for your review",
-  approved: "Approved",
-  sent_back: "Sent back",
-};
-
-export function DraftCard({
-  stageId, title, draft, liveBlocks, onChanged, figures,
-}: {
-  stageId: string;
-  title: string;
-  draft: ChapterDraft;
-  liveBlocks: number;
-  onChanged: () => void;
-  figures?: ReadonlyMap<string, ContentFigure> | undefined;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [sending, setSending] = useState(false);
-  const opener = useRef<HTMLButtonElement>(null);
-  const when = dayDate(draft.reviewedAt);
-  const gate = useApprovalGate(draft.authoredBy);
-  // The preview draws blocks with ids and ordinals; a draft's are its positions.
-  const blocks = useMemo<ContentBlock[]>(
-    () =>
-      draft.blocks.map((b, i) => ({
-        id: `draft-${i + 1}`, ordinal: i + 1, kind: b.kind, body: b.body, meta: b.meta, version: 0,
-        updatedAt: draft.updatedAt, consoleEdited: false, editable: false,
-        source: typeof b.meta.source === "string" ? b.meta.source : null, historyCount: 0, lastEdit: null,
-      })),
-    [draft],
-  );
-  const quotes = blocks.filter((b) => b.source).length;
-
-  async function approve() {
-    setBusy(true);
-    try {
-      await api.approveDraft(stageId, draft.hash);
-      toast.success(`Stage ${stageId} lesson text approved`, `Students read these ${draft.blocks.length} blocks now.`);
-    } catch (e) {
-      toast.error(`Stage ${stageId} lesson text was not approved`, e instanceof Error ? e.message : "Nothing changed. Try again.");
-    } finally {
-      setBusy(false);
-      onChanged();
-    }
-  }
-
-  return (
-    <section className="ct-card ct-draft-card" data-draft-card data-draft-status={draft.status} aria-labelledby="draft-title">
-      <div className="ct-summary-head">
-        <h2 id="draft-title" className="ct-summary-title">Drafted lesson text</h2>
-        <Badge tone={SUMMARY_TONE[draft.status]} data-state={draft.status}>{WORD[draft.status]}</Badge>
-      </div>
-      <p className="ct-faint">
-        Drafted from the textbook for your review (your ruling of 5 October 2026).{" "}
-        {draft.status === "approved"
-          ? <>Students read it now: <span className="num">{draft.blocks.length}</span> blocks.</>
-          : draft.everApproved
-            ? <>A revised draft. Students read the last approved text until you approve this one.</>
-            : <>No student reads it until you approve it. Approving replaces the chapter&apos;s <span className="num">{liveBlocks}</span> blocks with these <span className="num">{draft.blocks.length}</span>.</>}
-        {quotes > 0 ? <> <span className="num">{quotes}</span> quoted from the book, each checked against it by sync.</> : null}
-      </p>
-      {draft.status === "sent_back" && draft.note ? (
-        <p className="ct-summary-note">
-          <span className="font-medium text-ink">Sent back:</span> {draft.note}
-        </p>
-      ) : null}
-      {draft.reviewer || when ? (
-        <p className="ct-summary-meta">
-          {WORD[draft.status]}
-          {draft.reviewer ? <> by {draft.reviewer}</> : null}
-          {when ? <> · <span className="num">{when}</span></> : null}
-          {draft.status === "sent_back" ? <> · back to review when content/stages/<span className="num">{stageId}</span>.draft.md is revised</> : null}
-        </p>
-      ) : null}
-      {draft.status === "draft" ? (
-        <div className="ct-summary-actions">
-          <Button size="sm" data-approve-draft onClick={() => void approve()} disabled={busy || !gate.allowed}
-                  aria-describedby={gate.reason || gate.selfApproved ? "gate-draft" : undefined}>
-            {busy ? "Approving…" : `Approve stage ${stageId} lesson text`}
-          </Button>
-          <Button ref={opener} size="sm" variant="outline" onClick={() => setSending(true)} disabled={busy}>
-            {`Send back stage ${stageId} lesson text`}
-          </Button>
-          <GateNote id="gate-draft" gate={gate} />
-        </div>
-      ) : null}
-
-      <Preview
-        blocks={blocks}
-        editing={null}
-        title={`${stageId} · ${title}`}
-        headingId="pv-draft-title"
-        heading="The draft · as a student would read it"
-        figures={figures}
-      />
-
-      <DraftSendBack
-        open={sending}
-        stageId={stageId}
-        title={title}
-        onClose={() => setSending(false)}
-        onDone={onChanged}
-        returnFocus={() => opener.current}
-      />
-    </section>
-  );
-}
-
-function DraftSendBack({
+export function DraftSendBack({
   open, stageId, title, onClose, onDone, returnFocus,
 }: {
   open: boolean;

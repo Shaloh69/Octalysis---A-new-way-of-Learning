@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chapterPath, isTab, outlineNote, reviewCount, subjectFromSlug, subjectPath, subjectSlug, tabsFor } from "../src/lib/studio-view";
+import { chapterPath, outlineNote, reviewCount, subjectFromSlug, subjectPath, subjectSlug } from "../src/lib/studio-view";
 import { gateFor } from "../src/lib/approval-gate";
 
 describe("a subject's address", () => {
@@ -13,28 +13,6 @@ describe("a subject's address", () => {
     expect(subjectFromSlug("cpe-413", ["CPE 412", "CPE 413"])).toBe("CPE 413");
     expect(subjectFromSlug("CPE-412", ["CPE 412"])).toBe("CPE 412");
     expect(subjectFromSlug("cpe-999", ["CPE 412"])).toBeNull();
-  });
-});
-
-const sum = (status: "draft" | "approved" | "sent_back") => ({ status }) as never;
-const fig = (status: "draft" | "approved" | "sent_back") => ({ status }) as never;
-
-describe("a chapter's tabs", () => {
-  it("always has Blocks, Summary and Objectives", () => {
-    expect(tabsFor({ summary: null, draft: null, figures: [] }).map((t) => t.id)).toEqual(["blocks", "summary", "objectives"]);
-  });
-  it("adds Draft and Figures only when the chapter has them, in the SPEC's order", () => {
-    const t = tabsFor({ summary: sum("approved"), draft: sum("draft"), figures: [fig("approved")] });
-    expect(t.map((x) => x.id)).toEqual(["blocks", "summary", "draft", "figures", "objectives"]);
-  });
-  it("says which tab has something waiting", () => {
-    const t = tabsFor({ summary: sum("draft"), draft: sum("approved"), figures: [fig("approved"), fig("draft")] });
-    expect(t.filter((x) => x.waiting).map((x) => x.id)).toEqual(["summary", "figures"]);
-  });
-  it("recognises its own tab names, and nothing else", () => {
-    expect(isTab("draft")).toBe(true);
-    expect(isTab("history")).toBe(false);
-    expect(isTab(null)).toBe(false);
   });
 });
 

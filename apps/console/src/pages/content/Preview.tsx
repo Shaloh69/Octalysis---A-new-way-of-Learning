@@ -31,7 +31,7 @@ function Inl({ c }: { c: Inline[] }) {
 }
 
 /** One parsed block of markdown. A `##` is an h3 here: the preview pane is under an h2. */
-function Md({ blocks }: { blocks: MdBlock[] }) {
+export function Md({ blocks }: { blocks: MdBlock[] }) {
   return (
     <>
       {blocks.map((b, i) => {
@@ -64,7 +64,7 @@ function Paragraphs({ body }: { body: string }) {
   return <Md blocks={parseBlocks(body)} />;
 }
 
-function Shape({ kind, meta, body, figures }: {
+export function Shape({ kind, meta, body, figures }: {
   kind: string;
   meta: Record<string, string>;
   body: string;
