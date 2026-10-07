@@ -13,6 +13,7 @@ import "./styles/stages.css";
 import "./styles/progress.css";
 import "./styles/work.css";
 import "./styles/settings.css";
+import "./styles/news.css";
 import "./styles/chat.css";
 import "./styles/title.css";
 

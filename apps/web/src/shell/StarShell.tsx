@@ -85,6 +85,11 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
 
         <header className="star-top">
           <Readout dress="hud" />
+          {/* What's new (7 Oct 2026, night): in the top strip, not a seventh
+              tab, so the bottom bar at 640 keeps its six. */}
+          <NavLink className="star-news" to="/app/changelog">
+            What&apos;s new
+          </NavLink>
           <button
             type="button"
             className="star-signout"

@@ -23,6 +23,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { StagesPage } from "./pages/StagesPage";
 import { SubmitPage } from "./pages/SubmitPage";
 import { ChatPage } from "./pages/ChatPage";
+import { WhatsNewPage } from "./pages/WhatsNewPage";
 import { useCosmetics } from "./solar-system/cosmetic-seed";
 import { currentIdentity, onAuthChange, type Identity } from "./lib/auth";
 import { useRealm } from "./lib/realm";
@@ -129,6 +130,7 @@ export default function App(): JSX.Element {
                 <Route path="/app/work" element={<SubmitPage />} />
                 <Route path="/app/chat" element={<ChatPage />} />
                 <Route path="/app/settings" element={<SettingsPage />} />
+                <Route path="/app/changelog" element={<WhatsNewPage />} />
               </Route>
               <Route path="/app/map" element={<MapRedirect />} />
               <Route path="/app/stage/:id" element={<BiomeShell signedIn />}>

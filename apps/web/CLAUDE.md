@@ -9,7 +9,7 @@ carried for almost no reuse. `apps/console` is the opposite case and DOES use sh
 Route groups: `/` public (unauthenticated), `/app/*` student (role `student`).
 
 ## Two realms — the remake, 30 Sep 2026 (`docs/redesign/WEB-REMAKE.md`)
-- **The star system** (`/app`, `/app/stages`, `/app/progress`, `/app/work`, `/app/chat` (6 Oct 2026), `/app/settings`, and
+- **The star system** (`/app`, `/app/stages`, `/app/progress`, `/app/work`, `/app/chat` (6 Oct 2026), `/app/settings`, `/app/changelog` (What's new, linked from the top strip, 7 Oct 2026), and
   the public pages): **one** game HUD for everyone, with the seeded accent. No variants: apps/web
   never sets `data-theme` (ruling 2, 30 Sep). Never a biome.
 - **Inside a planet or moon** (`/app/stage/:id` and everything under it): **that planet's biome,
