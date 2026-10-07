@@ -1,6 +1,6 @@
 {
   "madeAt": {
-    "commit": "f6f9656",
+    "commit": "2746a64",
     "date": "2026-10-08"
   },
   "updates": [
@@ -22,6 +22,18 @@
         "A topic's History is back in the editor: the clock button lists its earlier versions and Use this text puts one back as a draft."
       ],
       "commits": [
+        {
+          "hash": "2746a64",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the moons as an editor (E2) and a topic's History (E1.5)"
+        },
+        {
+          "hash": "42530fe",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "the Studio's moons (E2): draft, edit, retire, publish; the lock counts live moons"
+        },
         {
           "hash": "07028ed",
           "type": "feat",

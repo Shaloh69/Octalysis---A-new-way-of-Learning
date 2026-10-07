@@ -19,6 +19,16 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**8 Oct 2026 (night):** phase report **239/245 (98%)** (R5 21/24: the moon work's lock
+layer was accepted by the instructor, so its DoD box is ticked; what stays open is a
+person's: the screen-reader pass, the planet summaries). **The Studio's moons are an
+editor (E2)**: edit a moon's wording, add one as a draft the lock does not count, retire
+one (its evidence stays), one dialog that says who would see a planet close before it
+publishes. `is_stage_unlocked()` counts live moons only; `ob_staff` is gone. **Per-topic
+History is back in the editor (E1.5).** The sixteenth SQL file is on Supabase. Nothing is
+owned by the Studio yet, so `content:export` had nothing to write. Prelim NOT runnable
+(14 of 96 act-1 questions live on the deployment). Detail: `NEXT-SESSION.md` §0zl.
+
 **8 Oct 2026 (later):** phase report **238/245 (97%)**, unchanged (outside the R
 boxes). **The Studio became an editor (E1):** a right sidebar of two tabs, a
 chapter as a page you type on (TipTap), topics you add, delete and reorder, a

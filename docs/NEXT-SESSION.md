@@ -1526,6 +1526,104 @@ left, or needing a decision:
 
 ---
 
+## 0zl. The Studio's moons (E2) and a topic's History (E1.5) — 8 Oct 2026 (night, after 0zk)
+
+The prompt asked for the E2 PLAN first and a stop for approval. Done in that
+order: the plan went into `docs/STUDIO-EDITOR-PLAN.md` ("E2 — the moons plan",
+committed and pushed alone, `f6f9656`), and the instructor, asked, answered
+**"Accept and approve"**: the plan as written, **and the moon work's lock layer
+accepted** (REDESIGN-SIGNOFF.md §5, the last thing keeping R5's final DoD box
+shut; ticked). Defaults taken: 3 live questions to publish a moon; a re-lock is
+allowed and shown in the Publish dialog; wording edits go through Publish too.
+
+**Built.**
+- **The sixteenth SQL file, `db/addendum-studio-moons.sql`**, on the deployment
+  (ddvxkbcelpqydnjkffdr, ref checked with `db:push:check`) **before the push**:
+  115 live moons unchanged, invariants 0 failures. `objectives.status` (draft /
+  live / retired), `owner` (file / console), `retired_at`; `objective_edits` (one
+  pending change per moon, staff-read, API-written); `live_objectives` (a
+  `security_invoker` view); `moon_publishable()` (3 live families);
+  **`ob_staff` DROPPED** (a staff token cannot write a moon); `ob_read` shows a
+  student only `live`; **`is_stage_unlocked()` step 4 counts live moons only**
+  (the whole function is re-declared in the addendum; schema.sql's copy is the
+  old one and the addendum supersedes it); INV-28/29 read live moons.
+- **`services/api/src/moons.ts` + `routes/moons.ts`**: `GET/POST
+  /console/content/:stageId/moons`, `PUT/DELETE …/moons/:id/pending`, `DELETE
+  …/moons/:id` (a never-used draft only), `POST …/moons/publish` (names its
+  `ids`, a `hash`, a `reason`, `dryRun`). Publish runs in one transaction under a
+  per-stage advisory lock, asks `approval_verdict` (editor may publish own edit,
+  `self_approved` audited), refuses a draft under 3 live questions, retiring the
+  last live moon, and a retirement that leaves a stage check or a final that
+  filled before unable to fill; it computes **who would see a planet close**
+  with `is_stage_unlocked()` itself, before and after, and the dry run rolls it
+  all back. The stage-check pool (`loadLivePool`) draws only from live moons.
+  Student readers (stages, journeys, live, the console's record) moved to
+  `live_objectives`; `moon-readers.spec.ts` fails if a new student-facing query
+  names `objectives` (watched failing when one regressed).
+- **sync-content** upserts a moon only `where objectives.owner = 'file'`;
+  **`pnpm content:export`** writes `NN.moons.json`. `MOON_GAMES` (id → game) in
+  contracts, pinned to the web registry by `apps/web/test/moon-games.spec.ts`.
+- **The Studio's moons, REDONE** (`pages/studio/MoonsEditor.tsx`, template
+  `design/templates/console/studio-moons/`, shadcn's Tasks) and **E1.5's History**
+  (`editor/TopicHistory.tsx`, template `studio-history/`, Wikipedia's revision
+  history). Departures from the plan are in `design/templates/console/studio/SPEC.md`
+  "As built, E1.5 and E2" (the button is "Review moon changes" because `/^Publish/`
+  already means the chapter's; Publish names its moons; **no new invariant**: it
+  would have warned on every act-1 moon).
+
+**Denial tests, red first (watched):** all 31 failed on the missing table; the
+staff-token write went **red with `ob_staff` still present** ("a staff update got
+through RLS: expected 1 to be 0") and green once dropped; the draft-moon lock
+tests went **red against the old lock function** (restored from schema.sql) and
+green on the new one. Also green: a student cannot write `objectives` or
+`objective_edits`; cannot read a draft or retired moon (RLS, the view, `/stages`,
+`/stages/:id`, the journey 404); a teacher with no class types but cannot publish
+(403, nothing changed); a published moon re-closes 02 for a student who had it
+open and the response counted them; a retired moon opens a planet and closes none,
+and its progress rows, items, journey and attempts survive (UPDATE/DELETE on
+`objective_progress` still raise for the service role).
+
+**Found by LOOKING / by testing the unexpected:**
+- **Closing the History dialog stole focus** (Radix returned it to the toolbar
+  button), so Ctrl+Z did nothing after "Use this text". Found by the Undo check;
+  `onCloseAutoFocus` now returns it to the editor.
+- **The keyboard-reach helper tabs from the top with a budget**: scoped to the moons
+  card it reported the card's first two buttons "unreachable" (the editor's tab
+  stops used the budget). It is a fact about the helper; the spec uses scope
+  "main" like every other.
+- A heredoc ate the backslashes of a regex AGAIN (and `python` is not installed):
+  node scripts written with the Write tool, or the Edit tool.
+- At 380 the toasts of three quick actions cover the lower part of an open
+  dialog in a capture. They dismiss in 4 s and the gate's clipping check passes;
+  not changed, noted.
+
+**State of the deployment, 8 Oct (night):** `content:export` ran against it:
+**no chapter and no moon is owned by the Studio yet, so nothing was exported and
+`content/export` has nothing to commit.** Stage 01 has 14 live, 02-04 none: **the
+Prelim is still NOT runnable on students** (14 of 96). Deployment invariants 0
+failures (3 warnings).
+
+**Measured:** phase **239/245 (98%)** (R5 21/24, the DoD box ticked). `pnpm verify`
+exit 0: API 1095 + 1 skipped, console 270, web 326, tokens 38. Playwright, against
+builds on 5185/5186 after a reset and reseed: `console-studio-moons` 30,
+`console-studio-history` 18, with `console-studio`, `-editor`, `console-teaching`,
+`-shell`, `-changelog`: **272 total, 256 passed, 16 skipped by design**; the
+student map, stage, stages, progress and moon-journey specs (242, 212 passed, 30
+skipped) green against the changed API. The moons' writes in the Playwright specs
+are a stateful stand-in (the server's rules are the API spec's, 31 tests); no
+browser has driven a real publish yet.
+
+**Not built, and said so:** the AI proposing moons and topics (E3, with CS3); a
+way to **un-retire** a moon (retirement is final in the UI; a row can be set back
+by SQL); a moon's questions are written through Items (the card links there), not
+in the Studio; a student already inside a retired moon's journey can still submit
+it (the evidence counts, the lock ignores it).
+
+**Next: PROFILES** (`docs/PROFILES-PLAN.md`), templates first. The prompt is
+`docs/redesign/REVAMP-PROMPTS.md` §1.
+
+---
+
 ## 0zk. The Studio became an editor (E1) — 8 Oct 2026 (the same day, after 0zj)
 
 The instructor, after seeing CS1: **"Change the design for the Studio. It

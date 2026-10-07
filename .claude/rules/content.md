@@ -82,8 +82,8 @@ and never fill the gap with plausible-sounding paragraphs to make a page look co
 > moon's wording and add or retire moons in the Studio, as a draft they publish. This
 > rule still binds every session and every script: **you** do not reword them, and
 > `pnpm check:objectives` still holds `content/stages/NN.md` to the syllabus. A moon a
-> teacher has edited is the database's, and `sync-content` will stop overwriting it
-> (E2). The text below is the rule for code and for the files.
+> teacher has edited, added or retired is the database's (`objectives.owner = 'console'`),
+> and `sync-content` no longer overwrites or revives it (E2, built 8 Oct 2026). The text below is the rule for code and for the files.
 
 They are the syllabus's contract, transcribed verbatim from the DOCX. `pnpm check:objectives`
 diffs every chapter against it and fails on any difference; `--fix` restores them.

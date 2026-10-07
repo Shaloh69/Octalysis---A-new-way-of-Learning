@@ -11,7 +11,12 @@
         "To review gathers summaries, drafted lesson text and figures in one place.",
         "Every teacher can add a subject, rename it, and add, edit or default its books, each with a reason in the audit log.",
         "A new approval rule, held in the database: a teacher of the subject approves, never the author of the version; the admin may approve their own edit, recorded as self-approved. An Approve you may not use is disabled, with the reason beside it.",
-        "The AI Assistant pane is there, locked, and says the app is not released yet."
+        "The AI Assistant pane is there, locked, and says the app is not released yet.",
+        "Moons are an editor now. On a chapter, each moon is a row you can edit (its sentence, its ring, its kind of skill), retire, or add to: a new moon is a draft that students never see and that does not hold the next planet shut until it has three live questions.",
+        "Typing a change to a moon changes nothing for students. One dialog, Review moon changes, publishes them and says first what will happen: what moves on the map, which minigame leaves it, and how many students would see a planet close until they master a new moon. It asks you for a reason.",
+        "Retiring a moon takes it off the map and out of what opens a planet, and keeps every question and every student's record of it. The last moon of a chapter, or one a stage check needs to fill, cannot be retired.",
+        "A moon you have edited or added is yours: syncing the chapter files no longer rewords it or brings a retired one back, and the export now writes moons too.",
+        "A topic's History is back in the editor: the clock button lists its earlier versions and Use this text puts one back as a draft."
       ],
       "students": []
     },

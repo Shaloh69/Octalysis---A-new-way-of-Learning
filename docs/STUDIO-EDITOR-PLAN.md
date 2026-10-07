@@ -1,4 +1,4 @@
-# The Studio as an editor — plan v1, rulings APPROVED 8 Oct 2026; E1 in progress
+# The Studio as an editor — plan v1, rulings APPROVED 8 Oct 2026; E1, E1.5 and E2 BUILT
 
 Instructor, 8 Oct 2026, on Course Studio (CS1, built the same morning):
 
@@ -124,7 +124,7 @@ when **every** moon is mastered (`is_stage_unlocked()`, the lock layer).
   (and the instructor's still-owed sign-off on the moon work's lock layer,
   REDESIGN-SIGNOFF.md §5, is a dependency worth settling first).
 
-### E2 — the moons plan (v1, written 8 Oct 2026 night; NOT APPROVED — nothing below is built)
+### E2 — the moons plan (v1, written 8 Oct 2026 night; APPROVED the same night by the instructor, who also accepted the moon work's lock layer; BUILT — departures are in `design/templates/console/studio/SPEC.md` "As built, E1.5 and E2")
 
 Written before any code, because it changes `is_stage_unlocked()`. Read from the
 code, not from the docs: `objectives` (schema.sql:91), `is_stage_unlocked()` step 4
@@ -316,8 +316,8 @@ proposal is published like any typed edit. Nothing here builds the app.
 | **E1.2** *(built 8 Oct)* | The converter (reader AST ⇄ editor doc) and its 754-block round-trip test | unit tests |
 | **E1.3** *(built 8 Oct; gate green)* | The editor page: right sidebar tabs, page, toolbar, topic controls, Publish and Discard, REDONE from the templates; SPEC rewritten | spec at 1440 and 380, six assertions, captures opened |
 | **E1.4** *(built 8 Oct)* | `export-content.mjs` (`pnpm content:export`); docs | test |
-| **E1.5** *(not built)* | Per-topic History in the editor: what the old block editor's History and Use this text did, on a topic | spec at 1440 and 380 |
-| **E2** *(plan v1 written 8 Oct, awaiting approval)* | Moons: see "E2 — the moons plan" above | its own gate |
+| **E1.5** *(built 8 Oct, night)* | Per-topic History in the editor: what the old block editor's History and Use this text did, on a topic | `console-studio-history.spec.ts`, 18 green |
+| **E2** *(approved and built 8 Oct, night; `db/addendum-studio-moons.sql` is the sixteenth file, on Supabase first)* | Moons: see "E2 — the moons plan" above | `studio-moons-api.spec.ts` (31 incl. the denials, red first), `moon-readers.spec.ts`, `console-studio-moons.spec.ts` (30) |
 | **E3** | AI proposals, with CS3 | with the app |
 
 Templates, captured and opened 8 Oct 2026: `design/templates/console/studio-editor/`

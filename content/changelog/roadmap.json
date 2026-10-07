@@ -2,20 +2,6 @@
   "_about": "What comes next, in the approved order (docs/COURSE-STUDIO-PLAN.md §4, approved 7 Oct 2026, night), and what waits on the instructor (docs/NEXT-SESSION.md). Shown on the console's /changelog only. Update it in the session that changes either list.",
   "next": [
     {
-      "id": "E1",
-      "title": "Studio as an editor: type in place, topics, Draft then Publish",
-      "what": "The chapter is a page you click into and type, under one toolbar, with the outline and the AI in a right sidebar. Add, delete and reorder topics. What you type is a draft students never see until you publish it.",
-      "plan": "docs/STUDIO-EDITOR-PLAN.md",
-      "state": "built, history on a topic still owed"
-    },
-    {
-      "id": "E2",
-      "title": "Moons you can edit, add and retire",
-      "what": "Edit a moon's wording; add a moon as a draft that opens nothing until it has questions; retire one without losing anyone's progress. Touches the lock that opens a planet, so it gets its own plan first.",
-      "plan": "docs/STUDIO-EDITOR-PLAN.md",
-      "state": "planned"
-    },
-    {
       "id": "Profiles",
       "title": "Profile pages",
       "what": "A profile page with an uploaded picture for students, teachers and the admin.",
@@ -58,6 +44,6 @@
     "Import the first teacher roster on Teachers, and have a teacher make the first real claim at Claim.",
     "Say whether Teachers should leave Records for a nav group of its own.",
     "Choose which of the study plan's features to build (STUDY-AND-BOT-PLAN.md §4), and supply the four AI engine keys.",
-    "The screen-reader pass, and accepting the moon work's lock-layer changes (REDESIGN-SIGNOFF.md §5)."
+    "The screen-reader pass."
   ]
 }

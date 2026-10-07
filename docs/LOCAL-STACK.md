@@ -41,7 +41,7 @@ before anything else.
 
 ```bash
 pnpm db:up      # Postgres 16 in Docker on :15432
-pnpm db:reset   # drop, recreate, apply all FOURTEEN SQL files, run invariants
+pnpm db:reset   # drop, recreate, apply all SIXTEEN SQL files, run invariants
 pnpm dev:api    # the API on :8090, configured for LOCAL auth  <- not `pnpm dev`
 pnpm test:rls   # the 38-test denial suite
 pnpm verify     # typecheck + tests + invariants

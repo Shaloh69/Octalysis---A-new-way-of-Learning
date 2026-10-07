@@ -23,156 +23,53 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: E2, MOONS IN THE STUDIO (the plan first), then E1.5
+## 1. Start here — the next session: PROFILES (profile pages and pictures)
 
 ```
-Read docs/NEXT-SESSION.md sections 0zk, 0zj and 0zi first: the Studio is an
-editor now (E1: a right sidebar of two tabs, a chapter as a page you type on,
-topics you add, delete and reorder, a locked book quote, Draft then Publish,
-autosave, pnpm content:export) and is on the deployment; CS1 and the changelogs
-are built. The order is E1 (done) -> E2 and E1.5 (this session) -> PROFILES ->
-T2 -> CS2 -> the student bot and Study Session -> the app with CS3. Then
-docs/STUDIO-EDITOR-PLAN.md in full (the instructor's rulings of 8 Oct, and the
-Moons (E2) section), docs/COURSE-STUDIO-PLAN.md section 4 (the order),
-docs/redesign/REDESIGN-SIGNOFF.md section 5 (the moon work's lock layer, which
-the instructor has NOT yet signed off), db/CLAUDE.md (V-29: a column grant is
-decided on purpose; V-30: a policy's subquery is subject to RLS), and
-apps/console/CLAUDE.md's /studio row. Then root CLAUDE.md: hard rules 3, 5, 6,
-8 and 10, "Templates are ARTIFACTS", "THE HARDEST RULE", "NEVER PROCEED TO
-ANOTHER PAGE", "REDO THE PAGE". Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md sections 0zl, 0zk and 0zj first: the Studio is an
+editor (E1), its moons are an editor too (E2: edit, add as a draft, retire,
+one dialog that says who would see a planet close) and a topic has its History
+back (E1.5); all of it is on the deployment, and the moon work's lock layer
+was ACCEPTED by the instructor on 8 Oct. The order is T1 (done) -> CS1 (done)
+-> E1, E2, E1.5 (done) -> PROFILES (this session) -> T2 -> CS2 -> the student
+bot and Study Session -> the app with CS3. Then docs/PROFILES-PLAN.md in full
+(rulings approved 7 Oct, night; it REVERSES DESIGN-MANDATE.md section 4, which
+said never to ask for a profile picture), docs/CHAT-PLAN.md for how chat
+attachments and their private bucket work (the picture bucket is built the
+same way), db/CLAUDE.md (V-29: a column grant is decided on purpose; V-30: a
+policy's subquery is subject to RLS; and the new Never about objectives),
+and apps/console/CLAUDE.md's /teachers, /teachers/:key and /students/:id
+rows. Then root CLAUDE.md: hard rules 3, 8 and 10, "Templates are ARTIFACTS",
+"THE HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE", "REDO THE PAGE". Do not
+re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. On
-8 Oct it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open box a
-person's. Then say plainly whether Prelim-worth of data is okay to run on
-students, checking the five conditions in CLAUDE.md (the console's /changelog
-shows them live). On 8 Oct it was NOT: on the deployment stage 01 has 14 live,
-1 at review, 2 retired, and 02-04 have none live (14 of the act-1 bank's 96);
-11 of the 19 planet summaries are approved; deployment invariants 0 failures
-(3 warnings).
+8 Oct (night) it was 239/245, 98%: R3 87/88, R4 46/48, R5 21/24, every open
+box a person's. Then say plainly whether Prelim-worth of data is okay to run
+on students, checking the five conditions in CLAUDE.md (the console's
+/changelog shows them live). On 8 Oct it was NOT: on the deployment stage 01
+has 14 live, 1 at review, 2 retired, and 02-04 have none live (14 of the
+act-1 bank's 96); 11 of the 19 planet summaries are approved; deployment
+invariants 0 failures (3 warnings).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
 reboot, start Docker Desktop first. Kill orphaned API trees and previews:
 stopping a background task does NOT stop its server, so kill by PID (netstat
 -ano, taskkill //T //F //PID) and prove the port is free. Run pnpm db:reset,
-THEN node scripts/db-demo.mjs (FIFTEEN SQL files: addendum-studio-editor.sql is
+THEN node scripts/db-demo.mjs (SIXTEEN SQL files: addendum-studio-moons.sql is
 the last). Start ONE pnpm dev:api and prove it with a real GET (readyz); curl
-again after EVERY db:reset (a reset can kill it). Build and preview apps/web on
-5185 and apps/console on 5186 (restart a preview after EVERY build), and export
-OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test run, and pnpm verify, empties
-the seeded database: reset and reseed before any Playwright run. Capture a
-dialog only after its ease-in. A script with an apostrophe, backtick or
-backslash goes through the Write tool, never a heredoc (a heredoc with a long
-prose body failed on 8 Oct too), and a regex-heavy edit through the Edit tool
-or a Python script written with Write. Git Bash rewrites a leading-slash
-argument into a Windows path: MSYS_NO_PATHCONV=1.
-
-The deployment: API https://octa-api-noq2.onrender.com, student site
-https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
-Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
-print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project).
-scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref; pnpm
-db:push:check prints the host, and pnpm db:push --file db/<addendum>.sql
-applies one.
-
-The work, in this order:
-
-1. E2 PLAN FIRST, in docs/STUDIO-EDITOR-PLAN.md or its own file, BEFORE any
-   code, and stop for the instructor's approval of it (the lock layer is
-   involved). Read how a moon is wired: the objectives table, items and
-   blueprints (one journey per moon), mastery, the four minigames,
-   is_stage_unlocked(), sync-content's handling of objectives and
-   check:objectives. Say: what editing a moon's wording changes and what it must
-   not (sync-content must stop overwriting an edited objective); how a NEW moon is
-   a draft the lock does not count until it has enough live questions to fill its
-   journey; how a RETIRED moon disappears for students and from the lock's count
-   while its mastery rows and items stay (rules 6 and 7); what a moon with a
-   minigame says when retired; who may publish a moon change (the approval rule:
-   a teacher of the subject, the author rule for the AI's proposals); the denial
-   tests, written RED FIRST (a student cannot write an objective; a draft moon is
-   invisible to a student and does not hold a planet shut; a retired moon's
-   evidence survives; a teacher of another subject cannot publish). If the
-   instructor has not signed off the moon work's lock layer (REDESIGN-SIGNOFF.md
-   section 5), say so and ask.
-2. After approval: the schema (an idempotent addendum, the SIXTEENTH file,
-   registered in scripts/db-reset.mjs and scripts/db-push-supabase.mjs, applied
-   to Supabase BEFORE the code, hard rule 10), the API, then the Studio's moons
-   section REDONE from a captured template (today it is a read-only list on the
-   chapter page): type in a moon's wording, add one (wording, bloom level, level
-   0-6, read/trace/build), retire one, all as part of Draft then Publish.
-   design/specs/console-studio-editor.spec.ts is the gate for it, at 1440 and
-   380, the six assertions, screenshots OPENED.
-3. E1.5: per-topic History in the editor (what the old block editor's History
-   and "Use this text" did, on a topic). The route and the client method exist
-   (GET /console/content/blocks/:id/history, api.contentHistory); the page does
-   not call them. Template first.
-4. Run pnpm content:export against the deployment's database if its
-   credentials are there, and commit content/export if the Studio owns any
-   chapter; if there is none, say so.
-
-Not this session (do not start): PROFILES, T2, CS2, the student bot, CS3.
-
-Still owed by the instructor (do not build around them): the first teacher
-roster import on /teachers and a first real claim at /claim; whether /teachers
-leaves Records for a nav group of its own; which of STUDY-AND-BOT-PLAN.md
-section 4's features to build; the four engine keys; approving the 83 act-1
-items at review (the Prelim needs 96 live), the 131 questions for 09-12, the
-chapter drafts 08-13, 17 figures and the 8 summaries still to review (on the
-Studio's To review); the screen-reader pass; accepting the moon work's
-lock-layer changes (REDESIGN-SIGNOFF.md section 5).
-
-Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put a
-key in it). Any visual change goes through its page gate. Before the last
-commit run pnpm changelog and add the day's entry to
-content/changelog/highlights.json (and the roadmap), so the changelogs say what
-shipped.
-
-End: pnpm phase with the percentage, the Prelim sentence checked,
-docs/NEXT-SESSION.md and PROGRESS.md updated, REVAMP-PROMPTS.md section 1
-rewritten for the session after, committed and pushed, and the next prompt
-given in one plain fenced block.
-```
-
-## 1b. Parked — the session after: PROFILES (profile pages and pictures)
-
-```
-Read docs/NEXT-SESSION.md sections 0zj, 0zi and 0zh first: the changelogs
-and Course Studio CS1 are built and deployed (CS1 took in /content, which
-redirects); the order is T1 (done) -> CS1 (done) -> PROFILES (this session) ->
-T2 -> CS2 -> the student bot and Study Session -> the app with CS3. Then
-docs/PROFILES-PLAN.md in full (rulings approved 7 Oct, night; it REVERSES
-DESIGN-MANDATE.md section 4, which said never to ask for a profile picture),
-docs/CHAT-PLAN.md for how chat attachments and their private bucket work (the
-picture bucket is built the same way), db/CLAUDE.md (V-29: a column grant is
-decided on purpose; V-30: a policy's subquery is subject to RLS), and
-apps/console/CLAUDE.md's /teachers, /teachers/:key and /students/:id rows.
-Then root CLAUDE.md: hard rules 3, 8 and 10, "Templates are ARTIFACTS", "THE
-HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE", "REDO THE PAGE". Do not
-re-derive what those carry.
-
-Run pnpm phase. Show the table, say the percentage, name the live phase. On
-8 Oct it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open box a
-person's. Then say plainly whether Prelim-worth of data is okay to run on
-students, checking the five conditions in CLAUDE.md (the console's /changelog
-now shows them live). On 8 Oct it was NOT: on the deployment stage 01 has 14
-live, 1 at review, 2 retired, and 02-04 have none live (14 of the act-1
-bank's 96); 11 of the 19 planet summaries are approved; deployment
-invariants 0 failures (3 warnings).
-
-Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot, start Docker Desktop first (it was down at the start of 8 Oct). Kill
-orphaned API trees and previews: stopping a background task does NOT stop its
-server, so kill by PID (netstat -ano, taskkill //T //F //PID) and prove the
-port is free. Run pnpm db:reset, THEN node scripts/db-demo.mjs (FOURTEEN SQL
-files: addendum-studio.sql is the last). Start ONE pnpm dev:api and prove it
-with a real GET (readyz); curl again after EVERY db:reset (a reset can kill
-it). Build and preview apps/web on 5185 and apps/console on 5186 (restart a
-preview after EVERY build), and export OCTA_WEB_URL and OCTA_CONSOLE_URL.
-Every API test run, and pnpm verify, empties the seeded database: reset and
-reseed before any Playwright run. Capture a dialog only after its ease-in (a
-capture mid-fade looks translucent). A script with an apostrophe, backtick or
-backslash goes through the Write tool, never a heredoc, and a regex-heavy edit
-through the Edit tool or a Python script written with Write (node -e in the
-shell ate the backslashes of two regexes on 8 Oct).
+again after EVERY db:reset (a reset can kill it: it did on 8 Oct). Build and
+preview apps/web on 5185 and apps/console on 5186 (restart a preview after
+EVERY build), and export OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test
+run, and pnpm verify, empties the seeded database: reset and reseed before any
+Playwright run. Capture a dialog only after its ease-in. A script with an
+apostrophe, backtick or backslash goes through the Write tool, never a
+heredoc (a heredoc ate the backslashes of two regexes again on 8 Oct, and
+there is no python on this machine); a regex-heavy edit goes through the Edit
+tool or a node script written with Write. Git Bash rewrites a leading-slash
+argument into a Windows path: MSYS_NO_PATHCONV=1. The keyboard-reach helper
+(design/specs/_gate.ts unreachableByKeyboard) tabs from the top of the page
+with a budget, so give it scope "main", not a small card.
 
 The deployment: API https://octa-api-noq2.onrender.com, student site
 https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
@@ -189,13 +86,13 @@ The work, PROFILES (PROFILES-PLAN.md), in this order:
    design/templates/web/_direction and /app/progress's) and a teacher/admin
    profile (/profile; shadcn-admin's profile settings or similar), each with
    SOURCE.md, SPEC.md (every control, the four tests) and motion.md.
-2. The schema, an idempotent addendum, the SIXTEENTH file (register it in
-   scripts/db-reset.mjs and scripts/db-push-supabase.mjs as addendum-studio.sql
-   was): profiles.avatar_path and avatar_updated_at written by the API only,
-   and the private bucket profile-images created as chat-attachments is. Denial
-   tests red first (a student cannot set another's picture, read one outside
-   their classes, or remove one; anon reads nothing; a teacher's removal is
-   audited). On Supabase BEFORE the code (hard rule 10).
+2. The schema, an idempotent addendum, the SEVENTEENTH file (register it in
+   scripts/db-reset.mjs and scripts/db-push-supabase.mjs as
+   addendum-studio-moons.sql was): profiles.avatar_path and avatar_updated_at
+   written by the API only, and the private bucket profile-images created as
+   chat-attachments is. Denial tests red first (a student cannot set another's
+   picture, read one outside their classes, or remove one; anon reads nothing;
+   a teacher's removal is audited). On Supabase BEFORE the code (hard rule 10).
 3. The API: sign one upload to a path the API chooses, check the bytes are
    WebP and at most 300 KB, record it; sign short-lived downloads only for a
    viewer allowed to see that person (same class, their teacher, the admin);
@@ -216,11 +113,11 @@ Not this session (do not start): T2, CS2, the student bot, CS3.
 
 Still owed by the instructor (do not build around them): the first teacher
 roster import on /teachers and a first real claim at /claim; whether
-/teachers leaves Records for a nav group of its own; which of STUDY-AND-BOT-PLAN.md section 4's features to build; the four engine
-keys; approving the 83 act-1 items at review (the Prelim needs 96 live), the
-131 questions for 09-12, the chapter drafts 08-13, 17 figures and the 8 summaries
-still to review (on the Studio's To review); the screen-reader pass; accepting
-the moon work's lock-layer changes (REDESIGN-SIGNOFF.md section 5).
+/teachers leaves Records for a nav group of its own; which of
+STUDY-AND-BOT-PLAN.md section 4's features to build; the four engine keys;
+approving the 83 act-1 items at review (the Prelim needs 96 live), the 131
+questions for 09-12, the chapter drafts 08-13, 17 figures and the 8 summaries
+still to review (on the Studio's To review); the screen-reader pass.
 
 Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put
 a key in it). Any visual change goes through its page gate. Before the last
@@ -233,6 +130,12 @@ docs/NEXT-SESSION.md and PROGRESS.md updated, REVAMP-PROMPTS.md section 1
 rewritten for the session after, committed and pushed, and the next prompt
 given in one plain fenced block.
 ```
+
+## 1b. Parked — the session after: T2 (teachers see their own classes)
+
+No prompt is written yet: it is written by the PROFILES session, from
+`docs/TEACHERS-AND-SUBJECTS-PLAN.md`. The order after it is CS2, the student
+bot and Study Session, then the app with CS3 (`docs/COURSE-STUDIO-PLAN.md` §4).
 
 ## 2. Continue — every session after the first
 

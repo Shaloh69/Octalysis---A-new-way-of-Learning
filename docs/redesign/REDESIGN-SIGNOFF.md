@@ -125,11 +125,11 @@ document that owns it. None is built around.
 | A stage's prerequisites listed in text for an OPEN planet (only a locked planet's reason names them today; the map draws no edge, INV-33 ruling) | Instructor: list them, or accept as is | R5.2 note |
 | The guard cannot rescue a CPU-bound device (24 fps at 16x) | Instructor: accept, or plan a lighter CPU path | R5.3 note |
 | Restoring a flight-path line (INV-33's other half) | Instructor, parked 2 Oct | NEXT-SESSION 0za |
-| Accept the moon work's lock-layer changes (section 2) as inside the redesign's scope; until then R5's last DoD box ("nothing outside the declared scope boundary was touched") cannot be ticked honestly | Instructor | R5 DoD |
+| ~~Accept the moon work's lock-layer changes (section 2) as inside the redesign's scope~~ **ACCEPTED by the instructor, 8 Oct 2026** (asked while approving the Studio's moons plan, `docs/STUDIO-EDITOR-PLAN.md` E2). R5's last DoD box is ticked | Instructor | R5 DoD |
 
 Content the instructor still owes is outside the redesign and is tracked in
 `docs/NEXT-SESSION.md` (the 83 act-1 items at review, the 131 questions for
 09-12, chapter drafts 08-13, 17 figures).
 
 **`docs/PROGRESS.md` is NOT marked "redesign complete"** (R5.6's second box):
-it will be when section 5's first two rows close.
+it will be when section 5's first two rows close. (8 Oct 2026: the lock-layer row closed; the screen-reader pass and the planet summaries are still a person's.)

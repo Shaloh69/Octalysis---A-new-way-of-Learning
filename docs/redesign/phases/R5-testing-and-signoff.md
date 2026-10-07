@@ -182,5 +182,6 @@ contract (R5.2)").
 ## Definition of done
 - [ ] Every checkbox above checked
 - [x] `REDESIGN-SIGNOFF.md` committed (7 Oct 2026)
-- [ ] Nothing outside the declared scope boundary was touched, verified by
-      diff, not by memory
+- [x] Nothing outside the declared scope boundary was touched, verified by
+      diff, not by memory (R5.4's diff of 7 Oct; the three lock-layer changes
+      it flagged were ACCEPTED by the instructor on 8 Oct 2026, `REDESIGN-SIGNOFF.md` §5)
