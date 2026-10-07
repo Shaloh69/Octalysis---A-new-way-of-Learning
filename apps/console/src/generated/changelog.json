@@ -1,9 +1,47 @@
 {
   "madeAt": {
-    "commit": "2113f4c",
-    "date": "2026-10-07"
+    "commit": "d9b4f0a",
+    "date": "2026-10-08"
   },
   "updates": [
+    {
+      "date": "2026-10-08",
+      "title": "Course Studio",
+      "highlights": [
+        "Course Studio replaces Content: one page for the course's material, in the Course group of the menu. An outline of subjects, their books and chapters on the left, the editor in the middle, and the AI Assistant on the right.",
+        "A chapter is now tabs: Blocks, Summary, Draft and Figures where the chapter has them, and the syllabus's Objectives. Everything Content did is kept: approvals of one exact text, a reason and the version opened on every save, quotes from the book read-only. Old Content links still land.",
+        "To review gathers summaries, drafted lesson text and figures in one place.",
+        "Every teacher can add a subject, rename it, and add, edit or default its books, each with a reason in the audit log.",
+        "A new approval rule, held in the database: a teacher of the subject approves, never the author of the version; the admin may approve their own edit, recorded as self-approved. An Approve you may not use is disabled, with the reason beside it.",
+        "The AI Assistant pane is there, locked, and says the app is not released yet."
+      ],
+      "commits": [
+        {
+          "hash": "b148ded",
+          "type": "feat",
+          "scope": "console",
+          "subject": "/studio, Course Studio (CS1): the course's material in one page"
+        },
+        {
+          "hash": "b827a25",
+          "type": "feat",
+          "scope": "api",
+          "subject": "a chapter's objectives and who wrote each version, for the Studio"
+        },
+        {
+          "hash": "3e7f7e9",
+          "type": "feat",
+          "scope": "api",
+          "subject": "subjects and books for every teacher, with a reason and an audit row (CS1)"
+        },
+        {
+          "hash": "dbe8f3f",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "the approval rule, held in the database (CS1)"
+        }
+      ]
+    },
     {
       "date": "2026-10-07",
       "title": "Teacher accounts, and the changelog",
@@ -1644,18 +1682,11 @@
   "roadmap": {
     "next": [
       {
-        "id": "CS1",
-        "title": "Course Studio, without the AI",
-        "what": "One console page for subjects, books and chapters: the chapter editor, summaries, figures and drafted text, with the new approval rule (a subject's teachers approve, never their own edit; the admin may, recorded).",
-        "plan": "docs/COURSE-STUDIO-PLAN.md",
-        "state": "in progress"
-      },
-      {
         "id": "Profiles",
         "title": "Profile pages",
         "what": "A profile page with an uploaded picture for students, teachers and the admin.",
         "plan": "docs/PROFILES-PLAN.md",
-        "state": "planned"
+        "state": "next"
       },
       {
         "id": "T2",
@@ -1687,8 +1718,9 @@
       }
     ],
     "owed": [
+      "Decide whether a block edit in the Studio, which reaches students at once, should also need a second teacher (ruling 6 could be read to say so).",
       "Approve the 83 act-1 questions at review on Items (the Prelim needs all 96 live).",
-      "Approve the planet summaries (the redesign's last R3 box), the drafted chapters 08 to 13 and 17 figures on Content.",
+      "Approve the planet summaries (the redesign's last R3 box), the drafted chapters 08 to 13 and 17 figures on the Studio's To review.",
       "Review the 131 questions for stages 09 to 12 on Items.",
       "Import the first teacher roster on Teachers, and have a teacher make the first real claim at Claim.",
       "Say whether Teachers should leave Records for a nav group of its own.",
