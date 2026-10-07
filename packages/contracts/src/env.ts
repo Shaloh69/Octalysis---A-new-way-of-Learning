@@ -62,6 +62,10 @@ export const ServerEnv = z.object({
   /** Authenticates Supabase Cron -> /internal/* calls. */
   CRON_SECRET: z.string().min(16).optional(),
 
+  /** Seals teachers' engine keys (AES-256-GCM; the drafting assistant, B3). Only in
+   *  Render's environment. Unset: the API refuses to store or use a key. */
+  ASSISTANT_KEY_SECRET: z.string().min(32, "ASSISTANT_KEY_SECRET must be at least 32 chars").optional(),
+
   SENTRY_DSN: z.string().optional(),
 });
 export type ServerEnv = z.infer<typeof ServerEnv>;
@@ -77,5 +81,6 @@ export const SERVER_ONLY_SECRETS = [
   "EXAM_SALT_SECRET",
   "DATABASE_URL",
   "CRON_SECRET",
+  "ASSISTANT_KEY_SECRET",
   "SENTRY_DSN",
 ] as const;
