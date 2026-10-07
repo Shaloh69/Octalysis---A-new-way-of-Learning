@@ -105,9 +105,10 @@ by itself (hard rules 1, 4, 5):
 
 ## 5. Order and what is still open
 
-Proposed: T1 (teachers) → profiles → T2 (own classes) → the student bot and
-the Study Session (they need the class scoping and per-class limits) → the
-assistant's app and the teacher's bot. The instructor may move it.
+**APPROVED (instructor, 7 Oct 2026, night: "do the proposed order"):** T1
+(teachers) → profiles → T2 (own classes) → the student bot and the Study
+Session (they need the class scoping and per-class limits) → the assistant's
+app and the teacher's bot.
 
 Open: which of §4 to build, and in what order; whether a teacher may read a
 student's bot conversations (privacy; proposed: no, totals only, as the

@@ -64,5 +64,6 @@ identical for everyone (CLAUDE.md "Design").
 
 ## 4. Order
 
-Proposed: after T1 (teacher accounts), before T2, so the teacher and admin
-profile has accounts to belong to. The instructor may move it.
+**APPROVED (7 Oct 2026, night):** after T1 (teacher accounts), before T2.
+The whole order: T1 → profiles → T2 → the student bot and the Study Session
+→ the assistant's app and the teacher's bot.
