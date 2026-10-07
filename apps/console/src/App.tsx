@@ -3,6 +3,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-d
 import { AppShell } from "./components/AppShell";
 import { Toaster } from "./components/ui/toast";
 import { LocksPage } from "./pages/LocksPage";
+import { ChangelogPage } from "./pages/ChangelogPage";
 import { StudentsPage } from "./pages/StudentsPage";
 import { StudentDetailPage } from "./pages/StudentDetailPage";
 import { AttemptPage } from "./pages/AttemptPage";
@@ -94,6 +95,7 @@ export function App() {
           <Route path="/audit" element={<AuditPage />} />
           <Route path="/system" element={<SystemPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="/changelog" element={<ChangelogPage />} />
           {/* The admin's (T1). The page itself tells a teacher it is the admin's. */}
           <Route path="/teachers" element={<TeachersPage />} />
           <Route path="/teachers/:key" element={<TeacherDetailPage />} />

@@ -5,7 +5,7 @@ import type {
   LiveOptions, LiveSession, LiveSnapshot, LiveStartBody,
   ChatAttachments, ChatMessage, ChatRoom, ChatRooms, ChatThread, ChatUnread, ChatUpload,
   ClassAssignBody, ClassUpdateBody, TeacherClaimBody, TeacherDetail, TeacherImportBody,
-  TeacherStatusBody, TeachersResponse,
+  TeacherStatusBody, TeachersResponse, ProgressResponse,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -669,6 +669,8 @@ export const api = {
     }>("/api/v1/stages"),
 
   content: () => request<ContentStatus>("/api/v1/console/content"),
+  /** The /changelog page's course readiness: the Prelim's five conditions, live. */
+  progress: () => request<ProgressResponse>("/api/v1/console/progress"),
 
   contentSummaries: () => request<{ summaries: StageSummary[] }>("/api/v1/console/content/summaries"),
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Users, Lock, BookOpen, Table2, ScrollText, ShieldCheck, MessageSquare,
-  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare, UserCog,
+  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare, UserCog, History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } from "@/lib/session";
@@ -60,6 +60,7 @@ const GROUPS = [
       { to: "/audit", label: "Audit log", icon: ScrollText, hint: "Who changed what, and why" },
       { to: "/system", label: "System health", icon: ShieldCheck, hint: "The invariant suite, run live" },
       { to: "/feedback", label: "Feedback", icon: MessageSquare, hint: "Reports from students" },
+      { to: "/changelog", label: "Changelog", icon: History, hint: "What changed, and how far the whole system is" },
       /*
        * The ADMIN's alone (T1, 7 Oct 2026): every teacher, their classes, the
        * teacher roster. Shown only to the admin; the route renders a forbidden
