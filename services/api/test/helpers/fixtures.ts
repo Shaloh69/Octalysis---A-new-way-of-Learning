@@ -179,6 +179,14 @@ export async function resetWorld(): Promise<World> {
   );
 
   const r = rows[0] as Record<string, string>;
+  // The fixture teacher teaches CPE 412 in this section (Course Studio, 7 Oct 2026):
+  // the approval rule makes an approver a teacher OF THE SUBJECT, and a teacher
+  // who holds no class approves nothing. Tests of that refusal make their own.
+  await setup(
+    `insert into classes (section_id, subject_code, teacher_id, term) values ($1, 'CPE 412', $2, '2026-1')
+     on conflict (section_id, subject_code, term) do update set teacher_id = excluded.teacher_id, ended_at = null`,
+    [r.section_id, r.teacher],
+  );
 
   return {
     sectionId: r.section_id!,

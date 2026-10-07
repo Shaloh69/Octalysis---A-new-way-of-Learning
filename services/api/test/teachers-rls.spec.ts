@@ -70,7 +70,8 @@ beforeAll(async () => {
     );
     await setup(
       `insert into classes (section_id, subject_code, teacher_id, term) values
-         ($1, 'CPE 412', $3, '2026-1'), ($2, 'CPE 412', $4, '2026-1')`,
+         ($1, 'CPE 412', $3, '2026-1'), ($2, 'CPE 412', $4, '2026-1')
+       on conflict (section_id, subject_code, term) do update set teacher_id = excluded.teacher_id`,
       [sectionA, sectionB, w.teacher, idB],
     );
   } catch {

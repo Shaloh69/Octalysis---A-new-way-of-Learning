@@ -7,6 +7,7 @@ import {
 } from "@octa/contracts";
 import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
+import { assertMayApprove } from "../approval.js";
 import { withTransaction } from "../db.js";
 import { resolveItem, type BankItem } from "../engine/resolve.js";
 import { BANK_THROUGH_STAGE, isStageInBank } from "../engine/scope.js";
@@ -464,7 +465,7 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
     if (!body.success) throw errors.badRequest("That status change could not be read.");
 
     const cur = await app.db.query(
-      `select i.status, i.author_id, i.type, i.correct_spec, i.figure_id,
+      `select i.status, i.author_id, i.stage_id, i.type, i.correct_spec, i.figure_id,
               f.approved_svg is not null as figure_served
          from items i left join figures f on f.id = i.figure_id
         where i.id = $1`,
@@ -483,41 +484,20 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
         );
       }
       /*
-       * Rule 3, and the one place it bends.
-       *
-       * Approving your own item is how a wrong key reaches a live bank. But
-       * decision D4 makes teacher and admin the same person in this deployment,
-       * so on a one-instructor install the strict rule means NOTHING can ever
-       * go live -- a correctness rule that stops the system working is not a
-       * correctness rule, it is a bug.
-       *
-       * So: if a second member of staff exists, the strict rule stands and
-       * there is no override. If the author is the only one, they may publish
-       * their own work by saying so explicitly, and it is recorded as a
-       * self-approval rather than as a review. The moment a TA is added, this
-       * tightens by itself -- no setting to remember to change.
+       * Rule 3, as the Course Studio ruling restated it (7 Oct 2026, night):
+       * the approver is a teacher of the subject and never the author; the
+       * ADMIN may approve their own item. The database holds the same rule
+       * (approval_verdict, the items_approver trigger); asking it here makes
+       * the refusal a sentence. This replaces "if a second member of staff
+       * exists the strict rule stands": a one-teacher department is the
+       * admin, who is never stuck, and nobody else approves their own work.
        */
-      if (item.author_id === id!.userId) {
-        const staff = await app.db.query(
-          `select count(*)::int as n from profiles
-            where role in ('teacher','admin') and deleted_at is null and id <> $1`,
-          [id!.userId],
+      const { selfApproved } = await assertMayApprove(app.db, id!, item.author_id ?? null, item.stage_id);
+      if (selfApproved && !body.data.selfApproved) {
+        throw errors.badRequest(
+          "You wrote this item. As the admin you can publish it, but you must confirm you have re-checked the answer " +
+            "key yourself. That confirmation is recorded as a self-approval.",
         );
-        const othersExist = Number(staff.rows[0]!.n) > 0;
-
-        if (othersExist) {
-          throw errors.forbidden(
-            "An item cannot be approved by the person who wrote it. Ask another " +
-              "member of staff to review it.",
-          );
-        }
-        if (!body.data.selfApproved) {
-          throw errors.badRequest(
-            "You wrote this item, and you are the only member of staff. You can " +
-              "publish it, but you must confirm you have re-checked the answer " +
-              "key yourself. That confirmation is recorded.",
-          );
-        }
       }
       // A static item with no correct value would grade every student wrong,
       // silently, for as long as it stayed live.
@@ -547,7 +527,7 @@ export function registerItemRoutes(app: FastifyInstance, env: Env): void {
           reason: body.data.reason ?? null,
           // Distinguishable from a real review, forever, in one field.
           selfApproved:
-            body.data.status === "live" && item.author_id === id!.userId ? true : undefined,
+            body.data.status === "live" && item.author_id !== null && item.author_id === id!.userId ? true : undefined,
         }),
       ],
     );

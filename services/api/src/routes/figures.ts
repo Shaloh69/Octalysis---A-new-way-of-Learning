@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { identityFrom, requireStaff } from "../auth.js";
 import { AppError, errors } from "../errors.js";
+import { assertMayApprove } from "../approval.js";
 import { withTransaction } from "../db.js";
 import type { Env } from "../env.js";
 
@@ -51,7 +52,7 @@ export function registerFigureRoutes(app: FastifyInstance, env: Env): void {
 
     const result = await withTransaction(app.db, async (client) => {
       const { rows } = await client.query(
-        "select svg, svg_hash, status from figures where id = $1 for update",
+        "select svg, svg_hash, status, stage_id, authored_by::text as authored_by from figures where id = $1 for update",
         [figureId],
       );
       const cur = rows[0];
@@ -60,6 +61,7 @@ export function registerFigureRoutes(app: FastifyInstance, env: Env): void {
         throw new AppError("conflict", "This figure was redrawn since you opened it. Look at the new drawing before approving it.");
       }
       if (cur.status === "approved") return { already: true };
+      const { selfApproved } = await assertMayApprove(client, id!, cur.authored_by ?? null, cur.stage_id);
       await client.query(
         `update figures
             set status = 'approved', approved_hash = svg_hash, approved_svg = svg,
@@ -70,7 +72,7 @@ export function registerFigureRoutes(app: FastifyInstance, env: Env): void {
       await client.query(
         `insert into audit_log (actor_id, action, target_type, target_id, payload)
          values ($1, 'figure.approve', 'figure', $2, $3)`,
-        [id!.userId, figureId, JSON.stringify({ hash: cur.svg_hash })],
+        [id!.userId, figureId, JSON.stringify({ hash: cur.svg_hash, ...(selfApproved ? { selfApproved: true } : {}) })],
       );
       return { already: false };
     });

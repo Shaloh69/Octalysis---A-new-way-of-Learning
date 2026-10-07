@@ -5,6 +5,7 @@ import { AppError, errors } from "../errors.js";
 import { withTransaction } from "../db.js";
 import type { Env } from "../env.js";
 import { toFigure } from "./figures.js";
+import { assertMayApprove } from "../approval.js";
 
 /**
  * `/content`: authoring status, the block editor, and planet-summary review.
@@ -413,7 +414,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
 
     const result = await withTransaction(app.db, async (client) => {
       const { rows } = await client.query(
-        "select draft, draft_hash, status from stage_summaries where stage_id = $1 for update",
+        "select draft, draft_hash, status, authored_by::text as authored_by from stage_summaries where stage_id = $1 for update",
         [stageId],
       );
       const cur = rows[0];
@@ -425,6 +426,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
         );
       }
       if (cur.status === "approved") return { already: true };
+      const { selfApproved } = await assertMayApprove(client, id!, cur.authored_by ?? null, stageId);
 
       await client.query(
         `update stage_summaries
@@ -437,7 +439,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
       await client.query(
         `insert into audit_log (actor_id, action, target_type, target_id, payload)
          values ($1, 'summary.approve', 'stage', $2, $3)`,
-        [id!.userId, stageId, JSON.stringify({ hash: cur.draft_hash, text: cur.draft })],
+        [id!.userId, stageId, JSON.stringify({ hash: cur.draft_hash, text: cur.draft, ...(selfApproved ? { selfApproved: true } : {}) })],
       );
       return { already: false };
     });
@@ -515,7 +517,7 @@ export function registerChapterDraftRoutes(app: FastifyInstance, env: Env): void
 
     const result = await withTransaction(app.db, async (client) => {
       const { rows } = await client.query(
-        "select blocks, draft_hash, status from chapter_drafts where stage_id = $1 for update",
+        "select blocks, draft_hash, status, authored_by::text as authored_by from chapter_drafts where stage_id = $1 for update",
         [stageId],
       );
       const cur = rows[0];
@@ -524,6 +526,7 @@ export function registerChapterDraftRoutes(app: FastifyInstance, env: Env): void
         throw new AppError("conflict", "This chapter's draft changed since you opened it. Read the new text before approving it.");
       }
       if (cur.status === "approved") return { already: true };
+      const { selfApproved } = await assertMayApprove(client, id!, cur.authored_by ?? null, stageId);
       const blocks = z.array(DraftBlock).min(1).parse(cur.blocks);
 
       await client.query(
@@ -554,7 +557,7 @@ export function registerChapterDraftRoutes(app: FastifyInstance, env: Env): void
       await client.query(
         `insert into audit_log (actor_id, action, target_type, target_id, payload)
          values ($1, 'chapter.approve', 'stage', $2, $3)`,
-        [id!.userId, stageId, JSON.stringify({ hash: cur.draft_hash, blocks: blocks.length })],
+        [id!.userId, stageId, JSON.stringify({ hash: cur.draft_hash, blocks: blocks.length, ...(selfApproved ? { selfApproved: true } : {}) })],
       );
       return { already: false };
     });

@@ -278,31 +278,33 @@ describe("nothing goes live without a second pair of eyes", () => {
     mineId = res.json().id;
   });
 
-  it("REFUSES to let the author approve their own item WHILE OTHER STAFF EXIST", async () => {
-    // beforeAll created a second staff account, so the strict rule applies.
+  it("REFUSES to let a teacher approve their own item, in words", async () => {
+    // Course Studio (7 Oct 2026, night): an approver is never the author. Only
+    // the admin may approve their own edit.
     const res = await app.inject({
       method: "PATCH", url: `/api/v1/console/items/${mineId}/status`,
       headers: auth(teacherToken), payload: { status: "live" },
     });
     expect(res.statusCode).toBe(403);
-    expect(res.json().error.message).toMatch(/cannot be approved by the person who wrote it/i);
+    expect(res.json().error.message).toMatch(/you wrote this version/i);
 
     const { rows } = await pool.query("select status from items where id = $1", [mineId]);
     expect(rows[0]!.status).toBe("draft");
   });
 
-  it("REFUSES a self-approval even when alone, unless it is acknowledged", async () => {
-    // Soft-delete the second reviewer: now the author is the only staff, which
-    // is the real one-instructor deployment (decision D4).
+  it("REFUSES a teacher's self-approval even when they are the only staff left", async () => {
+    // This used to degrade to an acknowledged self-approval for a solo
+    // instructor. The solo instructor is the admin now, who is never stuck;
+    // a teacher is never their own reviewer, alone or not.
     await pool.query("update profiles set deleted_at = now() where id = $1", [adminUserId]);
     try {
-      const res = await app.inject({
-        method: "PATCH", url: `/api/v1/console/items/${mineId}/status`,
-        headers: auth(teacherToken), payload: { status: "live" },
-      });
-      expect(res.statusCode).toBe(400);
-      expect(res.json().error.message).toMatch(/re-checked the answer key/i);
-
+      for (const payload of [{ status: "live" }, { status: "live", selfApproved: true }]) {
+        const res = await app.inject({
+          method: "PATCH", url: `/api/v1/console/items/${mineId}/status`,
+          headers: auth(teacherToken), payload,
+        });
+        expect(res.statusCode).toBe(403);
+      }
       const { rows } = await pool.query("select status from items where id = $1", [mineId]);
       expect(rows[0]!.status).toBe("draft");
     } finally {
@@ -310,35 +312,37 @@ describe("nothing goes live without a second pair of eyes", () => {
     }
   });
 
-  it("ALLOWS an acknowledged self-approval when alone, and records it as one", async () => {
-    // The rule cannot simply stop a solo instructor working -- a correctness
-    // rule that makes the system unusable is a bug. It degrades to an explicit,
-    // audited acknowledgement instead.
-    await pool.query("update profiles set deleted_at = now() where id = $1", [adminUserId]);
-    try {
-      const res = await app.inject({
-        method: "PATCH", url: `/api/v1/console/items/${mineId}/status`,
-        headers: auth(teacherToken), payload: { status: "live", selfApproved: true },
-      });
-      expect(res.statusCode).toBe(200);
+  it("lets the ADMIN approve their own item, once they confirm the key, and records it as one", async () => {
+    // The rule cannot stop a one-teacher department working: the admin may
+    // publish their own work by saying they re-checked the key, and it is
+    // recorded as a self-approval, in the audit row and on the item.
+    const made = await app.inject({
+      method: "POST", url: "/api/v1/console/items",
+      headers: auth(adminToken), payload: { ...DRAFT, slug: "P-07-admin-own" },
+    });
+    const ownId = made.json().id as string;
+    const bare = await app.inject({
+      method: "PATCH", url: `/api/v1/console/items/${ownId}/status`,
+      headers: auth(adminToken), payload: { status: "live" },
+    });
+    expect(bare.statusCode).toBe(400);
+    expect(bare.json().error.message).toMatch(/re-checked the answer key/i);
 
-      const { rows } = await pool.query(
-        `select payload from audit_log
-          where action = 'item.status' and target_id = $1
-          order by at desc limit 1`,
-        [mineId],
-      );
-      // Distinguishable from a real review, forever, in one field.
-      expect(rows[0]!.payload.selfApproved).toBe(true);
-    } finally {
-      await pool.query("update profiles set deleted_at = null where id = $1", [adminUserId]);
-      await pool.query("update items set status = 'draft' where id = $1", [mineId]);
-    }
+    const res = await app.inject({
+      method: "PATCH", url: `/api/v1/console/items/${ownId}/status`,
+      headers: auth(adminToken), payload: { status: "live", selfApproved: true },
+    });
+    expect(res.statusCode).toBe(200);
+    const { rows } = await pool.query(
+      `select payload from audit_log where action = 'item.status' and target_id = $1 order by at desc limit 1`,
+      [ownId],
+    );
+    expect(rows[0]!.payload.selfApproved).toBe(true);
+    const item = await pool.query("select self_approved from items where id = $1", [ownId]);
+    expect(item.rows[0]!.self_approved).toBe(true);
   });
 
-  it("the acknowledgement is IGNORED while another reviewer exists", async () => {
-    // Otherwise the override would be a way around the rule rather than a
-    // fallback for when there is nobody to ask.
+  it("the acknowledgement does not open it for a teacher: it only ever applied to the admin", async () => {
     const res = await app.inject({
       method: "PATCH", url: `/api/v1/console/items/${mineId}/status`,
       headers: auth(teacherToken), payload: { status: "live", selfApproved: true },

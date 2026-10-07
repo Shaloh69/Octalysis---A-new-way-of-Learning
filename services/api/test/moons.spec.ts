@@ -90,6 +90,14 @@ beforeAll(async () => {
     select (select id from ua) a, (select id from ub) b, (select id from ut) t,
            (select count(*) from obj) + (select count(*) from its) + (select count(*) from s) n
   `);
+  // The fixture teacher teaches CPE 412 here: the approval rule (Course Studio,
+  // 7 Oct 2026) makes an approver a teacher of the subject.
+  await setup(
+    `insert into classes (section_id, subject_code, teacher_id, term)
+     select s.id, 'CPE 412', $1, '2026-1' from sections s where s.code = 'BSCPE-2A'
+     on conflict (section_id, subject_code, term) do nothing`,
+    [rows[0].t],
+  );
   studentA = rows[0].a;
   studentB = rows[0].b;
 
