@@ -95,6 +95,66 @@ Journey**. The accessible layer binds (`VISUAL-SYSTEM-3D.md` §5): every system
 is also a real button, reduced motion freezes the orbits and cuts the zoom,
 no WebGL keeps the list. Chat rooms become per class (section x subject).
 
+### 5a. The galaxy's engineering: real physics, detail by distance, measured speed
+
+Instructor, 7 Oct 2026 (night): "This galaxy should follow the rules of real
+physics, and textures of those animations; some solar systems only visible,
+like planets, if we get close. Make sure it is also fps friendly, with proper
+LODs. Make sure this works as intended."
+
+**Real physics, a compressed scale.** The LAWS are real; the DISTANCES are not
+(at true scale every system would be an invisible point and the black hole a
+dot). Kept exactly:
+
+- **Kepler's third law** for every orbit, systems around the black hole as
+  planets around a sun already do (`WEB-REVAMP.md` §4): angular speed
+  proportional to a^-1.5, so an inner system laps an outer one; T^2 / a^3 the
+  same for all of them.
+- **The black hole by its own radii:** the event horizon (r_s), the photon
+  ring at 1.5 r_s, and the accretion disc's inner edge at the innermost
+  stable circular orbit, 3 r_s (6GM/c^2 for a non-spinning hole); the disc
+  itself Keplerian (its inner edge turns fastest).
+- **Doppler beaming:** the side of the disc moving toward the camera is
+  brighter, and gravitational redshift dims and reddens the inner edge.
+- **Gravitational lensing** of the disc and the stars behind the hole: a
+  screen-space shader on the highest quality tier only; lower tiers keep the
+  photon ring and a fixed lensed glow (honest: true ray-traced lensing does
+  not hold 30 fps on a mid-range phone).
+- Textures procedural (noise in the shader), not downloaded images, so the
+  look costs no bandwidth; colours from tokens (`VISUAL-SYSTEM-3D.md` §6).
+
+**Detail by distance (LOD), with hysteresis so nothing flickers at a border:**
+
+| Level | When | What is drawn |
+|---|---|---|
+| L0, the galaxy | the default view | the black hole and disc; each subject's system as ONE glowing star on its orbit (one instanced draw for all of them) and its orbit ring; **no planets** |
+| L1, approaching | the camera within a system's near radius, or a system selected | that system's planets appear as points on their orbits (one instanced draw for the system), fading in |
+| L2, entered | after Enter Journey's zoom | the full system scene as today (planet meshes, moons, the HUD); the galaxy's other systems culled; its chunk already loaded |
+
+Frustum culling, shared geometry and materials, instancing, the device pixel
+ratio capped, `frameloop="demand"` (no frame drawn while nothing moves), and
+the existing degradation ladder (reduced motion, no WebGL, a slow device,
+Battery Saver) all apply unchanged.
+
+**"Make sure this works as intended": what CS2 must show before it is done.**
+
+1. **Physics, unit-tested:** T^2/a^3 constant within 0.1% across the systems;
+   the disc's inner edge at 3 r_s and the photon ring at 1.5 r_s; inner disc
+   faster than outer; the approaching side brighter than the receding one.
+2. **LOD, tested in the browser:** at L0 no planet is in the scene and the
+   draw calls are within budget; moving inside a near radius brings that
+   system's planets in; moving back and forth across a border does not
+   flicker (hysteresis); after Enter Journey only the entered system remains.
+3. **Speed, measured as `PROGRESS.md` measures `/app` today:** 60 fps at
+   1440 on desktop; at least 30 fps at a 6x CPU slowdown; draw calls at most
+   50 (the galaxy's own ambient at most 12); the 3D chunk at most 250 KB
+   gzipped and still never preloaded; idle draws nothing.
+4. **On a real phone:** a mid-range Android, because CPU throttling is not a
+   weak GPU (fill rate is the phone's limit). Owed by the instructor or
+   whoever holds the phone; recorded, not assumed.
+5. **Seen:** captures of L0, L1, the zoom mid-way and L2, at 1440 and 380,
+   opened and looked at; reduced motion and no-WebGL captured too.
+
 ## 4. Order (APPROVED, 7 Oct 2026, night)
 
 T1 (done) → **CS1** → profiles → T2 → **CS2 (T3)** → the student bot and the
