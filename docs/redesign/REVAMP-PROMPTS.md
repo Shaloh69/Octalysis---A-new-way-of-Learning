@@ -31,7 +31,9 @@ moved the assistant's keys and engine calls into each teacher's app (plan
 v6, retired B3's server half), and the instructor approved a new plan,
 docs/TEACHERS-AND-SUBJECTS-PLAN.md, with T1 FIRST. Read that plan in full
 (the rulings table, sections 1-4). docs/PROFILES-PLAN.md is approved too and
-comes AFTER T1: read its rulings only, do not start it. Then root CLAUDE.md: hard rules 3, 8 and 10, "AUDIT
+comes AFTER T1: read its rulings only, do not start it. So does
+docs/STUDY-AND-BOT-PLAN.md (the chat bot and the Study Session): its
+rulings table only. Then root CLAUDE.md: hard rules 3, 8 and 10, "AUDIT
 EVERY PAGE AGAINST ITS SPEC", "Templates are ARTIFACTS", "THE HARDEST RULE"
 and "NEVER PROCEED TO ANOTHER PAGE"; db/CLAUDE.md; .claude/rules/rls.md;
 services/api/CLAUDE.md (one generic error for unknown and already-claimed
@@ -70,8 +72,10 @@ The work, T1 (plan section 3), in this order:
    look, then write SPEC.md listing every control and the four tests of
    docs/DESIGN-MANDATE.md section 1.
 2. The schema: one idempotent addendum (the thirteenth): subjects (CPE 412
-   seeded, its book), classes (section x subject x teacher x term, a
-   nullable book override until question C is answered), teacher_directory
+   seeded), subject_books (two or more per subject; Stallings the default
+   for CPE 412), classes (section x subject x teacher x term, many sections
+   per subject, book_id one of the subject's books or null for its
+   default; question C is ANSWERED: both), teacher_directory
    (employee ID, name, email, role, claim status), is_admin(). RLS on, admin
    only; denial tests WRITTEN RED FIRST (a teacher, a student and anon read
    no teacher_directory row and write none; a teacher cannot make a class).
@@ -91,13 +95,14 @@ The work, T1 (plan section 3), in this order:
    second T1 session; say so rather than rush it.
 
 Not T1 (do not start): the profile pages and pictures (PROFILES-PLAN.md,
-next after T1); T2, a teacher seeing only their own classes (RLS across
+next after T1); the chat bot and the Study Session (STUDY-AND-BOT-PLAN.md); T2, a teacher seeing only their own classes (RLS across
 students, gradebook, locks, submissions, chat); T3, a second subject's
 curriculum; the assistant's app.
 
-Still owed by the instructor (do not build around them): question C of the
-teachers plan (one book per subject, or per class); the four engine keys
-(they will go into the app); approving the 83 act-1 items at review (the
+Still owed by the instructor (do not build around them): which of
+STUDY-AND-BOT-PLAN.md section 4's proposed features to build; the four
+engine keys (the teacher's go into their app; the student bot's into
+Render's environment); approving the 83 act-1 items at review (the
 Prelim needs 96 live), the 131 questions for 09-12, the chapter drafts 08-13
 and 17 figures on /content, and the planet summaries (R3's last box); the
 screen-reader pass; accepting the moon work's lock-layer changes

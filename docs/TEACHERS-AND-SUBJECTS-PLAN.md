@@ -19,6 +19,7 @@ Instructor, 7 Oct 2026 (night):
 | 5 | "A section can have the same subject too" | **Many sections, one subject**: BSCPE-2A and BSCPE-2B can both take CPE 412, each its own class, possibly with different teachers |
 | 6 | "Expound the current admin to handle individual teachers" | **The roster import AND a page per teacher**, `/teachers/:id`: their classes, token totals and controls |
 | 7 | Profile pictures, for teachers and the admin too | A separate plan: `docs/PROFILES-PLAN.md` |
+| 8 | Books (question C) | **A subject may have two or more books** ("some subjects have different books"), **and a class may still choose its own: support both** |
 
 This supersedes decision **D4** ("teacher and admin are one role in this
 deployment", `VERIFICATION.md`, `PAGE-SPECS.md` §4.4) for the admin-only
@@ -41,11 +42,16 @@ powers below. Everything else D4 governs stays.
 
 **Tables** (an idempotent addendum, on Supabase before the code, hard rule 10):
 
-- `subjects (code pk, title, book_title, book_edition)` — `'CPE 412'` seeded;
-  the code matches the assistant's `assistant_course_ok()` pattern.
-- `classes (id, section_id, subject_code, teacher_id, term)` — one section,
-  one subject, one teacher; unique per (section, subject, term). A teacher
-  holds many; the admin can hold classes too.
+- `subjects (code pk, title)` — `'CPE 412'` seeded; the code matches the
+  assistant's `assistant_course_ok()` pattern.
+- `subject_books (subject_code, title, edition, is_default)` — **two or more
+  books per subject** (question C, answered); CPE 412's Stallings seeded as
+  its default.
+- `classes (id, section_id, subject_code, teacher_id, term, book_id)` — one
+  section, one subject, one teacher; unique per (section, subject, term).
+  Many sections may take one subject. `book_id` is one of the subject's books
+  (null: the subject's default), so both "per subject" and "per class" hold.
+  A teacher holds many; the admin can hold classes too.
 - `teacher_directory (employee_id pk, full_name, email, role teacher|admin,
   status unclaimed|claimed|disabled, claimed_by, claimed_at)` — the teacher
   roster, mirroring `student_directory`. Admin-only (RLS: `is_admin()`;
@@ -91,10 +97,9 @@ hides the nav item, it never decides access.
 - **A. Order: T1 FIRST**, before the assistant's app (instructor, 7 Oct).
 - **B. A teacher sees ONLY their own classes**; the admin sees all
   (instructor, 7 Oct). That is T2, with class-scoped RLS and denial tests.
-- **C. Still open: "different books".** Is a class's book its subject's
-  textbook (one per subject), or can two sections of one subject use
-  different books? Until it is answered, T1 keeps the book on the subject
-  and a nullable override on the class, which serves either answer.
+- **C. Books: ANSWERED (7 Oct, night):** a subject may have two or more
+  books, and a class may choose one of them; both are supported
+  (`subject_books`, `classes.book_id`).
 
 Each new page is born with a captured template, a `SPEC.md` and a spec at
 1440 and 380 before it is built (CLAUDE.md). Templates for `/teachers`,

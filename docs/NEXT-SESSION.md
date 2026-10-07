@@ -1593,6 +1593,17 @@ every open box a person's.
      admin and audited: `docs/PROFILES-PLAN.md` (approved; reverses
      DESIGN-MANDATE §4's "never upload"; the seeded avatar stays as the
      fallback). Proposed order: T1, then profiles, then T2, then the app.
+   - **Then:** books answered (two or more per subject, a class may choose
+     one; both supported). **The assistant is also a chat bot**, for
+     teachers (through their app) and students (on Render, the engine chain
+     back for them only, with memory and every assistant rule), plus a
+     **Study Session `/app/study`** of editable, shareable study sheets:
+     `docs/STUDY-AND-BOT-PLAN.md`. Templates captured and opened:
+     `design/templates/web/assistant-bot/` (+ console copy),
+     `design/templates/web/study/` (assistant-ui's floating modal chat;
+     BlockNote's demo; novel.sh rejected, it rendered an application error).
+     Its section 4 lists ten proposed class-management features awaiting the
+     instructor's pick.
 
 ## 0zf. The assistant's B1 (figure reader) and B2 (schema) — 7 Oct 2026 (late)
 

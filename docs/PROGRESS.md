@@ -30,7 +30,9 @@ locked until their app is connected (plan v6). New approved plan
 by employee ID, an admin-only `/teachers` and `/teachers/:id`; **T1 is
 next**, before the assistant's app. Also approved: `PROFILES-PLAN.md`
 (profile pages with uploaded pictures for students, teachers and the admin),
-proposed after T1. Prelim NOT runnable (deployment: stage 01 13 live, 02-04
+proposed after T1; and `STUDY-AND-BOT-PLAN.md` (the assistant as a chat bot
+for teachers and students, a Study Session of shareable study sheets;
+templates captured). Prelim NOT runnable (deployment: stage 01 13 live, 02-04
 none). Detail: NEXT-SESSION.md 0zg.
 
 **7 Oct 2026 (late):** phase report **238/245 (97%)**, unchanged; live R3

@@ -27,6 +27,14 @@ APPROVED (§4-six), superseding §4-now wherever they differ:**
 | 6 | Today's API-side B3 pieces | **Retired**: the sealed-keys table, `seal.ts`/`keys.ts`, the server tick, its cron job and Vault secrets, the TypeScript adapters and the Anthropic SDK in the API. `CRON_SECRET` and `ASSISTANT_KEY_SECRET` are no longer needed on Render |
 | 7 | Order | **Teacher accounts (T1) first**, then the assistant's app |
 
+**Round seven (7 Oct 2026, night): the assistant is also a chat bot**, for
+teachers (through their app) and for **students (on the API on Render, with
+the instructor's keys in Render's environment and the same engine chain,
+memory and rules)**, plus a Study Session page. Its own plan:
+`docs/STUDY-AND-BOT-PLAN.md`. This brings the server-side engine chain
+(`f1d87d3`) back **for the student bot only**; teachers' keys stay in their
+app.
+
 **Rulings, round five (7 Oct 2026, night), during B0:**
 
 > "Wait lets pause the ollama AI put that into the selection in the page if
