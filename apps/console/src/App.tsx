@@ -19,6 +19,7 @@ import { SystemPage } from "./pages/SystemPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
 import { ClaimPage } from "./pages/ClaimPage";
 import { TeachersPage } from "./pages/TeachersPage";
+import { TeacherDetailPage } from "./pages/TeacherDetailPage";
 import { SignInPage } from "./pages/SignInPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
@@ -95,6 +96,7 @@ export function App() {
           <Route path="/feedback" element={<FeedbackPage />} />
           {/* The admin's (T1). The page itself tells a teacher it is the admin's. */}
           <Route path="/teachers" element={<TeachersPage />} />
+          <Route path="/teachers/:key" element={<TeacherDetailPage />} />
           <Route path="*" element={<Navigate to="/locks" replace />} />
         </Route>
       </Routes>

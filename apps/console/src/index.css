@@ -801,6 +801,14 @@
   .roster-list li.teacher-list-item { grid-template-columns: minmax(0, 1fr) auto; }
   .teacher-classes { display: flex; flex-wrap: wrap; gap: var(--space-1); }
   .unassigned-list { margin: 0; padding: 0; list-style: none; }
+  .teacher-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--space-3); }
+  .teacher-stat {
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-hair) solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+  }
+  .teacher-detail h1[data-state="deactivated"] { color: var(--ink-muted); text-decoration: line-through; }
   .unassigned-row {
     display: flex;
     align-items: center;

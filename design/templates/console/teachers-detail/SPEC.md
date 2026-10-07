@@ -17,10 +17,12 @@ details only).
   (mono) · AI cost this month (mono; "No AI use yet" before the app).
 - **The classes table:** section · subject · term · book (the subject's
   default, or the class's own) · students · `⋯` (Change book…, End class…).
-- **AI use by month:** one chart of token totals by month and by engine,
-  with a 3 months / 30 days / 7 days toggle; **totals only, never a draft,
-  never a prompt** (round six, ruling 2). Until the app exists the chart is
-  replaced by one line saying so.
+- **AI use by month:** token totals by month and by engine, **totals only,
+  never a draft, never a prompt** (round six, ruling 2). **Built as a table,
+  the chart deferred (7 Oct 2026):** no teacher has any AI use until the
+  assistant's app exists, and Recharts is lazy-loaded only on `/gradebook`;
+  a chart, with its range toggle, is built when real totals exist to draw.
+  With none, one line says so.
 - At 380: cards stack, the table becomes a list of class cards, the chart
   keeps its axis labels legible or falls back to the table of totals.
 
@@ -32,7 +34,6 @@ details only).
 | Assign class… | a new class for this teacher | dialog names section, subject, term, book | End class | |
 | `⋯` on a class → Change book… | the class reads another of the subject's books | the subject's books listed, the current marked | change it back | which book a class uses |
 | `⋯` on a class → End class… | the class is ended (kept, with its date), the teacher no longer holds it | reason required, the class named | Re-open, same menu | |
-| Range toggle | the chart's window | pressed state, axis dates | press another | how much AI the teacher uses |
 | `⋯` → Disable… / Re-enable… | as on `/teachers` (reason, type the employee ID; never an admin) | | Re-enable | |
 
 Every write is audited. A teacher who opens this URL gets the forbidden

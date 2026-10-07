@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
-import { assignClass, importTeachers, setTeacherStatus, type TeacherImportResult } from "@/lib/api";
+import { assignClass, importTeachers, setTeacherStatus, updateClass, type TeacherImportResult } from "@/lib/api";
 import {
   confirmWord, importToast, needsLook, parseTeacherRoster, planOutcome, plural,
 } from "@/lib/teachers-view";
@@ -407,6 +407,104 @@ export function AssignClassDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button onClick={() => void commit()} disabled={!ready || saving}>{saving ? "Assigning…" : "Assign class"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export interface ClassChange {
+  kind: "book" | "end" | "reopen";
+  cls: { id: string; sectionCode: string; subjectCode: string; term: string; bookId: string | null };
+}
+
+/** Change a class's book, end it, or re-open it: each with a reason, each audited. */
+export function ClassChangeDialog({
+  change, subjects, onClose, onDone, returnFocus,
+}: {
+  change: ClassChange | null;
+  subjects: Subject[];
+  onClose: () => void;
+  onDone: () => void;
+  returnFocus: () => HTMLElement | null;
+}) {
+  const [bookId, setBookId] = useState("");
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!change) return;
+    setBookId(change.cls.bookId ?? "");
+    setReason("");
+    setError(null);
+    setSaving(false);
+  }, [change]);
+
+  const books = subjects.find((s) => s.code === change?.cls.subjectCode)?.books ?? [];
+  const label = change ? `${change.cls.sectionCode} · ${change.cls.subjectCode}, ${change.cls.term}` : "";
+  const title = change?.kind === "book" ? `Change the book for ${label}` : change?.kind === "end" ? `End ${label}?` : `Re-open ${label}?`;
+  const changed = change?.kind !== "book" || bookId !== (change?.cls.bookId ?? "");
+  const ready = reason.trim().length >= 3 && changed;
+
+  async function commit() {
+    if (!change) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await updateClass(change.cls.id, {
+        reason: reason.trim(),
+        ...(change.kind === "book" ? { bookId: bookId || null } : { ended: change.kind === "end" }),
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That change was not saved.");
+      toast.error(`${label} was not changed`, "The dialog is still open with your reason in it. Try again.");
+      setSaving(false);
+      return;
+    }
+    toast.success(change.kind === "book" ? `${label}: book changed` : change.kind === "end" ? `${label} ended` : `${label} re-opened`);
+    setSaving(false);
+    onClose();
+    onDone();
+  }
+
+  return (
+    <Dialog open={change !== null} onOpenChange={(o) => !o && !saving && onClose()}>
+      <DialogContent className="ease-dialog max-w-md max-sm:top-3 max-sm:translate-y-0" onCloseAutoFocus={backTo(returnFocus)}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>
+            {change?.kind === "end"
+              ? "The class is kept, with the date it ended; the teacher no longer holds it."
+              : change?.kind === "reopen"
+                ? "The teacher holds the class again."
+                : "Any of the subject's books, or its default."}
+          </DialogDescription>
+        </DialogHeader>
+
+        {change?.kind === "book" ? (
+          <div className="mb-3">
+            <Label htmlFor="change-book">Book</Label>
+            <select id="change-book" className="roster-select w-full" value={bookId} onChange={(e) => setBookId(e.target.value)}>
+              <option value="">The subject&apos;s default</option>
+              {books.map((b) => (
+                <option key={b.id} value={b.id}>{b.title}{b.edition ? `, ${b.edition} ed.` : ""}{b.isDefault ? " (default)" : ""}</option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+
+        <Label htmlFor="change-reason">Reason (required)</Label>
+        <Textarea id="change-reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <p className="mt-1.5 text-xs text-ink-muted">Recorded in the audit log with your name and the time.</p>
+
+        <Fault text={error ? `Not saved. ${error}` : null} />
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button variant={change?.kind === "end" ? "danger" : "default"} onClick={() => void commit()} disabled={!ready || saving}>
+            {saving ? "Saving…" : change?.kind === "book" ? "Change book" : change?.kind === "end" ? "End class" : "Re-open class"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
