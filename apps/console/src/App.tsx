@@ -17,6 +17,7 @@ import { AssessmentsPage } from "./pages/AssessmentsPage";
 import { AuditPage } from "./pages/AuditPage";
 import { SystemPage } from "./pages/SystemPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
+import { ClaimPage } from "./pages/ClaimPage";
 import { SignInPage } from "./pages/SignInPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
@@ -57,6 +58,8 @@ export function App() {
             whoever needs it is, by definition, not signed in. */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        {/* A teacher claims their employee ID (T1): not signed in, by definition. */}
+        <Route path="/claim" element={<ClaimPage />} />
 
         {/* The projector: staff-only like every console route, with no frame
             around it, so the nav is not on a screen the whole class reads. */}

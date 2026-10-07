@@ -116,7 +116,13 @@ export function SignInPage(): JSX.Element {
       }
       footer={
         <>
-          <p>No account? Staff accounts are created by an administrator. There is no sign-up here.</p>
+          <p>
+            First time?{" "}
+            <Link to="/claim" className="gate-link">
+              Claim your teacher account
+            </Link>{" "}
+            with the employee ID your admin put on the roster.
+          </p>
           <p>
             <Link to="/forgot-password" className="gate-link">
               Forgot your password?

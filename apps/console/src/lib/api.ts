@@ -4,6 +4,8 @@ import type {
   SystemAudit, FeedbackBulkTriage, FeedbackQueue,
   LiveOptions, LiveSession, LiveSnapshot, LiveStartBody,
   ChatAttachments, ChatMessage, ChatRoom, ChatRooms, ChatThread, ChatUnread, ChatUpload,
+  ClassAssignBody, ClassUpdateBody, TeacherClaimBody, TeacherDetail, TeacherImportBody,
+  TeacherStatusBody, TeachersResponse,
 } from "@octa/contracts";
 import { getAccessToken } from "./session";
 
@@ -946,3 +948,45 @@ export async function putChatFile(uploadUrl: string, file: File): Promise<void> 
   const res = await fetch(uploadUrl, { method: "PUT", headers: { "content-type": file.type, "x-upsert": "false" }, body: file });
   if (!res.ok) throw new ApiError("upload_failed", "The file did not upload. Try attaching it again.", res.status);
 }
+
+/* ---------------------------------------------------------- teachers (T1) */
+
+/** POST /auth/claim-teacher: public; the role comes from the roster. */
+export async function claimTeacher(body: TeacherClaimBody): Promise<void> {
+  await request<{ ok: true }>("/api/v1/auth/claim-teacher", { method: "POST", body: JSON.stringify(body) });
+}
+
+export const getTeachers = () => request<TeachersResponse>("/api/v1/console/teachers");
+
+export const getTeacher = (key: string) =>
+  request<TeacherDetail>(`/api/v1/console/teachers/${encodeURIComponent(key)}`);
+
+export interface TeacherImportPlanRow {
+  employeeId: string;
+  fullName: string;
+  email: string | null;
+  role: "teacher" | "admin";
+  current: { fullName: string; email: string | null; role: string; status: string } | null;
+  action: "insert" | "update" | "unchanged" | "conflict";
+  why?: "claimed" | "duplicate";
+}
+
+export interface TeacherImportResult {
+  dryRun: boolean;
+  summary: { insert: number; update: number; unchanged: number; conflict: number };
+  plan: TeacherImportPlanRow[];
+}
+
+export const importTeachers = (body: TeacherImportBody) =>
+  request<TeacherImportResult>("/api/v1/console/teachers/import", { method: "POST", body: JSON.stringify(body) });
+
+export const setTeacherStatus = (key: string, body: TeacherStatusBody) =>
+  request<{ ok: true; active: boolean }>(`/api/v1/console/teachers/${encodeURIComponent(key)}/status`, {
+    method: "POST", body: JSON.stringify(body),
+  });
+
+export const assignClass = (body: ClassAssignBody) =>
+  request<{ ok: true; id: string }>("/api/v1/console/classes", { method: "POST", body: JSON.stringify(body) });
+
+export const updateClass = (id: string, body: ClassUpdateBody) =>
+  request<{ ok: true }>(`/api/v1/console/classes/${id}`, { method: "PATCH", body: JSON.stringify(body) });

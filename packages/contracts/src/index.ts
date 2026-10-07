@@ -1038,6 +1038,7 @@ export const TeacherClaimBody = z.object({
   employeeId: EmployeeId,
   fullName: z.string().trim().min(1).max(200),
   email: z.string().trim().email().max(254),
-  password: z.string().min(10).max(128),
+  /** 12, as every staff password (the console's `MIN_PASSWORD`, the credential change). */
+  password: z.string().min(12).max(128),
 });
 export type TeacherClaimBody = z.infer<typeof TeacherClaimBody>;

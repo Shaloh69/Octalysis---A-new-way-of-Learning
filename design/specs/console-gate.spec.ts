@@ -423,6 +423,9 @@ test.describe("the sign-in — SPEC.md", () => {
     );
     // And a student at the wrong door has a door.
     await expect(page.getByRole("link", { name: /student app/i })).toBeVisible();
+    // A teacher with no account yet claims the roster's employee ID (T1, 7 Oct 2026):
+    // not a sign-up, and it leads to a real page (console-claim.spec).
+    await expect(page.getByRole("link", { name: /claim your teacher account/i })).toHaveAttribute("href", "/claim");
   });
 
   /*
