@@ -102,6 +102,13 @@ export async function resetAll(): Promise<void> {
     alter table audit_log disable trigger audit_log_no_delete;
     delete from audit_log          where true;
     alter table audit_log enable trigger audit_log_no_delete;
+    -- Teachers, subjects and classes (T1, 7 Oct 2026): classes point at
+    -- sections and auth.users, the roster at auth.users. CPE 412 and its
+    -- books are the addendum's seed and stay.
+    delete from classes            where true;
+    delete from teacher_directory  where true;
+    delete from subject_books      where subject_code <> 'CPE 412';
+    delete from subjects           where code <> 'CPE 412';
     delete from profiles           where true;
     delete from student_directory  where true;
     delete from sections           where true;

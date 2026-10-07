@@ -49,6 +49,7 @@ const FILES = [
   // units, sealed keys, the private crops bucket. Idempotent.
   "db/addendum-assistant.sql",
   "db/addendum-assistant-v6.sql",
+  "db/addendum-teachers.sql",
 ];
 
 const c = {
