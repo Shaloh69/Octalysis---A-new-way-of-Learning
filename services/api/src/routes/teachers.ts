@@ -5,6 +5,7 @@ import {
   ClassUpdateBody,
   TeacherImportBody,
   TeacherStatusBody,
+  type Avatar,
   type Subject,
   type TeacherClass,
   type TeacherDetail,
@@ -16,6 +17,8 @@ import { errors } from "../errors.js";
 import { withTransaction } from "../db.js";
 import type { Env } from "../env.js";
 import type { SupabaseAdmin } from "./auth.js";
+import type { BucketStorage } from "../chat/storage.js";
+import { avatarsFor, generatedAvatar } from "../avatars.js";
 
 /**
  * Teachers, subjects and classes: the ADMIN's routes (T1, 7 Oct 2026;
@@ -93,8 +96,10 @@ function toClass(r: Record<string, unknown>): TeacherClass {
   };
 }
 
-function toTeacher(r: StaffRow, classes: TeacherClass[]): TeacherRow {
+function toTeacher(r: StaffRow, classes: TeacherClass[], faces: Map<string, Avatar>): TeacherRow {
   return {
+    // A picture, or the generated avatar (a roster row nobody has claimed has no account).
+    avatar: (r.user_id && faces.get(r.user_id)) || { url: null, ...generatedAvatar(r.employee_id ?? r.key), removable: false },
     key: r.key,
     userId: r.user_id,
     employeeId: r.employee_id,
@@ -146,13 +151,21 @@ function audit(client: pg.PoolClient, actor: string, action: string, targetType:
   );
 }
 
-export function registerTeacherRoutes(app: FastifyInstance, env: Env, admin: SupabaseAdmin | null): void {
+export function registerTeacherRoutes(
+  app: FastifyInstance,
+  env: Env,
+  admin: SupabaseAdmin | null,
+  // The private profile-images bucket (PROFILES, 8 Oct 2026): pictures beside names.
+  profileStorage: BucketStorage | null = null,
+): void {
   /* GET /api/v1/console/teachers  (admin) */
   app.get("/api/v1/console/teachers", async (req, reply) => {
-    requireAdmin(await identityFrom(req, env));
+    const me = await identityFrom(req, env);
+    requireAdmin(me);
     const { staff, classes } = await loadAll(app.db);
+    const faces = await avatarsFor(app.db, profileStorage, me.userId, staff.map((t) => t.user_id).filter((u): u is string => u !== null));
     const teachers = staff.map((t) =>
-      toTeacher(t, classes.filter((c) => t.user_id !== null && c.teacher_id === t.user_id).map(toClass)),
+      toTeacher(t, classes.filter((c) => t.user_id !== null && c.teacher_id === t.user_id).map(toClass), faces),
     );
     const body: TeachersResponse = {
       teachers,
@@ -171,9 +184,11 @@ export function registerTeacherRoutes(app: FastifyInstance, env: Env, admin: Sup
 
   /* GET /api/v1/console/teachers/:key  (admin) */
   app.get<{ Params: { key: string } }>("/api/v1/console/teachers/:key", async (req, reply) => {
-    requireAdmin(await identityFrom(req, env));
+    const me = await identityFrom(req, env);
+    requireAdmin(me);
     const t = await findTeacher(app.db, req.params.key);
     if (!t) throw errors.notFound("That teacher does not exist.");
+    const faces = await avatarsFor(app.db, profileStorage, me.userId, t.user_id ? [t.user_id] : []);
     const classes = t.user_id
       ? (await app.db.query(`${CLASS_SQL} where c.teacher_id = $1 order by c.ended_at nulls first, s.code`, [t.user_id])).rows.map(toClass)
       : [];
@@ -194,7 +209,7 @@ export function registerTeacherRoutes(app: FastifyInstance, env: Env, admin: Sup
     const thisMonth = usage.filter((u) => u.month === month);
     const live = classes.filter((c) => c.endedAt === null);
     const body: TeacherDetail = {
-      teacher: toTeacher(t, classes),
+      teacher: toTeacher(t, classes, faces),
       stats: {
         classes: live.length,
         students: live.reduce((n, c) => n + c.students, 0),

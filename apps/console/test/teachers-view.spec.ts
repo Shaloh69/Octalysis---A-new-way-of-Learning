@@ -7,6 +7,7 @@ import {
 const row = (over: Partial<TeacherRow> = {}): TeacherRow => ({
   key: "u1", userId: "11111111-1111-4111-8111-111111111111", employeeId: "EMP-0001", fullName: "Maria Osmeña",
   email: "maria@example.com", role: "teacher", status: "active", classes: [], tokensThisMonth: 0, lastSignInAt: null,
+  avatar: { url: null, hue: 200, variant: 1, removable: false },
   ...over,
 });
 

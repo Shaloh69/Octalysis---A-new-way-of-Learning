@@ -9,6 +9,8 @@ import type { Env } from "../env.js";
 import { computeGradebook, toCsv } from "../gradebook/compute.js";
 import { loadGradebookInput } from "../gradebook/load.js";
 import { AuditQuery, type SystemAudit } from "@octa/contracts";
+import type { BucketStorage } from "../chat/storage.js";
+import { avatarsFor, generatedAvatar } from "../avatars.js";
 import { presentInvariant, summariseRun, type InvariantRow } from "../audit/invariants.js";
 import { AUDIT_EXPORT_MAX, loadAuditExport, loadAuditPage, toAuditCsv } from "../audit/log.js";
 
@@ -24,7 +26,12 @@ import { AUDIT_EXPORT_MAX, loadAuditExport, loadAuditPage, toAuditCsv } from "..
  *     that does not record why is a toggle nobody can explain in December.
  */
 
-export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
+export function registerConsoleRoutes(
+  app: FastifyInstance,
+  env: Env,
+  // The private profile-images bucket (PROFILES, 8 Oct 2026): pictures beside names.
+  profileStorage: BucketStorage | null = null,
+): void {
   /* ----------------------------------------------------------
    * GET /api/v1/console/roster
    * -------------------------------------------------------- */
@@ -45,6 +52,12 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
         order by d.student_id`,
     );
     const sections = await app.db.query("select id, code, term from sections order by code");
+    const faces = await avatarsFor(
+      app.db,
+      profileStorage,
+      id.userId,
+      rows.map((r) => r.user_id as string | null).filter((u): u is string => u !== null),
+    );
 
     return reply.send({
       students: rows.map((r) => ({
@@ -55,6 +68,8 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
         sectionId: r.section_id,
         sectionCode: r.section_code,
         userId: r.user_id,
+        // A picture, or the generated avatar (a roster row nobody has claimed has no account).
+        avatar: (r.user_id && faces.get(r.user_id as string)) || { url: null, ...generatedAvatar(r.student_id as string), removable: false },
         // Two shapes of the same decision: a registered student's profile is
         // soft-deleted; a row nobody has claimed yet is disabled, which the
         // claim's `where status = 'unclaimed'` refuses.
@@ -693,9 +708,14 @@ export function registerConsoleRoutes(app: FastifyInstance, env: Env): void {
       if (mastered) stage.mastered += 1;
     }
 
+    const face = (await avatarsFor(app.db, profileStorage, id.userId, [profile.rows[0].id as string])).get(profile.rows[0].id as string);
+    const pic = await app.db.query("select avatar_removed_at from profiles where id = $1", [userId]);
     return reply.send({
       moons,
       student: {
+        avatar: face,
+        // Set when a teacher or the admin removed the picture and the student has not set a new one.
+        pictureRemovedAt: pic.rows[0]?.avatar_removed_at ?? null,
         userId: profile.rows[0].id,
         studentId: profile.rows[0].student_id,
         fullName: profile.rows[0].full_name,

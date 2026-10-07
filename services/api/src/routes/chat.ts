@@ -23,7 +23,8 @@ import { identityFrom, isStaff, requireStaff, type Identity } from "../auth.js";
 import { AppError, errors } from "../errors.js";
 import { withTransaction, type Db } from "../db.js";
 import type { Env } from "../env.js";
-import type { ChatStorage } from "../chat/storage.js";
+import type { BucketStorage, ChatStorage } from "../chat/storage.js";
+import { avatarsFor } from "../avatars.js";
 import { submitLeftPapers } from "../sitting.js";
 
 /**
@@ -280,8 +281,20 @@ async function audit(db: Queryable, actor: string, action: string, target: strin
   );
 }
 
-export function registerChatRoutes(app: FastifyInstance, env: Env, storage: ChatStorage | null): void {
+export function registerChatRoutes(
+  app: FastifyInstance,
+  env: Env,
+  storage: ChatStorage | null,
+  // The private profile-images bucket (PROFILES, 8 Oct 2026): pictures beside names.
+  profileStorage: BucketStorage | null = null,
+): void {
   const log = (e: unknown) => app.log.warn({ err: (e as Error).message }, "chat storage call failed");
+
+  /** Each person as THIS viewer may see them: their picture, or the generated avatar. */
+  async function dress<T extends ChatPerson>(viewer: string, people: readonly T[]): Promise<T[]> {
+    const map = await avatarsFor(app.db, profileStorage, viewer, people.map((p) => p.id), log);
+    return people.map((p) => ({ ...p, avatar: map.get(p.id) }));
+  }
 
   /* GET /api/v1/chat/rooms — the rooms the caller is in, with unread counts. */
   app.get("/api/v1/chat/rooms", async (req): Promise<ChatRooms> => {
@@ -300,7 +313,7 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
       [id.userId, staff],
     );
     return {
-      me: await me(app.db, id),
+      me: (await dress(id.userId, [await me(app.db, id)]))[0]!,
       rooms: rows.map((r) => toRoom(r, staff)),
       attachments: storage !== null,
     };
@@ -376,11 +389,17 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
     const more = msgs.rows.length > PAGE;
     const page = msgs.rows.slice(0, PAGE).reverse();
     const urls = await signFor(storage, page, log);
+    const messages = page.map((r) => toMessage(r, id.userId, urls));
+    const people = await dress(id.userId, [
+      ...members.rows.map((m) => ({ id: m.id as string, name: m.name as string, staff: m.staff === true })),
+      ...messages.map((m) => m.author),
+    ]);
+    const byId = new Map(people.map((p) => [p.id, p]));
     return {
       room,
-      messages: page.map((r) => toMessage(r, id.userId, urls)),
+      messages: messages.map((m) => ({ ...m, author: byId.get(m.author.id) ?? m.author })),
       more,
-      members: members.rows.map((m) => ({ id: m.id as string, name: m.name as string, staff: m.staff === true })),
+      members: members.rows.map((m) => byId.get(m.id as string)!),
     };
   });
 
@@ -483,7 +502,8 @@ export function registerChatRoutes(app: FastifyInstance, env: Env, storage: Chat
       const { rows } = await app.db.query<MessageRow>(`${MESSAGE_SELECT} where m.id = $1`, [inserted]);
       const urls = await signFor(storage, rows, log);
       reply.status(201);
-      return toMessage(rows[0]!, id.userId, urls);
+      const msg = toMessage(rows[0]!, id.userId, urls);
+      return { ...msg, author: (await dress(id.userId, [msg.author]))[0]! };
     },
   );
 

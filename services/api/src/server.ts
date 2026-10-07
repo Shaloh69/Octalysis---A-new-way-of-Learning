@@ -17,13 +17,14 @@ import { registerLiveRoutes } from "./routes/live.js";
 import { registerAssessmentRoutes } from "./routes/assessments.js";
 import { registerJourneyRoutes } from "./routes/journeys.js";
 import { registerChatRoutes } from "./routes/chat.js";
+import { registerProfileRoutes } from "./routes/profile.js";
 import { registerPasswordRoutes } from "./routes/passwords.js";
 import { registerTeacherRoutes } from "./routes/teachers.js";
 import { registerProgressRoutes } from "./routes/progress.js";
 import { registerSubjectRoutes } from "./routes/subjects.js";
 import { registerWorkingCopyRoutes } from "./routes/working-copy.js";
 import { registerMoonRoutes } from "./routes/moons.js";
-import { makeChatStorage, type ChatStorage } from "./chat/storage.js";
+import { makeChatStorage, makeProfileStorage, type BucketStorage, type ChatStorage } from "./chat/storage.js";
 import type { Env } from "./env.js";
 
 /**
@@ -37,6 +38,8 @@ export async function buildServer(
   chatStorage: ChatStorage | null = makeChatStorage(env),
   // Tests pass a fake Supabase Admin client; undefined builds the real one when configured.
   authAdmin?: SupabaseAdmin | null,
+  // Profile pictures (PROFILES): the private profile-images bucket. Tests pass a fake.
+  profileStorage: BucketStorage | null = makeProfileStorage(env),
 ): Promise<FastifyInstance> {
   const app = Fastify({
     logger: {
@@ -113,7 +116,7 @@ export async function buildServer(
   registerAttemptRoutes(app, env);
   registerStageRoutes(app, env);
   registerCosmeticRoutes(app, env);
-  registerConsoleRoutes(app, env);
+  registerConsoleRoutes(app, env, profileStorage);
   registerContentRoutes(app, env);
   registerChapterDraftRoutes(app, env);
   registerFigureRoutes(app, env);
@@ -123,7 +126,8 @@ export async function buildServer(
   registerLiveRoutes(app, env);
   registerAssessmentRoutes(app, env);
   registerJourneyRoutes(app, env);
-  registerChatRoutes(app, env, chatStorage);
+  registerChatRoutes(app, env, chatStorage, profileStorage);
+  registerProfileRoutes(app, env, profileStorage);
   registerProgressRoutes(app, env);
   registerSubjectRoutes(app, env);
   registerWorkingCopyRoutes(app, env);
@@ -146,7 +150,7 @@ export async function buildServer(
   registerPasswordRoutes(app, env, supabaseAdmin);
   // The admin's teacher routes (T1). Mounted either way: only disabling a
   // teacher uses the Supabase client, to ban their login when there is one.
-  registerTeacherRoutes(app, env, supabaseAdmin);
+  registerTeacherRoutes(app, env, supabaseAdmin, profileStorage);
 
   /** Readiness DOES check the database, and is not what the keep-alive pings. */
   app.get("/readyz", async (_req, reply) => {

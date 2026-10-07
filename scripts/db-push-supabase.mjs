@@ -61,6 +61,9 @@ const FILES = [
   "db/addendum-studio.sql",
   "db/addendum-studio-editor.sql",
   "db/addendum-studio-moons.sql",
+  // Profile pictures (PROFILES, 8 Oct 2026): three columns, the API-only guard, the
+  // two questions the API asks, the private profile-images bucket. Idempotent.
+  "db/addendum-profiles.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 

@@ -11,6 +11,8 @@ import type { Env } from "../env.js";
  * the chat says attachments are unavailable instead of failing on send.
  */
 export const CHAT_BUCKET = "chat-attachments";
+/** Profile pictures (PROFILES, 8 Oct 2026): private, WebP, 300 KB, the same way. */
+export const PROFILE_BUCKET = "profile-images";
 
 export interface StoredObject {
   readonly bytes: number;
@@ -27,7 +29,21 @@ export interface ChatStorage {
   remove(paths: readonly string[]): Promise<void>;
 }
 
+/** A bucket's client that can also read a file's first bytes, to check what it really is. */
+export interface BucketStorage extends ChatStorage {
+  /** The first `n` bytes of the stored file, or null if nothing is there. */
+  readHead(path: string, n: number): Promise<Uint8Array | null>;
+}
+
 export function makeChatStorage(env: Env): ChatStorage | null {
+  return makeBucketStorage(env, CHAT_BUCKET);
+}
+
+export function makeProfileStorage(env: Env): BucketStorage | null {
+  return makeBucketStorage(env, PROFILE_BUCKET);
+}
+
+export function makeBucketStorage(env: Env, bucket: string): BucketStorage | null {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
   const base = `${env.SUPABASE_URL.replace(/\/$/, "")}/storage/v1`;
   const key = env.SUPABASE_SERVICE_ROLE_KEY;
@@ -53,7 +69,7 @@ export function makeChatStorage(env: Env): ChatStorage | null {
 
   return {
     async signUpload(path) {
-      const r = await call<{ url: string }>("POST", `/object/upload/sign/${CHAT_BUCKET}/${enc(path)}`, {});
+      const r = await call<{ url: string }>("POST", `/object/upload/sign/${bucket}/${enc(path)}`, {});
       return `${base}${r.url}`;
     },
     async signDownloads(paths, seconds) {
@@ -61,7 +77,7 @@ export function makeChatStorage(env: Env): ChatStorage | null {
       if (paths.length === 0) return out;
       const r = await call<Array<{ path: string | null; signedURL: string | null; error: string | null }>>(
         "POST",
-        `/object/sign/${CHAT_BUCKET}`,
+        `/object/sign/${bucket}`,
         { expiresIn: seconds, paths },
       );
       for (const s of r) if (s.path && s.signedURL) out.set(s.path, `${base}${s.signedURL}`);
@@ -73,16 +89,25 @@ export function makeChatStorage(env: Env): ChatStorage | null {
       const name = path.slice(slash + 1);
       const r = await call<Array<{ name: string; metadata: { size?: number; mimetype?: string } | null }>>(
         "POST",
-        `/object/list/${CHAT_BUCKET}`,
+        `/object/list/${bucket}`,
         { prefix, search: name, limit: 10, offset: 0 },
       );
       const hit = r.find((o) => o.name === name);
       if (!hit?.metadata?.size || !hit.metadata.mimetype) return null;
       return { bytes: hit.metadata.size, mime: hit.metadata.mimetype };
     },
+    async readHead(path, n) {
+      // The authenticated route, with the service key: the bucket is private.
+      const res = await fetch(`${base}/object/authenticated/${bucket}/${enc(path)}`, {
+        headers: { ...auth, Range: `bytes=0-${n - 1}` },
+      });
+      if (res.status === 404 || res.status === 400) return null;
+      if (!res.ok) throw new Error(`storage GET ${bucket} object answered ${res.status}`);
+      return new Uint8Array(await res.arrayBuffer()).slice(0, n);
+    },
     async remove(paths) {
       if (paths.length === 0) return;
-      await call<unknown>("DELETE", `/object/${CHAT_BUCKET}`, { prefixes: paths });
+      await call<unknown>("DELETE", `/object/${bucket}`, { prefixes: paths });
     },
   };
 }

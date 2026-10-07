@@ -769,10 +769,35 @@ export const ChatMime = z.enum([
 ]);
 export type ChatMime = z.infer<typeof ChatMime>;
 
+/* ---------------------------------------------------------------------------
+ * Profile pictures (PROFILES, 8 Oct 2026; docs/PROFILES-PLAN.md).
+ *
+ * A person's picture AS A VIEWER MAY SEE IT. `url` is a short-lived signed link
+ * and is null when the person has no picture, when this viewer may not see it
+ * (`can_see_avatar`), or where no file storage is configured; the page then
+ * draws the generated avatar from `hue` and `variant`, which the API derives
+ * from the person's student ID (their cosmetic seed, never the exam seed).
+ * ------------------------------------------------------------------------- */
+export const PROFILE_IMAGE_MAX_BYTES = 300 * 1024;
+export const PROFILE_IMAGE_SIZE = 512;
+export const Avatar = z.object({
+  url: z.string().url().nullable(),
+  hue: z.number().int().min(0).max(359),
+  variant: z.number().int().min(0).max(3),
+  /**
+   * The viewer may REMOVE this person's picture right now (a picture exists and
+   * `can_remove_avatar` says yes): true for a teacher looking at a student's
+   * and for the admin, never for a student. Keys every Remove button.
+   */
+  removable: z.boolean().default(false),
+});
+export type Avatar = z.infer<typeof Avatar>;
+
 export const ChatPerson = z.object({
   id: z.string().uuid(),
   name: z.string(),
   staff: z.boolean(),
+  avatar: Avatar.optional(),
 });
 export type ChatPerson = z.infer<typeof ChatPerson>;
 
@@ -909,6 +934,49 @@ export const ChatThreadBody = z.object({ userId: z.string().uuid() }).strict();
 export type ChatThreadBody = z.infer<typeof ChatThreadBody>;
 
 /* ============================================================
+ * Profiles (PROFILES, 8 Oct 2026): a page and a picture for every account.
+ * ========================================================== */
+export const ProfileClass = z.object({
+  subject: z.string(),
+  subjectTitle: z.string(),
+  section: z.string(),
+  term: z.string(),
+  /** The class's teacher; null while unassigned. */
+  teacher: z.string().nullable(),
+});
+export type ProfileClass = z.infer<typeof ProfileClass>;
+
+export const Profile = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  role: z.enum(["student", "teacher", "admin"]),
+  /** A student's number; null for staff. */
+  studentId: z.string().nullable(),
+  /** A teacher's or the admin's roster ID; null for a student or an unclaimed staff account. */
+  employeeId: z.string().nullable(),
+  /** A student's section ("BSCPE-2A"); null for staff. */
+  section: z.string().nullable(),
+  /** A student's classes (their section's), or the classes a teacher holds. */
+  classes: z.array(ProfileClass),
+  avatar: Avatar,
+  /** A picture is on file (it may still not be drawable where no storage is configured). */
+  hasPicture: z.boolean(),
+  /** A teacher or the admin removed the picture, and the person has not set a new one. */
+  removedAt: z.string().nullable(),
+  /** False where no file storage is configured (the local stack): no upload control. */
+  pictures: z.boolean(),
+});
+export type Profile = z.infer<typeof Profile>;
+
+/** Ask to upload: the browser has already cropped and re-encoded, so the size is known. */
+export const AvatarUploadBody = z.object({ bytes: z.number().int().min(1).max(PROFILE_IMAGE_MAX_BYTES) }).strict();
+export type AvatarUploadBody = z.infer<typeof AvatarUploadBody>;
+
+/** Record the picture just uploaded: a path the API signed for this person. */
+export const AvatarSetBody = z.object({ path: z.string().min(1).max(200) }).strict();
+export type AvatarSetBody = z.infer<typeof AvatarSetBody>;
+
+/* ============================================================
  * Teachers, subjects and classes (T1, 7 Oct 2026;
  * docs/TEACHERS-AND-SUBJECTS-PLAN.md). Every route is the ADMIN's.
  * ========================================================== */
@@ -944,6 +1012,8 @@ export const TeacherClass = z.object({
 export type TeacherClass = z.infer<typeof TeacherClass>;
 
 export const TeacherRow = z.object({
+  /** Their picture as the admin sees it, or the generated avatar (PROFILES, 8 Oct 2026). */
+  avatar: Avatar,
   /** The user id once claimed; `employee:<id>` for a roster row nobody has claimed. */
   key: z.string(),
   userId: z.string().uuid().nullable(),
