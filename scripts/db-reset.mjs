@@ -51,6 +51,7 @@ const FILES = [
   "db/addendum-assistant-v6.sql",
   "db/addendum-teachers.sql",
   "db/addendum-studio.sql",
+  "db/addendum-studio-editor.sql",
 ];
 
 const c = {

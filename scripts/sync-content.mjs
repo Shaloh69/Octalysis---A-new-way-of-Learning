@@ -446,7 +446,7 @@ async function sync(client, stages, { dryRun, pull = false, takeFile = false }) 
   let inserted = 0, updated = 0, unchanged = 0, removed = 0, objectives = 0;
   let summariesLive = 0, summariesPending = 0;
   let chaptersLive = 0, chaptersPending = 0;
-  const chaptersWithdrawn = [], chaptersKept = [];
+  const chaptersWithdrawn = [], chaptersKept = [], chaptersConsole = [], workingCopies = [];
   const summariesWithdrawn = [], kept = [], conflicts = [], pulled = [], filesToWrite = [];
 
   // Every block this run replaces is archived as a SYNC change, not 'direct'.
@@ -546,13 +546,27 @@ async function sync(client, stages, { dryRun, pull = false, takeFile = false }) 
       );
     }
 
+    // THE CONSOLE OWNS IT (Studio, 8 Oct 2026; docs/STUDIO-EDITOR-PLAN.md). Once a chapter
+    // has been published from the Studio's editor the database holds its text and its
+    // structure, and a file no longer decides either. Sync leaves it entirely alone.
+    const { rows: ownerRows } = await client.query("select content_owner from stages where id = $1", [stage.stageId]);
+    if (ownerRows[0]?.content_owner === "console") {
+      chaptersConsole.push(stage.stageId);
+      continue;
+    }
+
     // Drafted lesson text: written for review, never straight to students.
     const { rows: draftRows } = await client.query(
-      "select draft_hash, status, ever_approved from chapter_drafts where stage_id = $1",
+      "select draft_hash, status, ever_approved, origin from chapter_drafts where stage_id = $1",
       [stage.stageId],
     );
     const dRow = draftRows[0];
-    if (stage.draft) {
+    if (dRow?.origin === "console") {
+      // A teacher is typing in the Studio: this working copy is theirs. Never overwrite it with
+      // a file, and never delete it because its file is gone. (Live blocks still sync below; a
+      // publish then refuses, saying the chapter changed, rather than losing either side.)
+      workingCopies.push(stage.stageId);
+    } else if (stage.draft) {
       if (!dRow) {
         chaptersPending++;
         if (!dryRun) {
@@ -690,7 +704,7 @@ async function sync(client, stages, { dryRun, pull = false, takeFile = false }) 
   return {
     inserted, updated, unchanged, removed, objectives, summariesLive, summariesPending,
     summariesWithdrawn, kept, conflicts, pulled, filesToWrite,
-    chaptersLive, chaptersPending, chaptersWithdrawn, chaptersKept,
+    chaptersLive, chaptersPending, chaptersWithdrawn, chaptersKept, chaptersConsole, workingCopies,
   };
 }
 
@@ -793,6 +807,12 @@ async function main() {
     }
     for (const id of s.chaptersWithdrawn) {
       console.log(c.yellow(`  stage ${id}: its drafted text changed, so its approval was withdrawn. Students keep the last approved text.`));
+    }
+    if (s.chaptersConsole.length > 0) {
+      console.log(c.dim(`  chapters the Studio owns, left alone: ${s.chaptersConsole.join(", ")} (the files no longer decide them)`));
+    }
+    if (s.workingCopies.length > 0) {
+      console.log(c.dim(`  working copies being typed in the Studio, left alone: ${s.workingCopies.join(", ")}`));
     }
     if (s.chaptersKept.length > 0) {
       console.log(c.dim(`  approved chapters left as reviewed: ${s.chaptersKept.join(", ")}`));

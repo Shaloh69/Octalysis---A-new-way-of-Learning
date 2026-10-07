@@ -311,3 +311,53 @@ A box, drawn for the sync test.
     expect(r.approved_svg).toContain('width="60"');
   });
 });
+
+/* ============================================================
+ * sync-content and the Studio's editor (8 Oct 2026; docs/STUDIO-EDITOR-PLAN.md)
+ *
+ * Typing in the Studio makes a WORKING COPY (a chapter_drafts row, origin
+ * 'console'); publishing it hands the chapter to the console
+ * (stages.content_owner = 'console'). Sync must never undo either: it used to
+ * delete any draft whose file had gone, and rewrite live blocks from the file.
+ * ========================================================== */
+describe("sync-content and the Studio's editor", () => {
+  beforeAll(async () => {
+    await rm(join(dir, "00.draft.md"), { force: true });
+    await writeFile(join(dir, "00.md"), stageFile(SUMMARY, "File block one.", "File block two."));
+    await setup("delete from chapter_drafts where stage_id = '00'");
+    await setup("update stages set content_owner = 'files' where id = '00'");
+    await sync("--take-file");
+  });
+
+  it("a teacher's working copy survives a sync even though no draft file exists", async () => {
+    await setup(
+      `insert into chapter_drafts (stage_id, blocks, draft_hash, origin, version, base_hash, edited_by, edited_at)
+       values ('00', $1::jsonb, 'typed-in-the-studio', 'console', 1, 'base', $2, now())`,
+      [JSON.stringify([{ id: "11111111-1111-4111-8111-111111111111", kind: "prose", body: "Typed in the Studio.", meta: {} }]), w.teacher],
+    );
+    const out = await sync();
+    const { rows } = await setup("select draft_hash, origin, version from chapter_drafts where stage_id = '00'");
+    expect(rows).toEqual([{ draft_hash: "typed-in-the-studio", origin: "console", version: 1 }]);
+    expect(out).toMatch(/working copies being typed in the Studio, left alone: 00/);
+  });
+
+  it("a drafted chapter a teacher has taken over is not overwritten by its file", async () => {
+    await writeFile(join(dir, "00.draft.md"), `---\nstage: "00"\ntitle: Orientation\n---\n\n<!-- block: prose -->\nThe file's draft text.\n`);
+    await sync();
+    const { rows } = await setup("select draft_hash, origin from chapter_drafts where stage_id = '00'");
+    expect(rows).toEqual([{ draft_hash: "typed-in-the-studio", origin: "console" }]);
+    await rm(join(dir, "00.draft.md"), { force: true });
+  });
+
+  it("a chapter the Studio owns is never rewritten from a file, and sync says so", async () => {
+    await setup("delete from chapter_drafts where stage_id = '00'");
+    await setup("update stages set content_owner = 'console' where id = '00'");
+    const before = await setup("select ordinal, body_md, version from content_blocks where stage_id = '00' order by ordinal");
+    await writeFile(join(dir, "00.md"), stageFile(SUMMARY, "A file edit sync must not apply.", "Nor this one."));
+    const out = await sync("--take-file");
+    const after = await setup("select ordinal, body_md, version from content_blocks where stage_id = '00' order by ordinal");
+    expect(after.rows).toEqual(before.rows);
+    expect(out).toMatch(/chapters the Studio owns, left alone: 00/);
+    await setup("update stages set content_owner = 'files' where id = '00'");
+  });
+});

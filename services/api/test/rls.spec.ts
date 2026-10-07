@@ -791,8 +791,17 @@ describe("content review — drafts and history are staff-only", () => {
     expect(del.error?.message).toMatch(/append-only/i);
   });
 
-  it("a staff write straight to content_blocks keeps the text it replaced, and bumps the version", async () => {
-    const res = await runAsSteps(teacher, [
+  it("a staff CLIENT cannot write content_blocks at all: the API's Publish is the only way (8 Oct 2026)", async () => {
+    // Was: "a staff write straight to content_blocks is archived as 'direct'". The Studio's
+    // Draft-then-Publish ruling closed that door; the full denial (update, insert, delete) is
+    // in studio-editor-api.spec.ts. Here: it matches nothing, and the text is as it was.
+    const res = await runAs(teacher, "update content_blocks set body_md = 'A direct edit.' where stage_id = '00' and ordinal = 1 returning id");
+    expect(res.error, denialReason(res)).toBeNull();
+    expect(res.rowCount, "a staff client wrote the chapter students read").toBe(0);
+  });
+
+  it("a write by the API (the service role) keeps the text it replaced, and bumps the version", async () => {
+    const res = await runAsSteps(service, [
       ["update content_blocks set body_md = 'A direct edit.' where stage_id = '00' and ordinal = 1"],
       [`select v.body_md, v.version, v.replaced_via,
                 (select version from content_blocks where stage_id = '00' and ordinal = 1) as now_version

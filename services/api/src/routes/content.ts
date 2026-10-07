@@ -93,11 +93,12 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
               (select count(*)::int from figures f
                 where f.stage_id = s.id and f.status = 'approved')
                 as figures_approved,
+              (select count(*) > 0 from chapter_drafts w where w.stage_id = s.id and w.origin = 'console') as working,
               ss.status as summary_status,
               cd.status as draft_status, cd.ever_approved as draft_ever_approved
          from stages s
          left join stage_summaries ss on ss.stage_id = s.id
-         left join chapter_drafts cd on cd.stage_id = s.id
+         left join chapter_drafts cd on cd.stage_id = s.id and cd.origin <> 'console'
         order by s.ordinal`,
     );
 
@@ -119,6 +120,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
         liveItems: Number(r.live_items),
         draftItems: Number(r.draft_items),
         authoring: authoringOf(blocks, Number(r.scaffold_blocks)),
+        working: r.working === true,
         summaryStatus: (r.summary_status ?? null) as "draft" | "approved" | "sent_back" | null,
         draftStatus: (r.draft_status ?? null) as "draft" | "approved" | "sent_back" | null,
         figuresWaiting: Number(r.figures_waiting),
@@ -235,7 +237,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
       `select cd.blocks, cd.draft_hash, cd.status, cd.note, cd.ever_approved, cd.reviewed_at, cd.updated_at,
               cd.authored_by::text as authored_by, p.full_name as reviewer
          from chapter_drafts cd left join profiles p on p.id = cd.reviewed_by
-        where cd.stage_id = $1`,
+        where cd.stage_id = $1 and cd.origin <> 'console'`,
       [stageId],
     );
     const dr = drafts[0];
@@ -532,11 +534,12 @@ export function registerChapterDraftRoutes(app: FastifyInstance, env: Env): void
 
     const result = await withTransaction(app.db, async (client) => {
       const { rows } = await client.query(
-        "select blocks, draft_hash, status, authored_by::text as authored_by from chapter_drafts where stage_id = $1 for update",
+        "select blocks, draft_hash, status, origin, authored_by::text as authored_by from chapter_drafts where stage_id = $1 for update",
         [stageId],
       );
       const cur = rows[0];
       if (!cur) throw errors.notFound("No drafted text for that chapter.");
+      if (cur.origin === "console") throw new AppError("conflict", "This is a teacher's typed draft. It is published (or discarded) from the Studio's editor.");
       if (cur.draft_hash !== parsed.data.hash) {
         throw new AppError("conflict", "This chapter's draft changed since you opened it. Read the new text before approving it.");
       }
@@ -594,8 +597,11 @@ export function registerChapterDraftRoutes(app: FastifyInstance, env: Env): void
     if (!parsed.success) throw errors.badRequest("Sending a chapter back needs a reason of at least 3 characters.");
 
     await withTransaction(app.db, async (client) => {
-      const { rows } = await client.query("select status from chapter_drafts where stage_id = $1 for update", [stageId]);
+      const { rows } = await client.query("select status, origin from chapter_drafts where stage_id = $1 for update", [stageId]);
       if (!rows[0]) throw errors.notFound("No drafted text for that chapter.");
+      if (rows[0].origin === "console") {
+        throw new AppError("conflict", "This is a teacher's typed draft. It is published, or discarded, from the Studio's editor.");
+      }
       await client.query(
         `update chapter_drafts
             set status = 'sent_back', approved_hash = null, note = $2, reviewed_by = $3, reviewed_at = now()

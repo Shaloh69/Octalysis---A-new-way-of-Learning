@@ -1129,3 +1129,72 @@ export const StudioSubjectsResponse = z.object({
   }),
 });
 export type StudioSubjectsResponse = z.infer<typeof StudioSubjectsResponse>;
+
+/* ============================================================
+ * The Studio as an editor, E1 (docs/STUDIO-EDITOR-PLAN.md; instructor rulings,
+ * 8 Oct 2026): a chapter's WORKING COPY, saved as a draft students never see,
+ * and Publish. Staff only.
+ * ========================================================== */
+
+/** The kinds a chapter's topics have (`content_blocks.kind`). */
+export const EditorBlockKind = z.enum(["prose", "brief", "callout", "code", "quote", "figure"]);
+export type EditorBlockKind = z.infer<typeof EditorBlockKind>;
+
+/**
+ * One topic as the editor sends it. `id` is the live row's id, or a uuid the
+ * editor chose for a topic that does not exist yet. A quote or a figure is
+ * LOCKED: it is accepted only as the exact block the chapter already has.
+ */
+export const EditorBlock = z.object({
+  id: z.string().uuid().optional(),
+  kind: EditorBlockKind,
+  body: z.string().max(40_000),
+  meta: z.record(z.string().max(60), z.string().max(300)).default({}),
+}).strict();
+export type EditorBlock = z.infer<typeof EditorBlock>;
+
+export const WorkingCopyPutBody = z.object({
+  /** The version the editor loaded: 0 when the chapter has no working copy yet. */
+  version: z.number().int().min(0),
+  blocks: z.array(EditorBlock).min(1).max(400),
+}).strict();
+export type WorkingCopyPutBody = z.infer<typeof WorkingCopyPutBody>;
+
+export const WorkingCopyPublishBody = z.object({
+  /** The draft the teacher read: Publish is of THAT text. */
+  hash: z.string().min(1).max(128),
+  /** What changed, for the audit log and the reader of History. */
+  reason: z.string().trim().min(3).max(500),
+}).strict();
+export type WorkingCopyPublishBody = z.infer<typeof WorkingCopyPublishBody>;
+
+export const WorkingBlock = z.object({
+  id: z.string().uuid().nullable(),
+  kind: EditorBlockKind,
+  body: z.string(),
+  meta: z.record(z.string(), z.string()),
+  /** A quote from the book or a figure: moved or deleted here, never typed in. */
+  locked: z.boolean(),
+});
+export type WorkingBlock = z.infer<typeof WorkingBlock>;
+
+export const WorkingCopy = z.object({
+  stageId: z.string(),
+  /** `live`: nothing unpublished, this is what students read. `draft`: unpublished changes. */
+  source: z.enum(["live", "draft"]),
+  origin: z.enum(["file", "console", "ai"]).nullable(),
+  version: z.number().int(),
+  hash: z.string(),
+  baseHash: z.string().nullable(),
+  /** The hash of what students read now. */
+  liveHash: z.string(),
+  /** Live text changed since this draft began (a publish or a sync), so Publish will refuse. */
+  stale: z.boolean(),
+  status: z.enum(["draft", "approved", "sent_back"]).nullable(),
+  editedBy: z.string().nullable(),
+  editedAt: z.string().nullable(),
+  /** Who owns the chapter's text: the files (sync-content) or the console. */
+  owner: z.enum(["files", "console"]),
+  blocks: z.array(WorkingBlock),
+});
+export type WorkingCopy = z.infer<typeof WorkingCopy>;
