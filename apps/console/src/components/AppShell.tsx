@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Users, Lock, BookOpen, Table2, ScrollText, ShieldCheck, MessageSquare,
-  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare,
+  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare, UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } from "@/lib/session";
@@ -60,9 +60,19 @@ const GROUPS = [
       { to: "/audit", label: "Audit log", icon: ScrollText, hint: "Who changed what, and why" },
       { to: "/system", label: "System health", icon: ShieldCheck, hint: "The invariant suite, run live" },
       { to: "/feedback", label: "Feedback", icon: MessageSquare, hint: "Reports from students" },
+      /*
+       * The ADMIN's alone (T1, 7 Oct 2026): every teacher, their classes, the
+       * teacher roster. Shown only to the admin; the route renders a forbidden
+       * screen and the API answers 403 for anyone else. In Records until the
+       * instructor rules on a group of its own (a new group is their call).
+       */
+      { to: "/teachers", label: "Teachers", icon: UserCog, hint: "Every teacher, their classes, the teacher roster", adminOnly: true },
     ],
   },
 ] as const;
+
+type NavItem = (typeof GROUPS)[number]["items"][number];
+const shownTo = (role: Identity["role"]) => (i: NavItem) => !("adminOnly" in i && i.adminOnly) || role === "admin";
 
 const THEMES: Array<{ value: Theme; label: string }> = [
   { value: "bare-metal", label: "Bare metal" },
@@ -76,6 +86,7 @@ function pageName(pathname: string): string {
     for (const i of g.items) if (pathname === i.to || pathname.startsWith(`${i.to}/`)) return i.label;
   }
   return pathname.startsWith("/attempts/") ? "Attempt" : "Teacher console";
+  // (/teachers/:id is covered by the startsWith above.)
 }
 
 function initials(identity: Identity): string {
@@ -277,7 +288,7 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
                 {g.label}
               </p>
               <ul aria-labelledby={`nav-${g.id}`}>
-                {g.items.map(({ to, label, icon: Icon, hint }) => (
+                {g.items.filter(shownTo(identity.role)).map(({ to, label, icon: Icon, hint }) => (
                   <li key={to}>
                     <NavLink
                       to={to}
@@ -298,7 +309,8 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
       </aside>
 
       <main id="main" tabIndex={-1} className="shell-main">
-        <Outlet />
+        {/* Pages that decide what to render by role (only /teachers) read it here. */}
+        <Outlet context={identity} />
       </main>
 
       {/* The toaster is NOT here: it is mounted once in App.tsx, so the gate
