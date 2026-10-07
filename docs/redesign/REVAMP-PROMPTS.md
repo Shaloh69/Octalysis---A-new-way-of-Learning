@@ -23,92 +23,103 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: Course Studio, CS1 (no AI yet)
+## 1. Start here — the next session: PROFILES (profile pages and pictures)
 
 ```
-Read docs/NEXT-SESSION.md sections 0zi and 0zh first: T1 (teacher accounts,
-subjects, classes) is built and deployed; Course Studio is planned and its
-rulings approved; the order is T1 (done) -> CS1 -> profiles -> T2 -> CS2 ->
-the student bot and Study Session -> the app with CS3. Then
-docs/COURSE-STUDIO-PLAN.md in full (CS1 is this session's work; section 5,
-the student's many star systems, is CS2's and is only read), the rulings
-tables of docs/TEACHERS-AND-SUBJECTS-PLAN.md and AI-ASSISTANT-PLAN.md
-(rounds six to eight), design/templates/console/studio/SOURCE.md, and the
-existing /content: design/templates/console/content/SPEC.md and
-apps/console/CLAUDE.md's /content row (what moves into the Studio, and every
-rule it already keeps: an approval is of one exact text, saves need a reason
-and the version opened, quotes are read-only, sync-content never overwrites
-a console edit). Then root CLAUDE.md: hard rules 3, 5, 8 and 10, "Templates
-are ARTIFACTS", "THE HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE", "REDO
-THE PAGE". Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md sections 0zj, 0zi and 0zh first: the changelogs
+and Course Studio CS1 are built and deployed (CS1 took in /content, which
+redirects); the order is T1 (done) -> CS1 (done) -> PROFILES (this session) ->
+T2 -> CS2 -> the student bot and Study Session -> the app with CS3. Then
+docs/PROFILES-PLAN.md in full (rulings approved 7 Oct, night; it REVERSES
+DESIGN-MANDATE.md section 4, which said never to ask for a profile picture),
+docs/CHAT-PLAN.md for how chat attachments and their private bucket work (the
+picture bucket is built the same way), db/CLAUDE.md (V-29: a column grant is
+decided on purpose; V-30: a policy's subquery is subject to RLS), and
+apps/console/CLAUDE.md's /teachers, /teachers/:key and /students/:id rows.
+Then root CLAUDE.md: hard rules 3, 8 and 10, "Templates are ARTIFACTS", "THE
+HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE", "REDO THE PAGE". Do not
+re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. On
-7 Oct (night) it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open
-box a person's. Then say plainly whether Prelim-worth of data is okay to run
-on students, checking the five conditions in CLAUDE.md. On 7 Oct it was NOT:
-on the deployment stage 01 has 13 live, 2 at review, 2 retired, and 02-04
-have none live; deployment invariants 0 failures (3 warnings).
+8 Oct it was 238/245, 97%: R3 87/88, R4 46/48, R5 20/24, every open box a
+person's. Then say plainly whether Prelim-worth of data is okay to run on
+students, checking the five conditions in CLAUDE.md (the console's /changelog
+now shows them live). On 8 Oct it was NOT: on the deployment stage 01 has 14
+live, 1 at review, 2 retired, and 02-04 have none live (14 of the act-1
+bank's 96); 11 of the 19 planet summaries are approved; deployment
+invariants 0 failures (3 warnings).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot, start Docker Desktop first. Kill orphaned API trees and previews.
-Run pnpm db:reset, THEN node scripts/db-demo.mjs (THIRTEEN SQL files:
-addendum-teachers.sql is the last). Start ONE pnpm dev:api and prove it with
-a real GET (readyz); curl again after EVERY db:reset (a reset can kill it).
-Build and preview apps/web on 5185 and apps/console on 5186 (restart a
-preview after each build), and export OCTA_WEB_URL and OCTA_CONSOLE_URL.
-Every API test run empties the seeded database: reset and reseed before any
-Playwright run. Capture a dialog only after its ease-in (a capture mid-fade
-looks translucent). Any script with an apostrophe, backtick or backslash goes
-through the Write tool, never a heredoc.
+reboot, start Docker Desktop first (it was down at the start of 8 Oct). Kill
+orphaned API trees and previews: stopping a background task does NOT stop its
+server, so kill by PID (netstat -ano, taskkill //T //F //PID) and prove the
+port is free. Run pnpm db:reset, THEN node scripts/db-demo.mjs (FOURTEEN SQL
+files: addendum-studio.sql is the last). Start ONE pnpm dev:api and prove it
+with a real GET (readyz); curl again after EVERY db:reset (a reset can kill
+it). Build and preview apps/web on 5185 and apps/console on 5186 (restart a
+preview after EVERY build), and export OCTA_WEB_URL and OCTA_CONSOLE_URL.
+Every API test run, and pnpm verify, empties the seeded database: reset and
+reseed before any Playwright run. Capture a dialog only after its ease-in (a
+capture mid-fade looks translucent). A script with an apostrophe, backtick or
+backslash goes through the Write tool, never a heredoc, and a regex-heavy edit
+through the Edit tool or a Python script written with Write (node -e in the
+shell ate the backslashes of two regexes on 8 Oct).
 
 The deployment: API https://octa-api-noq2.onrender.com, student site
 https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
 Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
 print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project).
-scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref.
+scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref; pnpm
+db:push:check prints the host, and pnpm db:push --file db/<addendum>.sql
+applies one.
 
-The work, CS1 (COURSE-STUDIO-PLAN.md sections 1-3), in this order:
+The work, PROFILES (PROFILES-PLAN.md), in this order:
 
-1. SPEC.md for /studio from the captured templates (three panes; at 380 the
-   outline and the AI are sheets), every control and the four tests. The AI
-   pane is LOCKED in CS1 and must not be a dead end: there is no app to
-   download yet, so it says the AI Assistant app is not released yet (the
-   "Download here and install" prompt arrives with the app, CS3).
-2. Subjects and books for every teacher: API routes under requireStaff()
-   (add a subject: code and title; rename; add, edit and set the default
-   book), each with a reason and an audit_log row; RLS stays "no client
-   write". Denial tests red first (a student and anon refused; a teacher
-   cannot write a subject or book straight to the table).
-3. The approval rule (plan section 3): the approver must not be the author
-   of the version approved, for chapter drafts, summaries, figures and
-   items; the ADMIN may approve their own edit, recorded as self-approved.
-   Read how each is approved today first; put the rule in the database
-   where the author is known (an idempotent addendum, the fourteenth, on
-   Supabase BEFORE the code), denial tests red first.
-4. The page /studio, REDONE from its template, carrying over everything
-   /content does (read the old pages as a requirements document, then build):
-   the outline (subjects -> books, chapters), the editor pane (today's
-   chapter editor and its rules), summaries, figures, chapter drafts, the
-   approvals with the new rule. /content and /content/:stageId redirect to
-   it so old links work. Its gate: spec at 1440 and 380, six assertions,
-   screenshots OPENED; the old console-content spec moved or rewritten,
-   green. Probably two sessions; say so rather than rush it.
+1. Templates FIRST, captured as artifacts and opened: a student profile in the
+   star HUD (/app/profile; the HUD's character-menu direction in
+   design/templates/web/_direction and /app/progress's) and a teacher/admin
+   profile (/profile; shadcn-admin's profile settings or similar), each with
+   SOURCE.md, SPEC.md (every control, the four tests) and motion.md.
+2. The schema, an idempotent addendum, the FIFTEENTH file (register it in
+   scripts/db-reset.mjs and scripts/db-push-supabase.mjs as addendum-studio.sql
+   was): profiles.avatar_path and avatar_updated_at written by the API only,
+   and the private bucket profile-images created as chat-attachments is. Denial
+   tests red first (a student cannot set another's picture, read one outside
+   their classes, or remove one; anon reads nothing; a teacher's removal is
+   audited). On Supabase BEFORE the code (hard rule 10).
+3. The API: sign one upload to a path the API chooses, check the bytes are
+   WebP and at most 300 KB, record it; sign short-lived downloads only for a
+   viewer allowed to see that person (same class, their teacher, the admin);
+   removal by a teacher of that student or the admin, audited, with the
+   student told "Your picture was removed by your teacher". The generated
+   avatar seeded from the student ID is the fallback, and what shows after a
+   removal.
+4. The pages, REDONE from their templates: /app/profile and /profile; the
+   picture in the web nav's own-avatar spot, the class chat (both apps), the
+   console roster and /students/:userId (with Remove), the shell's avatar,
+   /teachers and /teachers/:key. NEVER on a stage check or an exam paper:
+   [data-paper] stays identical for everyone. The browser crops to a square and
+   re-encodes to 512x512 WebP on a canvas (drops EXIF, GPS included).
+5. Each page's gate: spec at 1440 and 380, the six assertions, screenshots
+   OPENED. Probably two sessions; say so rather than rush it.
 
-Not CS1 (do not start): CS2 (a new subject as its own star system, the
-black-hole galaxy page and per-subject chat, summaries and progress), CS3
-(the AI sidebar's work), profiles, T2.
+Not this session (do not start): T2, CS2, the student bot, CS3.
 
 Still owed by the instructor (do not build around them): the first teacher
 roster import on /teachers and a first real claim at /claim; whether
-/teachers leaves Records for a nav group of its own; which of
-STUDY-AND-BOT-PLAN.md section 4's features to build; the four engine keys;
-approving the 83 act-1 items at review (the Prelim needs 96 live), the 131
-questions for 09-12, the chapter drafts 08-13 and 17 figures on /content,
-and the planet summaries (R3's last box); the screen-reader pass; accepting
+/teachers leaves Records for a nav group of its own; whether a Studio block
+edit, which reaches students at once, should also need a second teacher;
+which of STUDY-AND-BOT-PLAN.md section 4's features to build; the four engine
+keys; approving the 83 act-1 items at review (the Prelim needs 96 live), the
+131 questions for 09-12, the chapter drafts 08-13, 17 figures and the 8 summaries
+still to review (on the Studio's To review); the screen-reader pass; accepting
 the moon work's lock-layer changes (REDESIGN-SIGNOFF.md section 5).
 
 Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put
-a key in it). Any visual change goes through its page gate.
+a key in it). Any visual change goes through its page gate. Before the last
+commit run pnpm changelog and add the day's entry to
+content/changelog/highlights.json (and the roadmap), so the changelogs say what
+shipped.
 
 End: pnpm phase with the percentage, the Prelim sentence checked,
 docs/NEXT-SESSION.md and PROGRESS.md updated, REVAMP-PROMPTS.md section 1

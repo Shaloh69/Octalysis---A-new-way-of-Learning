@@ -1,16 +1,46 @@
 {
   "_about": "What comes next, in the approved order (docs/COURSE-STUDIO-PLAN.md §4, approved 7 Oct 2026, night), and what waits on the instructor (docs/NEXT-SESSION.md). Shown on the console's /changelog only. Update it in the session that changes either list.",
   "next": [
-    { "id": "CS1", "title": "Course Studio, without the AI", "what": "One console page for subjects, books and chapters: the chapter editor, summaries, figures and drafted text, with the new approval rule (a subject's teachers approve, never their own edit; the admin may, recorded).", "plan": "docs/COURSE-STUDIO-PLAN.md", "state": "in progress" },
-    { "id": "Profiles", "title": "Profile pages", "what": "A profile page with an uploaded picture for students, teachers and the admin.", "plan": "docs/PROFILES-PLAN.md", "state": "planned" },
-    { "id": "T2", "title": "Teachers see their own classes", "what": "A teacher's students, gradebook, locks, submissions and chat show only the classes they hold; the admin sees all.", "plan": "docs/TEACHERS-AND-SUBJECTS-PLAN.md", "state": "planned" },
-    { "id": "CS2", "title": "A subject as its own star system", "what": "A second subject (CPE 413) gets its own planets, questions and grades; a student with two or more subjects sees their systems orbiting a black hole.", "plan": "docs/COURSE-STUDIO-PLAN.md §5", "state": "planned" },
-    { "id": "Bot", "title": "The study bot and the Study Session", "what": "The assistant as a chat bot for students and teachers, and shareable study sheets.", "plan": "docs/STUDY-AND-BOT-PLAN.md", "state": "planned" },
-    { "id": "CS3", "title": "The AI Assistant app, and Course Studio's AI sidebar", "what": "Each teacher's own app holds their keys; Course Studio's AI checks a chapter against the book, the syllabus, student results and its writing, as proposals you accept or discard.", "plan": "docs/AI-ASSISTANT-PLAN.md", "state": "planned" }
+    {
+      "id": "Profiles",
+      "title": "Profile pages",
+      "what": "A profile page with an uploaded picture for students, teachers and the admin.",
+      "plan": "docs/PROFILES-PLAN.md",
+      "state": "next"
+    },
+    {
+      "id": "T2",
+      "title": "Teachers see their own classes",
+      "what": "A teacher's students, gradebook, locks, submissions and chat show only the classes they hold; the admin sees all.",
+      "plan": "docs/TEACHERS-AND-SUBJECTS-PLAN.md",
+      "state": "planned"
+    },
+    {
+      "id": "CS2",
+      "title": "A subject as its own star system",
+      "what": "A second subject (CPE 413) gets its own planets, questions and grades; a student with two or more subjects sees their systems orbiting a black hole.",
+      "plan": "docs/COURSE-STUDIO-PLAN.md §5",
+      "state": "planned"
+    },
+    {
+      "id": "Bot",
+      "title": "The study bot and the Study Session",
+      "what": "The assistant as a chat bot for students and teachers, and shareable study sheets.",
+      "plan": "docs/STUDY-AND-BOT-PLAN.md",
+      "state": "planned"
+    },
+    {
+      "id": "CS3",
+      "title": "The AI Assistant app, and Course Studio's AI sidebar",
+      "what": "Each teacher's own app holds their keys; Course Studio's AI checks a chapter against the book, the syllabus, student results and its writing, as proposals you accept or discard.",
+      "plan": "docs/AI-ASSISTANT-PLAN.md",
+      "state": "planned"
+    }
   ],
   "owed": [
+    "Decide whether a block edit in the Studio, which reaches students at once, should also need a second teacher (ruling 6 could be read to say so).",
     "Approve the 83 act-1 questions at review on Items (the Prelim needs all 96 live).",
-    "Approve the planet summaries (the redesign's last R3 box), the drafted chapters 08 to 13 and 17 figures on Content.",
+    "Approve the planet summaries (the redesign's last R3 box), the drafted chapters 08 to 13 and 17 figures on the Studio's To review.",
     "Review the 131 questions for stages 09 to 12 on Items.",
     "Import the first teacher roster on Teachers, and have a teacher make the first real claim at Claim.",
     "Say whether Teachers should leave Records for a nav group of its own.",

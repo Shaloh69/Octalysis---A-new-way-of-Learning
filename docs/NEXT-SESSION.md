@@ -1526,6 +1526,80 @@ left, or needing a decision:
 
 ---
 
+## 0zj. Changelogs, then Course Studio CS1 built — 8 Oct 2026 (the session after 0zi)
+
+The instructor added, mid-session: **"Add Changelogs to both the admin/teachers
+and student web to show the Updates We made. Also add all the progress of the
+entire System there ... do that first before the studio."** So the order of
+the day was the changelogs, then CS1.
+
+**1. The changelogs** (4 commits, `7b7b5fc`..`2113f4c`, then regenerated).
+Answers (asked, then built): entries from **both** written highlights and the
+full commit list; students see **their changes only** with one line of
+progress; the console shows build phases, course readiness and planned work.
+- `pnpm changelog` (`scripts/changelog.mjs`) reads `git log` (feat/fix/perf/
+  content), `content/changelog/highlights.json` (a teachers' list and a
+  students' list per day; the students' under a student's own title) and
+  `roadmap.json`, and the phase counts through `scripts/lib/phases.mjs`, the
+  reader `pnpm phase` now shares. **Run it before a session's last commit**: the
+  output (`apps/*/src/generated/changelog.json`) is committed because Vercel's
+  clone is shallow.
+- Console `/changelog` (Records): progress R0-R5 and P0-P10, **course readiness
+  live** (`GET /console/progress`: the Prelim's five conditions, each saying
+  whether it is measured, proved by a test or checked by a person; never
+  "ready"), what comes next, what waits on the instructor, then every day with
+  "All n changes". 24 green. Student `/app/changelog`, "What's new", in the
+  top strip, the star HUD, Linear's timeline. 23 green.
+- Found by LOOKING: stretched state badges, a hash on its own row at 380,
+  prose set in mono, and the teachers' titles ("The console rebuild begins")
+  on the students' page.
+
+**2. CS1, in the plan's order.**
+- **The SPEC** (`design/templates/console/studio/SPEC.md`), with an "As built"
+  section listing where the build departs from the plan.
+- **Subjects and books for every teacher** (`3e7f7e9`): `GET/POST/PATCH
+  /console/subjects`, `POST /subjects/:code/books`, `PATCH /books/:id`, `POST
+  /books/:id/default`, each with a reason and an audit row. 16 tests; the
+  direct-write denials watched red with the policies temporarily opened.
+- **The approval rule** (`dbe8f3f`): `db/addendum-studio.sql`, the
+  **fourteenth** file: `approval_verdict()` and an approver trigger on
+  `stage_summaries`, `chapter_drafts`, `figures` and `items`, `authored_by`
+  and `self_approved` columns (the database sets the latter). **Applied to the
+  deployment (ddvxkbcelpqydnjkffdr) before the push**: function answers, four
+  triggers, invariants 0 failures. 12 denial tests watched red (7 on the rule
+  itself once the columns existed). `items.spec`'s solo-instructor tests were
+  rewritten: a teacher is never their own reviewer, the admin is never stuck.
+  Fixture teachers now hold a CPE 412 class (a teacher with none approves
+  nothing).
+- **`/studio`** (this session's last commits): three panes, sheets at 380; the
+  Overview, To review, a subject (books), a chapter in tabs; the locked AI
+  pane; redirects from `/content`. `console-studio.spec.ts` (the old content
+  spec, moved) with the Studio's own claims: 164 green with the teaching spec.
+
+**Found by looking (not by the gate):** the Overview fell back to tall
+one-chapter cards at 1440 (the docked outline leaves the table 53rem; now a
+dense row); an outline chapter broke mid-word ("Microprogramm ed Control");
+Books' heading was misaligned with its list; the AI sheet's Locked badge sat
+under the close button; **adding a subject from the 380 outline left the sheet
+open over the new page** (a real bug the spec caught).
+
+**Two things to know.** (1) The approval rule bites on **authors only where an
+author is known**: sync-content writes summaries, drafts and figures with no
+author, so today only items carry one; the *teacher of the subject* check acts
+on all four. (2) **A block edit is still not gated** (it reaches students at
+once, "fix a typo now"); whether ruling 6 should put a second teacher in front
+of those too is **the instructor's question**, recorded in the SPEC and the
+changelog's "Waiting on you".
+
+**State of the deployment, 8 Oct:** stage 01 has 14 live and 1 at review (one
+more than on 7 Oct), 02-04 none live; **11 of 19 planet summaries are
+approved** (the instructor's); invariants 0 failures, 3 warnings. **Prelim-
+worth of data is NOT okay to run on students** (14 of the act-1 bank's 96 are
+live).
+
+**Next: profiles** (`docs/PROFILES-PLAN.md`), then T2, CS2, the student bot,
+CS3. Templates for `/app/profile` and `/profile` are to capture first.
+
 ## 0zi. Course Studio planned — 7 Oct 2026 (night, fourth part)
 
 The gap "no screen to add a subject or a book" became **Course Studio**

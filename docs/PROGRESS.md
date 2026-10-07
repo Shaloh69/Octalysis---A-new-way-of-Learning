@@ -19,6 +19,19 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**8 Oct 2026:** phase report **238/245 (97%)**, unchanged (the changelogs and
+Course Studio are outside the R boxes, like T1); live R3 87/88, R4 46/48, R5
+20/24, every open box a person's. **Built and pushed:** a changelog on both
+apps (`pnpm changelog`; console `/changelog` with the whole system's progress
+and live course readiness; student `/app/changelog`), the approval rule in the
+database (`addendum-studio.sql`, the fourteenth file, on Supabase first),
+subjects and books for every teacher, and **Course Studio `/studio`** (it took
+in `/content`, which redirects). `pnpm verify` green (API 1020, console 244,
+web 325). **Prelim NOT runnable:** deployment stage 01 14 live, 02-04 none;
+**11 of 19 summaries approved** by the instructor. Next: profiles. Detail:
+NEXT-SESSION.md 0zj.
+
+
 **7 Oct 2026 (night, fourth part):** Course Studio planned
 (`COURSE-STUDIO-PLAN.md`): subjects, books, chapters and the AI sidebar in one
 console page, taking in `/content` and `/assistant`; CS1 (no AI) is next,

@@ -1,4 +1,4 @@
-# Course Studio — plan v1, rulings APPROVED 7 Oct 2026 (night), nothing built
+# Course Studio — plan v1, rulings APPROVED 7 Oct 2026 (night); **CS1 BUILT 8 Oct 2026**, CS2 and CS3 not
 
 Instructor, 7 Oct 2026 (night), on the gap "there is no screen to add a
 subject or a book":
@@ -53,7 +53,7 @@ kept, so old links work) and `/assistant`.
 
 | Phase | What | When |
 |---|---|---|
-| **CS1** | Course Studio without AI: subjects (add, rename; a code and a title), their books (add, edit, set the default), the outline, and today's `/content` work moved in (chapter status, the block editor, summaries, figures, chapter drafts), with the **new approval rule** (the subject's teachers, never your own edit). For CPE 412 only, because only CPE 412 has a star system | **NOW**, before profiles |
+| **CS1 (BUILT 8 Oct 2026; NEXT-SESSION 0zj, the SPEC's "As built")** | Course Studio without AI: subjects (add, rename; a code and a title), their books (add, edit, set the default), the outline, and today's `/content` work moved in (chapter status, the block editor, summaries, figures, chapter drafts), with the **new approval rule** (the subject's teachers, never your own edit). For CPE 412 only, because only CPE 412 has a star system | **Done 8 Oct 2026** |
 | **CS2 = T3** | A subject is its own star system: stages, objectives, items, blueprints, assessments and the student map keyed by subject; a new subject's chapters are created in Studio; a CPE 413 class's students see CPE 413's map. Touches nearly every table and the student app | After T2 (approved) |
 | **CS3** | The AI sidebar, through the teacher's app: the four checks, proposals with diffs, chapter drafting (the assistant plan's B5-B6 inside Studio) | With the assistant's app |
 

@@ -2,6 +2,19 @@
   "_about": "The changelog's written highlights, one entry per day that shipped. Written from that day's commits (git log), in plain words; the commit list itself is added by scripts/changelog.mjs. `teachers` shows on the console's /changelog; `students` (under `studentTitle`, in a student's words) on the student app's What's new, and only student-facing changes go there. An empty `students` list keeps the day off the student page. Instructor, 7 Oct 2026 (night): both written highlights and the full commit list.",
   "updates": [
     {
+      "date": "2026-10-08",
+      "title": "Course Studio",
+      "teachers": [
+        "Course Studio replaces Content: one page for the course's material, in the Course group of the menu. An outline of subjects, their books and chapters on the left, the editor in the middle, and the AI Assistant on the right.",
+        "A chapter is now tabs: Blocks, Summary, Draft and Figures where the chapter has them, and the syllabus's Objectives. Everything Content did is kept: approvals of one exact text, a reason and the version opened on every save, quotes from the book read-only. Old Content links still land.",
+        "To review gathers summaries, drafted lesson text and figures in one place.",
+        "Every teacher can add a subject, rename it, and add, edit or default its books, each with a reason in the audit log.",
+        "A new approval rule, held in the database: a teacher of the subject approves, never the author of the version; the admin may approve their own edit, recorded as self-approved. An Approve you may not use is disabled, with the reason beside it.",
+        "The AI Assistant pane is there, locked, and says the app is not released yet."
+      ],
+      "students": []
+    },
+    {
       "date": "2026-10-07",
       "title": "Teacher accounts, and the changelog",
       "studentTitle": "A fix, and this page",
