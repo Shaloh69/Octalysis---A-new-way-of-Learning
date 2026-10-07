@@ -1,6 +1,6 @@
 {
   "madeAt": {
-    "commit": "b64a83d",
+    "commit": "2113f4c",
     "date": "2026-10-07"
   },
   "updates": [
@@ -15,6 +15,30 @@
         "This changelog, with the system's progress on one page."
       ],
       "commits": [
+        {
+          "hash": "2113f4c",
+          "type": "feat",
+          "scope": "web",
+          "subject": "/app/changelog, What's new for students, in the star HUD"
+        },
+        {
+          "hash": "c90fe39",
+          "type": "feat",
+          "scope": "console",
+          "subject": "/changelog, every update and the whole system's progress"
+        },
+        {
+          "hash": "0fe245c",
+          "type": "feat",
+          "scope": null,
+          "subject": "pnpm changelog, the changelogs' data from git, the phase files and written highlights"
+        },
+        {
+          "hash": "7b7b5fc",
+          "type": "feat",
+          "scope": "api",
+          "subject": "GET /console/progress, the Prelim's five conditions, live (staff)"
+        },
         {
           "hash": "050b7da",
           "type": "feat",
