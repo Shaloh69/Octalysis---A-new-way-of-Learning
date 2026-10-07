@@ -33,6 +33,7 @@ export function toFigure(r: Record<string, unknown>) {
     everApproved: r.ever_approved === true,
     reviewer: (r.reviewer ?? null) as string | null,
     reviewedAt: r.reviewed_at ? new Date(r.reviewed_at as string).toISOString() : null,
+    authoredBy: (r.authored_by ?? null) as string | null,
   };
 }
 

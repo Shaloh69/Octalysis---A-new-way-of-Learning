@@ -171,7 +171,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
     requireStaff(id);
     const { rows } = await app.db.query(
       `select ss.stage_id, s.title, s.act, ss.draft, ss.draft_hash, ss.status, ss.note,
-              ss.reviewed_at, ss.updated_at, p.full_name as reviewer
+              ss.reviewed_at, ss.updated_at, ss.authored_by::text as authored_by, p.full_name as reviewer
          from stage_summaries ss
          join stages s on s.id = ss.stage_id
          left join profiles p on p.id = ss.reviewed_by
@@ -222,7 +222,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
 
     const { rows: sums } = await app.db.query(
       `select ss.stage_id, s.title, s.act, ss.draft, ss.draft_hash, ss.status, ss.note,
-              ss.reviewed_at, ss.updated_at, p.full_name as reviewer
+              ss.reviewed_at, ss.updated_at, ss.authored_by::text as authored_by, p.full_name as reviewer
          from stage_summaries ss
          join stages s on s.id = ss.stage_id
          left join profiles p on p.id = ss.reviewed_by
@@ -233,17 +233,24 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
     // Drafted lesson text, if any (5 Oct 2026): shown beside the live blocks.
     const { rows: drafts } = await app.db.query(
       `select cd.blocks, cd.draft_hash, cd.status, cd.note, cd.ever_approved, cd.reviewed_at, cd.updated_at,
-              p.full_name as reviewer
+              cd.authored_by::text as authored_by, p.full_name as reviewer
          from chapter_drafts cd left join profiles p on p.id = cd.reviewed_by
         where cd.stage_id = $1`,
       [stageId],
     );
     const dr = drafts[0];
 
+    // The syllabus's objectives for this chapter, read-only (Studio's Objectives tab): they are the
+    // syllabus's contract, transcribed verbatim, and check:objectives guards them.
+    const { rows: objs } = await app.db.query(
+      `select code, description, bloom_level, level, competency from objectives where stage_id = $1 order by code`,
+      [stageId],
+    );
+
     // The chapter's figures (6 Oct 2026), each drawn as it is under review.
     const { rows: figs } = await app.db.query(
       `select f.id, f.title, f.svg, f.svg_hash, f.status, f.note, f.ever_approved,
-              f.approved_svg is not null as served, f.reviewed_at, p.full_name as reviewer
+              f.approved_svg is not null as served, f.reviewed_at, f.authored_by::text as authored_by, p.full_name as reviewer
          from figures f left join profiles p on p.id = f.reviewed_by
         where f.stage_id = $1
         order by f.id`,
@@ -251,6 +258,13 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
     );
 
     return reply.send({
+      objectives: objs.map((o) => ({
+        code: o.code as string,
+        description: o.description as string,
+        bloom: o.bloom_level as string,
+        level: o.level === null ? null : Number(o.level),
+        competency: (o.competency ?? null) as string | null,
+      })),
       figures: figs.map(toFigure),
       draft: dr
         ? {
@@ -262,6 +276,7 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
             reviewer: (dr.reviewer ?? null) as string | null,
             reviewedAt: dr.reviewed_at ?? null,
             updatedAt: dr.updated_at,
+            authoredBy: (dr.authored_by ?? null) as string | null,
           }
         : null,
       stage: {
@@ -640,5 +655,7 @@ function toSummary(r: Record<string, unknown>) {
     reviewer: (r.reviewer ?? null) as string | null,
     reviewedAt: r.reviewed_at ? new Date(r.reviewed_at as string).toISOString() : null,
     updatedAt: new Date(r.updated_at as string).toISOString(),
+    /** The teacher who wrote this version through the console; null: written from the files by sync. */
+    authoredBy: (r.authored_by ?? null) as string | null,
   };
 }

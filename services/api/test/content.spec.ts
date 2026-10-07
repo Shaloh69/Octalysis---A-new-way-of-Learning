@@ -156,6 +156,20 @@ describe("GET /console/content/:stageId — one chapter", () => {
     expect(body.summary).toMatchObject({ draft: DRAFT, hash: DRAFT_HASH, status: "draft" });
   });
 
+  it("carries the chapter's objectives, verbatim and in order, for the Studio's Objectives tab", async () => {
+    await setup(
+      `insert into objectives (id, stage_id, code, bloom_level, level, competency, description) values
+         ('00.2', '00', '00.2', 'understand', 6, 'read', 'Say how a stage opens'),
+         ('00.1', '00', '00.1', 'remember', 6, 'read', 'Name the parts of the map')
+       on conflict (id) do nothing`,
+    );
+    const res = await app.inject({ method: "GET", url: "/api/v1/console/content/00", headers: as(teacherToken) });
+    expect(res.json().objectives).toEqual([
+      { code: "00.1", description: "Name the parts of the map", bloom: "remember", level: 6, competency: "read" },
+      { code: "00.2", description: "Say how a stage opens", bloom: "understand", level: 6, competency: "read" },
+    ]);
+  });
+
   it("answers 404 for a stage that does not exist", async () => {
     const res = await app.inject({ method: "GET", url: "/api/v1/console/content/42", headers: as(teacherToken) });
     expect(res.statusCode).toBe(404);
