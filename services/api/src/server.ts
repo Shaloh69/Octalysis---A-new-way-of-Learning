@@ -18,6 +18,7 @@ import { registerAssessmentRoutes } from "./routes/assessments.js";
 import { registerJourneyRoutes } from "./routes/journeys.js";
 import { registerChatRoutes } from "./routes/chat.js";
 import { registerPasswordRoutes } from "./routes/passwords.js";
+import { registerTeacherRoutes } from "./routes/teachers.js";
 import { makeChatStorage, type ChatStorage } from "./chat/storage.js";
 import type { Env } from "./env.js";
 
@@ -135,6 +136,9 @@ export async function buildServer(
   }
   // Mounted either way: without a project they say so rather than 404.
   registerPasswordRoutes(app, env, supabaseAdmin);
+  // The admin's teacher routes (T1). Mounted either way: only disabling a
+  // teacher uses the Supabase client, to ban their login when there is one.
+  registerTeacherRoutes(app, env, supabaseAdmin);
 
   /** Readiness DOES check the database, and is not what the keep-alive pings. */
   app.get("/readyz", async (_req, reply) => {

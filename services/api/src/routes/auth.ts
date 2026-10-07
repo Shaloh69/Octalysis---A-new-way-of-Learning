@@ -3,6 +3,7 @@ import { z } from "zod";
 import { withRoleChangeAllowed, withTransaction } from "../db.js";
 import { errors } from "../errors.js";
 import { identityFrom, requireStaff } from "../auth.js";
+import { TeacherClaimBody } from "@octa/contracts";
 import type { Env } from "../env.js";
 
 /**
@@ -28,6 +29,9 @@ const ResolveBody = z.object({
 const REGISTER_FAILED =
   "That student ID could not be used. Check the ID on your registration form, " +
   "or ask your instructor if it has already been claimed.";
+
+/** The ONLY failure message the teacher claim ever returns (T1). */
+const TEACHER_CLAIM_FAILED = "That employee ID could not be used. Check it with your admin.";
 
 /** The ONLY failure message the login/resolve path ever returns. */
 const RESOLVE_FAILED = "Check your ID and password.";
@@ -92,6 +96,11 @@ export interface SupabaseAdmin {
       appMetadata?: Record<string, unknown>;
     },
   ): Promise<void>;
+  /**
+   * Ban or unban a login (a disabled teacher, T1). Optional: a test fake may
+   * leave it out; the API refuses a disabled account either way.
+   */
+  setBanned?(id: string, banned: boolean): Promise<void>;
 }
 
 /**
@@ -145,6 +154,14 @@ export function makeSupabaseAdmin(env: Env): SupabaseAdmin {
     },
     async deleteUser(id) {
       await fetch(`${base}/auth/v1/admin/users/${id}`, { method: "DELETE", headers });
+    },
+    async setBanned(id, banned) {
+      const res = await fetch(`${base}/auth/v1/admin/users/${id}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({ ban_duration: banned ? "876000h" : "none" }),
+      });
+      if (!res.ok) throw new Error(`admin ban failed: ${res.status}`);
     },
   };
 }
@@ -233,6 +250,77 @@ export function registerAuthRoutes(
           )
           .catch(() => {});
         throw errors.internal("registration rolled back");
+      }
+    },
+  );
+
+  /* ----------------------------------------------------------
+   * POST /api/v1/auth/claim-teacher   (T1, 7 Oct 2026)
+   *
+   * A teacher claims the employee ID the admin put on the teacher roster, as a
+   * student claims their student ID. The ROLE comes from the roster, never the
+   * form. The name must match the roster's (case and spacing aside), so a
+   * guessed ID alone does not open an account. Unknown ID, claimed ID,
+   * disabled ID and wrong name are ONE message (no enumeration). Atomic and
+   * rolled back on any failure, as /register.
+   * -------------------------------------------------------- */
+  app.post(
+    "/api/v1/auth/claim-teacher",
+    { config: { rateLimit: { max: 5 * app.limitScale, timeWindow: "1 minute" } } },
+    async (req, reply) => {
+      const body = TeacherClaimBody.safeParse(req.body);
+      if (!body.success) throw errors.badRequest(TEACHER_CLAIM_FAILED);
+      if (!admin) throw errors.internal("auth admin not configured");
+      const { employeeId, fullName, email, password } = body.data;
+
+      const claimed = await withTransaction(app.db, async (client) => {
+        const { rows } = await client.query<{ role: "teacher" | "admin"; full_name: string }>(
+          `update teacher_directory
+              set status = 'claimed', claimed_at = now()
+            where employee_id = $1 and status = 'unclaimed'
+              and lower(regexp_replace(trim(full_name), '\\s+', ' ', 'g'))
+                = lower(regexp_replace(trim($2), '\\s+', ' ', 'g'))
+            returning role::text as role, full_name`,
+          [employeeId, fullName],
+        );
+        return rows[0] ?? null;
+      });
+      if (!claimed) {
+        req.log.info({ employeeId }, "teacher claim rejected");
+        throw errors.forbidden(TEACHER_CLAIM_FAILED);
+      }
+
+      let authUserId: string | null = null;
+      try {
+        const created = await admin.createUser({
+          email,
+          password,
+          appMetadata: { role: claimed.role, employee_id: employeeId },
+        });
+        authUserId = created.id;
+        await withRoleChangeAllowed(app.db, async (client) => {
+          await client.query(
+            `insert into profiles (id, full_name, role) values ($1, $2, $3::user_role)`,
+            [authUserId, claimed.full_name, claimed.role],
+          );
+          await client.query(`update teacher_directory set claimed_by = $2 where employee_id = $1`, [employeeId, authUserId]);
+          await client.query(
+            `insert into audit_log (actor_id, action, target_type, target_id, payload)
+             values ($1, 'auth.claim_teacher', 'teacher_directory', $2, $3)`,
+            [authUserId, employeeId, JSON.stringify({ email, role: claimed.role })],
+          );
+        });
+        return reply.status(201).send({ ok: true });
+      } catch (err) {
+        req.log.error({ err }, "teacher claim failed after claim");
+        if (authUserId) await admin.deleteUser(authUserId).catch(() => {});
+        await app.db
+          .query(
+            `update teacher_directory set status = 'unclaimed', claimed_at = null, claimed_by = null where employee_id = $1`,
+            [employeeId],
+          )
+          .catch(() => {});
+        throw errors.internal("teacher claim rolled back");
       }
     },
   );

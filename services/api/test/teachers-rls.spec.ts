@@ -34,7 +34,6 @@ function denied(res: QueryResult): boolean {
 let w: World;
 let admin: Actor;
 let teacherA: Actor;
-let teacherB: Actor;
 let student: Actor;
 let adminId = "";
 let idB = "";
@@ -80,7 +79,6 @@ beforeAll(async () => {
 
   admin = authenticated(adminId, "admin", "admin");
   teacherA = authenticated(w.teacher, "teacher", "teacherA");
-  teacherB = authenticated(idB, "teacher", "teacherB");
   student = authenticated(w.studentA, "student", "student");
 }, 60_000);
 

@@ -144,13 +144,19 @@ export async function identityFrom(req: FastifyRequest, env: Env): Promise<Ident
    * roster is. The student app reads nothing except through this API, so this
    * one check is the whole lock-out. A primary-key lookup, students only.
    */
-  if (role === "student") {
+  if (role === "student" || role === "teacher") {
+    // A teacher disabled on /teachers (T1, 7 Oct 2026) is refused the same way:
+    // the console reads everything through this API. An admin is never disabled.
     const { rows } = await req.server.db.query<{ off: boolean }>(
       "select deleted_at is not null as off from profiles where id = $1",
       [payload.sub],
     );
     if (rows[0]?.off) {
-      throw errors.forbidden("This account has been deactivated. Ask your instructor.");
+      throw errors.forbidden(
+        role === "student"
+          ? "This account has been deactivated. Ask your instructor."
+          : "This account has been disabled. Ask your admin.",
+      );
     }
   }
 
@@ -166,6 +172,17 @@ export const isStaff = (id: Identity): boolean => id.role === "teacher" || id.ro
 
 export function requireStaff(id: Identity): void {
   if (!isStaff(id)) throw errors.forbidden("That is a teacher-only area.");
+}
+
+export const isAdmin = (id: Identity): boolean => id.role === "admin";
+
+/**
+ * The admin's own powers (T1, docs/TEACHERS-AND-SUBJECTS-PLAN.md): the teacher
+ * roster, classes, a teacher's page. Supersedes D4 for these alone; the admin
+ * is also a teacher, so every `requireStaff()` route still admits them.
+ */
+export function requireAdmin(id: Identity): void {
+  if (!isAdmin(id)) throw errors.forbidden("That is an admin-only area.");
 }
 
 /**

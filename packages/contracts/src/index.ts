@@ -907,3 +907,137 @@ export type ChatPruneBody = z.infer<typeof ChatPruneBody>;
 
 export const ChatThreadBody = z.object({ userId: z.string().uuid() }).strict();
 export type ChatThreadBody = z.infer<typeof ChatThreadBody>;
+
+/* ============================================================
+ * Teachers, subjects and classes (T1, 7 Oct 2026;
+ * docs/TEACHERS-AND-SUBJECTS-PLAN.md). Every route is the ADMIN's.
+ * ========================================================== */
+
+export const TeacherStatus = z.enum(["active", "unclaimed", "disabled"]);
+export type TeacherStatus = z.infer<typeof TeacherStatus>;
+
+export const SubjectBook = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  author: z.string().nullable(),
+  edition: z.string().nullable(),
+  isDefault: z.boolean(),
+});
+export type SubjectBook = z.infer<typeof SubjectBook>;
+
+export const Subject = z.object({ code: z.string(), title: z.string(), books: z.array(SubjectBook) });
+export type Subject = z.infer<typeof Subject>;
+
+export const TeacherClass = z.object({
+  id: z.string().uuid(),
+  sectionId: z.string().uuid(),
+  sectionCode: z.string(),
+  subjectCode: z.string(),
+  term: z.string(),
+  /** Null: the subject's default book. */
+  bookId: z.string().uuid().nullable(),
+  /** The book the class reads, in words: its own, or the subject's default. */
+  bookLabel: z.string().nullable(),
+  students: z.number().int().nonnegative(),
+  endedAt: z.string().nullable(),
+});
+export type TeacherClass = z.infer<typeof TeacherClass>;
+
+export const TeacherRow = z.object({
+  /** The user id once claimed; `employee:<id>` for a roster row nobody has claimed. */
+  key: z.string(),
+  userId: z.string().uuid().nullable(),
+  employeeId: z.string().nullable(),
+  fullName: z.string(),
+  email: z.string().nullable(),
+  role: z.enum(["teacher", "admin"]),
+  status: TeacherStatus,
+  classes: z.array(TeacherClass),
+  /** AI tokens this calendar month (round six: the teacher's own app); 0 until it exists. */
+  tokensThisMonth: z.number().int().nonnegative(),
+  lastSignInAt: z.string().nullable(),
+});
+export type TeacherRow = z.infer<typeof TeacherRow>;
+
+export const SectionRef = z.object({ id: z.string().uuid(), code: z.string(), term: z.string() });
+
+export const TeachersResponse = z.object({
+  teachers: z.array(TeacherRow),
+  counts: z.object({
+    total: z.number().int(), active: z.number().int(), unclaimed: z.number().int(), disabled: z.number().int(),
+  }),
+  /** Classes nobody holds yet: the admin assigns them. */
+  unassigned: z.array(TeacherClass),
+  sections: z.array(SectionRef),
+  subjects: z.array(Subject),
+});
+export type TeachersResponse = z.infer<typeof TeachersResponse>;
+
+export const TeacherUsage = z.object({
+  month: z.string(), // 'YYYY-MM'
+  engine: z.string(),
+  tokensIn: z.number().int().nonnegative(),
+  tokensOut: z.number().int().nonnegative(),
+  costUsd: z.number().nonnegative(),
+});
+export type TeacherUsage = z.infer<typeof TeacherUsage>;
+
+export const TeacherDetail = z.object({
+  teacher: TeacherRow,
+  stats: z.object({
+    classes: z.number().int(), students: z.number().int(),
+    tokensThisMonth: z.number().int(), costThisMonth: z.number(),
+  }),
+  /** Totals only, never a draft or a prompt (round six, ruling 2). */
+  usage: z.array(TeacherUsage),
+  sections: z.array(SectionRef),
+  subjects: z.array(Subject),
+});
+export type TeacherDetail = z.infer<typeof TeacherDetail>;
+
+export const EmployeeId = z.string().trim().regex(/^[A-Za-z0-9][A-Za-z0-9-]{2,31}$/, "an employee ID is 3-32 letters, digits or hyphens");
+
+export const TeacherImportBody = z.object({
+  rows: z.array(z.object({
+    employeeId: EmployeeId,
+    fullName: z.string().trim().min(1).max(200),
+    email: z.string().trim().email().max(254).optional(),
+    role: z.enum(["teacher", "admin"]).default("teacher"),
+  })).max(500),
+  apply: z.boolean().default(false),
+});
+export type TeacherImportBody = z.infer<typeof TeacherImportBody>;
+
+export const ClassAssignBody = z.object({
+  sectionId: z.string().uuid(),
+  subjectCode: z.string().trim().min(1),
+  term: z.string().trim().min(1).max(40),
+  teacherId: z.string().uuid().nullable(),
+  bookId: z.string().uuid().nullable().default(null),
+  reason: z.string().trim().min(3).max(500),
+});
+export type ClassAssignBody = z.infer<typeof ClassAssignBody>;
+
+export const ClassUpdateBody = z.object({
+  bookId: z.string().uuid().nullable().optional(),
+  teacherId: z.string().uuid().nullable().optional(),
+  ended: z.boolean().optional(),
+  reason: z.string().trim().min(3).max(500),
+});
+export type ClassUpdateBody = z.infer<typeof ClassUpdateBody>;
+
+export const TeacherStatusBody = z.object({
+  active: z.boolean(),
+  reason: z.string().trim().min(3).max(500),
+  /** The employee ID (or, with none, the full name) typed to confirm. */
+  confirm: z.string().trim().min(1),
+});
+export type TeacherStatusBody = z.infer<typeof TeacherStatusBody>;
+
+export const TeacherClaimBody = z.object({
+  employeeId: EmployeeId,
+  fullName: z.string().trim().min(1).max(200),
+  email: z.string().trim().email().max(254),
+  password: z.string().min(10).max(128),
+});
+export type TeacherClaimBody = z.infer<typeof TeacherClaimBody>;
