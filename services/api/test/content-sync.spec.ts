@@ -10,7 +10,7 @@ import type { FastifyInstance } from "fastify";
 import { buildServer } from "../src/server.js";
 import { loadEnv } from "../src/env.js";
 import { setup, closePool } from "./helpers/rls.js";
-import { resetWorld, type World } from "./helpers/fixtures.js";
+import { consoleEdit, resetWorld, type World } from "./helpers/fixtures.js";
 
 /**
  * `sync-content` and the console editor, together (instructor ruling, 28 Sep
@@ -69,12 +69,7 @@ async function blockAt(ordinal: number) {
 
 async function edit(ordinal: number, body: string) {
   const b = await blockAt(ordinal);
-  const res = await app.inject({
-    method: "PUT", url: `/api/v1/console/content/blocks/${b.id}`,
-    headers: { authorization: `Bearer ${token}` },
-    payload: { body, version: b.version, reason: "fix in the console" },
-  });
-  expect(res.statusCode, res.body).toBe(200);
+  await consoleEdit(b.id, body, "fix in the console", w.teacher);
 }
 
 function mintToken(userId: string): string {

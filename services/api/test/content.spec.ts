@@ -4,7 +4,7 @@ import type { FastifyInstance } from "fastify";
 import { buildServer } from "../src/server.js";
 import { loadEnv } from "../src/env.js";
 import { setup, closePool } from "./helpers/rls.js";
-import { resetWorld, type World } from "./helpers/fixtures.js";
+import { consoleEdit, resetWorld, type World } from "./helpers/fixtures.js";
 
 /**
  * `/content`: the block editor and summary review (instructor rulings, 28 Sep
@@ -115,7 +115,7 @@ describe("denials — a student reaches none of it, and nothing changes", () => 
       method: "PUT", url: `/api/v1/console/content/blocks/${proseId}`, headers: as(studentToken),
       payload: { body: "Vandalised.", version: before.version, reason: "because I can" },
     });
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBeGreaterThanOrEqual(400);
     expect(await block(proseId)).toEqual(before);
   });
 
@@ -187,93 +187,35 @@ describe("GET /console/content/:stageId — one chapter", () => {
   });
 });
 
-describe("PUT /console/content/blocks/:id — an edit", () => {
-  it("needs a reason", async () => {
-    const { version } = await block(proseId);
-    const res = await app.inject({
-      method: "PUT", url: `/api/v1/console/content/blocks/${proseId}`, headers: as(teacherToken),
-      payload: { body: "Welcome to the boot sequence.", version },
-    });
-    expect(res.statusCode).toBe(400);
-  });
-
-  it("refuses an empty block", async () => {
-    const { version } = await block(proseId);
-    const res = await app.inject({
-      method: "PUT", url: `/api/v1/console/content/blocks/${proseId}`, headers: as(teacherToken),
-      payload: { body: "   ", version, reason: "clearing it" },
-    });
-    expect(res.statusCode).toBe(400);
-  });
-
-  it("refuses a quote from the book, and names the file to edit instead", async () => {
-    const before = await block(quoteId);
-    const res = await app.inject({
-      method: "PUT", url: `/api/v1/console/content/blocks/${quoteId}`, headers: as(teacherToken),
-      payload: { body: "A paraphrase.", version: before.version, reason: "simpler wording" },
-    });
-    expect(res.statusCode).toBe(409);
-    expect(res.json().error.message).toContain("content/stages/00.md");
-    expect(await block(quoteId)).toEqual(before);
-  });
-
-  it("saves: a new version, the old text kept with who and why, an audit row", async () => {
+describe("a block has no live edit: Draft, then Publish (the Studio editor, 8 Oct 2026)", () => {
+  it("a teacher's PUT to a block answers 404 and the block is unchanged: nothing reaches students without Publish", async () => {
     const before = await block(proseId);
     const res = await app.inject({
       method: "PUT", url: `/api/v1/console/content/blocks/${proseId}`, headers: as(teacherToken),
       payload: { body: "Welcome to the **boot** sequence.", version: before.version, reason: "bold the key word" },
     });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().block).toMatchObject({ version: before.version + 1, consoleEdited: true });
-
-    expect(await block(proseId)).toEqual({
-      body_md: "Welcome to the **boot** sequence.", version: before.version + 1, console_edited: true,
-    });
-    const { rows: hist } = await setup(
-      `select body_md, version, replaced_via, replaced_by, reason from content_block_versions
-        where block_id = $1 order by version desc limit 1`,
-      [proseId],
-    );
-    expect(hist[0]).toMatchObject({
-      body_md: before.body_md, version: before.version, replaced_via: "console",
-      replaced_by: w.teacher, reason: "bold the key word",
-    });
-    const { rows: audit } = await setup(
-      "select actor_id, payload from audit_log where action = 'content.edit' and target_id = $1",
-      [proseId],
-    );
-    expect(audit).toHaveLength(1);
-    expect(audit[0].actor_id).toBe(w.teacher);
-    expect(audit[0].payload).toMatchObject({ reason: "bold the key word", stageId: "00", version: before.version + 1 });
+    expect(res.statusCode).toBe(404);
+    expect(await block(proseId)).toEqual(before);
   });
 
-  it("refuses a save made against a version someone has since replaced", async () => {
-    // The save above replaced the version this editor would have opened.
-    const { version, body_md } = await block(proseId);
-    const res = await app.inject({
-      method: "PUT", url: `/api/v1/console/content/blocks/${proseId}`, headers: as(teacherToken),
-      payload: { body: "A stale edit.", version: version - 1, reason: "typo" },
-    });
-    expect(res.statusCode).toBe(409);
-    expect(res.json().error.message).toContain(`version ${version}`);
-    expect((await block(proseId)).body_md).toBe(body_md);
-  });
-
-  it("the history lists what was replaced, newest first", async () => {
+  it("the history lists what was replaced, newest first, with who and why", async () => {
+    const before = await block(proseId);
+    await consoleEdit(proseId, "Welcome to the **boot** sequence.", "bold the key word", w.teacher);
     const res = await app.inject({
       method: "GET", url: `/api/v1/console/content/blocks/${proseId}/history`, headers: as(teacherToken),
     });
     expect(res.statusCode).toBe(200);
     const [latest] = res.json().versions;
-    expect(latest).toMatchObject({ via: "console", reason: "bold the key word", body: "Welcome to the boot sequence." });
+    expect(latest).toMatchObject({ via: "console", reason: "bold the key word", body: before.body_md });
   });
 
-  it("answers 404 for a block that does not exist", async () => {
+  it("a history of a block that does not exist is empty, not an error", async () => {
     const res = await app.inject({
-      method: "PUT", url: "/api/v1/console/content/blocks/00000000-0000-4000-8000-000000000000",
-      headers: as(teacherToken), payload: { body: "x", version: 1, reason: "typo" },
+      method: "GET", url: "/api/v1/console/content/blocks/00000000-0000-4000-8000-000000000000/history",
+      headers: as(teacherToken),
     });
-    expect(res.statusCode).toBe(404);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().versions).toEqual([]);
   });
 });
 

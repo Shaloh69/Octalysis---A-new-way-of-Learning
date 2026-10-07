@@ -35,12 +35,6 @@ import { assertMayApprove } from "../approval.js";
 
 const STAGE_ID = /^\d{2}$/;
 
-const EditBody = z.object({
-  body: z.string().max(40_000),
-  version: z.number().int().positive(),
-  reason: z.string().trim().min(3).max(300),
-});
-
 export type Authoring = "empty" | "planned" | "authored";
 
 export function authoringOf(blocks: number, scaffold: number): Authoring {
@@ -326,97 +320,12 @@ export function registerContentRoutes(app: FastifyInstance, env: Env): void {
     });
   });
 
-  /* ----------------------------------------------------------
-   * PUT /api/v1/console/content/blocks/:blockId   (staff)
-   *
-   * Changes what students read, now. Reason required, like every write that
-   * changes student-visible state; the version the editor loaded is required
-   * too, so two teachers saving the same block cannot silently overwrite each
-   * other.
-   * -------------------------------------------------------- */
-  app.put("/api/v1/console/content/blocks/:blockId", async (req, reply) => {
-    const id = await identityFrom(req, env);
-    requireStaff(id);
-    const blockId = (req.params as { blockId: string }).blockId;
-    if (!isUuid(blockId)) throw errors.notFound("No such block.");
-
-    const parsed = EditBody.safeParse(req.body);
-    if (!parsed.success) {
-      throw errors.badRequest("An edit needs the text, the version you opened, and a reason of at least 3 characters.");
-    }
-    const e = parsed.data;
-    const body = e.body.replace(/\r\n/g, "\n").trim();
-    if (body.length === 0) throw errors.badRequest("A block cannot be empty. To remove one, edit the chapter's .md file.");
-
-    const saved = await withTransaction(app.db, async (client) => {
-      const { rows } = await client.query(
-        "select id, stage_id, ordinal, kind, body_md, meta, version from content_blocks where id = $1 for update",
-        [blockId],
-      );
-      const cur = rows[0];
-      if (!cur) throw errors.notFound("No such block.");
-
-      const source = (cur.meta as Record<string, unknown>)?.source;
-      if (typeof source === "string" && source.length > 0) {
-        throw new AppError(
-          "conflict",
-          `This block quotes ${source} word for word and is checked against the book. ` +
-            `Edit it in content/stages/${cur.stage_id}.md, where sync-content --verify can check it.`,
-        );
-      }
-      if (Number(cur.version) !== e.version) {
-        throw new AppError(
-          "conflict",
-          `Someone saved this block since you opened it (it is now version ${cur.version}). ` +
-            `Reload to read their text before saving yours.`,
-        );
-      }
-      if (cur.body_md === body) throw errors.badRequest("Nothing changed: the text is the same as the saved version.");
-
-      // Names the edit for the archive trigger. Transaction-local, so it cannot
-      // leak onto another request's connection.
-      await client.query(
-        `select set_config('app.edit_via', 'console', true),
-                set_config('app.actor_id', $1, true),
-                set_config('app.edit_reason', $2, true)`,
-        [id!.userId, e.reason],
-      );
-      const { rows: upd } = await client.query(
-        `update content_blocks set body_md = $2, console_edited = true
-          where id = $1
-        returning id, ordinal, kind, body_md, meta, version, updated_at, console_edited`,
-        [blockId, body],
-      );
-      const b = upd[0]!;
-      await client.query(
-        `insert into audit_log (actor_id, action, target_type, target_id, payload)
-         values ($1, 'content.edit', 'content_block', $2, $3)`,
-        [
-          id!.userId,
-          blockId,
-          JSON.stringify({
-            stageId: cur.stage_id,
-            ordinal: Number(cur.ordinal),
-            version: Number(b.version),
-            reason: e.reason,
-            previousVersion: Number(cur.version),
-          }),
-        ],
-      );
-      // Counted afterwards: the trigger's archive row is not visible to the
-      // UPDATE's own RETURNING.
-      const { rows: h } = await client.query(
-        "select count(*)::int as n from content_block_versions where block_id = $1",
-        [blockId],
-      );
-      return {
-        ...b, replaced_via: "console", replaced_at: new Date(), reason: e.reason,
-        editor: null, history: Number(h[0]!.n),
-      };
-    });
-
-    return reply.send({ block: toBlock(saved) });
-  });
+  /* There is no PUT on a block. Since the Studio became an editor (8 Oct 2026,
+   * docs/STUDIO-EDITOR-PLAN.md) a change to what students read is a working copy
+   * saved with PUT /console/content/:stageId/working and made live with
+   * POST /console/content/:stageId/publish (routes/working-copy.ts): Draft, then
+   * Publish. A route that wrote content_blocks directly would let one teacher's
+   * keystroke reach students with no second look. */
 
   /* ----------------------------------------------------------
    * POST /api/v1/console/content/summaries/:stageId/approve   (staff)

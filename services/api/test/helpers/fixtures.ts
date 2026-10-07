@@ -207,3 +207,22 @@ export async function resetWorld(): Promise<World> {
     examSalt,
   };
 }
+
+
+/**
+ * A block edited the way the retired live-edit route did it: the text replaced, `console_edited`
+ * set, the old text archived by the trigger with who and why. The route is gone (the Studio's
+ * editor publishes a working copy instead), but several tests need a block with a history, and the
+ * rule that sync-content never overwrites a console-edited block still stands. One statement, so
+ * the three settings are transaction-local to the update that reads them.
+ */
+export async function consoleEdit(blockId: string, body: string, reason: string, actorId: string): Promise<void> {
+  await setup(
+    `with cfg as (select set_config('app.edit_via', 'console', true) as a,
+                         set_config('app.actor_id', $3, true) as b,
+                         set_config('app.edit_reason', $4, true) as c)
+     update content_blocks set body_md = $2, console_edited = true
+       from cfg where id = $1 and cfg.a is not null`,
+    [blockId, body, actorId, reason],
+  );
+}
