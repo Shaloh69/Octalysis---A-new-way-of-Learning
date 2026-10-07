@@ -1,6 +1,6 @@
 {
   "madeAt": {
-    "commit": "d9b4f0a",
+    "commit": "07028ed",
     "date": "2026-10-08"
   },
   "updates": [
@@ -8,14 +8,33 @@
       "date": "2026-10-08",
       "title": "Course Studio",
       "highlights": [
-        "Course Studio replaces Content: one page for the course's material, in the Course group of the menu. An outline of subjects, their books and chapters on the left, the editor in the middle, and the AI Assistant on the right.",
-        "A chapter is now tabs: Blocks, Summary, Draft and Figures where the chapter has them, and the syllabus's Objectives. Everything Content did is kept: approvals of one exact text, a reason and the version opened on every save, quotes from the book read-only. Old Content links still land.",
+        "Course Studio replaces Content: one page for the course's material, in the Course group of the menu. One sidebar on the right holds the Outline (subjects, their books and chapters) and the AI Assistant as two tabs.",
+        "A chapter is now a page you type on, like a word processor: click into any topic and type, with bold, italic, code, headings and lists on a toolbar above it. Add, delete and reorder topics; quotes from the book and figures stay locked, so the book's words cannot be typed over. A Student view button shows the page as a student reads it. Old Content links still land.",
+        "What you type is a draft: it saves itself, and students read none of it until you press Publish, give a reason and see what changes. Discard throws a draft away. The old save-a-block that reached students at once is gone, which answers the question about a second teacher on block edits. Chapters you publish are exported to files for git with pnpm content:export, because the free database keeps no backups",
         "To review gathers summaries, drafted lesson text and figures in one place.",
         "Every teacher can add a subject, rename it, and add, edit or default its books, each with a reason in the audit log.",
         "A new approval rule, held in the database: a teacher of the subject approves, never the author of the version; the admin may approve their own edit, recorded as self-approved. An Approve you may not use is disabled, with the reason beside it.",
         "The AI Assistant pane is there, locked, and says the app is not released yet."
       ],
       "commits": [
+        {
+          "hash": "07028ed",
+          "type": "feat",
+          "scope": "api",
+          "subject": "retire the live block edit; export the chapters the Studio owns (E1.4)"
+        },
+        {
+          "hash": "549c905",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the Studio as an editor (E1.3): a page you type on, Draft then Publish"
+        },
+        {
+          "hash": "b7c36ca",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "a chapter's working copy and Publish (E1.1)"
+        },
         {
           "hash": "b148ded",
           "type": "feat",
@@ -1682,6 +1701,20 @@
   "roadmap": {
     "next": [
       {
+        "id": "E1",
+        "title": "Studio as an editor: type in place, topics, Draft then Publish",
+        "what": "The chapter is a page you click into and type, under one toolbar, with the outline and the AI in a right sidebar. Add, delete and reorder topics. What you type is a draft students never see until you publish it.",
+        "plan": "docs/STUDIO-EDITOR-PLAN.md",
+        "state": "built, history on a topic still owed"
+      },
+      {
+        "id": "E2",
+        "title": "Moons you can edit, add and retire",
+        "what": "Edit a moon's wording; add a moon as a draft that opens nothing until it has questions; retire one without losing anyone's progress. Touches the lock that opens a planet, so it gets its own plan first.",
+        "plan": "docs/STUDIO-EDITOR-PLAN.md",
+        "state": "planned"
+      },
+      {
         "id": "Profiles",
         "title": "Profile pages",
         "what": "A profile page with an uploaded picture for students, teachers and the admin.",
@@ -1718,7 +1751,6 @@
       }
     ],
     "owed": [
-      "Decide whether a block edit in the Studio, which reaches students at once, should also need a second teacher (ruling 6 could be read to say so).",
       "Approve the 83 act-1 questions at review on Items (the Prelim needs all 96 live).",
       "Approve the planet summaries (the redesign's last R3 box), the drafted chapters 08 to 13 and 17 figures on the Studio's To review.",
       "Review the 131 questions for stages 09 to 12 on Items.",

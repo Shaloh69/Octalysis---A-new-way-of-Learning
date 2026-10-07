@@ -19,6 +19,18 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**8 Oct 2026 (later):** phase report **238/245 (97%)**, unchanged (outside the R
+boxes). **The Studio became an editor (E1):** a right sidebar of two tabs, a
+chapter as a page you type on (TipTap), topics you add, delete and reorder, a
+quote from the book locked, **Draft then Publish**, autosave, Student view,
+`pnpm content:export` for the chapters the console now owns. The fifteenth SQL
+file is on Supabase. The retired live block edit closes the second-teacher
+question. **Not built:** per-topic History (E1.5), moons (E2, own plan and the
+lock layer's sign-off first), the AI proposing (E3, with CS3). Prelim NOT
+runnable (14 of 96 act-1 questions live on the deployment). Detail:
+NEXT-SESSION.md 0zk.
+
+
 **8 Oct 2026:** phase report **238/245 (97%)**, unchanged (the changelogs and
 Course Studio are outside the R boxes, like T1); live R3 87/88, R4 46/48, R5
 20/24, every open box a person's. **Built and pushed:** a changelog on both

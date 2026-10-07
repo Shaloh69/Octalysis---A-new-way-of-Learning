@@ -227,7 +227,7 @@ function Next() {
               <span className="num cg-phase-id">{n.id}</span>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-ink">
-                  {n.title} <Badge tone={n.state === "in progress" ? "info" : "neutral"}>{n.state}</Badge>
+                  {n.title} <Badge tone={n.state === "in progress" ? "info" : n.state.startsWith("built") ? "success" : "neutral"}>{n.state}</Badge>
                 </p>
                 <p className="cg-faint">{n.what}</p>
               </div>

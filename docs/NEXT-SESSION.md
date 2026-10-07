@@ -1526,6 +1526,89 @@ left, or needing a decision:
 
 ---
 
+## 0zk. The Studio became an editor (E1) — 8 Oct 2026 (the same day, after 0zj)
+
+The instructor, after seeing CS1: **"Change the design for the Studio. It
+should look more like an actual editor, and the sidebar should be on the right.
+Also freedom of clicking and typing like MS Word for the topics or moons. Also
+check what the AI does: can it create and author topics for review, everything
+from the book?"** Answers (asked, then built): **one right sidebar, two tabs**
+(Outline, AI Assistant); **all four freedoms** (type in place; add, delete,
+reorder topics; edit a moon's wording; add and delete moons); **Draft, then
+Publish** (the editing teacher may publish their own edit); **the AI may also
+propose moons**. The plan is `docs/STUDIO-EDITOR-PLAN.md`.
+
+**Built (E1, in four steps, all through the gate):**
+- **E1.1, the database and API** (`b7c36ca`): `db/addendum-studio-editor.sql`,
+  the **fifteenth** file, **applied to the deployment (ddvxkbcelpqydnjkffdr)
+  before the push**. A chapter's working copy is a `chapter_drafts` row (origin
+  file | console | ai, a version counter, `base_hash`, `edited_by`); `stages.
+  content_owner` ('files' | 'console'); `cb_staff` dropped, so a staff client can
+  no longer write `content_blocks`. `PUT/GET/DELETE /console/content/:id/working`
+  and `POST …/publish` (`working-copy.ts`): block ids kept so history follows,
+  ordinals rewritten, deletions archived, one audit row. Locked topics (a book
+  quote, a figure) are accepted only as exactly what already exists. 36 tests.
+- **E1.2, the converter** (`lib/editor-doc.ts`): reader markdown ⇄ editor
+  document, with a round-trip test over every real block (untouched topics are
+  kept byte for byte, so a save never rewrites what nobody touched) and
+  collision detection for text the reader cannot show (`a*b*c`).
+- **E1.3, the page** (`pages/studio/editor/`, TipTap, lazy, ~142 KB gz): the
+  chapter as a page under one toolbar; topics with a gutter (label and move up,
+  down, add, delete) on the one the cursor is in; Alt+Up/Down; autosave 900 ms
+  after the last key; Student view toggle; Publish… (summary of what changes, a
+  reason, the draft's hash) and Discard draft; every failure keeps the typing
+  (409 stale, failed save, stale base). The right sidebar, two tabs. Gates:
+  `console-studio.spec.ts` (six assertions on every view) and the new
+  **`console-studio-editor.spec.ts`** (37 claims at both widths).
+- **E1.4, `pnpm content:export`** (`scripts/export-content.mjs`): writes the
+  chapters the Studio owns to `content/export/NN.json` + `NN.md`, because a
+  published chapter lives only in the database and Supabase Free keeps no
+  backups. Idempotent; `--check`. **Nobody has run it against the deployment
+  yet, and nothing schedules it: run it, and commit, after each publishing
+  session.**
+- **Retired:** `PUT /console/content/blocks/:id` (404 now) and the console's
+  `saveBlock`; the second-teacher question on block edits is closed by Draft
+  then Publish. `sync-content` skips a console-owned chapter and a console
+  working copy.
+
+**Found by LOOKING / by testing denial (not by a green run):**
+- **Typing with a locked quote selected REPLACED it** (a node selection is
+  overwritten by the next keystroke). `LockGuard` now ignores typing and paste
+  over a locked topic; the spec failed first (the first quote on the page became
+  a different one). A locked topic can still be moved or deleted, on purpose.
+- **Two topics showed their controls at once**, and the active marker never
+  moved: ProseMirror does not paint an outer decoration on a React node view, and
+  TipTap skips the re-render when the node object is unchanged. The views read
+  `props.decorations` and an `update` hook re-renders on a decoration change.
+- Only the active topic's controls are Tab stops (forty topics would be a
+  hundred and sixty); at 380 the gutter's pill wrapped into a tall block over the
+  line above (`nowrap`, and the quote's source hides under 640px); a locked
+  caption was 4.10:1 on bare-metal (full ink inside the locked topic).
+
+**Not built, and said so (nothing silently dropped):**
+- **E1.5, per-topic History** in the editor: the old block editor's History and
+  "Use this text". The route (`GET /console/content/blocks/:id/history`) and the
+  console client method still exist; the page does not call them.
+- **E2, moons** (edit wording, add as a draft that the lock does not count until
+  it has enough live questions, retire not delete). It touches
+  `is_stage_unlocked()`, so it needs **its own plan and denial tests first**, and
+  the instructor's sign-off on the moon work's lock layer (REDESIGN-SIGNOFF.md
+  §5) is a dependency. The chapter page shows moons read-only, and says so.
+- **E3, the AI proposing** topics, questions, figures, summaries and moons for a
+  teacher to accept. Today **nothing a teacher can press calls an AI** (the CS3
+  app is unbuilt; the B1 figure reader and B2 schema exist). The AI tab is
+  locked and says so.
+- A table topic is edited as text; there are no links, images or strike-through
+  because the student reader draws none.
+
+**Measured, 8 Oct:** phase report 238/245 (97%), unchanged (outside the R
+boxes). API 1061 tests, console 270, web 325 (`pnpm verify` exit 0), `console-studio` + `console-studio-editor`
+148 green at 1440 and 380, the shell, teaching, gate, changelog and r3 specs
+green. **Prelim NOT runnable on students** (unchanged by this work): the
+deployment has 14 of the act-1 bank's 96 questions live.
+
+---
+
 ## 0zj. Changelogs, then Course Studio CS1 built — 8 Oct 2026 (the session after 0zi)
 
 The instructor added, mid-session: **"Add Changelogs to both the admin/teachers

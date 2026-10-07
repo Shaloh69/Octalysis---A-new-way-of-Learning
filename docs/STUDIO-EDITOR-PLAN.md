@@ -153,10 +153,11 @@ proposal is published like any typed edit. Nothing here builds the app.
 
 | Phase | What | Gate |
 |---|---|---|
-| **E1.1** | Schema (`addendum-studio-editor.sql`, the fifteenth file, on Supabase first) and API: the working copy, autosave, discard, publish with block ids and ordering, the author rule for `console`; denial tests red first; `sync-content` guard | API tests |
-| **E1.2** | The converter (reader AST ⇄ editor doc) and its 754-block round-trip test | unit tests |
-| **E1.3** | The editor page: right sidebar tabs, page, toolbar, topic controls, Publish and Discard, REDONE from the templates; SPEC rewritten | spec at 1440 and 380, six assertions, captures opened |
-| **E1.4** | `export-content.mjs`; docs | test |
+| **E1.1** *(built 8 Oct)* | Schema (`addendum-studio-editor.sql`, the fifteenth file, on Supabase first) and API: the working copy, autosave, discard, publish with block ids and ordering, the author rule for `console`; denial tests red first; `sync-content` guard | API tests |
+| **E1.2** *(built 8 Oct)* | The converter (reader AST ⇄ editor doc) and its 754-block round-trip test | unit tests |
+| **E1.3** *(built 8 Oct; gate green)* | The editor page: right sidebar tabs, page, toolbar, topic controls, Publish and Discard, REDONE from the templates; SPEC rewritten | spec at 1440 and 380, six assertions, captures opened |
+| **E1.4** *(built 8 Oct)* | `export-content.mjs` (`pnpm content:export`); docs | test |
+| **E1.5** *(not built)* | Per-topic History in the editor: what the old block editor's History and Use this text did, on a topic | spec at 1440 and 380 |
 | **E2** | Moons: its own plan first | its own gate |
 | **E3** | AI proposals, with CS3 | with the app |
 
