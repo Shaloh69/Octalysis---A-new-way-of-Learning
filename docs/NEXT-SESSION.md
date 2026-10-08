@@ -1526,6 +1526,115 @@ left, or needing a decision:
 
 ---
 
+## 0zm. PROFILES, the first half, then two things the instructor asked for mid-session — 8 Oct 2026 (night, after 0zl)
+
+**What the prompt asked:** PROFILES (templates, the seventeenth SQL file, the API, the
+pages). **What the instructor asked, mid-session** (the session was stopped at the
+console preview and redirected): **"Change how chat looks overall ... like Messenger ...
+Also add a ? button on top that auto runs on only first ever log ins, it's a tutorial.
+For both of these find suitable templates online and do it."** Both are built, for the
+**student app**; the console was not asked about and is unchanged (see "Asked, not
+assumed").
+
+**Done and on the deployment (database) / pushed (code).**
+- **The seventeenth SQL file, `db/addendum-profiles.sql`, on the deployment
+  (ddvxkbcelpqydnjkffdr, ref checked) before the push.** `profiles.avatar_path`,
+  `avatar_updated_at`, `avatar_removed_at`; a trigger that refuses a change to them
+  unless the API's transaction sets `app.allow_avatar_change` (EVERY role, service_role
+  included: `profiles` lets a student update their own row and staff write all of it, so a
+  policy alone could not say "not these columns"); a CHECK that the path names its owner and
+  ends `.webp`; `can_see_avatar(viewer, subject)` and `can_remove_avatar(actor, subject)`,
+  executable by the API's connection only (a function that takes the viewer as an argument
+  would let a student map who shares a section with whom); the private `profile-images`
+  bucket (300 KB, WebP only). Checked on the deployment: columns, trigger, bucket, function
+  privileges, invariants 0 failures (3 warnings), 115 live moons unchanged, **and the bucket
+  refuses anonymous callers** (public URL 400, list empty, upload 403 by RLS).
+- **API** (`routes/profile.ts`, `avatars.ts`): `GET /profile`, `POST /profile/avatar/upload`
+  (a path the API chooses), `PUT`/`DELETE /profile/avatar` (size, type **and the stored file's
+  own first bytes** are checked), `DELETE /profiles/:userId/avatar` (a reason, an audit row,
+  the student is told). `avatarsFor()` gives every page a signed picture or the generated
+  avatar; the chat, the roster, a student's record and the teachers rows carry it, with
+  `removable` (the database's answer, not the page's).
+- **Denial tests red first, then mutated:** 26 database denials (`profiles-rls.spec.ts`) and
+  41 route tests (`profile.spec.ts`) + 4 storage-client tests. Mutation checks, each turning
+  tests red: guard trigger dropped (5), path-shape check off (1), bytes check off (2). Ten
+  tests passed vacuously before the addendum existed (the column was missing); the mutation
+  is what proved they bite.
+- **Web:** `/app/profile` (Starfield's character menu: the ring, captioned panels), the
+  top strip's own avatar as a link, a generated planet (`packages/tokens/avatar.css`) as the
+  fallback, `AvatarCropper` + `avatar-image.ts` (drag or arrow keys, zoom; a 512 px WebP under
+  300 KB; no EXIF). **The console already holds identical copies** (pinned by
+  `apps/web/test/avatar-image.spec.ts`) for its own page.
+- **Chat, Messenger-shaped** (template Chatscope's friends demo): on a phone, screen one is a
+  list of rooms (a face, a name, a line, the time) with no mission panel; screen two is one
+  room filling the screen (slim header, back arrow, log, composer with Send beside the field),
+  the top strip, tabs, mission panel and key hints gone. `?room=<id>` is a history entry, so
+  the browser's Back returns. Bubbles, runs of one speaker, faces. Desktop keeps both panes.
+- **The tour** (template Driver.js running): a `?` in the top strip, nine steps, dim page and a
+  spotlight, the rest of the page `inert` while it runs, once per student on their first visit
+  to the map, never inside a planet. **Built by hand: the repo adds no UI library.**
+- Specs: `web-profile` (28 passed at both widths, 10 skipped by design), `web-tour`,
+  `web-chat` (61 together), and the other star specs; 120 passed after the last change.
+  `pnpm verify` exit 0 (checked with `$?`): API 1166 + 1 skipped, web 336, console 270, tokens 38.
+
+**Found by LOOKING / by the gate, not by a green run:**
+- The right column of the profile stretched apart (a panel spanning two rows); "SIGN OUT"
+  wrapped to two lines at 380 once the avatar joined the strip; the class term was set in mono.
+- **The shell's own clipping check caught the "PC ----" register cut off at 380** after the ? and
+  the avatar joined the strip (my `overflow: hidden` did it; tighter gaps instead).
+- **The ? could not be clicked at 380**: the readout's box covered it (found because the
+  capture script's click timed out).
+- A hidden `tabindex=-1` file input was a Tab stop that never took focus: it is now the visible
+  label's own control, as chat's Attach is.
+- Focus did not return to the ? when the tour started by itself (nothing had held it).
+- **A template capture overwrote a good one with a blank page** (shadcn-admin, a 200 and a saved
+  PNG): the script now keeps a capture only when headings rendered.
+- The tour's shield would have blocked every other spec that visits the map: an automated
+  browser (`navigator.webdriver`) is not given the tour unless `octa:tour:force` is set, and a
+  test proves nothing starts without it.
+- `pnpm verify` "exit 0" in a background-task notice was my wrapper's `echo`, not verify's: it had
+  failed at the console typecheck (a fixture without `avatar`). **Read the code with `$?`.**
+- `TeacherRow` gained a required `avatar`; a console test fixture broke the typecheck, which
+  stopped `pnpm verify` before a single test ran. The API's new tests had not run until it was fixed.
+
+**Not done, and said so (nothing silently dropped):**
+- **The console half of PROFILES**: `/profile` (SPEC.md, motion.md and the page), the picture in
+  the shell's avatar and menu, the roster, `/students/:userId` with **Remove picture** (a reason),
+  the console's class chat, `/teachers` and `/teachers/:key`. The API already serves them:
+  `avatar` (with `removable`) is on the roster, `student.avatar` and `pictureRemovedAt` on a
+  student's record, `avatar` on teachers, and `ChatPerson.avatar` in the chat. The template is
+  captured and opened (`design/templates/console/profile/`, SOURCE.md says what is missing).
+- **No real picture has gone through the real bucket yet.** The routes are tested against a fake
+  storage (and the storage CLIENT's requests against a recorder, including the Range request),
+  the browser's half against a stand-in, and the bucket's anonymous refusals against the live
+  project. The first real signed upload, the bytes check on a real file and a real removal need
+  two throwaway accounts on the deployment (as the chat's did, 6 Oct): **ask first**, then clean up.
+- **`design/specs/r3-inventory.spec.ts` was not run** (it needs the console preview and I did not
+  start it), and no console spec was run: the console's changes are an unused pair of files and
+  one CSS import (`pnpm verify` and `pnpm build` pass).
+- The deployed Render API and both Vercel apps were pushed to but **not looked at** after the
+  deploy: check that `/app/profile`, the chat and the ? are live on https://octa-web-dusky.vercel.app.
+- The tour's auto-start is remembered **per browser** (localStorage, keyed by account), not in the
+  database: a student on a second device sees it again. A server flag is one column and one route if
+  the instructor wants it.
+- A last-message preview on a chat row (the API gives the time, not the text); an instructor's own
+  picture as the private thread's face.
+- `docs/IMPLEMENTED.md` is stale (it lists 13 student routes and no chat, changelog or profile).
+
+**Asked, not assumed (the instructor's to answer):** does the **console** get the ? tour and the
+Messenger-shaped chat too (the console's chat is a staff desktop page and was left alone)? Should
+"once" be per account in the database rather than per browser?
+
+**State of the deployment, 8 Oct (night):** unchanged content-wise. Stage 01: 14 live, 1 at review,
+2 retired; 02: 24, 03: 33, 04: 24 all at review, none live. **The Prelim is NOT runnable on
+students** (14 of the act-1 bank's 96 are live). Deployment invariants 0 failures, 3 warnings.
+
+**Measured:** phase **239/245 (98%)**, unchanged: none of today's work has a box in R0-R5.
+
+**Next:** the console half of PROFILES (`docs/redesign/REVAMP-PROMPTS.md` §1), then T2.
+
+---
+
 ## 0zl. The Studio's moons (E2) and a topic's History (E1.5) — 8 Oct 2026 (night, after 0zk)
 
 The prompt asked for the E2 PLAN first and a stop for approval. Done in that

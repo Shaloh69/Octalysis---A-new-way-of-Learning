@@ -1,6 +1,6 @@
 {
   "madeAt": {
-    "commit": "2746a64",
+    "commit": "b21c06a",
     "date": "2026-10-08"
   },
   "updates": [
@@ -19,9 +19,24 @@
         "Typing a change to a moon changes nothing for students. One dialog, Review moon changes, publishes them and says first what will happen: what moves on the map, which minigame leaves it, and how many students would see a planet close until they master a new moon. It asks you for a reason.",
         "Retiring a moon takes it off the map and out of what opens a planet, and keeps every question and every student's record of it. The last moon of a chapter, or one a stage check needs to fill, cannot be retired.",
         "A moon you have edited or added is yours: syncing the chapter files no longer rewords it or brings a retired one back, and the export now writes moons too.",
-        "A topic's History is back in the editor: the clock button lists its earlier versions and Use this text puts one back as a draft."
+        "A topic's History is back in the editor: the clock button lists its earlier versions and Use this text puts one back as a draft.",
+        "Profile pictures, first half: the database and the server are done and on the live project. A picture is cropped to a square and re-encoded to a small WebP in the student's browser (a phone photo's location data is dropped), stored in a private bucket, and shown to classmates and teachers. A teacher can remove a student's picture, the admin anyone's, each with a reason in the audit log, and the student is told. The roster, a student's record and the teachers list already carry the picture; their pages for it, and your own profile page, are next.",
+        "The student chat is Messenger-shaped on a phone: the rooms are a list, and opening a room fills the screen with the room's name, the messages and the composer, with the top bar, tabs and mission panel out of the way. The console's chat is unchanged.",
+        "Students get a ? button in the top bar that runs a nine-step tour of the app, and runs by itself once, on their first visit to the map."
       ],
       "commits": [
+        {
+          "hash": "00ec057",
+          "type": "feat",
+          "scope": "web",
+          "subject": "profile page and pictures, a Messenger-shaped chat, a first-run tour with a ? button"
+        },
+        {
+          "hash": "954134b",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "profile pictures: an API-only guard, who sees and who removes, a private bucket"
+        },
         {
           "hash": "2746a64",
           "type": "feat",
@@ -1720,9 +1735,9 @@
       {
         "id": "Profiles",
         "title": "Profile pages",
-        "what": "A profile page with an uploaded picture for students, teachers and the admin.",
+        "what": "A profile page with an uploaded picture for students, teachers and the admin. Done: the database, the server, the student's page and picture. Next: the teacher's and admin's /profile, and the picture on the roster, a student's record, the chat and the teachers pages.",
         "plan": "docs/PROFILES-PLAN.md",
-        "state": "next"
+        "state": "in progress"
       },
       {
         "id": "T2",

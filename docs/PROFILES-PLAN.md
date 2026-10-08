@@ -1,4 +1,4 @@
-# Profile pages and profile pictures — plan v1, APPROVED 7 Oct 2026 (night), nothing built
+# Profile pages and profile pictures — plan v1, APPROVED 7 Oct 2026 (night); the database, the API and the STUDENT's page built 8 Oct 2026, the console's half still to build
 
 Instructor, 7 Oct 2026 (night):
 
@@ -67,3 +67,19 @@ identical for everyone (CLAUDE.md "Design").
 **APPROVED (7 Oct 2026, night):** after T1 (teacher accounts), before T2.
 The whole order: T1 → profiles → T2 → the student bot and the Study Session
 → the assistant's app and the teacher's bot.
+
+## 5. Built, 8 Oct 2026 (night)
+
+Done: `db/addendum-profiles.sql` (on the deployment), the picture API
+(`routes/profile.ts`, `avatars.ts`), the student's `/app/profile`, the top strip's
+avatar, the generated planet as the fallback, the picture in the student chat.
+Read `NEXT-SESSION.md` §0zm for what was found and what is unverified (no real
+picture has been through the real bucket). **Not done:** `/profile` (console), the
+roster, `/students/:userId` (with Remove), the console chat, `/teachers` and
+`/teachers/:key`; the API already serves them (`avatar`, with `removable`).
+
+Departures from the plan above: a staff member's picture is seen by every
+signed-in student (they are in the chat with them), not only "their class"; "a
+teacher of that student" is any teacher until T2, as §1 said, and lives in one
+function (`can_remove_avatar`) for T2 to narrow; the self-removal path is not a
+moderation and is not audited, a teacher's or the admin's is.

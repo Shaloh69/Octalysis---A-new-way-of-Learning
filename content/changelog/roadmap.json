@@ -4,9 +4,9 @@
     {
       "id": "Profiles",
       "title": "Profile pages",
-      "what": "A profile page with an uploaded picture for students, teachers and the admin.",
+      "what": "A profile page with an uploaded picture for students, teachers and the admin. Done: the database, the server, the student's page and picture. Next: the teacher's and admin's /profile, and the picture on the roster, a student's record, the chat and the teachers pages.",
       "plan": "docs/PROFILES-PLAN.md",
-      "state": "next"
+      "state": "in progress"
     },
     {
       "id": "T2",

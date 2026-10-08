@@ -23,99 +23,104 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: PROFILES (profile pages and pictures)
+## 1. Start here — the next session: PROFILES, the console half
 
 ```
-Read docs/NEXT-SESSION.md sections 0zl, 0zk and 0zj first: the Studio is an
-editor (E1), its moons are an editor too (E2: edit, add as a draft, retire,
-one dialog that says who would see a planet close) and a topic has its History
-back (E1.5); all of it is on the deployment, and the moon work's lock layer
-was ACCEPTED by the instructor on 8 Oct. The order is T1 (done) -> CS1 (done)
--> E1, E2, E1.5 (done) -> PROFILES (this session) -> T2 -> CS2 -> the student
-bot and Study Session -> the app with CS3. Then docs/PROFILES-PLAN.md in full
-(rulings approved 7 Oct, night; it REVERSES DESIGN-MANDATE.md section 4, which
-said never to ask for a profile picture), docs/CHAT-PLAN.md for how chat
-attachments and their private bucket work (the picture bucket is built the
-same way), db/CLAUDE.md (V-29: a column grant is decided on purpose; V-30: a
-policy's subquery is subject to RLS; and the new Never about objectives),
-and apps/console/CLAUDE.md's /teachers, /teachers/:key and /students/:id
+Read docs/NEXT-SESSION.md sections 0zm, 0zl and 0zk first. PROFILES is half
+done: the seventeenth SQL file (db/addendum-profiles.sql) is on the deployment,
+the picture API is built and pushed, and the STUDENT's /app/profile, the top
+strip's avatar, the Messenger-shaped student chat and the ? tour are built.
+What is left is the console half, then T2. The order is T1 (done) -> CS1 (done)
+-> E1, E2, E1.5 (done) -> PROFILES (this session finishes it) -> T2 -> CS2 ->
+the student bot and Study Session -> the app with CS3. Then docs/PROFILES-PLAN.md
+in full, design/templates/web/profile/SPEC.md (the student's page: the console's
+follows its picture controls) and design/templates/console/profile/SOURCE.md (the
+captured shadcn-admin reference and why two captures were rejected), db/CLAUDE.md
+(V-29, V-30), apps/console/CLAUDE.md's /teachers, /teachers/:key and /students/:id
 rows. Then root CLAUDE.md: hard rules 3, 8 and 10, "Templates are ARTIFACTS",
 "THE HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE", "REDO THE PAGE". Do not
 re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. On
 8 Oct (night) it was 239/245, 98%: R3 87/88, R4 46/48, R5 21/24, every open
-box a person's. Then say plainly whether Prelim-worth of data is okay to run
-on students, checking the five conditions in CLAUDE.md (the console's
-/changelog shows them live). On 8 Oct it was NOT: on the deployment stage 01
-has 14 live, 1 at review, 2 retired, and 02-04 have none live (14 of the
-act-1 bank's 96); 11 of the 19 planet summaries are approved; deployment
-invariants 0 failures (3 warnings).
+box a person's; none of the PROFILES, chat or tour work has a box. Then say
+plainly whether Prelim-worth of data is okay to run on students, checking the
+five conditions in CLAUDE.md (the console's /changelog shows them live). On 8 Oct
+it was NOT: on the deployment stage 01 has 14 live, 1 at review, 2 retired, and
+02 (24), 03 (33) and 04 (24) are all at review, none live (14 of the act-1
+bank's 96); deployment invariants 0 failures (3 warnings).
 
 Confirm everything is green before touching anything, AGAINST BUILDS. After a
 reboot, start Docker Desktop first. Kill orphaned API trees and previews:
 stopping a background task does NOT stop its server, so kill by PID (netstat
 -ano, taskkill //T //F //PID) and prove the port is free. Run pnpm db:reset,
-THEN node scripts/db-demo.mjs (SIXTEEN SQL files: addendum-studio-moons.sql is
-the last). Start ONE pnpm dev:api and prove it with a real GET (readyz); curl
-again after EVERY db:reset (a reset can kill it: it did on 8 Oct). Build and
-preview apps/web on 5185 and apps/console on 5186 (restart a preview after
-EVERY build), and export OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test
-run, and pnpm verify, empties the seeded database: reset and reseed before any
-Playwright run. Capture a dialog only after its ease-in. A script with an
-apostrophe, backtick or backslash goes through the Write tool, never a
-heredoc (a heredoc ate the backslashes of two regexes again on 8 Oct, and
-there is no python on this machine); a regex-heavy edit goes through the Edit
-tool or a node script written with Write. Git Bash rewrites a leading-slash
-argument into a Windows path: MSYS_NO_PATHCONV=1. The keyboard-reach helper
-(design/specs/_gate.ts unreachableByKeyboard) tabs from the top of the page
-with a budget, so give it scope "main", not a small card.
+THEN node scripts/db-demo.mjs (SEVENTEEN SQL files: addendum-profiles.sql is the
+last; the demo section now has a CPE 412 class). Start ONE pnpm dev:api and
+prove it with a real GET (readyz); curl again after EVERY db:reset. Build each
+app in the FOREGROUND (pnpm build), then start its preview with the Bash tool's
+run_in_background (npx vite preview --port 5185 for web, 5186 for console) and
+kill it by PID before the next build: a preview started inside a script, or
+with &, held the tool's pipe open and hung it three times on 8 Oct. Export
+OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test run, and pnpm verify, empties
+the seeded database: reset and reseed before any Playwright run. READ pnpm
+verify's exit code with $? (a background-task "exit 0" was a wrapper's echo on
+8 Oct, and verify had failed). A script with an apostrophe, backtick or
+backslash goes through the Write tool, never a heredoc; a multi-line edit of a
+file with CRLF endings (StarShell.tsx, App.tsx, main.tsx) needs a patch that
+matches on LF and writes back CRLF. Git Bash rewrites a leading-slash argument
+into a Windows path: MSYS_NO_PATHCONV=1. The keyboard-reach helper tabs from the
+top of the page with a budget, so give it scope "main". A capture script must
+keep a capture only when its headings rendered (a blank 200 overwrote a good
+template on 8 Oct). design/specs/_profile-fixture.ts stands in for Storage
+(the local API has none); scripts/.profile-look.tmp.mjs, .chat-look.tmp.mjs and
+.tour-look.tmp.mjs are the capture scripts (gitignored scratch).
 
 The deployment: API https://octa-api-noq2.onrender.com, student site
 https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
 Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
 print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project).
 scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref; pnpm
-db:push:check prints the host, and pnpm db:push --file db/<addendum>.sql
-applies one.
+db:push:check prints the host. FIRST, look at the deployed student site: that
+/app/profile, the chat and the ? are live after the 8 Oct push (the Render API
+and Vercel apps were pushed to and not looked at).
 
-The work, PROFILES (PROFILES-PLAN.md), in this order:
+The work:
 
-1. Templates FIRST, captured as artifacts and opened: a student profile in the
-   star HUD (/app/profile; the HUD's character-menu direction in
-   design/templates/web/_direction and /app/progress's) and a teacher/admin
-   profile (/profile; shadcn-admin's profile settings or similar), each with
-   SOURCE.md, SPEC.md (every control, the four tests) and motion.md.
-2. The schema, an idempotent addendum, the SEVENTEENTH file (register it in
-   scripts/db-reset.mjs and scripts/db-push-supabase.mjs as
-   addendum-studio-moons.sql was): profiles.avatar_path and avatar_updated_at
-   written by the API only, and the private bucket profile-images created as
-   chat-attachments is. Denial tests red first (a student cannot set another's
-   picture, read one outside their classes, or remove one; anon reads nothing;
-   a teacher's removal is audited). On Supabase BEFORE the code (hard rule 10).
-3. The API: sign one upload to a path the API chooses, check the bytes are
-   WebP and at most 300 KB, record it; sign short-lived downloads only for a
-   viewer allowed to see that person (same class, their teacher, the admin);
-   removal by a teacher of that student or the admin, audited, with the
-   student told "Your picture was removed by your teacher". The generated
-   avatar seeded from the student ID is the fallback, and what shows after a
-   removal.
-4. The pages, REDONE from their templates: /app/profile and /profile; the
-   picture in the web nav's own-avatar spot, the class chat (both apps), the
-   console roster and /students/:userId (with Remove), the shell's avatar,
-   /teachers and /teachers/:key. NEVER on a stage check or an exam paper:
-   [data-paper] stays identical for everyone. The browser crops to a square and
-   re-encodes to 512x512 WebP on a canvas (drops EXIF, GPS included).
-5. Each page's gate: spec at 1440 and 380, the six assertions, screenshots
-   OPENED. Probably two sessions; say so rather than rush it.
+0. THE REAL BUCKET, with the instructor's approval (ask, as the chat's was):
+   two throwaway accounts in a TEST section; a real signed upload of a
+   browser-made WebP, the bytes check on a real file, a classmate's signed
+   download, a teacher's removal (audited, the student told), a student
+   outside the section refused; then remove the accounts and files. Nothing
+   has gone through the real bucket yet; routes ran against a fake.
+1. The console's /profile (teacher and admin): SPEC.md (every control, the four
+   tests) and motion.md first, from design/templates/console/profile/template.png;
+   then the page. Employee ID (teacher_directory) and the classes they hold. The
+   picture editor is the web's: apps/console already holds AvatarCropper.tsx and
+   avatar-image.ts, pinned identical to the web's. Link it from the shell's
+   account menu; the shell's shell-avatar shows the picture.
+2. The picture where the console names a person, each through its page gate:
+   the roster (/students), /students/:userId with Remove picture (a dialog, a
+   reason, the server audits, the student is told; show it only when
+   avatar.removable), the class chat (/chat: author avatars; Remove from a
+   message), /teachers and /teachers/:key. The API already returns avatar
+   (with removable) on all of them.
+3. Each page's gate: spec at 1440 and 380, the six assertions, screenshots
+   OPENED. Also run what this session could not: design/specs/r3-inventory.spec.ts
+   and the console specs against builds.
+4. ASK, do not assume: should the console get the ? tour and the Messenger-shaped
+   chat too (the student app has both; the console's chat is a staff desktop page
+   and was left alone)? Should the tour's "once" live in the database rather than
+   the browser?
 
-Not this session (do not start): T2, CS2, the student bot, CS3.
+Not this session (do not start): T2, CS2, the student bot, CS3. T2 will narrow
+can_remove_avatar() in db/addendum-profiles.sql to a teacher's own classes and add
+the matching denial test (it is any teacher until then, the plan's ruling).
 
 Still owed by the instructor (do not build around them): the first teacher
 roster import on /teachers and a first real claim at /claim; whether
 /teachers leaves Records for a nav group of its own; which of
 STUDY-AND-BOT-PLAN.md section 4's features to build; the four engine keys;
-approving the 83 act-1 items at review (the Prelim needs 96 live), the 131
+approving the 81 act-1 items at review (the Prelim needs 96 live), the 131
 questions for 09-12, the chapter drafts 08-13, 17 figures and the 8 summaries
 still to review (on the Studio's To review); the screen-reader pass.
 

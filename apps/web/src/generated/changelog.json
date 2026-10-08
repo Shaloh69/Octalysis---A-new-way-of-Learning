@@ -1,6 +1,6 @@
 {
   "madeAt": {
-    "commit": "2746a64",
+    "commit": "b21c06a",
     "date": "2026-10-08"
   },
   "progress": {
@@ -9,6 +9,15 @@
     "pct": 98
   },
   "updates": [
+    {
+      "date": "2026-10-08",
+      "title": "Your profile, a Messenger-style chat, and a tour",
+      "items": [
+        "You can add a profile picture. Choose one, drag it into place, zoom, and use it: your classmates and your teachers see it, and your teacher can remove it. Until you add one, your system draws a planet for you from your student ID. Your name, student number and classes are on the same page, which you reach from your picture in the top bar.",
+        "Chat looks and works like Messenger on a phone: the rooms are a list, and opening one fills the screen with the messages, with the bar, tabs and mission panel out of the way. The arrow (or your phone's Back) returns to the rooms. Messages are bubbles with a face beside each speaker.",
+        "There is a ? in the top bar. It walks you through the app in nine short steps, and it starts by itself the first time you open the map. Press it whenever you want it again."
+      ]
+    },
     {
       "date": "2026-10-07",
       "title": "A fix, and this page",

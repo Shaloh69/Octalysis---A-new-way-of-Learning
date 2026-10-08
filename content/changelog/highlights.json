@@ -16,9 +16,17 @@
         "Typing a change to a moon changes nothing for students. One dialog, Review moon changes, publishes them and says first what will happen: what moves on the map, which minigame leaves it, and how many students would see a planet close until they master a new moon. It asks you for a reason.",
         "Retiring a moon takes it off the map and out of what opens a planet, and keeps every question and every student's record of it. The last moon of a chapter, or one a stage check needs to fill, cannot be retired.",
         "A moon you have edited or added is yours: syncing the chapter files no longer rewords it or brings a retired one back, and the export now writes moons too.",
-        "A topic's History is back in the editor: the clock button lists its earlier versions and Use this text puts one back as a draft."
+        "A topic's History is back in the editor: the clock button lists its earlier versions and Use this text puts one back as a draft.",
+        "Profile pictures, first half: the database and the server are done and on the live project. A picture is cropped to a square and re-encoded to a small WebP in the student's browser (a phone photo's location data is dropped), stored in a private bucket, and shown to classmates and teachers. A teacher can remove a student's picture, the admin anyone's, each with a reason in the audit log, and the student is told. The roster, a student's record and the teachers list already carry the picture; their pages for it, and your own profile page, are next.",
+        "The student chat is Messenger-shaped on a phone: the rooms are a list, and opening a room fills the screen with the room's name, the messages and the composer, with the top bar, tabs and mission panel out of the way. The console's chat is unchanged.",
+        "Students get a ? button in the top bar that runs a nine-step tour of the app, and runs by itself once, on their first visit to the map."
       ],
-      "students": []
+      "students": [
+        "You can add a profile picture. Choose one, drag it into place, zoom, and use it: your classmates and your teachers see it, and your teacher can remove it. Until you add one, your system draws a planet for you from your student ID. Your name, student number and classes are on the same page, which you reach from your picture in the top bar.",
+        "Chat looks and works like Messenger on a phone: the rooms are a list, and opening one fills the screen with the messages, with the bar, tabs and mission panel out of the way. The arrow (or your phone's Back) returns to the rooms. Messages are bubbles with a face beside each speaker.",
+        "There is a ? in the top bar. It walks you through the app in nine short steps, and it starts by itself the first time you open the map. Press it whenever you want it again."
+      ],
+      "studentTitle": "Your profile, a Messenger-style chat, and a tour"
     },
     {
       "date": "2026-10-07",

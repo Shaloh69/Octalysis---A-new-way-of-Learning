@@ -79,4 +79,11 @@ guarantees.
   proves a teacher's token is refused. A student reads only a `live` moon (`ob_read`,
   `live_objectives`); `is_stage_unlocked()` counts live moons only. Never DELETE a moon that has
   questions or a record: retire it (`status = 'retired'`).
+- Add a client write path to `profiles.avatar_path`, `avatar_updated_at` or `avatar_removed_at`
+  (PROFILES, 8 Oct 2026). `profiles` lets a student update their own row and staff write all of
+  it, so a policy could not exclude three columns: `profiles_avatar_guard` refuses a change unless
+  the API's transaction sets `app.allow_avatar_change`, for every role including service_role.
+  `can_see_avatar()` and `can_remove_avatar()` are executable by the API's connection only (they
+  take the viewer as an argument). `profile-images` is a private bucket with no client policy;
+  `profiles-rls.spec.ts` fails if any of this changes.
 - Drop an item row. Retire it.

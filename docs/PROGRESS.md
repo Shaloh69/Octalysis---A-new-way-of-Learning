@@ -19,6 +19,14 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**8 Oct 2026 (later, night):** phase report **239/245 (98%)**, unchanged (none of the day's work has
+a box in R0-R5). **PROFILES, first half:** the seventeenth SQL file (`addendum-profiles.sql`) is on
+Supabase, the picture API and the student's `/app/profile` are built and pushed; the console's
+`/profile`, its roster, a student's record, the chat and the teachers pages are NOT (the API already
+serves them). **Also built, on the instructor's request mid-session:** the student chat as Messenger's
+two screens on a phone, and a `?` first-run tour. No real picture has gone through the real bucket yet.
+Prelim NOT runnable (14 of 96 live). Detail: `NEXT-SESSION.md` §0zm.
+
 **8 Oct 2026 (night):** phase report **239/245 (98%)** (R5 21/24: the moon work's lock
 layer was accepted by the instructor, so its DoD box is ticked; what stays open is a
 person's: the screen-reader pass, the planet summaries). **The Studio's moons are an

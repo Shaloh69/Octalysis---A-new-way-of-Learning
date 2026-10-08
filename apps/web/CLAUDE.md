@@ -9,7 +9,7 @@ carried for almost no reuse. `apps/console` is the opposite case and DOES use sh
 Route groups: `/` public (unauthenticated), `/app/*` student (role `student`).
 
 ## Two realms — the remake, 30 Sep 2026 (`docs/redesign/WEB-REMAKE.md`)
-- **The star system** (`/app`, `/app/stages`, `/app/progress`, `/app/work`, `/app/chat` (6 Oct 2026), `/app/settings`, `/app/changelog` (What's new, linked from the top strip, 7 Oct 2026), and
+- **The star system** (`/app`, `/app/stages`, `/app/progress`, `/app/work`, `/app/chat` (6 Oct 2026), `/app/settings`, `/app/profile` (8 Oct 2026: a picture, name, number, classes), `/app/changelog` (What's new, linked from the top strip, 7 Oct 2026), and
   the public pages): **one** game HUD for everyone, with the seeded accent. No variants: apps/web
   never sets `data-theme` (ruling 2, 30 Sep). Never a biome.
 - **Inside a planet or moon** (`/app/stage/:id` and everything under it): **that planet's biome,
@@ -93,3 +93,14 @@ tested saving at all, on a graded surface where saving is the whole promise
 ## Feedback tone
 Incorrect answers: neutral low tick, calm rationale card, offer a re-roll. Never red, never a
 buzzer, never a shake. These students are already anxious about a hard course.
+
+## Added 8 Oct 2026 (night)
+- **Profile pictures** (`docs/PROFILES-PLAN.md`): `/app/profile`; the top strip's avatar links to it; a
+  picture is cropped and re-encoded to a 512 px WebP under 300 KB in the browser (`lib/avatar-image.ts`,
+  `components/AvatarCropper.tsx`, **identical to apps/console's, pinned by a test**); the generated planet
+  (`packages/tokens/avatar.css`) is the fallback; never drawn on `[data-paper]`.
+- **Chat is Messenger's two screens on a phone** (899 and under): the rooms, then one room filling the
+  screen (`.star-shell.is-chat-thread` hides the strip, tabs, mission panel and key hints).
+- **The first-run tour** (`shell/Tour.tsx`, a ? in the top strip): once per student on their first visit to
+  the map (`localStorage octa:tour:v1:<user id>`), `inert` page behind it, StarShell only, never in a planet.
+  An automated browser is not given it unless `octa:tour:force` is set.
