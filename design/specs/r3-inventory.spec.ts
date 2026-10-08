@@ -49,6 +49,7 @@ const WEB_ROUTES: Array<[string, string]> = [
   ["/app/stage/00", "app-stage-reader"],
   ["/app/progress", "app-progress"],
   ["/app/settings", "app-settings"],
+  ["/app/profile", "app-profile"],
   ["/app/work", "app-work"],
   ["/login", "public-login"],
   ["/register", "public-register"],

@@ -50,9 +50,23 @@ test.beforeAll(async ({ request }) => {
 const thread = (page: Page) =>
   page.locator(".chat-room-btn").filter({ has: page.locator(".chat-room-name", { hasText: /^Instructor$/ }) });
 
+/** A phone (under 900) is two screens: the rooms, then one room. A desktop shows both. */
+const phone = (page: Page) => (page.viewportSize()?.width ?? 1440) < 900;
+
+/** Open the chat as a person does: on a phone, the list first, then the section's room. */
 async function chat(page: Page, token = S006, query = ""): Promise<void> {
   await signIn(page, token);
   await page.goto(`/app/chat${query}`, { waitUntil: "domcontentloaded" });
+  if (phone(page) && !query.includes("room=")) {
+    await page.locator(".chat-room-btn").first().click();
+  }
+  await page.locator(".chat-msgs, .chat-empty").first().waitFor({ timeout: 15_000 });
+}
+
+/** The private thread: on a phone, back to the rooms first, then the row. */
+async function openThread(page: Page): Promise<void> {
+  if (phone(page)) await page.locator(".chat-back").click();
+  await thread(page).click();
   await page.locator(".chat-msgs, .chat-empty").first().waitFor({ timeout: 15_000 });
 }
 
@@ -72,7 +86,7 @@ test.describe("/app/chat — the six gate assertions", () => {
   test("4 · AA computed on the star set, a room with a mention, and the private thread", async ({ page }) => {
     await chat(page);
     expect(await contrastFailures(page, ROUTE), "section room").toEqual([]);
-    await thread(page).click();
+    await openThread(page);
     await page.locator(".chat-msgs").waitFor();
     expect(await contrastFailures(page, ROUTE), "private thread").toEqual([]);
   });
@@ -84,7 +98,7 @@ test.describe("/app/chat — the six gate assertions", () => {
     test.skip(!wide(info), "one width is enough");
     await recordMotion(page);
     await chat(page);
-    await thread(page).click();
+    await openThread(page);
     expect((await motionStarted(page, "main", 50)).length, "messages ease in without reduced motion").toBeGreaterThan(0);
 
     const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1440, height: 900 }, baseURL: info.project.use.baseURL });
@@ -99,13 +113,79 @@ test.describe("/app/chat — the six gate assertions", () => {
   });
 });
 
+test.describe("/app/chat — Messenger's two screens on a phone", () => {
+  test("a phone opens on the rooms, with no mission panel; a room fills the screen; Back returns", async ({ page }, info) => {
+    test.skip(wide(info), "phone behaviour");
+    await signIn(page, S006);
+    await page.goto("/app/chat", { waitUntil: "domcontentloaded" });
+    await page.locator(".chat-room-btn").first().waitFor({ timeout: 15_000 });
+    // Screen one: rooms only. Each row has a face, a name and a line.
+    await expect(page.locator(".chat-room")).toBeHidden();
+    await expect(page.locator(".mission")).toBeHidden();
+    await expect(page.locator(".chat-room-btn").first().locator(".avatar")).toBeVisible();
+    // The tabs stay: this is a hub screen.
+    await expect(page.locator("nav[aria-label=Main]")).toBeVisible();
+
+    await page.locator(".chat-room-btn").first().click();
+    await page.locator(".chat-msgs, .chat-empty").first().waitFor();
+    await expect(page).toHaveURL(/room=/);
+    // Screen two: ONE room. The top strip, the tabs, the mission panel and the key hints are gone.
+    await expect(page.locator(".chat-rooms")).toBeHidden();
+    for (const gone of [".star-top", "nav[aria-label=Main]", ".mission", ".keyhints"]) {
+      await expect(page.locator(gone), gone).toBeHidden();
+    }
+    // It fills the screen: the room is the viewport tall, with the composer on it.
+    const vh = page.viewportSize()!.height;
+    const box = (await page.locator(".chat-room").boundingBox())!;
+    expect(Math.abs(box.height - vh)).toBeLessThanOrEqual(2);
+    const compose = (await page.locator(".chat-compose").boundingBox())!;
+    expect(compose.y + compose.height).toBeLessThanOrEqual(vh + 1);
+    // The header is slim: the back arrow, a face, the room's name and who is in it.
+    const head = (await page.locator(".chat-room-head").boundingBox())!;
+    expect(head.height).toBeLessThanOrEqual(80);
+    await expect(page.locator(".chat-back")).toBeVisible();
+
+    // The arrow and the browser's own Back both return to the rooms.
+    await page.locator(".chat-back").click();
+    await expect(page.locator(".chat-room")).toBeHidden();
+    await page.locator(".chat-room-btn").first().click();
+    await page.locator(".chat-msgs, .chat-empty").first().waitFor();
+    await page.goBack();
+    await expect(page.locator(".chat-room-btn").first()).toBeVisible();
+    await expect(page.locator(".chat-room")).toBeHidden();
+  });
+
+  test("opening the rooms reads nothing: only opening a room marks it read", async ({ page, request }, info) => {
+    test.skip(wide(info), "phone behaviour");
+    await signIn(page, S006);
+    const before = await request.get(`${API}/api/v1/chat/unread`, { headers: { authorization: `Bearer ${S006}` } });
+    expect(before.ok()).toBe(true);
+    await page.goto("/app/chat", { waitUntil: "domcontentloaded" });
+    await page.locator(".chat-room-btn").first().waitFor();
+    await page.waitForTimeout(800);
+    const after = await request.get(`${API}/api/v1/chat/unread`, { headers: { authorization: `Bearer ${S006}` } });
+    expect((await after.json()).mentions).toBe((await before.json()).mentions);
+  });
+
+  test("a desktop shows the rooms and the room side by side, the first one open", async ({ page }, info) => {
+    test.skip(!wide(info), "desktop behaviour");
+    await chat(page);
+    await expect(page.locator(".chat-rooms")).toBeVisible();
+    await expect(page.locator(".chat-room")).toBeVisible();
+    await expect(page.locator(".chat-back")).toBeHidden();
+    await expect(page.locator("nav[aria-label=Main]")).toBeVisible();
+  });
+});
+
 test.describe("/app/chat — what the page owes", () => {
   test("two rooms: the section's (current) and the private thread with the instructor", async ({ page }) => {
     await chat(page);
+    // A phone shows one screen at a time: the rooms are the other screen.
+    if (phone(page)) await page.locator(".chat-back").click();
     const rooms = page.locator(".chat-room-btn");
     await expect(rooms).toHaveCount(2);
     await expect(rooms.nth(0)).toContainText("BSCPE - 4");
-    await expect(rooms.nth(0)).toHaveAttribute("aria-current", "true");
+    if (!phone(page)) await expect(rooms.nth(0)).toHaveAttribute("aria-current", "true");
     await expect(rooms.nth(1)).toContainText("Instructor");
     // A section code is a code: mono.
     expect(await rooms.nth(0).locator(".chat-room-name").evaluate((e) => getComputedStyle(e).fontFamily)).toMatch(/JetBrains Mono/i);
@@ -123,7 +203,7 @@ test.describe("/app/chat — what the page owes", () => {
 
   test("the private thread says who can read it", async ({ page }) => {
     await chat(page);
-    await thread(page).click();
+    await openThread(page);
     await expect(page.locator(".chat-room-about")).toHaveText(/only you and the instructor/i);
     await expect(page.locator(".chat-msgs")).toContainText("after the lecture");
     await expect(page).toHaveURL(/room=/);
@@ -231,7 +311,9 @@ test.describe("/app/chat — what the page owes", () => {
     await expect(page.locator("[data-chat-state=error]")).toContainText("That did not load");
     fail = false;
     await page.getByRole("button", { name: "Try again" }).click();
-    await expect(page.locator(".chat-msgs")).toBeVisible();
+    // A phone lands on the rooms; a desktop on the first room's messages.
+    if (phone(page)) await expect(page.locator(".chat-room-btn").first()).toBeVisible();
+    else await expect(page.locator(".chat-msgs")).toBeVisible();
   });
 
   test("the star realm, no biome; Chat is the sixth tab", async ({ page }) => {
@@ -247,7 +329,7 @@ test.describe("/app/chat — what the page owes", () => {
     await page.waitForTimeout(300);
     const suffix = wide(info) ? "" : "-380";
     await page.screenshot({ path: `design/templates/web/chat/current${suffix}.png`, fullPage: !wide(info) });
-    await thread(page).click();
+    await openThread(page);
     await page.locator(".chat-msgs").waitFor();
     await page.waitForTimeout(300);
     await page.screenshot({ path: `design/templates/web/chat/current-thread${suffix}.png`, fullPage: !wide(info) });
