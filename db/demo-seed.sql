@@ -96,6 +96,13 @@ insert into profiles (id, student_id, full_name, section_id, role, theme, accent
   ('dddddddd-0000-4000-8000-000000000001', null, 'Prof. Amalia R. Bontuyan',
    'dddddddd-5EC0-4000-8000-000000000001', 'teacher', 'blueprint', 210);
 
+-- The section takes CPE 412 with that teacher: the profile pages list a person's
+-- classes, and addendum-teachers.sql only made classes for sections that existed
+-- when it was applied (this one is seeded after it).
+insert into classes (section_id, subject_code, teacher_id, term)
+select id, 'CPE 412', teacher_id, term from sections where code = 'BSCPE - 4'
+on conflict do nothing;
+
 -- ---------------------------------------------------------------
 -- Twenty-four students.
 --

@@ -7,6 +7,7 @@ import type {
   ChatUnread,
   ChatUpload,
   Cosmetics,
+  Profile,
 } from "@octa/contracts";
 
 /**
@@ -353,9 +354,30 @@ export const api = {
     }),
   chatDelete: (messageId: string) =>
     request<void>(`/api/v1/chat/messages/${encodeURIComponent(messageId)}`, { method: "DELETE" }),
+
+  /* ---- the student's own profile and picture (docs/PROFILES-PLAN.md) ---- */
+  profile: () => request<Profile>("/api/v1/profile"),
+  profileAvatarUpload: (bytes: number) =>
+    request<{ path: string; uploadUrl: string }>("/api/v1/profile/avatar/upload", {
+      method: "POST",
+      body: JSON.stringify({ bytes }),
+    }),
+  profileAvatarSet: (path: string) =>
+    request<Profile>("/api/v1/profile/avatar", { method: "PUT", body: JSON.stringify({ path }) }),
+  profileAvatarRemove: () => request<Profile>("/api/v1/profile/avatar", { method: "DELETE" }),
 };
 
 export type { ChatMessage, ChatRoom, ChatRooms, ChatThread };
+
+/** PUT the encoded picture to the one-time signed URL the API gave (the bucket takes WebP only). */
+export async function putAvatarFile(uploadUrl: string, blob: Blob): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "content-type": "image/webp", "x-upsert": "false" },
+    body: blob,
+  });
+  if (!res.ok) throw new ApiError("upload_failed", "The picture did not upload. Try again.", res.status);
+}
 
 /** Why a paper was handed in for the student (ruling 4, 6 Oct 2026). */
 export type LeftReason = "left_fullscreen" | "left_page" | "closed";

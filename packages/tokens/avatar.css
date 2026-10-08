@@ -1,0 +1,137 @@
+/* ============================================================
+   AVATARS (PROFILES, 8 Oct 2026; docs/PROFILES-PLAN.md)
+
+   Shared by apps/web and apps/console. A person's picture is an <img>
+   in a round `.avatar`; with no picture (or one this viewer may not
+   see) the avatar is GENERATED: a small planet, drawn from two numbers
+   the API derives from the student ID (the cosmetic seed, never the
+   exam seed): --avatar-hue (0-359) and data-variant (0-3).
+
+   Each generated avatar is deliberately its own hue, so it is not one
+   of the theme tokens: `_gate.ts` exempts [data-avatar] from the token
+   check exactly as it exempts [data-swatch]. It is decorative
+   (aria-hidden; the person's name is always beside it), so it carries
+   no text and has no contrast ratio to hold.
+
+   The cropper at the bottom is the stage a person positions their
+   picture in before it is sent: what they see in the circle is exactly
+   what is encoded (same crop rectangle, same canvas).
+   ============================================================ */
+
+.avatar {
+  --avatar-size: 2rem;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  inline-size: var(--avatar-size);
+  block-size: var(--avatar-size);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  line-height: 0;
+  vertical-align: middle;
+  background: var(--surface-2);
+}
+.avatar[data-size="sm"] { --avatar-size: 1.5rem; }
+.avatar[data-size="md"] { --avatar-size: 2rem; }
+.avatar[data-size="lg"] { --avatar-size: 3rem; }
+.avatar[data-size="xl"] { --avatar-size: 7.5rem; }
+
+.avatar > img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+/* The generated planet: lit from the upper left, in the person's own hue. */
+.avatar[data-avatar="generated"] {
+  background: radial-gradient(
+    circle at 32% 28%,
+    oklch(0.86 0.09 var(--avatar-hue)),
+    oklch(0.62 0.15 var(--avatar-hue)) 55%,
+    oklch(0.34 0.09 var(--avatar-hue))
+  );
+}
+.avatar[data-avatar="generated"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+/* 0: a plain world. 1: cloud bands. 2: craters. 3: a night side. */
+.avatar[data-avatar="generated"][data-variant="1"]::after {
+  background: repeating-linear-gradient(
+    -18deg,
+    oklch(0 0 0 / 0.16) 0 9%,
+    transparent 9% 24%
+  );
+}
+.avatar[data-avatar="generated"][data-variant="2"]::after {
+  background:
+    radial-gradient(circle at 62% 34%, oklch(0 0 0 / 0.22) 0 11%, transparent 12%),
+    radial-gradient(circle at 36% 62%, oklch(0 0 0 / 0.20) 0 14%, transparent 15%),
+    radial-gradient(circle at 70% 70%, oklch(0 0 0 / 0.18) 0 7%, transparent 8%);
+}
+.avatar[data-avatar="generated"][data-variant="3"]::after {
+  background: linear-gradient(115deg, transparent 52%, oklch(0 0 0 / 0.5) 53%);
+}
+
+/* ------------------------------------------------------------ the cropper */
+
+.avatar-cropper {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  max-inline-size: 100%;
+}
+.avatar-cropper-stage {
+  position: relative;
+  inline-size: min(15rem, 100%);
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-2);
+  touch-action: none;
+  cursor: grab;
+}
+.avatar-cropper-stage:active { cursor: grabbing; }
+.avatar-cropper-stage:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.avatar-cropper-stage > canvas {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+/* The circle the picture will be seen in; the shade outside it is the part
+   that is shown only as a square preview, never to anyone else. */
+.avatar-cropper-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle closest-side,
+    transparent calc(100% - 2px),
+    var(--accent) calc(100% - 2px),
+    var(--accent) 100%,
+    oklch(0 0 0 / 0.55) 100%
+  );
+}
+.avatar-cropper-zoom {
+  display: grid;
+  gap: var(--space-1);
+  inline-size: min(15rem, 100%);
+}
+.avatar-cropper-zoom label {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+.avatar-cropper-zoom input[type="range"] {
+  inline-size: 100%;
+  accent-color: var(--accent);
+  /* A native range paints a browser-default field colour; keep it on the tokens. */
+  color: var(--ink);
+  background: transparent;
+}

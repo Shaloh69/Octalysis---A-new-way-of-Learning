@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { signOut } from "../lib/auth";
 import { FeedbackDialog } from "../components/FeedbackDialog";
 import { SusSurvey } from "../components/SusSurvey";
@@ -11,6 +11,9 @@ import { useKeyHints } from "./keyHints";
 import { useOnline } from "./useOnline";
 import { api } from "../lib/api";
 import { useChatLive } from "../lib/chat-live";
+import { clearProfile, useProfile } from "../lib/profile";
+import { Avatar } from "../components/Avatar";
+import { Tour } from "./Tour";
 
 /**
  * The star system's shell (WEB-REMAKE.md §2): Starfield's HUD.
@@ -26,13 +29,21 @@ import { useChatLive } from "../lib/chat-live";
  * own, and the gate's surfaces are the route's, not the chrome's.
  */
 const TABS = [
-  { to: "/app", label: "Map", short: "Map", end: true },
-  { to: "/app/stages", label: "Stages", short: "Stages", end: false },
-  { to: "/app/progress", label: "Progress", short: "Progress", end: false },
-  { to: "/app/work", label: "Your work", short: "Work", end: false },
-  { to: "/app/chat", label: "Chat", short: "Chat", end: false },
-  { to: "/app/settings", label: "Settings", short: "Settings", end: false },
+  { to: "/app", label: "Map", short: "Map", end: true, tour: "map" },
+  { to: "/app/stages", label: "Stages", short: "Stages", end: false, tour: "stages" },
+  { to: "/app/progress", label: "Progress", short: "Progress", end: false, tour: "progress" },
+  { to: "/app/work", label: "Your work", short: "Work", end: false, tour: "work" },
+  { to: "/app/chat", label: "Chat", short: "Chat", end: false, tour: "chat" },
+  { to: "/app/settings", label: "Settings", short: "Settings", end: false, tour: "settings" },
 ] as const;
+
+/**
+ * The tour runs by itself ONCE per student, on their first visit to the map, and
+ * the ? brings it back. "Once" is remembered per account in this browser (a
+ * convenience, never a grade): a student who signs in on a second device sees it
+ * there too, and one who clears site data sees it again, which does no harm.
+ */
+const tourKey = (userId: string) => `octa:tour:v1:${userId}`;
 
 /**
  * Unread @mentions, for the Chat tab: read on every route change, and on any
@@ -60,11 +71,14 @@ function currentTab(pathname: string): number {
 export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
   const { pathname } = useLocation();
   const nav = useNavigate();
+  const [query] = useSearchParams();
   const online = useOnline();
   const [reporting, setReporting] = useState(false);
   const isMap = pathname === "/app" || pathname === "/app/";
   const here = currentTab(pathname);
   const mentions = useChatMentions(pathname);
+  const { profile } = useProfile();
+  const [touring, setTouring] = useState(false);
   const prev = TABS[(here + TABS.length - 1) % TABS.length]!;
   const next = TABS[(here + 1) % TABS.length]!;
 
@@ -76,8 +90,33 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
   // A route change closes the report dialog rather than carrying it along.
   useEffect(() => setReporting(false), [pathname]);
 
+  // First ever visit to the map: start the tour, and remember that it has been shown.
+  // The key is written when it STARTS (not when it is finished), so a reload mid-tour
+  // does not loop it, and only inside the timer, so React's double effect cannot eat it.
+  const userId = profile?.id ?? null;
+  useEffect(() => {
+    if (!userId || pathname !== "/app") return;
+    const t = window.setTimeout(() => {
+      try {
+        // An automated browser (Playwright, a screenshot job) is not a student, and the
+        // tour's shield would block every script that visits the map. `octa:tour:force`
+        // lets the tour's own spec exercise the real path.
+        if (navigator.webdriver === true && localStorage.getItem("octa:tour:force") !== "1") return;
+        if (localStorage.getItem(tourKey(userId))) return;
+        localStorage.setItem(tourKey(userId), new Date().toISOString());
+      } catch {
+        return; // no storage: it cannot be remembered, so it is not forced on anyone
+      }
+      setTouring(true);
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [userId, pathname]);
+
   return (
-      <div className={`star-shell${isMap ? " is-map" : ""}`} data-shell>
+      <div
+        className={`star-shell${isMap ? " is-map" : ""}${pathname === "/app/chat" ? " is-chat" : ""}${pathname === "/app/chat" && query.get("room") ? " is-chat-thread" : ""}`}
+        data-shell
+      >
         <a className="skip-link" href="#main">
           Skip to content
         </a>
@@ -87,6 +126,9 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
           <Readout dress="hud" />
           {/* What's new (7 Oct 2026, night): in the top strip, not a seventh
               tab, so the bottom bar at 640 keeps its six. */}
+          <button type="button" className="star-help" aria-label="Take the tour of the app" data-tour="help" onClick={() => setTouring(true)}>
+            ?
+          </button>
           <NavLink className="star-news" to="/app/changelog">
             What&apos;s new
           </NavLink>
@@ -95,11 +137,25 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
             className="star-signout"
             onClick={async () => {
               await signOut();
+              clearProfile();
               nav("/login", { replace: true });
             }}
           >
             Sign out
           </button>
+          {/* Your profile (8 Oct 2026): your own picture, or your system's planet, links to it. */}
+          <NavLink
+            className={({ isActive }) => `star-me${isActive ? " active" : ""}`}
+            to="/app/profile"
+            aria-label="Your profile"
+            data-me=""
+            data-tour="profile"
+          >
+            <Avatar avatar={profile?.avatar} size="sm" />
+            <span className="star-me-label" aria-hidden="true">
+              Profile
+            </span>
+          </NavLink>
         </header>
 
         <nav className="star-nav" aria-label="Main">
@@ -113,6 +169,7 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
                   to={t.to}
                   end={t.end}
                   className="star-tab"
+                  data-tour={t.tour}
                   aria-label={
                     t.to === "/app/chat" && mentions > 0
                       ? `${t.label}, ${mentions} unread mention${mentions === 1 ? "" : "s"}`
@@ -151,6 +208,7 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
         <KeyHintBar dress="hud" />
         {reporting && <FeedbackDialog framed="hud-panel" onClose={() => setReporting(false)} />}
         {signedIn && <SusSurvey />}
+        {touring && <Tour onClose={() => setTouring(false)} />}
       </div>
   );
 }

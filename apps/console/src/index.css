@@ -11,6 +11,8 @@
 @import "@octa/tokens/backdrop.css";
 /* Course figures (6 Oct 2026): their eight fig-* classes, in this theme's tokens. */
 @import "@octa/tokens/figure.css";
+/* Profile pictures and the generated avatar (8 Oct 2026). */
+@import "@octa/tokens/avatar.css";
 
 @tailwind base;
 @tailwind components;

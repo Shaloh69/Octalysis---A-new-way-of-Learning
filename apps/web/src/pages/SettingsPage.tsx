@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ACCENTS } from "@octa/tokens/accents";
 import { clearAccentChoice, hasChosen, setAccentHue } from "../lib/session";
 import { toast } from "../lib/toast";
@@ -62,6 +63,18 @@ export function SettingsPage(): JSX.Element {
       </header>
 
       <div className="set-grid">
+        <section className="hud-panel set-panel set-wide" aria-labelledby="set-profile-title">
+          <h2 id="set-profile-title" className="hud-caption">
+            Profile
+          </h2>
+          <div className="set-body">
+            <p className="set-note">Your picture, name, student number and classes: what your class and your teachers see.</p>
+            <Link className="hud-button" to="/app/profile" data-profile-link="">
+              Open your profile
+            </Link>
+          </div>
+        </section>
+
         <section className="hud-panel set-panel set-accent" aria-labelledby="set-accent-title">
           <h2 id="set-accent-title" className="hud-caption">
             Accent

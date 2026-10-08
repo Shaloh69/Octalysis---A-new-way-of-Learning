@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import type { ChatPerson } from "@octa/contracts";
+import type { Avatar as AvatarData, ChatPerson } from "@octa/contracts";
 import { api, ApiError, putChatFile, type ChatMessage, type ChatRooms, type ChatThread } from "../lib/api";
 import { useChatLive } from "../lib/chat-live";
+import { Avatar } from "../components/Avatar";
 import { toast } from "../lib/toast";
 import { useDelayed } from "../lib/useDelayed";
 
@@ -39,6 +40,37 @@ type Load =
       paper: { assessmentId: string; title: string; stageId: string | null; startedAt: string } | null;
     }
   | { state: "ready"; rooms: ChatRooms };
+
+/** A phone is where the chat is two screens (the rooms, then one room), as Messenger is. */
+function usePhone(): boolean {
+  const q = "(max-width: 899px)";
+  const [p, setP] = useState(() => typeof window !== "undefined" && window.matchMedia(q).matches);
+  useEffect(() => {
+    const m = window.matchMedia(q);
+    const f = () => setP(m.matches);
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, []);
+  return p;
+}
+
+/** A room's face: a generated planet seeded from its id (cosmetic, like every avatar's seed). */
+function roomFace(id: string): AvatarData {
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return { url: null, hue: h % 360, variant: (h >>> 9) % 4, removable: false };
+}
+
+/** Same author, close in time, nothing deleted between: a run, drawn as one speaker. */
+function continues(prev: ChatMessage | undefined, m: ChatMessage): boolean {
+  return (
+    !!prev &&
+    !prev.deleted &&
+    !m.deleted &&
+    prev.author.id === m.author.id &&
+    new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() < 5 * 60 * 1000
+  );
+}
 
 const mb = (n: number) => (n / (1024 * 1024)).toFixed(n < 1024 * 1024 ? 2 : 1);
 
@@ -111,10 +143,12 @@ function Message({
   m,
   me,
   members,
+  grouped,
   onDelete,
 }: {
   m: ChatMessage;
   me: ChatPerson;
+  grouped: boolean;
   members: Map<string, ChatPerson>;
   onDelete: (m: ChatMessage) => Promise<void>;
 }): JSX.Element {
@@ -124,29 +158,36 @@ function Message({
   const mentioned = m.mentions.map((id) => members.get(id)).filter((p): p is ChatPerson => p !== undefined);
   return (
     <li
-      className={`chat-msg${m.mine ? " is-mine" : ""}${mentionsMe ? " is-for-me" : ""}${m.deleted ? " is-deleted" : ""}`}
+      className={`chat-msg${m.mine ? " is-mine" : ""}${mentionsMe ? " is-for-me" : ""}${m.deleted ? " is-deleted" : ""}${grouped ? " is-grouped" : ""}`}
       data-message={m.id}
     >
-      <div className="chat-msg-head">
-        <span className="chat-msg-author">{m.mine ? "You" : m.author.name}</span>
-        {m.author.staff && <span className="chat-badge">Instructor</span>}
-        {mentionsMe && <span className="chat-badge chat-badge-info">Mentions you</span>}
+      <span className="chat-msg-face" aria-hidden="true">
+        {!m.mine && !grouped && <Avatar avatar={m.author.avatar} size="sm" />}
+      </span>
+      <div className="chat-bubble">
+        {/* The author is always in the text (a screen reader hears whose it is); it is
+            drawn only at the start of a run, and never for your own. */}
+        <div className="chat-msg-head">
+          <span className={`chat-msg-author${m.mine || grouped ? " sr-only" : ""}`}>{m.mine ? "You" : m.author.name}</span>
+          {!grouped && m.author.staff && <span className="chat-badge">Instructor</span>}
+          {mentionsMe && <span className="chat-badge chat-badge-info">Mentions you</span>}
+        </div>
+        {m.deleted ? (
+          <p className="chat-msg-gone">Message deleted.</p>
+        ) : (
+          <>
+            {m.body && (
+              <p className="chat-msg-body">
+                <Body text={m.body} mentioned={mentioned} />
+              </p>
+            )}
+            <Attachment m={m} />
+          </>
+        )}
         <time className="chat-msg-time mono" dateTime={m.createdAt}>
           {when(m.createdAt)}
         </time>
       </div>
-      {m.deleted ? (
-        <p className="chat-msg-gone">Message deleted.</p>
-      ) : (
-        <>
-          {m.body && (
-            <p className="chat-msg-body">
-              <Body text={m.body} mentioned={mentioned} />
-            </p>
-          )}
-          <Attachment m={m} />
-        </>
-      )}
       {m.mine && !m.deleted && (
         <div className="chat-msg-tools">
           {asking ? (
@@ -327,7 +368,8 @@ function Composer({
                   choose(p);
                 }}
               >
-                {p.name}
+                <Avatar avatar={p.avatar} size="sm" />
+                <span className="chat-face">{p.name}</span>
                 {p.staff && <span className="chat-badge">Instructor</span>}
               </li>
             ))}
@@ -436,8 +478,13 @@ export function ChatPage(): JSX.Element {
   const verySlow = useDelayed(load.state === "loading", 3000);
 
   const rooms = load.state === "ready" ? load.rooms.rooms : [];
+  const phone = usePhone();
   const asked = params.get("room");
-  const roomId = rooms.find((r) => r.id === asked)?.id ?? rooms[0]?.id ?? null;
+  const picked = rooms.find((r) => r.id === asked)?.id ?? null;
+  // A desktop shows the first room until another is picked; a phone shows the list of
+  // rooms until one is, and reads (marks as read) nothing from a screen it is not on.
+  const roomId = picked ?? (phone ? null : (rooms[0]?.id ?? null));
+  const view: "list" | "thread" = phone && !picked ? "list" : "thread";
 
   const fail = useCallback((err: unknown) => {
     if (err instanceof ApiError && err.code === "paper_open") {
@@ -609,8 +656,8 @@ export function ChatPage(): JSX.Element {
   const me = load.rooms.me;
 
   return (
-    <section className="chat" aria-labelledby="chat-title" data-chat="">
-      <header className="chat-head">
+    <section className="chat" aria-labelledby="chat-title" data-chat="" data-view={view}>
+      <header className={`chat-head${view === "thread" && phone ? " sr-only" : ""}`}>
         <h1 id="chat-title" className="chat-title">
           Chat
         </h1>
@@ -635,20 +682,29 @@ export function ChatPage(): JSX.Element {
                     type="button"
                     className="chat-room-btn"
                     aria-current={r.id === roomId ? "true" : undefined}
-                    onClick={() => setParams(r.id === rooms[0]?.id ? {} : { room: r.id }, { replace: true })}
+                    // A phone pushes a history entry, so its Back returns to the rooms.
+                    onClick={() => setParams({ room: r.id }, { replace: !phone })}
                   >
-                    <span className={`chat-room-name${r.kind === "section" ? " mono" : ""}`}>{r.title}</span>
-                    <span className="chat-room-sub">{r.subtitle}</span>
-                    {r.unread > 0 && (
-                      <span className="chat-room-count">
-                        <span className="mono">{r.unread}</span> new
-                        {r.mentions > 0 && (
-                          <>
-                            {" · "}
-                            <span className="mono">{r.mentions}</span> for you
-                          </>
-                        )}
-                      </span>
+                    <Avatar avatar={roomFace(r.id)} size="lg" />
+                    <span className="chat-room-text">
+                      <span className={`chat-room-name${r.kind === "section" ? " mono" : ""}`}>{r.title}</span>
+                      <span className="chat-room-sub">{r.subtitle}</span>
+                      {r.unread > 0 && (
+                        <span className="chat-room-count">
+                          <span className="mono">{r.unread}</span> new
+                          {r.mentions > 0 && (
+                            <>
+                              {" · "}
+                              <span className="mono">{r.mentions}</span> for you
+                            </>
+                          )}
+                        </span>
+                      )}
+                    </span>
+                    {r.lastAt && (
+                      <time className="chat-room-when mono" dateTime={r.lastAt}>
+                        {when(r.lastAt)}
+                      </time>
                     )}
                   </button>
                 </li>
@@ -657,10 +713,18 @@ export function ChatPage(): JSX.Element {
           </nav>
 
           <section className="hud-panel chat-room" aria-labelledby="chat-room-title">
-            <h2 id="chat-room-title" className={`hud-caption chat-room-title${room?.kind === "section" ? " mono" : ""}`}>
-              {room?.title ?? "Room"}
-            </h2>
-            <p className="chat-room-about">{room?.subtitle}</p>
+            <header className="chat-room-head">
+              <button type="button" className="chat-back" aria-label="Back to rooms" onClick={() => setParams({})}>
+                <span aria-hidden="true">←</span>
+              </button>
+              <Avatar avatar={roomFace(room?.id ?? "room")} size="md" />
+              <div className="chat-room-heading">
+                <h2 id="chat-room-title" className={`chat-room-title${room?.kind === "section" ? " mono" : ""}`}>
+                  {room?.title ?? "Room"}
+                </h2>
+                <p className="chat-room-about">{room?.subtitle}</p>
+              </div>
+            </header>
             <div
               ref={logRef}
               className="chat-log"
@@ -716,10 +780,11 @@ export function ChatPage(): JSX.Element {
                     </p>
                   ) : (
                     <ol className="chat-msgs">
-                      {messages.map((m) => (
+                      {messages.map((m, i) => (
                         <Message
                           key={m.id}
                           m={m}
+                          grouped={continues(messages[i - 1], m)}
                           me={me}
                           members={members}
                           onDelete={async (target) => {

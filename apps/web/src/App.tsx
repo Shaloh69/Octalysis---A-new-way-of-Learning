@@ -20,6 +20,7 @@ import {
   StagePage,
 } from "./pages/StudentPages";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { StagesPage } from "./pages/StagesPage";
 import { SubmitPage } from "./pages/SubmitPage";
 import { ChatPage } from "./pages/ChatPage";
@@ -130,6 +131,7 @@ export default function App(): JSX.Element {
                 <Route path="/app/work" element={<SubmitPage />} />
                 <Route path="/app/chat" element={<ChatPage />} />
                 <Route path="/app/settings" element={<SettingsPage />} />
+                <Route path="/app/profile" element={<ProfilePage />} />
                 <Route path="/app/changelog" element={<WhatsNewPage />} />
               </Route>
               <Route path="/app/map" element={<MapRedirect />} />
