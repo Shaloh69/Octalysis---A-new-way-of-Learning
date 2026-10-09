@@ -143,3 +143,16 @@ measure; as SVG they would pass unexamined. It also takes Recharts (~105 KB
 gz) off the route: no console page imports it now, and
 `console-gradebook.spec.ts` proves no loaded chunk carries it. The route
 stays lazy-loaded (`App.tsx`).
+
+## The Moon checks view (9 Oct 2026)
+
+A third view beside Final grade and Stage checks (`docs/GRADED-MOONS-PLAN.md`):
+each graded moon's check counts as one more quiz inside Quizzes, so the page
+shows them. One column per moon the class has sat (a moon nobody sat is not a
+column, as Quizzes does not count it), the best sitting per student, **"not sat"
+never 0**, a class-average row. More than 18 columns fall to the list at any
+width. With none sat the view says so in words and shows no empty table.
+Captures: `current-moons`, `current-moons-380` (six moons, fixture data) and
+`current-moons-empty-380` (the real, empty state). Opened 9 Oct 2026. The
+third button is a pressed-state button like the other two (consequence: it
+changes what the teacher can see).

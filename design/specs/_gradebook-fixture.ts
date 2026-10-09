@@ -23,21 +23,24 @@ import type { Page, Route } from "@playwright/test";
  * so a screenshot never shows a final that disagrees with its own row.
  *
  * Options make the states a seeded database cannot: a failed load, a slow one,
- * an empty roster, a course with nothing marked, and a failed CSV.
+ * an empty roster, a course with nothing marked, a failed CSV, and `moons: n`,
+ * which gives the class n graded moon checks sat (docs/GRADED-MOONS-PLAN.md): the
+ * seed has none, so the Moon checks view is otherwise its honest empty state.
  */
 
 type Pct = number | null;
 type Key = "project" | "quizzes" | "exams" | "labs" | "participation";
 export interface Student {
   userId: string; studentId: string; fullName: string; section: string | null;
-  checks: Record<string, Pct>; components: Record<Key, Pct>; unmarked: number; final: Pct;
+  checks: Record<string, Pct>; moonChecks?: Record<string, Pct>; components: Record<Key, Pct>; unmarked: number; final: Pct;
 }
 export interface Book {
   components: Array<{ key: Key; label: string; weight: number; covered: boolean; counted: Array<{ id: string; title: string }> }>;
   coverage: number;
   stages: Array<{ id: string; title: string }>;
   students: Student[];
-  classAverage: { checks: Record<string, Pct>; components: Record<Key, Pct>; final: Pct };
+  moons?: Array<{ id: string; title: string }>;
+  classAverage: { checks: Record<string, Pct>; moons?: Record<string, Pct>; components: Record<Key, Pct>; final: Pct };
   awaitingMarking: number;
 }
 
@@ -109,6 +112,30 @@ export interface FixtureOpts {
   empty?: boolean;
   nothingMarked?: boolean;
   csvFail?: boolean;
+  /** Give the class this many graded moon checks, sat. The first moon is left unsat by the first student. */
+  moons?: number;
+}
+
+export const MOON_IDS = (n: number) =>
+  Array.from({ length: n }, (_, i) => `${String((i % 7) + 1).padStart(2, "0")}.${Math.floor(i / 7) + 1}`);
+
+/** n graded moon checks, sat by everyone; FIX.first has not sat the first, and one student has a real 0 on the second. */
+function withMoons(b: Book, n: number): Book {
+  const ids = MOON_IDS(n);
+  b.moons = ids.map((id) => ({ id, title: `Moon ${id}: a graded moon of the course` }));
+  b.classAverage.moons = {};
+  b.students.forEach((s, si) => {
+    s.moonChecks = {};
+    ids.forEach((id, mi) => {
+      const first = s.studentId === FIX.first.studentId;
+      s.moonChecks![id] = first && mi === 0 ? null : s.studentId === FIX.zero.studentId && mi === 1 ? 0 : 40 + ((si * 7 + mi * 13) % 61);
+    });
+  });
+  for (const id of ids) {
+    const xs = b.students.map((s) => s.moonChecks![id] ?? null).filter((x): x is number => x !== null);
+    b.classAverage.moons[id] = xs.length ? r1(xs.reduce((a, c) => a + c, 0) / xs.length) : null;
+  }
+  return b;
 }
 
 export async function useFixture(page: Page, opts: FixtureOpts = {}): Promise<{ book: () => Book | null }> {
@@ -125,6 +152,7 @@ export async function useFixture(page: Page, opts: FixtureOpts = {}): Promise<{ 
     const res = await route.fetch();
     let book = patch((await res.json()) as Book);
     if (opts.nothingMarked) book = nothingMarked(book);
+    if (opts.moons) book = withMoons(book, opts.moons);
     if (opts.empty) { book.students = []; averages(book); book.awaitingMarking = 0; }
     last = book;
     return route.fulfill({ response: res, json: book });

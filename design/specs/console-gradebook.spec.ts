@@ -5,7 +5,7 @@ import {
   clippedElements, contrastFailures, horizontalOverflow, motionStarted, offTokenStyles,
   recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
 } from "./_gate";
-import { FIX, useFixture, type FixtureOpts } from "./_gradebook-fixture";
+import { FIX, MOON_IDS, useFixture, type FixtureOpts } from "./_gradebook-fixture";
 
 /**
  * `/gradebook` — every student's score so far, weighted by the syllabus.
@@ -55,7 +55,7 @@ async function openPage(page: Page, opts: FixtureOpts = {}) {
   return fx;
 }
 
-async function view(page: Page, name: "Final grade" | "Stage checks") {
+async function view(page: Page, name: "Final grade" | "Stage checks" | "Moon checks") {
   await page.getByRole("button", { name, exact: true }).click();
   await expect(page.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", "true");
 }
@@ -352,5 +352,89 @@ test.describe("the bundle", () => {
     await page.locator("[data-student]").first().waitFor({ timeout: 15_000 });
     expect(urls.some((u) => /GradebookPage/.test(u)), "the gradebook chunk was never fetched").toBe(true);
     expect(urls.filter((u) => /recharts/i.test(u))).toEqual([]);
+  });
+});
+
+/* ======================================================================
+ * MOON CHECKS — docs/GRADED-MOONS-PLAN.md (instructor, 8 Oct 2026: every moon is
+ * graded, "as important as checks"). Each graded moon's check counts as one more
+ * quiz, so it is a third view of the same grid: the same rule as a stage check
+ * (best sitting; not sat is never 0), and only the moons the class has sat.
+ * ==================================================================== */
+
+test.describe("moon checks: a third view of the same grid", () => {
+  test("with none sat the view says so, in words, and shows no empty table", async ({ page }) => {
+    await openPage(page);
+    await view(page, "Moon checks");
+    await expect(page.locator("[data-no-columns=moons]")).toContainText("No moon check has been sat yet");
+    await expect(page.locator("table[data-grid]")).toHaveCount(0);
+    await expect(page.locator("ul[data-grid]")).toHaveCount(0);
+  });
+
+  test("each moon the class sat is a column named by its code; one not sat reads 'not sat', a real 0 reads 0", async ({ page }) => {
+    await openPage(page, { moons: 4 });
+    await view(page, "Moon checks");
+    const ids = await student(page, FIX.zero.studentId).locator("[data-moon-check]")
+      .evaluateAll((els) => els.map((e) => e.getAttribute("data-moon-check")));
+    expect(ids).toEqual(MOON_IDS(4));
+    const [m1, m2] = MOON_IDS(4);
+    await expect(student(page, FIX.first.studentId).locator(`[data-moon-check="${m1}"]`)).toHaveText(/not sat/i);
+    await expect(student(page, FIX.zero.studentId).locator(`[data-moon-check="${m2}"]`)).toHaveText("0");
+    await expect(student(page, FIX.zero.studentId).locator(`[data-moon-check="${m1}"]`)).toHaveText(/^\d+$/);
+  });
+
+  test("the class average closes the moon grid too", async ({ page }) => {
+    await openPage(page, { moons: 3 });
+    await view(page, "Moon checks");
+    for (const id of MOON_IDS(3)) await expect(page.locator(`[data-average] [data-moon-check="${id}"]`)).toHaveText(/^\d+$/);
+  });
+
+  test("a table at 1440 and a list at 380; so many moons that a table cannot hold them is a list at any width", async ({ page }, info) => {
+    await openPage(page, { moons: 4 });
+    await view(page, "Moon checks");
+    if (wide(info.project.name)) await expect(page.locator("table[data-grid][data-view=moons]")).toBeVisible();
+    else await expect(page.locator("ul[data-grid] > li[data-student]").first()).toBeVisible();
+  });
+
+  test("more moons than a card can hold as a table fall to the list, even at 1440", async ({ page }, info) => {
+    test.skip(!wide(info.project.name), "the point is that a wide page still chooses the list");
+    await openPage(page, { moons: 30 });
+    await view(page, "Moon checks");
+    await expect(page.locator("table[data-grid]")).toHaveCount(0);
+    await expect(page.locator("ul[data-grid] > li[data-student]").first()).toBeVisible();
+  });
+
+  test("the view is a pressed button, reachable from the keyboard", async ({ page }) => {
+    await openPage(page, { moons: 2 });
+    const b = page.getByRole("button", { name: "Moon checks", exact: true });
+    await b.focus();
+    await page.keyboard.press("Enter");
+    await expect(b).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Final grade", exact: true })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("the gate on the moon view, filled: nothing clipped, no sideways scroll, keyboard, tokens, AA on all three themes", async ({ page }) => {
+    test.setTimeout(180_000);
+    await openPage(page, { moons: 6 });
+    await view(page, "Moon checks");
+    expect(await clippedElements(page), "clipped").toEqual([]);
+    expect(await horizontalOverflow(page), "overflow").toBeLessThanOrEqual(0);
+    expect(await unreachableByKeyboard(page, "main"), "keyboard").toEqual([]);
+    expect(await offTokenStyles(page), "tokens").toEqual([]);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      expect(await contrastFailures(page), theme).toEqual([]);
+    }
+  });
+
+  test("the gate on the moon view, empty: nothing clipped, no sideways scroll, AA", async ({ page }) => {
+    await openPage(page);
+    await view(page, "Moon checks");
+    expect(await clippedElements(page), "clipped").toEqual([]);
+    expect(await horizontalOverflow(page), "overflow").toBeLessThanOrEqual(0);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      expect(await contrastFailures(page), theme).toEqual([]);
+    }
   });
 });

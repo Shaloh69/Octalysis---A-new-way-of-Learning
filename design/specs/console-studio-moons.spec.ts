@@ -40,7 +40,9 @@ interface Moon {
   id: string; status: string; owner: string; description: string; bloom: string; level: number | null;
   competency: string | null; questions: number; notLive: number; publishable: boolean; game: string | null;
   removable: boolean;
-  pending: null | { action: string; description: string | null; bloom: string | null; level: number | null; competency: string | null; version: number; editedBy: string | null; editedAt: string };
+  /** Sat as a graded check that counts as one more quiz (docs/GRADED-MOONS-PLAN.md). */
+  graded: boolean;
+  pending: null | { action: string; graded: boolean | null; description: string | null; bloom: string | null; level: number | null; competency: string | null; version: number; editedBy: string | null; editedAt: string };
 }
 interface MoonWrites {
   add: Array<Record<string, unknown>>;
@@ -84,7 +86,8 @@ async function useMoons(page: Page, opts: MoonOpts = {}) {
       const id = `${state!.stageId}.${next}`;
       state!.moons.push({
         id, status: "draft", owner: "console", description: String(b.description), bloom: String(b.bloom), level: Number(b.level),
-        competency: String(b.competency), questions: 0, notLive: 0, publishable: false, game: null, removable: true, pending: null,
+        competency: String(b.competency), questions: 0, notLive: 0, publishable: false, game: null, removable: true,
+        graded: b.graded !== false, pending: null,
       });
       n++;
       return route.fulfill({ json: { ok: true, id } });
@@ -98,7 +101,9 @@ async function useMoons(page: Page, opts: MoonOpts = {}) {
       const version = (moon.pending?.version ?? 0) + 1;
       moon.pending = {
         action: String(b.action), description: (b.description as string) ?? null, bloom: (b.bloom as string) ?? null,
-        level: (b.level as number) ?? null, competency: (b.competency as string) ?? null, version, editedBy: "The Teacher", editedAt: new Date().toISOString(),
+        level: (b.level as number) ?? null, competency: (b.competency as string) ?? null,
+        // The server stores the switch only when it differs from the moon's: null leaves it as it is.
+        graded: typeof b.graded === "boolean" && b.graded !== moon.graded ? b.graded : null, version, editedBy: "The Teacher", editedAt: new Date().toISOString(),
       };
       n++;
       return route.fulfill({ json: { ok: true, version } });
@@ -124,12 +129,18 @@ async function useMoons(page: Page, opts: MoonOpts = {}) {
       const picked = state!.moons.filter((x) => b.ids.includes(x.id));
       const applied = picked.map((x) => {
         const change = x.pending?.action === "retire" ? "retire" : x.status === "draft" ? "publish" : "edit";
+        const flips = x.pending?.graded != null && x.pending.graded !== x.graded;
         const moves = change === "retire" ? ["leaves the map, the grid and the lock's count"]
-          : change === "publish" ? ["goes live: students see it and the lock counts it"] : ["new wording"];
+          : change === "publish" ? ["goes live: students see it and the lock counts it"]
+            : flips ? [x.pending!.graded ? "becomes GRADED: its check counts as one more quiz" : "stops being graded: its check leaves the gradebook"]
+              : ["new wording"];
         return { id: x.id, change, moves };
       });
+      const grading = picked
+        .filter((x) => x.pending?.graded != null && x.pending.graded !== x.graded)
+        .map((x) => ({ id: x.id, graded: x.pending!.graded as boolean, students: 0 }));
       const result = {
-        ok: true, dryRun: b.dryRun, applied,
+        ok: true, dryRun: b.dryRun, applied, grading,
         gamesRemoved: picked.filter((x) => x.pending?.action === "retire" && x.game).map((x) => ({ id: x.id, name: x.game })),
         impact: {
           relocked: opts.relocked ?? 0,
@@ -146,6 +157,7 @@ async function useMoons(page: Page, opts: MoonOpts = {}) {
         if (x.pending?.action === "retire") x.status = "retired";
         else {
           if (x.pending?.description) x.description = x.pending.description;
+          if (x.pending?.graded != null) x.graded = x.pending.graded;
           x.status = "live";
           x.owner = "console";
         }
@@ -232,7 +244,7 @@ test.describe("the moons: a row is a code, a sentence, a status in a word and a 
   test("a new moon is a draft: it says how many live questions it still needs, and may be deleted while it has none", async ({ page }) => {
     const fx = await open(page);
     await addDraft(page);
-    expect(fx.writes.add).toEqual([{ description: "Explain how a write-back cache handles a dirty line", bloom: "understand", level: 5, competency: "read" }]);
+    expect(fx.writes.add).toEqual([{ description: "Explain how a write-back cache handles a dirty line", bloom: "understand", level: 5, competency: "read", graded: true }]);
     const id = fx.moons().at(-1)!.id;
     const r = row(page, id);
     await expect(r).toHaveAttribute("data-status", "draft");
@@ -444,5 +456,156 @@ test.describe("captures", () => {
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${dir}/current-publish${suffix}.png` });
     void fx;
+  });
+});
+
+/* ===========================================================================
+ * The GRADED switch (docs/GRADED-MOONS-PLAN.md; instructor, 8 Oct 2026: "add a
+ * control for each moon to be able [to say] if graded or not").
+ * ========================================================================= */
+
+const switchOf = (page: Page, id: string) => row(page, id).getByRole("switch", { name: `Moon ${id} is graded` });
+
+test.describe("the Graded switch on a moon", () => {
+  test("every live moon carries a switch, on, told by a word and not by colour alone", async ({ page }) => {
+    const fx = await open(page);
+    for (const m of fx.moons().filter((x) => x.status === "live")) {
+      const sw = switchOf(page, m.id);
+      await expect(sw, m.id).toHaveAttribute("aria-checked", "true");
+      await expect(sw).toContainText("Graded");
+      await expect(row(page, m.id).locator("[data-moon-facts]")).toContainText("graded");
+    }
+  });
+
+  test("pressing it stages ONE change (the wording untouched), says so, and nothing is published", async ({ page }) => {
+    const fx = await open(page);
+    const id = fx.moons().find((x) => x.status === "live")!.id;
+    const before = fx.moons().find((x) => x.id === id)!;
+    await switchOf(page, id).click();
+    await expect(page.locator("[data-toaster]")).toContainText(`Moon ${id} will be practice only`);
+    await expect(switchOf(page, id)).toHaveAttribute("aria-checked", "false");
+    await expect(switchOf(page, id)).toContainText("Practice only");
+    await expect(row(page, id).locator("[data-grading-waiting]")).toContainText("Grading change waiting to publish");
+    await expect(row(page, id)).toHaveAttribute("data-pending", "edit");
+    await expect(review(page)).toContainText("(1)");
+    // The server was sent the live wording, unchanged, and the switch.
+    expect(fx.writes.pending).toHaveLength(1);
+    expect(fx.writes.pending[0]!.body).toMatchObject({ action: "edit", graded: false, description: before.description });
+    expect(fx.writes.publish).toEqual([]);
+    // No "Proposed:" line repeating wording that did not change.
+    await expect(row(page, id).locator("[data-moon-proposed]")).toHaveCount(0);
+  });
+
+  test("pressing it again, back to what is live, drops the change instead of saving a no-op", async ({ page }) => {
+    const fx = await open(page);
+    const id = fx.moons().find((x) => x.status === "live")!.id;
+    await switchOf(page, id).click();
+    await expect(switchOf(page, id)).toHaveAttribute("aria-checked", "false");
+    await switchOf(page, id).click();
+    await expect(switchOf(page, id)).toHaveAttribute("aria-checked", "true");
+    await expect(row(page, id)).toHaveAttribute("data-pending", "");
+    expect(fx.writes.discard).toEqual([id]);
+    await expect(review(page)).toBeDisabled();
+  });
+
+  test("it works from the keyboard: Space toggles it, and focus is visible", async ({ page }) => {
+    const fx = await open(page);
+    const id = fx.moons().find((x) => x.status === "live")!.id;
+    await switchOf(page, id).focus();
+    await expect(switchOf(page, id)).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(switchOf(page, id)).toHaveAttribute("aria-checked", "false");
+    // The save runs and finishes; the keyboard user must still be on the switch.
+    await expect(page.locator("[data-toaster]")).toContainText("practice only");
+    await expect(switchOf(page, id)).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(switchOf(page, id)).toHaveAttribute("aria-checked", "true");
+    await expect(switchOf(page, id)).toBeFocused();
+    const outline = await switchOf(page, id).evaluate((e) => getComputedStyle(e).outlineStyle);
+    expect(outline).not.toBe("none");
+  });
+
+  test("a wording edit does not drop a flip already waiting", async ({ page }) => {
+    const fx = await open(page);
+    const id = fx.moons().find((x) => x.status === "live")!.id;
+    await switchOf(page, id).click();
+    await expect(row(page, id)).toHaveAttribute("data-pending", "edit");
+    await row(page, id).getByRole("button", { name: `Edit moon ${id}` }).click();
+    const form = page.getByRole("form", { name: `Edit moon ${id}` });
+    await form.getByRole("textbox").fill("A clearer wording for this moon, entirely");
+    await form.getByRole("button", { name: "Save change" }).click();
+    await expect(row(page, id).locator("[data-moon-proposed]")).toContainText("A clearer wording");
+    expect(fx.writes.pending.at(-1)!.body).toMatchObject({ graded: false });
+    await expect(switchOf(page, id)).toHaveAttribute("aria-checked", "false");
+  });
+
+  test("Publish says what it does to the gradebook, and applies it", async ({ page }) => {
+    const fx = await open(page);
+    const id = fx.moons().find((x) => x.status === "live")!.id;
+    await switchOf(page, id).click();
+    await expect(review(page)).toContainText("(1)");
+    await review(page).click();
+    const dialog = page.locator("[data-moons-dialog]");
+    await expect(dialog).toContainText(`${id} will stop being graded`);
+    await expect(dialog.locator("[data-moons-summary]")).toContainText("stops being graded");
+    await expect(dialog.locator("[data-grading]")).toContainText("The gradebook changes");
+    await expect(dialog.locator("[data-grading]")).toContainText(`${id} stops counting`);
+    await expect(dialog.locator("[data-grading]")).toContainText("Every sitting is kept");
+    await dialog.getByRole("textbox").fill("Practice only this term");
+    await dialog.getByRole("button", { name: "Publish moons" }).click();
+    await expect(page.locator("[data-toaster]")).toContainText("1 moon published");
+    expect(fx.writes.publish).toHaveLength(1);
+    await expect(switchOf(page, id)).toHaveAttribute("aria-checked", "false");
+    await expect(row(page, id)).toHaveAttribute("data-pending", "");
+  });
+
+  test("a new moon is asked 'Graded', on by default; off sends practice only", async ({ page }) => {
+    const fx = await open(page);
+    await card(page).getByRole("button", { name: "Add a moon" }).click();
+    const form = page.getByRole("form", { name: "A new moon" });
+    const box = form.getByRole("checkbox", { name: /Graded/ });
+    await expect(box).toBeChecked();
+    await form.getByRole("textbox").fill("Explain how a write-back cache handles a dirty line");
+    await box.uncheck();
+    await form.getByRole("button", { name: "Add moon" }).click();
+    await expect(page.locator("[data-toaster]")).toContainText("added as a draft");
+    expect(fx.writes.add.at(-1)).toMatchObject({ graded: false });
+  });
+
+  test("a moon waiting to retire has no switch: there is nothing left to grade", async ({ page }) => {
+    const fx = await open(page);
+    const id = fx.moons().find((x) => x.status === "live")!.id;
+    await row(page, id).getByRole("button", { name: `Retire moon ${id}` }).click();
+    await expect(row(page, id)).toHaveAttribute("data-pending", "retire");
+    await expect(switchOf(page, id)).toHaveCount(0);
+  });
+
+  test("the gate on a state with a flip waiting: nothing clipped, no sideways scroll, AA on all three themes, tokens, keyboard", async ({ page }) => {
+    const fx = await open(page);
+    const id = fx.moons().find((x) => x.status === "live")!.id;
+    await switchOf(page, id).click();
+    await expect(row(page, id).locator("[data-grading-waiting]")).toBeVisible();
+    expect(await clippedElements(page, "main")).toEqual([]);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    expect(await unreachableByKeyboard(page, "main")).toEqual([]);
+    expect(await offTokenStyles(page, "[data-moons]")).toEqual([]);
+    for (const t of THEMES) {
+      await setTheme(page, t);
+      expect(await contrastFailures(page, "[data-moons]"), t).toEqual([]);
+    }
+  });
+
+  test("reduced motion: the switch snaps, it does not slide", async ({ page, browser }, info) => {
+    test.skip(info.project.name !== "desktop-1440", "one width is enough");
+    const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1440, height: 900 }, baseURL: info.project.use.baseURL });
+    const calm = await ctx.newPage();
+    await recordMotion(calm);
+    const fx = await open(calm);
+    const id = fx.moons().find((x) => x.status === "live")!.id;
+    await switchOf(calm, id).click();
+    await expect(switchOf(calm, id)).toHaveAttribute("aria-checked", "false");
+    const long = (await recordedMotion(calm)).filter((m) => m.ms > 1 && /mn-switch/.test(m.on));
+    expect(long, JSON.stringify(long)).toEqual([]);
+    await ctx.close();
   });
 });

@@ -39,13 +39,19 @@ interface Fields {
   bloom: (typeof BLOOMS)[number];
   level: number;
   competency: (typeof COMPETENCIES)[number];
+  /** Graded: its check counts as one more quiz. Only the add form edits it; a row has its own switch. */
+  graded: boolean;
 }
+
+/** The switch as it will be once published: a waiting change wins over the live moon's. */
+const gradedOf = (m: StudioMoon): boolean => (m.pending?.action === "edit" && m.pending.graded !== null ? m.pending.graded : m.graded);
 
 const fieldsOf = (m: StudioMoon): Fields => ({
   description: m.pending?.action === "edit" ? (m.pending.description ?? m.description) : m.description,
   bloom: (m.pending?.action === "edit" ? m.pending.bloom : null) ?? m.bloom,
   level: (m.pending?.action === "edit" ? m.pending.level : null) ?? m.level ?? 0,
   competency: (m.pending?.action === "edit" ? m.pending.competency : null) ?? m.competency ?? "read",
+  graded: gradedOf(m),
 });
 
 export function MoonsEditor({ stageId, onChanged }: { stageId: string; onChanged?: (() => void) | undefined }) {
@@ -114,10 +120,11 @@ export function MoonsEditor({ stageId, onChanged }: { stageId: string; onChanged
           legend="A new moon"
           submitLabel="Add moon"
           note="It starts as a draft. Students never see it, and it does not hold the next planet shut, until it has at least three live questions and you publish it."
-          initial={{ description: "", bloom: "understand", level: 3, competency: "read" }}
+          initial={{ description: "", bloom: "understand", level: 3, competency: "read", graded: true }}
+          withGraded
           onCancel={() => setAdding(false)}
           onSubmit={async (f) => {
-            const r = await api.addMoon(stageId, { description: f.description, bloom: f.bloom, level: f.level, competency: f.competency });
+            const r = await api.addMoon(stageId, { description: f.description, bloom: f.bloom, level: f.level, competency: f.competency, graded: f.graded });
             toast.success(`Moon ${r.id} added as a draft`, "Students see nothing yet. Write its questions in Items, then publish it.");
             setAdding(false);
             reload();
@@ -216,6 +223,8 @@ function MoonRow({ m, minQuestions, editing, onEdit, onCancel, onChanged }: {
               await api.saveMoonPending(m.id, {
                 action: "edit", version: m.pending?.version ?? 0,
                 description: next.description, bloom: next.bloom, level: next.level, competency: next.competency,
+                // Always sent: a wording edit must not drop a flip already waiting to publish.
+                graded: f.graded,
               });
               toast.success(`Moon ${m.id} change saved`, "Students see it when you publish.");
               onChanged();
@@ -224,7 +233,7 @@ function MoonRow({ m, minQuestions, editing, onEdit, onCancel, onChanged }: {
         ) : (
           <>
             <p className={retired ? "text-sm text-ink-muted" : "text-sm text-ink"}>{m.description}</p>
-            {m.pending?.action === "edit" ? (
+            {m.pending?.action === "edit" && m.pending.description !== null && m.pending.description !== m.description ? (
               <p className="mn-change" data-moon-proposed>
                 <span className="font-medium">Proposed:</span> {m.pending.description}
                 {m.pending.editedBy ? <span className="text-ink-muted"> ({m.pending.editedBy})</span> : null}
@@ -232,6 +241,8 @@ function MoonRow({ m, minQuestions, editing, onEdit, onCancel, onChanged }: {
             ) : null}
             <p className="ct-faint" data-moon-facts>
               {f.bloom} · {f.competency} · ring <span className="num">{f.level}</span>
+              {" · "}
+              {f.graded ? "graded" : "practice only"}
               {" · "}
               {m.status === "draft" ? (
                 <>
@@ -245,6 +256,29 @@ function MoonRow({ m, minQuestions, editing, onEdit, onCancel, onChanged }: {
               {m.notLive > 0 ? <> · <span className="num">{m.notLive}</span> waiting for review</> : null}
               {!retired ? <> · <Link className="ct-link" to="/items">Items</Link></> : null}
             </p>
+            {!retired && m.pending?.action !== "retire" ? (
+              <GradedSwitch
+                m={m}
+                busy={busy}
+                onFlip={(next) => {
+                  // Flipping back to what is live, with no wording change waiting, simply drops the change.
+                  const wording =
+                    m.pending?.action === "edit" &&
+                    (m.pending.description !== m.description || (m.pending.bloom ?? m.bloom) !== m.bloom ||
+                      (m.pending.level ?? m.level) !== m.level || (m.pending.competency ?? m.competency) !== m.competency);
+                  if (next === m.graded && m.pending && !wording) {
+                    return void run(`Moon ${m.id} grading kept`, "It is graded as it was. Nothing waits to publish.", () => api.discardMoonPending(m.id));
+                  }
+                  void run(
+                    next ? `Moon ${m.id} will be graded` : `Moon ${m.id} will be practice only`,
+                    next
+                      ? "Its check counts as one more quiz once you publish."
+                      : "Its check leaves the gradebook once you publish. Every sitting is kept.",
+                    () => api.saveMoonPending(m.id, { action: "edit", version: m.pending?.version ?? 0, ...fieldsOnly(f), graded: next }),
+                  );
+                }}
+              />
+            ) : null}
             {!retired ? (
               <div className="mn-actions">
                 <Button size="sm" variant="outline" onClick={onEdit} disabled={busy} aria-label={`Edit moon ${m.id}`}>Edit</Button>
@@ -290,13 +324,52 @@ function MoonRow({ m, minQuestions, editing, onEdit, onCancel, onChanged }: {
   );
 }
 
+/** A moon's wording fields without its switch (the pending change names the switch itself). */
+const fieldsOnly = ({ description, bloom, level, competency }: Fields) => ({ description, bloom, level, competency });
+
+/**
+ * The Graded control, on the moon (docs/GRADED-MOONS-PLAN.md; instructor 8 Oct 2026: "add a
+ * control for each moon to be able [to say] if graded or not"). A switch: pressing it stages a
+ * change, and nothing reaches students or the gradebook until Publish. The state is a WORD and a
+ * position, never colour alone. Template: shadcn's Switch (design/templates/console/studio-moons/).
+ */
+function GradedSwitch({ m, busy, onFlip }: { m: StudioMoon; busy: boolean; onFlip: (next: boolean) => void }) {
+  const on = gradedOf(m);
+  const waiting = m.pending?.action === "edit" && m.pending.graded !== null;
+  return (
+    <div className="mn-grading" data-moon-grading={on ? "graded" : "practice"} data-grading-waiting={waiting ? "" : undefined}>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={`Moon ${m.id} is graded`}
+        className="mn-switch"
+        // aria-disabled, not disabled: a disabled button drops keyboard focus while the save runs and never gets it back.
+        aria-disabled={busy || undefined}
+        onClick={() => { if (!busy) onFlip(!on); }}
+      >
+        <span className="mn-switch-track" aria-hidden="true"><span className="mn-switch-thumb" /></span>
+        <span className="mn-switch-word">{on ? "Graded" : "Practice only"}</span>
+      </button>
+      <span className="ct-faint">
+        {on
+          ? "Students sit its check; it counts as one more quiz, like a stage check."
+          : "Students can only practise it; nothing on it counts toward the grade."}
+        {waiting ? <> <Badge tone="info">Grading change waiting to publish</Badge></> : null}
+      </span>
+    </div>
+  );
+}
+
 /* -------------------------------------------------------------------- form */
 
-function MoonForm({ legend, submitLabel, note, initial, onSubmit, onCancel }: {
+function MoonForm({ legend, submitLabel, note, initial, withGraded = false, onSubmit, onCancel }: {
   legend: string;
   submitLabel: string;
   note: string;
   initial: Fields;
+  /** The add form asks whether the new moon is graded; an edit leaves it to the row's switch. */
+  withGraded?: boolean;
   onSubmit: (f: Fields) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -346,6 +419,15 @@ function MoonForm({ legend, submitLabel, note, initial, onSubmit, onCancel }: {
           </select>
         </div>
       </div>
+      {withGraded ? (
+        <label className="mn-graded-field">
+          <input type="checkbox" checked={f.graded} onChange={(e) => setF({ ...f, graded: e.target.checked })} />
+          <span>
+            <span className="font-medium">Graded</span>
+            <span className="ct-faint block">Students sit its check and it counts as one more quiz. Leave it off for practice only.</span>
+          </span>
+        </label>
+      ) : null}
       <p className="ct-faint">{note}</p>
       {error ? <p className="rounded-md border border-danger bg-danger-bg px-3 py-2 text-sm text-ink" role="alert">Not saved. {error}</p> : null}
       <div className="mn-actions">
@@ -431,7 +513,15 @@ function PublishMoonsDialog({ open, stageId, moons, hash, onClose, onDone }: {
         <fieldset className="mn-pick">
           <legend className="sr-only">Moons to publish</legend>
           {candidates.map((m) => {
-            const verb = m.pending?.action === "retire" ? "retire" : m.status === "draft" ? "go live" : "change wording";
+            const flips = m.pending?.action === "edit" && m.pending.graded !== null;
+            const verb =
+              m.pending?.action === "retire"
+                ? "retire"
+                : m.status === "draft"
+                  ? "go live"
+                  : flips
+                    ? `${m.pending!.graded ? "become graded" : "stop being graded"}${m.pending!.description !== m.description ? " and change wording" : ""}`
+                    : "change wording";
             const ok = ready(m);
             return (
               <label key={m.id} className="mn-pick-row">
@@ -468,6 +558,18 @@ function PublishMoonsDialog({ open, stageId, moons, hash, onClose, onDone }: {
               ) : (
                 <li>No student loses a planet they have open.</li>
               )}
+              {preview.grading.length > 0 ? (
+                <li data-grading>
+                  <span className="font-medium">The gradebook changes.</span>{" "}
+                  {preview.grading.filter((g) => g.graded).length > 0
+                    ? `${preview.grading.filter((g) => g.graded).map((g) => g.id).join(", ")} ${preview.grading.filter((g) => g.graded).length === 1 ? "starts" : "start"} counting as a quiz. `
+                    : ""}
+                  {preview.grading.filter((g) => !g.graded).length > 0
+                    ? `${preview.grading.filter((g) => !g.graded).map((g) => g.id).join(", ")} ${preview.grading.filter((g) => !g.graded).length === 1 ? "stops" : "stop"} counting. `
+                    : ""}
+                  Every sitting is kept; turning a moon back on brings its marks back.
+                </li>
+              ) : null}
               {preview.gamesRemoved.map((g) => (
                 <li key={g.id}>The minigame <span className="font-medium">{g.name}</span> leaves the map with moon <span className="num">{g.id}</span>. Its code stays.</li>
               ))}

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Empty } from "@/components/ui/empty";
 import { toast } from "@/components/ui/toast";
 import { Kpis, StageChart, Weights } from "./gradebook/Overview";
-import { GridList, GridTable, type View } from "./gradebook/Grid";
+import { columnsOf, NoColumns, GridList, GridTable, type View } from "./gradebook/Grid";
 
 /**
  * `/gradebook`: every student's score so far, weighted by the syllabus.
@@ -32,7 +32,11 @@ const WIDE_PX = 1056; // 66rem
 const VIEWS: Array<[View, string]> = [
   ["final", "Final grade"],
   ["stages", "Stage checks"],
+  ["moons", "Moon checks"],
 ];
+
+/** More moon columns than this do not fit a card as a table, however wide: the list shows them. */
+const MOON_TABLE_MAX = 18;
 
 export function GradebookPage() {
   const q = useAsync(() => api.gradebook(), []);
@@ -162,7 +166,9 @@ export function GradebookPage() {
               <p className="gb-nomatch" role="status">
                 No student matches “{query.trim()}”.
               </p>
-            ) : wide ? (
+            ) : view !== "final" && columnsOf(book, view).length === 0 ? (
+              <NoColumns view={view} />
+            ) : wide && (view !== "moons" || columnsOf(book, view).length <= MOON_TABLE_MAX) ? (
               <GridTable book={book} rows={rows} view={view} />
             ) : (
               <GridList book={book} rows={rows} view={view} />

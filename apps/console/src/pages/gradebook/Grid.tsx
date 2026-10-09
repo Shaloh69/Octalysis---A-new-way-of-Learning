@@ -7,11 +7,16 @@ import { SHORT_LABEL, checkText, pctText } from "@/lib/gradebook-view";
  * students down, marks across, the final as the total column and the class
  * average as the total row. At 66rem of the page's own width and up, a table
  * that fits its card without scrolling sideways; below, a list with the same
- * facts. Both views, both layouts, carry the same data attributes, so the
+ * facts. Every view, both layouts, carries the same data attributes, so the
  * spec reads one thing whatever the width.
+ *
+ * Three views: the final (the five components), the stage checks, and since
+ * 8 Oct 2026 the MOON checks (docs/GRADED-MOONS-PLAN.md): each graded moon's
+ * check counts as one more quiz inside Quizzes, and a moon the class has not
+ * sat is not a column (it is not counted either).
  */
 
-export type View = "final" | "stages";
+export type View = "final" | "stages" | "moons";
 
 interface GridProps {
   book: Gradebook;
@@ -23,6 +28,28 @@ type Average = Gradebook["classAverage"];
 
 const faint = (v: number | null) => (v === null ? "gb-none" : undefined);
 
+/** A column of a check view: a stage's check, or a graded moon's. */
+export interface CheckColumn {
+  id: string;
+  title: string;
+}
+
+/** The columns of a check view. Moons: only those the class has sat, as Quizzes counts them. */
+export function columnsOf(book: Gradebook, view: View): CheckColumn[] {
+  if (view === "stages") return book.stages;
+  if (view === "moons") return book.moons.filter((m) => book.classAverage.moons[m.id] != null);
+  return [];
+}
+
+type Marks = { checks: Record<string, number | null>; moonChecks: Record<string, number | null>; components: Record<string, number | null> };
+
+const markOf = (v: Marks, view: View, id: string): number | null =>
+  (view === "moons" ? v.moonChecks[id] : v.checks[id]) ?? null;
+
+const averageMarks = (avg: Average): Marks => ({ checks: avg.checks, moonChecks: avg.moons, components: avg.components });
+
+const attr = (view: View, id: string) => (view === "moons" ? { "data-moon-check": id } : { "data-check": id });
+
 function Who({ s }: { s: GradebookStudent }) {
   return (
     <>
@@ -32,16 +59,30 @@ function Who({ s }: { s: GradebookStudent }) {
   );
 }
 
+/** Nothing to show in a check view yet: said, not an empty table. */
+export function NoColumns({ view }: { view: View }) {
+  return (
+    <p className="gb-nomatch gb-empty" role="status" data-no-columns={view}>
+      {view === "moons"
+        ? "No moon check has been sat yet. Each graded moon appears here, and counts as one more quiz, once someone in the class has sat it."
+        : "No stage check has been sat yet."}
+    </p>
+  );
+}
+
 /* ------------------------------------------------------------ wide */
 
 export function GridTable({ book, rows, view }: GridProps) {
   const avg = book.classAverage;
+  const cols = columnsOf(book, view);
   return (
     <table className="gb-table" data-grid="" data-view={view}>
       <caption className="sr-only">
         {view === "final"
           ? "Each student's score so far per grade component, and the final so far"
-          : "Each student's best score per stage check"}
+          : view === "stages"
+            ? "Each student's best score per stage check"
+            : "Each student's best score per graded moon check"}
       </caption>
       <colgroup>
         <col className="c-student" />
@@ -52,7 +93,7 @@ export function GridTable({ book, rows, view }: GridProps) {
             <col className="c-unmarked" />
           </>
         ) : (
-          book.stages.map((s) => <col key={s.id} />)
+          cols.map((s) => <col key={s.id} />)
         )}
       </colgroup>
       <thead>
@@ -77,7 +118,7 @@ export function GridTable({ book, rows, view }: GridProps) {
               </th>
             </>
           ) : (
-            book.stages.map((s) => (
+            cols.map((s) => (
               <th key={s.id} scope="col" className="gb-col">
                 <span className="num">{s.id}</span>
                 <span className="sr-only"> {s.title}</span>
@@ -108,11 +149,11 @@ export function GridTable({ book, rows, view }: GridProps) {
                 </td>
               </>
             ) : (
-              book.stages.map((st) => {
-                const v = s.checks[st.id] ?? null;
+              cols.map((st) => {
+                const v = markOf(s, view, st.id);
                 return (
                   <td key={st.id} className={faint(v)}>
-                    <span className={v === null ? "gb-notsat" : "num"} data-check={st.id}>{checkText(v)}</span>
+                    <span className={v === null ? "gb-notsat" : "num"} {...attr(view, st.id)}>{checkText(v)}</span>
                   </td>
                 );
               })
@@ -121,13 +162,13 @@ export function GridTable({ book, rows, view }: GridProps) {
         ))}
       </tbody>
       <tfoot>
-        <AverageRow book={book} avg={avg} view={view} />
+        <AverageRow book={book} avg={avg} view={view} cols={cols} />
       </tfoot>
     </table>
   );
 }
 
-function AverageRow({ book, avg, view }: { book: Gradebook; avg: Average; view: View }) {
+function AverageRow({ book, avg, view, cols }: { book: Gradebook; avg: Average; view: View; cols: CheckColumn[] }) {
   return (
     <tr data-average="">
       <th scope="row" className="gb-who">Class average</th>
@@ -150,11 +191,11 @@ function AverageRow({ book, avg, view }: { book: Gradebook; avg: Average; view: 
           </td>
         </>
       ) : (
-        book.stages.map((st) => {
-          const v = avg.checks[st.id] ?? null;
+        cols.map((st) => {
+          const v = markOf(averageMarks(avg), view, st.id);
           return (
             <td key={st.id} className={faint(v)}>
-              <span className={v === null ? "gb-notsat" : "num"} data-check={st.id}>{checkText(v)}</span>
+              <span className={v === null ? "gb-notsat" : "num"} {...attr(view, st.id)}>{checkText(v)}</span>
             </td>
           );
         })
@@ -165,32 +206,31 @@ function AverageRow({ book, avg, view }: { book: Gradebook; avg: Average; view: 
 
 /* ------------------------------------------------------------ narrow */
 
-function Facts({ book, values, view }: {
-  book: Gradebook;
-  values: { checks: Record<string, number | null>; components: Record<string, number | null> };
-  view: View;
-}) {
-  return view === "final" ? (
-    <dl className="gb-facts">
-      {book.components.map((c) => {
-        const v = values.components[c.key] ?? null;
-        return (
-          <div key={c.key} className="gb-fact">
-            <dt>{SHORT_LABEL[c.key]} <span className="num">{c.weight}%</span></dt>
-            <dd className={faint(v)}><span className="num" data-component={c.key}>{pctText(v)}</span></dd>
-          </div>
-        );
-      })}
-    </dl>
-  ) : (
+function Facts({ book, values, view }: { book: Gradebook; values: Marks; view: View }) {
+  if (view === "final") {
+    return (
+      <dl className="gb-facts">
+        {book.components.map((c) => {
+          const v = values.components[c.key] ?? null;
+          return (
+            <div key={c.key} className="gb-fact">
+              <dt>{SHORT_LABEL[c.key]} <span className="num">{c.weight}%</span></dt>
+              <dd className={faint(v)}><span className="num" data-component={c.key}>{pctText(v)}</span></dd>
+            </div>
+          );
+        })}
+      </dl>
+    );
+  }
+  return (
     <dl className="gb-facts gb-facts-stages">
-      {book.stages.map((st) => {
-        const v = values.checks[st.id] ?? null;
+      {columnsOf(book, view).map((st) => {
+        const v = markOf(values, view, st.id);
         return (
           <div key={st.id} className="gb-fact">
             <dt><span className="num">{st.id}</span><span className="sr-only"> {st.title}</span></dt>
             <dd className={faint(v)}>
-              <span className={v === null ? "gb-notsat" : "num"} data-check={st.id}>{checkText(v)}</span>
+              <span className={v === null ? "gb-notsat" : "num"} {...attr(view, st.id)}>{checkText(v)}</span>
             </dd>
           </div>
         );
@@ -227,7 +267,7 @@ export function GridList({ book, rows, view }: GridProps) {
             <span className="num" data-final="">{pctText(book.classAverage.final)}</span>
           </span>
         </div>
-        <Facts book={book} values={book.classAverage} view={view} />
+        <Facts book={book} values={averageMarks(book.classAverage)} view={view} />
       </li>
     </ul>
   );
