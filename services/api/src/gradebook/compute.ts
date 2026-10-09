@@ -33,6 +33,14 @@ export interface GradebookInput {
   students: Array<{ userId: string; studentId: string; fullName: string; section: string | null }>;
   /** Best stage-check result per student and stage, for checks actually sat. */
   checks: Array<{ userId: string; stageId: string; ratio: number }>;
+  /**
+   * The GRADED moons (docs/GRADED-MOONS-PLAN.md, ruled 8 Oct 2026), live, of a gradeable stage.
+   * A moon that is not graded is not here, so turning one off removes it from the grade
+   * (its sittings stay; turning it back on brings the marks back).
+   */
+  moons?: Array<{ id: string; title: string }>;
+  /** Best submitted moon-check result per student and moon. */
+  moonScores?: Array<{ userId: string; objectiveId: string; ratio: number }>;
   /** Final-scope assessments (Prelim, Midterm, ...), in order. */
   exams: Array<{ id: string; title: string }>;
   /** Submitted attempts on those, one row per attempt; the best one counts. */
@@ -69,6 +77,15 @@ export function computeGradebook(input: GradebookInput): Gradebook {
   }
   const satStages = input.stages.filter((st) => users.some((u) => checkBy.has(`${u}|${st.id}`)));
 
+  /* ---- graded moons: one more quiz each, the same arithmetic as a stage check ---- */
+  const moonBy = new Map<string, number>();
+  for (const m of input.moonScores ?? []) {
+    const k = `${m.userId}|${m.objectiveId}`;
+    moonBy.set(k, Math.max(moonBy.get(k) ?? 0, m.ratio));
+  }
+  const gradedMoons = input.moons ?? [];
+  const satMoons = gradedMoons.filter((m) => users.some((u) => moonBy.has(`${u}|${m.id}`)));
+
   /* ---- exams: best submitted attempt ---- */
   const examBy = new Map<string, number>();
   for (const e of input.examScores) {
@@ -96,7 +113,10 @@ export function computeGradebook(input: GradebookInput): Gradebook {
 
   const counted: Record<GradeComponent, Array<{ id: string; title: string }>> = {
     project: countedSubs.project,
-    quizzes: satStages.map((s) => ({ id: s.id, title: s.title })),
+    quizzes: [
+      ...satStages.map((s) => ({ id: s.id, title: s.title })),
+      ...satMoons.map((m) => ({ id: m.id, title: m.title })),
+    ],
     exams: satExams,
     labs: countedSubs.lab,
     participation: countedSubs.participation,
@@ -132,11 +152,21 @@ export function computeGradebook(input: GradebookInput): Gradebook {
       checks[s.id] = r === undefined ? null : round1(r * 100);
     }
 
+    const moonChecks: Record<string, number | null> = {};
+    for (const m of gradedMoons) {
+      const r = moonBy.get(`${st.userId}|${m.id}`);
+      moonChecks[m.id] = r === undefined ? null : round1(r * 100);
+    }
+
+    // Quizzes: every stage check and every graded moon check the class has sat, each worth the
+    // same; one the student has not sat is a 0 only because the class has.
+    const quizRatios = [
+      ...satStages.map((s) => checkBy.get(`${st.userId}|${s.id}`) ?? 0),
+      ...satMoons.map((m) => moonBy.get(`${st.userId}|${m.id}`) ?? 0),
+    ];
     const raw: Record<GradeComponent, number | null> = {
       project: submissionComponent(st.userId, "project"),
-      quizzes: satStages.length === 0
-        ? null
-        : mean(satStages.map((s) => checkBy.get(`${st.userId}|${s.id}`) ?? 0))! * 100,
+      quizzes: quizRatios.length === 0 ? null : mean(quizRatios)! * 100,
       exams: satExams.length === 0
         ? null
         : mean(satExams.map((e) => examBy.get(`${st.userId}|${e.id}`) ?? 0))! * 100,
@@ -160,6 +190,7 @@ export function computeGradebook(input: GradebookInput): Gradebook {
     return {
       ...st,
       checks,
+      moonChecks,
       components: Object.fromEntries(
         GradeComponent.options.map((k) => [k, raw[k] === null ? null : round1(raw[k]!)]),
       ) as Record<GradeComponent, number | null>,
@@ -177,9 +208,11 @@ export function computeGradebook(input: GradebookInput): Gradebook {
     components,
     coverage,
     stages: input.stages.map((s) => ({ id: s.id, title: s.title })),
+    moons: gradedMoons.map((m) => ({ id: m.id, title: m.title })),
     students,
     classAverage: {
       checks: Object.fromEntries(input.stages.map((s) => [s.id, avg(students.map((x) => x.checks[s.id] ?? null))])),
+      moons: Object.fromEntries(gradedMoons.map((m) => [m.id, avg(students.map((x) => x.moonChecks[m.id] ?? null))])),
       components: Object.fromEntries(
         GradeComponent.options.map((k) => [k, avg(students.map((x) => x.components[k] ?? null))]),
       ) as Record<GradeComponent, number | null>,
@@ -205,6 +238,7 @@ export function toCsv(g: Gradebook): string {
   const header = [
     "student_id", "full_name", "section",
     ...g.stages.map((s) => `stage_${s.id}`),
+    ...g.moons.map((m) => `moon_${m.id}`),
     ...g.components.map((c) => `${c.key}_${c.weight}`),
     "final_so_far", "grade_covered_pct",
   ];
@@ -213,6 +247,7 @@ export function toCsv(g: Gradebook): string {
     lines.push([
       escape(s.studentId), escape(s.fullName), escape(s.section ?? ""),
       ...g.stages.map((st) => cell(s.checks[st.id] ?? null, 0)),
+      ...g.moons.map((m) => cell(s.moonChecks[m.id] ?? null, 0)),
       ...g.components.map((c) => cell(s.components[c.key] ?? null, 1)),
       cell(s.final, 1), String(g.coverage),
     ].join(","));

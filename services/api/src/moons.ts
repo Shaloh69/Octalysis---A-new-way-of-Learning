@@ -45,6 +45,7 @@ interface MoonRow {
   bloom_level: "remember" | "understand" | "apply" | "analyze";
   level: number | null;
   competency: "read" | "trace" | "build" | null;
+  graded: boolean;
   questions: number;
   not_live: number;
   any_items: boolean;
@@ -56,6 +57,7 @@ interface MoonRow {
   p_bloom: "remember" | "understand" | "apply" | "analyze" | null;
   p_level: number | null;
   p_competency: "read" | "trace" | "build" | null;
+  p_graded: boolean | null;
   p_version: number | null;
   p_base_hash: string | null;
   p_edited_by: string | null;
@@ -64,9 +66,9 @@ interface MoonRow {
 }
 
 /** The fields a pending change is measured against: if they move, the change is stale. */
-function fieldsHash(m: Pick<MoonRow, "status" | "description" | "bloom_level" | "level" | "competency">): string {
+function fieldsHash(m: Pick<MoonRow, "status" | "description" | "bloom_level" | "level" | "competency" | "graded">): string {
   return createHash("sha256")
-    .update(canon({ status: m.status, description: m.description, bloom: m.bloom_level, level: m.level, competency: m.competency }))
+    .update(canon({ status: m.status, description: m.description, bloom: m.bloom_level, level: m.level, competency: m.competency, graded: m.graded }))
     .digest("hex").slice(0, 32);
 }
 
@@ -83,7 +85,7 @@ async function stageOf(db: Db, stageId: string): Promise<{ id: string; gradeable
 
 async function loadMoons(db: Db, stageId: string, lock = false): Promise<MoonRow[]> {
   const { rows } = await db.query<MoonRow>(
-    `select o.id, o.status, o.owner, o.description, o.bloom_level, o.level, o.competency,
+    `select o.id, o.status, o.owner, o.description, o.bloom_level, o.level, o.competency, o.graded,
             (select count(distinct i.family_id)::int from items i
               where i.objective_id = o.id and i.status = 'live') as questions,
             (select count(distinct i.family_id)::int from items i
@@ -93,7 +95,7 @@ async function loadMoons(db: Db, stageId: string, lock = false): Promise<MoonRow
             exists (select 1 from blueprints b where b.objective_id = o.id) as has_journey,
             moon_publishable(o.id) as publishable,
             e.action as p_action, e.description as p_description, e.bloom_level as p_bloom,
-            e.level as p_level, e.competency as p_competency, e.version as p_version,
+            e.level as p_level, e.competency as p_competency, e.graded as p_graded, e.version as p_version,
             e.base_hash as p_base_hash, e.edited_by::text as p_edited_by,
             e.edited_at::text as p_edited_at, pr.full_name as p_editor
        from objectives o
@@ -110,8 +112,8 @@ async function loadMoons(db: Db, stageId: string, lock = false): Promise<MoonRow
 function stateHash(moons: MoonRow[]): string {
   return createHash("sha256")
     .update(canon(moons.map((m) => ({
-      id: m.id, status: m.status, d: m.description, b: m.bloom_level, l: m.level, c: m.competency,
-      p: m.p_action ? { a: m.p_action, d: m.p_description, b: m.p_bloom, l: m.p_level, c: m.p_competency, v: m.p_version } : null,
+      id: m.id, status: m.status, d: m.description, b: m.bloom_level, l: m.level, c: m.competency, g: m.graded,
+      p: m.p_action ? { a: m.p_action, d: m.p_description, b: m.p_bloom, l: m.p_level, c: m.p_competency, g: m.p_graded, v: m.p_version } : null,
     }))))
     .digest("hex").slice(0, 32);
 }
@@ -125,6 +127,7 @@ function toMoon(m: MoonRow): StudioMoon {
     bloom: m.bloom_level,
     level: m.level === null ? null : Number(m.level),
     competency: m.competency,
+    graded: m.graded !== false,
     questions: Number(m.questions),
     notLive: Number(m.not_live),
     publishable: m.publishable === true,
@@ -137,6 +140,7 @@ function toMoon(m: MoonRow): StudioMoon {
           bloom: m.p_bloom,
           level: m.p_level === null ? null : Number(m.p_level),
           competency: m.p_competency,
+          graded: m.p_graded,
           version: Number(m.p_version),
           editedBy: m.p_editor,
           editedAt: m.p_edited_at ?? "",
@@ -179,11 +183,11 @@ export async function addMoon(client: pg.PoolClient, stageId: string, userId: st
   if (next > 99) throw errors.conflict("A chapter holds at most 99 moons.");
   const id = `${stageId}.${next}`;
   await client.query(
-    `insert into objectives (id, stage_id, code, bloom_level, level, competency, description, status, owner)
-     values ($1, $2, $1, $3, $4, $5, $6, 'draft', 'console')`,
-    [id, stageId, body.bloom, body.level, body.competency, body.description],
+    `insert into objectives (id, stage_id, code, bloom_level, level, competency, description, status, owner, graded)
+     values ($1, $2, $1, $3, $4, $5, $6, 'draft', 'console', $7)`,
+    [id, stageId, body.bloom, body.level, body.competency, body.description, body.graded],
   );
-  await audit(client, userId, "moon.add", stageId, { id, description: body.description, bloom: body.bloom, level: body.level, competency: body.competency });
+  await audit(client, userId, "moon.add", stageId, { id, description: body.description, bloom: body.bloom, level: body.level, competency: body.competency, graded: body.graded });
   return { id };
 }
 
@@ -208,24 +212,26 @@ export async function savePending(
     throw errors.conflict(`Moon ${id} was changed by someone else since you opened it. Reload to see their change.`);
   }
   if (body.action === "edit") {
+    // The switch is stored only when it DIFFERS from the moon's: null says "leave it as it is".
+    const graded = body.graded === undefined || body.graded === moon.graded ? null : body.graded;
     const same = body.description === moon.description && body.bloom === moon.bloom_level
-      && body.level === moon.level && body.competency === moon.competency;
+      && body.level === moon.level && body.competency === moon.competency && graded === null;
     if (same) throw errors.conflict(`That is already moon ${id} as it stands; there is nothing to change.`);
     await client.query(
-      `insert into objective_edits (objective_id, action, description, bloom_level, level, competency, base_hash, version, edited_by, edited_at)
-       values ($1, 'edit', $2, $3, $4, $5, $6, 1, $7, now())
+      `insert into objective_edits (objective_id, action, description, bloom_level, level, competency, graded, base_hash, version, edited_by, edited_at)
+       values ($1, 'edit', $2, $3, $4, $5, $8, $6, 1, $7, now())
        on conflict (objective_id) do update
          set action = 'edit', description = excluded.description, bloom_level = excluded.bloom_level,
-             level = excluded.level, competency = excluded.competency,
+             level = excluded.level, competency = excluded.competency, graded = excluded.graded,
              version = objective_edits.version + 1, edited_by = excluded.edited_by, edited_at = now()`,
-      [id, body.description, body.bloom, body.level, body.competency, fieldsHash(moon), userId],
+      [id, body.description, body.bloom, body.level, body.competency, fieldsHash(moon), userId, graded],
     );
   } else {
     await client.query(
-      `insert into objective_edits (objective_id, action, description, bloom_level, level, competency, base_hash, version, edited_by, edited_at)
-       values ($1, 'retire', null, null, null, null, $2, 1, $3, now())
+      `insert into objective_edits (objective_id, action, description, bloom_level, level, competency, graded, base_hash, version, edited_by, edited_at)
+       values ($1, 'retire', null, null, null, null, null, $2, 1, $3, now())
        on conflict (objective_id) do update
-         set action = 'retire', description = null, bloom_level = null, level = null, competency = null,
+         set action = 'retire', description = null, bloom_level = null, level = null, competency = null, graded = null,
              version = objective_edits.version + 1, edited_by = excluded.edited_by, edited_at = now()`,
       [id, fieldsHash(moon), userId],
     );
@@ -368,6 +374,7 @@ export async function publishMoons(
   const authors = new Set<string>();
   const applied: MoonsPublishResult["applied"] = [];
   const gamesRemoved: MoonsPublishResult["gamesRemoved"] = [];
+  const grading: MoonsPublishResult["grading"] = [];
   for (const { moon: m, change } of plans) {
     const moves: string[] = [];
     if (change === "retire") {
@@ -383,16 +390,34 @@ export async function publishMoons(
         bloom: m.p_action === "edit" ? m.p_bloom! : m.bloom_level,
         level: m.p_action === "edit" ? m.p_level : m.level,
         competency: m.p_action === "edit" ? m.p_competency : m.competency,
+        // A pending change that says nothing about the switch leaves it as it is.
+        graded: m.p_action === "edit" && m.p_graded !== null ? m.p_graded : m.graded,
       };
       if (next.description !== m.description) moves.push("new wording");
       if (next.level !== m.level) moves.push(`moves from ${RING(m.level)} to ${RING(next.level)}`);
       if (next.competency !== m.competency) moves.push(`${m.competency ?? "no competency"} becomes ${next.competency ?? "no competency"} on the grid`);
       if (next.bloom !== m.bloom_level) moves.push(`${m.bloom_level} becomes ${next.bloom}`);
+      if (next.graded !== m.graded) {
+        // The marks that start or stop counting: the students who have already sat this moon's check.
+        const sat = await client.query<{ n: number }>(
+          `select count(distinct a.user_id)::int as n
+             from attempts a join assessments s on s.id = a.assessment_id join blueprints b on b.id = s.blueprint_id
+            where b.scope = 'moon' and b.objective_id = $1 and a.status = 'submitted'`,
+          [m.id],
+        );
+        const students = Number(sat.rows[0]?.n ?? 0);
+        grading.push({ id: m.id, graded: next.graded, students });
+        moves.push(
+          next.graded
+            ? `becomes GRADED: its check counts as one more quiz${students > 0 ? `, and ${students} student${students === 1 ? "" : "s"}' sittings start counting` : ""}`
+            : `stops being graded: its check leaves the gradebook${students > 0 ? ` (${students} student${students === 1 ? "" : "s"}' sittings are kept)` : ""}`,
+        );
+      }
       await client.query(
-        `update objectives set description = $2, bloom_level = $3, level = $4, competency = $5,
+        `update objectives set description = $2, bloom_level = $3, level = $4, competency = $5, graded = $6,
                 status = 'live', owner = 'console'
           where id = $1`,
-        [m.id, next.description, next.bloom, next.level, next.competency],
+        [m.id, next.description, next.bloom, next.level, next.competency, next.graded],
       );
       if (change === "publish") {
         moves.push("goes live: students see it and the lock counts it");
@@ -433,6 +458,7 @@ export async function publishMoons(
     dryRun: body.dryRun,
     applied,
     gamesRemoved,
+    grading,
     impact: {
       relocked: lost.length === 0 ? 0 : new Set(lost.map((k) => k.split("|")[0])).size,
       stages: [...perStage].map(([s, students]) => ({ stageId: s, students })).sort((a, b) => a.stageId.localeCompare(b.stageId)),
@@ -443,7 +469,7 @@ export async function publishMoons(
   if (body.dryRun) throw new DryRun(result);
 
   await audit(client, userId, "moon.publish", stageId, {
-    reason: body.reason, hash: body.hash, applied, gamesRemoved, relocked: result.impact.relocked,
+    reason: body.reason, hash: body.hash, applied, gamesRemoved, grading, relocked: result.impact.relocked,
     ...(result.selfApproved ? { selfApproved: true } : {}),
   });
   return result;

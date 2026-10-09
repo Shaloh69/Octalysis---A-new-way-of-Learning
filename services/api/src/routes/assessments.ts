@@ -145,10 +145,13 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
          join blueprints b on b.id = a.blueprint_id
          left join sections s on s.id = a.section_id
          left join assessment_secrets sec on sec.assessment_id = a.id
-        -- A moon's journey is practice the API creates, not an assessment a
+        -- A moon's journey and a moon's check are papers the API creates (one per moon, from the
+        -- moon's own switch in the Studio), not assessments a teacher sets (WEB-REVAMP 3.7a,
+        -- docs/GRADED-MOONS-PLAN.md). A journey is practice; a check has fixed rules (five attempts, no window).
+        -- Neither is an assessment a
         -- teacher sets (WEB-REVAMP 3.7a): it has no window, no attempt limit
         -- and no grade, so it has no row on this page.
-        where b.scope <> 'objective'
+        where b.scope not in ('objective', 'moon')
         order by a.created_at desc`,
     );
 
@@ -160,7 +163,7 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
 
     const blueprints = await app.db.query(
       `select id, name, scope, stage_id, total_items, constraints
-         from blueprints where scope <> 'objective' order by scope, name`,
+         from blueprints where scope not in ('objective', 'moon') order by scope, name`,
     );
 
     return reply.send({
@@ -243,7 +246,7 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
     const created = await withTransaction(app.db, async (client) => {
       // A journey's blueprint is the API's own (3.7a), never a teacher's exam.
       const bp = await client.query(
-        "select id from blueprints where id = $1 and scope <> 'objective'",
+        "select id from blueprints where id = $1 and scope not in ('objective', 'moon')",
         [b.blueprintId],
       );
       if (bp.rows.length === 0) throw errors.notFound("No such blueprint.");

@@ -58,13 +58,16 @@ interface StageRow {
  */
 interface Moon {
   id: string;
+  /** Sat as a graded check (docs/GRADED-MOONS-PLAN.md): the switch the Studio flips. */
+  graded: boolean;
   correct: number;
   mastered: boolean;
   questions: number;
 }
 
 /** The objective's own live questions, counted per question across versions (V-3). */
-const MOON_SQL = `'correct', moon_correct($1, o.id),
+const MOON_SQL = `'graded', o.graded,
+                  'correct', moon_correct($1, o.id),
                   'mastered', moon_mastered($1, o.id),
                   'questions', (select count(distinct i.family_id)::int from items i
                                  where i.objective_id = o.id and i.status = 'live')`;
@@ -122,7 +125,7 @@ function stateOf(unlocked: boolean, mastery: number): StageState {
  */
 function lockReasonFor(
   prereq: string[],
-  moonsOf: (id: string) => Moon[],
+  moonsOf: (id: string) => Array<Omit<Moon, "graded">>,
   titleOf: (id: string) => string | undefined,
 ): LockReason {
   const short = prereq.filter((p) => {
@@ -314,14 +317,15 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
     if (!stage.published && !staff) throw errors.notFound("That stage does not exist.");
 
     const objectives = await app.db.query(
-      `select o.id, o.code, o.bloom_level, o.level, o.competency, o.description,
+      `select o.id, o.code, o.bloom_level, o.level, o.competency, o.description, o.graded,
               moon_correct($2, o.id) as correct, moon_mastered($2, o.id) as mastered,
               (select count(distinct i.family_id)::int from items i
                 where i.objective_id = o.id and i.status = 'live') as questions
          from live_objectives o where o.stage_id = $1 order by o.id`,
       [stageId, id.userId],
     );
-    const moonOf = (o: { correct: number; mastered: boolean; questions: number }) => ({
+    const moonOf = (o: { graded: boolean; correct: number; mastered: boolean; questions: number }) => ({
+      graded: o.graded !== false,
       correct: Number(o.correct),
       mastered: o.mastered === true,
       questions: Number(o.questions),

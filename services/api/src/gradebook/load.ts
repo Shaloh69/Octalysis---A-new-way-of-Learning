@@ -9,7 +9,7 @@ import type { GradebookInput } from "./compute.js";
  * the API's own connection, the same read `ai_after_submit` grants staff.
  */
 export async function loadGradebookInput(db: Db): Promise<GradebookInput> {
-  const [stages, students, checks, exams, examScores, submissions] = await Promise.all([
+  const [stages, students, checks, exams, examScores, submissions, moons, moonScores] = await Promise.all([
     db.query("select id, title from stages where gradeable order by ordinal"),
     db.query(
       `select p.id as user_id, p.student_id, p.full_name, s.code as section
@@ -37,6 +37,21 @@ export async function loadGradebookInput(db: Db): Promise<GradebookInput> {
         where b.scope = 'final' and at.status = 'submitted' and at.max_score > 0`,
     ),
     db.query("select user_id, kind, slug, title, status, score, max_score from submissions"),
+    // The GRADED moons (docs/GRADED-MOONS-PLAN.md): live, of a gradeable stage, switched on.
+    db.query(
+      `select o.id, o.description
+         from live_objectives o join stages s on s.id = o.stage_id
+        where o.graded and s.gradeable
+        order by s.ordinal, split_part(o.id, '.', 1), nullif(split_part(o.id, '.', 2), '')::int`,
+    ),
+    // The best SUBMITTED sitting of each moon check; an open or voided one scores nothing.
+    db.query(
+      `select at.user_id, b.objective_id, at.score / at.max_score as ratio
+         from attempts at
+         join assessments a on a.id = at.assessment_id
+         join blueprints b on b.id = a.blueprint_id
+        where b.scope = 'moon' and at.status = 'submitted' and at.max_score > 0`,
+    ),
   ]);
 
   const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
@@ -51,6 +66,10 @@ export async function loadGradebookInput(db: Db): Promise<GradebookInput> {
     })),
     checks: checks.rows.map((r) => ({
       userId: r.user_id as string, stageId: r.stage_id as string, ratio: Number(r.mastery),
+    })),
+    moons: moons.rows.map((r) => ({ id: r.id as string, title: `Moon ${r.id as string}` })),
+    moonScores: moonScores.rows.map((r) => ({
+      userId: r.user_id as string, objectiveId: r.objective_id as string, ratio: Number(r.ratio),
     })),
     exams: exams.rows.map((r) => ({ id: r.id as string, title: r.title as string })),
     examScores: examScores.rows.map((r) => ({

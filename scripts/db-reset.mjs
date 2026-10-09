@@ -56,6 +56,8 @@ const FILES = [
   // Profile pictures (PROFILES, 8 Oct 2026): three columns, the API-only guard, the
   // two questions the API asks, the private profile-images bucket. Idempotent.
   "db/addendum-profiles.sql",
+  // Graded moons (8 Oct 2026): objectives.graded, the moon-check blueprint scope, INV-12. Idempotent.
+  "db/addendum-graded-moons.sql",
 ];
 
 const c = {

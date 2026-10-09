@@ -26,7 +26,7 @@ export interface AttemptContext {
   readonly seed: string;
   readonly engineVersion: string;
   readonly status: "in_progress" | "submitted" | "abandoned" | "voided";
-  readonly blueprintScope: "stage" | "final" | "objective";
+  readonly blueprintScope: "stage" | "final" | "objective" | "moon";
 }
 
 /* ============================================================
@@ -202,7 +202,8 @@ export async function startAttempt(
     }
 
     // A moon's journey is practice (WEB-REVAMP 3.7a, decided 30 Sep 2026): it
-    // may be sat as often as the student likes, so the limit is not applied.
+    // may be sat as often as the student likes, so the limit is not applied. A moon's
+    // CHECK is a paper (docs/GRADED-MOONS-PLAN.md): the limit applies, as a stage check's.
     const used = existing.rows.length;
     if (blueprint.scope !== "objective" && used >= Number(assessment.attempts_allowed)) {
       throw errors.forbidden(
@@ -229,20 +230,20 @@ export async function startAttempt(
     // it has, in the seed's order: a moon holds three or four, and mastering it
     // takes two distinct ones correct, so a journey that drew fewer than all of
     // them would hide the ones a student still needs.
+    const ofOneMoon = (blueprint.scope === "objective" || blueprint.scope === "moon") && !!blueprint.objectiveId;
     const pool = await loadLivePool(
       db,
-      blueprint.scope === "objective" && blueprint.objectiveId
-        ? { objectiveId: blueprint.objectiveId }
+      ofOneMoon
+        ? { objectiveId: blueprint.objectiveId! }
         : blueprint.scope === "stage" && blueprint.stageId
           ? { stageId: blueprint.stageId }
           : {},
     );
-    if (blueprint.scope === "objective" && pool.length === 0) {
-      // Fail-closed (3.7a): a moon with no live question has nothing to practise.
+    if (ofOneMoon && pool.length === 0) {
+      // Fail-closed (3.7a): a moon with no live question has nothing to practise or to sit.
       throw errors.conflict("This moon has no questions yet.");
     }
-    const effective: Blueprint =
-      blueprint.scope === "objective" ? { ...blueprint, totalItems: pool.length } : blueprint;
+    const effective: Blueprint = ofOneMoon ? { ...blueprint, totalItems: pool.length } : blueprint;
     // BlueprintUnsatisfiable propagates. It is never swallowed into a short
     // paper -- a paper quietly missing three `analyze` items measures something
     // other than what it claims to.
@@ -331,31 +332,55 @@ export async function ensureJourney(
   db: Db,
   opts: { objectiveId: string; stageId: string; liveQuestions: number; saltSecret: string },
 ): Promise<string> {
+  return ensureMoonPaper(db, "objective", opts);
+}
+
+/**
+ * A moon's CHECK (docs/GRADED-MOONS-PLAN.md, ruled 8 Oct 2026): the graded paper on
+ * one moon, scope 'moon'. Created the same way and for the same reasons as a
+ * journey (lazily, with a minted salt, one per moon, an advisory lock), and it takes
+ * every live question the moon has at Start. It differs in being a PAPER: five
+ * attempts, the best counts, sat behind the start prompt, and it reaches the
+ * gradebook as one more quiz. It creates no attempt.
+ */
+export async function ensureMoonCheck(
+  db: Db,
+  opts: { objectiveId: string; stageId: string; liveQuestions: number; saltSecret: string },
+): Promise<string> {
+  return ensureMoonPaper(db, "moon", opts);
+}
+
+async function ensureMoonPaper(
+  db: Db,
+  scope: "objective" | "moon",
+  opts: { objectiveId: string; stageId: string; liveQuestions: number; saltSecret: string },
+): Promise<string> {
+  const title = `Moon ${opts.objectiveId} ${scope === "moon" ? "check" : "journey"}`;
   return withTransaction(db, async (client) => {
     await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [
-      `journey:${opts.objectiveId}`,
+      `${scope === "moon" ? "moon-check" : "journey"}:${opts.objectiveId}`,
     ]);
     const have = await client.query(
       `select a.id from assessments a join blueprints b on b.id = a.blueprint_id
-        where b.scope = 'objective' and b.objective_id = $1
+        where b.scope = $2 and b.objective_id = $1
         order by a.created_at limit 1`,
-      [opts.objectiveId],
+      [opts.objectiveId, scope],
     );
     if (have.rows[0]) return have.rows[0].id as string;
 
-    // total_items is the count when the journey was created, for the record.
+    // total_items is the count when the paper was created, for the record.
     // Start takes every live question the moon has at that moment.
     const bp = await client.query(
       `insert into blueprints (name, scope, stage_id, objective_id, total_items, constraints)
-       values ($1, 'objective', $2, $3, $4, '{}'::jsonb)
-       on conflict (objective_id) where scope = 'objective' do update set name = excluded.name
+       values ($1, $5, $2, $3, $4, '{}'::jsonb)
+       on conflict (objective_id) where scope = $5 do update set name = excluded.name
        returning id`,
-      [`Moon ${opts.objectiveId} journey`, opts.stageId, opts.objectiveId, Math.max(1, opts.liveQuestions)],
+      [title, opts.stageId, opts.objectiveId, Math.max(1, opts.liveQuestions), scope],
     );
     const { rows } = await client.query(
       `insert into assessments (blueprint_id, section_id, title)
        values ($1, null, $2) returning id`,
-      [bp.rows[0].id, `Moon ${opts.objectiveId} journey`],
+      [bp.rows[0].id, title],
     );
     const assessmentId = rows[0].id as string;
     await client.query(

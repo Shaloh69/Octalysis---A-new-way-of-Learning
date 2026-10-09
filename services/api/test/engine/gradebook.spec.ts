@@ -205,3 +205,106 @@ describe("toCsv", () => {
     expect(toCsv(g).split("\n")[1]).toMatch(/^21-0001,"Dela Cruz, Juan ""JD""",,/);
   });
 });
+
+describe("graded moons: one more quiz each, inside Quizzes (docs/GRADED-MOONS-PLAN.md, ruled 8 Oct 2026)", () => {
+  const moons = [{ id: "01.1", title: "Moon 01.1" }, { id: "01.2", title: "Moon 01.2" }];
+  const quizzes = (g: ReturnType<typeof computeGradebook>, who: string) =>
+    g.students.find((s) => s.userId === who)!.components.quizzes;
+
+  it("a moon check counts as ONE quiz, the same weight as a stage check", () => {
+    // Ana: stage 01 at 100% and moon 01.1 at 50% -> the mean of the two, not a separate component.
+    const g = computeGradebook(world({
+      checks: [{ userId: A, stageId: "01", ratio: 1 }],
+      moons, moonScores: [{ userId: A, objectiveId: "01.1", ratio: 0.5 }],
+    }));
+    expect(quizzes(g, A)).toBe(75);
+    const q = g.components.find((c) => c.key === "quizzes")!;
+    expect(q.counted.map((c) => c.id)).toEqual(["01", "01.1"]);
+    expect(q.weight).toBe(GRADE_WEIGHTS.quizzes); // the syllabus weights did not move
+    expect(Object.values(GRADE_WEIGHTS).reduce((a, b) => a + b, 0)).toBe(100);
+  });
+
+  it("a moon check nobody in the class has sat is left out, and does NOT zero anyone", () => {
+    const g = computeGradebook(world({
+      checks: [{ userId: A, stageId: "01", ratio: 0.8 }],
+      moons, moonScores: [],
+    }));
+    expect(quizzes(g, A)).toBe(80);
+    expect(g.components.find((c) => c.key === "quizzes")!.counted.map((c) => c.id)).toEqual(["01"]);
+    expect(g.students.find((s) => s.userId === A)!.moonChecks["01.1"]).toBeNull();
+  });
+
+  it("once the class has sat a moon, a student who has not is a 0 inside Quizzes, and NOT SAT in the cell", () => {
+    const g = computeGradebook(world({ moons, moonScores: [{ userId: A, objectiveId: "01.1", ratio: 1 }] }));
+    expect(quizzes(g, A)).toBe(100);
+    expect(quizzes(g, B)).toBe(0);
+    expect(g.students.find((s) => s.userId === B)!.moonChecks["01.1"]).toBeNull();
+    expect(g.students.find((s) => s.userId === A)!.moonChecks["01.1"]).toBe(100);
+  });
+
+  it("the best sitting counts, and a real 0 stays 0", () => {
+    const g = computeGradebook(world({
+      moons,
+      moonScores: [
+        { userId: A, objectiveId: "01.1", ratio: 0.25 },
+        { userId: A, objectiveId: "01.1", ratio: 0.75 },
+        { userId: B, objectiveId: "01.1", ratio: 0 },
+      ],
+    }));
+    expect(g.students.find((s) => s.userId === A)!.moonChecks["01.1"]).toBe(75);
+    expect(g.students.find((s) => s.userId === B)!.moonChecks["01.1"]).toBe(0);
+  });
+
+  it("a moon switched OFF is not in the grade, whatever was sat on it", () => {
+    // `moons` is the graded list: 01.2 is off, so its sittings are ignored (and kept in the table).
+    const g = computeGradebook(world({
+      moons: [{ id: "01.1", title: "Moon 01.1" }],
+      moonScores: [
+        { userId: A, objectiveId: "01.1", ratio: 1 },
+        { userId: A, objectiveId: "01.2", ratio: 0 },
+      ],
+    }));
+    expect(quizzes(g, A)).toBe(100);
+    expect(g.moons.map((m) => m.id)).toEqual(["01.1"]);
+    expect(g.students.find((s) => s.userId === A)!.moonChecks).not.toHaveProperty("01.2");
+  });
+
+  it("many moons weigh as many quizzes: the stage's own check does not outweigh them", () => {
+    // Stage 01 at 100%, and two moons at 0%: three quizzes, mean 33.3, not 100.
+    const g = computeGradebook(world({
+      checks: [{ userId: A, stageId: "01", ratio: 1 }],
+      moons,
+      moonScores: [{ userId: A, objectiveId: "01.1", ratio: 0 }, { userId: A, objectiveId: "01.2", ratio: 0 }],
+    }));
+    expect(quizzes(g, A)).toBeCloseTo(33.3, 1);
+  });
+
+  it("the class average per moon, and the CSV carries a column per moon", () => {
+    const g = computeGradebook(world({
+      moons,
+      moonScores: [{ userId: A, objectiveId: "01.1", ratio: 1 }, { userId: B, objectiveId: "01.1", ratio: 0.5 }],
+    }));
+    expect(g.classAverage.moons["01.1"]).toBe(75);
+    expect(g.classAverage.moons["01.2"]).toBeNull();
+    const csv = toCsv(g);
+    expect(csv.split("\n")[0]).toContain("moon_01.1,moon_01.2");
+    expect(csv.split("\n")[1]).toContain(",100,");
+    // not sat is an EMPTY cell, never 0
+    expect(csv.split("\n")[1]!.split(",").filter((c) => c === "").length).toBeGreaterThan(0);
+  });
+
+  it("answers in the shared contract, and an old payload without moons still parses", () => {
+    const g = computeGradebook(world({ moons, moonScores: [{ userId: A, objectiveId: "01.1", ratio: 1 }] }));
+    expect(() => Gradebook.parse(g)).not.toThrow();
+    const old = { ...g, moons: undefined, classAverage: { ...g.classAverage, moons: undefined }, students: g.students.map((s) => ({ ...s, moonChecks: undefined })) };
+    const parsed = Gradebook.parse(old);
+    expect(parsed.moons).toEqual([]);
+    expect(parsed.students[0]!.moonChecks).toEqual({});
+  });
+
+  it("a world with no moons computes exactly as before", () => {
+    const g = computeGradebook(world({ checks: [{ userId: A, stageId: "01", ratio: 0.8 }] }));
+    expect(g.moons).toEqual([]);
+    expect(quizzes(g, A)).toBe(80);
+  });
+});

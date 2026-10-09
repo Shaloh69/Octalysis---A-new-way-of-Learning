@@ -103,7 +103,7 @@ async function reseed(): Promise<void> {
   await setup(`delete from items where objective_id not in ('01.1','01.2') or status <> 'live'`);
   await setup(`delete from objectives where id not in ('01.1','01.2')`);
   await setup(
-    `update objectives set status = 'live', owner = 'file', retired_at = null, level = 6, competency = 'read',
+    `update objectives set status = 'live', owner = 'file', retired_at = null, level = 6, competency = 'read', graded = true,
             bloom_level = case id when '01.1' then 'remember' else 'understand' end,
             description = case id when '01.1' then 'Moon one, as the syllabus words it' else 'Moon two, as the syllabus words it' end
       where id in ('01.1','01.2')`,
@@ -591,6 +591,109 @@ describe("sync-content stops overwriting a moon a teacher owns", () => {
 });
 
 /* ------------------------------------------------- last: it leaves evidence */
+
+describe("the graded switch (docs/GRADED-MOONS-PLAN.md): a teacher flips a moon through Draft, then Publish", () => {
+  const keep = { description: "Moon one, as the syllabus words it", bloom: "remember", level: 6, competency: "read" } as const;
+  const flip = (graded: boolean, version = 0) => ({ action: "edit", version, ...keep, graded }) as const;
+  const gradedOf = async (id: string): Promise<boolean> =>
+    (await setup("select graded from objectives where id = $1", [id])).rows[0].graded as boolean;
+  const satOn = async (id: string): Promise<number> =>
+    Number((await setup(
+      `select count(distinct a.user_id)::int n from attempts a
+         join assessments s on s.id = a.assessment_id join blueprints b on b.id = s.blueprint_id
+        where b.scope = 'moon' and b.objective_id = $1 and a.status = 'submitted'`, [id])).rows[0].n);
+
+  it("every moon is graded, and a new one is graded unless it says it is not", async () => {
+    const list = (await moonsOf()).moons;
+    expect(list.map((m) => [m.id, (m as unknown as { graded: boolean }).graded])).toEqual([["01.1", true], ["01.2", true]]);
+    const made = await add(teacherTok, { description: "A moon that is graded by default", bloom: "remember", level: 6, competency: "read" });
+    expect(made.statusCode, made.body).toBe(200);
+    expect(await gradedOf(made.json().id)).toBe(true);
+    const off = await add(teacherTok, { description: "A moon that is practice only", bloom: "remember", level: 6, competency: "read", graded: false });
+    expect(await gradedOf(off.json().id)).toBe(false);
+  });
+
+  it("a flip is a pending change students never see: the live moon stays graded until Publish", async () => {
+    const put = await putPending(teacherTok, "01.1", flip(false));
+    expect(put.statusCode, put.body).toBe(200);
+    expect(await gradedOf("01.1")).toBe(true);
+    expect((await moon("01.1")).pending).toMatchObject({ action: "edit", graded: false });
+    const stage = await app.inject({ method: "GET", url: "/api/v1/stages/01", headers: auth(tokA) });
+    const seen = (stage.json().objectives as Array<{ id: string; graded: boolean }>).find((o) => o.id === "01.1")!;
+    expect(seen.graded).toBe(true);
+  });
+
+  it("Publish applies it, says so in words, and the student's map follows", async () => {
+    await putPending(teacherTok, "01.1", flip(false));
+    const done = await publish(teacherTok, { hash: (await moonsOf()).hash, reason: "Practice only this term", ids: ["01.1"] });
+    expect(done.statusCode, done.body).toBe(200);
+    const body = done.json();
+    expect(body.applied[0].moves.join(" ")).toMatch(/stops being graded/);
+    expect(body.grading).toEqual([{ id: "01.1", graded: false, students: await satOn("01.1") }]);
+    expect(await gradedOf("01.1")).toBe(false);
+    const stage = await app.inject({ method: "GET", url: "/api/v1/stages/01", headers: auth(tokA) });
+    expect((stage.json().objectives as Array<{ id: string; graded: boolean }>).find((o) => o.id === "01.1")!.graded).toBe(false);
+    // and a moon that is not graded has no check to sit
+    expect((await app.inject({ method: "POST", url: "/api/v1/objectives/01.1/check", headers: auth(tokA) })).statusCode).toBe(409);
+  });
+
+  it("the audit log keeps the flip and the reason", async () => {
+    await putPending(teacherTok, "01.2", { ...flip(false), description: "Moon two, as the syllabus words it", bloom: "understand" });
+    await publish(teacherTok, { hash: (await moonsOf()).hash, reason: "Not assessed this term", ids: ["01.2"] });
+    const log = (await setup(`select payload from audit_log where action = 'moon.publish' order by id desc limit 1`)).rows[0].payload;
+    expect(log.reason).toBe("Not assessed this term");
+    expect(log.grading).toEqual([{ id: "01.2", graded: false, students: expect.any(Number) }]);
+  });
+
+  it("a change of ONLY the switch is a real edit; the same switch is 'nothing to change'", async () => {
+    expect((await putPending(teacherTok, "01.1", flip(false))).statusCode).toBe(200);
+    await delPending(teacherTok, "01.1");
+    const same = await putPending(teacherTok, "01.1", flip(true));
+    expect(same.statusCode).toBe(409);
+    expect(same.json().error.message).toMatch(/nothing to change/);
+  });
+
+  it("a pending flip the moon has since made moot is not a change; a stale hash is refused", async () => {
+    await putPending(teacherTok, "01.1", flip(false));
+    const hash = (await moonsOf()).hash;
+    await putPending(teacherTok, "01.2", { ...flip(false), description: "Moon two, as the syllabus words it", bloom: "understand", version: 0 });
+    const stale = await publish(teacherTok, { hash, reason: "Stale on purpose", ids: ["01.1"] });
+    expect(stale.statusCode).toBe(409);
+    expect(await gradedOf("01.1")).toBe(true);
+  });
+
+  it("students who have already sat the check are counted in what Publish says, and their sittings are kept", async () => {
+    const asked = await app.inject({ method: "POST", url: "/api/v1/objectives/01.1/check", headers: auth(tokA) });
+    expect(asked.statusCode, asked.body).toBe(200);
+    const started = await app.inject({ method: "POST", url: "/api/v1/attempts", headers: auth(tokA), payload: { assessmentId: asked.json().assessmentId } });
+    expect(started.statusCode, started.body).toBe(200);
+    await app.inject({ method: "POST", url: `/api/v1/attempts/${started.json().attemptId}/submit`, headers: auth(tokA) });
+    const sat = await satOn("01.1");
+    expect(sat).toBeGreaterThanOrEqual(1);
+    const before = Number((await setup("select count(*)::int n from attempts")).rows[0].n);
+
+    await putPending(teacherTok, "01.1", flip(false));
+    const dry = await publish(teacherTok, { hash: (await moonsOf()).hash, reason: "Looking first", ids: ["01.1"], dryRun: true });
+    expect(dry.statusCode, dry.body).toBe(200);
+    expect(dry.json().grading).toEqual([{ id: "01.1", graded: false, students: sat }]);
+    expect(await gradedOf("01.1")).toBe(true); // a dry run changes nothing
+
+    const done = await publish(teacherTok, { hash: (await moonsOf()).hash, reason: "Practice only", ids: ["01.1"] });
+    expect(done.json().applied[0].moves.join(" ")).toMatch(/kept/);
+    expect(Number((await setup("select count(*)::int n from attempts")).rows[0].n)).toBe(before);
+
+    // and back on: the same sittings start counting again
+    await putPending(teacherTok, "01.1", flip(true));
+    const on = await publish(teacherTok, { hash: (await moonsOf()).hash, reason: "Graded again", ids: ["01.1"] });
+    expect(on.json().applied[0].moves.join(" ")).toMatch(/becomes GRADED/);
+    expect(on.json().grading).toEqual([{ id: "01.1", graded: true, students: sat }]);
+  });
+
+  it("retiring a moon carries no switch", async () => {
+    await putPending(teacherTok, "01.2", { action: "retire", version: 0 });
+    expect((await setup("select graded from objective_edits where objective_id = '01.2'")).rows[0].graded).toBeNull();
+  });
+});
 
 describe("mastering a published moon reopens the planet it had shut (kept last: it leaves a journey behind)", () => {
   it("A masters 01.3 through its journey and 02 opens again", async () => {

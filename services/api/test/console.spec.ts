@@ -578,10 +578,16 @@ describe("gradebook export", () => {
     const header = lines[0] ?? "";
     const rows = lines.slice(1);
     expect(header).toMatch(/^student_id,full_name,section,stage_01/);
-    // 18 gradeable stages: 00 is orientation and excluded. Then the five
-    // components, each named with its syllabus weight, the final so far, and
-    // how much of the grade that final covers (instructor, 28 Sep 2026).
-    expect(header.split(",")).toHaveLength(3 + 18 + 5 + 2);
+    // 18 gradeable stages: 00 is orientation and excluded. Then one column per
+    // graded moon (8 Oct 2026, docs/GRADED-MOONS-PLAN.md: its check is one more
+    // quiz), then the five components, each named with its syllabus weight, the
+    // final so far, and how much of the grade that final covers (instructor, 28 Sep 2026).
+    const cols = header.split(",");
+    const moons = cols.filter((c) => c.startsWith("moon_"));
+    expect(moons.length).toBeGreaterThan(0);
+    for (const m of moons) expect(m).toMatch(/^moon_\d{2}\.\d+$/);
+    expect(cols).toHaveLength(3 + 18 + moons.length + 5 + 2);
+    expect(cols.indexOf(moons[0]!)).toBe(3 + 18);
     expect(header).toContain("project_20,quizzes_30,exams_30,labs_10,participation_10,final_so_far,grade_covered_pct");
     expect(rows.length).toBeGreaterThanOrEqual(2);
   });

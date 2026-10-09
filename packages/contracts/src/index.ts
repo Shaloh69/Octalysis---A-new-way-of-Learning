@@ -338,6 +338,11 @@ export const GradebookStudent = z.object({
   section: z.string().nullable(),
   /** Best stage-check score per gradeable stage. null = NOT SAT, which is not 0. */
   checks: z.record(z.string(), Pct),
+  /**
+   * Best score on each GRADED moon's check (docs/GRADED-MOONS-PLAN.md), by moon id.
+   * null = not sat, which is not 0. Each counts as one more quiz, inside Quizzes.
+   */
+  moonChecks: z.record(z.string(), Pct).default({}),
   /** Per component. null = nothing of this student's counts yet. */
   components: z.record(GradeComponent, Pct),
   /** Handed in and not yet counted: submitted, or returned for revision. */
@@ -363,9 +368,12 @@ export const Gradebook = z.object({
   /** Share of the grade, in percent, that the final so far is computed over. */
   coverage: z.number().min(0).max(100),
   stages: z.array(z.object({ id: z.string(), title: z.string() })),
+  /** The graded moons a check can be sat on, in order: one more column each beside the stages. */
+  moons: z.array(z.object({ id: z.string(), title: z.string() })).default([]),
   students: z.array(GradebookStudent),
   classAverage: z.object({
     checks: z.record(z.string(), Pct),
+    moons: z.record(z.string(), Pct).default({}),
     components: z.record(GradeComponent, Pct),
     final: Pct,
   }),
@@ -934,6 +942,28 @@ export const ChatThreadBody = z.object({ userId: z.string().uuid() }).strict();
 export type ChatThreadBody = z.infer<typeof ChatThreadBody>;
 
 /* ============================================================
+ * Graded moons (docs/GRADED-MOONS-PLAN.md, ruled 8 Oct 2026).
+ *
+ * A graded moon is sat as a paper, a "moon check". This is the answer to asking
+ * for one: the assessment to open (the student app opens it on the same check
+ * route as a stage check, behind its start prompt) and where the student stands.
+ * Asking creates the paper if it did not exist; it never starts an attempt.
+ * ========================================================== */
+export const MoonCheck = z.object({
+  objectiveId: z.string(),
+  assessmentId: z.string().uuid(),
+  title: z.string(),
+  /** Sittings allowed, as a stage check's (instructor ruling 9 Sep 2026). */
+  attemptsAllowed: z.number().int().positive(),
+  attemptsUsed: z.number().int().min(0),
+  /** The best submitted sitting as a share of its maximum, 0 to 1; null before any. */
+  best: z.number().min(0).max(1).nullable(),
+  /** A sitting is open (Start resumes it, behind the prompt). */
+  inProgress: z.boolean(),
+});
+export type MoonCheck = z.infer<typeof MoonCheck>;
+
+/* ============================================================
  * Profiles (PROFILES, 8 Oct 2026): a page and a picture for every account.
  * ========================================================== */
 export const ProfileClass = z.object({
@@ -1307,12 +1337,16 @@ const MoonFields = {
   competency: MoonCompetency,
 };
 
-export const MoonAddBody = z.object(MoonFields).strict();
+/**
+ * Whether a moon is GRADED (docs/GRADED-MOONS-PLAN.md): sat as a check that counts as one more quiz.
+ * A new moon is graded unless it says otherwise; on an edit, absent means "leave it as it is".
+ */
+export const MoonAddBody = z.object({ ...MoonFields, graded: z.boolean().default(true) }).strict();
 export type MoonAddBody = z.infer<typeof MoonAddBody>;
 
 /** Save (or replace) the one pending change on a moon. `version` is the pending change the editor loaded: 0 when there is none. */
 export const MoonPendingBody = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("edit"), version: z.number().int().min(0), ...MoonFields }).strict(),
+  z.object({ action: z.literal("edit"), version: z.number().int().min(0), ...MoonFields, graded: z.boolean().optional() }).strict(),
   z.object({ action: z.literal("retire"), version: z.number().int().min(0) }).strict(),
 ]);
 export type MoonPendingBody = z.infer<typeof MoonPendingBody>;
@@ -1335,6 +1369,8 @@ export const MoonPending = z.object({
   bloom: MoonBloom.nullable(),
   level: z.number().int().nullable(),
   competency: MoonCompetency.nullable(),
+  /** The switch this change sets; null: it leaves the switch as it is. */
+  graded: z.boolean().nullable().default(null),
   version: z.number().int(),
   editedBy: z.string().nullable(),
   editedAt: z.string(),
@@ -1350,6 +1386,8 @@ export const StudioMoon = z.object({
   bloom: MoonBloom,
   level: z.number().int().nullable(),
   competency: MoonCompetency.nullable(),
+  /** Sat as a graded check that counts toward the grade (its switch, as published). */
+  graded: z.boolean().default(true),
   /** Distinct live questions (families): what the journey is made of. */
   questions: z.number().int(),
   /** Questions of this moon that are not live yet (at review, in draft). */
@@ -1385,6 +1423,12 @@ export const MoonsPublishResult = z.object({
   })),
   /** Minigames taken off the map by a retirement. */
   gamesRemoved: z.array(z.object({ id: z.string(), name: z.string() })),
+  /**
+   * Moons whose grading switch this publish flips, and how many students have ALREADY sat
+   * that moon's check: the marks that start or stop counting in the gradebook. The sittings
+   * themselves are never changed or removed.
+   */
+  grading: z.array(z.object({ id: z.string(), graded: z.boolean(), students: z.number().int().min(0) })).default([]),
   impact: z.object({
     /** Students who have a planet open now that would see it close until they master the new moon. */
     relocked: z.number().int(),
