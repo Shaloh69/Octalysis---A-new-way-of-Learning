@@ -245,7 +245,10 @@ test.describe("the picture around the console", () => {
     await page.goto(`${CONSOLE_URL}/chat?room=${section}`, { waitUntil: "domcontentloaded" });
     await page.locator(".ch-msgs").waitFor({ timeout: 20_000 });
     const msgs = await page.locator(".ch-msg").count();
-    expect(await page.locator(".ch-msg .ch-msg-head .avatar").count()).toBe(msgs);
+    expect(msgs).toBeGreaterThan(0);
+    // A face at the start of each run of someone else's messages, none on your own.
+    expect(await page.locator(".ch-msg-face .avatar").count()).toBe(await page.locator(".ch-msg:not(.is-mine):not(.is-grouped)").count());
+    expect(await page.locator(".ch-msg-face .avatar").count()).toBeGreaterThan(0);
     expect(await page.getByRole("button", { name: /^Remove .*'s picture$/ }).count()).toBe(1);
     await page.getByRole("button", { name: /^Remove .*'s picture$/ }).click();
     await expect(page.getByRole("dialog")).toContainText("picture?");

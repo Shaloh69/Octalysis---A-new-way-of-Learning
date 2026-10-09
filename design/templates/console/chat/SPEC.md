@@ -48,3 +48,51 @@ picker clipped to "Choose a studer", and the open room still counting "1 new"
 after it was read; all three fixed, the last now asserted. The room holds the
 spec runs' own test messages ("Clip check", "Kept, run ..."): a local artifact,
 gone at the next `pnpm db:reset`.
+
+---
+
+## As remade, 9 Oct 2026 (Messenger's two screens)
+
+The controls and the four tests above are unchanged; what moved is the shape. Gate:
+`design/specs/console-chat.spec.ts` (the six assertions at both widths, plus five
+claims for the new shape).
+
+**Below 52rem of the page's own width it is two screens** (not a window width: the
+sidebar takes 16rem at lg, so a 1024 window is already one pane).
+- **Screen one, the rooms:** each row is a face (a generated planet seeded from the
+  room's id), the room's name (a section code in mono), a line, the time of its last
+  message, and "n new · m for you". **Message a student** is here. Opening the screen
+  **reads nothing**: only opening a room marks it read (a test proves it against the
+  API: a thread's unread count does not move until it is opened).
+- **Screen two, one room:** the URL becomes `/chat?room=<id>` (a history entry, so
+  the browser's Back and the header's arrow both return to the rooms). The page's own
+  title, sentence and Conversations / Attachments tabs make way (`display: none`, so
+  nothing invisible can take focus; the tabs are one Back away), leaving a slim header
+  (arrow, face, name, who is in it), the log, and the composer.
+- **At 52rem and up** both panes stay side by side (17rem rail), the first room open,
+  now with faces and the same slim room header (no arrow).
+
+**Messages are bubbles.** Others': left, with a face at the end of a run and the
+author's name once at its start, in `--surface-2`. Yours: right, no face, in
+`--accent-muted`, "You" in the text for a screen reader. A mention is `--info-bg` plus
+the words "Mentions you". A **run** (same author, under five minutes, nothing deleted
+between: `lib/chat-view.ts` `continues()`, tested) is drawn as one speaker.
+**The staff's tools** (Remove; Remove picture where the server says `removable`; Delete
+on your own, with its Keep) sit in the bubble's foot beside the time, one row, not two.
+
+**The composer:** Attach, the field and Send are one row; the field grows with what is
+typed, up to 12rem, then scrolls. The long placeholder is now the hint beneath ("Type @
+to mention someone. Enter sends, Shift+Enter starts a new line."), because a one-row
+field cut it off.
+
+**Not built, said so:** a last-message preview on a row (the API gives the time, not
+the text); a face for a private thread that is the student's own picture (a room has no
+avatar in the API yet: the planet is the room's).
+
+**Captures (opened, 9 Oct 2026):** `current.png` (1440, a room beside the rooms),
+`current-380.png` (a room, screen two), `current-rooms-380.png` (screen one).
+**Found by looking:** the rail at 15rem squeezed "BSCPE - 4" onto two lines beside a
+face and a time (17rem, a medium face); a "Remove" row under every bubble doubled the
+log's height (the tools moved into the bubble's foot); the long placeholder was cut off
+at one row (it is the hint now); hiding the page's header with a 1px clip left its tabs
+focusable and invisible (`display: none`).

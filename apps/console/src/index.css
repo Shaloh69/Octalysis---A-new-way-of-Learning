@@ -2938,9 +2938,17 @@
   .ch-tab:hover { color: var(--ink); background: var(--surface-2); }
   .ch-tab[aria-selected="true"] { color: var(--ink); background: var(--surface-2); box-shadow: inset 0 calc(var(--border-thick) * -1) 0 var(--accent); font-weight: 600; }
   .ch-reserve { min-height: 24rem; }
+  /* Below 52rem the page is two screens (the rooms, then one room), Messenger's shape. In a
+     room the page's title, sentence and tabs make way: only the room's slim header remains. */
+  @container (max-width: 51.99rem) {
+    /* display: none, so nothing invisible can take focus */
+    .ch-head[data-thread] { display: none; }
+    .ch-grid[data-screen="room"] .ch-log { height: clamp(14rem, calc(100dvh - 16rem), 60rem); }
+    .ch-grid[data-screen="room"] .ch-room-panel { border-radius: var(--radius-lg); }
+  }
 
   .ch-grid { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); align-items: start; }
-  @container (min-width: 52rem) { .ch-grid { grid-template-columns: 15rem minmax(0, 1fr); } }
+  @container (min-width: 52rem) { .ch-grid { grid-template-columns: 17rem minmax(0, 1fr); } }
 
   .ch-rooms, .ch-room-panel, .ch-card {
     min-width: 0;
@@ -2953,7 +2961,9 @@
   .ch-room-list { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
   .ch-room {
     display: grid;
-    gap: 2px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
     width: 100%;
     min-height: 44px;
     padding: var(--space-2);
@@ -2963,6 +2973,8 @@
     color: var(--ink);
     transition: background-color var(--dur-fast) var(--ease-out);
   }
+  .ch-room-text { display: grid; gap: 2px; min-width: 0; }
+  .ch-room-when { align-self: start; font-size: var(--text-xs); color: var(--ink-muted); white-space: nowrap; }
   .ch-room:hover { background: var(--surface-2); }
   .ch-room[aria-current="true"] { background: var(--surface-2); border-color: var(--line-strong); box-shadow: inset var(--border-thick) 0 0 var(--accent); }
   .ch-room-name { font-weight: 600; font-size: var(--text-sm); overflow-wrap: anywhere; }
@@ -2987,7 +2999,14 @@
   }
 
   .ch-room-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
-  .ch-room-head { padding: var(--space-3) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .ch-room-head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border-bottom: var(--border-hair) solid var(--line); }
+  .ch-room-about { font-size: var(--text-xs); color: var(--ink-muted); }
+  .ch-back {
+    display: inline-grid; place-items: center; flex: none; width: 2.5rem; height: 2.5rem; margin-left: calc(var(--space-2) * -1);
+    color: var(--ink); background: none; border: 0; border-radius: var(--radius-full); cursor: pointer;
+  }
+  .ch-back:hover { background: var(--surface-2); }
+  .ch-back:focus-visible { outline: var(--border-thick) solid var(--accent); outline-offset: 2px; }
   .ch-room-title { font-family: var(--font-display); font-size: var(--text-lg); overflow-wrap: anywhere; }
   .ch-room-title.num { font-family: var(--font-mono); }
   .ch-log { height: clamp(14rem, calc(100dvh - 24rem), 46rem); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-3) var(--space-4); }
@@ -2997,24 +3016,55 @@
   .ch-failed { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: var(--border-hair) solid var(--danger); border-radius: var(--radius-md); background: var(--danger-bg); }
 
   .ch-msgs { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
-  .ch-msg { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-left: var(--border-thick) solid transparent; border-radius: var(--radius-sm); animation: octa-rise-in var(--dur-fast) var(--ease-out); }
-  .ch-msg:hover { background: var(--surface-2); }
-  .ch-msg.is-mine { border-left-color: var(--accent); }
-  .ch-msg.is-for-me { background: var(--info-bg); }
+  .ch-msg {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    align-items: end;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    animation: octa-rise-in var(--dur-fast) var(--ease-out);
+  }
+  .ch-msg.is-grouped { margin-top: 0; }
+  .ch-msg-face { display: grid; align-self: end; }
+  .ch-bubble {
+    display: grid;
+    gap: var(--space-1);
+    justify-self: start;
+    max-width: min(100%, 34rem);
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-2);
+    border-radius: var(--radius-lg);
+    border-end-start-radius: var(--radius-sm);
+  }
+  .ch-msg.is-grouped .ch-bubble { border-start-start-radius: var(--radius-sm); }
+  /* Your own: on the right, in the accent (the one place the accent marks: yours). */
+  .ch-msg.is-mine { grid-template-columns: minmax(0, 1fr); justify-items: end; }
+  .ch-msg.is-mine .ch-msg-face { display: none; }
+  .ch-msg.is-mine .ch-bubble { justify-self: end; background: var(--accent-muted); border-end-start-radius: var(--radius-lg); border-end-end-radius: var(--radius-sm); }
+  /* Mentions you: said in words too ("Mentions you"), never colour alone. */
+  .ch-msg.is-for-me .ch-bubble { background: var(--info-bg); }
   .ch-msg-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+  .ch-msg-head:empty { display: none; }
   .ch-author { font-weight: 600; font-size: var(--text-sm); }
-  .ch-time { margin-left: auto; font-size: var(--text-xs); color: var(--ink-muted); }
-  .ch-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); }
+  .ch-time { justify-self: end; font-size: var(--text-xs); color: var(--ink-muted); }
+  .ch-body { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); }
   .ch-at { font-weight: 700; }
-  .ch-gone { font-size: var(--text-sm); font-style: italic; color: var(--ink-muted); }
+  .ch-gone { margin: 0; font-size: var(--text-sm); font-style: italic; color: var(--ink-muted); }
+  /* The staff's tools sit in the bubble's foot, beside the time: one row, not two. */
+  .ch-bubble-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 var(--space-3); }
+  .ch-bubble-foot > .ch-time { margin-left: auto; }
   .ch-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+  .ch-tools > button { min-height: 1.75rem; padding: 0 var(--space-2); }
   .ch-file { display: grid; gap: var(--space-1); justify-items: start; margin: var(--space-1) 0 0; }
   .ch-media { display: block; max-width: min(100%, 22rem); max-height: 16rem; border: var(--border-hair) solid var(--line); border-radius: var(--radius-sm); }
   .ch-file-cap { font-size: var(--text-xs); color: var(--ink-muted); overflow-wrap: anywhere; }
 
   .ch-compose { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-top: var(--border-hair) solid var(--line); }
-  .ch-compose-field { position: relative; }
-  .ch-text { min-height: 3.5rem; max-height: 12rem; resize: vertical; }
+  .ch-compose-row { display: flex; align-items: flex-end; gap: var(--space-2); }
+  .ch-compose-field { position: relative; flex: 1 1 0; min-width: 0; }
+  .ch-text { min-height: var(--control-h-md); max-height: 12rem; resize: none; border-radius: var(--radius-lg); }
+  .ch-send { flex: none; border-radius: var(--radius-full); }
   .ch-mentions {
     position: absolute; left: 0; right: 0; bottom: calc(100% + var(--space-1)); z-index: 4;
     margin: 0; padding: var(--space-1); list-style: none;
@@ -3024,10 +3074,9 @@
   .ch-mention-opt[aria-selected="true"] { background: var(--surface-2); box-shadow: inset var(--border-thick) 0 0 var(--accent); font-weight: 600; }
   .ch-chip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
   .ch-problem { font-size: var(--text-sm); color: var(--warning); }
-  .ch-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); }
-  .ch-hint { flex: 1 1 14rem; margin-right: auto; font-size: var(--text-xs); color: var(--ink-muted); }
+  .ch-hint { font-size: var(--text-xs); color: var(--ink-muted); }
   .ch-attach {
-    display: inline-flex; align-items: center; min-height: var(--control-h-md); padding: 0 var(--space-4);
+    display: inline-flex; flex: none; align-items: center; min-height: var(--control-h-md); padding: 0 var(--space-3);
     font-size: var(--text-sm); font-weight: 500; color: var(--ink); cursor: pointer;
     background: var(--surface-1); border: var(--border-hair) solid var(--line-strong); border-radius: var(--radius-md);
   }

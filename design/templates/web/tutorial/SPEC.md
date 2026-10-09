@@ -31,10 +31,12 @@ current width is shown as a centred step rather than pointing at nothing.
 ## When it runs by itself
 
 **Once per student**, on their first visit to the map (`/app`), 0.9 s after the
-profile loads. "Once" is `localStorage["octa:tour:v1:<user id>"]`, written when
-the tour **starts** (so a reload mid-tour does not loop it). It is a per-viewer
-convenience, never a grade; a second device sees it again, which does no harm. If
-storage is unavailable it is not forced on anyone.
+profile loads. **Since 9 Oct 2026 "once" is the ACCOUNT's, in the database**
+(`profiles.tour_seen_at`, `db/addendum-tour.sql`, instructor: "yes, in the
+database"): `POST /api/v1/profile/tour` sets it when the tour **starts** (so a reload
+mid-tour does not loop it) and never moves it; a second device, or cleared site
+data, does not show it again. A profile that failed to load starts nothing. It is a
+convenience, never a grade. (Until then it was `localStorage`, per browser.)
 
 **An automated browser is not a student**: with `navigator.webdriver` set, the
 shell does not start it unless `octa:tour:force` is `"1"`, because the tour's

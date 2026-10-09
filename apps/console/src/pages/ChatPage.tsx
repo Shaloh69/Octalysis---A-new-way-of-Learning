@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import type { ChatAttachments, ChatMessage, ChatPerson, ChatRooms, ChatThread } from "@octa/contracts";
 import { api, ApiError, putChatFile, type Roster } from "@/lib/api";
 import { useChatLive } from "@/lib/chat-live";
+import { continues, roomFace, TWO_PANES_PX } from "@/lib/chat-view";
 import { useDelayed } from "@/lib/useDelayed";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,6 +106,14 @@ function Composer({
   const fileInput = useRef<HTMLInputElement>(null);
   const roomId = thread.room.id;
 
+  // The field grows with what is typed, up to its max-height, then scrolls.
+  useLayoutEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [text, roomId]);
+
   useEffect(() => {
     setText("");
     setFile(null);
@@ -184,60 +194,7 @@ function Composer({
   return (
     <form className="ch-compose" onSubmit={(e) => { e.preventDefault(); void send(); }}>
       <label htmlFor="ch-text" className="sr-only">Message {thread.room.title}</label>
-      <div className="ch-compose-field">
-        {open && (
-          <ul className="ch-mentions" id={listId} role="listbox" aria-label="People to mention">
-            {options.map((p, i) => (
-              <li
-                key={p.id}
-                id={`${listId}-${p.id}`}
-                role="option"
-                aria-selected={i === pick}
-                className="ch-mention-opt"
-                onMouseDown={(e) => { e.preventDefault(); choose(p); }}
-              >
-                {p.name}
-              </li>
-            ))}
-          </ul>
-        )}
-        <Textarea
-          id="ch-text"
-          ref={area}
-          rows={2}
-          maxLength={4000}
-          className="ch-text"
-          value={text}
-          placeholder={thread.room.kind === "direct" ? `Message ${thread.room.title}. Only the two of you read this.` : `Message ${thread.room.title}. Type @ to mention someone.`}
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={open ? listId : undefined}
-          aria-autocomplete="list"
-          aria-activedescendant={open ? `${listId}-${options[Math.min(pick, options.length - 1)]!.id}` : undefined}
-          aria-describedby="ch-hint"
-          onChange={(e) => {
-            setText(e.target.value);
-            setMq(mentionQuery(e.target.value, e.target.selectionStart));
-            setPick(0);
-          }}
-          onKeyDown={onKey}
-          onBlur={() => setMq(null)}
-        />
-      </div>
-      {file && (
-        <p className="ch-chip">
-          <span className="min-w-0 break-words">{file.name}</span>
-          <span className="num">{mb(file.size)} MB</span>
-          <Button type="button" size="sm" variant="ghost" aria-label={`Remove ${file.name}`} onClick={() => { setFile(null); if (fileInput.current) fileInput.current.value = ""; }}>
-            Remove
-          </Button>
-        </p>
-      )}
-      {problem && <p className="ch-problem" role="alert">{problem}</p>}
-      <div className="ch-actions">
-        <p id="ch-hint" className="ch-hint">
-          Enter sends, Shift+Enter starts a new line.{!attachments && " Attachments are not available on this server."}
-        </p>
+      <div className="ch-compose-row">
         {attachments && (
           <label className="ch-attach">
             <input
@@ -265,10 +222,64 @@ function Composer({
             Attach
           </label>
         )}
+        <div className="ch-compose-field">
+          {open && (
+            <ul className="ch-mentions" id={listId} role="listbox" aria-label="People to mention">
+              {options.map((p, i) => (
+                <li
+                  key={p.id}
+                  id={`${listId}-${p.id}`}
+                  role="option"
+                  aria-selected={i === pick}
+                  className="ch-mention-opt"
+                  onMouseDown={(e) => { e.preventDefault(); choose(p); }}
+                >
+                  {p.name}
+                </li>
+              ))}
+            </ul>
+          )}
+          <Textarea
+            id="ch-text"
+            ref={area}
+            rows={1}
+            maxLength={4000}
+            className="ch-text"
+            value={text}
+            placeholder={`Message ${thread.room.title}`}
+            role="combobox"
+            aria-expanded={open}
+            aria-controls={open ? listId : undefined}
+            aria-autocomplete="list"
+            aria-activedescendant={open ? `${listId}-${options[Math.min(pick, options.length - 1)]!.id}` : undefined}
+            aria-describedby="ch-hint"
+            onChange={(e) => {
+              setText(e.target.value);
+              setMq(mentionQuery(e.target.value, e.target.selectionStart));
+              setPick(0);
+            }}
+            onKeyDown={onKey}
+            onBlur={() => setMq(null)}
+          />
+        </div>
         <Button type="submit" disabled={sending !== null} className="ch-send">
           {sending === "uploading" ? "Uploading…" : sending === "sending" ? "Sending…" : "Send"}
         </Button>
       </div>
+      {file && (
+        <p className="ch-chip">
+          <span className="min-w-0 break-words">{file.name}</span>
+          <span className="num">{mb(file.size)} MB</span>
+          <Button type="button" size="sm" variant="ghost" aria-label={`Remove ${file.name}`} onClick={() => { setFile(null); if (fileInput.current) fileInput.current.value = ""; }}>
+            Remove
+          </Button>
+        </p>
+      )}
+      {problem && <p className="ch-problem" role="alert">{problem}</p>}
+      <p id="ch-hint" className="ch-hint">
+        {thread.room.kind === "direct" ? "Only you and this student read this. " : "Type @ to mention someone. "}
+        Enter sends, Shift+Enter starts a new line.{!attachments && " Attachments are not available on this server."}
+      </p>
     </form>
   );
 }
@@ -303,7 +314,21 @@ function Conversations({
 
   const list = rooms.rooms;
   const asked = params.get("room");
-  const roomId = asked ?? list[0]?.id ?? null;
+  // Two panes when the page has the room (52rem), else two SCREENS: the rooms, then one room
+  // (Messenger's shape, like the student app's phone chat). The first guess is the viewport's,
+  // corrected before paint, so a narrow page never opens (and reads) the first room by itself.
+  const box = useRef<HTMLDivElement>(null);
+  const [wide, setWide] = useState(() => window.innerWidth - (window.innerWidth >= 1024 ? 256 : 0) - 64 >= TWO_PANES_PX);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setWide(el.getBoundingClientRect().width >= TWO_PANES_PX);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const roomId = asked ?? (wide ? list[0]?.id ?? null : null);
   const room = list.find((r) => r.id === roomId) ?? (thread?.room.id === roomId ? thread.room : null);
 
   const loadThread = useCallback(async () => {
@@ -362,65 +387,81 @@ function Conversations({
         type="button"
         className="ch-room"
         aria-current={r.id === roomId ? "true" : undefined}
-        onClick={() => setParams({ room: r.id }, { replace: true })}
+        // Narrow pushes a history entry, so the browser's Back returns to the rooms.
+        onClick={() => setParams({ room: r.id }, { replace: wide })}
       >
-        <span className={r.kind === "section" ? "ch-room-name num" : "ch-room-name"}>{r.title}</span>
-        <span className="ch-room-sub">{r.subtitle}</span>
-        {r.unread > 0 && (
-          <span className="ch-room-count">
-            <span className="num">{r.unread}</span> new
-            {r.mentions > 0 && <> · <span className="num">{r.mentions}</span> for you</>}
-          </span>
-        )}
+        <Avatar avatar={roomFace(r.id)} size="md" />
+        <span className="ch-room-text">
+          <span className={r.kind === "section" ? "ch-room-name num" : "ch-room-name"}>{r.title}</span>
+          <span className="ch-room-sub">{r.subtitle}</span>
+          {r.unread > 0 && (
+            <span className="ch-room-count">
+              <span className="num">{r.unread}</span> new
+              {r.mentions > 0 && <> · <span className="num">{r.mentions}</span> for you</>}
+            </span>
+          )}
+        </span>
+        {r.lastAt && <time className="ch-room-when num" dateTime={r.lastAt}>{when(r.lastAt)}</time>}
       </button>
     </li>
   );
 
   return (
-    <div className="ch-grid">
-      <nav className="ch-rooms" aria-label="Rooms">
-        <h2 className="ch-h2">Sections</h2>
-        <ul className="ch-room-list">{sections.map(roomButton)}</ul>
-        <h2 className="ch-h2">Private threads</h2>
-        {threads.length > 0 ? (
-          <ul className="ch-room-list">{threads.map(roomButton)}</ul>
-        ) : (
-          <p className="ch-note">None yet. A thread appears here once a student writes to you, or you to them.</p>
-        )}
-        <form
-          className="ch-open"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!student) return;
-            try {
-              const r = await api.chatOpenThread(student);
-              await onRooms();
-              setParams({ room: r.id }, { replace: true });
-              setStudent("");
-            } catch (err) {
-              toast.error("Thread not opened", err instanceof ApiError ? err.message : "Try again.");
-            }
-          }}
-        >
-          <label htmlFor="ch-student" className="ch-label">Message a student</label>
-          <div className="ch-open-row">
-            <select id="ch-student" className="ch-select" value={student} onChange={(e) => setStudent(e.target.value)}>
-              <option value="">Choose a student…</option>
-              {students.map((s) => (
-                <option key={s.userId!} value={s.userId!}>
-                  {s.fullName} ({s.studentId})
-                </option>
-              ))}
-            </select>
-            <Button type="submit" variant="outline" disabled={!student}>Open</Button>
-          </div>
-        </form>
-      </nav>
+    <div ref={box} className="ch-grid" data-wide={wide ? "" : undefined} data-screen={wide ? undefined : roomId ? "room" : "list"}>
+      {(wide || !roomId) && (
+        <nav className="ch-rooms" aria-label="Rooms">
+          <h2 className="ch-h2">Sections</h2>
+          <ul className="ch-room-list">{sections.map(roomButton)}</ul>
+          <h2 className="ch-h2">Private threads</h2>
+          {threads.length > 0 ? (
+            <ul className="ch-room-list">{threads.map(roomButton)}</ul>
+          ) : (
+            <p className="ch-note">None yet. A thread appears here once a student writes to you, or you to them.</p>
+          )}
+          <form
+            className="ch-open"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!student) return;
+              try {
+                const r = await api.chatOpenThread(student);
+                await onRooms();
+                setParams({ room: r.id }, { replace: wide });
+                setStudent("");
+              } catch (err) {
+                toast.error("Thread not opened", err instanceof ApiError ? err.message : "Try again.");
+              }
+            }}
+          >
+            <label htmlFor="ch-student" className="ch-label">Message a student</label>
+            <div className="ch-open-row">
+              <select id="ch-student" className="ch-select" value={student} onChange={(e) => setStudent(e.target.value)}>
+                <option value="">Choose a student…</option>
+                {students.map((s) => (
+                  <option key={s.userId!} value={s.userId!}>
+                    {s.fullName} ({s.studentId})
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" variant="outline" disabled={!student}>Open</Button>
+            </div>
+          </form>
+        </nav>
+      )}
 
+      {(wide || roomId) && (
       <section className="ch-room-panel" aria-labelledby="ch-room-title">
         <header className="ch-room-head">
-          <h2 id="ch-room-title" className={room?.kind === "section" ? "ch-room-title num" : "ch-room-title"}>{room?.title ?? "Room"}</h2>
-          <p className="ch-room-sub">{room?.subtitle}</p>
+          {!wide && (
+            <button type="button" className="ch-back" aria-label="Back to rooms" onClick={() => setParams({})}>
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+          )}
+          <Avatar avatar={roomFace(room?.id ?? "room")} size="md" />
+          <div className="min-w-0">
+            <h2 id="ch-room-title" className={room?.kind === "section" ? "ch-room-title num" : "ch-room-title"}>{room?.title ?? "Room"}</h2>
+            <p className="ch-room-about">{room?.subtitle}</p>
+          </div>
         </header>
         <div
           ref={logRef}
@@ -478,62 +519,79 @@ function Conversations({
                 <p className="ch-empty">Nothing here yet. {room?.kind === "direct" ? "Only you and this student read this thread." : "Everyone in the section reads this room."}</p>
               ) : (
                 <ol className="ch-msgs">
-                  {messages.map((m) => {
+                  {messages.map((m, i) => {
                     const forMe = m.mentions.includes(rooms.me.id);
+                    const grouped = continues(messages[i - 1], m);
                     const mentioned = m.mentions.map((id) => members.get(id)).filter((p): p is ChatPerson => p !== undefined);
                     return (
-                      <li key={m.id} data-message={m.id} className={`ch-msg${m.mine ? " is-mine" : ""}${forMe ? " is-for-me" : ""}`}>
-                        <div className="ch-msg-head">
-                          <Avatar avatar={m.author.avatar} size="sm" />
-                          <span className="ch-author">{m.mine ? "You" : m.author.name}</span>
-                          {m.author.staff && <Badge>Instructor</Badge>}
-                          {forMe && <Badge tone="info">Mentions you</Badge>}
-                          <time className="ch-time num" dateTime={m.createdAt}>{when(m.createdAt)}</time>
-                        </div>
-                        {m.deleted ? (
-                          <p className="ch-gone">Message deleted.</p>
-                        ) : (
-                          <>
-                            {m.body && <p className="ch-body"><Body text={m.body} mentioned={mentioned} /></p>}
-                            <Attachment m={m} />
-                            <div className="ch-tools">
-                              {m.mine ? (
-                                asking === m.id ? (
-                                  <>
-                                    <span className="text-sm" role="status">Delete it for everyone?</span>
-                                    <Button size="sm" variant="outline" onClick={async () => {
-                                      try {
-                                        await api.chatDelete(m.id);
-                                        setAsking(null);
-                                        toast.success("Message deleted", "Its text is gone for everyone in the room.");
-                                        await loadThread();
-                                      } catch (err) {
-                                        toast.error("Message not deleted", err instanceof ApiError ? err.message : "Try again.");
-                                      }
-                                    }}>Delete</Button>
-                                    <Button size="sm" variant="ghost" onClick={() => setAsking(null)}>Keep</Button>
-                                  </>
+                      <li
+                        key={m.id}
+                        data-message={m.id}
+                        className={`ch-msg${m.mine ? " is-mine" : ""}${forMe ? " is-for-me" : ""}${grouped ? " is-grouped" : ""}`}
+                      >
+                        <span className="ch-msg-face" aria-hidden="true">
+                          {!m.mine && !grouped && <Avatar avatar={m.author.avatar} size="sm" />}
+                        </span>
+                        <div className="ch-bubble">
+                          {/* The author is always in the text (a screen reader hears whose it is); it is
+                              drawn only at the start of a run, and never for your own. */}
+                          <div className="ch-msg-head">
+                            <span className={`ch-author${m.mine || grouped ? " sr-only" : ""}`}>{m.mine ? "You" : m.author.name}</span>
+                            {!grouped && m.author.staff && <Badge>Instructor</Badge>}
+                            {forMe && <Badge tone="info">Mentions you</Badge>}
+                          </div>
+                          {m.deleted ? (
+                            <p className="ch-gone">Message deleted.</p>
+                          ) : (
+                            <>
+                              {m.body && <p className="ch-body"><Body text={m.body} mentioned={mentioned} /></p>}
+                              <Attachment m={m} />
+                            </>
+                          )}
+                          <div className="ch-bubble-foot">
+                            {!m.deleted && (
+                              <div className="ch-tools">
+                                {m.mine ? (
+                                  asking === m.id ? (
+                                    <>
+                                      <span className="text-sm" role="status">Delete it for everyone?</span>
+                                      <Button size="sm" variant="outline" onClick={async () => {
+                                        try {
+                                          await api.chatDelete(m.id);
+                                          setAsking(null);
+                                          toast.success("Message deleted", "Its text is gone for everyone in the room.");
+                                          await loadThread();
+                                        } catch (err) {
+                                          toast.error("Message not deleted", err instanceof ApiError ? err.message : "Try again.");
+                                        }
+                                      }}>Delete</Button>
+                                      <Button size="sm" variant="ghost" onClick={() => setAsking(null)}>Keep</Button>
+                                    </>
+                                  ) : (
+                                    <Button size="sm" variant="ghost" aria-label={`Delete your message from ${when(m.createdAt)}`} onClick={() => setAsking(m.id)}>Delete</Button>
+                                  )
                                 ) : (
-                                  <Button size="sm" variant="ghost" aria-label={`Delete your message from ${when(m.createdAt)}`} onClick={() => setAsking(m.id)}>Delete</Button>
-                                )
-                              ) : (
-                                <Button size="sm" variant="ghost" aria-label={`Remove ${m.author.name}'s message from ${when(m.createdAt)}`} onClick={() => onAsk({ kind: "remove-message", m })}>
-                                  Remove
-                                </Button>
-                              )}
-                              {!m.mine && m.author.avatar?.removable && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  aria-label={`Remove ${m.author.name}'s picture`}
-                                  onClick={(e) => onPicture({ userId: m.author.id, name: m.author.name, avatar: m.author.avatar! }, e.currentTarget)}
-                                >
-                                  Remove picture
-                                </Button>
-                              )}
-                            </div>
-                          </>
-                        )}
+                                  <>
+                                    <Button size="sm" variant="ghost" aria-label={`Remove ${m.author.name}'s message from ${when(m.createdAt)}`} onClick={() => onAsk({ kind: "remove-message", m })}>
+                                      Remove
+                                    </Button>
+                                    {m.author.avatar?.removable && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        aria-label={`Remove ${m.author.name}'s picture`}
+                                        onClick={(e) => onPicture({ userId: m.author.id, name: m.author.name, avatar: m.author.avatar! }, e.currentTarget)}
+                                      >
+                                        Remove picture
+                                      </Button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
+                            <time className="ch-time num" dateTime={m.createdAt}>{when(m.createdAt)}</time>
+                          </div>
+                        </div>
                       </li>
                     );
                   })}
@@ -555,6 +613,7 @@ function Conversations({
           />
         )}
       </section>
+      )}
       <ConversationReload register={loadThread} />
     </div>
   );
@@ -635,6 +694,7 @@ export function ChatPage() {
   const [roster, setRoster] = useState<Roster | null>(null);
   const [storage, setStorage] = useState<ChatAttachments | null>(null);
   const [tab, setTab] = useState<"conversations" | "attachments">("conversations");
+  const [params] = useSearchParams();
   const [pending, setPending] = useState<Pending | null>(null);
   const [pictureOf, setPictureOf] = useState<PictureOwner | null>(null);
   const pictureOpener = useRef<HTMLElement | null>(null);
@@ -706,7 +766,7 @@ export function ChatPage() {
 
   return (
     <div className="ch">
-      <header className="ch-head">
+      <header className="ch-head" data-thread={tab === "conversations" && params.get("room") ? "" : undefined}>
         <div className="min-w-0">
           <h1 className="mb-1 font-display text-2xl">Chat</h1>
           <p className="text-sm text-ink-muted">

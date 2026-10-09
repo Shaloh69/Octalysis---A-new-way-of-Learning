@@ -102,7 +102,7 @@ buzzer, never a shake. These students are already anxious about a hard course.
 - **Chat is Messenger's two screens on a phone** (899 and under): the rooms, then one room filling the
   screen (`.star-shell.is-chat-thread` hides the strip, tabs, mission panel and key hints).
 - **The first-run tour** (`shell/Tour.tsx`, a ? in the top strip): once per student on their first visit to
-  the map (`localStorage octa:tour:v1:<user id>`), `inert` page behind it, StarShell only, never in a planet.
+  the map (**remembered per account in the database since 9 Oct 2026**, `profiles.tour_seen_at`, `POST /profile/tour`), `inert` page behind it, StarShell only, never in a planet.
   An automated browser is not given it unless `octa:tour:force` is set.
 
 ## Added 9 Oct 2026 (graded moons, `docs/GRADED-MOONS-PLAN.md`)
