@@ -116,3 +116,22 @@ describe("moonWords: a moon's state in words, never a colour (30 Sep 2026)", () 
     expect(moonWords(moon(1, false, 3))).toBe("1 of 3 right");
   });
 });
+
+import { studentAnswerText } from "../src/lib/record-view";
+
+describe("studentAnswerText: an answer is text before any page sees it (8 Oct 2026)", () => {
+  // On the deployment an object here was handed to React as a child and blanked the console.
+  const options = ["A compiler", "An assembler", "A linker"];
+  it("turns the stored shapes into text", () => {
+    expect(studentAnswerText({ index: 1 }, options)).toBe("An assembler");
+    expect(studentAnswerText({ order: ["b", "a"] })).toBe("b | a");
+    expect(studentAnswerText({ value: "0x1F" })).toBe("0x1F");
+    expect(studentAnswerText({ value: 12 })).toBe("12");
+    expect(studentAnswerText("An assembler")).toBe("An assembler");
+  });
+  it("is null, never an object, for anything it cannot read", () => {
+    for (const raw of [null, undefined, {}, [], "", { index: 7 }, { order: [] }, { weird: 1 }, true]) {
+      expect(studentAnswerText(raw, options), JSON.stringify(raw)).toBeNull();
+    }
+  });
+});

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { PageBoundary } from "./PageBoundary";
 import {
   Users, Lock, Table2, ScrollText, ShieldCheck, MessageSquare,
   Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare, UserCog, History, Library,
@@ -189,8 +190,18 @@ export function AppShell({ bare = false }: { bare?: boolean }) {
     return <ChangeCredentialsScreen identity={identity} onSignOut={() => void leave(identity)} />;
   }
 
-  if (bare) return <Outlet />;
+  if (bare) return <BareBoundary />;
   return <Shell identity={identity} onSignOut={() => void leave(identity)} />;
+}
+
+/** The frameless routes (the projector view) get the same safety net. */
+function BareBoundary() {
+  const { pathname } = useLocation();
+  return (
+    <PageBoundary resetKey={pathname}>
+      <Outlet />
+    </PageBoundary>
+  );
 }
 
 /* ------------------------------------------------------------------ the frame */
@@ -311,7 +322,9 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
 
       <main id="main" tabIndex={-1} className="shell-main">
         {/* Pages that decide what to render by role (only /teachers) read it here. */}
-        <Outlet context={identity} />
+        <PageBoundary resetKey={pathname}>
+          <Outlet context={identity} />
+        </PageBoundary>
       </main>
 
       {/* The toaster is NOT here: it is mounted once in App.tsx, so the gate

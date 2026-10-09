@@ -445,6 +445,37 @@ describe("student drill-down regenerates the exact paper from the seed", () => {
     }
   });
 
+  it("hands the page the student's answer as TEXT, whatever shape the student app stored (8 Oct 2026)", async () => {
+    // Found on the deployment: the answer route stores {index}, {value} or {order}, the drill-down
+    // passed that object through, and the page (which reads a string) gave it to React as a child:
+    // "Objects are not valid as a React child", and the whole console went blank on opening a
+    // real attempt. Every earlier test seeded a string, so none could see it.
+    const start = await app.inject({
+      method: "POST", url: "/api/v1/attempts", headers: auth(studentToken),
+      payload: { assessmentId: w.stageAssessmentId },
+    });
+    const attemptId = start.json().attemptId as string;
+    const items = start.json().items as Array<{ ordinal: number; type: string; options: string[] }>;
+    const first = items[0]!;
+    const body =
+      first.type === "G" ? { order: [...first.options].reverse() } : { index: Math.min(1, first.options.length - 1) };
+    const sent = await app.inject({
+      method: "POST", url: `/api/v1/attempts/${attemptId}/answer`, headers: auth(studentToken),
+      payload: { ordinal: first.ordinal, answer: body },
+    });
+    expect(sent.statusCode).toBe(200);
+
+    const drill = await app.inject({
+      method: "GET", url: `/api/v1/console/attempts/${attemptId}`, headers: auth(teacherToken),
+    });
+    const got = (drill.json().items as Array<{ ordinal: number; studentAnswer: unknown }>).find((i) => i.ordinal === first.ordinal)!;
+    expect(typeof got.studentAnswer, JSON.stringify(got.studentAnswer)).toBe("string");
+    expect(got.studentAnswer).toBe("order" in body ? body.order.join(" | ") : first.options[body.index]);
+    // An item the student has not answered stays null: "Not answered".
+    const second = (drill.json().items as Array<{ ordinal: number; studentAnswer: unknown }>).find((i) => i.ordinal !== first.ordinal);
+    if (second) expect(second.studentAnswer).toBeNull();
+  });
+
   it("says whose paper it is, which assessment, and when (instructor, 29 Sep 2026)", async () => {
     const start = await app.inject({
       method: "POST", url: "/api/v1/attempts", headers: auth(studentToken),

@@ -10,6 +10,7 @@ import type {
   WorkingCopy, WorkingCopyPublishBody, WorkingCopyPutBody,
   MoonAddBody, MoonPendingBody, MoonsPublishBody, MoonsPublishResult, StudioMoonsResponse,
 } from "@octa/contracts";
+import { studentAnswerText } from "./record-view";
 import { getAccessToken } from "./session";
 
 /**
@@ -660,7 +661,15 @@ export const api = {
     request<StudentDetail>(`/api/v1/console/students/${encodeURIComponent(userId)}`),
 
   attempt: (attemptId: string) =>
-    request<AttemptDetail>(`/api/v1/console/attempts/${encodeURIComponent(attemptId)}`),
+    request<AttemptDetail>(`/api/v1/console/attempts/${encodeURIComponent(attemptId)}`).then((d) => ({
+      ...d,
+      // Text, whatever shape was stored: an object here blanks the page (see studentAnswerText).
+      items: (d.items ?? []).map((i) => ({
+        ...i,
+        options: Array.isArray(i.options) ? i.options : [],
+        studentAnswer: studentAnswerText(i.studentAnswer, Array.isArray(i.options) ? i.options : []),
+      })),
+    })),
 
   /** One page of the log, newest first; `params` from `lib/audit-view.ts` `apiParams()`. */
   audit: (params: URLSearchParams) => request<AuditPage>(`/api/v1/console/audit?${params}`),

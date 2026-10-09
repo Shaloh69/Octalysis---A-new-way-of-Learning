@@ -56,6 +56,28 @@ export function verdict(item: Pick<PaperItem, "isCorrect" | "studentAnswer">): s
   return item.isCorrect ? "Correct" : "Not correct";
 }
 
+/**
+ * A recorded answer as TEXT. The API sends text now (`answerText()`), but the
+ * stored shapes are `{ index }`, `{ value }` and `{ order }`, and an object
+ * handed to React as a child blanks the whole page (8 Oct 2026, a real attempt
+ * on the deployment). Whatever arrives is made a string or null here, once, at
+ * the fetch, so no page ever sees an object where it reads a string.
+ */
+export function studentAnswerText(raw: unknown, options: readonly string[] = []): string | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === "string") return raw === "" ? null : raw;
+  if (typeof raw === "number") return String(raw);
+  if (typeof raw !== "object" || Array.isArray(raw)) return null;
+  const a = raw as Record<string, unknown>;
+  if (Array.isArray(a.order) && a.order.every((o) => typeof o === "string")) {
+    return a.order.length === 0 ? null : (a.order as string[]).join(" | ");
+  }
+  if (typeof a.index === "number" && Number.isInteger(a.index) && a.index >= 0) return options[a.index] ?? null;
+  if (typeof a.value === "string") return a.value === "" ? null : a.value;
+  if (typeof a.value === "number") return String(a.value);
+  return null;
+}
+
 /** An ordering answer or key is stored as `a | b | c`. */
 export function sequence(value: string | null): string[] {
   if (!value) return [];

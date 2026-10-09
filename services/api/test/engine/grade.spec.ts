@@ -250,3 +250,35 @@ describe("student serializer — the answer key never leaves the server", () => 
     expect(toStudentItem(items[0]!)).not.toHaveProperty("resolvedParams");
   });
 });
+
+import { answerText } from "../../src/engine/grade.js";
+
+describe("answerText: a recorded answer as text, for the pages that show it", () => {
+  const options = ["A compiler", "An assembler", "A linker"];
+  it("a picked option is that option's text", () => {
+    expect(answerText({ index: 1 }, options)).toBe("An assembler");
+    expect(answerText({ index: 0 }, options)).toBe("A compiler");
+  });
+  it("an ordering is its sequence, joined as a key is", () => {
+    expect(answerText({ order: ["c", "a", "b"] }, options)).toBe("c | a | b");
+  });
+  it("a typed value is the text, numbers included", () => {
+    expect(answerText({ value: "0x1F" }, options)).toBe("0x1F");
+    expect(answerText({ value: 42 }, options)).toBe("42");
+  });
+  it("keeps a legacy bare string or number", () => {
+    expect(answerText("An assembler", options)).toBe("An assembler");
+    expect(answerText(7, options)).toBe("7");
+  });
+  it("is null, never an object, when nothing usable was recorded", () => {
+    for (const raw of [null, undefined, {}, [], "", { order: [] }, { value: "" }, { index: 9 }, { index: -1 }, { index: 1.5 }, { value: {} }, { order: [1, 2] }, true]) {
+      expect(answerText(raw, options), JSON.stringify(raw)).toBeNull();
+    }
+  });
+  it("never returns anything but a string or null", () => {
+    for (const raw of [{ index: 1 }, { order: ["a"] }, { value: 3 }, { weird: [1, 2] }, "x", 5]) {
+      const t = answerText(raw, options);
+      expect(t === null || typeof t === "string").toBe(true);
+    }
+  });
+});

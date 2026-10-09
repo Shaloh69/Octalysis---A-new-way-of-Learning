@@ -5,6 +5,7 @@ import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
 import { withTransaction } from "../db.js";
 import { loadAttempt, loadResolvedPaper } from "../repo/engine-repo.js";
+import { answerText } from "../engine/grade.js";
 import type { Env } from "../env.js";
 import { computeGradebook, toCsv } from "../gradebook/compute.js";
 import { loadGradebookInput } from "../gradebook/load.js";
@@ -830,7 +831,8 @@ export function registerConsoleRoutes(
           resolvedParams: i.resolvedParams,
           correctValue: i.correctValue,
           rationale: i.rationale,
-          studentAnswer: r?.raw_answer ?? null,
+          // TEXT, never the stored object ({ index } | { value } | { order }): see answerText().
+          studentAnswer: r ? answerText(r.raw_answer, i.options) : null,
           isCorrect: r ? r.is_correct : null,
           timeMs: r?.time_ms ?? null,
         };

@@ -208,3 +208,31 @@ export function scoreAttempt(
     byObjective,
   };
 }
+
+/**
+ * A recorded answer as TEXT, for a reader that shows it (the console's record
+ * and paper pages). The answer route stores what the student app sent, an
+ * object: `{ index }` (a picked option), `{ value }` (typed) or `{ order }` (a
+ * sequence). The pages read a string, and an object handed to React as a child
+ * is a render error that blanks the whole page (found on the deployment, 8 Oct
+ * 2026, on opening a real attempt). A sequence is `a | b | c`, as a key is.
+ *
+ * Null when nothing was answered (`{}`, or a shape this does not know), which
+ * the pages say as "Not answered". A legacy bare string is kept as it is.
+ */
+export function answerText(raw: unknown, options: readonly string[]): string | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === "string") return raw === "" ? null : raw;
+  if (typeof raw === "number") return String(raw);
+  if (typeof raw !== "object" || Array.isArray(raw)) return null;
+  const a = raw as Record<string, unknown>;
+  if (Array.isArray(a.order) && a.order.every((o) => typeof o === "string")) {
+    return a.order.length === 0 ? null : (a.order as string[]).join(" | ");
+  }
+  if (typeof a.index === "number" && Number.isInteger(a.index) && a.index >= 0) {
+    return options[a.index] ?? null;
+  }
+  if (typeof a.value === "string") return a.value === "" ? null : a.value;
+  if (typeof a.value === "number") return String(a.value);
+  return null;
+}
