@@ -340,3 +340,27 @@ assessment windows (A) and the chat additions: one each. The count of SQL files 
    teacher's class is read-only.
 3. **Chat: yes** (§5.7 as written): a Staff room, private teacher-to-teacher threads readable by their two
    members only, and active-now shown to staff about staff only. Built as its own piece, last.
+
+### 5.9, ruling 4 (9 Oct 2026, mid-session): which papers are global, and which follow the class's book
+
+> *"Prelim, Midterm and Final examinations are global; but stage checks or moons are dependent on what
+> book a teacher uploads, or the admin uploads, as the subject for that class or section. A class or
+> section can have different books for every subject."* (instructor, 9 Oct 2026)
+
+So there are **two kinds of paper**, not one:
+
+| Paper | Belongs to | Who changes it | Today |
+|---|---|---|---|
+| **Prelim, Midterm, Finals** | the course (global) | the admin; every teacher reads | as built in T2: shared, no section |
+| **Stage checks and moon checks/journeys** | **the class's book**: the book a teacher (or the admin) gives that class for the subject | the teacher of that class, for their class | **not yet true**: all 13 on the deployment are global, because only one book (Stallings, CPE 412) has content |
+
+What T2 does with this: **nothing is built for the second row yet, and nothing built contradicts it.**
+Stage checks stay shared papers (editable by the admin only) while one book is all there is. When a class
+takes a *different* book, its stage chapters, moons and checks come from that book: that is T3 (a subject's
+curriculum keyed by subject and book, `classes.book_id` already holds the choice) and CS2, and it needs its
+own plan (what "a teacher uploads a book" means; how chapters, moons and checks are made from it; whether
+two classes on one book share the checks). **Open question for the instructor, which changes T2 now:**
+until T3, should a teacher be able to set the **window and attempt limit of the stage checks for their own
+class** (a per-class setting over the one shared paper), or wait for T3 to own it? Recommendation: wait, and
+say so on the page (a teacher reads the stage checks; the admin sets them), because a per-class table built
+now would be thrown away when the checks become per-book.
