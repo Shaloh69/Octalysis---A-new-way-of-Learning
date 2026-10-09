@@ -1526,6 +1526,41 @@ left, or needing a decision:
 
 ---
 
+## 0zn. Every moon is graded, a Graded switch, and a blank-page fix — 9 Oct 2026 (after 0zm)
+
+**What the instructor asked, mid-session:** "are moons recorded also?" then **"No I want
+everything to be graded. Moons are still as important as checks. Add a control for each moon
+to be able [to say] if graded or not"**; then "also when clicking dropdowns this happens to the
+page" (the console's student record went blank) and "when entering moons, instead of auto checks
+it defaults to [practice]". Four rulings, all the recommended option: a moon check is sat like a
+stage check (a paper, five tries, the best counts); it counts into Quizzes as one more quiz at a
+stage check's weight (the five syllabus weights stay fixed); all 115 live moons start graded; a
+teacher flips each in the Studio through Draft then Publish, with a reason, audited.
+
+**Built, pushed (code) and on the deployment (database).** Detail and the rulings:
+`docs/GRADED-MOONS-PLAN.md` ("Built"). The eighteenth SQL file, `addendum-graded-moons.sql`,
+was applied with `pnpm db:push --file` after `db:push:check` named ddvxkbcelpqydnjkffdr, and
+checked there: 115 of 115 live moons graded, constraints, the view (`security_invoker`), INV-12,
+invariants clean. **The blank page:** the record rendered an answer shaped `{index}` as an object;
+fixed at the source (`answerText`), the console's normaliser, and a `PageBoundary` / `RouteBoundary`
+so a fault shows a retry; regression spec `console-record-answers.spec.ts`.
+
+**Found while testing, fixed:** the Graded switch used `disabled` while it saved, which dropped
+keyboard focus and never gave it back; it is `aria-disabled` now (a spec holds it). The CSV test
+hard-coded 18 stage columns and failed once moon columns existed; it counts them now.
+
+**Open, in order.**
+1. **Console `/profile`** and the picture in the console shell, roster, `/students/:userId`
+   (Remove), console chat and `/teachers*` (PROFILES second half, unchanged from 0zm).
+2. A real picture through the real bucket with throwaway accounts (ask first).
+3. `console-studio.spec.ts:637`'s regex (see the plan's "Built").
+4. Check the deployed Render and both Vercel builds after this push; `docs/IMPLEMENTED.md` is stale.
+5. **Prelim is not runnable:** 14 of 96 act-1 questions are live. A moon check also needs 3 live
+   questions in its moon, so on the deployment every moon's "Sit the check" is disabled until
+   its questions are approved at /items; the moon panel says so ("This moon has no questions yet").
+
+---
+
 ## 0zm. PROFILES, the first half, then two things the instructor asked for mid-session — 8 Oct 2026 (night, after 0zl)
 
 **What the prompt asked:** PROFILES (templates, the seventeenth SQL file, the API, the

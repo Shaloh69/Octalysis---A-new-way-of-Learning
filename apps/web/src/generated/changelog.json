@@ -1,7 +1,7 @@
 {
   "madeAt": {
-    "commit": "b21c06a",
-    "date": "2026-10-08"
+    "commit": "1c72f8b",
+    "date": "2026-10-09"
   },
   "progress": {
     "done": 239,
@@ -9,6 +9,14 @@
     "pct": 98
   },
   "updates": [
+    {
+      "date": "2026-10-09",
+      "title": "Moons now have a graded check",
+      "items": [
+        "Entering a moon now takes you to its check: a short paper that counts toward your quizzes, like a stage check. You start it behind a prompt, in full screen, and you get five tries; the best one counts.",
+        "'Practise first' is still there on every moon: practice is open, as many times as you like, and never graded. If your teacher has marked a moon as practice only, it says so and 'Enter journey' is the only way in."
+      ]
+    },
     {
       "date": "2026-10-08",
       "title": "Your profile, a Messenger-style chat, and a tour",

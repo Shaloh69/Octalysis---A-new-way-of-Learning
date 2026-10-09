@@ -49,6 +49,14 @@ Every structural rule that CAN be a constraint SHOULD be a constraint. `run_inva
 rules a constraint cannot express. Do not write a checker for something a unique index already
 guarantees.
 
+## Graded moons (the eighteenth file, 9 Oct 2026)
+
+`addendum-graded-moons.sql`: `objectives.graded` (default true) and `objective_edits.graded` (null =
+unchanged), blueprint scope `moon` (one per moon: `blueprints_one_check_per_moon`), `live_objectives`
+carries `graded`, INV-12 exempts `objective` and `moon` papers. **Never write `objectives.graded`
+outside the Studio's publish** (`services/api/src/moons.ts`): it is a teacher's published decision
+with a reason and an audit row, and it changes the gradebook.
+
 ## Never
 - Disable RLS "temporarily" to debug. Use the service role in a scratch branch instead.
 - Add an UPDATE or DELETE path to `responses`. Corrections void an attempt; they never edit

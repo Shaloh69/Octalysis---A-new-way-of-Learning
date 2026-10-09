@@ -26,7 +26,10 @@ design work at all.
 ## 1. Start here — the next session: PROFILES, the console half
 
 ```
-Read docs/NEXT-SESSION.md sections 0zm, 0zl and 0zk first. PROFILES is half
+Read docs/NEXT-SESSION.md sections 0zn, 0zm and 0zl first (0zn: on 9 Oct every
+moon became graded, with a Graded switch in the Studio, the eighteenth SQL file
+is on the deployment, docs/GRADED-MOONS-PLAN.md has the rulings and what was
+built). PROFILES is half
 done: the seventeenth SQL file (db/addendum-profiles.sql) is on the deployment,
 the picture API is built and pushed, and the STUDENT's /app/profile, the top
 strip's avatar, the Messenger-shaped student chat and the ? tour are built.
@@ -42,11 +45,12 @@ rows. Then root CLAUDE.md: hard rules 3, 8 and 10, "Templates are ARTIFACTS",
 re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage, name the live phase. On
-8 Oct (night) it was 239/245, 98%: R3 87/88, R4 46/48, R5 21/24, every open
-box a person's; none of the PROFILES, chat or tour work has a box. Then say
+9 Oct it was 239/245, 98%: R3 87/88, R4 46/48, R5 21/24, every open
+box a person's; none of the PROFILES, chat, tour or graded-moons work has a box. Then say
 plainly whether Prelim-worth of data is okay to run on students, checking the
-five conditions in CLAUDE.md (the console's /changelog shows them live). On 8 Oct
-it was NOT: on the deployment stage 01 has 14 live, 1 at review, 2 retired, and
+five conditions in CLAUDE.md (the console's /changelog shows them live). On 9 Oct
+it was NOT (and a moon's check also needs 3 live questions in its moon, so every
+moon's Sit the check is disabled on the deployment until /items approves them): on the deployment stage 01 has 14 live, 1 at review, 2 retired, and
 02 (24), 03 (33) and 04 (24) are all at review, none live (14 of the act-1
 bank's 96); deployment invariants 0 failures (3 warnings).
 
@@ -54,7 +58,7 @@ Confirm everything is green before touching anything, AGAINST BUILDS. After a
 reboot, start Docker Desktop first. Kill orphaned API trees and previews:
 stopping a background task does NOT stop its server, so kill by PID (netstat
 -ano, taskkill //T //F //PID) and prove the port is free. Run pnpm db:reset,
-THEN node scripts/db-demo.mjs (SEVENTEEN SQL files: addendum-profiles.sql is the
+THEN node scripts/db-demo.mjs (EIGHTEEN SQL files: addendum-graded-moons.sql is the
 last; the demo section now has a CPE 412 class). Start ONE pnpm dev:api and
 prove it with a real GET (readyz); curl again after EVERY db:reset. Build each
 app in the FOREGROUND (pnpm build), then start its preview with the Bash tool's
@@ -65,7 +69,8 @@ OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test run, and pnpm verify, empties
 the seeded database: reset and reseed before any Playwright run. READ pnpm
 verify's exit code with $? (a background-task "exit 0" was a wrapper's echo on
 8 Oct, and verify had failed). A script with an apostrophe, backtick or
-backslash goes through the Write tool, never a heredoc; a multi-line edit of a
+backslash goes through the Write tool, never a heredoc (a regex's backslash was
+eaten twice on 9 Oct, in a heredoc and in node -e); a multi-line edit of a
 file with CRLF endings (StarShell.tsx, App.tsx, main.tsx) needs a patch that
 matches on LF and writes back CRLF. Git Bash rewrites a leading-slash argument
 into a Windows path: MSYS_NO_PATHCONV=1. The keyboard-reach helper tabs from the
@@ -80,9 +85,12 @@ https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
 Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never
 print it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project).
 scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref; pnpm
-db:push:check prints the host. FIRST, look at the deployed student site: that
-/app/profile, the chat and the ? are live after the 8 Oct push (the Render API
-and Vercel apps were pushed to and not looked at).
+db:push:check prints the host. FIRST, look at the deployed sites: that
+/app/profile, the chat and the ? are live after the 8 Oct push, and that the 9 Oct
+push (graded moons: the moon panel's Sit the check, the Studio's Graded switch,
+the gradebook's Moon checks) built on Render and both Vercel apps. Then fix
+design/specs/console-studio.spec.ts:637, whose regex /classes? tak/ cannot match
+"1 class takes" (the local DB has one class): it fails for that reason alone.
 
 The work:
 

@@ -78,3 +78,40 @@ still exempt; the moon's CHECK is a paper.
 Database (the eighteenth SQL file, on Supabase before the code, hard rule 10) -> denial
 tests red first -> the API (engine, the check route, the gradebook) -> the student's moon
 panel and check route -> the Studio's switch -> each page's gate at 1440 and 380.
+
+## Built — 9 Oct 2026
+
+All of the order above, in three commits (`220e04e` db + api, `4e141db` console, `1c72f8b` web).
+
+- **Database:** `db/addendum-graded-moons.sql` (the eighteenth file). `objectives.graded`
+  (default true; **all 115 live moons are graded on the deployment**), `objective_edits.graded`
+  (null = unchanged), scope `moon` with exactly one check per moon, `live_objectives` carries
+  `graded`, INV-12 exempts moon papers. Applied to Supabase (ref ddvxkbcelpqydnjkffdr,
+  checked) before the push; invariants 0 failures.
+- **API:** `POST /objectives/:id/check` (404 unknown/unpublished, 403 locked, 409 not graded or
+  no live questions; creates no attempt, so nothing of the paper exists before Start). A moon
+  check is sat like a stage check (five attempts, the best counts); the journey stays
+  unlimited and ungraded. The gradebook: Quizzes is the mean over the stage checks sat AND the
+  graded moon checks sat; a switched-off moon drops out and its sittings are kept; the CSV gains
+  `moon_<id>` columns. The Studio's Publish applies `graded`, says so in its moves and audits a
+  `grading` list (id, new state, students who had sat it).
+- **Student app:** the moon panel's Grading row, **Sit the check** (Enter) with **Practise first**
+  beside it; a moon not graded keeps **Enter journey**. A graded moon's journey says it is not the
+  graded check and links to it. The check's start prompt says "moon", not "stage".
+- **Console:** a Graded switch on each moon row (a word and a position, `aria-disabled` while it
+  saves so keyboard focus survives); flipping back drops the staged change; the Publish dialog
+  states the gradebook effect before it happens; the add form asks "Graded" (on by default). The
+  gradebook's third view, **Moon checks**.
+- **Also in this commit range:** `RouteBoundary` (web) and `PageBoundary` (console) so one render
+  fault shows a retry instead of an empty page, after `/students/:id` went blank when an attempt
+  was opened (an answer shaped `{index}` was rendered as an object).
+
+**Measured:** `pnpm verify` exit 0 (API 1220 passed, web 336, console 272). Playwright:
+`web-moon-check` 23, `console-studio-moons` 49 + 1 skip, `console-gradebook` 15 moon tests
+beside the existing 52. **Not green, not mine:** `console-studio.spec.ts:637` asserts
+`/classes? tak/`, which cannot match "1 class takes" (the regex needs "classe"); the local DB has
+one class. Fix the regex to `/class(es)? take?s?/` or seed two classes.
+
+**Not verified / open:** a graded moon sat end to end on the deployment by a real student; the
+deployed Vercel/Render builds after this push; the 380 gradebook list with 18+ moons is a list by
+rule, tested with 30.

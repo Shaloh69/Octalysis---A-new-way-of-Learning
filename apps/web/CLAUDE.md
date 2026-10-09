@@ -104,3 +104,13 @@ buzzer, never a shake. These students are already anxious about a hard course.
 - **The first-run tour** (`shell/Tour.tsx`, a ? in the top strip): once per student on their first visit to
   the map (`localStorage octa:tour:v1:<user id>`), `inert` page behind it, StarShell only, never in a planet.
   An automated browser is not given it unless `octa:tour:force` is set.
+
+## Added 9 Oct 2026 (graded moons, `docs/GRADED-MOONS-PLAN.md`)
+- **A moon's panel leads with its CHECK** when the moon is graded (the default): **Sit the check** (also
+  the Enter key) goes to `/app/stage/:id/moon/:objectiveId/check`, which asks `POST /objectives/:id/check`
+  and lands on the runner's start prompt (nothing of the paper exists before Start, hard rule 9); **Practise
+  first** is the journey. A moon the Studio switched off keeps **Enter journey** alone. The journey says it
+  is not the graded check and links to it. The check is the stage check's runner (`AttemptRunner`,
+  eyebrow "Moon check", "moon" in the prompt's words); nothing is scored in the browser.
+- **`RouteBoundary`** wraps both shells: a render fault in one page shows a retry instead of unmounting the
+  app (the console has `PageBoundary`).

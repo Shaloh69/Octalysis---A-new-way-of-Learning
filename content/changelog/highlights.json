@@ -2,6 +2,22 @@
   "_about": "The changelog's written highlights, one entry per day that shipped. Written from that day's commits (git log), in plain words; the commit list itself is added by scripts/changelog.mjs. `teachers` shows on the console's /changelog; `students` (under `studentTitle`, in a student's words) on the student app's What's new, and only student-facing changes go there. An empty `students` list keeps the day off the student page. Instructor, 7 Oct 2026 (night): both written highlights and the full commit list.",
   "updates": [
     {
+      "date": "2026-10-09",
+      "title": "Every moon is graded",
+      "studentTitle": "Moons now have a graded check",
+      "teachers": [
+        "Every moon is now graded, and a moon's check counts as one more quiz, with the same weight as a stage check (the five syllabus weights are unchanged). A student sits it like a stage check: behind a start prompt, in full screen, five tries, the best counts. Practising a moon is still open and never graded.",
+        "A Graded switch on each moon in the Studio. Flip it and the change waits for Publish, which asks for a reason and tells you what happens in the gradebook before it happens ('01.2 stops counting. Every sitting is kept.') and how many students had already sat it. Turning it back on brings the marks back; nothing is deleted. A new moon is graded unless you untick it.",
+        "The gradebook has a third view, Moon checks: a column for each graded moon the class has sat, the best sitting per student, 'not sat' never read as 0. The CSV carries a moon_ column for each graded moon.",
+        "A moon needs 3 live questions before its check can be sat, so until the act-1 bank is approved at Items, 'Sit the check' on a moon stays disabled and says why.",
+        "Fixed: the student record in the console no longer goes blank when you open an attempt; an answer of a kind the page did not expect was being drawn as an object. Each app now shows a retry if a page fails instead of an empty screen."
+      ],
+      "students": [
+        "Entering a moon now takes you to its check: a short paper that counts toward your quizzes, like a stage check. You start it behind a prompt, in full screen, and you get five tries; the best one counts.",
+        "'Practise first' is still there on every moon: practice is open, as many times as you like, and never graded. If your teacher has marked a moon as practice only, it says so and 'Enter journey' is the only way in."
+      ]
+    },
+    {
       "date": "2026-10-08",
       "title": "Course Studio",
       "teachers": [

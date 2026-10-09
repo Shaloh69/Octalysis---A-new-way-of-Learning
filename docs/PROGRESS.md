@@ -19,6 +19,14 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**9 Oct 2026:** phase report **239/245 (98%)**, unchanged (no box in R0-R5 covers it). **Every moon
+is graded, with a switch:** the eighteenth SQL file (`addendum-graded-moons.sql`) is on Supabase
+(all 115 live moons graded), a moon's check is a paper like a stage check and counts as one more
+quiz, the Studio has a Graded switch per moon, the gradebook has a Moon checks view, the student's
+moon panel leads with Sit the check. Also fixed: the blank console record (an answer rendered as an
+object) plus a boundary in each app. `pnpm verify` green. Prelim NOT runnable (14 of 96 act-1
+questions live; moon checks also wait on live questions). Detail: `NEXT-SESSION.md` §0zn.
+
 **8 Oct 2026 (later, night):** phase report **239/245 (98%)**, unchanged (none of the day's work has
 a box in R0-R5). **PROFILES, first half:** the seventeenth SQL file (`addendum-profiles.sql`) is on
 Supabase, the picture API and the student's `/app/profile` are built and pushed; the console's

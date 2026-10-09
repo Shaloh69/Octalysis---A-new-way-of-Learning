@@ -1,9 +1,46 @@
 {
   "madeAt": {
-    "commit": "b21c06a",
-    "date": "2026-10-08"
+    "commit": "1c72f8b",
+    "date": "2026-10-09"
   },
   "updates": [
+    {
+      "date": "2026-10-09",
+      "title": "Every moon is graded",
+      "highlights": [
+        "Every moon is now graded, and a moon's check counts as one more quiz, with the same weight as a stage check (the five syllabus weights are unchanged). A student sits it like a stage check: behind a start prompt, in full screen, five tries, the best counts. Practising a moon is still open and never graded.",
+        "A Graded switch on each moon in the Studio. Flip it and the change waits for Publish, which asks for a reason and tells you what happens in the gradebook before it happens ('01.2 stops counting. Every sitting is kept.') and how many students had already sat it. Turning it back on brings the marks back; nothing is deleted. A new moon is graded unless you untick it.",
+        "The gradebook has a third view, Moon checks: a column for each graded moon the class has sat, the best sitting per student, 'not sat' never read as 0. The CSV carries a moon_ column for each graded moon.",
+        "A moon needs 3 live questions before its check can be sat, so until the act-1 bank is approved at Items, 'Sit the check' on a moon stays disabled and says why.",
+        "Fixed: the student record in the console no longer goes blank when you open an attempt; an answer of a kind the page did not expect was being drawn as an object. Each app now shows a retry if a page fails instead of an empty screen."
+      ],
+      "commits": [
+        {
+          "hash": "1c72f8b",
+          "type": "feat",
+          "scope": "web",
+          "subject": "entering a graded moon sits its check; practice is one step lower; a route error no longer blanks the app"
+        },
+        {
+          "hash": "4e141db",
+          "type": "feat",
+          "scope": "console",
+          "subject": "a Graded switch on every moon, and a Moon checks view in the gradebook"
+        },
+        {
+          "hash": "220e04e",
+          "type": "feat",
+          "scope": "db,api",
+          "subject": "every moon is graded unless a teacher switches it off; a moon's check is a paper that counts as one more quiz"
+        },
+        {
+          "hash": "a8e6df1",
+          "type": "fix",
+          "scope": "console,api",
+          "subject": "opening a real attempt no longer blanks the whole console"
+        }
+      ]
+    },
     {
       "date": "2026-10-08",
       "title": "Course Studio",

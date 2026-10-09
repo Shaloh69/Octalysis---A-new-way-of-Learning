@@ -23,7 +23,7 @@ other documents — check it before believing any claim that something is built.
 - `packages/contracts` — Zod schemas shared across all three
 - `packages/tokens` — three themes + accent derivation, as CSS custom properties
 - `db` — Supabase Postgres. Apply in order: `schema.sql` → `addendum-feedback.sql` →
-  **`addendum-submissions.sql`** → `addendum-audit.sql` → `addendum-cron.sql` → `addendum-drafts.sql` → `addendum-figures.sql` → `addendum-chat.sql` → `addendum-sitting.sql` → `addendum-assistant.sql` → `addendum-assistant-v6.sql` → `addendum-teachers.sql` → `addendum-studio.sql` → `addendum-studio-editor.sql` → `addendum-studio-moons.sql` → `addendum-profiles.sql` (local
+  **`addendum-submissions.sql`** → `addendum-audit.sql` → `addendum-cron.sql` → `addendum-drafts.sql` → `addendum-figures.sql` → `addendum-chat.sql` → `addendum-sitting.sql` → `addendum-assistant.sql` → `addendum-assistant-v6.sql` → `addendum-teachers.sql` → `addendum-studio.sql` → `addendum-studio-editor.sql` → `addendum-studio-moons.sql` → `addendum-profiles.sql` → `addendum-graded-moons.sql` (local
   prepends `local-bootstrap.sql`). `addendum-submissions.sql` carries labs, project and
   participation — **40% of the grade** — and was missing from this list while
   `scripts/db-reset.mjs` had been applying it all along.
@@ -87,7 +87,9 @@ other documents — check it before believing any claim that something is built.
      far, and that uses the attempt. Away for less, the questions stay covered and the
      leave is recorded. The page hands it in when it can; the API submits a paper that
      was left (`services/api/src/sitting.ts`) the next time its student touches it.
-     A moon's journey is practice and is exempt from all of this.
+     A moon's journey is practice and is exempt from all of this. **A moon's CHECK is not**
+     (8 Oct 2026: every moon is graded unless a teacher switches it off; `docs/GRADED-MOONS-PLAN.md`):
+     it is a paper under every line above, like a stage check.
 10. **Every database change reaches Supabase in the same session, before the code that uses
    it** (instructor, 5 Oct 2026: "whenever a new schema or any database update, always
    update Supabase for no errors"). A new table, column, policy, function or trigger:
@@ -121,7 +123,7 @@ other documents — check it before believing any claim that something is built.
 
 ```bash
 pnpm db:up      # Postgres 16 in Docker on :15432
-pnpm db:reset   # drop, recreate, apply all SEVENTEEN SQL files, run invariants
+pnpm db:reset   # drop, recreate, apply all EIGHTEEN SQL files, run invariants
 pnpm dev:api    # the API on :8090, configured for LOCAL auth  <- not `pnpm dev`
 pnpm test:rls   # the 38-test denial suite
 pnpm verify     # typecheck + tests + invariants
@@ -131,7 +133,7 @@ pnpm verify     # typecheck + tests + invariants
 that cost hours each and are not guessable: the raw API dev script boots from
 `.env` and fails three ways that all look like app bugs (use `pnpm dev:api`);
 **ports 8080 and 5173 belong to other projects on this machine** and both answer
-200, so "the port is up" proves nothing; and the SQL apply order is **seventeen files**
+200, so "the port is up" proves nothing; and the SQL apply order is **eighteen files**
 — omitting `addendum-submissions.sql` silently drops 40% of the grade.
 
 **`local-bootstrap.sql` is LOCAL ONLY** — it supplies the `auth` schema and the
