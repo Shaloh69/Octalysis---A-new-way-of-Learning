@@ -23,10 +23,12 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: T2 (teachers see only their own classes)
+## 1. Start here — the next session: T2, BUILDING (the plan is written, section 5 of the teachers plan; the rulings come first)
 
 ```
-Read docs/NEXT-SESSION.md sections 0zo, 0zn and 0zm first (0zo: on 9 Oct the
+Read docs/NEXT-SESSION.md sections 0zp, 0zo and 0zn first (0zp: on 9 Oct T2's PLAN was written
+into docs/TEACHERS-AND-SUBJECTS-PLAN.md section 5 and the session stopped for the instructor's
+rulings; read section 5 in full, it replaces step 1 below. 0zo: on 9 Oct the
 console half of PROFILES was built and pushed, a real picture went through the
 real bucket, the first-run tour is remembered per account in the database
 (db/addendum-tour.sql, the NINETEENTH SQL file, on the deployment), and the
@@ -95,7 +97,11 @@ instructor before removing them by any means that touches those guards.
 
 The work: T2, in this order.
 
-1. THE PLAN FIRST, then stop for the instructor's approval (as E2's was).
+1. THE PLAN IS WRITTEN (docs/TEACHERS-AND-SUBJECTS-PLAN.md section 5, 9 Oct). Open with the
+   instructor's rulings on its open points (5.3: per-class assessment windows (A) or a copy per
+   section (B), and who edits the 13 shared assessments; 5.4: the admin's four read-only
+   exceptions; 5.7: teacher-to-teacher chat and staff-only presence), write them into section 5,
+   and only then build. The old step 1, kept for what it asks:
    Write "T2" into docs/TEACHERS-AND-SUBJECTS-PLAN.md: for each console page a
    teacher uses (/locks, /live, /chat, /students, /students/:id, /attempts/:id,
    /submissions, /gradebook, /assessments, /feedback, the Studio's subject pages

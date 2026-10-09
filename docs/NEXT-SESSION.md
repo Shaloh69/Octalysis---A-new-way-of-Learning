@@ -1526,6 +1526,33 @@ left, or needing a decision:
 
 ---
 
+## 0zp. T2 planned, and stopped for the instructor's rulings — 9 Oct 2026 (after 0zo)
+
+**Phase:** R3/R4/R5 live, 239/245 (98%), unchanged; T2 has no box. **Built: nothing. Written:**
+`docs/TEACHERS-AND-SUBJECTS-PLAN.md` section 5 (the T2 plan v1, every console page, the two-door
+enforcement, rollout, tests, order).
+
+**Asked with the question tool, answered:** an ended class is **read-only** for its teacher; feedback is
+read by all teachers with names only for their own classes, the audit log shows a teacher their own
+actions and actions on their students (admin: all). **Answered with a question back:** global locks and
+assessments ("I thought each teacher has their own set of locks, assessments, books, sections, classes");
+section 5.3 explains (the deployment has 0 global locks; **all 13 assessments are global, shared papers**)
+and proposes per-class windows over the shared paper. **Answered, to confirm:** a section's creator gets its
+class automatically, teacher or admin; the admin is read-only on everyone else's sections, classes, books
+(5.4 lists four exceptions I proposed: picture removal, password/status recovery, assigning classes,
+the shared assessments). **Volunteered:** teachers chat with one another and see who is active (5.7).
+
+**Found by reading the deployment (read-only, ref ddvxkbcelpqydnjkffdr checked):** 6 sections, 3 classes, only
+BSCPE-4A held (by the admin); **BSECE-4A (15 students) was imported with no class, so a scoped teacher could not
+see it** (the roster import must create the class, and the admin gives BSECE-4A one on /teachers before the
+T2 code is pushed); one live teacher account holds nothing; the three deployed sites answer 200 and the
+console bundle carries the profile route. Prelim sentence unchanged: **NOT safe**, 39 of 96 act-1 items live
+(stage 03 33 and 04 24 still at review).
+
+**Next:** get the rulings on 5.3, 5.4, 5.7, then the denial tests red first (5.8).
+
+---
+
 ## 0zo. PROFILES finished: the console half, the real bucket, a tour in the database, and the console's ? and Messenger chat — 9 Oct 2026 (after 0zn)
 
 **What the prompt asked:** the console half of PROFILES (the real bucket, `/profile`, the picture
