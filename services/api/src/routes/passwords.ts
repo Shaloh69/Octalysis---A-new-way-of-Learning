@@ -5,6 +5,7 @@ import { identityFrom, isStaff, requireStaff } from "../auth.js";
 import { AppError, errors } from "../errors.js";
 import type { Env } from "../env.js";
 import type { SupabaseAdmin } from "./auth.js";
+import { assertWritesUser, staffScope } from "../scope.js";
 
 /**
  * Passwords a student cannot reset for themself (instructor ruling, 6 Oct
@@ -50,6 +51,10 @@ export function registerPasswordRoutes(app: FastifyInstance, env: Env, admin: Su
       if (!params.success) throw errors.notFound("No such student.");
       const body = ResetBody.safeParse(req.body);
       if (!body.success) throw errors.badRequest("Say why, in a few words.");
+      // T2: a teacher resets the password of a student in a class they hold and that has not ended. The
+      // admin may reset anyone's: recovery for a student whose teacher is away (instructor, 9 Oct 2026).
+      const scope = await staffScope(app.db, id);
+      if (!scope.admin) await assertWritesUser(app.db, scope, params.data.userId);
 
       const { rows } = await app.db.query(
         `select p.student_id, p.full_name from profiles p

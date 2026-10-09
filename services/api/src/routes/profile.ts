@@ -10,6 +10,7 @@ import {
   type ProfileClass,
 } from "@octa/contracts";
 import { identityFrom, requireStaff } from "../auth.js";
+import { assertReadsUser, staffScope } from "../scope.js";
 import { errors } from "../errors.js";
 import { withTransaction, type Db } from "../db.js";
 import type { Env } from "../env.js";
@@ -215,6 +216,12 @@ export function registerProfileRoutes(app: FastifyInstance, env: Env, storage: B
     if (!params.success) throw errors.notFound("That account does not exist.");
     const reason = ChatReasonBody.safeParse(req.body);
     if (!reason.success) throw errors.badRequest("Say why you are removing it, in a few words.");
+    // T2: a student outside the classes a teacher reads is not found (the admin removes anyone's: moderation).
+    const scope = await staffScope(app.db, id);
+    if (!scope.admin) {
+      const who = await app.db.query<{ role: string }>("select role::text as role from profiles where id = $1", [params.data.userId]);
+      if (who.rows[0]?.role === "student") await assertReadsUser(app.db, scope, params.data.userId, "That account does not exist.");
+    }
 
     const removed = await asApi(app.db, async (tx) => {
       const { rows } = await tx.query(

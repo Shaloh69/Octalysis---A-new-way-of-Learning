@@ -170,9 +170,10 @@ async function extraStudents(n: number, tag: string): Promise<string[]> {
          insert into auth.users (id, email, raw_app_meta_data)
          values (gen_random_uuid(), $1, '{"role":"student"}'::jsonb) returning id
        )
-       insert into profiles (id, full_name, role)
-       select id, $2, 'student'::user_role from u returning id::text as id`,
-      [`${tag}-${i}@octa-test.local`, `Live Test ${tag} ${i}`],
+       insert into profiles (id, full_name, role, section_id)
+       select id, $2, 'student'::user_role, $3::uuid from u returning id::text as id`,
+      // In the fixture teacher's class: T2 shows a teacher the room of the classes they hold.
+      [`${tag}-${i}@octa-test.local`, `Live Test ${tag} ${i}`, w.sectionId],
     );
     ids.push(rows[0].id as string);
   }
@@ -256,7 +257,7 @@ describe("a question put to the room: staff only, audited, one at a time", () =>
     app.inject({ method: "POST", url: "/api/v1/console/live/sessions", headers: auth(token), payload });
 
   it("a student cannot start one, and nothing is written", async () => {
-    const res = await start(studentToken, { itemId: liveItem.id, sectionId: null, reason: "Warm-up question" });
+    const res = await start(studentToken, { itemId: liveItem.id, sectionId: w.sectionId, reason: "Warm-up question" });
     expect(res.statusCode).toBe(403);
     const { rows } = await pool.query("select count(*)::int as n from live_sessions");
     expect(rows[0].n, "a student's refused start left a session behind").toBe(0);
@@ -278,13 +279,13 @@ describe("a question put to the room: staff only, audited, one at a time", () =>
   });
 
   it("refuses a start with no reason", async () => {
-    const res = await start(teacherToken, { itemId: liveItem.id, sectionId: null, reason: "" });
+    const res = await start(teacherToken, { itemId: liveItem.id, sectionId: w.sectionId, reason: "" });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.message).toMatch(/why/i);
   });
 
   it("refuses an item that is not live, and says where it is", async () => {
-    const res = await start(teacherToken, { itemId: draftItemId, sectionId: null, reason: "Warm-up question" });
+    const res = await start(teacherToken, { itemId: draftItemId, sectionId: w.sectionId, reason: "Warm-up question" });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.message).toMatch(/S-07-live-draft is at review/);
   });
@@ -322,7 +323,7 @@ describe("a question put to the room: staff only, audited, one at a time", () =>
   });
 
   it("refuses a second while one is running", async () => {
-    const res = await start(teacherToken, { itemId: liveItem.id, sectionId: null, reason: "Another one" });
+    const res = await start(teacherToken, { itemId: liveItem.id, sectionId: w.sectionId, reason: "Another one" });
     expect(res.statusCode).toBe(409);
     expect(res.json().error.message).toMatch(/already running/i);
   });

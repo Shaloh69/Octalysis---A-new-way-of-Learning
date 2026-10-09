@@ -1001,6 +1001,13 @@ describe("roster writes — /students", () => {
  * rows the rest of this file writes "now".
  * ========================================================== */
 describe("the audit log: every entry, filtered on the server, and exported", () => {
+  // T2 (9 Oct 2026): the WHOLE log is the admin's; a teacher reads their own actions and those on their
+  // students (class-scope-api.spec.ts). This describe is about the whole log, so it reads as the admin
+  // (the fixture instructor's account, with the admin role claim).
+  let auditorToken = "";
+  beforeAll(() => {
+    auditorToken = mintToken(w.teacher, "admin");
+  });
   const RANGE = "from=2025-01-01T00:00:00Z&to=2026-01-01T00:00:00Z";
   const BLOCK = "0b10c000-0000-4000-8000-000000000007";
   const FILLER = 120;
@@ -1052,7 +1059,7 @@ describe("the audit log: every entry, filtered on the server, and exported", () 
     target: { type: string; id: string | null; label: string } | null;
   };
   const get = async (qs: string) => {
-    const res = await app.inject({ method: "GET", url: `/api/v1/console/audit?${qs}`, headers: auth(teacherToken) });
+    const res = await app.inject({ method: "GET", url: `/api/v1/console/audit?${qs}`, headers: auth(auditorToken) });
     expect(res.statusCode, res.body).toBe(200);
     return res.json() as {
       entries: Entry[]; next: string | null; total: number; actors: Array<{ id: string | null; name: string }>;
@@ -1122,7 +1129,7 @@ describe("the audit log: every entry, filtered on the server, and exported", () 
 
   it("refuses a malformed filter in words, never a 500", async () => {
     for (const qs of ["family=nope", "from=yesterday", "limit=0", "before=abc", "actor=someone"]) {
-      const res = await app.inject({ method: "GET", url: `/api/v1/console/audit?${qs}`, headers: auth(teacherToken) });
+      const res = await app.inject({ method: "GET", url: `/api/v1/console/audit?${qs}`, headers: auth(auditorToken) });
       expect(res.statusCode, qs).toBe(400);
       expect(res.json().error.message, qs).toMatch(/\w/);
     }
@@ -1130,7 +1137,7 @@ describe("the audit log: every entry, filtered on the server, and exported", () 
 
   it("exports every match as CSV, not only the loaded page", async () => {
     const res = await app.inject({
-      method: "GET", url: `/api/v1/console/audit.csv?${RANGE}`, headers: auth(teacherToken),
+      method: "GET", url: `/api/v1/console/audit.csv?${RANGE}`, headers: auth(auditorToken),
     });
     expect(res.statusCode).toBe(200);
     expect(res.headers["content-type"]).toMatch(/text\/csv/);
@@ -1150,7 +1157,7 @@ describe("the audit log: every entry, filtered on the server, and exported", () 
       [w.teacher, JSON.stringify({ scope: "global", stageId: "06", state: "locked", reason: '=HYPERLINK("http://x")' })],
     );
     const res = await app.inject({
-      method: "GET", url: `/api/v1/console/audit.csv?${RANGE}&q=HYPERLINK`, headers: auth(teacherToken),
+      method: "GET", url: `/api/v1/console/audit.csv?${RANGE}&q=HYPERLINK`, headers: auth(auditorToken),
     });
     expect(res.body.split("\n")[1]).toContain(`"'=HYPERLINK(""http://x"")"`);
   });

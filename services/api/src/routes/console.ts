@@ -975,13 +975,13 @@ export function registerConsoleRoutes(
   app.get("/api/v1/console/audit", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
-    return reply.send(await loadAuditPage(app.db, auditQuery(req.query)));
+    return reply.send(await loadAuditPage(app.db, auditQuery(req.query), await staffScope(app.db, id)));
   });
 
   app.get("/api/v1/console/audit.csv", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
-    const { entries, total } = await loadAuditExport(app.db, auditQuery(req.query));
+    const { entries, total } = await loadAuditExport(app.db, auditQuery(req.query), await staffScope(app.db, id));
     if (total > AUDIT_EXPORT_MAX) {
       throw errors.badRequest(
         `${total.toLocaleString("en-US")} entries match, and an export holds ${AUDIT_EXPORT_MAX.toLocaleString("en-US")} at most. Narrow the dates and export again.`,

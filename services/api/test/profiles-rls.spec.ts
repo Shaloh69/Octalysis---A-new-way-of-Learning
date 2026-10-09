@@ -201,9 +201,11 @@ describe("who may SEE a picture: can_see_avatar(viewer, subject)", () => {
     expect(await ask(w.studentB, w.studentA)).toBe(true);
     expect(await ask(w.studentA, w.studentA)).toBe(true);
   });
-  it("a teacher sees a student's, and the admin does", async () => {
-    expect(await ask(w.teacher, c)).toBe(true);
+  it("a teacher sees a student's of a class they read, and the admin sees any (T2, addendum-class-avatars.sql)", async () => {
+    expect(await ask(w.teacher, w.studentA), "the teacher of section 2A sees their own student").toBe(true);
+    expect(await ask(w.teacher, c), "student c is in section 2B, which this teacher does not hold").toBe(false);
     expect(await ask(adminId, w.studentA)).toBe(true);
+    expect(await ask(adminId, c)).toBe(true);
   });
   it("a student sees a teacher's and the admin's (they are in the chat with them)", async () => {
     expect(await ask(w.studentA, w.teacher)).toBe(true);

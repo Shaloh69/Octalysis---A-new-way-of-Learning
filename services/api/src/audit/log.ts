@@ -7,6 +7,7 @@ import {
 } from "@octa/contracts";
 import { csvCell } from "../csv.js";
 import type { Db } from "../db.js";
+import type { StaffScope } from "../scope.js";
 
 /**
  * `/audit`'s reads: one query, enriched once, for the page and the CSV.
@@ -34,6 +35,7 @@ interface Row {
   subject_user_id: string | null;
   subject_name: string | null;
   subject_student_id: string | null;
+  subject_section_id: string | null;
   item_slug: string | null;
   assessment_title: string | null;
   block_stage: string | null;
@@ -53,9 +55,10 @@ interface Row {
 const ENRICHED = `
   select l.id, l.action, l.target_type, l.target_id, l.payload, l.at, l.actor_id,
          a.full_name                                                      as actor_name,
-         coalesce(su.id, sd.claimed_by, sb.user_id, tp.id)                as subject_user_id,
-         coalesce(su.full_name, sd.full_name, sbp.full_name, tp.full_name) as subject_name,
-         coalesce(su.student_id, sd.student_id, sbp.student_id, tp.student_id) as subject_student_id,
+         coalesce(su.id, sd.claimed_by, sb.user_id, tp.id, stp.id)                as subject_user_id,
+         coalesce(su.full_name, sd.full_name, sbp.full_name, tp.full_name, stp.full_name) as subject_name,
+         coalesce(su.student_id, sd.student_id, sbp.student_id, tp.student_id, stp.student_id) as subject_student_id,
+         coalesce(su.section_id, sd.section_id, sbp.section_id, tp.section_id, stp.section_id)  as subject_section_id,
          it.slug   as item_slug,
          asm.title as assessment_title,
          cb.stage_id as block_stage,
@@ -73,6 +76,7 @@ const ENRICHED = `
     left join submissions sb  on l.target_type = 'submission'    and sb.id::text  = l.target_id
     left join profiles sbp    on sbp.id = sb.user_id
     left join profiles tp     on l.target_type = 'profile'       and tp.id::text  = l.target_id
+    left join profiles stp    on l.target_type = 'student'       and stp.id::text = l.target_id
     left join items it        on l.target_type = 'item'          and it.id::text  = l.target_id
     left join assessments asm on l.target_type = 'assessment'    and asm.id::text = l.target_id
     left join content_blocks cb on l.target_type = 'content_block' and cb.id::text = l.target_id
@@ -87,13 +91,20 @@ const SEARCHED = `concat_ws(' ',
     e.assessment_title, e.payload->>'title', e.stage_title, e.submission_title, e.section_code,
     e.payload->>'reason', e.payload->>'from', e.payload->>'to', e.payload->>'fullName')`;
 
-function where(q: AuditQuery, withCursor: boolean): { sql: string; params: unknown[] } {
+function where(q: AuditQuery, withCursor: boolean, scope: StaffScope): { sql: string; params: unknown[] } {
   const clauses: string[] = [];
   const params: unknown[] = [];
   const p = (v: unknown) => {
     params.push(v);
     return `$${params.length}`;
   };
+
+  // T2 (instructor, 9 Oct 2026): the admin reads the whole log; a teacher their own actions and the
+  // actions on the students of the classes they read. An entry about nobody (an item, a chapter) is
+  // in scope only when it is the teacher's own.
+  if (!scope.admin) {
+    clauses.push(`(e.actor_id = ${p(scope.userId)}::uuid or e.subject_section_id = any(${p([...scope.readIds])}::uuid[]))`);
+  }
 
   if (q.family) clauses.push(`split_part(e.action, '.', 1) = any(${p([...AUDIT_FAMILY_PREFIXES[q.family]])}::text[])`);
   if (q.actor === "system") clauses.push("e.actor_id is null");
@@ -110,9 +121,11 @@ function where(q: AuditQuery, withCursor: boolean): { sql: string; params: unkno
   return { sql: clauses.length ? `where ${clauses.join(" and ")}` : "", params };
 }
 
-export async function loadAuditPage(db: Db, q: AuditQuery): Promise<AuditPage> {
-  const page = where(q, true);
-  const all = where(q, false);
+export async function loadAuditPage(db: Db, q: AuditQuery, scope: StaffScope): Promise<AuditPage> {
+  const page = where(q, true, scope);
+  const all = where(q, false, scope);
+  // The actors a teacher may filter by are the actors of the entries they can read.
+  const actorsAll = where({ ...q, family: undefined, actor: undefined, from: undefined, to: undefined, q: undefined, before: undefined } as AuditQuery, false, scope);
   const [rows, total, actors] = await Promise.all([
     db.query<Row>(
       `with e as (${ENRICHED}) select * from e ${page.sql}
@@ -121,8 +134,8 @@ export async function loadAuditPage(db: Db, q: AuditQuery): Promise<AuditPage> {
     ),
     db.query<{ n: string }>(`with e as (${ENRICHED}) select count(*) as n from e ${all.sql}`, all.params),
     db.query<{ id: string | null; name: string | null }>(
-      `select distinct l.actor_id as id, p.full_name as name
-         from audit_log l left join profiles p on p.id = l.actor_id`,
+      `with e as (${ENRICHED}) select distinct e.actor_id as id, e.actor_name as name from e ${actorsAll.sql}`,
+      actorsAll.params,
     ),
   ]);
 
@@ -141,8 +154,8 @@ export async function loadAuditPage(db: Db, q: AuditQuery): Promise<AuditPage> {
 /** An export past this many rows is refused with a sentence, not streamed for minutes. */
 export const AUDIT_EXPORT_MAX = 50_000;
 
-export async function loadAuditExport(db: Db, q: AuditQuery): Promise<{ entries: AuditEntry[]; total: number }> {
-  const all = where(q, false);
+export async function loadAuditExport(db: Db, q: AuditQuery, scope: StaffScope): Promise<{ entries: AuditEntry[]; total: number }> {
+  const all = where(q, false, scope);
   const { rows: count } = await db.query<{ n: string }>(
     `with e as (${ENRICHED}) select count(*) as n from e ${all.sql}`,
     all.params,

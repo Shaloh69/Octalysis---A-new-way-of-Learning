@@ -70,6 +70,8 @@ const FILES = [
   "db/addendum-tour.sql",
   // T2 (9 Oct 2026): a teacher holds their own classes: the class-scoped read/write helpers and policies. Idempotent.
   "db/addendum-class-scope.sql",
+  // T2 (9 Oct 2026): a picture follows the class: can_see_avatar() and can_remove_avatar() ask the class. Idempotent.
+  "db/addendum-class-avatars.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 

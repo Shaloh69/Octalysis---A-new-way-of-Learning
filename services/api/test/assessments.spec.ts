@@ -48,7 +48,10 @@ beforeAll(async () => {
   } as NodeJS.ProcessEnv);
   app = await buildServer(env);
   await app.ready();
-  teacherToken = mintToken(w.teacher, "teacher");
+  // T2 (9 Oct 2026): the course's papers (no section) are the admin's to make and change. This spec is about
+  // those, so its staff token is the fixture instructor's account with the admin role claim; the teacher's
+  // own side (a paper for a class they hold, and the refusals) is class-scope-api.spec.ts.
+  teacherToken = mintToken(w.teacher, "admin");
   studentToken = mintToken(w.studentA, "student", "21-0001");
 
   const { rows } = await pool.query("select id from blueprints where scope = 'stage' limit 1");
@@ -564,6 +567,8 @@ describe("a section-scoped assessment", () => {
     const other = await pool.query(
       "insert into sections (code, term) values ('BSCPE-OTHER','2026-1') returning id",
     );
+    // The admin writes only to classes they hold (T2).
+    await pool.query("insert into classes (section_id, subject_code, teacher_id, term) values ($1, 'CPE 412', $2, '2026-1')", [other.rows[0]!.id, w.teacher]);
     const made = await app.inject({
       method: "POST", url: "/api/v1/console/assessments",
       headers: auth(teacherToken),

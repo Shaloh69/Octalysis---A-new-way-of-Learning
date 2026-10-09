@@ -61,7 +61,11 @@ $$;
 create or replace function audit_target_in_scope(p_type text, p_id text) returns boolean
 language sql stable security definer set search_path = public, pg_temp as $$
   select case
-    when p_id is null or p_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then false
+    when p_id is null then false
+    -- A roster action names the student by their student ID (21-0001), not their account.
+    when p_type = 'student' and p_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then exists (
+      select 1 from student_directory d where d.student_id = p_id and staff_reads_section(d.section_id))
+    when p_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then false
     when p_type in ('student', 'profile') then staff_reads_user(p_id::uuid)
     when p_type = 'submission' then exists (
       select 1 from submissions s where s.id = p_id::uuid and staff_reads_user(s.user_id))
@@ -318,3 +322,11 @@ begin
   end if;
   return new;
 end $$;
+
+-- ---------- one question per class ----------
+-- Lecture Mode ran ONE question at a time across the whole system. Each teacher now runs their own,
+-- in a class they hold, so the unique index is per section (instructor, 9 Oct 2026). A question
+-- put to "everyone" (no section) is no longer started by the API.
+drop index if exists live_sessions_one_open;
+create unique index if not exists live_sessions_one_open_per_section
+  on live_sessions (section_id) where ended_at is null and section_id is not null;

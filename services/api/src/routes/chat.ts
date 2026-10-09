@@ -21,6 +21,7 @@ import {
 } from "@octa/contracts";
 import { identityFrom, isStaff, requireStaff, type Identity } from "../auth.js";
 import { AppError, errors } from "../errors.js";
+import { assertWritesUser, staffScope } from "../scope.js";
 import { withTransaction, type Db } from "../db.js";
 import type { Env } from "../env.js";
 import type { BucketStorage, ChatStorage } from "../chat/storage.js";
@@ -163,6 +164,16 @@ async function guardPaper(db: Db, id: Identity): Promise<void> {
 async function requireMember(db: Queryable, id: Identity, roomId: string): Promise<void> {
   const { rows } = await db.query(`select chat_member($1, $2::uuid) as ok`, [id.userId, roomId]);
   if (rows[0]?.ok !== true) throw noRoom();
+}
+
+/**
+ * T2: reading a room is not posting in it. A teacher reads the rooms of their classes (ended or not)
+ * and posts only where the class has not ended; the admin reads every room and posts in their own.
+ */
+async function requirePoster(db: Queryable, id: Identity, roomId: string): Promise<void> {
+  if (!isStaff(id)) return;
+  const { rows } = await db.query(`select chat_may_post($1, $2::uuid) as ok`, [id.userId, roomId]);
+  if (rows[0]?.ok !== true) throw errors.forbidden("This class is read-only to you, so you can read it and not post in it.");
 }
 
 async function me(db: Queryable, id: Identity): Promise<ChatPerson> {
@@ -344,6 +355,8 @@ export function registerChatRoutes(
     requireStaff(id);
     const body = ChatThreadBody.safeParse(req.body);
     if (!body.success) throw errors.badRequest("Choose a student.");
+    // T2: a private thread is opened with a student of a class held and not ended; any other student is not found.
+    await assertWritesUser(app.db, await staffScope(app.db, id), body.data.userId, "No such student.");
     const { rows } = await app.db.query(
       `insert into chat_rooms (kind, student_id)
        select 'direct', p.id from profiles p
@@ -432,6 +445,7 @@ export function registerChatRoutes(
       }
       await guardPaper(app.db, id);
       await requireMember(app.db, id, params.data.id);
+      await requirePoster(app.db, id, params.data.id);
       if (!storage) throw errors.conflict("Attachments are not available on this server: it has no file storage.");
       const path = `${params.data.id}/${id.userId}/${randomUUID()}.${EXT[body.data.mime]}`;
       try {
@@ -457,6 +471,7 @@ export function registerChatRoutes(
       const roomId = params.data.id;
       await guardPaper(app.db, id);
       await requireMember(app.db, id, roomId);
+      await requirePoster(app.db, id, roomId);
 
       const body = parsed.data.body && parsed.data.body.length > 0 ? parsed.data.body : null;
       const mentions = [...new Set(parsed.data.mentions)].filter((m) => m !== id.userId);
@@ -524,7 +539,7 @@ export function registerChatRoutes(
     const removedPath = await withTransaction(app.db, async (tx) => {
       const { rows } = await tx.query(
         `select m.room_id::text, m.author_id::text, m.body, m.attachment_path, m.attachment_name, m.deleted_at,
-                chat_member($2, m.room_id) as member
+                chat_member($2, m.room_id) as member, chat_may_post($2, m.room_id) as may_write
            from chat_messages m where m.id = $1 for update`,
         [params.data.id, id.userId],
       );
@@ -532,6 +547,9 @@ export function registerChatRoutes(
       if (!m || m.member !== true) throw errors.notFound();
       const own = m.author_id === id.userId;
       if (!own && !staff) throw errors.notFound();
+      // T2: removing someone else's message is moderating a class: the teacher of a class that has not
+      // ended (the admin reads every room and moderates their own).
+      if (!own && m.may_write !== true) throw errors.forbidden("This class is read-only to you, so you can read it and not change it.");
       if (m.deleted_at !== null) return null;
       if (!own && !reason.success) throw errors.badRequest("Say why you are removing it, in a few words.");
       await tx.query(
@@ -570,9 +588,12 @@ export function registerChatRoutes(
          left join sections sec on sec.id = r.section_id
          left join profiles sp on sp.id = r.student_id
          left join profiles p on p.id = m.author_id
-        where m.attachment_path is not null
+        where m.attachment_path is not null and chat_belongs($1, m.room_id)
         order by m.created_at asc`,
+      [id.userId],
     );
+    // The bucket is shared: the figure against the limit is everyone's, the list is this teacher's.
+    const used = await app.db.query(`select coalesce(sum(attachment_bytes), 0)::bigint as n from chat_messages where attachment_path is not null`);
     const items = rows.map((r) => ({
       messageId: r.message_id as string,
       room: r.room as string,
@@ -583,7 +604,7 @@ export function registerChatRoutes(
       createdAt: new Date(r.created_at as Date).toISOString(),
     }));
     return {
-      usedBytes: items.reduce((s, i) => s + i.bytes, 0),
+      usedBytes: Number(used.rows[0]!.n),
       limitBytes: CHAT_STORAGE_BYTES,
       items,
     };
@@ -621,6 +642,13 @@ export function registerChatRoutes(
     if (!params.success) throw errors.notFound();
     const reason = ChatReasonBody.safeParse(req.body);
     if (!reason.success) throw errors.badRequest("Say why you are removing it, in a few words.");
+    const owner = await app.db.query(
+      `select chat_member($2, room_id) as member, chat_may_post($2, room_id) as may_write
+         from chat_messages where id = $1`,
+      [params.data.id, id.userId],
+    );
+    if (owner.rows[0]?.member !== true) throw errors.notFound("That message has no attachment.");
+    if (owner.rows[0]?.may_write !== true) throw errors.forbidden("This class is read-only to you, so you can read it and not change it.");
     const r = await removeAttachments(id.userId, [params.data.id], "chat.attachment.removed", { reason: reason.data.reason });
     if (r.removed === 0) throw errors.notFound("That message has no attachment.");
     return r;
@@ -631,10 +659,14 @@ export function registerChatRoutes(
     requireStaff(id);
     const body = ChatPruneBody.safeParse(req.body);
     if (!body.success) throw errors.badRequest("Say how many days old (1 to 365) and why, in a few words.");
+    // T2: a teacher clears the files of the rooms of classes they hold; the admin, as housekeeping of the
+    // one shared bucket, clears anyone's (audited, with a reason).
+    const scope = await staffScope(app.db, id);
     const { rows } = await app.db.query(
       `select id::text from chat_messages
-        where attachment_path is not null and created_at < now() - make_interval(days => $1)`,
-      [body.data.olderThanDays],
+        where attachment_path is not null and created_at < now() - make_interval(days => $1)
+          and ($3::boolean or chat_may_post($2, room_id))`,
+      [body.data.olderThanDays, id.userId, scope.admin],
     );
     return removeAttachments(id.userId, rows.map((r) => r.id as string), "chat.attachments.pruned", {
       olderThanDays: body.data.olderThanDays,

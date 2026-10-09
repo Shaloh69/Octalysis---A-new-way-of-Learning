@@ -241,7 +241,8 @@ describe("a journey is not a teacher's assessment", () => {
     );
     const res = await app.inject({
       method: "POST", url: "/api/v1/console/assessments", headers: auth(tokenT),
-      payload: { blueprintId: rows[0].id, title: "Sneaky exam" },
+      // For a class the teacher holds, so the refusal under test is the blueprint's, not T2's.
+      payload: { blueprintId: rows[0].id, title: "Sneaky exam", sectionId: w.sectionId },
     });
     expect(res.statusCode).toBe(404);
   });

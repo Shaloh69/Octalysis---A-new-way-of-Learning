@@ -363,13 +363,17 @@ describe("private threads, opened by the instructor", () => {
     expect(res.statusCode).toBe(403);
   });
   it("the instructor opens one with a student, named for them", async () => {
-    const res = await post("/api/v1/chat/threads", tT, { userId: studentC });
+    const res = await post("/api/v1/chat/threads", tT, { userId: w.studentB });
     expect(res.statusCode).toBe(201);
-    expect(res.json()).toMatchObject({ kind: "direct", title: "Student C" });
-    expect(res.json().subtitle).toMatch(/21-0003/);
+    expect(res.json()).toMatchObject({ kind: "direct", title: "Student B" });
+    expect(res.json().subtitle).toMatch(/21-0002/);
     // The same thread the student has, not a second one.
-    const own = (await get("/api/v1/chat/rooms", tC)).json().rooms.find((r: { kind: string }) => r.kind === "direct");
+    const own = (await get("/api/v1/chat/rooms", tB)).json().rooms.find((r: { kind: string }) => r.kind === "direct");
     expect(own.id).toBe(res.json().id);
+  });
+  it("T2: not with a student of a class the teacher does not hold, who is not found; the admin cannot either (read-only)", async () => {
+    expect((await post("/api/v1/chat/threads", tT, { userId: studentC })).statusCode).toBe(404);
+    expect((await post("/api/v1/chat/threads", tAdmin, { userId: studentC })).statusCode).toBe(403);
   });
   it("not with a staff account or someone unknown", async () => {
     expect((await post("/api/v1/chat/threads", tT, { userId: w.teacher })).statusCode).toBe(404);

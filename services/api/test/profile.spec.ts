@@ -426,9 +426,17 @@ describe("DELETE /profiles/:userId/avatar: a teacher or the admin removes someon
     expect((await del(url("00000000-0000-0000-0000-000000000000"), tAdmin, { reason: "Checking" })).statusCode).toBe(404);
     expect((await del("/api/v1/profiles/not-a-uuid/avatar", tAdmin, { reason: "Checking" })).statusCode).toBe(404);
   });
-  it("studentC's picture, set by them, is removable by the admin and the section 2A teacher alike (until T2 scopes a teacher to their classes)", async () => {
+  it("T2: studentC (section 2B) has a picture the section 2A teacher cannot remove, and cannot tell is there; the admin can", async () => {
     await setPicture(studentC, tC, 3);
-    const res = await del(url(studentC), tT, { reason: "Test of the pre-T2 rule" });
+    const refused = await del(url(studentC), tT, { reason: "Not my class" });
+    expect(refused.statusCode, "a teacher of another class removed (or was told about) a picture").toBe(404);
+    expect((await picture(studentC)).avatar_path, "the refused removal changed the picture").not.toBeNull();
+    const res = await del(url(studentC), tAdmin, { reason: "Moderation, the admin's exception" });
+    expect(res.statusCode, "POSITIVE CONTROL: the admin removes anyone's").toBe(200);
+  });
+  it("T2: a teacher removes the picture of a student in their own class", async () => {
+    await setPicture(w.studentB, tB, 13);
+    const res = await del(url(w.studentB), tT, { reason: "Own class" });
     expect(res.statusCode).toBe(200);
   });
 });

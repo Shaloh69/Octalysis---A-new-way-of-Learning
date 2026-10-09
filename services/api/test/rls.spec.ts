@@ -1032,9 +1032,10 @@ describe("Lecture Mode — sessions and answers are staff-read, client-write-nev
     expect(edit.error?.message, denialReason(edit)).toMatch(/only be ended/i);
   });
 
-  it("only one question runs at a time", async () => {
-    const res = await runAs(service, "insert into live_sessions (item_id, started_by) values ($1, $2)", [
+  it("only one question runs at a time IN A CLASS (T2: each teacher runs their own)", async () => {
+    const res = await runAs(service, "insert into live_sessions (item_id, section_id, started_by) values ($1, $2, $3)", [
       w.itemId,
+      w.sectionId,
       w.teacher,
     ]);
     expect(res.error?.message, denialReason(res)).toMatch(/live_sessions_one_open/);

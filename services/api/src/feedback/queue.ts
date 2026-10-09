@@ -11,6 +11,7 @@ import type {
 } from "@octa/contracts";
 import { csvLine } from "../csv.js";
 import type { Db } from "../db.js";
+import type { StaffScope } from "../scope.js";
 
 /**
  * `/feedback`'s triage queue: one query shape for the page and the CSV.
@@ -69,13 +70,16 @@ interface ReportRow {
   created_at: Date;
   role: string;
   reporter_name: string | null;
+  reporter_section: string | null;
+  reporter_is_student: boolean;
 }
 
 const REPORT_COLUMNS = `
   m.id, m.gkey, m.channel, m.category, m.body, m.rating, m.route, m.app_version, m.context,
   m.item_id, i.slug as item_slug, m.resolved_variant, m.status, m.severity, m.released_in,
   m.triaged_by, t.full_name as triaged_by_name, m.updated_at, m.created_at, m.role::text as role,
-  p.full_name as reporter_name`;
+  p.full_name as reporter_name, p.section_id::text as reporter_section,
+  coalesce(p.role = 'student', false) as reporter_is_student`;
 
 const REPORT_JOINS = `
   left join profiles p on p.id = m.user_id
@@ -86,10 +90,20 @@ const SEVERITIES = new Set(["low", "medium", "high"]);
 const asSeverity = (s: string | null): FeedbackSeverity | null =>
   s && SEVERITIES.has(s) ? (s as FeedbackSeverity) : null;
 
-function toReport(r: ReportRow): FeedbackReport {
+/**
+ * T2 (instructor, 9 Oct 2026): every teacher reads the feedback, because it is about OCTA; a STUDENT
+ * reporter is named only to the teacher of their class (and to the admin). Anyone else's report
+ * carries no name, and the role says it was a student.
+ */
+function reporterNameFor(r: ReportRow, scope: StaffScope): string | null {
+  if (!r.reporter_is_student) return r.reporter_name;
+  return scope.reads(r.reporter_section) ? r.reporter_name : null;
+}
+
+function toReport(r: ReportRow, scope: StaffScope): FeedbackReport {
   return {
     id: r.id,
-    reporterName: r.reporter_name,
+    reporterName: reporterNameFor(r, scope),
     role: r.role,
     createdAt: r.created_at.toISOString(),
     route: r.route,
@@ -102,7 +116,7 @@ function toReport(r: ReportRow): FeedbackReport {
 }
 
 /** A group from its reports, newest first. The newest report speaks for the group. */
-function toGroup(key: string, rows: ReportRow[]): FeedbackGroup {
+function toGroup(key: string, rows: ReportRow[], scope: StaffScope): FeedbackGroup {
   const newest = rows[0]!;
   const triaged = rows
     .filter((r) => r.triaged_by)
@@ -122,7 +136,7 @@ function toGroup(key: string, rows: ReportRow[]): FeedbackGroup {
     lastAt: newest.created_at.toISOString(),
     triagedBy: triaged ? { id: triaged.triaged_by!, name: triaged.triaged_by_name } : null,
     triagedAt: triaged ? triaged.updated_at.toISOString() : null,
-    reports: rows.map(toReport),
+    reports: rows.map((r) => toReport(r, scope)),
   };
 }
 
@@ -135,7 +149,7 @@ function parseCursor(before: string | undefined): { us: string; key: string } | 
   return { us, key: before.slice(dot + 1) };
 }
 
-export async function loadFeedbackQueue(db: Db, q: FeedbackQuery): Promise<FeedbackQueue> {
+export async function loadFeedbackQueue(db: Db, q: FeedbackQuery, scope: StaffScope): Promise<FeedbackQueue> {
   const status = q.status ?? null;
   const kind = q.kind ?? null;
   const cursor = parseCursor(q.before);
@@ -193,7 +207,7 @@ export async function loadFeedbackQueue(db: Db, q: FeedbackQuery): Promise<Feedb
 
   const last = keys[keys.length - 1];
   return {
-    groups: keys.map((k) => toGroup(k.gkey, byKey.get(k.gkey) ?? [])).filter((g) => g.reports.length > 0),
+    groups: keys.map((k) => toGroup(k.gkey, byKey.get(k.gkey) ?? [], scope)).filter((g) => g.reports.length > 0),
     next: more && last ? `${last.last_us}.${last.gkey}` : null,
     total: { groups: total?.groups ?? 0, reports: total?.reports ?? 0 },
     counts,
@@ -212,6 +226,7 @@ export const FEEDBACK_CSV_COLUMNS = [
 export async function loadFeedbackCsv(
   db: Db,
   q: Pick<FeedbackQuery, "status" | "kind">,
+  scope: StaffScope,
 ): Promise<{ csv: string; total: number }> {
   const { rows } = await db.query<ReportRow & { repeats: number }>(
     `with m as (${MATCHING})
@@ -226,7 +241,7 @@ export async function loadFeedbackCsv(
     lines.push(
       csvLine([
         r.created_at.toISOString(), r.channel, r.category, r.status, r.severity, r.released_in,
-        r.reporter_name, r.role, r.route, r.app_version, r.item_slug ?? r.item_id,
+        reporterNameFor(r, scope), r.role, r.route, r.app_version, r.item_slug ?? r.item_id,
         r.rating === null ? "" : String(r.rating), r.body, String(r.repeats), r.id,
       ]),
     );

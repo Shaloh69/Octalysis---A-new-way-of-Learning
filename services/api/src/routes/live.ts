@@ -13,6 +13,7 @@ import { identityFrom, requireStaff } from "../auth.js";
 import { AppError, errors } from "../errors.js";
 import { withTransaction, type Db } from "../db.js";
 import type { Env } from "../env.js";
+import { assertWritesSection, sectionFilter, staffScope } from "../scope.js";
 
 /**
  * Lecture Mode — the aggregate a teacher puts on the projector, and the one
@@ -60,8 +61,13 @@ const ACTIVE_ATTEMPT = `
 
 type Queryable = Pick<pg.PoolClient, "query"> | Db;
 
-/** The one open question, in the words the projector may show. */
-async function openSession(db: Queryable): Promise<LiveSession | null> {
+/**
+ * The open question of the sections given, in the words the projector may show. T2 (9 Oct 2026):
+ * each teacher runs a question in their own class, so there is one per section, and a teacher sees
+ * the one in a class they hold (the newest, if they hold several).
+ */
+async function openSession(db: Queryable, sectionIds: readonly string[]): Promise<LiveSession | null> {
+  if (sectionIds.length === 0) return null;
   const { rows } = await db.query(
     `select s.id::text as id, s.started_at, i.slug, i.type::text as type, i.stage_id,
             st.title as stage_title, o.description as objective, sec.code as section,
@@ -73,7 +79,10 @@ async function openSession(db: Queryable): Promise<LiveSession | null> {
        join stages st     on st.id = i.stage_id
        left join live_objectives o on o.id = i.objective_id
        left join sections sec on sec.id = s.section_id
-      where s.ended_at is null`,
+      where s.ended_at is null and s.section_id = any($1::uuid[])
+      order by s.started_at desc
+      limit 1`,
+    [[...sectionIds]],
   );
   const r = rows[0];
   if (!r) return null;
@@ -104,9 +113,20 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
   app.get("/api/v1/console/live", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
+    // T2: the room is the students of the classes this teacher reads.
+    const ap: unknown[] = [];
+    const aReach = sectionFilter(scope, "read", "ap.section_id", ap);
+    const sp: unknown[] = [];
+    const sReach = sectionFilter(scope, "read", "p.section_id", sp);
 
     const [active, perStage, session] = await Promise.all([
-      app.db.query(`select count(distinct a.user_id)::int as n from attempts a where ${ACTIVE_ATTEMPT}`),
+      app.db.query(
+        `select count(distinct a.user_id)::int as n
+           from attempts a join profiles ap on ap.id = a.user_id
+          where ${ACTIVE_ATTEMPT} and ${aReach}`,
+        ap,
+      ),
       // The whole class so far, by stage: every student's best mastery to date,
       // not only the people in the room. The page says so.
       app.db.query(
@@ -115,10 +135,12 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
            from stage_progress sp
            join profiles p on p.id = sp.user_id and p.deleted_at is null and p.role = 'student'
            join stages st  on st.id = sp.stage_id
+          where ${sReach}
           group by sp.stage_id, st.title
           order by sp.stage_id`,
+        sp,
       ),
-      openSession(app.db),
+      openSession(app.db, scope.writeIds),
     ]);
 
     const body: LiveSnapshot = {
@@ -149,6 +171,7 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
   app.get("/api/v1/console/live/options", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
 
     const [items, sections] = await Promise.all([
       app.db.query(
@@ -160,7 +183,9 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
           where i.status = 'live'
           order by i.stage_id, i.slug`,
       ),
-      app.db.query(`select id::text as id, code from sections order by code`),
+      // A question is put to a class this teacher holds and that has not ended; the admin's reading
+      // of someone else's class does not let them start one in it.
+      app.db.query(`select id::text as id, code from sections where id = any($1::uuid[]) order by code`, [[...scope.writeIds]]),
     ]);
     const body: LiveOptions = {
       items: items.rows.map((r) => ({
@@ -185,12 +210,17 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
   app.post("/api/v1/console/live/sessions", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
 
     const parsed = LiveStartBody.safeParse(req.body);
     if (!parsed.success) {
       throw errors.badRequest("A question needs a live item, who may answer it, and a reason: say why, in a few words.");
     }
     const b = parsed.data;
+    // T2 (9 Oct 2026): a question is put to one class, never to everyone: everyone includes the
+    // students of other teachers.
+    if (b.sectionId === null) throw errors.badRequest("Pick the class that may answer. A question is not put to everyone.");
+    assertWritesSection(scope, b.sectionId, "No such section.");
 
     const session = await withTransaction(app.db, async (client) => {
       const item = await client.query(
@@ -212,7 +242,7 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
         sectionCode = sec.rows[0].code as string;
       }
 
-      const running = await openSession(client);
+      const running = await openSession(client, [b.sectionId!]);
       if (running) {
         throw conflict(`A question is already running (${running.itemSlug}). End it before starting another.`);
       }
@@ -249,7 +279,7 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
           }),
         ],
       );
-      return openSession(client);
+      return openSession(client, [b.sectionId!]);
     });
 
     return reply.status(201).send({ session });
@@ -264,6 +294,7 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
     const id = await identityFrom(req, env);
     requireStaff(id);
 
+    const scope = await staffScope(app.db, id);
     const sessionId = (req.params as { id: string }).id;
     if (!z.string().uuid().safeParse(sessionId).success) throw errors.notFound("No such question.");
     const parsed = LiveEndBody.safeParse(req.body);
@@ -271,7 +302,7 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
 
     const endedAt = await withTransaction(app.db, async (client) => {
       const cur = await client.query(
-        `select s.ended_at, s.item_id::text as item_id, i.slug,
+        `select s.ended_at, s.item_id::text as item_id, i.slug, s.section_id::text as section_id,
                 (select count(*)::int from live_responses r where r.session_id = s.id) as answered
            from live_sessions s join items i on i.id = s.item_id
           where s.id = $1
@@ -280,6 +311,12 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
       );
       const s = cur.rows[0];
       if (!s) throw errors.notFound("No such question.");
+      // Ended by the teacher of its class; a question from before classes (no section) is the admin's.
+      if (s.section_id === null) {
+        if (!scope.admin) throw errors.notFound("No such question.");
+      } else {
+        assertWritesSection(scope, s.section_id as string, "No such question.");
+      }
       if (s.ended_at) throw conflict(`${s.slug} has already ended.`);
 
       const { rows } = await client.query(
@@ -311,14 +348,19 @@ export function registerLiveRoutes(app: FastifyInstance, env: Env): void {
   app.get("/api/v1/console/live/health", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
+    const hp: unknown[] = [];
+    const hReach = sectionFilter(scope, "read", "hp.section_id", hp);
 
     const { rows } = await app.db.query(
       `select
-         (select count(*)::int from attempts a where ${ACTIVE_ATTEMPT})   as in_progress,
-         (select count(*)::int from attempts
-           where submitted_at > now() - interval '20 minutes') as submitted_recently,
+         (select count(*)::int from attempts a join profiles hp on hp.id = a.user_id
+           where ${ACTIVE_ATTEMPT} and ${hReach})   as in_progress,
+         (select count(*)::int from attempts a2 join profiles hp on hp.id = a2.user_id
+           where a2.submitted_at > now() - interval '20 minutes' and ${hReach}) as submitted_recently,
          (select count(*)::int from feedback
            where created_at > now() - interval '20 minutes')   as reports_recently`,
+      hp,
     );
     const r = rows[0]!;
     return reply.send({

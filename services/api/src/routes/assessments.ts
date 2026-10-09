@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
+import { assertWritesSection, sectionFilter, staffScope, type StaffScope } from "../scope.js";
 import { withTransaction } from "../db.js";
 import type { Env } from "../env.js";
 import { mintSalt } from "../repo/salt.js";
@@ -119,6 +120,19 @@ const LIVE_POOL_SQL = `select i.bloom, i.type::text as type, s.act, i.stage_id
                          join stages s on s.id = i.stage_id
                         where i.status = 'live' and s.gradeable`;
 
+/**
+ * T2 (instructor, 9 Oct 2026): the papers every student sits (no section) are the COURSE's: every
+ * teacher reads them, the admin alone changes them. An assessment made for a section is its holder's.
+ * A teacher reading a paper they may not change gets 403; one for a class they do not read is 404.
+ */
+function assertEditsAssessment(scope: StaffScope, sectionId: string | null): void {
+  if (sectionId === null) {
+    if (!scope.admin) throw errors.forbidden("This paper is the whole course's, so only the admin changes it. You can read it.");
+    return;
+  }
+  assertWritesSection(scope, sectionId, "No such assessment.");
+}
+
 export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
   /* ----------------------------------------------------------
    * GET /api/v1/console/assessments
@@ -126,6 +140,12 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
   app.get("/api/v1/console/assessments", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
+    // The counts are of the students this teacher reads: a shared paper's sittings in another
+    // teacher's class are not theirs to see.
+    const lp: unknown[] = [];
+    const reach = sectionFilter(scope, "read", "ap.section_id", lp);
+    const paperReach = sectionFilter(scope, "read", "a.section_id", lp);
 
     const { rows } = await app.db.query(
       `select a.id, a.title, a.attempts_allowed, a.opens_at, a.closes_at, a.created_at,
@@ -138,9 +158,10 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
               (select max(l.at) from audit_log l
                 where l.action = 'assessment.salt_rotate' and l.target_id = a.id::text)
                 as salt_rotated_at,
-              (select count(*)::int from attempts at where at.assessment_id = a.id) as attempts,
-              (select count(*)::int from attempts at
-                where at.assessment_id = a.id and at.status = 'submitted') as submitted
+              (select count(*)::int from attempts at join profiles ap on ap.id = at.user_id
+                where at.assessment_id = a.id and ${reach}) as attempts,
+              (select count(*)::int from attempts at join profiles ap on ap.id = at.user_id
+                where at.assessment_id = a.id and at.status = 'submitted' and ${reach}) as submitted
          from assessments a
          join blueprints b on b.id = a.blueprint_id
          left join sections s on s.id = a.section_id
@@ -152,11 +173,15 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
         -- teacher sets (WEB-REVAMP 3.7a): it has no window, no attempt limit
         -- and no grade, so it has no row on this page.
         where b.scope not in ('objective', 'moon')
+          and (a.section_id is null or ${paperReach})
         order by a.created_at desc`,
+      lp,
     );
 
+    const sp: unknown[] = [];
     const sections = await app.db.query(
-      "select id, code, term from sections order by code",
+      `select id, code, term from sections where ${sectionFilter(scope, "read", "id", sp)} order by code`,
+      sp,
     );
     // One read of the live pool answers every row's "can the bank fill it?".
     const pool = (await app.db.query(LIVE_POOL_SQL)).rows as PoolRow[];
@@ -181,6 +206,8 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
         totalItems: Number(r.total_items),
         sectionId: r.section_id,
         sectionCode: r.section_code,
+        // False: this actor reads the paper and may not change it (the course's, or another's).
+        canEdit: r.section_id === null ? scope.admin : scope.writes(r.section_id as string),
         saltSetAt: r.salt_set_at,
         saltRotatedAt: r.salt_rotated_at,
         attempts: Number(r.attempts),
@@ -195,7 +222,7 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
         totalItems: Number(b.total_items),
         constraints: b.constraints,
       })),
-      sections: sections.rows.map((x) => ({ id: x.id, code: x.code, term: x.term })),
+      sections: sections.rows.map((x) => ({ id: x.id, code: x.code, term: x.term, held: scope.writes(x.id as string) })),
     });
   });
 
@@ -232,12 +259,19 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
   app.post("/api/v1/console/assessments", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
 
     const body = CreateBody.safeParse(req.body);
     if (!body.success) {
       throw errors.badRequest("That assessment could not be read. Check the required fields.");
     }
     const b = body.data;
+    // A paper for everyone is the course's (the admin's); a teacher's is for a class they hold.
+    if (b.sectionId) {
+      const exists = await app.db.query("select 1 from sections where id = $1", [b.sectionId]);
+      if (exists.rows.length === 0) throw errors.notFound("No such section.");
+    }
+    assertEditsAssessment(scope, b.sectionId ?? null);
 
     if (b.opensAt && b.closesAt && new Date(b.closesAt) <= new Date(b.opensAt)) {
       throw errors.badRequest("The closing time must be after the opening time.");
@@ -319,18 +353,21 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
   app.patch("/api/v1/console/assessments/:id", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const assessmentId = (req.params as { id: string }).id;
 
     const body = WindowBody.safeParse(req.body);
     if (!body.success) throw errors.badRequest("That change could not be read.");
     const b = body.data;
 
+    if (!z.string().uuid().safeParse(assessmentId).success) throw errors.notFound("No such assessment.");
     const cur = await app.db.query(
-      "select title, opens_at, closes_at, attempts_allowed from assessments where id = $1",
+      "select title, opens_at, closes_at, attempts_allowed, section_id::text as section_id from assessments where id = $1",
       [assessmentId],
     );
     if (cur.rows.length === 0) throw errors.notFound("No such assessment.");
     const before = cur.rows[0]!;
+    assertEditsAssessment(scope, before.section_id as string | null);
 
     // The resulting window must make sense, not merely the fields being sent.
     const opensAt = b.opensAt === undefined ? before.opens_at : b.opensAt;
@@ -409,11 +446,15 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
   app.post("/api/v1/console/assessments/:id/rotate-salt", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const assessmentId = (req.params as { id: string }).id;
 
     if (!z.string().uuid().safeParse(assessmentId).success) {
       throw errors.notFound("No such assessment.");
     }
+    const owner = await app.db.query("select section_id::text as section_id from assessments where id = $1", [assessmentId]);
+    if (owner.rows.length === 0) throw errors.notFound("No such assessment.");
+    assertEditsAssessment(scope, owner.rows[0]!.section_id as string | null);
     const body = RotateBody.safeParse(req.body);
     if (!body.success) throw errors.badRequest("A reason is required to rotate the exam salt.");
 

@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { identityFrom, requireStaff } from "../auth.js";
 import { errors } from "../errors.js";
+import { staffScope } from "../scope.js";
 import { loadAttempt, loadResolvedPaper } from "../repo/engine-repo.js";
 import type { Env } from "../env.js";
 import { withTransaction } from "../db.js";
@@ -244,13 +245,13 @@ export function registerFeedbackRoutes(app: FastifyInstance, env: Env): void {
   app.get("/api/v1/console/feedback", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
-    return reply.send(await loadFeedbackQueue(app.db, feedbackQuery(req.query)));
+    return reply.send(await loadFeedbackQueue(app.db, feedbackQuery(req.query), await staffScope(app.db, id)));
   });
 
   app.get("/api/v1/console/feedback.csv", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
-    const { csv, total } = await loadFeedbackCsv(app.db, feedbackQuery(req.query));
+    const { csv, total } = await loadFeedbackCsv(app.db, feedbackQuery(req.query), await staffScope(app.db, id));
     if (total > FEEDBACK_EXPORT_MAX) {
       throw errors.badRequest(
         `More than ${FEEDBACK_EXPORT_MAX.toLocaleString("en-US")} reports match, and an export holds that many at most. Filter by status or kind and export again.`,
