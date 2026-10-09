@@ -3524,3 +3524,102 @@
   .prof-classes li:last-child { border-bottom: 0; padding-bottom: 0; }
   .prof-skel-ring { display: block; width: 7.5rem; height: 7.5rem; border-radius: var(--radius-full); }
 }
+
+/* ------------------------------------------------------------------
+   The first-run tour and its ? (9 Oct 2026; design/templates/console/tour/SPEC.md).
+   Driver.js's structure (dimmed page, a spotlight, a popover with a step
+   count, Previous / Next / Skip) in the console's tokens. Above dialogs,
+   below toasts.
+   ------------------------------------------------------------------ */
+@layer components {
+  .shell-help {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    inline-size: var(--size-8);
+    block-size: var(--size-8);
+    padding: 0;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--ink-muted);
+    background: none;
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  }
+  .shell-help:hover { color: var(--ink); border-color: var(--ink-muted); }
+  .shell-help:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+  .shell-bar .shell-help { margin-left: auto; }
+  .shell-foot { display: flex; align-items: center; gap: var(--space-1); }
+  .shell-foot > button.shell-account { flex: 1 1 0; min-width: 0; width: auto; }
+
+  .tour { position: fixed; inset: 0; z-index: calc(var(--z-dialog) + 1); }
+  .tour-shield { position: absolute; inset: 0; }
+  /* A step with no target dims the whole page. */
+  .tour-dim { position: absolute; inset: 0; background: color-mix(in oklch, var(--surface-0) 78%, transparent); }
+  /* The spotlight: a clear window whose shadow is the dimness around it. */
+  .tour-spot {
+    position: absolute;
+    border-radius: var(--radius-md);
+    box-shadow:
+      0 0 0 var(--border-thick) var(--accent),
+      0 0 0 100vmax color-mix(in oklch, var(--surface-0) 78%, transparent);
+    transition: top var(--dur-base) var(--ease-out), left var(--dur-base) var(--ease-out),
+      width var(--dur-base) var(--ease-out), height var(--dur-base) var(--ease-out);
+    pointer-events: none;
+  }
+  .tour-pop {
+    position: absolute;
+    z-index: 1;
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    box-sizing: border-box;
+    background: var(--surface-1);
+    border: var(--border-hair) solid var(--line-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2);
+    animation: tour-in var(--dur-fast) var(--ease-out);
+  }
+  @keyframes tour-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+  /* The arrow: a small notch on the edge that faces the target. */
+  .tour-pop[data-place="below"]::before,
+  .tour-pop[data-place="above"]::before,
+  .tour-pop[data-place="right"]::before {
+    content: "";
+    position: absolute;
+    inline-size: 12px;
+    block-size: 12px;
+    background: var(--surface-1);
+  }
+  .tour-pop[data-place="below"]::before { left: var(--tour-arrow-x); top: -7px; transform: translateX(-50%) rotate(45deg); border-left: var(--border-hair) solid var(--line-strong); border-top: var(--border-hair) solid var(--line-strong); }
+  .tour-pop[data-place="above"]::before { left: var(--tour-arrow-x); bottom: -7px; transform: translateX(-50%) rotate(45deg); border-right: var(--border-hair) solid var(--line-strong); border-bottom: var(--border-hair) solid var(--line-strong); }
+  .tour-pop[data-place="right"]::before { top: var(--tour-arrow-y); left: -7px; transform: translateY(-50%) rotate(45deg); border-left: var(--border-hair) solid var(--line-strong); border-bottom: var(--border-hair) solid var(--line-strong); }
+
+  .tour-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .tour-count { margin: 0; font-size: var(--text-xs); color: var(--ink-muted); }
+  .tour-title { margin: 0; font-family: var(--font-display); font-size: var(--text-lg); color: var(--ink); }
+  .tour-text { margin: 0; font-size: var(--text-sm); color: var(--ink); }
+  .tour-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+  .tour-spacer { flex: 1 1 0; }
+  .tour-skip {
+    padding: var(--space-1) 0;
+    font: inherit;
+    font-size: var(--text-sm);
+    color: var(--ink-muted);
+    background: none;
+    border: 0;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .tour-skip:hover { color: var(--ink); }
+  .tour-skip:focus-visible { outline: var(--border-thick) solid var(--accent-ring); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tour-spot, .tour-pop, .shell-help { transition: none; animation: none; }
+  }
+}

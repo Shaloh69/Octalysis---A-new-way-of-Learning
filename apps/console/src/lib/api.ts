@@ -1069,6 +1069,9 @@ export const profileAvatarSet = (path: string) =>
 
 export const profileAvatarRemove = () => request<Profile>("/api/v1/profile/avatar", { method: "DELETE" });
 
+/** The first-run tour has been started for this account (set once, in the database). */
+export const profileTourSeen = () => request<Profile>("/api/v1/profile/tour", { method: "POST" });
+
 /** PUT the encoded picture to the one-time signed URL the API gave (the bucket takes WebP only). */
 export async function putAvatarFile(uploadUrl: string, blob: Blob): Promise<void> {
   const res = await fetch(uploadUrl, {

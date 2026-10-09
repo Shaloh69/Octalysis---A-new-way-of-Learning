@@ -16,7 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChangeCredentialsScreen, StudentAccountScreen } from "@/pages/GateScreens";
 import { Avatar } from "@/components/Avatar";
-import { clearProfile, useProfile } from "@/lib/profile";
+import { clearProfile, setProfile, useProfile } from "@/lib/profile";
+import { profileTourSeen } from "@/lib/api";
+import { Tour } from "@/components/Tour";
 
 /**
  * The console shell: sidebar, nav, account block, and the 380 top bar.
@@ -214,6 +216,8 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
   const [navOpen, setNavOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const { pathname, key } = useLocation();
+  const { profile } = useProfile();
+  const [touring, setTouring] = useState(false);
 
   /** Close the 380 sheet; `refocus` sends focus back to the button that opened it. */
   const close = useCallback((refocus: boolean) => {
@@ -227,6 +231,39 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
   useEffect(() => {
     if (openRef.current) close(true);
   }, [key, close]);
+
+  /**
+   * The tour. At 380 the nav is a sheet, so it is opened for the tour (the targets are in
+   * it) and closed when the tour ends. Narrower than lg is the only time that matters.
+   */
+  const narrow = () => !window.matchMedia("(min-width: 1024px)").matches;
+  const startTour = useCallback(() => {
+    if (narrow()) setNavOpen(true);
+    setTouring(true);
+  }, []);
+  const endTour = useCallback(() => {
+    setTouring(false);
+    if (narrow()) setNavOpen(false);
+  }, []);
+
+  // First ever visit: start it by itself, once per account (`profiles.tour_seen_at`).
+  // Remembered when it STARTS, so a reload mid-tour does not loop it. Only a profile that
+  // loaded and says "not yet" starts it. An automated browser is not a teacher: it is not
+  // given the tour (the shield would block every other spec) unless `octa:tour:force` is set.
+  const unseen = profile !== null && profile.tourSeenAt === null;
+  useEffect(() => {
+    if (!unseen) return;
+    const t = window.setTimeout(() => {
+      try {
+        if (navigator.webdriver === true && localStorage.getItem("octa:tour:force") !== "1") return;
+      } catch {
+        // no storage: the guard cannot be read; a teacher's browser has it
+      }
+      void profileTourSeen().then(setProfile).catch(() => undefined);
+      startTour();
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [unseen, startTour]);
 
   useEffect(() => {
     if (!navOpen) return;
@@ -278,6 +315,9 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
         </Button>
         <span className="shell-bar-rule" aria-hidden="true" />
         <span className="font-display text-base text-ink">{pageName(pathname)}</span>
+        <button type="button" className="shell-help" aria-label="Take the tour of the console" data-tour="help" onClick={startTour}>
+          ?
+        </button>
       </header>
 
       {navOpen && (
@@ -299,13 +339,13 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
 
         <nav aria-label="Console sections" className="shell-nav">
           {GROUPS.map((g) => (
-            <div key={g.id} className="shell-group">
+            <div key={g.id} className="shell-group" data-tour={`nav-${g.id}`}>
               <p id={`nav-${g.id}`} className="shell-group-label">
                 {g.label}
               </p>
               <ul aria-labelledby={`nav-${g.id}`}>
                 {g.items.filter(shownTo(identity.role)).map(({ to, label, icon: Icon, hint }) => (
-                  <li key={to}>
+                  <li key={to} data-tour={to === "/teachers" ? "nav-teachers" : undefined}>
                     <NavLink
                       to={to}
                       title={hint}
@@ -321,7 +361,7 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
           ))}
         </nav>
 
-        <AccountMenu identity={identity} onSignOut={onSignOut} />
+        <AccountMenu identity={identity} onSignOut={onSignOut} onTour={startTour} />
       </aside>
 
       <main id="main" tabIndex={-1} className="shell-main">
@@ -331,6 +371,8 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
         </PageBoundary>
       </main>
 
+      {touring && <Tour admin={identity.role === "admin"} onClose={endTour} />}
+
       {/* The toaster is NOT here: it is mounted once in App.tsx, so the gate
           screens outside this layout, and /signin after a sign-out, reach it. */}
     </div>
@@ -339,7 +381,7 @@ function Shell({ identity, onSignOut }: { identity: Identity; onSignOut: () => v
 
 /* ------------------------------------------------------------------ the foot */
 
-function AccountMenu({ identity, onSignOut }: { identity: Identity; onSignOut: () => void }) {
+function AccountMenu({ identity, onSignOut, onTour }: { identity: Identity; onSignOut: () => void; onTour: () => void }) {
   const [theme, setThemeState] = useState<Theme>(
     () => (document.documentElement.getAttribute("data-theme") as Theme | null) ?? "bare-metal",
   );
@@ -355,6 +397,7 @@ function AccountMenu({ identity, onSignOut }: { identity: Identity; onSignOut: (
           <button
             type="button"
             className="shell-account"
+            data-tour="account"
             aria-label={`${name}${identity.email && identity.fullName ? `, ${identity.email}` : ""}, account menu`}
           >
             {profile ? (
@@ -410,6 +453,9 @@ function AccountMenu({ identity, onSignOut }: { identity: Identity; onSignOut: (
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <button type="button" className="shell-help" aria-label="Take the tour of the console" data-tour="help" onClick={onTour}>
+        ?
+      </button>
     </div>
   );
 }
