@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { FigureDrawing } from "./FigureDrawing";
 import {
   api,
@@ -117,10 +118,12 @@ interface Recorded {
 type Props = {
   stageId: string;
   title: string;
+  /** What the paper is called above its title: "Stage check", or "Moon check" (a graded moon's). */
+  eyebrow?: string;
   onLeave: () => void;
 } & (
   | { assessmentId: string; journey?: undefined }
-  | { journey: { objectiveId: string }; assessmentId?: undefined }
+  | { journey: { objectiveId: string; graded?: boolean }; assessmentId?: undefined }
 );
 
 const FLAGS = (attemptId: string) => `octa:flags:${attemptId}`;
@@ -169,7 +172,7 @@ function answerText(item: PaperItem, a: StudentAnswer | null): string {
   return String(a.value);
 }
 
-export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }: Props): JSX.Element {
+export function AttemptRunner({ stageId, assessmentId, journey, title, eyebrow = "Stage check", onLeave }: Props): JSX.Element {
   const practice = journey !== undefined;
   const objectiveId = journey?.objectiveId ?? null;
   const [phase, setPhase] = useState<Phase>(practice ? "loading" : "ready");
@@ -569,6 +572,7 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
         title={title}
         canFullscreen={canFullscreen}
         refused={refused}
+        place={eyebrow === "Moon check" ? "moon" : "stage"}
         onStart={() => void begin()}
         onLeave={onLeave}
       />
@@ -727,15 +731,26 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, onLeave }
 
         <div className="check-paper" data-paper="">
       <header className="check-head">
-        <p className="check-eyebrow">{practice ? "Moon journey · practice" : "Stage check"}</p>
+        <p className="check-eyebrow">{practice ? "Moon journey · practice" : eyebrow}</p>
         <h1 id="check-title">{title}</h1>
         {practice && objectiveId && objectives[objectiveId] && (
           <p className="check-objective">{objectives[objectiveId]}</p>
         )}
         {practice ? (
           <p className="check-rule">
-            Practice, never graded. Record an answer to see at once whether it is right, and why. Two different
-            questions answered right master this moon.
+            {journey?.graded
+              ? "Practice: this is not the graded check. "
+              : "Practice, not graded. "}
+            Record an answer to see at once whether it is right, and why. Two different questions answered right
+            master this moon.
+            {journey?.graded && (
+              <>
+                {" "}
+                <Link className="check-check-link" to={`/app/stage/${stageId}/moon/${journey.objectiveId}/check`} data-sit-check="">
+                  Sit this moon&apos;s graded check
+                </Link>
+              </>
+            )}
           </p>
         ) : (
           <p className="check-rule">
@@ -958,12 +973,15 @@ function StartPrompt({
   title,
   canFullscreen,
   refused,
+  place,
   onStart,
   onLeave,
 }: {
   title: string;
   canFullscreen: boolean;
   refused: boolean;
+  /** Where "back" goes before Start: the stage, or the moon (a graded moon's check). */
+  place: "stage" | "moon";
   onStart: () => void;
   onLeave: () => void;
 }): JSX.Element {
@@ -985,7 +1003,7 @@ function StartPrompt({
           </li>
         )}
         <li>
-          Once it starts there is <strong>no way back</strong> to the stage until you submit. Your answers are saved
+          Once it starts there is <strong>no way back</strong> to the {place} until you submit. Your answers are saved
           as you record them.
         </li>
         <li>
@@ -1005,7 +1023,7 @@ function StartPrompt({
           Start the paper
         </button>
         <button type="button" className="check-btn" onClick={onLeave}>
-          Back to the stage
+          Back to the {place}
         </button>
       </div>
     </section>

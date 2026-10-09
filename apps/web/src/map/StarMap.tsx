@@ -241,13 +241,23 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
 
   const planetEnter = sel && sel.state !== "locked" ? `/app/stage/${sel.id}` : null;
   // A moon's journey: its planet open and a question to practise (3.7a).
-  const moonEnter =
+  const moonJourney =
     sel && selMoon && sel.state !== "locked" && (selMoon.questions > 0 || selMoon.mastered)
       ? `/app/stage/${sel.id}/moon/${selMoon.id}`
       : null;
+  // A GRADED moon's main way in is its CHECK (docs/GRADED-MOONS-PLAN.md, instructor 8 Oct 2026:
+  // "when entering moons, instead of auto checks it defaults to [practice]"): a paper, behind
+  // its start prompt. Practice is still there, one step lower. It needs a live question.
+  const moonCheckTo =
+    sel && selMoon && selMoon.graded && sel.state !== "locked" && selMoon.questions > 0
+      ? `/app/stage/${sel.id}/moon/${selMoon.id}/check`
+      : null;
+  const moonEnter = selMoon?.graded ? moonCheckTo : moonJourney;
   const enterTo = selMoon ? moonEnter : planetEnter;
   useKeyHints("map", [
-    ...(enterTo ? [{ key: "Enter", cap: "Enter", label: "Enter journey", run: () => nav(enterTo) }] : []),
+    ...(enterTo
+      ? [{ key: "Enter", cap: "Enter", label: selMoon?.graded ? "Sit the check" : "Enter journey", run: () => nav(enterTo) }]
+      : []),
     ...(sel ? [{ key: "Escape", cap: "Esc", label: "Close", run: close }] : alien.focused ? [{ key: "Escape", cap: "Esc", label: "Close", run: letAlienGo }] : []),
     { key: "s", cap: "S", label: "Stages", run: () => nav("/app/stages") },
     ...(webgl
@@ -545,7 +555,7 @@ export function StarMap({ data }: { data: StageMapData }): JSX.Element {
               </button>
             </div>
             {selMoon ? (
-              <MoonPanel node={sel} moon={selMoon} enterTo={moonEnter} onBack={close} />
+              <MoonPanel node={sel} moon={selMoon} enterTo={moonEnter} practiceTo={selMoon.graded ? moonJourney : null} onBack={close} />
             ) : (
               <BodyPanel node={sel} byId={byId} onShow={open} onMoon={openMoon} enterTo={planetEnter} />
             )}

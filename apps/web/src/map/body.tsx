@@ -247,19 +247,25 @@ export function MoonPanel({
   node,
   moon,
   enterTo,
+  practiceTo = null,
   onBack,
 }: {
   node: StageNode;
   moon: StageNode["objectives"][number];
+  /** The main way in: a graded moon's CHECK, or a moon that is not graded's journey. */
   enterTo: string | null;
+  /** A graded moon's practice, one step lower than its check. */
+  practiceTo?: string | null;
   onBack: () => void;
 }): JSX.Element {
   const glow = moonGlow(moon);
   const game = encounterForMoon(moon.id);
+  // A graded moon's check needs a live question even when the moon is mastered (a mastered moon
+  // whose questions were later retired can be revisited, not sat); practice does not.
   const why =
     node.state === "locked"
       ? node.lockReason?.message ?? "This planet is locked."
-      : moon.questions === 0 && !moon.mastered
+      : moon.questions === 0 && (moon.graded || !moon.mastered)
         ? "This moon has no questions yet."
         : null;
   return (
@@ -285,6 +291,11 @@ export function MoonPanel({
         </p>
       )}
 
+      <p className="starmap-moon-game" data-moon-grading={moon.graded ? "graded" : "practice"}>
+        <span className="starmap-survey-label">Grading</span>
+        <span>{moon.graded ? "Graded: its check counts as one more quiz" : "Practice only: not graded"}</span>
+      </p>
+
       {why && (
         <p className="starmap-lock" id={`moon-why-${moon.id}`}>
           <LockGlyph />
@@ -296,7 +307,7 @@ export function MoonPanel({
       <div className="starmap-actions is-stacked">
         {enterTo && !why ? (
           <WarpLink className="button hud-button button-primary" to={enterTo}>
-            Enter journey
+            {moon.graded ? "Sit the check" : "Enter journey"}
           </WarpLink>
         ) : (
           <button
@@ -305,17 +316,30 @@ export function MoonPanel({
             disabled
             aria-describedby={`moon-why-${moon.id}`}
           >
-            Enter journey
+            {moon.graded ? "Sit the check" : "Enter journey"}
           </button>
         )}
+        {moon.graded &&
+          (practiceTo && node.state !== "locked" ? (
+            <WarpLink className="button hud-button" to={practiceTo} data-practice-first="">
+              Practise first
+            </WarpLink>
+          ) : (
+            <button type="button" className="button hud-button" disabled aria-describedby={`moon-why-${moon.id}`}>
+              Practise first
+            </button>
+          ))}
         <button type="button" className="button hud-button" onClick={onBack}>
           <NumberedTitle text={`Back to Stage ${node.id}`} />
         </button>
       </div>
 
       <p className="starmap-moon-rule">
-        Practice, never graded. Two different questions right master this moon (it has{" "}
-        <span className="mono">{moon.questions}</span>); every moon of this planet mastered opens the next one.
+        {moon.graded
+          ? "The check is a paper: you start it in full screen, leaving it hands it in, you have five tries and the best counts. Practising first is not graded."
+          : "Practice, not graded."}{" "}
+        Two different questions right master this moon (it has <span className="mono">{moon.questions}</span>);
+        every moon of this planet mastered opens the next one.
       </p>
     </div>
   );

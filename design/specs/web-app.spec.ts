@@ -47,7 +47,7 @@ const wide = (name: string) => !name.includes("380");
  * only: 01.1 mastered, 01.2 one right, 01.3 and 01.4 not started, 01.5 still
  * without questions. Everything else on the page is the real API's.
  */
-async function moonsInEveryState(page: Page): Promise<void> {
+async function moonsInEveryState(page: Page, opts: { ungraded?: string[] } = {}): Promise<void> {
   await page.route("**/api/v1/stages", async (route) => {
     const res = await route.fetch();
     const body = (await res.json()) as {
@@ -64,6 +64,8 @@ async function moonsInEveryState(page: Page): Promise<void> {
     for (const o of n.objectives) {
       const f = facts[o.id as string];
       if (f) Object.assign(o, { correct: f[0], mastered: f[1], questions: f[2] });
+      // Every moon is graded unless the Studio's switch says otherwise (docs/GRADED-MOONS-PLAN.md).
+      if (opts.ungraded?.includes(o.id as string)) Object.assign(o, { graded: false });
     }
     n.moons = { mastered: 1, total: n.objectives.length };
     await route.fulfill({ response: res, json: body });
@@ -387,7 +389,7 @@ test.describe("/app — the moons", () => {
     await expect(page.locator(".starmap-moons button.starmap-moon")).toHaveCount(5);
   });
 
-  test("choosing a moon updates the panel in place, and Enter journey goes to its journey", async ({ page }, info) => {
+  test("choosing a moon updates the panel in place; a GRADED moon's Enter is its check, with practice beside it", async ({ page }, info) => {
     test.skip(!wide(info.project.name), "behaviour, one width");
     await moonsInEveryState(page);
     await map(page, "/app?stage=01");
@@ -399,10 +401,42 @@ test.describe("/app — the moons", () => {
     await expect(panel).toContainText("Circles Stage 01");
     await expect(panel.locator(".starmap-moon-now")).toHaveText("Not started");
     await expect(panel).toContainText(/Two different questions right master this moon/);
-    const enter = panel.getByRole("link", { name: "Enter journey" });
-    await expect(enter).toHaveAttribute("href", "/app/stage/01/moon/01.4");
-    await enter.click();
+    // Graded (instructor, 8 Oct 2026): the main way in is the CHECK, a paper; practice is one step lower.
+    await expect(panel.locator("[data-moon-grading]")).toHaveAttribute("data-moon-grading", "graded");
+    await expect(panel.locator("[data-moon-grading]")).toContainText("counts as one more quiz");
+    await expect(panel).toContainText(/five tries and the best counts/);
+    const enter = panel.getByRole("link", { name: "Sit the check" });
+    await expect(enter).toHaveAttribute("href", "/app/stage/01/moon/01.4/check");
+    const practise = panel.getByRole("link", { name: "Practise first" });
+    await expect(practise).toHaveAttribute("href", "/app/stage/01/moon/01.4");
+    await expect(panel.getByRole("link", { name: "Enter journey" })).toHaveCount(0);
+    await practise.click();
     await expect(page).toHaveURL(/\/app\/stage\/01\/moon\/01\.4$/);
+  });
+
+  test("a moon that is NOT graded keeps Enter journey as its only way in: practice, no check", async ({ page }, info) => {
+    test.skip(!wide(info.project.name), "behaviour, one width");
+    await moonsInEveryState(page, { ungraded: ["01.4"] });
+    await map(page, "/app?stage=01&moon=01.4");
+    const panel = page.locator(".starmap-body");
+    await expect(panel.locator("[data-moon-grading]")).toHaveAttribute("data-moon-grading", "practice");
+    await expect(panel.locator("[data-moon-grading]")).toContainText("Practice only: not graded");
+    await expect(panel.getByRole("link", { name: "Enter journey" })).toHaveAttribute("href", "/app/stage/01/moon/01.4");
+    await expect(panel.getByRole("link", { name: "Sit the check" })).toHaveCount(0);
+    await expect(panel.getByRole("link", { name: "Practise first" })).toHaveCount(0);
+    await expect(panel).toContainText(/Practice, not graded/);
+  });
+
+  test("the Enter key on a graded moon sits the check; on a moon that is not graded it enters the journey", async ({ page }, info) => {
+    test.skip(!wide(info.project.name), "behaviour, one width");
+    await moonsInEveryState(page, { ungraded: ["01.2"] });
+    await map(page, "/app?stage=01&moon=01.4");
+    const hints = page.locator(".keyhints");
+    await expect(hints.getByRole("button", { name: /Sit the check/ })).toHaveCount(1);
+    await expect(hints.getByRole("button", { name: /Enter journey/ })).toHaveCount(0);
+    await map(page, "/app?stage=01&moon=01.2");
+    await expect(hints.getByRole("button", { name: /Enter journey/ })).toHaveCount(1);
+    await expect(hints.getByRole("button", { name: /Sit the check/ })).toHaveCount(0);
   });
 
   test("Escape steps out one level: the moon, then the planet (3.3)", async ({ page }, info) => {
@@ -430,16 +464,18 @@ test.describe("/app — the moons", () => {
   test("a moon with no questions yet: Enter is disabled, the reason beside it (fail-closed)", async ({ page }) => {
     await moonsInEveryState(page);
     await map(page, "/app?stage=01&moon=01.5");
-    const enter = page.locator(".starmap-body").getByRole("button", { name: "Enter journey" });
+    const enter = page.locator(".starmap-body").getByRole("button", { name: "Sit the check" });
     await expect(enter).toBeDisabled();
+    await expect(page.locator(".starmap-body").getByRole("button", { name: "Practise first" })).toBeDisabled();
     await expect(page.locator(".starmap-body .starmap-lock")).toHaveText("This moon has no questions yet.");
+    await expect(page.getByRole("link", { name: "Sit the check" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Enter journey" })).toHaveCount(0);
   });
 
   test("a locked planet's moon: Enter disabled, with the planet's own reason, verbatim", async ({ page }) => {
     await map(page, "/app?stage=04&moon=04.1");
     await expect(page.locator(".starmap-body h2")).toHaveText("Moon 04.1");
-    await expect(page.locator(".starmap-body").getByRole("button", { name: "Enter journey" })).toBeDisabled();
+    await expect(page.locator(".starmap-body").getByRole("button", { name: "Sit the check" })).toBeDisabled();
     await expect(page.locator(".starmap-body .starmap-lock")).toContainText(/Unlocks when every moon of Stage 03/);
   });
 

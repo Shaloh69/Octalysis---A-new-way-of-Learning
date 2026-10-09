@@ -158,7 +158,9 @@ test.describe("a journey is practice, not a paper", () => {
     await expect(head).toContainText("Moon journey · practice");
     await expect(head.getByRole("heading", { level: 1 })).toHaveText(`Moon ${MOON}`);
     await expect(head).toContainText(objectiveWords);
-    await expect(head).toContainText(/never graded/i);
+    // Every moon is graded unless switched off: its practice says so, and offers the check.
+    await expect(head).toContainText(/Practice: this is not the graded check/i);
+    await expect(head.locator("[data-sit-check]")).toHaveAttribute("href", `/app/stage/${MOON.split(".")[0]}/moon/${MOON}/check`);
     await expect(head).toContainText(/Two different questions answered right master this moon/);
   });
 

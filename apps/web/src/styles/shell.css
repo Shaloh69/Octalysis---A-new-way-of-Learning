@@ -665,3 +665,7 @@
   .arrival-title { font-size: var(--text-xl); line-height: var(--lh-xl); }
   .arrival-facts { font-size: var(--text-xs); }
 }
+
+/* A page that failed to render (components/RouteBoundary.tsx): the app stays, the page says so. */
+.route-error { max-width: 40rem; margin: var(--space-6) auto; }
+.route-error-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }

@@ -52,7 +52,12 @@ async function travel(page: Page, opts: { stage?: string; moon?: string } = {}):
   if (opts.moon) await moonsOpen(page);
   await page.goto(`/app?stage=${stage}${opts.moon ? `&moon=${opts.moon}` : ""}`, { waitUntil: "domcontentloaded" });
   await page.locator(".starmap-body h2").waitFor();
-  await page.locator(".starmap-body").getByRole("link", { name: "Enter journey" }).click();
+  // A graded moon's main way in is its check (a paper behind its own start prompt); the arrival is of the
+  // planet or the moon's JOURNEY, so a moon is travelled to through "Practise first".
+  await page
+    .locator(".starmap-body")
+    .getByRole("link", { name: opts.moon ? "Practise first" : "Enter journey" })
+    .click();
   await page.locator(ARRIVAL).waitFor({ timeout: 10_000 });
   // Wait for the facts: the arrival fills in once the shell's stage data is there.
   await page.locator(".arrival-facts li").first().waitFor({ timeout: 10_000 });

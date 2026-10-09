@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { api } from "../lib/api";
 import { StarMap } from "../map/StarMap";
 import { useShellData } from "../shell/ShellData";
 import { StageReader } from "../components/StageReader";
@@ -52,6 +54,9 @@ export function CheckPage(): JSX.Element {
   const nav = useNavigate();
   const assessmentId = params.get("a");
   const title = params.get("t") ?? "Stage check";
+  // A graded moon's check opens on this same route (docs/GRADED-MOONS-PLAN.md): `m` names the moon,
+  // so the paper says so and leaving it lands on that moon, not on the planet.
+  const moon = params.get("m");
 
   if (!assessmentId) {
     return (
@@ -68,8 +73,56 @@ export function CheckPage(): JSX.Element {
       stageId={id}
       assessmentId={assessmentId}
       title={title}
-      onLeave={() => nav(`/app/stage/${id}`)}
+      {...(moon ? { eyebrow: "Moon check" } : {})}
+      onLeave={() => nav(moon ? `/app?stage=${id}&moon=${encodeURIComponent(moon)}` : `/app/stage/${id}`)}
     />
+  );
+}
+
+/**
+ * `/app/stage/:id/moon/:objectiveId/check`: the way INTO a graded moon's check
+ * (docs/GRADED-MOONS-PLAN.md). It asks the server for the paper (created once per
+ * moon) and passes on to the ordinary check route, behind its start prompt. It starts
+ * NOTHING: under hard rule 9 no attempt exists until the student presses Start there.
+ * The server decides whether the moon is graded, open and has questions; a refusal is
+ * said in the server's words, with the way back to the moon.
+ */
+export function MoonCheckEntry(): JSX.Element {
+  const { id = "", objectiveId = "" } = useParams();
+  const nav = useNavigate();
+  const [problem, setProblem] = useState<string | null>(null);
+  const back = `/app?stage=${id}&moon=${encodeURIComponent(objectiveId)}`;
+
+  useEffect(() => {
+    if (!objectiveId.startsWith(`${id}.`)) {
+      setProblem("That moon does not circle this planet. Go back to the map and choose it there.");
+      return;
+    }
+    let live = true;
+    api
+      .moonCheck(objectiveId)
+      .then((c) => {
+        if (!live) return;
+        nav(
+          `/app/stage/${id}/check?a=${encodeURIComponent(c.assessmentId)}&t=${encodeURIComponent(c.title)}&m=${encodeURIComponent(objectiveId)}`,
+          { replace: true },
+        );
+      })
+      .catch((e: unknown) => {
+        if (live) setProblem(e instanceof Error ? e.message : "The check did not open. Try again.");
+      });
+    return () => {
+      live = false;
+    };
+  }, [id, objectiveId, nav]);
+
+  if (problem) {
+    return <ErrorState message={problem} onRetry={() => nav(back)} retryLabel="Back to the moon" />;
+  }
+  return (
+    <section className="check-loading" aria-busy="true" data-moon-check-entry="">
+      <p role="status">Opening the check for Moon {objectiveId}…</p>
+    </section>
   );
 }
 
@@ -82,6 +135,10 @@ export function CheckPage(): JSX.Element {
 export function MoonJourneyPage(): JSX.Element {
   const { id = "", objectiveId = "" } = useParams();
   const nav = useNavigate();
+  const { map } = useShellData();
+  // A graded moon's practice says it is not the graded paper, and offers the check.
+  const graded =
+    map?.nodes.find((n) => n.id === id)?.objectives.find((o) => o.id === objectiveId)?.graded === true;
   // Leaving returns to the map with the planet, and its moon, still chosen (3.3).
   const back = () => nav(`/app?stage=${id}&moon=${encodeURIComponent(objectiveId)}`);
 
@@ -100,7 +157,7 @@ export function MoonJourneyPage(): JSX.Element {
       <AttemptRunner
         key={objectiveId}
         stageId={id}
-        journey={{ objectiveId }}
+        journey={{ objectiveId, graded }}
         title={`Moon ${objectiveId}`}
         onLeave={back}
       />

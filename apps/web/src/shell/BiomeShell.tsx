@@ -9,6 +9,7 @@ import { Readout } from "./Readout";
 import { KeyHintBar } from "./KeyHintBar";
 import { useKeyHints } from "./keyHints";
 import { useSitting } from "../lib/sitting";
+import { RouteBoundary } from "../components/RouteBoundary";
 import { NumberedTitle } from "./MissionPanel";
 import { WarpLink } from "./RealmWarp";
 import { useOnline } from "./useOnline";
@@ -137,7 +138,9 @@ export function BiomeShell({ signedIn }: { signedIn: boolean }): JSX.Element {
       )}
 
       <main id="main" className="biome-main">
-        <Outlet />
+        <RouteBoundary resetKey={pathname}>
+          <Outlet />
+        </RouteBoundary>
       </main>
 
       <footer className="biome-bottom">

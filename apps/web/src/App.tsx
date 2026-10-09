@@ -12,6 +12,7 @@ import { ChangePasswordPage, LoginPage, RegisterPage } from "./pages/AuthPages";
 import { ForgotPasswordPage, ResetPasswordPage } from "./pages/RecoveryPages";
 import {
   CheckPage,
+  MoonCheckEntry,
   MaintenancePage,
   MapPage,
   MoonJourneyPage,
@@ -139,6 +140,7 @@ export default function App(): JSX.Element {
                 <Route index element={<StagePage />} />
                 <Route path="check" element={<CheckPage />} />
                 <Route path="moon/:objectiveId" element={<MoonJourneyPage />} />
+                <Route path="moon/:objectiveId/check" element={<MoonCheckEntry />} />
               </Route>
             </Route>
           </Route>

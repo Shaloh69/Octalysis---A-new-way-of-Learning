@@ -68,3 +68,20 @@ shows it **below the paper, never around it**, in its own section wearing
 `data-encounter`. The first is moon 01.2's Two Columns
 (`design/templates/web/encounter-sort/`). A moon without one is its practice
 alone, and is not unfinished.
+
+## A graded moon: the panel and the check (9 Oct 2026)
+
+Instructor, 8 Oct 2026 (`docs/GRADED-MOONS-PLAN.md`): every moon is graded
+unless a teacher switches it off in the Studio. So the moon panel on `/app`
+leads with the **check**, a paper like a stage check (behind its own start
+prompt, five tries, the best counts), and practice is one step lower.
+
+| Control | Does | Tests it passes |
+|---|---|---|
+| **Sit the check** (primary; Enter) | Leads to `/app/stage/NN/moon/ID/check`, a start prompt: nothing of the paper exists until Start (hard rule 9) | consequence (a graded paper), legibility (the Grading row says it counts as one more quiz), teaching (the prompt states the rules first) |
+| **Practise first** | The journey, unchanged: unlimited, never graded | consequence (it changes what the student can do) |
+| **Enter journey** (a moon NOT graded only) | The journey, its only way in | as above |
+
+Captures: `current-graded-panel` (the panel, jungle HUD) and
+`current-graded-prompt` (the check's start prompt, on the neutral paper), each
+with `-380`. Opened 9 Oct 2026.

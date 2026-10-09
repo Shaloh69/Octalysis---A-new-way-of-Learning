@@ -7,6 +7,7 @@ import type {
   ChatUnread,
   ChatUpload,
   Cosmetics,
+  MoonCheck,
   Profile,
 } from "@octa/contracts";
 
@@ -34,6 +35,8 @@ export interface LockReason {
  */
 export interface MoonFacts {
   id: string;
+  /** Sat as a graded check (docs/GRADED-MOONS-PLAN.md): Enter goes to the check, practice is beside it. */
+  graded: boolean;
   correct: number;
   mastered: boolean;
   questions: number;
@@ -354,6 +357,10 @@ export const api = {
     }),
   chatDelete: (messageId: string) =>
     request<void>(`/api/v1/chat/messages/${encodeURIComponent(messageId)}`, { method: "DELETE" }),
+
+  /** A graded moon's paper: the assessment to open, and where this student stands. Starts nothing. */
+  moonCheck: (objectiveId: string) =>
+    request<MoonCheck>(`/api/v1/objectives/${encodeURIComponent(objectiveId)}/check`, { method: "POST" }),
 
   /* ---- the student's own profile and picture (docs/PROFILES-PLAN.md) ---- */
   profile: () => request<Profile>("/api/v1/profile"),

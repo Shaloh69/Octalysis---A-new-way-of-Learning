@@ -14,6 +14,7 @@ import { useChatLive } from "../lib/chat-live";
 import { clearProfile, useProfile } from "../lib/profile";
 import { Avatar } from "../components/Avatar";
 import { Tour } from "./Tour";
+import { RouteBoundary } from "../components/RouteBoundary";
 
 /**
  * The star system's shell (WEB-REMAKE.md §2): Starfield's HUD.
@@ -202,7 +203,9 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
 
         <main id="main" className={`star-main${isMap ? " is-map" : ""}`}>
           {!isMap && <MissionPanel />}
-          <Outlet />
+          <RouteBoundary resetKey={pathname}>
+            <Outlet />
+          </RouteBoundary>
         </main>
 
         <KeyHintBar dress="hud" />
