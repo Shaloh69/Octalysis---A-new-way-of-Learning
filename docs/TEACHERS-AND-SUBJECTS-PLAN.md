@@ -1,4 +1,4 @@
-# Teachers, subjects and classes — plan v1, APPROVED 7 Oct 2026 (night); **T1 BUILT the same night**; **T2 planned 9 Oct 2026 (§5), awaiting approval**
+# Teachers, subjects and classes — plan v1, APPROVED 7 Oct 2026 (night); **T1 BUILT the same night**; **T2 planned and RULED 9 Oct 2026 (§5); building**
 
 **T1 status (7 Oct 2026, night):** built and on the deployment.
 `db/addendum-teachers.sql` (thirteenth; on Supabase first), the admin's API
@@ -121,7 +121,7 @@ start of the session that builds each.
 
 ---
 
-# 5. T2 — a teacher holds their own classes — plan v1, 9 Oct 2026 — **AWAITING APPROVAL; nothing below is built**
+# 5. T2 — a teacher holds their own classes — plan v2, 9 Oct 2026 — **RULED (§5.9); building**
 
 ## 5.0 What the instructor ruled, 9 Oct 2026 (asked with the question tool)
 
@@ -129,7 +129,7 @@ start of the session that builds each.
 |---|---|---|---|
 | T2-1 | A class has ended: what does its teacher keep? | **Read-only** | Ruled |
 | T2-2 | Feedback and the audit log (not class-shaped) | **Feedback: every teacher reads it, names only for their own classes. Audit: a teacher's own actions + actions on their own students; the admin all** | Ruled |
-| T2-3 | Global locks and global assessments: who may change them? | *"explain, I thought each teacher has their own set of locks, assessments, books, sections, classes etc"* | **Open: §5.3 explains and asks** |
+| T2-3 | Global locks and global assessments: who may change them? | *"explain, I thought each teacher has their own set …"*; then: ***"Assessments are kept the same, that was my mistake: assessments are created only for minor checks such as the moons and stage checks. Maybe give me a proper recommendation"*** | **Ruled: §5.9** |
 | T2-4 | Roster import and moving students | *"An admin can create a section but automatically set for himself, same as a teacher. Admin can only see the sections created etc and their books and classes as read-only."* | Ruled; **three points need confirming, §5.4** |
 | T2-5 | (volunteered) Chat | *"also add to the chat that teachers can communicate with one another and see who is active as of the moment in the chat page"* | New scope, **§5.7; confirm** |
 
@@ -316,3 +316,27 @@ loosen a policy.
 **Sizing:** the scope, the denials and the twenty-first file: one session. The console pages: one. The
 assessment windows (A) and the chat additions: one each. The count of SQL files in `CLAUDE.md`,
 `scripts/db-reset.mjs` and `docs/LOCAL-STACK.md` moves from nineteen as each lands.
+
+## 5.9 The rulings of 9 Oct 2026 (later), and what they change
+
+1. **Assessments stay as they are** (instructor: they exist for the minor checks, the moons and the stage
+   checks, and are shared). So **option (A) and option (B) of §5.3 are both dropped: no
+   `class_assessment_windows` table, no copy per section.** The recommendation I was asked for:
+   - **The shared papers (every assessment with no section, today all 13) are the course's.** Every teacher
+     *reads* them on `/assessments` (the window, the limit, feasibility); only the **admin** edits them
+     (the course owner, D4). A teacher cannot change a paper that every other teacher's students also sit.
+   - **A teacher may still create and edit an assessment for a section they hold** (`assessments.section_id`
+     already exists): a make-up sitting or a section's own quiz. That is the only "own assessment", it needs
+     no new table, and it is invisible to other teachers. The Prelim and Midterm stay shared; if sections ever
+     need different exam *days*, that is a per-class window, to be built when a real need appears (recorded
+     as deferred, not forgotten).
+   - **Locks:** as recommended in §5.3: "All my classes" fans out to a `section` lock per held class; the
+     `global` scope leaves the console and a staff token cannot write a new one; only the admin may remove
+     a legacy one. (No objection was raised.)
+2. **Admin read-only exceptions: decided by me, as asked; all four stand.** (a) remove a student's picture,
+   audited; (b) reset a student's password and set their roster status (recovery); (c) assign / end a class on
+   `/teachers`; (d) edit the shared assessments and remove a legacy global lock. Each is moderation or
+   recovery, not teaching, and each is audited with a reason. Everything else the admin does to another
+   teacher's class is read-only.
+3. **Chat: yes** (§5.7 as written): a Staff room, private teacher-to-teacher threads readable by their two
+   members only, and active-now shown to staff about staff only. Built as its own piece, last.
