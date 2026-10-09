@@ -80,6 +80,22 @@ const CredentialsBody = z.object({
     }),
 });
 
+/**
+ * Supabase refuses a second account on an email (`email_exists`, HTTP 422). A claim or
+ * registration that meets it is not "something went wrong on our side": the person typed
+ * an email that already belongs to a login (found 9 Oct 2026, when a teacher claimed with
+ * the address of their own student account). The route says so, in a sentence, and the
+ * roster row goes back to unclaimed so they can try another address.
+ */
+export class EmailTakenError extends Error {
+  constructor() {
+    super("email_exists");
+    this.name = "EmailTakenError";
+  }
+}
+
+const EMAIL_TAKEN = "That email already has an account. Use a different email address.";
+
 export interface SupabaseAdmin {
   createUser(input: {
     email: string;
@@ -133,6 +149,10 @@ export function makeSupabaseAdmin(env: Env): SupabaseAdmin {
         }),
       });
       if (!res.ok) {
+        if (res.status === 422 || res.status === 409) {
+          const why = (await res.json().catch(() => ({}))) as { error_code?: string; code?: string };
+          if ((why.error_code ?? why.code) === "email_exists") throw new EmailTakenError();
+        }
         throw new Error(`admin createUser failed: ${res.status}`);
       }
       const body = (await res.json()) as { id: string };
@@ -320,6 +340,7 @@ export function registerAuthRoutes(
             [employeeId],
           )
           .catch(() => {});
+        if (err instanceof EmailTakenError) throw errors.conflict(EMAIL_TAKEN);
         throw errors.internal("teacher claim rolled back");
       }
     },

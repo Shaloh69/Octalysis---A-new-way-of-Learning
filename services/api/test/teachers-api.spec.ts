@@ -3,7 +3,7 @@ import { createHmac } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "../src/server.js";
 import { loadEnv } from "../src/env.js";
-import type { SupabaseAdmin } from "../src/routes/auth.js";
+import { EmailTakenError, type SupabaseAdmin } from "../src/routes/auth.js";
 import { setup, pool, closePool } from "./helpers/rls.js";
 import { resetWorld, type World } from "./helpers/fixtures.js";
 
@@ -30,6 +30,9 @@ function mint(userId: string, role: string): string {
 class FakeAdmin implements SupabaseAdmin {
   banned = new Map<string, boolean>();
   async createUser({ email, appMetadata }: { email: string; password: string; appMetadata: Record<string, unknown> }) {
+    // Supabase refuses a second account on an email; the real client says so with this error.
+    const taken = await pool.query(`select 1 from auth.users where lower(email) = lower($1)`, [email]);
+    if (taken.rowCount) throw new EmailTakenError();
     const { rows } = await pool.query(
       `insert into auth.users (id, email, raw_app_meta_data) values (gen_random_uuid(), $1, $2::jsonb) returning id`,
       [email, JSON.stringify(appMetadata)],
@@ -248,6 +251,22 @@ describe("disabling a teacher", () => {
 
 describe("POST /api/v1/auth/claim-teacher", () => {
   const claim = (b: object) => inject("POST", "/api/v1/auth/claim-teacher", null, b);
+  it("an email that already has an account says so (409), leaves the ID unclaimed, and another email then works", async () => {
+    // The 9 Oct 2026 deployment bug: the roster's email already belonged to a student's login, the
+    // claim failed after the roster row was taken, and the teacher saw "Something went wrong on our side".
+    await setup(`insert into teacher_directory (employee_id, full_name, role) values ('EMP-0400', 'Already Here', 'teacher')`);
+    await setup(`insert into auth.users (id, email, raw_app_meta_data) values (gen_random_uuid(), 'shared@octa-test.local', '{"role":"student"}'::jsonb)`);
+    const r = await claim({ employeeId: "EMP-0400", fullName: "Already Here", email: "Shared@octa-test.local", password: "a-long-password-1" });
+    expect(r.statusCode).toBe(409);
+    expect(r.json().error.message).toMatch(/email already has an account/i);
+    const still = await setup(`select status::text as status, claimed_by from teacher_directory where employee_id = 'EMP-0400'`);
+    expect(still.rows[0]).toEqual({ status: "unclaimed", claimed_by: null });
+    const ok = await claim({ employeeId: "EMP-0400", fullName: "Already Here", email: "mine@octa-test.local", password: "a-long-password-1" });
+    expect(ok.statusCode, "POSITIVE CONTROL: a different email claims it").toBe(201);
+    // The other account was not touched.
+    const other = await setup(`select raw_app_meta_data ->> 'role' as role from auth.users where email = 'shared@octa-test.local'`);
+    expect(other.rows[0]).toEqual({ role: "student" });
+  });
   it("unknown ID, claimed ID and a wrong name are ONE message", async () => {
     const unknown = await claim({ employeeId: "EMP-7777", fullName: "Nobody", email: "x1@octa-test.local", password: "a-long-password-1" });
     const taken = await claim({ employeeId: "EMP-0001", fullName: "Instructor", email: "x2@octa-test.local", password: "a-long-password-1" });
