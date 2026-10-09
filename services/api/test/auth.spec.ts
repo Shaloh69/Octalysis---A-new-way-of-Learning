@@ -99,6 +99,12 @@ async function resetRoster(): Promise<void> {
   );
   teacherId = rows[0].tid;
   teacherToken = mintToken(teacherId, "teacher");
+  // T2 (9 Oct 2026): a teacher writes to the roster of the classes they hold. This one holds 2A.
+  await setup(
+    `insert into classes (section_id, subject_code, teacher_id, term)
+     select id, 'CPE 412', $1, term from sections where code = 'BSCPE-2A'`,
+    [teacherId],
+  );
 }
 
 beforeAll(async () => {

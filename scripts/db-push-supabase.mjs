@@ -68,6 +68,8 @@ const FILES = [
   "db/addendum-graded-moons.sql",
   // The first-run tour (9 Oct 2026; db/addendum-tour.sql): remembered per account, in the database.
   "db/addendum-tour.sql",
+  // T2 (9 Oct 2026): a teacher holds their own classes: the class-scoped read/write helpers and policies. Idempotent.
+  "db/addendum-class-scope.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 

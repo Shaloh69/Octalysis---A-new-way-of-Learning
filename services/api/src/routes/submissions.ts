@@ -3,6 +3,7 @@ import { z } from "zod";
 import { identityFrom, requireStaff } from "../auth.js";
 import { AppError, errors } from "../errors.js";
 import type { Env } from "../env.js";
+import { assertWritesUser, sectionFilter, staffScope } from "../scope.js";
 
 /**
  * Labs, the project, and participation — 40% of the final grade.
@@ -58,6 +59,14 @@ const jsonParam = (v: unknown): string | null =>
   v === null || v === undefined ? null : typeof v === "string" ? v : JSON.stringify(v);
 
 export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
+  /** T2: a submission is marked by the teacher of its student's class; anyone else is told it is not there. */
+  async function assertOwnsSubmission(scope: Awaited<ReturnType<typeof staffScope>>, subId: string): Promise<void> {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(subId)) throw errors.notFound("No such submission.");
+    const { rows } = await app.db.query<{ user_id: string }>("select user_id::text as user_id from submissions where id = $1", [subId]);
+    if (rows.length === 0) throw errors.notFound("No such submission.");
+    await assertWritesUser(app.db, scope, rows[0]!.user_id, "No such submission.");
+  }
+
   /* ----------------------------------------------------------
    * GET /api/v1/submissions          -- the student's own
    * -------------------------------------------------------- */
@@ -160,7 +169,11 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
   app.get("/api/v1/console/submissions", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const q = req.query as { status?: string; kind?: string; slug?: string };
+    // T2: the work of the students in the classes this teacher reads, and no one else's.
+    const params: unknown[] = [q.status ?? null, q.kind ?? null, q.slug ?? null];
+    const reach = sectionFilter(scope, "read", "p.section_id", params);
 
     const { rows } = await app.db.query(
       `select s.id, s.user_id, s.kind, s.stage_id, s.slug, s.title, s.body_md,
@@ -174,13 +187,20 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
         where ($1::text is null or s.status = $1::submission_status)
           and ($2::text is null or s.kind   = $2::submission_kind)
           and ($3::text is null or s.slug   = $3)
+          and ${reach}
         order by (s.status = 'submitted') desc, s.submitted_at asc nulls last
         limit 500`,
-      [q.status ?? null, q.kind ?? null, q.slug ?? null],
+      params,
     );
 
+    const sumParams: unknown[] = [];
+    const sumReach = sectionFilter(scope, "read", "p.section_id", sumParams);
     const summary = await app.db.query(
-      `select status::text as status, count(*)::int as n from submissions group by status`,
+      `select s.status::text as status, count(*)::int as n
+         from submissions s join profiles p on p.id = s.user_id
+        where ${sumReach}
+        group by s.status`,
+      sumParams,
     );
 
     return reply.send({
@@ -203,7 +223,9 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
   app.post("/api/v1/console/submissions/:id/grade", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const subId = (req.params as { id: string }).id;
+    await assertOwnsSubmission(scope, subId);
 
     const body = GradeBody.safeParse(req.body);
     if (!body.success) throw errors.badRequest("That grade could not be read.");
@@ -254,7 +276,9 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
   app.post("/api/v1/console/submissions/:id/return", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const subId = (req.params as { id: string }).id;
+    await assertOwnsSubmission(scope, subId);
 
     const parsed = z
       .object({ reason: z.string().trim().min(3).max(500) })

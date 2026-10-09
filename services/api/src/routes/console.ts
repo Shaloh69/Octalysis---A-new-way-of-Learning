@@ -12,6 +12,9 @@ import { loadGradebookInput } from "../gradebook/load.js";
 import { AuditQuery, type SystemAudit } from "@octa/contracts";
 import type { BucketStorage } from "../chat/storage.js";
 import { avatarsFor, generatedAvatar } from "../avatars.js";
+import {
+  assertReadsUser, assertWritesSection, assertWritesUser, attemptOwner, sectionFilter, staffScope,
+} from "../scope.js";
 import { presentInvariant, summariseRun, type InvariantRow } from "../audit/invariants.js";
 import { AUDIT_EXPORT_MAX, loadAuditExport, loadAuditPage, toAuditCsv } from "../audit/log.js";
 
@@ -39,7 +42,11 @@ export function registerConsoleRoutes(
   app.get("/api/v1/console/roster", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
 
+    // T2: the students of the classes this teacher holds (the admin: every class's).
+    const params: unknown[] = [];
+    const reach = sectionFilter(scope, "read", "d.section_id", params);
     const { rows } = await app.db.query(
       `select d.student_id, d.full_name, d.status, d.claimed_at,
               d.section_id, s.code as section_code,
@@ -50,9 +57,15 @@ export function registerConsoleRoutes(
          from student_directory d
          left join sections s on s.id = d.section_id
          left join profiles p on p.student_id = d.student_id
+        where ${reach}
         order by d.student_id`,
+      params,
     );
-    const sections = await app.db.query("select id, code, term from sections order by code");
+    const sparams: unknown[] = [];
+    const sections = await app.db.query(
+      `select id, code, term from sections where ${sectionFilter(scope, "read", "id", sparams)} order by code`,
+      sparams,
+    );
     const faces = await avatarsFor(
       app.db,
       profileStorage,
@@ -78,7 +91,8 @@ export function registerConsoleRoutes(
         attempts: Number(r.attempts ?? 0),
         avgMastery: r.avg_mastery === null ? null : Number(r.avg_mastery),
       })),
-      sections: sections.rows.map((s) => ({ id: s.id, code: s.code, term: s.term })),
+      // `held`: this actor may write to the class (it is theirs and has not ended); false = read-only.
+      sections: sections.rows.map((s) => ({ id: s.id, code: s.code, term: s.term, held: scope.writes(s.id as string) })),
     });
   });
 
@@ -128,23 +142,30 @@ export function registerConsoleRoutes(
   app.post("/api/v1/console/roster/import", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
 
     const body = RosterBody.safeParse(req.body);
     if (!body.success) throw errors.badRequest("That roster could not be read.");
     const { sectionCode, term, rows, apply } = body.data;
 
     const existing = await app.db.query<{
-      student_id: string; full_name: string; status: string; section_code: string | null;
+      student_id: string; full_name: string; status: string; section_code: string | null; section_id: string | null;
     }>(
-      `select d.student_id, d.full_name, d.status, s.code as section_code
+      `select d.student_id, d.full_name, d.status, s.code as section_code, d.section_id
          from student_directory d left join sections s on s.id = d.section_id
         where d.student_id = any($1)`,
       [rows.map((r) => r.studentId)],
     );
     const known = new Map(existing.rows.map((r) => [r.student_id, r]));
-    const sections = new Set(
-      (await app.db.query<{ code: string }>("select code from sections")).rows.map((r) => r.code),
-    );
+    const allSections = (await app.db.query<{ id: string; code: string }>("select id, code from sections")).rows;
+    // T2: the sections this actor may import INTO are the ones they hold and that have not ended, plus
+    // the dialog's own section when it is NEW (which makes the actor its teacher). Naming a section
+    // someone else holds is a refusal that does not say whose it is.
+    const dialogSection = allSections.find((s) => s.code === sectionCode);
+    if (dialogSection && !scope.writes(dialogSection.id)) {
+      throw errors.conflict("That section already exists and is not yours to import into. Pick another code.");
+    }
+    const sections = new Set(allSections.filter((s) => scope.writes(s.id)).map((s) => s.code));
     sections.add(sectionCode);
     const seen = new Map<string, number>();
     for (const r of rows) seen.set(r.studentId, (seen.get(r.studentId) ?? 0) + 1);
@@ -159,6 +180,11 @@ export function registerConsoleRoutes(
       if (seen.get(r.studentId)! > 1) return { ...base, action: "conflict" as const, why: "duplicate" as const };
       if (!sections.has(target)) return { ...base, action: "conflict" as const, why: "unknown-section" as const };
       if (!cur) return { ...base, action: "insert" as const };
+      // A student already on another teacher's roster (or in a class that has ended, or the admin's
+      // read-only view of one) is not this actor's to write, and the row does not say whose they are.
+      if (cur.section_id !== null && !scope.writes(cur.section_id)) {
+        return { ...base, current: null, action: "conflict" as const, why: "other-class" as const };
+      }
       const same = cur.full_name === r.fullName && cur.section_code === target;
       if (same) return { ...base, action: "unchanged" as const };
       if (cur.status === "claimed") return { ...base, action: "conflict" as const, why: "registered" as const };
@@ -179,10 +205,18 @@ export function registerConsoleRoutes(
 
     await withTransaction(app.db, async (client) => {
       const { rows: own } = await client.query(
-        `insert into sections (code, term) values ($1, $2)
+        `insert into sections (code, term, teacher_id) values ($1, $2, $3)
          on conflict (code) do update set term = excluded.term
          returning id`,
-        [sectionCode, term],
+        [sectionCode, term, id.userId],
+      );
+      // A section's creator holds its class from the first moment, teacher or admin (instructor,
+      // 9 Oct 2026). Only CPE 412 has content, so that is the subject until a second one exists.
+      await client.query(
+        `insert into classes (section_id, subject_code, teacher_id, term)
+         values ($1, 'CPE 412', $2, $3)
+         on conflict (section_id, subject_code, term) do nothing`,
+        [own[0]!.id, id.userId, term],
       );
       const { rows: all } = await client.query<{ id: string; code: string }>("select id, code from sections");
       const sectionId = new Map(all.map((s) => [s.code, s.id]));
@@ -243,6 +277,7 @@ export function registerConsoleRoutes(
   app.post("/api/v1/console/roster/status", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const parsed = StatusBody.safeParse(req.body);
     if (!parsed.success) {
       throw errors.badRequest("Say why, in a few words. The reason goes to the audit log.");
@@ -250,15 +285,21 @@ export function registerConsoleRoutes(
     const b = parsed.data;
 
     const result = await withTransaction(app.db, async (client) => {
-      const { rows } = await client.query<{ full_name: string; status: string; user_id: string | null }>(
-        `select d.full_name, d.status, p.id as user_id
+      const { rows } = await client.query<{ full_name: string; status: string; user_id: string | null; section_id: string | null }>(
+        `select d.full_name, d.status, p.id as user_id, d.section_id
            from student_directory d left join profiles p on p.student_id = d.student_id
           where d.student_id = $1
           for update of d`,
         [b.studentId],
       );
       const row = rows[0];
-      if (!row) throw errors.badRequest("That student is not on the roster. Nothing was changed.");
+      // Outside this teacher's reach it is the same answer as an ID that does not exist.
+      if (!row || !scope.reads(row.section_id)) throw errors.badRequest("That student is not on the roster. Nothing was changed.");
+      // Recovery is the admin's even on a class they do not hold (a student locked out while their
+      // teacher is away); everyone else needs a class they hold that has not ended.
+      if (!scope.admin && !scope.writes(row.section_id)) {
+        throw errors.forbidden("This class has ended, so you can read it and not change it.");
+      }
 
       if (row.user_id) {
         await client.query(
@@ -310,6 +351,7 @@ export function registerConsoleRoutes(
   app.post("/api/v1/console/roster/section", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const parsed = SectionBody.safeParse(req.body);
     if (!parsed.success) {
       throw errors.badRequest("Pick a section and say why. The reason goes to the audit log.");
@@ -320,16 +362,24 @@ export function registerConsoleRoutes(
     const section = await app.db.query<{ code: string }>("select code from sections where id = $1", [b.sectionId]);
     if (section.rows.length === 0) throw errors.badRequest("That section does not exist. Nothing was changed.");
     const to = section.rows[0]!.code;
+    // Into a class held and not ended; a class someone else holds is not found.
+    assertWritesSection(scope, b.sectionId);
 
     await withTransaction(app.db, async (client) => {
-      const { rows } = await client.query<{ student_id: string; code: string | null }>(
-        `select d.student_id, s.code
+      const found = await client.query<{ student_id: string; code: string | null; section_id: string | null }>(
+        `select d.student_id, s.code, d.section_id
            from student_directory d left join sections s on s.id = d.section_id
           where d.student_id = any($1)
           for update of d`,
         [ids],
       );
+      // Out of a class held and not ended (or a student with no section yet). A student outside the
+      // reach counts as missing: the message does not say they exist.
+      const rows = found.rows.filter((r) => scope.reads(r.section_id));
       const missing = ids.length - rows.length;
+      if (rows.some((r) => r.section_id !== null && !scope.writes(r.section_id))) {
+        throw errors.forbidden("One of those students is in a class you can read and not change.");
+      }
       if (missing > 0) {
         throw errors.badRequest(
           `${missing} of those students ${missing === 1 ? "is" : "are"} not on the roster. Nothing was changed.`,
@@ -360,16 +410,20 @@ export function registerConsoleRoutes(
   app.get("/api/v1/console/locks", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
 
     const stages = await app.db.query(
       "select id, title, ordinal from stages order by ordinal",
     );
 
+    const sp: unknown[] = [];
+    const reach = sectionFilter(scope, "read", "p.section_id", sp);
     const students = await app.db.query(
       `select p.id as user_id, p.student_id, p.full_name, p.section_id
          from profiles p
-        where p.student_id is not null and p.deleted_at is null
+        where p.student_id is not null and p.deleted_at is null and ${reach}
         order by p.student_id`,
+      sp,
     );
 
     // Resolved state per cell, from is_stage_unlocked() -- the same authority
@@ -386,11 +440,17 @@ export function registerConsoleRoutes(
          left join stage_locks sl
                 on sl.scope = 'user' and sl.scope_user_id = p.id and sl.stage_id = s.id
          left join profiles actor on actor.id = sl.actor_id
-        where p.student_id is not null and p.deleted_at is null`,
+        where p.student_id is not null and p.deleted_at is null and ${reach}`,
+      sp,
     );
 
-    const sections = await app.db.query("select id, code, term from sections order by code");
+    const secp: unknown[] = [];
+    const sections = await app.db.query(
+      `select id, code, term from sections where ${sectionFilter(scope, "read", "id", secp)} order by code`,
+      secp,
+    );
 
+    const lp: unknown[] = [];
     const scopeLocks = await app.db.query(
       `select sl.id, sl.scope, sl.scope_section_id, sec.code as section_code, sl.stage_id,
               sl.state, sl.reason, sl.unlock_at, sl.lock_at, sl.created_at,
@@ -399,7 +459,9 @@ export function registerConsoleRoutes(
          left join sections sec on sec.id = sl.scope_section_id
          left join profiles actor on actor.id = sl.actor_id
         where sl.scope in ('global', 'section') and sl.state <> 'auto'
+          and (sl.scope = 'global' or ${sectionFilter(scope, "read", "sl.scope_section_id", lp)})
         order by sl.stage_id, sl.scope, sec.code`,
+      lp,
     );
 
     const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : v == null ? null : String(v));
@@ -428,7 +490,7 @@ export function registerConsoleRoutes(
           setAt: override ? iso(c.set_at) : null,
         };
       }),
-      sections: sections.rows.map((s) => ({ id: s.id, code: s.code, term: s.term })),
+      sections: sections.rows.map((s) => ({ id: s.id, code: s.code, term: s.term, held: scope.writes(s.id as string) })),
       scopeLocks: scopeLocks.rows.map((l) => ({
         id: l.id,
         scope: l.scope,
@@ -513,7 +575,8 @@ export function registerConsoleRoutes(
    * POST /api/v1/console/locks
    * -------------------------------------------------------- */
   const LockBody = z.object({
-    scope: z.enum(["global", "section", "user"]),
+    // "mine" is "All my classes" (T2): a section lock for each class the actor holds and has not ended.
+    scope: z.enum(["global", "section", "user", "mine"]),
     stageId: z.string().regex(/^\d{2}$/),
     state: z.enum(["locked", "unlocked", "auto"]),
     userId: z.string().uuid().optional(),
@@ -528,6 +591,7 @@ export function registerConsoleRoutes(
   app.post("/api/v1/console/locks", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
 
     const body = LockBody.safeParse(req.body);
     if (!body.success) {
@@ -536,6 +600,28 @@ export function registerConsoleRoutes(
       );
     }
     const b = body.data;
+
+    // T2 (instructor, 9 Oct 2026): each teacher has their own set of locks. A lock for EVERYONE would
+    // reach other teachers' students, so none is written any more: "All my classes" is a section lock
+    // for each class held. A legacy global lock still stands; only the admin removes one.
+    if (b.scope === "global" && !(b.state === "auto" && scope.admin)) {
+      throw errors.forbidden(
+        b.state === "auto"
+          ? "Only the admin removes a lock that was set for everyone."
+          : "A lock for everyone is not set any more. Use All my classes, or one class or student.",
+      );
+    }
+    if (b.scope === "mine") {
+      if (scope.writeIds.length === 0) throw errors.forbidden("You hold no class that is running, so there is nothing to lock.");
+      await withTransaction(app.db, async (client) => {
+        for (const sectionId of scope.writeIds) {
+          const one: LockWrite = { scope: "section", sectionId, stageId: b.stageId, state: b.state, reason: b.reason,
+            ...(b.unlockAt ? { unlockAt: b.unlockAt } : {}), ...(b.lockAt ? { lockAt: b.lockAt } : {}) };
+          await writeLock(client, one, id.userId, { ...one, allMyClasses: scope.writeIds.length });
+        }
+      });
+      return reply.send({ ok: true, classes: scope.writeIds.length });
+    }
 
     if (b.scope === "user" && !b.userId) throw errors.badRequest("A user-scope lock needs a userId.");
     if (b.scope === "section" && !b.sectionId) {
@@ -553,13 +639,15 @@ export function registerConsoleRoutes(
         [b.userId],
       );
       if (rows.length === 0) throw errors.badRequest("That student is not on the roster. Nothing was changed.");
+      await assertWritesUser(app.db, scope, b.userId!);
     }
     if (b.scope === "section") {
       const { rows } = await app.db.query("select 1 from sections where id = $1", [b.sectionId]);
       if (rows.length === 0) throw errors.badRequest("That section does not exist. Nothing was changed.");
+      assertWritesSection(scope, b.sectionId!);
     }
 
-    await withTransaction(app.db, (client) => writeLock(client, b, id.userId, b));
+    await withTransaction(app.db, (client) => writeLock(client, { ...b, scope: b.scope as LockWrite["scope"] }, id.userId, b));
 
     return reply.send({ ok: true });
   });
@@ -585,6 +673,7 @@ export function registerConsoleRoutes(
   app.post("/api/v1/console/locks/bulk", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
 
     const body = BulkBody.safeParse(req.body);
     if (!body.success) {
@@ -595,8 +684,8 @@ export function registerConsoleRoutes(
     const b = body.data;
 
     const userIds = [...new Set(b.cells.map((c) => c.userId))];
-    const known = await app.db.query(
-      `select id from profiles
+    const known = await app.db.query<{ id: string; section_id: string | null }>(
+      `select id, section_id::text as section_id from profiles
         where id = any($1::uuid[]) and student_id is not null and deleted_at is null`,
       [userIds],
     );
@@ -605,6 +694,11 @@ export function registerConsoleRoutes(
       throw errors.badRequest(
         `${missing} of those students ${missing === 1 ? "is" : "are"} not on the roster. Nothing was changed.`,
       );
+    }
+    // T2: one student outside the reach refuses the whole batch, and says nothing about who.
+    if (known.rows.some((r) => !scope.reads(r.section_id))) throw errors.notFound("No such student. Nothing was changed.");
+    if (known.rows.some((r) => !scope.writes(r.section_id))) {
+      throw errors.forbidden("One of those students is in a class you can read and not change. Nothing was changed.");
     }
 
     const count = b.cells.length;
@@ -629,7 +723,10 @@ export function registerConsoleRoutes(
   app.get("/api/v1/console/students/:userId", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const userId = (req.params as { userId: string }).userId;
+    // T2: a student outside the classes this teacher reads is not found, whoever they are.
+    await assertReadsUser(app.db, scope, userId);
 
     // A student is a profile with a student ID. Staff profiles are not records
     // this page can show. The section is the directory's, as on the roster, so
@@ -645,7 +742,11 @@ export function registerConsoleRoutes(
       [userId],
     );
     if (profile.rows.length === 0) throw errors.notFound("No such student.");
-    const sections = await app.db.query("select id, code, term from sections order by code");
+    const secp: unknown[] = [];
+    const sections = await app.db.query(
+      `select id, code, term from sections where ${sectionFilter(scope, "read", "id", secp)} order by code`,
+      secp,
+    );
 
     const attempts = await app.db.query(
       `select a.id, a.attempt_no, a.status, a.score, a.max_score,
@@ -724,9 +825,12 @@ export function registerConsoleRoutes(
         sectionCode: profile.rows[0].section_code,
         claimedAt: profile.rows[0].claimed_at,
         deactivated: profile.rows[0].deleted_at !== null,
+        // False: the class is read-only to this actor (ended, or another teacher's). The page disables
+        // its write controls; the routes refuse them regardless.
+        canWrite: scope.writes(profile.rows[0].section_id as string | null),
       },
       // For the record's "Move to section…", the same list the roster reads.
-      sections: sections.rows.map((s) => ({ id: s.id, code: s.code, term: s.term })),
+      sections: sections.rows.map((s) => ({ id: s.id, code: s.code, term: s.term, held: scope.writes(s.id as string) })),
       attempts: attempts.rows.map((a) => ({
         attemptId: a.id,
         attemptNo: Number(a.attempt_no),
@@ -765,9 +869,12 @@ export function registerConsoleRoutes(
   app.get("/api/v1/console/attempts/:attemptId", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
+    const scope = await staffScope(app.db, id);
     const attemptId = (req.params as { attemptId: string }).attemptId;
     // A malformed id is "no such attempt", not a 500 that invites a retry.
     if (!z.string().uuid().safeParse(attemptId).success) throw errors.notFound("No such attempt.");
+    // T2: an attempt of a student outside this teacher's classes is not found.
+    await assertReadsUser(app.db, scope, await attemptOwner(app.db, attemptId), "No such attempt.");
 
     const attempt = await loadAttempt(app.db, attemptId);
     if (!attempt) throw errors.notFound("No such attempt.");
@@ -948,13 +1055,15 @@ export function registerConsoleRoutes(
   app.get("/api/v1/console/gradebook", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
-    return reply.send(computeGradebook(await loadGradebookInput(app.db)));
+    const scope = await staffScope(app.db, id);
+    return reply.send(computeGradebook(await loadGradebookInput(app.db, scope)));
   });
 
   app.get("/api/v1/console/gradebook.csv", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
-    const csv = toCsv(computeGradebook(await loadGradebookInput(app.db)));
+    const scope = await staffScope(app.db, id);
+    const csv = toCsv(computeGradebook(await loadGradebookInput(app.db, scope)));
     return reply
       .header("content-type", "text/csv; charset=utf-8")
       .header("content-disposition", 'attachment; filename="octa-gradebook.csv"')

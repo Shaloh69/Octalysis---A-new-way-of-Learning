@@ -776,6 +776,11 @@ describe("roster writes — /students", () => {
     );
     studentC = rows[0].c;
     sectionB = rows[0].sb;
+    // T2 (9 Oct 2026): the move is between two classes the teacher holds, so this teacher holds 2B too.
+    await pool.query(
+      `insert into classes (section_id, subject_code, teacher_id, term) values ($1, 'CPE 412', $2, '2026-1')`,
+      [sectionB, w.teacher],
+    );
     tokenC = mintToken(studentC, "student", "21-0003");
   });
 

@@ -1,5 +1,6 @@
 import type { Db } from "../db.js";
 import type { GradebookInput } from "./compute.js";
+import { sectionFilter, type StaffScope } from "../scope.js";
 
 /**
  * Reads everything the gradebook counts, and decides nothing.
@@ -7,36 +8,49 @@ import type { GradebookInput } from "./compute.js";
  * The rules live in `compute.ts`, where they are unit-tested; this file only
  * fetches rows. Staff-only by its callers (`requireStaff()`), and it runs as
  * the API's own connection, the same read `ai_after_submit` grants staff.
+ *
+ * T2 (9 Oct 2026): only the students of the classes the actor reads, and only the exam columns that
+ * apply to them (a shared paper, or one made for a section they read). Every other query is cut to
+ * those students, so nothing about another teacher's class reaches the computation.
  */
-export async function loadGradebookInput(db: Db): Promise<GradebookInput> {
-  const [stages, students, checks, exams, examScores, submissions, moons, moonScores] = await Promise.all([
+export async function loadGradebookInput(db: Db, scope: StaffScope): Promise<GradebookInput> {
+  const sp: unknown[] = [];
+  const reach = sectionFilter(scope, "read", "p.section_id", sp);
+  const students = await db.query(
+    `select p.id as user_id, p.student_id, p.full_name, s.code as section
+       from profiles p
+       left join sections s on s.id = p.section_id
+      where p.student_id is not null and p.deleted_at is null and ${reach}
+      order by p.student_id`,
+    sp,
+  );
+  const ids = students.rows.map((r) => r.user_id as string);
+  const ap: unknown[] = [];
+  const examReach = sectionFilter(scope, "read", "a.section_id", ap);
+  const [stages, checks, exams, examScores, submissions, moons, moonScores] = await Promise.all([
     db.query("select id, title from stages where gradeable order by ordinal"),
-    db.query(
-      `select p.id as user_id, p.student_id, p.full_name, s.code as section
-         from profiles p
-         left join sections s on s.id = p.section_id
-        where p.student_id is not null and p.deleted_at is null
-        order by p.student_id`,
-    ),
     // A row with attempts = 0 was never sat; `mastery` is the best check ratio.
-    db.query("select user_id, stage_id, mastery from stage_progress where attempts > 0"),
+    db.query("select user_id, stage_id, mastery from stage_progress where attempts > 0 and user_id = any($1::uuid[])", [ids]),
     // A final blueprint's `by_act` key IS its grading period: Prelim is act 1.
     db.query(
       `select a.id, a.title
          from assessments a
          join blueprints b on b.id = a.blueprint_id
-        where b.scope = 'final'
+        where b.scope = 'final' and (a.section_id is null or ${examReach})
         order by (select min(k::int) from jsonb_object_keys(coalesce(b.constraints->'by_act', '{}'::jsonb)) k)
                  nulls last, a.opens_at nulls last, a.title`,
+      ap,
     ),
     db.query(
       `select at.user_id, at.assessment_id, at.score / at.max_score as ratio
          from attempts at
          join assessments a on a.id = at.assessment_id
          join blueprints b on b.id = a.blueprint_id
-        where b.scope = 'final' and at.status = 'submitted' and at.max_score > 0`,
+        where b.scope = 'final' and at.status = 'submitted' and at.max_score > 0
+          and at.user_id = any($1::uuid[])`,
+      [ids],
     ),
-    db.query("select user_id, kind, slug, title, status, score, max_score from submissions"),
+    db.query("select user_id, kind, slug, title, status, score, max_score from submissions where user_id = any($1::uuid[])", [ids]),
     // The GRADED moons (docs/GRADED-MOONS-PLAN.md): live, of a gradeable stage, switched on.
     db.query(
       `select o.id, o.description
@@ -50,7 +64,9 @@ export async function loadGradebookInput(db: Db): Promise<GradebookInput> {
          from attempts at
          join assessments a on a.id = at.assessment_id
          join blueprints b on b.id = a.blueprint_id
-        where b.scope = 'moon' and at.status = 'submitted' and at.max_score > 0`,
+        where b.scope = 'moon' and at.status = 'submitted' and at.max_score > 0
+          and at.user_id = any($1::uuid[])`,
+      [ids],
     ),
   ]);
 

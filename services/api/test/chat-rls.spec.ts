@@ -36,6 +36,7 @@ let studentA: Actor;
 let studentB: Actor;
 let studentC: Actor;
 let teacher: Actor;
+let admin: Actor;
 let roomA = "";
 let roomB = "";
 let threadB = "";
@@ -93,6 +94,11 @@ beforeAll(async () => {
   studentB = authenticated(w.studentB, "student", "studentB");
   studentC = authenticated(c, "student", "studentC");
   teacher = authenticated(w.teacher, "teacher", "teacher");
+  // T2 (9 Oct 2026): a teacher reads the rooms of the classes they hold; the admin reads every room.
+  const adminRow = await setup(`insert into auth.users (id, email, raw_app_meta_data) values (gen_random_uuid(), 'admin@octa-test.local', '{"role":"admin"}'::jsonb) returning id::text`);
+  const adminId = adminRow.rows[0]!.id as string;
+  await setup(`insert into profiles (id, full_name, role) values ($1, 'The Admin', 'admin'::user_role)`, [adminId]);
+  admin = authenticated(adminId, "admin", "admin");
 }, 60_000);
 
 afterAll(async () => {
@@ -114,10 +120,17 @@ describe("a student cannot read another section's room", () => {
     expect(res.error).toBeNull();
     expect(res.rowCount).toBeGreaterThanOrEqual(2);
   });
-  it("POSITIVE CONTROL: the instructor reads every room", async () => {
-    const res = await runAs(teacher, "select count(distinct room_id)::int as n from chat_messages");
+  it("POSITIVE CONTROL: the admin reads every room", async () => {
+    const res = await runAs(admin, "select count(distinct room_id)::int as n from chat_messages");
     expect(res.error).toBeNull();
     expect(Number(res.rows[0]!.n)).toBe(4);
+  });
+  it("a teacher reads the two rooms of the class they hold (section 2A and its thread), not 2B's", async () => {
+    const res = await runAs(teacher, "select count(distinct room_id)::int as n from chat_messages");
+    expect(res.error).toBeNull();
+    expect(Number(res.rows[0]!.n)).toBe(2);
+    const other = await runAs(teacher, "select id from chat_messages where room_id in ($1, $2)", [roomB, threadC]);
+    expect(wasDenied(other), "a teacher read another class's chat: " + denialReason(other)).toBe(true);
   });
   it("anon reads nothing at all", async () => {
     const res = await runAs(anon, "select id from chat_messages");
@@ -138,7 +151,7 @@ describe("a private thread is between one student and the instructor", () => {
   it("POSITIVE CONTROL: studentB reads their own thread, the instructor reads both", async () => {
     const own = await runAs(studentB, q, [threadB]);
     expect(own.rowCount).toBe(1);
-    const staff = await runAs(teacher, "select id from chat_messages where room_id in ($1, $2)", [threadB, threadC]);
+    const staff = await runAs(admin, "select id from chat_messages where room_id in ($1, $2)", [threadB, threadC]);
     expect(staff.rowCount).toBe(2);
   });
 });

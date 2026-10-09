@@ -63,6 +63,7 @@ let tA = "";
 let tB = "";
 let tC = "";
 let tT = "";
+let tAdmin = "";
 let roomA = "";
 let threadB = "";
 
@@ -104,6 +105,9 @@ beforeAll(async () => {
   tB = mintToken(w.studentB, "student", "21-0002");
   tC = mintToken(studentC, "student", "21-0003");
   tT = mintToken(w.teacher, "teacher", null);
+  const adminRow = await setup(`insert into auth.users (id, email, raw_app_meta_data) values (gen_random_uuid(), 'admin@octa-test.local', '{"role":"admin"}'::jsonb) returning id::text`);
+  await setup(`insert into profiles (id, full_name, role) values ($1, 'The Admin', 'admin'::user_role)`, [adminRow.rows[0]!.id]);
+  tAdmin = mintToken(adminRow.rows[0]!.id as string, "admin", null);
 }, 120_000);
 
 afterAll(async () => {
@@ -147,11 +151,13 @@ describe("GET /chat/rooms — who is in which room", () => {
     expect(["Stage 03 Check", "Power-On Self Test"]).toContain(unread.paper.title);
   });
 
-  it("the instructor sees every section's room; a private thread once it has a message", async () => {
+  it("T2: a teacher sees the room of the class they hold (2A), the admin every section's", async () => {
     const res = await get("/api/v1/chat/rooms", tT);
     const titles = res.json().rooms.map((r: { title: string }) => r.title);
-    expect(titles).toEqual(["BSCPE-2A", "BSCPE-2B"]);
+    expect(titles).toEqual(["BSCPE-2A"]);
     expect(res.json().me.staff).toBe(true);
+    const all = await get("/api/v1/chat/rooms", tAdmin);
+    expect(all.json().rooms.map((r: { title: string }) => r.title)).toEqual(["BSCPE-2A", "BSCPE-2B"]);
   });
 });
 
@@ -176,8 +182,9 @@ describe("reading a room", () => {
     const res = await get(`/api/v1/chat/rooms/${roomA}`, tB);
     expect(res.statusCode).toBe(200);
     const names = res.json().members.map((m: { name: string }) => m.name);
-    // The instructor first, then the section; studentA belongs though they cannot open it now.
-    expect(names).toEqual(["Instructor", "Student A", "Student B"]);
+    // The staff first (the class's teacher, and the admin who reads every room), then the section;
+    // studentA belongs though they cannot open it now.
+    expect(names).toEqual(["Instructor", "The Admin", "Student A", "Student B"]);
     expect(names).not.toContain("Student C");
   });
 });
