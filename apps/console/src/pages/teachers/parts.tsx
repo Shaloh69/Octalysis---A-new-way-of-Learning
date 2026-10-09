@@ -3,6 +3,7 @@ import { Link, useOutletContext } from "react-router-dom";
 import { MoreHorizontal, ShieldAlert } from "lucide-react";
 import type { TeacherRow } from "@octa/contracts";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -95,12 +96,15 @@ const tokens = (t: TeacherRow) =>
 
 function Name({ t }: { t: TeacherRow }) {
   return (
-    <>
-      <Link to={`/teachers/${encodeURIComponent(t.key)}`} className="roster-name">
-        {t.fullName}
-      </Link>
-      {t.email ? <span className="block truncate text-xs text-ink-muted" title={t.email}>{t.email}</span> : null}
-    </>
+    <span className="roster-who">
+      <Avatar avatar={t.avatar} size="md" />
+      <span className="min-w-0">
+        <Link to={`/teachers/${encodeURIComponent(t.key)}`} className="roster-name">
+          {t.fullName}
+        </Link>
+        {t.email ? <span className="block truncate text-xs text-ink-muted" title={t.email}>{t.email}</span> : null}
+      </span>
+    </span>
   );
 }
 

@@ -6,6 +6,8 @@ import { useChatLive } from "@/lib/chat-live";
 import { useDelayed } from "@/lib/useDelayed";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/Avatar";
+import { RemovePictureDialog, type PictureOwner } from "@/components/RemovePictureDialog";
 import { Textarea, Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import {
@@ -278,12 +280,14 @@ type Pending =
   | { kind: "prune"; days: number; count: number; bytes: number };
 
 function Conversations({
-  rooms, roster, onRooms, onAsk,
+  rooms, roster, onRooms, onAsk, onPicture,
 }: {
   rooms: ChatRooms;
   roster: Roster | null;
   onRooms: () => Promise<void>;
   onAsk: (p: Pending) => void;
+  /** Remove this author's picture (offered only where the server said `removable`). */
+  onPicture: (who: PictureOwner, from: HTMLElement) => void;
 }) {
   const [params, setParams] = useSearchParams();
   const [thread, setThread] = useState<ChatThread | null>(null);
@@ -480,6 +484,7 @@ function Conversations({
                     return (
                       <li key={m.id} data-message={m.id} className={`ch-msg${m.mine ? " is-mine" : ""}${forMe ? " is-for-me" : ""}`}>
                         <div className="ch-msg-head">
+                          <Avatar avatar={m.author.avatar} size="sm" />
                           <span className="ch-author">{m.mine ? "You" : m.author.name}</span>
                           {m.author.staff && <Badge>Instructor</Badge>}
                           {forMe && <Badge tone="info">Mentions you</Badge>}
@@ -514,6 +519,16 @@ function Conversations({
                               ) : (
                                 <Button size="sm" variant="ghost" aria-label={`Remove ${m.author.name}'s message from ${when(m.createdAt)}`} onClick={() => onAsk({ kind: "remove-message", m })}>
                                   Remove
+                                </Button>
+                              )}
+                              {!m.mine && m.author.avatar?.removable && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={`Remove ${m.author.name}'s picture`}
+                                  onClick={(e) => onPicture({ userId: m.author.id, name: m.author.name, avatar: m.author.avatar! }, e.currentTarget)}
+                                >
+                                  Remove picture
                                 </Button>
                               )}
                             </div>
@@ -621,6 +636,8 @@ export function ChatPage() {
   const [storage, setStorage] = useState<ChatAttachments | null>(null);
   const [tab, setTab] = useState<"conversations" | "attachments">("conversations");
   const [pending, setPending] = useState<Pending | null>(null);
+  const [pictureOf, setPictureOf] = useState<PictureOwner | null>(null);
+  const pictureOpener = useRef<HTMLElement | null>(null);
   const [working, setWorking] = useState(false);
   const [reason, setReason] = useState("");
   const reasonOk = reason.trim().length >= 3;
@@ -724,11 +741,23 @@ export function ChatPage() {
           <div className="ch-reserve" aria-busy="true" />
         )
       ) : tab === "conversations" ? (
-        <Conversations rooms={rooms} roster={roster} onRooms={loadRooms} onAsk={setPending} />
+        <Conversations
+          rooms={rooms}
+          roster={roster}
+          onRooms={loadRooms}
+          onAsk={setPending}
+          onPicture={(who, from) => { pictureOpener.current = from; setPictureOf(who); }}
+        />
       ) : (
         <Storage data={storage} onAsk={setPending} />
       )}
 
+      <RemovePictureDialog
+        owner={pictureOf}
+        onClose={() => setPictureOf(null)}
+        onDone={() => void reloadRoom?.()}
+        returnFocus={() => pictureOpener.current}
+      />
       <Dialog open={pending !== null} onOpenChange={(o) => !o && !working && setPending(null)}>
         <DialogContent>
           <DialogHeader>

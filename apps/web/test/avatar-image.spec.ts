@@ -69,4 +69,7 @@ describe("the two apps hold one copy", () => {
   it("components/AvatarCropper.tsx is identical in apps/web and apps/console", () => {
     expect(same("components/AvatarCropper.tsx")).toBe(true);
   });
+  it("components/Avatar.tsx is identical in apps/web and apps/console", () => {
+    expect(same("components/Avatar.tsx")).toBe(true);
+  });
 });

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/Avatar";
 import type { RosterRow } from "@/lib/api";
 import { plural, rosterState, STATE_WORDS } from "@/lib/roster-view";
 import { RowMenu, type RowActions } from "./RowMenu";
@@ -52,13 +53,16 @@ export function RosterList({
                 onChange={() => toggle(r.studentId)}
               />
               <div className="min-w-0">
-                {r.userId ? (
-                  <Link to={`/students/${r.userId}`} className="roster-name">
-                    {r.fullName}
-                  </Link>
-                ) : (
-                  <span className="roster-name">{r.fullName}</span>
-                )}
+                <span className="roster-who">
+                  <Avatar avatar={r.avatar} size="md" />
+                  {r.userId ? (
+                    <Link to={`/students/${r.userId}`} className="roster-name">
+                      {r.fullName}
+                    </Link>
+                  ) : (
+                    <span className="roster-name">{r.fullName}</span>
+                  )}
+                </span>
                 <p className="roster-list-meta">
                   <span className="num">{r.studentId}</span>
                   <span>{r.sectionCode ?? "no section"}</span>

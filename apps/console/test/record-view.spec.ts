@@ -91,6 +91,7 @@ describe("asRosterRow", () => {
       student: {
         userId: "u", studentId: "232129006", fullName: "Kristine Joy Montebon",
         sectionId: "s", sectionCode: "BSCPE - 4", claimedAt: "2026-09-21T10:34:15Z", deactivated: true,
+        avatar: { url: null, hue: 120, variant: 1, removable: false }, pictureRemovedAt: null,
       },
       sections: [], attempts: [], progress: [],
     };

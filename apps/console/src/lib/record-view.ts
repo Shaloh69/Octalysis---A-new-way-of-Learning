@@ -126,6 +126,7 @@ export function asRosterRow(d: StudentDetail): RosterRow {
     deactivated: d.student.deactivated,
     attempts: d.attempts.length,
     avgMastery: null,
+    avatar: d.student.avatar,
   };
 }
 

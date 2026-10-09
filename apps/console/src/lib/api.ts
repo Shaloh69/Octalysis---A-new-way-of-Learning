@@ -9,6 +9,7 @@ import type {
   BookCreateBody, BookDefaultBody, BookUpdateBody, StudioSubjectsResponse, SubjectCreateBody, SubjectRenameBody,
   WorkingCopy, WorkingCopyPublishBody, WorkingCopyPutBody,
   MoonAddBody, MoonPendingBody, MoonsPublishBody, MoonsPublishResult, StudioMoonsResponse,
+  Avatar, Profile,
 } from "@octa/contracts";
 import { studentAnswerText } from "./record-view";
 import { getAccessToken } from "./session";
@@ -151,6 +152,8 @@ export interface RosterRow {
   deactivated: boolean;
   attempts: number;
   avgMastery: number | null;
+  /** Their picture as this viewer may see it, or the generated planet (PROFILES). */
+  avatar: Avatar;
 }
 
 export interface RosterSection {
@@ -220,6 +223,10 @@ export interface StudentDetail {
     /** When they claimed their student ID. Null only for a record older than the directory. */
     claimedAt: string | null;
     deactivated: boolean;
+    /** Their picture as this viewer may see it, with whether the viewer may remove it (PROFILES). */
+    avatar: Avatar;
+    /** A teacher or the admin removed it and the student has not set a new one. */
+    pictureRemovedAt: string | null;
   };
   /** For "Move to section…", the same list the roster reads. */
   sections: RosterSection[];
@@ -1047,3 +1054,33 @@ export const assignClass = (body: ClassAssignBody) =>
 
 export const updateClass = (id: string, body: ClassUpdateBody) =>
   request<{ ok: true }>(`/api/v1/console/classes/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+
+/* ---- profile pictures (docs/PROFILES-PLAN.md): the signed-in person's own, and a moderator's removal ---- */
+
+export const getProfile = () => request<Profile>("/api/v1/profile");
+
+export const profileAvatarUpload = (bytes: number) =>
+  request<{ path: string; uploadUrl: string }>("/api/v1/profile/avatar/upload", {
+    method: "POST", body: JSON.stringify({ bytes }),
+  });
+
+export const profileAvatarSet = (path: string) =>
+  request<Profile>("/api/v1/profile/avatar", { method: "PUT", body: JSON.stringify({ path }) });
+
+export const profileAvatarRemove = () => request<Profile>("/api/v1/profile/avatar", { method: "DELETE" });
+
+/** PUT the encoded picture to the one-time signed URL the API gave (the bucket takes WebP only). */
+export async function putAvatarFile(uploadUrl: string, blob: Blob): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "content-type": "image/webp", "x-upsert": "false" },
+    body: blob,
+  });
+  if (!res.ok) throw new ApiError("upload_failed", "The picture did not upload. Try again.", res.status);
+}
+
+/** A teacher removes a student's picture; the admin anyone's. A reason, audited, the person is told. */
+export const removePicture = (userId: string, reason: string) =>
+  request<{ removed: true }>(`/api/v1/profiles/${encodeURIComponent(userId)}/avatar`, {
+    method: "DELETE", body: JSON.stringify({ reason }),
+  });

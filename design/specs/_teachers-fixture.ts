@@ -82,3 +82,20 @@ export const PLAN = {
     { employeeId: "EMP-0202", fullName: "Fixture Twice Again", email: null, role: "teacher", current: null, action: "conflict", why: "duplicate" },
   ],
 };
+
+/**
+ * Every teacher's face (PROFILES, 9 Oct 2026): a generated planet each, and a
+ * real picture on Osmeña's with `removable` true, as the API says it to the
+ * admin. The picture is a small inline SVG so no storage is needed. Fixture
+ * names only; the key (`removable`) is the server's answer, never the page's.
+ */
+const FACE =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='#456'/><circle cx='32' cy='26' r='12' fill='#cba'/><rect x='12' y='42' width='40' height='22' rx='10' fill='#cba'/></svg>",
+  );
+TEACHERS.teachers.forEach((t, i) =>
+  Object.assign(t, {
+    avatar: { url: i === 1 ? FACE : null, hue: (40 + i * 70) % 360, variant: i % 4, removable: i === 1 },
+  }),
+);

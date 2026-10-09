@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/Avatar";
 import type { RosterRow } from "@/lib/api";
 import { rosterState, STATE_WORDS } from "@/lib/roster-view";
 import { RowMenu, type RowActions } from "./RowMenu";
@@ -126,13 +127,16 @@ export function RosterTable({
               </td>
               <td className="num text-xs">{r.studentId}</td>
               <td>
-                {r.userId ? (
-                  <Link to={`/students/${r.userId}`} className="roster-name">
-                    {r.fullName}
-                  </Link>
-                ) : (
-                  <span className="roster-name">{r.fullName}</span>
-                )}
+                <span className="roster-who">
+                  <Avatar avatar={r.avatar} size="md" />
+                  {r.userId ? (
+                    <Link to={`/students/${r.userId}`} className="roster-name">
+                      {r.fullName}
+                    </Link>
+                  ) : (
+                    <span className="roster-name">{r.fullName}</span>
+                  )}
+                </span>
               </td>
               <td>{r.sectionCode ?? <span className="text-ink-muted">none</span>}</td>
               <td>

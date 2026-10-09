@@ -32,7 +32,11 @@ export interface PictureStandIn {
 
 const STORE = "https://storage.test";
 
-export async function installPictureStandIn(page: Page): Promise<PictureStandIn> {
+export async function installPictureStandIn(
+  page: Page,
+  /** Fields merged into every profile the page is given (the console's page wants an employee ID and classes the local seed lacks). */
+  merge: Record<string, unknown> = {},
+): Promise<PictureStandIn> {
   const s: PictureStandIn = { uploads: [], signed: [], picture: false, removedAt: null, failNextRecord: false };
   let last: Buffer | null = null;
 
@@ -41,6 +45,7 @@ export async function installPictureStandIn(page: Page): Promise<PictureStandIn>
     const p = (await res.json()) as Record<string, unknown> & { avatar: Record<string, unknown> };
     return {
       ...p,
+      ...merge,
       pictures: true,
       hasPicture: s.picture,
       removedAt: s.picture ? null : s.removedAt,
@@ -89,6 +94,7 @@ export async function installPictureStandIn(page: Page): Promise<PictureStandIn>
     const p = (await real.json()) as Record<string, unknown> & { avatar: Record<string, unknown> };
     return json(route, {
       ...p,
+      ...merge,
       pictures: true,
       hasPicture: s.picture,
       removedAt: null,

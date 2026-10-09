@@ -25,6 +25,7 @@ import { FeedbackPage } from "./pages/FeedbackPage";
 import { ClaimPage } from "./pages/ClaimPage";
 import { TeachersPage } from "./pages/TeachersPage";
 import { TeacherDetailPage } from "./pages/TeacherDetailPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { SignInPage } from "./pages/SignInPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
@@ -107,6 +108,8 @@ export function App() {
           <Route path="/system" element={<SystemPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
+          {/* The signed-in person's own page and picture (PROFILES, 9 Oct 2026): from the account menu. */}
+          <Route path="/profile" element={<ProfilePage />} />
           {/* The admin's (T1). The page itself tells a teacher it is the admin's. */}
           <Route path="/teachers" element={<TeachersPage />} />
           <Route path="/teachers/:key" element={<TeacherDetailPage />} />

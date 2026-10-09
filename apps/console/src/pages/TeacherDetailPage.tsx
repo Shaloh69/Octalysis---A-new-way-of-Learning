@@ -8,6 +8,8 @@ import { useDelayed } from "@/lib/useDelayed";
 import { canDisable, ROLE_WORDS, STATUS_TONE, STATUS_WORDS } from "@/lib/teachers-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/Avatar";
+import { RemovePictureDialog } from "@/components/RemovePictureDialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -54,6 +56,7 @@ function TeacherDetail() {
 
   const [assign, setAssign] = useState<AssignPreset | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [removingPicture, setRemovingPicture] = useState(false);
   const [change, setChange] = useState<ClassChange | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const remember = (el?: HTMLElement | null) => {
@@ -90,7 +93,9 @@ function TeacherDetail() {
       ) : (
         <>
           <header className="mb-5 flex flex-wrap items-start justify-between gap-x-6 gap-y-3" data-teacher-header="">
-            <div className="min-w-0">
+            <div className="record-who min-w-0">
+              <Avatar avatar={t.avatar} size="lg" />
+              <div className="min-w-0">
               <h1 className="font-display text-2xl text-ink" data-state={t.status === "disabled" ? "deactivated" : t.status}>{t.fullName}</h1>
               <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
                 <span className="num text-ink">{t.employeeId ?? "no employee ID"}</span>
@@ -99,10 +104,15 @@ function TeacherDetail() {
                 {t.email ? <span className="break-all">{t.email}</span> : null}
                 <span>{t.lastSignInAt ? `last signed in ${when(t.lastSignInAt)}` : "never signed in"}</span>
               </p>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {t.userId && t.status === "active" ? (
                 <Button variant="outline" onClick={() => { remember(); setAssign({ teacher: t }); }}>Assign class</Button>
+              ) : null}
+              {/* Only where the server said so (`can_remove_avatar`: the admin, for anyone). */}
+              {t.userId && t.avatar.removable ? (
+                <Button variant="outline" onClick={() => { remember(); setRemovingPicture(true); }}>Remove picture…</Button>
               ) : null}
               {canDisable(t, me.userId) ? (
                 <Button
@@ -150,6 +160,12 @@ function TeacherDetail() {
             sections={data.sections}
             subjects={data.subjects}
             onClose={() => setAssign(null)}
+            onDone={res.reload}
+            returnFocus={() => opener.current}
+          />
+          <RemovePictureDialog
+            owner={removingPicture && t.userId ? { userId: t.userId, name: t.fullName, avatar: t.avatar } : null}
+            onClose={() => setRemovingPicture(false)}
             onDone={res.reload}
             returnFocus={() => opener.current}
           />

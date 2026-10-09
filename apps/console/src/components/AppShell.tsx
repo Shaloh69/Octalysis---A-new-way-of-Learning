@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PageBoundary } from "./PageBoundary";
 import {
   Users, Lock, Table2, ScrollText, ShieldCheck, MessageSquare,
-  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare, UserCog, History, Library,
+  Boxes, ClipboardCheck, Radio, FileCheck2, LogOut, Menu, X, ChevronsUpDown, MessagesSquare, UserCog, History, Library, CircleUser,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getIdentity, isStaff, setTheme, signOut, type Identity, type Theme } from "@/lib/session";
@@ -15,6 +15,8 @@ import {
   DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChangeCredentialsScreen, StudentAccountScreen } from "@/pages/GateScreens";
+import { Avatar } from "@/components/Avatar";
+import { clearProfile, useProfile } from "@/lib/profile";
 
 /**
  * The console shell: sidebar, nav, account block, and the 380 top bar.
@@ -87,6 +89,7 @@ function pageName(pathname: string): string {
   for (const g of GROUPS) {
     for (const i of g.items) if (pathname === i.to || pathname.startsWith(`${i.to}/`)) return i.label;
   }
+  if (pathname === "/profile") return "Your profile";
   return pathname.startsWith("/attempts/") ? "Attempt" : "Teacher console";
   // (/teachers/:id is covered by the startsWith above.)
 }
@@ -136,6 +139,7 @@ export function AppShell({ bare = false }: { bare?: boolean }) {
         );
         return;
       }
+      clearProfile(); // the next person on this browser must not see this one's picture
       toast.success(
         "Signed out",
         `${who.email ?? who.fullName ?? "This account"} is no longer signed in on this browser.`,
@@ -341,6 +345,8 @@ function AccountMenu({ identity, onSignOut }: { identity: Identity; onSignOut: (
   );
   const name = identity.fullName ?? identity.email ?? "Signed in";
   const role = identity.role === "admin" ? "Admin" : "Teacher";
+  // The picture, or the generated planet; the initials stand in until the profile has loaded.
+  const { profile } = useProfile();
 
   return (
     <div className="shell-foot">
@@ -351,9 +357,13 @@ function AccountMenu({ identity, onSignOut }: { identity: Identity; onSignOut: (
             className="shell-account"
             aria-label={`${name}${identity.email && identity.fullName ? `, ${identity.email}` : ""}, account menu`}
           >
-            <span className="shell-avatar" aria-hidden="true">
-              {initials(identity)}
-            </span>
+            {profile ? (
+              <Avatar avatar={profile.avatar} size="md" />
+            ) : (
+              <span className="shell-avatar" aria-hidden="true">
+                {initials(identity)}
+              </span>
+            )}
             <span className="min-w-0 flex-1 text-left">
               <span className="block truncate text-sm text-ink" title={name}>
                 {name}
@@ -373,6 +383,12 @@ function AccountMenu({ identity, onSignOut }: { identity: Identity; onSignOut: (
             {identity.email && <span className="block truncate text-xs text-ink-muted">{identity.email}</span>}
             <span className="block text-xs text-ink-muted">{role}</span>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/profile">
+              <CircleUser className="h-4 w-4" aria-hidden="true" /> Your profile
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Theme</DropdownMenuLabel>
           <DropdownMenuRadioGroup

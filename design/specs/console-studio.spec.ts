@@ -642,7 +642,7 @@ test.describe("studio: subjects and books, for every teacher, each with a reason
     // Edit on both; Make default only on the one that is not the default.
     await expect(page.getByRole("button", { name: /^Edit / })).toHaveCount(2);
     await expect(page.getByRole("button", { name: /^Make .* the default$/ })).toHaveCount(1);
-    await expect(page.locator("[data-classes]")).toContainText(/classes? tak/);
+    await expect(page.locator("[data-classes]")).toContainText(/class(es)? tak/);
     await expect(page.locator("[data-classes]").getByRole("link", { name: "Teachers" })).toHaveAttribute("href", "/teachers");
   });
 

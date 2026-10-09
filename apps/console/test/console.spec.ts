@@ -421,6 +421,7 @@ describe("the new-password rule — shared by the credential screen and /reset-p
 const row = (o: Partial<RosterRow>): RosterRow => ({
   studentId: "232129001", fullName: "Juan Miguel Dela Cruz", status: "claimed", claimedAt: null,
   sectionId: "s1", sectionCode: "BSCPE - 4", userId: "u1", deactivated: false, attempts: 0, avgMastery: null,
+  avatar: { url: null, hue: 200, variant: 0, removable: false },
   ...o,
 });
 

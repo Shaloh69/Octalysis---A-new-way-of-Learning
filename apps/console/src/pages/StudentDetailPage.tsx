@@ -7,6 +7,8 @@ import { useDelayed } from "@/lib/useDelayed";
 import { pct } from "@/lib/utils";
 import { asRosterRow, dayDate } from "@/lib/record-view";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/Avatar";
+import { RemovePictureDialog } from "@/components/RemovePictureDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -88,6 +90,7 @@ export function StudentDetailPage() {
   const [statusFor, setStatusFor] = useState<RosterRow | null>(null);
   const [moving, setMoving] = useState<RosterRow[] | null>(null);
   const [resetting, setResetting] = useState(false);
+  const [removingPicture, setRemovingPicture] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
 
   if (record.error && !data) {
@@ -117,7 +120,10 @@ export function StudentDetailPage() {
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Students
         </Link>
         <div className="record-title">
-          <h1 className="font-display text-2xl text-ink">{student.fullName}</h1>
+          <div className="record-who">
+            <Avatar avatar={student.avatar} size="lg" />
+            <h1 className="font-display text-2xl text-ink">{student.fullName}</h1>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button ref={trigger} variant="outline" size="sm" aria-label={`Actions for ${student.fullName}`}>
@@ -129,6 +135,10 @@ export function StudentDetailPage() {
               {/* A deactivated account is refused everywhere; a new password would not let it in. */}
               {!student.deactivated && (
                 <DropdownMenuItem onSelect={() => setResetting(true)}>Reset password…</DropdownMenuItem>
+              )}
+              {/* Only where the server said this viewer may (`can_remove_avatar`); the page never decides who. */}
+              {student.avatar.removable && (
+                <DropdownMenuItem onSelect={() => setRemovingPicture(true)}>Remove picture…</DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
               {student.deactivated ? (
@@ -151,6 +161,11 @@ export function StudentDetailPage() {
           <span aria-hidden="true">·</span>
           <span>{registered ? `registered ${registered}` : "registration date not recorded"}</span>
         </p>
+        {student.pictureRemovedAt && !student.avatar.url ? (
+          <p className="text-sm text-ink-muted" data-picture-removed="">
+            Their picture was removed on {dayDate(student.pictureRemovedAt)}. They have not set a new one.
+          </p>
+        ) : null}
         {student.deactivated ? (
           <p className="text-sm text-ink-muted">
             Refused on every request until reactivated. Their attempts and grades below are kept.
@@ -214,6 +229,12 @@ export function StudentDetailPage() {
         </div>
       </div>
 
+      <RemovePictureDialog
+        owner={removingPicture ? { userId: student.userId, name: student.fullName, avatar: student.avatar } : null}
+        onClose={() => setRemovingPicture(false)}
+        onDone={record.reload}
+        returnFocus={() => trigger.current}
+      />
       <PasswordDialog
         student={resetting ? { userId, fullName: student.fullName, studentId: student.studentId } : null}
         onClose={() => setResetting(false)}
