@@ -11,7 +11,7 @@ import { useKeyHints } from "./keyHints";
 import { useOnline } from "./useOnline";
 import { api } from "../lib/api";
 import { useChatLive } from "../lib/chat-live";
-import { clearProfile, useProfile } from "../lib/profile";
+import { clearProfile, setProfile, useProfile } from "../lib/profile";
 import { Avatar } from "../components/Avatar";
 import { Tour } from "./Tour";
 import { RouteBoundary } from "../components/RouteBoundary";
@@ -40,11 +40,10 @@ const TABS = [
 
 /**
  * The tour runs by itself ONCE per student, on their first visit to the map, and
- * the ? brings it back. "Once" is remembered per account in this browser (a
- * convenience, never a grade): a student who signs in on a second device sees it
- * there too, and one who clears site data sees it again, which does no harm.
+ * the ? brings it back. "Once" is remembered per ACCOUNT, in the database
+ * (`profiles.tour_seen_at`, instructor 9 Oct 2026): a second device, or cleared
+ * site data, does not show it again. It is a convenience, never a grade.
  */
-const tourKey = (userId: string) => `octa:tour:v1:${userId}`;
 
 /**
  * Unread @mentions, for the Chat tab: read on every route change, and on any
@@ -95,23 +94,26 @@ export function StarShell({ signedIn }: { signedIn: boolean }): JSX.Element {
   // The key is written when it STARTS (not when it is finished), so a reload mid-tour
   // does not loop it, and only inside the timer, so React's double effect cannot eat it.
   const userId = profile?.id ?? null;
+  // Only a profile that LOADED and says "not yet" starts it: no answer is no tour.
+  const unseen = profile !== null && profile.tourSeenAt === null;
   useEffect(() => {
-    if (!userId || pathname !== "/app") return;
+    if (!userId || !unseen || pathname !== "/app") return;
     const t = window.setTimeout(() => {
       try {
         // An automated browser (Playwright, a screenshot job) is not a student, and the
         // tour's shield would block every script that visits the map. `octa:tour:force`
         // lets the tour's own spec exercise the real path.
         if (navigator.webdriver === true && localStorage.getItem("octa:tour:force") !== "1") return;
-        if (localStorage.getItem(tourKey(userId))) return;
-        localStorage.setItem(tourKey(userId), new Date().toISOString());
       } catch {
-        return; // no storage: it cannot be remembered, so it is not forced on anyone
+        // no storage: the guard above cannot be read; a student's browser has it
       }
+      // Remembered when it STARTS, not when it is finished: a reload mid-tour does not loop it.
+      // A failed save only means it may show once more; it is never forced on anyone twice in a row.
+      void api.profileTourSeen().then(setProfile).catch(() => undefined);
       setTouring(true);
     }, 900);
     return () => window.clearTimeout(t);
-  }, [userId, pathname]);
+  }, [userId, unseen, pathname]);
 
   return (
       <div

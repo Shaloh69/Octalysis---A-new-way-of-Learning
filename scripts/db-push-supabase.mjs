@@ -66,6 +66,8 @@ const FILES = [
   "db/addendum-profiles.sql",
   // Graded moons (8 Oct 2026): objectives.graded, the moon-check blueprint scope, INV-12. Idempotent.
   "db/addendum-graded-moons.sql",
+  // The first-run tour (9 Oct 2026; db/addendum-tour.sql): remembered per account, in the database.
+  "db/addendum-tour.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 

@@ -25,7 +25,35 @@ const ROUTE = ".tour-pop";
 const wide = (t: TestInfo) => t.project.name === "desktop-1440";
 const TARGETS = ["map", "stages", "progress", "work", "chat", "settings", "profile", "help"];
 
-async function open(page: Page, route = "/app", token = S006, force = true): Promise<void> {
+/**
+ * "Has had the tour" is the ACCOUNT's, in the database (`profiles.tour_seen_at`,
+ * db/addendum-tour.sql). Most specs need a student who has not, every time, and the
+ * shared local database cannot be reset from a browser, so the profile's flag is a
+ * stand-in kept per account for the life of the page (it survives a reload, as the
+ * database would). The one test that proves the REAL column is "remembered in the
+ * database" below, and server/tour.spec.ts has the route's own denials.
+ */
+async function tourStore(page: Page): Promise<{ marked: string[] }> {
+  const seen = new Map<string, string>();
+  const marked: string[] = [];
+  await page.route("**/api/v1/profile", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const res = await route.fetch();
+    const p = (await res.json()) as { id: string };
+    return route.fulfill({ response: res, json: { ...p, tourSeenAt: seen.get(p.id) ?? null } });
+  });
+  await page.route("**/api/v1/profile/tour", async (route) => {
+    const res = await route.fetch({ method: "GET", url: route.request().url().replace(/\/tour$/, "") });
+    const p = (await res.json()) as { id: string };
+    if (!seen.has(p.id)) seen.set(p.id, new Date().toISOString());
+    marked.push(p.id);
+    return route.fulfill({ response: res, json: { ...p, tourSeenAt: seen.get(p.id) } });
+  });
+  return { marked };
+}
+
+async function open(page: Page, route = "/app", token = S006, force = true, store = true): Promise<{ marked: string[] }> {
+  const st = store ? await tourStore(page) : { marked: [] };
   await page.addInitScript(
     ([t, f]) => {
       // Only if not already signed in: a test that switches student must keep its switch on reload.
@@ -35,12 +63,14 @@ async function open(page: Page, route = "/app", token = S006, force = true): Pro
     [token, force],
   );
   await page.goto(route, { waitUntil: "domcontentloaded" });
+  return st;
 }
 
 /** Start the tour the way a student does the first time: by visiting the map. */
-async function started(page: Page): Promise<void> {
-  await open(page);
+async function started(page: Page): Promise<{ marked: string[] }> {
+  const st = await open(page);
   await page.locator("[data-tour-root]").waitFor({ timeout: 25_000 });
+  return st;
 }
 
 /**
@@ -114,13 +144,26 @@ test.describe("the tour — the six gate assertions", () => {
 });
 
 test.describe("the tour — what it owes", () => {
-  test("it starts by itself on a student's first visit to the map, once, and remembers", async ({ page }) => {
-    await started(page);
+  test("it starts by itself on a student's first visit to the map, once, and remembers (in the account)", async ({ page }) => {
+    const st = await started(page);
     await expect(count(page)).toHaveText(/^1 of 9$/i);
-    const key = await page.evaluate(() => Object.keys(localStorage).find((k) => k.startsWith("octa:tour:v1:")));
-    expect(key).toBe("octa:tour:v1:dddddddd-1111-4000-8000-000000000006");
+    expect(st.marked).toEqual(["dddddddd-1111-4000-8000-000000000006"]);
+    // Nothing is kept in the browser any more: the account remembers.
+    expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("octa:tour:v1:")))).toEqual([]);
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator("[data-star-map], .star-nav, nav[aria-label=Main]").first().waitFor();
+    await page.waitForTimeout(2500);
+    await expect(page.locator("[data-tour-root]")).toHaveCount(0);
+  });
+
+  test("remembered in the database: once the account has had it, a fresh browser is not shown it", async ({ page }) => {
+    // The real column, no stand-in: mark the account through the real route, then visit as it would.
+    const api = process.env.OCTA_API_URL ?? "http://localhost:8090";
+    const marked = await page.request.post(`${api}/api/v1/profile/tour`, { headers: { authorization: `Bearer ${S004}` } });
+    expect(marked.status()).toBe(200);
+    expect((await marked.json()).tourSeenAt).toEqual(expect.any(String));
+    await open(page, "/app", S004, true, false);
+    await page.locator("nav[aria-label=Main]").waitFor();
     await page.waitForTimeout(2500);
     await expect(page.locator("[data-tour-root]")).toHaveCount(0);
   });
@@ -129,6 +172,7 @@ test.describe("the tour — what it owes", () => {
     await started(page);
     await page.getByRole("button", { name: "Skip the tour" }).click();
     await page.evaluate((t) => localStorage.setItem("octa:dev-token", t), S004);
+    // the profile is the new account's: the store reads it afresh on reload
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator("[data-tour-root]").waitFor({ timeout: 25_000 });
     await expect(count(page)).toHaveText(/^1 of 9$/i);
@@ -182,6 +226,8 @@ test.describe("the tour — what it owes", () => {
   });
 
   test("each step's spotlight sits on the thing it names, at this width", async ({ page }) => {
+    // Nine steps on the heavy 3D map: about 25 s alone in headless software rendering, more under load.
+    test.setTimeout(120_000);
     await started(page);
     await next(page).click(); // past the welcome
     for (const [i, target] of TARGETS.entries()) {

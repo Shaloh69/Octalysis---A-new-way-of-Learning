@@ -56,7 +56,7 @@ export function registerProfileRoutes(app: FastifyInstance, env: Env, storage: B
   async function loadProfile(userId: string): Promise<Profile> {
     const { rows } = await app.db.query(
       `select p.id::text as id, p.full_name, p.role::text as role, p.student_id, sec.code as section,
-              p.avatar_path is not null as has_picture, p.avatar_removed_at,
+              p.avatar_path is not null as has_picture, p.avatar_removed_at, p.tour_seen_at,
               (select td.employee_id from teacher_directory td where td.claimed_by = p.id) as employee_id
          from profiles p
          left join sections sec on sec.id = p.section_id
@@ -99,6 +99,7 @@ export function registerProfileRoutes(app: FastifyInstance, env: Env, storage: B
       classes,
       avatar,
       hasPicture: r.has_picture === true,
+      tourSeenAt: r.tour_seen_at ? new Date(r.tour_seen_at as Date).toISOString() : null,
       removedAt: r.avatar_removed_at ? new Date(r.avatar_removed_at as Date).toISOString() : null,
       pictures: storage !== null,
     };
@@ -107,6 +108,20 @@ export function registerProfileRoutes(app: FastifyInstance, env: Env, storage: B
   /* GET /api/v1/profile — the caller's own page. */
   app.get("/api/v1/profile", async (req): Promise<Profile> => {
     const id = await identityFrom(req, env);
+    return loadProfile(id.userId);
+  });
+
+  /*
+   * POST /api/v1/profile/tour: the first-run tour has been started for the caller.
+   * Set once and never moved (db/addendum-tour.sql); the flag is the CALLER'S own, so
+   * the route takes no body and no id. A convenience, never a grade.
+   */
+  app.post("/api/v1/profile/tour", async (req): Promise<Profile> => {
+    const id = await identityFrom(req, env);
+    await app.db.query(
+      `update profiles set tour_seen_at = coalesce(tour_seen_at, now()) where id = $1 and deleted_at is null`,
+      [id.userId],
+    );
     return loadProfile(id.userId);
   });
 

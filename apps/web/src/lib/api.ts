@@ -372,6 +372,8 @@ export const api = {
   profileAvatarSet: (path: string) =>
     request<Profile>("/api/v1/profile/avatar", { method: "PUT", body: JSON.stringify({ path }) }),
   profileAvatarRemove: () => request<Profile>("/api/v1/profile/avatar", { method: "DELETE" }),
+  /** The first-run tour has been started for this account (set once, in the database). */
+  profileTourSeen: () => request<Profile>("/api/v1/profile/tour", { method: "POST" }),
 };
 
 export type { ChatMessage, ChatRoom, ChatRooms, ChatThread };

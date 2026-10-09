@@ -991,6 +991,8 @@ export const Profile = z.object({
   avatar: Avatar,
   /** A picture is on file (it may still not be drawable where no storage is configured). */
   hasPicture: z.boolean(),
+  /** When the first-run tour was first started for this account; null = not yet (db/addendum-tour.sql). */
+  tourSeenAt: z.string().nullable(),
   /** A teacher or the admin removed the picture, and the person has not set a new one. */
   removedAt: z.string().nullable(),
   /** False where no file storage is configured (the local stack): no upload control. */
