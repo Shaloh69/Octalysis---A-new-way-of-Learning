@@ -1,4 +1,4 @@
-# Profile pages and profile pictures — plan v1, APPROVED 7 Oct 2026 (night); the database, the API and the STUDENT's page built 8 Oct 2026, the console's half still to build
+# Profile pages and profile pictures — plan v1, APPROVED 7 Oct 2026 (night); BUILT: the database, the API and the student's page 8 Oct 2026, the console's half 9 Oct 2026
 
 Instructor, 7 Oct 2026 (night):
 
@@ -67,6 +67,24 @@ identical for everyone (CLAUDE.md "Design").
 **APPROVED (7 Oct 2026, night):** after T1 (teacher accounts), before T2.
 The whole order: T1 → profiles → T2 → the student bot and the Study Session
 → the assistant's app and the teacher's bot.
+
+## 5b. Built, 9 Oct 2026: the console's half
+
+`/profile` for teachers and the admin (`design/templates/console/profile/`: SOURCE, SPEC, motion; spec
+`console-profile.spec.ts`, 46 tests at 1440 and 380, the six assertions on all three themes), linked from the
+account menu; the picture in the shell's account block, the roster (table and list), `/students/:userId`
+(**Remove picture…** in Actions, only where the server says `removable`, a reason, audited, the student is
+told), the class chat (faces; **Remove picture** on a message) and `/teachers`, `/teachers/:key`. **Checked
+on the real bucket** with throwaway accounts (27 checks): a browser-made WebP uploads on a signed URL; the
+stored bytes are read back identical; a file that claims to be WebP but is not is refused and deleted; a path in
+another person's folder is refused; the bucket refuses over 300 KB; a classmate's signed download returns the
+bytes; a student of another section and a classmate cannot remove it; the object has no public URL and a
+signed-in student cannot read it straight from storage; a teacher's removal deletes the file, tells the student
+(`removedAt`) and writes `audit_log`. **Left on the deployment, and why:** `audit_log` and `chat_messages` are
+append-only in the database and reference `auth.users`, so the throwaway teacher (one audit row) and the
+student who posted one chat message could not be deleted: both are banned, the teacher's profile is
+soft-deleted, the message is tombstoned, and the two TEST sections (`TEST-PROFILES-A`, `-B`, with one chat room,
+no classes) remain. Nothing else is left.
 
 ## 5. Built, 8 Oct 2026 (night)
 

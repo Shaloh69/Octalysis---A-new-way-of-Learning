@@ -49,6 +49,15 @@ Every structural rule that CAN be a constraint SHOULD be a constraint. `run_inva
 rules a constraint cannot express. Do not write a checker for something a unique index already
 guarantees.
 
+## The first-run tour (the nineteenth file, 9 Oct 2026)
+
+`addendum-tour.sql`: one column, `profiles.tour_seen_at` (null = the account has not had the tour),
+set once by `POST /api/v1/profile/tour` and never moved (instructor, 9 Oct: "in the database", not the
+browser). It is a convenience and never a grade, so unlike the picture's columns it has no write guard;
+what is tested (`services/api/test/tour.spec.ts`, red first, and a mutation check that the set-once rule
+bites) is that nobody can write ANOTHER person's flag (`p_update`'s `id = auth.uid()` leaves it at zero
+rows) and that anon reads nothing. Applied to the deployment (ddvxkbcelpqydnjkffdr) before the code.
+
 ## Graded moons (the eighteenth file, 9 Oct 2026)
 
 `addendum-graded-moons.sql`: `objectives.graded` (default true) and `objective_edits.graded` (null =

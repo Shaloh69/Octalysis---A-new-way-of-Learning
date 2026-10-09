@@ -4,9 +4,9 @@
     {
       "id": "Profiles",
       "title": "Profile pages",
-      "what": "A profile page with an uploaded picture for students, teachers and the admin. Done: the database, the server, the student's page and picture. Next: the teacher's and admin's /profile, and the picture on the roster, a student's record, the chat and the teachers pages.",
+      "what": "A profile page with an uploaded picture for students, teachers and the admin. Built: the database, the server, the student's page, the teacher's and admin's /profile, and the picture on the roster, a student's record, the chat and the Teachers pages, with a teacher's or the admin's removal (a reason, audited). Checked on the real storage. T2 will narrow who a teacher may remove a picture of to their own classes.",
       "plan": "docs/PROFILES-PLAN.md",
-      "state": "in progress"
+      "state": "built 9 Oct"
     },
     {
       "id": "T2",

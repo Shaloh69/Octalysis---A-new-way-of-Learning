@@ -11,13 +11,23 @@
 > Still update it before ending a session or before `/clear`. Append new
 > findings; do not rewrite old ones.
 
-**Last updated:** 7 September 2026.
+**Last updated:** 9 October 2026 (night).
 **Branch:** `main`. Not a `redesign/*` branch — root `CLAUDE.md` is explicit
 about why (`shaloh-build` cost an hour when Vercel and Render both built `main`).
 
 ---
 
 ## STATE NOW
+
+**9 Oct 2026 (night):** phase report **239/245 (98%)**, unchanged (no box in R0-R5 covers it).
+**PROFILES is finished:** the console's `/profile` and the picture on the shell, the roster, a student's
+record (Remove picture), the chat and the Teachers pages are built, gated and pushed; **a real picture went
+through the real bucket** (27 of 27 checks on the deployment). **The nineteenth SQL file**
+(`addendum-tour.sql`, `profiles.tour_seen_at`) is on Supabase: the first-run tour is remembered per account,
+in the database. The console got the ? tour and the Messenger-shaped chat (the instructor answered "Both").
+`pnpm verify` exit 0. Prelim NOT runnable (39 of the act-1 bank's 96 live: 01 and 02; 03 and 04 are at
+review). Left on the deployment: two banned throwaway accounts and two TEST sections (append-only guards).
+Detail: `NEXT-SESSION.md` §0zo. Next: T2.
 
 **9 Oct 2026:** phase report **239/245 (98%)**, unchanged (no box in R0-R5 covers it). **Every moon
 is graded, with a switch:** the eighteenth SQL file (`addendum-graded-moons.sql`) is on Supabase

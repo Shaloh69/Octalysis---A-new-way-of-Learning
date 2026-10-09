@@ -1,20 +1,48 @@
 {
   "madeAt": {
-    "commit": "1c72f8b",
+    "commit": "f02d7c9",
     "date": "2026-10-09"
   },
   "updates": [
     {
       "date": "2026-10-09",
-      "title": "Every moon is graded",
+      "title": "Every moon is graded; teachers get a profile, a tour and a Messenger-style chat",
       "highlights": [
         "Every moon is now graded, and a moon's check counts as one more quiz, with the same weight as a stage check (the five syllabus weights are unchanged). A student sits it like a stage check: behind a start prompt, in full screen, five tries, the best counts. Practising a moon is still open and never graded.",
         "A Graded switch on each moon in the Studio. Flip it and the change waits for Publish, which asks for a reason and tells you what happens in the gradebook before it happens ('01.2 stops counting. Every sitting is kept.') and how many students had already sat it. Turning it back on brings the marks back; nothing is deleted. A new moon is graded unless you untick it.",
         "The gradebook has a third view, Moon checks: a column for each graded moon the class has sat, the best sitting per student, 'not sat' never read as 0. The CSV carries a moon_ column for each graded moon.",
         "A moon needs 3 live questions before its check can be sat, so until the act-1 bank is approved at Items, 'Sit the check' on a moon stays disabled and says why.",
-        "Fixed: the student record in the console no longer goes blank when you open an attempt; an answer of a kind the page did not expect was being drawn as an object. Each app now shows a retry if a page fails instead of an empty screen."
+        "Fixed: the student record in the console no longer goes blank when you open an attempt; an answer of a kind the page did not expect was being drawn as an object. Each app now shows a retry if a page fails instead of an empty screen.",
+        "Your own profile page, from the account menu: your picture, your name and role, your Employee ID and the classes you hold. Students, the other teachers and the admin see your picture; the admin can remove it. The picture also shows in the sidebar, on the roster, on a student's record, in the chat and on the Teachers pages. A teacher can remove a student's picture (Actions on the record, or Remove picture on a chat message) with a reason; the removal is audited and the student is told on their own profile.",
+        "A ? in the sidebar (and the top bar on a phone) starts a one-minute tour of the console: where In class, Students, Course and Records are, your account, and the ? itself. It starts once, on your first visit, and is remembered on your account, so a second device does not show it again.",
+        "The chat looks like Messenger: bubbles in runs of one speaker with faces, Attach, the field and Send in one row. On a phone it is two screens (the rooms, then one room with a back arrow); opening the rooms marks nothing read.",
+        "Checked on the real storage with throwaway accounts: a picture uploads, a classmate sees it on a signed link, a student from another section and a classmate cannot remove it, a file that only claims to be a picture is refused, and a teacher's removal deletes the file and is in the audit log."
       ],
       "commits": [
+        {
+          "hash": "f02d7c9",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the chat in Messenger's shape, two screens below 52rem"
+        },
+        {
+          "hash": "42b3bc3",
+          "type": "feat",
+          "scope": "console",
+          "subject": "the ? tour, once per account, in the database"
+        },
+        {
+          "hash": "86d1350",
+          "type": "feat",
+          "scope": "db,api,web",
+          "subject": "the first-run tour is remembered per account, in the database"
+        },
+        {
+          "hash": "aba1a42",
+          "type": "feat",
+          "scope": "console",
+          "subject": "/profile and the picture wherever the console names a person"
+        },
         {
           "hash": "1c72f8b",
           "type": "feat",
@@ -1772,9 +1800,9 @@
       {
         "id": "Profiles",
         "title": "Profile pages",
-        "what": "A profile page with an uploaded picture for students, teachers and the admin. Done: the database, the server, the student's page and picture. Next: the teacher's and admin's /profile, and the picture on the roster, a student's record, the chat and the teachers pages.",
+        "what": "A profile page with an uploaded picture for students, teachers and the admin. Built: the database, the server, the student's page, the teacher's and admin's /profile, and the picture on the roster, a student's record, the chat and the Teachers pages, with a teacher's or the admin's removal (a reason, audited). Checked on the real storage. T2 will narrow who a teacher may remove a picture of to their own classes.",
         "plan": "docs/PROFILES-PLAN.md",
-        "state": "in progress"
+        "state": "built 9 Oct"
       },
       {
         "id": "T2",

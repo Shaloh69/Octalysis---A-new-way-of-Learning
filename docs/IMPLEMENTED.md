@@ -42,30 +42,33 @@ by review and by the specs listed below.
 
 ## Routes
 
-**22 routes exist**, read from the two `App.tsx` files. Existing is not the same
-as designed — `R3-page-templates-and-redesign.md` tracks which have had the
-template pass, and most have not.
+**Re-measured 9 Oct 2026 (routes and route modules only; the rest of this file is still the 8 September
+audit, and says so).** Read from the two `App.tsx` files and `services/api/src/routes`.
 
-**`apps/web` — 13**
-`/` · `/login` · `/register` · `/maintenance` · `/app` · `/app/map` ·
-`/app/stage/:id` · `/app/stage/:id/check` · `/app/stages` · `/app/progress` ·
-`/app/work` · `/app/settings` · `*` (404)
+**`apps/web` — 19 paths and one redirect**
+`/` (redirects to `/app`) · `/login` · `/register` · `/forgot-password` · `/reset-password` ·
+`/maintenance` · `/app` (the 3D map, the only map; `/app/map` redirects to it) · `/app/stages` ·
+`/app/progress` · `/app/work` · `/app/chat` · `/app/settings` · `/app/profile` · `/app/changelog` ·
+`/app/stage/:id` · `/app/stage/:id/check` · `/app/stage/:id/moon/:objectiveId` ·
+`/app/stage/:id/moon/:objectiveId/check` · `*` (404).
+Not built: the public marketing site (`/about`, `/course` …), `/app/notebook`, `/app/mistakes`,
+`/app/final`, `/app/help`, `/app/live`, `/app/lab`.
 
-`/` is currently `<Navigate to="/app">`. **The public marketing site does not
-exist**, and no phase owns it — `PROGRESS.md` carries this as a blocker.
-
-**`apps/console` — 17**
-`/signin` · `/` · `/locks` · `/live` · `/live/present` (29 Sep 2026) · `/students` · `/students/:userId` ·
-`/attempts/:attemptId` · `/gradebook` · `/assessments` · `/items` ·
-`/submissions` · `/content` · `/content/:stageId` (the block editor, 28 Sep 2026) ·
-`/audit` · `/system` · `/feedback` · `*`
+**`apps/console` — 30 paths**
+`/signin` · `/forgot-password` · `/reset-password` · `/claim` · `/live/present` · `/` (to `/locks`) ·
+`/locks` · `/live` · `/chat` · `/students` · `/students/:userId` · `/attempts/:attemptId` · `/gradebook` ·
+`/assessments` · `/items` · `/submissions` · `/studio` (+ `review`, `:subject`, `:subject/:stageId`) ·
+`/content` and `/content/:stageId` (redirects into the Studio) · `/audit` · `/system` · `/feedback` ·
+`/changelog` · `/profile` · `/teachers` · `/teachers/:key` · `*`.
 
 ---
 
 ## Services
 
-**`services/api` — 11 route modules**: `assessments` `attempts` `auth` `console`
-`content` `cosmetics` `feedback` `items` `live` `stages` `submissions`.
+**`services/api` — 21 route modules (9 Oct 2026)**: `assessments` `attempts` `auth` `chat` `console`
+`content` `cosmetics` `feedback` `figures` `items` `journeys` `live` `moons` `passwords` `profile` `progress`
+`stages` `subjects` `submissions` `teachers` `working-copy` (the earlier 11 were `assessments` `attempts`
+`auth` `console` `content` `cosmetics` `feedback` `items` `live` `stages` `submissions`).
 `content` (28 Sep 2026) took over `GET /console/content` and added a chapter's
 blocks, a block's history, `PUT` a block, and summary approve / send back.
 `items` gained `POST /console/items/bulk-status` (drafts into review only),

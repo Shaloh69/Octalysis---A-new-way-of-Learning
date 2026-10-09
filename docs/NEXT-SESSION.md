@@ -1526,6 +1526,90 @@ left, or needing a decision:
 
 ---
 
+## 0zo. PROFILES finished: the console half, the real bucket, a tour in the database, and the console's ? and Messenger chat — 9 Oct 2026 (after 0zn)
+
+**What the prompt asked:** the console half of PROFILES (the real bucket, `/profile`, the picture
+where the console names a person, the gates), then two questions. **What the instructor answered**
+(asked with the question tool): **yes, run the real-bucket test now; "Both"** (the ? tour and the
+Messenger-shaped chat for the console too); **"Yes, in the database"** (the tour's "once").
+All five are built. Commits `aba1a42`, `86d1350`, `42b3bc3`, `f02d7c9` (range `118fc88..f02d7c9`,
+pushed to `main`).
+
+**Built.**
+- **Console `/profile`** (`design/templates/console/profile/`: SOURCE, SPEC, motion, template from
+  shadcn-admin's Settings > Profile; spec `console-profile.spec.ts`, 46 tests): three cards (Picture,
+  Who you are with the Employee ID in mono, Your classes), the web's cropper and `avatar-image.ts`
+  unchanged (`Avatar.tsx` joined them in the parity test), linked from the account menu.
+- **The picture around the console:** the shell's account block, the roster (table and list),
+  `/students/:userId` (header face; **Remove picture…** in Actions, only where `avatar.removable`; a
+  note when it was removed), `/chat` (faces; **Remove picture** on a message), `/teachers`,
+  `/teachers/:key`. `components/RemovePictureDialog.tsx` (a reason, the server audits, the student is told).
+- **The real bucket, 27 of 27 checks, on the deployment** (`scripts/.bucket-e2e.tmp.mjs`, four throwaway
+  accounts in two TEST sections): see `docs/PROFILES-PLAN.md` §5b. **Nothing went through the real
+  bucket before; now a real signed upload, the bytes check on a real wrong file, a classmate's signed
+  download, a teacher's removal (file deleted, student told, audited) and every refusal have.**
+- **The tour's "once" is the account's, in the database:** `db/addendum-tour.sql` (the NINETEENTH SQL
+  file; `profiles.tour_seen_at`) applied to the deployment (ref checked) **before** the code;
+  `POST /profile/tour` sets it once; `Profile.tourSeenAt`; `StarShell` reads it. `tour.spec.ts`: 8 tests
+  red first (7 failed), mutation check (`coalesce` removed: the set-once test went red), then green.
+  **Checked on the deployment** with a throwaway student (5 of 5, account deleted, nothing left).
+- **The console's ? tour** (`components/Tour.tsx`, `design/templates/console/tour/`, template = the web's
+  captured Driver.js): 7 steps, 8 for the admin, a ? beside the account and in the 380 bar, the nav sheet
+  opened for it at 380, inert page behind, Escape from anywhere. `console-tour.spec.ts`: 31 tests.
+- **The console chat in Messenger's shape** (`design/templates/console/chat/`, template Chatscope's friends
+  demo, the web's capture): two screens below 52rem of the page, bubbles in runs with faces, the tools in
+  the bubble's foot, Attach + a growing field + Send in one row; opening the rooms reads nothing
+  (a test proves it on a private thread of its own). `lib/chat-view.ts` is tested (7).
+- `console-studio.spec.ts`'s regex fixed (`/class(es)? tak/`): it failed only because of the plural.
+
+**Found by LOOKING / by the gate, not by a green run:**
+- **Four "current.png" captures of the roster and students pages were stale** (the retired nav, no faces):
+  `console-students.spec` does not capture them. A scratch capture (`scripts/.faces-look.tmp.mjs`) showed
+  the real thing. A green run is not seeing.
+- The class meta line on `/profile` was set in mono (the term is prose); the 380 toast covered a card in the
+  capture (it is dismissed before the capture now).
+- The console chat's rail at 15rem squeezed "BSCPE - 4" onto two lines beside a face and a time (17rem); a
+  "Remove" row under every bubble doubled the log's height (the tools are in the bubble's foot); the long
+  placeholder was cut off by a one-row field (it is the hint beneath now); hiding the page's header with a
+  1px clip left its tabs focusable and invisible (`display: none`).
+- **The tour's Escape worked only with focus inside the popover** (a click on the dimness leaves focus on
+  the page): the console's listens on the document. **The web's still does not** (parked, below).
+- `web-tour`'s "spotlight sits on the thing it names" runs nine steps on the heavy 3D map and timed out at
+  45 s under load (24 s alone): it has 120 s now.
+- **The real bucket, found while cleaning up:** `audit_log` (append-only, FK to `auth.users`) and
+  `chat_messages` (append-only) cannot be deleted, so a throwaway teacher who made an audit row and a
+  student who posted one message cannot be removed. **Left on the deployment:** two banned auth accounts
+  (`testpic-a`, `testpic-t`), the teacher's soft-deleted profile (one audit row), the message tombstoned, and
+  two TEST sections (`TEST-PROFILES-A`, `-B`, one chat room, no classes). A section picker on the console
+  will list them. Removing them means disabling a guard: **the instructor's call, not taken.**
+- `pnpm verify` (and the API test run) truncates the seeded content; `db-demo.mjs` alone does not restore
+  the 115 objectives: **`pnpm db:reset` then `db-demo.mjs`, in that order**, before Playwright.
+
+**Not done, and said so (nothing silently dropped):**
+- The deployed apps were checked by **bundle and by route** (the Vercel bundles contain the profile route,
+  the tour and `profile/tour`; the Render API answers 401 to `POST /profile/tour`, so it is deployed),
+  and the tour flag was driven end to end on the deployment; **no signed-in browser looked at the deployed
+  console**: there is no teacher credential on this machine.
+- The web tour's Escape-from-anywhere (above). A last-message preview on a chat row. A room's own face
+  (the student's picture on a private thread): the API has no room avatar.
+- `docs/IMPLEMENTED.md` is stale (it lists 13 student routes and no chat, changelog, profile or tour).
+- The web specs other than tour and profile were not run this session (`web-chat`, the star specs): the web
+  changed only in `StarShell.tsx` (the tour's source of truth) and `api.ts`.
+
+**State of the deployment, 9 Oct (night):** content: stage 01 has 15 live (2 retired), **02 has 24 live**
+(approved since 8 Oct), 03 (33) and 04 (24) are at review. **39 of the act-1 bank's 96 are live: the Prelim
+is still NOT runnable on students.** 115 live moons, all graded. Deployment invariants 0 failures
+(3 warnings: INV-18, 27, 29). The nineteenth SQL file is applied.
+
+**Measured:** phase **239/245 (98%)**, unchanged: none of today's work has a box in R0-R5. `pnpm verify`
+exit 0 (read with `$?`): API 1228 + 1 skipped, web 337, console 279, tokens 38. Playwright against builds
+on 5185/5186 after `db:reset` and `db-demo`: every console spec plus `r3-inventory` (1,290 tests, both widths, 3 workers): **1,220 passed, 70 skipped by design, 0 failed** (12.4 min); web-tour and web-profile 54 passed + 15 skipped, 1 timeout that now has 120 s and passed alone.
+
+**Next:** T2 (teachers see only their own classes; `docs/redesign/REVAMP-PROMPTS.md` §1): plan first and
+stop for approval.
+
+---
+
 ## 0zn. Every moon is graded, a Graded switch, and a blank-page fix — 9 Oct 2026 (after 0zm)
 
 **What the instructor asked, mid-session:** "are moons recorded also?" then **"No I want
