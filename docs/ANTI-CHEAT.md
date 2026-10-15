@@ -71,7 +71,21 @@ another student's; a lost focus counts as a leave). SQL: `db/addendum-sitting-gu
 - **The key never reaches the browser** (hard rule 1), so there is nothing in the page to read.
 - **Leaving hands the paper in** (ruling 4): looking something up costs the attempt.
 
-## 6. For the instructor to decide (not built)
+## 6. Ruled by the instructor, 15 Oct 2026 (later) (asked with the question tool)
+
+1. **Guided Access / App pinning: yes, on every paper** (not only exams). The start prompt of every stage
+   check, moon check and exam carries one more rule (`[data-rule=device-lock]` in `AttemptRunner`'s
+   `StartPrompt`): turn on Guided Access (iPhone, iPad) or App pinning (Android) before you start; your
+   instructor may check. Words only: a page cannot tell whether it is on. Tested in
+   `design/specs/web-stage-check.spec.ts`.
+2. **Safe Exam Browser: plan it.** Its plan is `docs/SAFE-EXAM-BROWSER-PLAN.md`, stopped for approval;
+   nothing is built.
+3. Camera proctoring: not proposed (unchanged, see below).
+4. **No new signal hands a paper in.** Facts only; the 15-second rule stays the one automatic consequence.
+
+The questions as they were put:
+
+## 6a. The questions (15 Oct 2026)
 
 1. **Require Guided Access / App pinning on phones for exams**, and say so on the start prompt? (Words only;
    nothing to build but the sentence.)

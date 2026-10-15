@@ -364,3 +364,60 @@ until T3, should a teacher be able to set the **window and attempt limit of the 
 class** (a per-class setting over the one shared paper), or wait for T3 to own it? Recommendation: wait, and
 say so on the page (a teacher reads the stage checks; the admin sets them), because a per-class table built
 now would be thrown away when the checks become per-book.
+
+**Ruled 15 Oct 2026 (question tool): "Build it now"**, against the recommendation. A teacher sets the window
+and attempt limit of the stage checks for their own class over the one shared paper. Its plan is §5.10,
+written first and stopped for approval.
+
+## 5.10 A class's own window and attempt limit on a stage check — plan v1, 15 Oct 2026 (for approval)
+
+**What it is.** The shared stage check stays one paper (one blueprint, one exam salt, so every student's paper
+is still their own and still equivalent). A teacher may set, **for a class they hold**, when that paper opens
+and closes and how many attempts it allows. Anything not set is the shared paper's. The Prelim, Midterm and
+Finals are refused (ruling 4: global).
+
+**Data (the 24th SQL file, `db/addendum-class-windows.sql`, idempotent, to the deployment before the code):**
+
+| `class_assessment_windows` | |
+|---|---|
+| `class_id` → classes, `assessment_id` → assessments | primary key together |
+| `opens_at`, `closes_at`, `attempts_allowed` | each nullable; **null = the shared paper's** |
+| `set_by`, `set_at` | who, when (also in the audit log) |
+
+- A trigger refuses a row whose assessment's blueprint is not `stage` scope (so an exam can never get one, by
+  any path), whose effective close is not after its open, or whose `attempts_allowed < 1`.
+- **One function decides, used by every reader:** `effective_assessment_window(p_user, p_assessment)` returns
+  the opens/closes/limit for that student: their class's row (their section + the paper's subject, not ended)
+  over the shared paper, field by field. The Start check (`engine-repo.ts`), the reader's "n attempts left"
+  (`routes/stages.ts`), the moon panel (`routes/journeys.ts`) and the console read it, so the rule cannot be
+  written twice.
+- RLS on; one policy: staff **read** the rows of classes they read (`staff_reads_section`). No write policy:
+  writes go through the API only (the pattern of `attempt_events`). Students never read the table; they see
+  the effective numbers the API already returns.
+
+**API.** `PUT /console/assessments/:id/classes/:classId/window` `{opensAt?, closesAt?, attemptsAllowed?}`
+(null clears a field back to the shared value), `DELETE` the same path clears all three. Only the class's
+teacher (`assertWritesSection`; an ended class is read-only, 403; a class out of reach is 404). Lowering the
+limit stops at the highest attempt already used **by that class's students** (as the shared PATCH does today
+for everyone). Audited `assessment.class_window` with before and after. `GET /console/assessments` adds, per
+stage check, the windows of the classes the caller reads.
+
+**Console `/assessments`** (its page gate, at 1440 and 380): a stage check's row shows "Your classes: n set" and
+opens a sheet listing each held class with its effective window and limit, a **Set for this class** form, and
+**Use the course's** to clear. A teacher who holds no class sees the shared values read-only, as now. The
+exams' rows have no class control.
+
+**Student app.** No new control. The reader and the moon panel show the effective window and attempts left, so
+a class whose teacher extended a check sees it extended. The web stage-check gate stays green.
+
+**Tests, red first (rule 8), then mutation-checked:** another teacher cannot set or read a class's row (404); an
+ended class's teacher gets 403; a student cannot select the table; an exam or a moon's journey is refused (400,
+and the trigger refuses it from SQL too); Start honours the class's close while the same paper stays open to
+another class; the limit cannot go below the class's highest attempt; clearing restores the shared value.
+
+**What T3 does to it.** When stage checks become per-book (ruling 4), each book's check is its own
+`assessments` row, and a class's rows point at its book's check. This table survives unchanged; only the
+assessment id a class sees changes. (That is why it keys on the assessment, not on the stage.)
+
+**Asked with this plan:** (1) do **moon checks** follow the same per-class window, or only stage checks? (2) may
+the admin set another teacher's class window (a fifth exception to §5.9 ruling 2), or only the class's teacher?
