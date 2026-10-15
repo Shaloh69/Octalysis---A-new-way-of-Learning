@@ -7,6 +7,8 @@ const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-body " +
     "font-medium transition-colors duration-fast ease-out " +
     "disabled:pointer-events-none disabled:opacity-50 " +
+    // aria-disabled keeps keyboard focus (a disabled button drops it); it must still LOOK unavailable (T2).
+    "aria-disabled:cursor-not-allowed aria-disabled:opacity-50 " +
     // 44px minimum touch target on the coarse-pointer path. The console gets
     // used on a tablet at the front of a room, not only on a laptop.
     "[@media(pointer:coarse)]:min-h-[44px]",

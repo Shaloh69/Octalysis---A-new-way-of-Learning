@@ -14,11 +14,11 @@
 export interface RosterRow {
   studentId: string; fullName: string; status: "unclaimed" | "claimed" | "disabled";
   claimedAt: string | null; sectionId: string | null; sectionCode: string | null;
-  userId: string | null; deactivated: boolean; attempts: number; avgMastery: number | null;
+  userId: string | null; deactivated: boolean; readOnly: boolean; attempts: number; avgMastery: number | null;
 }
 export interface Roster {
   students: RosterRow[];
-  sections: Array<{ id: string; code: string; term: string }>;
+  sections: Array<{ id: string; code: string; term: string; held: boolean }>;
 }
 
 export const FIX = {
@@ -29,7 +29,7 @@ export const FIX = {
   /** Not registered: deactivating it disables the ID. */
   unregistered: "232129023",
   /** The section the fixture adds. A valid uuid; every write to it is intercepted. */
-  section: { id: "5ec7f1a0-0000-4000-8000-0000000004b0", code: "BSCPE - 4B", term: "2026-2027 First Semester" },
+  section: { id: "5ec7f1a0-0000-4000-8000-0000000004b0", code: "BSCPE - 4B", term: "2026-2027 First Semester", held: true },
 };
 
 export function patch(r: Roster): Roster {

@@ -18,6 +18,8 @@ import { MoveDialog } from "./students/MoveDialog";
 import { PasswordDialog } from "./students/PasswordDialog";
 import { AttemptList, AttemptTable, type PaperState } from "./record/Attempts";
 import { MoonsCard } from "./record/Moons";
+import { ReadOnly, readOnlyWhy } from "@/components/ClassScope";
+import { useIdentity } from "./teachers/parts";
 
 /**
  * `/students/:userId`: one student's record. Rebuilt 27 Sep 2026 against
@@ -38,6 +40,7 @@ import { MoonsCard } from "./record/Moons";
 const TABLE_PX = 640; // 40rem
 
 export function StudentDetailPage() {
+  const admin = useIdentity().role === "admin";
   const { userId = "" } = useParams();
   const record = useAsync(() => api.student(userId), [userId]);
   const data = record.data;
@@ -112,6 +115,10 @@ export function StudentDetailPage() {
   const { student, attempts, progress } = data;
   const row = asRosterRow(data);
   const registered = dayDate(student.claimedAt);
+  // T2: a class that has ended (to its teacher), or another teacher's (to the admin), is read and not changed.
+  // The admin alone may still reset a password and deactivate or reactivate: recovery, audited.
+  const readOnly = !student.canWrite;
+  const mayRecover = !readOnly || admin;
 
   return (
     <div className="record">
@@ -131,10 +138,10 @@ export function StudentDetailPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setMoving([row])}>Move to section…</DropdownMenuItem>
+              <DropdownMenuItem disabled={readOnly} onSelect={() => setMoving([row])}>Move to section…</DropdownMenuItem>
               {/* A deactivated account is refused everywhere; a new password would not let it in. */}
               {!student.deactivated && (
-                <DropdownMenuItem onSelect={() => setResetting(true)}>Reset password…</DropdownMenuItem>
+                <DropdownMenuItem disabled={!mayRecover} onSelect={() => setResetting(true)}>Reset password…</DropdownMenuItem>
               )}
               {/* Only where the server said this viewer may (`can_remove_avatar`); the page never decides who. */}
               {student.avatar.removable && (
@@ -142,12 +149,17 @@ export function StudentDetailPage() {
               )}
               <DropdownMenuSeparator />
               {student.deactivated ? (
-                <DropdownMenuItem onSelect={() => setStatusFor(row)}>Reactivate…</DropdownMenuItem>
+                <DropdownMenuItem disabled={!mayRecover} onSelect={() => setStatusFor(row)}>Reactivate…</DropdownMenuItem>
               ) : (
-                <DropdownMenuItem tone="danger" onSelect={() => setStatusFor(row)}>
+                <DropdownMenuItem tone="danger" disabled={!mayRecover} onSelect={() => setStatusFor(row)}>
                   Deactivate…
                 </DropdownMenuItem>
               )}
+              {readOnly ? (
+                <p className="max-w-[16rem] px-2 py-1.5 text-xs text-ink-muted" data-read-only-note="">
+                  {readOnlyWhy(admin)}
+                </p>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -158,6 +170,7 @@ export function StudentDetailPage() {
           <span className="num text-ink">{student.studentId}</span>
           <span aria-hidden="true">·</span>
           <span>{student.sectionCode ?? "no section"}</span>
+          {readOnly ? <ReadOnly admin={admin} /> : null}
           <span aria-hidden="true">·</span>
           <span>{registered ? `registered ${registered}` : "registration date not recorded"}</span>
         </p>

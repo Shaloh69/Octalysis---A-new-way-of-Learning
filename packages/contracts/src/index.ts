@@ -806,12 +806,20 @@ export const ChatPerson = z.object({
   name: z.string(),
   staff: z.boolean(),
   avatar: Avatar.optional(),
+  /**
+   * T2 (9 Oct 2026): "active now", seen within two minutes. STAFF ABOUT STAFF ONLY: it is sent to a staff
+   * viewer about a staff person, and never to a student, and never about a student.
+   */
+  active: z.boolean().optional(),
+  /** When a staff person was last seen with the console open (same rule as `active`). */
+  seenAt: z.string().nullable().optional(),
 });
 export type ChatPerson = z.infer<typeof ChatPerson>;
 
 export const ChatRoom = z.object({
   id: z.string().uuid(),
-  kind: z.enum(["section", "direct"]),
+  /** staff: the one room of every teacher and the admin. staff_direct: a private thread between two of them. */
+  kind: z.enum(["section", "direct", "staff", "staff_direct"]),
   /** "BSCPE-2A", or the other side of a private thread. */
   title: z.string(),
   /** One line saying who is in it. */
@@ -821,6 +829,13 @@ export const ChatRoom = z.object({
   /** Of those, how many @mention you. */
   mentions: z.number().int().min(0),
   lastAt: z.string().nullable(),
+  /**
+   * T2 (9 Oct 2026): staff READ the rooms of classes that have ended, and the admin reads every class's, but
+   * post only in a class they hold that is running. True: this room can be read and not posted in.
+   */
+  readOnly: z.boolean().default(false),
+  /** A staff thread's other member, so the rail can show their face and whether they are active. */
+  peer: ChatPerson.nullable().default(null),
 });
 export type ChatRoom = z.infer<typeof ChatRoom>;
 
@@ -940,6 +955,10 @@ export type ChatPruneBody = z.infer<typeof ChatPruneBody>;
 
 export const ChatThreadBody = z.object({ userId: z.string().uuid() }).strict();
 export type ChatThreadBody = z.infer<typeof ChatThreadBody>;
+
+/** `GET /chat/staff`: every other teacher and the admin, with who is active now (staff only). */
+export const ChatStaffList = z.object({ staff: z.array(ChatPerson) });
+export type ChatStaffList = z.infer<typeof ChatStaffList>;
 
 /* ============================================================
  * Graded moons (docs/GRADED-MOONS-PLAN.md, ruled 8 Oct 2026).

@@ -8,6 +8,7 @@ import { counts, unfillable, windowState } from "@/lib/assessments-view";
 import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/ui/empty";
 import { AssessList, AssessTable } from "./assessments/Views";
+import { useIdentity } from "./teachers/parts";
 import { CreateDialog } from "./assessments/CreateDialog";
 import { BankDialog, RotateDialog, WindowDialog } from "./assessments/RowDialogs";
 import type { RowActions } from "./assessments/Row";
@@ -29,8 +30,11 @@ import type { RowActions } from "./assessments/Row";
 const WIDE_PX = 1024; // 64rem
 
 export function AssessmentsPage() {
+  const admin = useIdentity().role === "admin";
   const list = useAsync(() => api.assessments(), []);
   const data = list.data;
+  // T2: a paper for every section is the course's, so the admin's; a teacher makes one for a class they hold.
+  const canCreate = admin || (data?.sections ?? []).some((s) => s.held);
   const firstLoad = list.loading && !data;
   const showSkeleton = useDelayed(firstLoad, 400);
   const slow = useDelayed(firstLoad, 3000);
@@ -69,6 +73,7 @@ export function AssessmentsPage() {
   const short = unfillable(rows).length;
 
   const startCreate = () => {
+    if (!canCreate) return;
     remember();
     setCreating(true);
   };
@@ -89,7 +94,12 @@ export function AssessmentsPage() {
             </p>
           ) : null}
         </div>
-        <Button onClick={startCreate} disabled={!data}>
+        <Button
+          onClick={startCreate}
+          disabled={!data}
+          aria-disabled={(data && !canCreate) || undefined}
+          title={data && !canCreate ? "A paper is made for one of your classes, and you hold none yet." : undefined}
+        >
           <Plus className="h-4 w-4" aria-hidden="true" /> New assessment
         </Button>
       </header>
@@ -149,7 +159,8 @@ export function AssessmentsPage() {
         <CreateDialog
           open={creating}
           blueprints={data.blueprints}
-          sections={data.sections ?? []}
+          sections={(data.sections ?? []).filter((s) => s.held)}
+          admin={admin}
           onClose={() => setCreating(false)}
           onCreated={list.reload}
           returnFocus={() => opener.current}

@@ -62,6 +62,8 @@ export function planOutcome(p: RosterPlanRow): { label: string; detail: string |
         detail:
           p.why === "registered"
             ? `Already registered as ${p.current?.fullName ?? "someone"}, in ${p.current?.sectionCode ?? "no section"}. A registered row is never overwritten; use Move to section to change their section.`
+            : p.why === "other-class"
+              ? "This student is on a class you cannot change: another teacher's, or one that has ended. Nothing about them is shown or changed here."
             : p.why === "duplicate"
               ? "This ID appears twice in what you pasted. Neither line is imported; keep the right one."
               : `No section called ${p.sectionCode}. Pick it above, or fix the code.`,

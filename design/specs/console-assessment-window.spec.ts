@@ -37,7 +37,7 @@ function teacherToken(): string {
     email: "teacher@example.com",
     aud: "authenticated",
     exp: Math.floor(Date.now() / 1000) + 86_400,
-    app_metadata: { role: "teacher" },
+    app_metadata: { role: "admin" },
   });
   const sig = createHmac("sha256", JWT_SECRET).update(`${header}.${payload}`).digest("base64url");
   return `${header}.${payload}.${sig}`;

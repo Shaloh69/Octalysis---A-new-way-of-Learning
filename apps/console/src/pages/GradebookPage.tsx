@@ -8,6 +8,8 @@ import { exportedWords, matches } from "@/lib/gradebook-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Empty } from "@/components/ui/empty";
+import { NoClass } from "@/components/ClassScope";
+import { useHoldsNoClass } from "@/lib/useMyClasses";
 import { toast } from "@/components/ui/toast";
 import { Kpis, StageChart, Weights } from "./gradebook/Overview";
 import { columnsOf, NoColumns, GridList, GridTable, type View } from "./gradebook/Grid";
@@ -39,6 +41,7 @@ const VIEWS: Array<[View, string]> = [
 const MOON_TABLE_MAX = 18;
 
 export function GradebookPage() {
+  const noClass = useHoldsNoClass();
   const q = useAsync(() => api.gradebook(), []);
   const book = q.data;
   const firstLoad = q.loading && !book;
@@ -111,6 +114,8 @@ export function GradebookPage() {
         </div>
       ) : firstLoad || !book ? (
         showSkeleton ? <Skeleton slow={slow} /> : <div className="min-h-[40rem]" aria-busy="true" />
+      ) : book.students.length === 0 && noClass ? (
+        <NoClass what="Your students' grades" />
       ) : book.students.length === 0 ? (
         <Empty
           title="No students on the roster yet"

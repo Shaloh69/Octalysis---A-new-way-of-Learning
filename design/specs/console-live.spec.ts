@@ -284,14 +284,20 @@ test.describe("the question: started and ended with a reason, and honest about s
     const fx = await openLive(page, { liveItems: 6 });
     const { dialog, first } = await chooseQuestion(page, fx);
     const start = dialog.getByRole("button", { name: "Start question" });
-    await expect(start, "a question and no reason").toBeDisabled();
     await dialog.getByLabel("Why", { exact: true }).fill("Warm-up before the lecture");
+    // T2: a question is put to ONE of the teacher's classes, never to everyone. With one class it is already chosen.
+    const who = dialog.getByRole("group", { name: "Who may answer" });
+    const classes = who.getByRole("button");
+    if ((await classes.count()) > 1) await expect(start, "a question and a reason, but no class").toBeDisabled();
+    await classes.first().click();
+    const code = (await classes.first().textContent())!.trim();
     await expect(start).toBeEnabled();
     await start.click();
 
     expect(fx.starts).toHaveLength(1);
-    expect(fx.starts[0]).toEqual({ itemId: first.id, sectionId: null, reason: "Warm-up before the lecture" });
-    await expect(page.locator("[data-toaster]")).toContainText(`${first.slug} put to the room, for everyone`);
+    expect(fx.starts[0]).toMatchObject({ itemId: first.id, reason: "Warm-up before the lecture" });
+    expect(fx.starts[0]!.sectionId, "never null: no question is put to everyone").toBeTruthy();
+    await expect(page.locator("[data-toaster]")).toContainText(`${first.slug} put to the room, for section ${code}`);
     await expect(question(page)).toHaveAttribute("data-state", "running");
     await expect(question(page)).toContainText(first.slug);
   });
@@ -300,7 +306,8 @@ test.describe("the question: started and ended with a reason, and honest about s
     const fx = await openLive(page, { liveItems: 6 });
     const { dialog } = await chooseQuestion(page, fx);
     const who = dialog.getByRole("group", { name: "Who may answer" });
-    const section = who.getByRole("button").nth(1);
+    expect(await who.getByRole("button", { name: /everyone/i }).count(), "there is no Everyone").toBe(0);
+    const section = who.getByRole("button").nth(0);
     const code = (await section.textContent())!.trim();
     await section.click();
     await expect(section).toHaveAttribute("aria-pressed", "true");
@@ -315,6 +322,7 @@ test.describe("the question: started and ended with a reason, and honest about s
     const fx = await openLive(page, { liveItems: 6, startRefusal: { status: 409, message } });
     const { dialog, first } = await chooseQuestion(page, fx);
     await dialog.getByLabel("Why", { exact: true }).fill("Warm-up");
+    await dialog.getByRole("group", { name: "Who may answer" }).getByRole("button").first().click();
     await dialog.getByRole("button", { name: "Start question" }).click();
     await expect(dialog.getByRole("alert")).toContainText(message);
     await expect(dialog.getByRole("group", { name: "Question" }).getByRole("button", { name: new RegExp(first.slug) })).toHaveAttribute("aria-pressed", "true");

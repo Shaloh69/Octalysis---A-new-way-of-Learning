@@ -24,7 +24,7 @@ export function share(correct: number | null, answered: number): number | null {
 
 /** Who may answer a question, in words. */
 export function whoMayAnswer(section: string | null): string {
-  return section ? `section ${section}` : "everyone";
+  return section ? `section ${section}` : "everyone (started before classes)";
 }
 
 /**

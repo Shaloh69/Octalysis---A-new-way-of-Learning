@@ -42,18 +42,19 @@ export function StartDialog({
 
   const [stageId, setStageId] = useState<string | null>(stages[0]?.id ?? null);
   const [itemId, setItemId] = useState<string | null>(null);
-  const [sectionId, setSectionId] = useState<string | null>(null);
+  // T2: a question is put to ONE of the teacher's own classes, never to everyone. With one class it is chosen.
+  const [sectionId, setSectionId] = useState<string | null>(options.sections.length === 1 ? options.sections[0]!.id : null);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const items = options.items.filter((i) => i.stageId === stageId);
   const chosen = options.items.find((i) => i.id === itemId) ?? null;
-  const ready = !!chosen && reason.trim().length >= REASON_MIN && !saving;
+  const ready = !!chosen && sectionId !== null && reason.trim().length >= REASON_MIN && !saving;
 
   function reset() {
     setItemId(null);
-    setSectionId(null);
+    setSectionId(options.sections.length === 1 ? options.sections[0]!.id : null);
     setReason("");
     setError(null);
   }
@@ -63,7 +64,7 @@ export function StartDialog({
     setSaving(true);
     setError(null);
     try {
-      const { session } = await api.liveStart({ itemId: chosen.id, sectionId, reason: reason.trim() });
+      const { session } = await api.liveStart({ itemId: chosen.id, sectionId: sectionId!, reason: reason.trim() });
       toast.success(
         startedWords(session.itemSlug, session.section),
         "Students cannot answer it yet. It is on the projector, and in the audit log with your reason.",
@@ -149,16 +150,8 @@ export function StartDialog({
 
           <div className="lv-start-col">
           <div role="group" aria-label="Who may answer" className="lv-field">
-            <p className="lv-label">Who may answer</p>
+            <p className="lv-label">Which of your classes may answer</p>
             <div className="lv-pills">
-              <Button
-                size="sm"
-                variant={sectionId === null ? "default" : "outline"}
-                aria-pressed={sectionId === null}
-                onClick={() => setSectionId(null)}
-              >
-                Everyone
-              </Button>
               {options.sections.map((s) => (
                 <Button
                   key={s.id}

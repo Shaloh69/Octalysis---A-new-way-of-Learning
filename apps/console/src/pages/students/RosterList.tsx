@@ -4,6 +4,7 @@ import { Avatar } from "@/components/Avatar";
 import type { RosterRow } from "@/lib/api";
 import { plural, rosterState, STATE_WORDS } from "@/lib/roster-view";
 import { RowMenu, type RowActions } from "./RowMenu";
+import { ReadOnly } from "@/components/ClassScope";
 import { STATE_TONE } from "./RosterTable";
 
 /**
@@ -66,6 +67,7 @@ export function RosterList({
                 <p className="roster-list-meta">
                   <span className="num">{r.studentId}</span>
                   <span>{r.sectionCode ?? "no section"}</span>
+                  {r.readOnly ? <ReadOnly admin={on.admin} /> : null}
                   <Badge tone={STATE_TONE[state]}>{STATE_WORDS[state]}</Badge>
                 </p>
                 <p className="roster-list-meta">

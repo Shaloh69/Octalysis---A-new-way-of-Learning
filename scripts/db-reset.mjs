@@ -64,6 +64,8 @@ const FILES = [
   "db/addendum-class-scope.sql",
   // T2 (9 Oct 2026): a picture follows the class: can_see_avatar() and can_remove_avatar() ask the class. Idempotent.
   "db/addendum-class-avatars.sql",
+  // T2 (9 Oct 2026): teachers talk to one another: the staff room, private staff threads, last_seen_at. Idempotent.
+  "db/addendum-staff-chat.sql",
 ];
 
 const c = {

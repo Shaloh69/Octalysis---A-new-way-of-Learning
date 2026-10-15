@@ -68,7 +68,13 @@ export const Pane = forwardRef<HTMLHeadingElement, PaneProps>(function Pane({ s,
         </div>
       ) : null}
 
-      {markable ? <MarkForm key={s.id} s={s} onGraded={onGraded} /> : null}
+      {(markable || s.status === "graded") && !s.canGrade ? (
+        <p className="subs-callout" data-read-only-note="">
+          This student&apos;s class is one you can read and not change, so the mark and the return are not
+          yours to make.
+        </p>
+      ) : null}
+      {markable && s.canGrade ? <MarkForm key={s.id} s={s} onGraded={onGraded} /> : null}
       {s.status === "graded" ? <Record s={s} onReturn={onReturn} /> : null}
     </section>
   );
@@ -304,7 +310,11 @@ function Record({ s, onReturn }: { s: Submission; onReturn: (s: Submission, from
         return it for revision with a reason.
       </p>
       <div className="subs-actions">
-        <Button variant="outline" onClick={(e) => onReturn(s, e.currentTarget)}>
+        <Button
+          variant="outline"
+          aria-disabled={!s.canGrade || undefined}
+          onClick={(e) => s.canGrade && onReturn(s, e.currentTarget)}
+        >
           Return for revision…
         </Button>
       </div>

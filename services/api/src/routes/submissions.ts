@@ -179,7 +179,7 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
       `select s.id, s.user_id, s.kind, s.stage_id, s.slug, s.title, s.body_md,
               s.attachments, s.payload, s.status, s.submitted_at, s.score,
               s.max_score, s.rubric, s.feedback_md, s.graded_at, s.due_at,
-              s.is_late, p.full_name, p.student_id,
+              s.is_late, p.full_name, p.student_id, p.section_id::text as owner_section,
               g.full_name as grader_name
          from submissions s
          join profiles p on p.id = s.user_id
@@ -211,6 +211,8 @@ export function registerSubmissionRoutes(app: FastifyInstance, env: Env): void {
         ...(r.status === "draft" ? { bodyMd: null, attachments: [], payload: {} } : {}),
         studentName: r.full_name,
         studentId: r.student_id,
+        // False: this student's class is read-only to the viewer (ended, or another teacher's).
+        canGrade: scope.writes(r.owner_section as string | null),
         graderName: r.grader_name,
       })),
       summary: Object.fromEntries(summary.rows.map((r) => [r.status, Number(r.n)])),

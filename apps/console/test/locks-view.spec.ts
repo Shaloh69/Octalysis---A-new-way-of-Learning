@@ -12,7 +12,7 @@ const cell = (c: Partial<LockCell>): LockCell => ({
 
 const m = {
   students: [{ userId: "a" }, { userId: "b" }, { userId: "c" }].map((s) => ({
-    ...s, studentId: s.userId, fullName: s.userId, sectionId: null,
+    ...s, studentId: s.userId, fullName: s.userId, sectionId: null, readOnly: false,
   })),
   stages: ["00", "01", "02", "03"].map((id, i) => ({ id, title: id, ordinal: i })),
 };
@@ -65,6 +65,12 @@ describe("bulk selection", () => {
 
   it("a column is one stage for every student", () => {
     expect(column(m, "02")).toEqual(["a|02", "b|02", "c|02"]);
+  });
+
+  it("T2: a student in a class the viewer may read and not change is never selected", () => {
+    const withRo = { ...m, students: m.students.map((s) => (s.userId === "b" ? { ...s, readOnly: true } : s)) };
+    expect(column(withRo, "02")).toEqual(["a|02", "c|02"]);
+    expect(rectangle(withRo, { row: 0, col: 2 }, { row: 2, col: 2 }).sort()).toEqual(["a|02", "c|02"]);
   });
 
   it("summarises students × stages", () => {

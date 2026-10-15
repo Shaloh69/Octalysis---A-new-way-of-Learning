@@ -15,6 +15,7 @@ import {
   type ChatPerson,
   type ChatRoom,
   type ChatRooms,
+  type ChatStaffList,
   type ChatThread,
   type ChatUnread,
   type ChatUpload,
@@ -95,7 +96,7 @@ type Queryable = Pick<pg.PoolClient, "query"> | Db;
 
 interface RoomRow {
   id: string;
-  kind: "section" | "direct";
+  kind: "section" | "direct" | "staff" | "staff_direct";
   section_code: string | null;
   section_students: number | null;
   student_name: string | null;
@@ -103,6 +104,9 @@ interface RoomRow {
   unread: number;
   mentions: number;
   last_at: Date | null;
+  can_post: boolean | null;
+  member_a: string | null;
+  member_b: string | null;
 }
 
 const ROOM_SELECT = `
@@ -117,16 +121,23 @@ const ROOM_SELECT = `
            where m.room_id = r.id and m.author_id <> $1 and m.deleted_at is null
              and $1 = any(m.mentions)
              and m.created_at > coalesce(cm.last_read_at, '-infinity')) as mentions,
-         (select max(m.created_at) from chat_messages m where m.room_id = r.id) as last_at
+         (select max(m.created_at) from chat_messages m where m.room_id = r.id) as last_at,
+         chat_may_post($1, r.id) as can_post, r.member_a::text as member_a, r.member_b::text as member_b
     from chat_rooms r
     left join sections sec on sec.id = r.section_id
     left join profiles sp on sp.id = r.student_id
     left join chat_members cm on cm.room_id = r.id and cm.user_id = $1`;
 
-function toRoom(r: RoomRow, staff: boolean): ChatRoom {
+function toRoom(r: RoomRow, staff: boolean, peer: ChatPerson | null = null): ChatRoom {
   let title: string;
   let subtitle: string;
-  if (r.kind === "section") {
+  if (r.kind === "staff") {
+    title = "Staff room";
+    subtitle = "Every teacher and the admin";
+  } else if (r.kind === "staff_direct") {
+    title = peer?.name ?? "A colleague";
+    subtitle = "Private: only you two";
+  } else if (r.kind === "section") {
     title = r.section_code ?? "Section";
     const n = r.section_students ?? 0;
     subtitle = staff ? `${n} student${n === 1 ? "" : "s"} and the instructor` : "Your section and the instructor";
@@ -145,7 +156,34 @@ function toRoom(r: RoomRow, staff: boolean): ChatRoom {
     unread: Number(r.unread),
     mentions: Number(r.mentions),
     lastAt: r.last_at ? new Date(r.last_at).toISOString() : null,
+    // T2: staff read a class that has ended, or another teacher's (the admin), and post only where they hold a running class.
+    readOnly: staff && r.can_post !== true,
+    peer: r.kind === "staff_direct" ? peer : null,
   };
+}
+
+/**
+ * T2 (9 Oct 2026): a staff account has the console open. Throttled to once in 30 seconds so polling is
+ * one cheap read, not a write each time. Staff only: nothing records when a STUDENT was last seen.
+ */
+async function touchSeen(db: Queryable, id: Identity): Promise<void> {
+  if (!isStaff(id)) return;
+  await db.query(
+    `update profiles set last_seen_at = now()
+      where id = $1 and (last_seen_at is null or last_seen_at < now() - interval '30 seconds')`,
+    [id.userId],
+  );
+}
+
+/** Staff about staff: who was seen within two minutes, and when. Never a student. */
+async function seenFor(db: Queryable, ids: readonly string[]): Promise<Map<string, { active: boolean; seenAt: string | null }>> {
+  if (ids.length === 0) return new Map();
+  const { rows } = await db.query(
+    `select id::text as id, last_seen_at, coalesce(last_seen_at > now() - interval '2 minutes', false) as active
+       from profiles where id = any($1::uuid[]) and role in ('teacher','admin') and deleted_at is null`,
+    [[...new Set(ids)]],
+  );
+  return new Map(rows.map((r) => [r.id as string, { active: r.active === true, seenAt: r.last_seen_at ? new Date(r.last_seen_at as Date).toISOString() : null }]));
 }
 
 async function isPaperOpen(db: Queryable, userId: string): Promise<boolean> {
@@ -189,6 +227,8 @@ async function ensureRooms(db: Queryable, id: Identity): Promise<void> {
        select 'section', s.id from sections s
        on conflict (section_id) where kind = 'section' do nothing`,
     );
+    // The staff room: one, for every teacher and the admin (T2).
+    await db.query(`insert into chat_rooms (kind) values ('staff') on conflict ((true)) where kind = 'staff' do nothing`);
     return;
   }
   await db.query(
@@ -206,11 +246,13 @@ async function ensureRooms(db: Queryable, id: Identity): Promise<void> {
   );
 }
 
-async function roomById(db: Queryable, id: Identity, roomId: string): Promise<ChatRoom> {
+type PeerOf = (viewer: string, r: RoomRow) => Promise<ChatPerson | null>;
+
+async function roomById(db: Queryable, id: Identity, roomId: string, peerOf?: PeerOf): Promise<ChatRoom> {
   const { rows } = await db.query<RoomRow>(`${ROOM_SELECT} where r.id = $2::uuid`, [id.userId, roomId]);
   const r = rows[0];
   if (!r) throw noRoom();
-  return toRoom(r, isStaff(id));
+  return toRoom(r, isStaff(id), peerOf && r.kind === "staff_direct" ? await peerOf(id.userId, r) : null);
 }
 
 interface MessageRow {
@@ -304,28 +346,41 @@ export function registerChatRoutes(
   /** Each person as THIS viewer may see them: their picture, or the generated avatar. */
   async function dress<T extends ChatPerson>(viewer: string, people: readonly T[]): Promise<T[]> {
     const map = await avatarsFor(app.db, profileStorage, viewer, people.map((p) => p.id), log);
-    return people.map((p) => ({ ...p, avatar: map.get(p.id) }));
+    // Active now: a staff viewer is told about staff people. A student viewer is told about no one.
+    const v = await app.db.query(`select role in ('teacher','admin') as staff from profiles where id = $1`, [viewer]);
+    const seen = v.rows[0]?.staff === true ? await seenFor(app.db, people.map((p) => p.id)) : new Map<string, { active: boolean; seenAt: string | null }>();
+    return people.map((p) => ({ ...p, avatar: map.get(p.id), ...(seen.get(p.id) ?? {}) }));
   }
+
+  /** The other member of a staff thread, dressed: their face and whether they are active. */
+  const peerOf: PeerOf = async (viewer, r) => {
+    const other = r.member_a === viewer ? r.member_b : r.member_a;
+    if (!other) return null;
+    const { rows } = await app.db.query(`select full_name from profiles where id = $1`, [other]);
+    const person: ChatPerson = { id: other, name: (rows[0]?.full_name as string | undefined) ?? "A colleague", staff: true };
+    return (await dress(viewer, [person]))[0]!;
+  };
 
   /* GET /api/v1/chat/rooms — the rooms the caller is in, with unread counts. */
   app.get("/api/v1/chat/rooms", async (req): Promise<ChatRooms> => {
     const id = await identityFrom(req, env);
     await guardPaper(app.db, id);
     await ensureRooms(app.db, id);
+    await touchSeen(app.db, id);
     const staff = isStaff(id);
     // Staff see every section's room, and a private thread once it has a message.
     const { rows } = await app.db.query<RoomRow>(
       `${ROOM_SELECT}
         where chat_member($1, r.id)
-          and (r.kind = 'section' or not $2::boolean
+          and (r.kind in ('section', 'staff') or not $2::boolean
                or exists (select 1 from chat_messages m where m.room_id = r.id))
-        order by (r.kind = 'direct'), sec.code nulls last,
+        order by case r.kind when 'staff' then 0 when 'section' then 1 else 2 end, sec.code nulls last,
                  (select max(m.created_at) from chat_messages m where m.room_id = r.id) desc nulls last`,
       [id.userId, staff],
     );
     return {
       me: (await dress(id.userId, [await me(app.db, id)]))[0]!,
-      rooms: rows.map((r) => toRoom(r, staff)),
+      rooms: await Promise.all(rows.map(async (r) => toRoom(r, staff, r.kind === "staff_direct" ? await peerOf(id.userId, r) : null))),
       attachments: storage !== null,
     };
   });
@@ -337,6 +392,7 @@ export function registerChatRoutes(
     if (!isStaff(id) && (await isPaperOpen(app.db, id.userId))) {
       return { mentions: 0, closed: true, paper: await openPaper(app.db, id.userId) };
     }
+    await touchSeen(app.db, id);
     const { rows } = await app.db.query(
       `select count(*)::int as n
          from chat_messages m
@@ -368,7 +424,48 @@ export function registerChatRoutes(
     const roomId = rows[0]?.id as string | undefined;
     if (!roomId) throw errors.notFound("No such student.");
     reply.status(201);
-    return roomById(app.db, id, roomId);
+    return roomById(app.db, id, roomId, peerOf);
+  });
+
+  /*
+   * POST /api/v1/chat/staff-threads — a teacher or the admin opens a private thread with ANOTHER staff
+   * account (T2, 9 Oct 2026). Two members, nobody else: the admin does not read two teachers' thread.
+   */
+  app.post("/api/v1/chat/staff-threads", async (req, reply): Promise<ChatRoom> => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const body = ChatThreadBody.safeParse(req.body);
+    if (!body.success) throw errors.badRequest("Choose a teacher.");
+    if (body.data.userId === id.userId) throw errors.badRequest("A thread is with someone else.");
+    const lo = id.userId < body.data.userId ? id.userId : body.data.userId;
+    const hi = id.userId < body.data.userId ? body.data.userId : id.userId;
+    const { rows } = await app.db.query(
+      `insert into chat_rooms (kind, member_a, member_b)
+       select 'staff_direct', $1::uuid, $2::uuid
+        where exists (select 1 from profiles p where p.id = $3 and p.role in ('teacher','admin') and p.deleted_at is null)
+       on conflict (member_a, member_b) where kind = 'staff_direct' do update set kind = excluded.kind
+       returning id::text`,
+      [lo, hi, body.data.userId],
+    );
+    const roomId = rows[0]?.id as string | undefined;
+    if (!roomId) throw errors.notFound("No such teacher.");
+    reply.status(201);
+    return roomById(app.db, id, roomId, peerOf);
+  });
+
+  /* GET /api/v1/chat/staff — the other teachers and the admin, and who is active now. Staff only. */
+  app.get("/api/v1/chat/staff", async (req): Promise<ChatStaffList> => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    await touchSeen(app.db, id);
+    const { rows } = await app.db.query(
+      `select id::text as id, full_name as name from profiles
+        where role in ('teacher','admin') and deleted_at is null and id <> $1
+        order by (role = 'admin') desc, full_name`,
+      [id.userId],
+    );
+    const people = await dress(id.userId, rows.map((r) => ({ id: r.id as string, name: (r.name as string | null) ?? "A colleague", staff: true })));
+    return { staff: people };
   });
 
   /* GET /api/v1/chat/rooms/:id — the latest messages and who can be mentioned. */
@@ -381,9 +478,10 @@ export function registerChatRoutes(
     const roomId = params.data.id;
     await guardPaper(app.db, id);
     await requireMember(app.db, id, roomId);
+    await touchSeen(app.db, id);
 
     const [room, msgs, members] = await Promise.all([
-      roomById(app.db, id, roomId),
+      roomById(app.db, id, roomId, peerOf),
       app.db.query<MessageRow>(
         `${MESSAGE_SELECT}
           where m.room_id = $1 and ($2::timestamptz is null or m.created_at < $2::timestamptz)
@@ -539,7 +637,8 @@ export function registerChatRoutes(
     const removedPath = await withTransaction(app.db, async (tx) => {
       const { rows } = await tx.query(
         `select m.room_id::text, m.author_id::text, m.body, m.attachment_path, m.attachment_name, m.deleted_at,
-                chat_member($2, m.room_id) as member, chat_may_post($2, m.room_id) as may_write
+                chat_member($2, m.room_id) as member, chat_may_post($2, m.room_id) as may_write,
+                (select r.kind from chat_rooms r where r.id = m.room_id) as room_kind
            from chat_messages m where m.id = $1 for update`,
         [params.data.id, id.userId],
       );
@@ -549,6 +648,9 @@ export function registerChatRoutes(
       if (!own && !staff) throw errors.notFound();
       // T2: removing someone else's message is moderating a class: the teacher of a class that has not
       // ended (the admin reads every room and moderates their own).
+      // Staff rooms: nobody removes a colleague's words from a private thread; in the staff room the admin does.
+      if (!own && m.room_kind === "staff_direct") throw errors.forbidden("A private thread between two teachers is theirs: only the author removes a message.");
+      if (!own && m.room_kind === "staff" && id.role !== "admin") throw errors.forbidden("Only the admin removes another teacher's message from the staff room.");
       if (!own && m.may_write !== true) throw errors.forbidden("This class is read-only to you, so you can read it and not change it.");
       if (m.deleted_at !== null) return null;
       if (!own && !reason.success) throw errors.badRequest("Say why you are removing it, in a few words.");
@@ -665,7 +767,8 @@ export function registerChatRoutes(
     const { rows } = await app.db.query(
       `select id::text from chat_messages
         where attachment_path is not null and created_at < now() - make_interval(days => $1)
-          and ($3::boolean or chat_may_post($2, room_id))`,
+          and ($3::boolean or chat_may_post($2, room_id))
+          and ($3::boolean or not exists (select 1 from chat_rooms r where r.id = room_id and r.kind = 'staff'))`,
       [body.data.olderThanDays, id.userId, scope.admin],
     );
     return removeAttachments(id.userId, rows.map((r) => r.id as string), "chat.attachments.pruned", {

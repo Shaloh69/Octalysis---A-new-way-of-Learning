@@ -450,7 +450,7 @@ function Detail({ g, onSaved }: { g: FeedbackGroup; onSaved: () => void }) {
           return (
             <li key={r.id} data-report={r.id} className="fb-report">
               <p className="fb-report-head">
-                <span data-fact="who">{r.reporterName ?? "Name not recorded"} · {r.role}</span>
+                <span data-fact="who">{r.reporterName ?? (r.role === "student" ? "A student in another class" : "Name not recorded")} · {r.role}</span>
                 <span data-fact="when" className="num fb-faint">{when(r.createdAt)}</span>
               </p>
               {ratingWords(r.rating) ? <p className="text-sm text-ink">{ratingWords(r.rating)}</p> : null}

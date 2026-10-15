@@ -4,6 +4,8 @@ import { Lock, LockOpen } from "lucide-react";
 import type { LockCell, LockMatrix, ScopeLock } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { cellKey, cellKind, cellLine, scopeLine, type CellKind } from "@/lib/locks-view";
+import { ReadOnly } from "@/components/ClassScope";
+import { useIdentity } from "../teachers/parts";
 
 /**
  * The whole matrix, at 62rem of available width and up. `SPEC.md` §"At 1440".
@@ -38,6 +40,7 @@ export function Matrix({
   scopeByStage: Map<string, ScopeLock[]>;
   on: CellHandlers & { selectColumn: (stageId: string) => void };
 }) {
+  const admin = useIdentity().role === "admin";
   const [active, setActive] = useState<{ row: number; col: number } | null>(null);
   const [hovered, setHovered] = useState<{ row: number; col: number } | null>(null);
   const shown = hovered ?? active;
@@ -116,6 +119,7 @@ export function Matrix({
                 <Link to={`/students/${st.userId}`} className="lock-student">
                   {st.fullName}
                 </Link>
+                {st.readOnly ? <ReadOnly admin={admin} compact /> : null}
                 <span className="num block text-xs text-ink-muted">{st.studentId}</span>
               </th>
               {data.stages.map((s, col) => {
@@ -135,8 +139,14 @@ export function Matrix({
                       data-stage={s.id}
                       data-pos={`${row}:${col}`}
                       data-selected={isSel ? "" : undefined}
-                      aria-label={cellName(c, st.fullName, s, isSel)}
-                      onClick={(e) => (e.shiftKey ? on.extend(row, col) : on.open(c))}
+                      aria-label={cellName(c, st.fullName, s, isSel) + (st.readOnly ? " Read-only: not your class to change." : "")}
+                      aria-disabled={st.readOnly || undefined}
+                      data-read-only={st.readOnly ? "" : undefined}
+                      onClick={(e) => {
+                        if (st.readOnly) return;
+                        if (e.shiftKey) on.extend(row, col);
+                        else on.open(c);
+                      }}
                       onKeyDown={(e) => move(e, row, col)}
                       onFocus={() => setActive({ row, col })}
                       onMouseEnter={() => setHovered({ row, col })}

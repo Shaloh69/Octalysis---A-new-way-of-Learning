@@ -124,6 +124,7 @@ export function asRosterRow(d: StudentDetail): RosterRow {
     sectionCode: d.student.sectionCode,
     userId: d.student.userId,
     deactivated: d.student.deactivated,
+    readOnly: !d.student.canWrite,
     attempts: d.attempts.length,
     avgMastery: null,
     avatar: d.student.avatar,

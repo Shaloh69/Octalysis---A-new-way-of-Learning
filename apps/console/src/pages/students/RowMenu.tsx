@@ -5,11 +5,14 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { RosterRow } from "@/lib/api";
+import { readOnlyWhy } from "@/components/ClassScope";
 
 export interface RowActions {
   /** Each is handed the menu button, so the dialog can send focus back to it. */
   move: (s: RosterRow, from: HTMLElement | null) => void;
   status: (s: RosterRow, from: HTMLElement | null) => void;
+  /** The admin may deactivate and reactivate anyone (recovery); a teacher only in a class they hold. */
+  admin: boolean;
 }
 
 /**
@@ -34,15 +37,28 @@ export function RowMenu({ student, on }: { student: RosterRow; on: RowActions })
             <Link to={`/students/${student.userId}`}>Open record</Link>
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem onSelect={() => on.move(student, trigger.current)}>Move to section…</DropdownMenuItem>
+        <DropdownMenuItem disabled={student.readOnly} onSelect={() => on.move(student, trigger.current)}>
+          Move to section…
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         {student.deactivated ? (
-          <DropdownMenuItem onSelect={() => on.status(student, trigger.current)}>Reactivate…</DropdownMenuItem>
+          <DropdownMenuItem disabled={student.readOnly && !on.admin} onSelect={() => on.status(student, trigger.current)}>
+            Reactivate…
+          </DropdownMenuItem>
         ) : (
-          <DropdownMenuItem tone="danger" onSelect={() => on.status(student, trigger.current)}>
+          <DropdownMenuItem
+            tone="danger"
+            disabled={student.readOnly && !on.admin}
+            onSelect={() => on.status(student, trigger.current)}
+          >
             Deactivate…
           </DropdownMenuItem>
         )}
+        {student.readOnly ? (
+          <p className="max-w-[16rem] px-2 py-1.5 text-xs text-ink-muted" data-read-only-note="">
+            {readOnlyWhy(on.admin)}
+          </p>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

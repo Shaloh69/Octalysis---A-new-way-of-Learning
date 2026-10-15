@@ -6,6 +6,8 @@ import { useDelayed } from "@/lib/useDelayed";
 import { rosterCounts, rosterMatches, rosterState, type RosterState } from "@/lib/roster-view";
 import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/ui/empty";
+import { NoClass } from "@/components/ClassScope";
+import { useIdentity } from "./teachers/parts";
 import { Input } from "@/components/ui/input";
 import { RosterTable } from "./students/RosterTable";
 import { RosterList } from "./students/RosterList";
@@ -41,6 +43,8 @@ const FILTERS: Array<[StateFilter, string]> = [
 ];
 
 export function StudentsPage() {
+  const me = useIdentity();
+  const admin = me.role === "admin";
   const roster = useAsync(() => api.roster(), []);
   const data = roster.data;
   const firstLoad = roster.loading && !data;
@@ -76,6 +80,8 @@ export function StudentsPage() {
 
   const students = useMemo(() => data?.students ?? [], [data]);
   const sections = data?.sections ?? [];
+  /** T2: a student is imported or moved only into a class held and not ended. */
+  const held = useMemo(() => sections.filter((s) => s.held), [sections]);
   const counts = rosterCounts(students);
   const shown = useMemo(
     () =>
@@ -121,6 +127,7 @@ export function StudentsPage() {
   }
 
   const on: RowActions = {
+    admin,
     move: (s, from) => {
       remember(from);
       setMoving([s]);
@@ -132,6 +139,7 @@ export function StudentsPage() {
   };
 
   const picked = students.filter((s) => selected.has(s.studentId));
+  const pickedReadOnly = picked.some((s) => s.readOnly);
 
   return (
     <div ref={box} className="roster">
@@ -173,6 +181,20 @@ export function StudentsPage() {
         </div>
       ) : firstLoad || !data ? (
         showSkeleton ? <RosterSkeleton wide={wide} slow={slow} /> : <div className="min-h-[32rem]" aria-busy="true" />
+      ) : students.length === 0 && !admin && sections.length === 0 ? (
+        <NoClass
+          what="Your students"
+          action={
+            <Button
+              onClick={() => {
+                remember();
+                setImportOpen(true);
+              }}
+            >
+              Import roster
+            </Button>
+          }
+        />
       ) : students.length === 0 ? (
         <Empty
           title="The roster is empty"
@@ -254,7 +276,10 @@ export function StudentsPage() {
                 <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
+                    aria-disabled={pickedReadOnly || undefined}
+                    title={pickedReadOnly ? "Some of these are in a class you can read and not change." : undefined}
                     onClick={() => {
+                      if (pickedReadOnly) return;
                       remember();
                       setMoving(picked);
                     }}
@@ -284,7 +309,7 @@ export function StudentsPage() {
 
       <ImportDialog
         open={importOpen}
-        sections={sections}
+        sections={held}
         onClose={() => setImportOpen(false)}
         onDone={roster.reload}
         returnFocus={() => opener.current}
@@ -297,7 +322,7 @@ export function StudentsPage() {
       />
       <MoveDialog
         students={moving}
-        sections={sections}
+        sections={held}
         onClose={() => setMoving(null)}
         onDone={() => {
           clear();

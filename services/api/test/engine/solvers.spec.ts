@@ -258,3 +258,27 @@ describe("registry", () => {
     }
   });
 });
+
+describe("every solver owes three distinct distractors at every parameter it can draw", () => {
+  // Found 15 Oct 2026 by an instructor's screenshot: raid5-overhead at 3 disks had only 2 of 4 candidates survive
+  // deduplication (1/(d-1) = 50 and (d-1)/d = 2/d collide there), so approving the item failed with "could not be
+  // resolved". The per-solver test above only covers one solver; this one sweeps all of them.
+  for (const s of listSolvers()) {
+    it(`${s.id}`, () => {
+      const rng = makeRng("c".repeat(64));
+      const worst = { n: Infinity, params: "" };
+      for (let i = 0; i < 400; i++) {
+        const p = s.draw(rng);
+        const correct = s.solve(p);
+        const distinct = new Set(
+          s.distractors(p, correct).map((d) => d.value).filter((v) => Math.abs(v - correct) > 1e-9).map((v) => v.toPrecision(9)),
+        ).size;
+        if (distinct < worst.n) {
+          worst.n = distinct;
+          worst.params = JSON.stringify(p);
+        }
+      }
+      expect(worst.n, `only ${worst.n} distinct at ${worst.params}`).toBeGreaterThanOrEqual(3);
+    });
+  }
+});

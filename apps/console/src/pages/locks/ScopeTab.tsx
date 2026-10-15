@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
+import { ReadOnly } from "@/components/ClassScope";
+import { useIdentity } from "../teachers/parts";
 import {
   localToIso, scopeLabel, scopeToast, when, windowError, windowLine,
 } from "@/lib/locks-view";
@@ -76,12 +78,18 @@ function ScopeRow({
   reload: () => void;
   ask: (r: ReasonRequest) => void;
 }) {
+  const me = useIdentity();
   const stage = data.stages.find((s) => s.id === l.stageId);
   const who = scopeLabel(l);
   const target = l.scope === "global" ? "every student" : `section ${l.sectionCode ?? ""}`;
+  // A lock for a class the viewer may read and not change; a legacy lock for everyone is the admin's to return.
+  const readOnly = l.scope === "global" ? me.role !== "admin" : !data.sections.find((s) => s.id === l.sectionId)?.held;
   return (
     <tr>
-      <td data-label="Applies to">{who}</td>
+      <td data-label="Applies to">
+        {who}
+        {readOnly ? <> <ReadOnly admin={me.role === "admin"} /></> : null}
+      </td>
       <td data-label="Stage">
         <span className="num">{l.stageId}</span> {stage?.title}
       </td>
@@ -97,7 +105,9 @@ function ScopeRow({
           size="sm"
           variant="outline"
           aria-label={`Return stage ${l.stageId} to automatic for ${target}`}
+          aria-disabled={readOnly || undefined}
           onClick={() =>
+            !readOnly &&
             ask({
               title: "Return this stage to automatic",
               subject: `${who} · Stage ${l.stageId} ${stage?.title ?? ""}`,
@@ -127,10 +137,12 @@ function ScopeRow({
   );
 }
 
-const EVERY = "__every__";
+/** All my classes (T2): a section lock for each class the signed-in teacher holds and that has not ended. */
+const MINE = "__mine__";
 
 function AddOverride({ data, reload }: { data: LockMatrix; reload: () => void }) {
-  const [scope, setScope] = useState<string>(data.sections[0]?.id ?? EVERY);
+  const held = data.sections.filter((s) => s.held);
+  const [scope, setScope] = useState<string>(held.length > 1 ? MINE : (held[0]?.id ?? MINE));
   const [stageId, setStageId] = useState<string>(data.stages[1]?.id ?? data.stages[0]!.id);
   const [state, setState] = useState<"unlocked" | "locked">("unlocked");
   const [opens, setOpens] = useState("");
@@ -140,9 +152,9 @@ function AddOverride({ data, reload }: { data: LockMatrix; reload: () => void })
   const [error, setError] = useState<string | null>(null);
 
   const windowErr = windowError(opens, closes);
-  const every = scope === EVERY;
+  const every = scope === MINE;
   const section = data.sections.find((s) => s.id === scope);
-  const who = every ? "Every student" : `Section ${section?.code ?? ""}`;
+  const who = every ? `All ${held.length} of your classes` : `Section ${section?.code ?? ""}`;
 
   async function save() {
     setSaving(true);
@@ -151,7 +163,7 @@ function AddOverride({ data, reload }: { data: LockMatrix; reload: () => void })
       const unlockAt = localToIso(opens);
       const lockAt = localToIso(closes);
       await api.setLock({
-        scope: every ? "global" : "section",
+        scope: every ? "mine" : "section",
         stageId,
         state,
         ...(every ? {} : { sectionId: scope }),
@@ -179,7 +191,7 @@ function AddOverride({ data, reload }: { data: LockMatrix; reload: () => void })
         <div>
           <h2 id="scope-add-h" className="text-base">Add an override</h2>
           <p className="text-xs text-ink-muted">
-            For a whole section, or for every student. A window is optional; without one the
+            For one of your classes, or for all of them at once. A window is optional; without one the
             override holds until it is returned to automatic.
           </p>
         </div>
@@ -199,12 +211,12 @@ function AddOverride({ data, reload }: { data: LockMatrix; reload: () => void })
             value={scope}
             onChange={(e) => setScope(e.target.value)}
           >
-            {data.sections.map((s) => (
+            {held.length > 1 ? <option value={MINE}>All my classes ({held.length})</option> : null}
+            {held.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.code}
               </option>
             ))}
-            <option value={EVERY}>Every student</option>
           </select>
         </div>
         <div>
@@ -262,7 +274,7 @@ function AddOverride({ data, reload }: { data: LockMatrix; reload: () => void })
         <div className="scope-wide grid gap-2">
           {every ? (
             <p className="rounded-md border border-warning bg-warning-bg px-3 py-2 text-sm text-ink">
-              This changes this stage for every student in the course, in every section.
+              This changes this stage for every student in the {held.length} classes you hold. Nobody else's students are touched.
             </p>
           ) : null}
           {windowErr ? <p className="text-sm text-ink">{windowErr}</p> : null}
@@ -272,7 +284,7 @@ function AddOverride({ data, reload }: { data: LockMatrix; reload: () => void })
             </p>
           ) : null}
           <div className="flex justify-end">
-            <Button type="submit" disabled={saving || reason.trim().length < 3 || windowErr !== null}>
+            <Button type="submit" disabled={saving || held.length === 0 || reason.trim().length < 3 || windowErr !== null}>
               {saving ? "Saving…" : "Save override"}
             </Button>
           </div>

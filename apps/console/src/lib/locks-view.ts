@@ -64,7 +64,8 @@ export function cellLine(c: LockCell): string {
 }
 
 export function scopeLabel(l: Pick<ScopeLock, "scope" | "sectionCode">): string {
-  return l.scope === "global" ? "Every student" : `Section ${l.sectionCode ?? "?"}`;
+  // "Every student" is a lock set before each teacher had their own classes; none is written any more.
+  return l.scope === "global" ? "Every student (set before classes)" : `Section ${l.sectionCode ?? "?"}`;
 }
 
 /** "Every student: closed by …" — a course-wide or section override, in words. */
@@ -114,7 +115,8 @@ export function rectangle(
     for (let c = c0; c <= c1; c++) {
       const st = m.students[r];
       const sg = m.stages[c];
-      if (st && sg) out.push(cellKey(st.userId, sg.id));
+      // A student in a class the viewer may read and not change is never selected (T2).
+      if (st && sg && !st.readOnly) out.push(cellKey(st.userId, sg.id));
     }
   }
   return out;
@@ -122,7 +124,7 @@ export function rectangle(
 
 /** Every student, one stage. */
 export function column(m: Pick<LockMatrix, "students">, stageId: string): string[] {
-  return m.students.map((s) => cellKey(s.userId, stageId));
+  return m.students.filter((s) => !s.readOnly).map((s) => cellKey(s.userId, stageId));
 }
 
 /** "9 cells selected (3 students × 3 stages)". */

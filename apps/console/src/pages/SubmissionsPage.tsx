@@ -11,6 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Empty } from "@/components/ui/empty";
+import { NoClass } from "@/components/ClassScope";
+import { useHoldsNoClass } from "@/lib/useMyClasses";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -43,6 +45,7 @@ const STATUS_BUTTONS: Array<[StatusFilter, string, keyof ReturnType<typeof count
 ];
 
 export function SubmissionsPage() {
+  const noClass = useHoldsNoClass();
   const list = useAsync(() => api.submissions(), []);
   const all = useMemo(() => list.data?.submissions ?? [], [list.data]);
   const firstLoad = list.loading && !list.data;
@@ -151,6 +154,8 @@ export function SubmissionsPage() {
         </div>
       ) : firstLoad || !list.data ? (
         showSkeleton ? <QueueSkeleton wide={wide} slow={slow} /> : <div className="min-h-[32rem]" aria-busy="true" />
+      ) : all.length === 0 && noClass ? (
+        <NoClass what="The labs, project and participation your students hand in" />
       ) : all.length === 0 ? (
         <Empty
           title="Nothing handed in yet"

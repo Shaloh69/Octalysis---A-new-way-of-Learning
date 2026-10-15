@@ -381,6 +381,20 @@ const microOpsTotal: Solver = {
         value: 4,
         misconception: "counted the number of phases rather than the micro-operations in them",
       },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: p.fetch! + p.indirect! + p.interrupt!,
+        misconception: "omitted the execute phase",
+      },
+      {
+        value: p.fetch! + p.indirect! + p.execute! + p.interrupt! + p.fetch!,
+        misconception: "counted the fetch phase twice",
+      },
+      {
+        value: p.fetch! + p.execute! * 2,
+        misconception: "counted the execute phase twice and dropped the optional phases",
+      },
     ];
   },
 

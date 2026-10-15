@@ -651,6 +651,20 @@ const memoryReferences: Solver = {
         value: p.instructions! * 2,
         misconception: "assumed every instruction makes exactly one data reference",
       },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: (p.instructions! + p.withOperand!) * 2,
+        misconception: "counted each reference as both a read and a write",
+      },
+      {
+        value: p.instructions! + p.stores!,
+        misconception: "omitted the memory reads",
+      },
+      {
+        value: p.instructions! + p.withOperand! + p.stores! * 2,
+        misconception: "counted each store as a read and a write",
+      },
     ];
   },
 
@@ -1034,6 +1048,28 @@ const cacheLineNumber: Solver = {
       {
         value: Math.floor(p.address! / p.lines!) % p.lineBytes!,
         misconception: "swapped the roles of line count and line size",
+      },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: Math.floor(p.address! / (p.lineBytes! * p.lines!)),
+        misconception: "computed the tag rather than the line number",
+      },
+      {
+        value: (Math.floor(p.address! / p.lineBytes!) + 1) % p.lines!,
+        misconception: "numbered the lines from 1 instead of 0",
+      },
+      {
+        value: Math.floor(p.address! / (p.lineBytes! * 2)) % p.lines!,
+        misconception: "used twice the line size",
+      },
+      {
+        value: Math.floor(p.address! / p.lineBytes!) + p.lines!,
+        misconception: "added the line count to the block number instead of wrapping it",
+      },
+      {
+        value: p.lines! - 1 - (Math.floor(p.address! / p.lineBytes!) % p.lines!),
+        misconception: "counted the lines from the far end of the cache",
       },
     ];
   },

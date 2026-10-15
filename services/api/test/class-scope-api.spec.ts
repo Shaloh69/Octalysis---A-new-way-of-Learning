@@ -542,3 +542,64 @@ describe("recovery: a password is reset by the teacher of the class, or by the a
     }
   }
 });
+
+/* ============================================================
+ * Batch 3: the fields a page needs to disable what a person may not change
+ * ========================================================== */
+
+describe("the pages are told what is read-only, so a control is disabled rather than refused", () => {
+  const sidOf = async (k: Key) => (await setup("select student_id from profiles where id = $1", [sw.st[k].user])).rows[0]!.student_id as string;
+
+  it("the roster marks every row of a class the viewer may read and not change", async () => {
+    for (const actor of STAFF) {
+      const res = await call(actor, "GET", "/api/v1/console/roster");
+      const rows = res.json().students as Array<{ userId: string | null; readOnly: boolean }>;
+      for (const k of ALL) {
+        const row = rows.find((r) => r.userId === sw.st[k].user);
+        if (!READS[actor]!.includes(k)) {
+          expect(row, `${actor} was shown student ${k}`).toBeUndefined();
+          continue;
+        }
+        expect(row!.readOnly, `${actor} student ${k}`).toBe(!WRITES[actor]!.includes(k));
+      }
+      const sections = res.json().sections as Array<{ id: string; held: boolean }>;
+      for (const k of ALL) {
+        const s = sections.find((x) => x.id === sw.st[k].section);
+        if (READS[actor]!.includes(k)) expect(s!.held, `${actor} section ${k} held`).toBe(WRITES[actor]!.includes(k));
+      }
+    }
+  });
+
+  it("the lock matrix, the record, the submissions and the chat rooms say so too", async () => {
+    await setup("update submissions set status = 'submitted' where status <> 'graded'");
+    for (const actor of STAFF) {
+      const locks = (await call(actor, "GET", "/api/v1/console/locks")).json().students as Array<{ userId: string; readOnly: boolean }>;
+      const subs = (await call(actor, "GET", "/api/v1/console/submissions")).json().submissions as Array<{ studentId: string; canGrade: boolean }>;
+      const rooms = (await call(actor, "GET", "/api/v1/chat/rooms")).json().rooms as Array<{ id: string; readOnly: boolean }>;
+      for (const k of ALL) {
+        if (!READS[actor]!.includes(k)) continue;
+        const w = WRITES[actor]!.includes(k);
+        expect(locks.find((s) => s.userId === sw.st[k].user)!.readOnly, `${actor} lock matrix ${k}`).toBe(!w);
+        expect(rooms.find((r) => r.id === sw.st[k].room)!.readOnly, `${actor} thread ${k}`).toBe(!w);
+        const rec = await call(actor, "GET", `/api/v1/console/students/${sw.st[k].user}`);
+        expect(rec.json().student.canWrite, `${actor} record ${k}`).toBe(w);
+      }
+      for (const k of ALL) {
+        if (!READS[actor]!.includes(k)) continue;
+        const sid = await sidOf(k);
+        const one = subs.find((s) => s.studentId === sid);
+        expect(one!.canGrade, `${actor} submission ${k}`).toBe(WRITES[actor]!.includes(k));
+      }
+    }
+  });
+
+  it("what a person holds: their classes, ended ones marked, none for a teacher with none", async () => {
+    const mine = async (actor: string) => (await call(actor, "GET", "/api/v1/console/classes/mine")).json().classes as Array<{ sectionId: string; ended: boolean }>;
+    expect((await mine("teacherA")).some((c) => c.sectionId === sw.st.A.section && !c.ended)).toBe(true);
+    expect((await mine("teacherA")).some((c) => c.sectionId === sw.st.B.section), "a class of another teacher").toBe(false);
+    expect(await mine("teacherEnded")).toMatchObject([{ sectionId: sw.st.E.section, ended: true }]);
+    expect(await mine("teacherNone")).toEqual([]);
+    expect((await mine("admin")).some((c) => c.sectionId === sw.st.D.section)).toBe(true);
+    expect((await mine("admin")).some((c) => c.sectionId === sw.st.A.section), "the admin does not hold A's class by reading it").toBe(false);
+  });
+});

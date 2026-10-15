@@ -3,7 +3,7 @@ import {
   clippedElements, contrastFailures, horizontalOverflow, motionStarted, offTokenStyles,
   recordMotion, recordedMotion, setTheme, THEMES, unreachableByKeyboard,
 } from "./_gate";
-import { API, S004, S004_ID, STAFF, seedChat, signIn } from "./_chat-fixture";
+import { ADMIN, ADMIN_ID, API, S004, S004_ID, STAFF, seedChat, signIn } from "./_chat-fixture";
 
 /**
  * `/chat` in the console, the instructor's side of the class chat
@@ -320,5 +320,43 @@ test.describe("/chat — Messenger's shape (9 Oct 2026, SPEC.md 'As remade')", (
     const n = await rows.count();
     expect(n).toBeGreaterThan(0);
     expect(await page.locator(".ch-room .avatar").count()).toBe(n);
+  });
+});
+
+/* ======================================================================
+ * T2 (9 Oct 2026): teachers talk to one another, and see who is active now.
+ * `design/templates/console/chat/SPEC.md`; the data half is
+ * `services/api/test/staff-chat-*.spec.ts`. The template is the same
+ * Chatscope friends demo (its Avatar status="available" dot).
+ * ==================================================================== */
+test.describe("/chat — teachers, and who is active now", () => {
+  test("the Teachers group holds the staff room, below the classes", async ({ page }) => {
+    await open(page, "", "list");
+    const rail = page.locator(".ch-rooms");
+    await expect(rail.getByRole("heading", { name: "Teachers" })).toBeVisible();
+    await expect(rail.locator("[data-staff-rooms] .ch-room").first()).toContainText("Staff room");
+    const headings = await rail.getByRole("heading").allTextContents();
+    expect(headings.indexOf("Sections"), "classes come first").toBeLessThan(headings.indexOf("Teachers"));
+  });
+
+  test("a colleague who has the console open is marked active, in words and in the list", async ({ page }) => {
+    // The admin opens the chat (the API records it), so to the teacher they are active now.
+    const seen = await page.request.get(`${API}/api/v1/chat/rooms`, { headers: { authorization: `Bearer ${ADMIN}` } });
+    expect(seen.status()).toBe(200);
+    await open(page, "", "list");
+    const choice = page.getByLabel("Message a teacher");
+    await expect(choice.locator("option", { hasText: "active now" })).toHaveCount(1);
+  });
+
+  test("opening a private thread shows the colleague's face, an active dot, and 'Active now'", async ({ page }) => {
+    test.skip(!wide(test.info().project.name), "it writes a thread; one width");
+    await page.request.get(`${API}/api/v1/chat/rooms`, { headers: { authorization: `Bearer ${ADMIN}` } });
+    await open(page, "", "list");
+    await page.getByLabel("Message a teacher").selectOption({ value: ADMIN_ID });
+    await page.getByRole("button", { name: "Open a thread with the teacher" }).click();
+    await expect(page.locator("#ch-room-title")).toHaveText("Dr. Ada Admin");
+    await expect(page.locator(".ch-room-head [data-active]")).toHaveCount(1);
+    await expect(page.locator(".ch-room-head [data-presence]")).toHaveText("Active now");
+    await expect(page.locator(".ch-hint, #ch-hint")).toContainText("Only you two read this");
   });
 });

@@ -121,3 +121,7 @@ async function seed(request: APIRequestContext): Promise<{ section: string; thre
 export async function signIn(page: Page, token: string): Promise<void> {
   await page.addInitScript((t) => localStorage.setItem("octa:dev-token", t as string), token);
 }
+
+/** T2: the admin account of the demo (db/demo-seed.sql), a colleague of the demo teacher who holds no class. */
+export const ADMIN = mint({ sub: "eeeeeeee-0000-4000-8000-000000000002", email: "admin-view@example.com", app_metadata: { role: "admin" } });
+export const ADMIN_ID = "eeeeeeee-0000-4000-8000-000000000002";

@@ -13,6 +13,21 @@ export function roomFace(id: string): Avatar {
   return { url: null, hue: h % 360, variant: (h >>> 9) % 4, removable: false };
 }
 
+/**
+ * "Active now" or when a colleague was last seen, in words (T2). Staff about staff only: the server sends
+ * no such fact about a student, so there is nothing here that could be shown for one.
+ */
+export function presenceWords(p: { active?: boolean | undefined; seenAt?: string | null | undefined } | null | undefined, now = Date.now()): string {
+  if (!p) return "";
+  if (p.active) return "Active now";
+  if (!p.seenAt) return "Not seen yet";
+  const min = Math.max(0, Math.round((now - Date.parse(p.seenAt)) / 60_000));
+  if (min < 60) return `Last seen ${min < 2 ? "a minute" : `${min} min`} ago`;
+  const h = Math.round(min / 60);
+  if (h < 48) return `Last seen ${h} h ago`;
+  return `Last seen ${Math.round(h / 24)} days ago`;
+}
+
 /** Same author, within five minutes, nothing deleted between: a run, drawn as one speaker. */
 export function continues(prev: ChatMessage | undefined, m: ChatMessage): boolean {
   return (

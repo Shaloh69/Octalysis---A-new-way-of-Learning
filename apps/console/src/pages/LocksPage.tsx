@@ -11,6 +11,8 @@ import {
 } from "@/lib/locks-view";
 import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/ui/empty";
+import { NoClass } from "@/components/ClassScope";
+import { useHoldsNoClass } from "@/lib/useMyClasses";
 import { toast } from "@/components/ui/toast";
 import { Matrix } from "./locks/Matrix";
 import { StageList } from "./locks/StageList";
@@ -40,6 +42,7 @@ const WIDE_PX = 992; // 62rem: 14rem of names + 19 × 2.5rem of cells
 type Tab = "matrix" | "scope";
 
 export function LocksPage() {
+  const noClass = useHoldsNoClass();
   const matrix = useAsync(() => api.locks(), []);
   const data = matrix.data;
   const firstLoad = matrix.loading && !data;
@@ -255,6 +258,8 @@ export function LocksPage() {
         </div>
       ) : firstLoad || !data ? (
         showSkeleton ? <MatrixSkeleton wide={wide} slow={slow} /> : <div className="min-h-[32rem]" aria-busy="true" />
+      ) : data.students.length === 0 && noClass ? (
+        <NoClass what="The lock matrix of your students" />
       ) : data.students.length === 0 ? (
         <Empty
           title="No students have registered yet"

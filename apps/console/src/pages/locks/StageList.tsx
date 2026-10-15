@@ -4,6 +4,8 @@ import type { LockCell, LockMatrix } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { cellKey, cellKind, cellLine, scopeLine } from "@/lib/locks-view";
 import { CellMark, cellName } from "./Matrix";
+import { ReadOnly } from "@/components/ClassScope";
+import { useIdentity } from "../teachers/parts";
 
 /**
  * Below 62rem of available width: one stage at a time. `SPEC.md` §"At 380".
@@ -25,6 +27,7 @@ export function StageList({
   selectColumn: (stageId: string) => void;
   open: (c: LockCell) => void;
 }) {
+  const admin = useIdentity().role === "admin";
   const i = Math.max(0, data.stages.findIndex((s) => s.id === stageId));
   const stage = data.stages[i]!;
   const scoped = data.scopeLocks.filter((l) => l.stageId === stage.id);
@@ -101,12 +104,14 @@ export function StageList({
                 checked={isSel}
                 onChange={() => toggle(key)}
                 aria-label={`Select ${st.fullName}`}
+                disabled={st.readOnly}
               />
               <div className="min-w-0">
                 <Link to={`/students/${st.userId}`} className="lock-student text-sm">
                   {st.fullName}
                 </Link>{" "}
                 <span className="num text-xs text-ink-muted">{st.studentId}</span>
+                {st.readOnly ? <> <ReadOnly admin={admin} /></> : null}
                 <p className={c.override ? "text-xs text-ink" : "text-xs text-ink-muted"}>{cellLine(c)}</p>
               </div>
               <button
@@ -118,8 +123,10 @@ export function StageList({
                 data-user={st.userId}
                 data-stage={stage.id}
                 data-selected={isSel ? "" : undefined}
-                aria-label={cellName(c, st.fullName, stage, isSel)}
-                onClick={() => open(c)}
+                aria-label={cellName(c, st.fullName, stage, isSel) + (st.readOnly ? " Read-only: not your class to change." : "")}
+                aria-disabled={st.readOnly || undefined}
+                data-read-only={st.readOnly ? "" : undefined}
+                onClick={() => !st.readOnly && open(c)}
               >
                 <CellMark kind={kind} />
               </button>

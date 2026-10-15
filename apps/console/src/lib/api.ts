@@ -3,7 +3,7 @@ import type {
   ItemImportRequest, ItemImportResult,
   SystemAudit, FeedbackBulkTriage, FeedbackQueue,
   LiveOptions, LiveSession, LiveSnapshot, LiveStartBody,
-  ChatAttachments, ChatMessage, ChatRoom, ChatRooms, ChatThread, ChatUnread, ChatUpload,
+  ChatAttachments, ChatMessage, ChatRoom, ChatRooms, ChatStaffList, ChatThread, ChatUnread, ChatUpload,
   ClassAssignBody, ClassUpdateBody, TeacherClaimBody, TeacherDetail, TeacherImportBody,
   TeacherStatusBody, TeachersResponse, ProgressResponse,
   BookCreateBody, BookDefaultBody, BookUpdateBody, StudioSubjectsResponse, SubjectCreateBody, SubjectRenameBody,
@@ -150,6 +150,8 @@ export interface RosterRow {
   userId: string | null;
   /** Registered and soft-deleted, or never registered and disabled. */
   deactivated: boolean;
+  /** T2: the class is read-only to the signed-in person (ended, or another teacher's). */
+  readOnly: boolean;
   attempts: number;
   avgMastery: number | null;
   /** Their picture as this viewer may see it, or the generated planet (PROFILES). */
@@ -160,6 +162,8 @@ export interface RosterSection {
   id: string;
   code: string;
   term: string;
+  /** T2: the signed-in teacher holds this class and it has not ended. False: it can be read, not changed. */
+  held: boolean;
 }
 
 export interface Roster {
@@ -177,6 +181,8 @@ export interface LockStudent {
   studentId: string;
   fullName: string;
   sectionId: string | null;
+  /** T2: the class is read-only to the signed-in person; the student's cells cannot be changed. */
+  readOnly: boolean;
 }
 export interface LockCell {
   userId: string;
@@ -209,7 +215,7 @@ export interface LockMatrix {
   stages: LockStage[];
   students: LockStudent[];
   cells: LockCell[];
-  sections: Array<{ id: string; code: string; term: string }>;
+  sections: Array<{ id: string; code: string; term: string; held: boolean }>;
   scopeLocks: ScopeLock[];
 }
 
@@ -223,6 +229,8 @@ export interface StudentDetail {
     /** When they claimed their student ID. Null only for a record older than the directory. */
     claimedAt: string | null;
     deactivated: boolean;
+    /** T2: false when the class is read-only to the signed-in person (ended, or another teacher's). */
+    canWrite: boolean;
     /** Their picture as this viewer may see it, with whether the viewer may remove it (PROFILES). */
     avatar: Avatar;
     /** A teacher or the admin removed it and the student has not set a new one. */
@@ -312,7 +320,7 @@ export interface RosterPlanRow {
   fullName: string;
   sectionCode: string;
   action: "insert" | "update" | "unchanged" | "conflict";
-  why?: "registered" | "duplicate" | "unknown-section";
+  why?: "registered" | "duplicate" | "unknown-section" | "other-class";
   current: { fullName: string; sectionCode: string | null; status: RosterRow["status"] } | null;
 }
 
@@ -539,6 +547,8 @@ export interface Submission {
   studentName: string;
   studentId: string;
   graderName: string | null;
+  /** T2: the student's class is read-only to the signed-in person, so the mark and the return are disabled. */
+  canGrade: boolean;
 }
 
 /** Lecture Mode's shapes live in `@octa/contracts` (29 Sep 2026); re-exported for the pages. */
@@ -574,6 +584,11 @@ export interface Assessment {
   totalItems: number;
   sectionId: string | null;
   sectionCode: string | null;
+  /**
+   * T2: the signed-in person may change this paper. The course's papers (no section) are the admin's;
+   * a section's own is its teacher's while the class runs. False: it can be read, not changed.
+   */
+  canEdit: boolean;
   /** When the exam salt was set. Null means no salt row: Start will fail. Never the salt. */
   saltSetAt: string | null;
   /** When it was last rotated, from the audit log; null if never. */
@@ -601,10 +616,26 @@ export interface Feasibility extends Bank {
   name: string;
 }
 
-export interface Section { id: string; code: string; term: string }
+export interface Section { id: string; code: string; term: string; held: boolean }
+
+/** T2: a class the signed-in person holds (ended ones included, so they can still be read). */
+export interface MyClass {
+  id: string;
+  sectionId: string;
+  sectionCode: string;
+  subject: string;
+  term: string;
+  ended: boolean;
+  students: number;
+}
 
 export interface SetLockInput {
-  scope: "global" | "section" | "user";
+  /**
+   * "mine" is All my classes (T2): a section lock for each class held and not ended. There is no lock
+   * for everyone any more: "global" is accepted by the server only to RETURN a legacy one to automatic,
+   * and only from the admin.
+   */
+  scope: "section" | "user" | "mine" | "global";
   stageId: string;
   state: "locked" | "unlocked" | "auto";
   userId?: string;
@@ -618,6 +649,9 @@ export interface SetLockInput {
 /* --------------------------------------------------------------- client */
 
 export const api = {
+  /** T2: the classes the signed-in person holds. */
+  myClasses: () => request<{ classes: MyClass[] }>("/api/v1/console/classes/mine"),
+
   roster: () => request<Roster>("/api/v1/console/roster"),
 
   importRoster: (input: {
@@ -978,6 +1012,11 @@ export const api = {
     request<void>(`/api/v1/chat/rooms/${encodeURIComponent(roomId)}/read`, { method: "POST" }),
   chatOpenThread: (userId: string) =>
     request<ChatRoom>("/api/v1/chat/threads", { method: "POST", body: JSON.stringify({ userId }) }),
+  /** T2: the other teachers and the admin, and who is active now (staff only). */
+  chatStaff: () => request<ChatStaffList>("/api/v1/chat/staff"),
+  /** T2: a private thread with another teacher or the admin: its two members read it, nobody else. */
+  chatOpenStaffThread: (userId: string) =>
+    request<ChatRoom>("/api/v1/chat/staff-threads", { method: "POST", body: JSON.stringify({ userId }) }),
   chatUpload: (roomId: string, file: { name: string; mime: string; bytes: number }) =>
     request<ChatUpload>(`/api/v1/chat/rooms/${encodeURIComponent(roomId)}/uploads`, {
       method: "POST",

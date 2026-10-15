@@ -2,13 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import type { ChatAttachments, ChatMessage, ChatPerson, ChatRooms, ChatThread } from "@octa/contracts";
+import type { Avatar as AvatarData } from "@octa/contracts";
 import { api, ApiError, putChatFile, type Roster } from "@/lib/api";
 import { useChatLive } from "@/lib/chat-live";
-import { continues, roomFace, TWO_PANES_PX } from "@/lib/chat-view";
+import { continues, presenceWords, roomFace, TWO_PANES_PX } from "@/lib/chat-view";
 import { useDelayed } from "@/lib/useDelayed";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/Avatar";
+import { useIdentity } from "./teachers/parts";
 import { RemovePictureDialog, type PictureOwner } from "@/components/RemovePictureDialog";
 import { Textarea, Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
@@ -277,7 +279,13 @@ function Composer({
       )}
       {problem && <p className="ch-problem" role="alert">{problem}</p>}
       <p id="ch-hint" className="ch-hint">
-        {thread.room.kind === "direct" ? "Only you and this student read this. " : "Type @ to mention someone. "}
+        {thread.room.kind === "direct"
+          ? "Only you and this student read this. "
+          : thread.room.kind === "staff_direct"
+            ? "Only you two read this. "
+            : thread.room.kind === "staff"
+              ? "Every teacher and the admin read this. Type @ to mention one. "
+              : "Type @ to mention someone. "}
         Enter sends, Shift+Enter starts a new line.{!attachments && " Attachments are not available on this server."}
       </p>
     </form>
@@ -290,6 +298,23 @@ type Pending =
   | { kind: "remove-file"; messageId: string; name: string; bytes: number }
   | { kind: "prune"; days: number; count: number; bytes: number };
 
+/**
+ * A face with a small dot when the person is active now (T2). The dot is never the only signal: the words
+ * "Active now" sit beside it in the rail and the header, and the dot itself carries them for a screen reader.
+ */
+function Face({ avatar, active }: { avatar: AvatarData; active: boolean }) {
+  return (
+    <span className="ch-face">
+      <Avatar avatar={avatar} size="md" />
+      {active ? (
+        <span className="ch-active" data-active="">
+          <span className="sr-only">Active now</span>
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function Conversations({
   rooms, roster, onRooms, onAsk, onPicture,
 }: {
@@ -300,12 +325,15 @@ function Conversations({
   /** Remove this author's picture (offered only where the server said `removable`). */
   onPicture: (who: PictureOwner, from: HTMLElement) => void;
 }) {
+  const admin = useIdentity().role === "admin";
   const [params, setParams] = useSearchParams();
   const [thread, setThread] = useState<ChatThread | null>(null);
   const [older, setOlder] = useState<ChatMessage[]>([]);
   const [more, setMore] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [student, setStudent] = useState("");
+  const [colleagues, setColleagues] = useState<ChatPerson[]>([]);
+  const [colleague, setColleague] = useState("");
   const [asking, setAsking] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -314,6 +342,23 @@ function Conversations({
 
   const list = rooms.rooms;
   const asked = params.get("room");
+
+  // Who is active now: the colleagues, and the rooms, are read again every minute (T2).
+  const loadColleagues = useCallback(async () => {
+    try {
+      setColleagues((await api.chatStaff()).staff);
+    } catch {
+      /* the list is a convenience; the rooms still work without it */
+    }
+  }, []);
+  useEffect(() => {
+    void loadColleagues();
+    const t = setInterval(() => {
+      void loadColleagues();
+      void onRooms();
+    }, 60_000);
+    return () => clearInterval(t);
+  }, [loadColleagues, onRooms]);
   // Two panes when the page has the room (52rem), else two SCREENS: the rooms, then one room
   // (Messenger's shape, like the student app's phone chat). The first guess is the viewport's,
   // corrected before paint, so a narrow page never opens (and reads) the first room by itself.
@@ -328,7 +373,8 @@ function Conversations({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const roomId = asked ?? (wide ? list[0]?.id ?? null : null);
+  // The first CLASS room opens by default; the staff room is one tap away, below.
+  const roomId = asked ?? (wide ? (list.find((r) => r.kind === "section") ?? list[0])?.id ?? null : null);
   const room = list.find((r) => r.id === roomId) ?? (thread?.room.id === roomId ? thread.room : null);
 
   const loadThread = useCallback(async () => {
@@ -377,6 +423,7 @@ function Conversations({
   }, [messages.length, thread?.room.id]);
 
   const members = useMemo(() => new Map((thread?.members ?? []).map((p) => [p.id, p])), [thread]);
+  const staffRooms = list.filter((r) => r.kind === "staff" || r.kind === "staff_direct");
   const sections = list.filter((r) => r.kind === "section");
   const threads = list.filter((r) => r.kind === "direct");
   const students = (roster?.students ?? []).filter((s) => s.userId).sort((a, b) => a.fullName.localeCompare(b.fullName));
@@ -390,10 +437,10 @@ function Conversations({
         // Narrow pushes a history entry, so the browser's Back returns to the rooms.
         onClick={() => setParams({ room: r.id }, { replace: wide })}
       >
-        <Avatar avatar={roomFace(r.id)} size="md" />
+        <Face avatar={r.peer?.avatar ?? roomFace(r.id)} active={r.peer?.active === true} />
         <span className="ch-room-text">
           <span className={r.kind === "section" ? "ch-room-name num" : "ch-room-name"}>{r.title}</span>
-          <span className="ch-room-sub">{r.subtitle}</span>
+          <span className="ch-room-sub">{r.kind === "staff_direct" ? presenceWords(r.peer) : r.subtitle}</span>
           {r.unread > 0 && (
             <span className="ch-room-count">
               <span className="num">{r.unread}</span> new
@@ -446,6 +493,36 @@ function Conversations({
               <Button type="submit" variant="outline" disabled={!student}>Open</Button>
             </div>
           </form>
+          <h2 className="ch-h2">Teachers</h2>
+          <ul className="ch-room-list" data-staff-rooms="">{staffRooms.map(roomButton)}</ul>
+          <form
+            className="ch-open"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!colleague) return;
+              try {
+                const r = await api.chatOpenStaffThread(colleague);
+                await onRooms();
+                setParams({ room: r.id }, { replace: wide });
+                setColleague("");
+              } catch (err) {
+                toast.error("Thread not opened", err instanceof ApiError ? err.message : "Try again.");
+              }
+            }}
+          >
+            <label htmlFor="ch-colleague" className="ch-label">Message a teacher</label>
+            <div className="ch-open-row">
+              <select id="ch-colleague" className="ch-select" value={colleague} onChange={(e) => setColleague(e.target.value)}>
+                <option value="">Choose a teacher…</option>
+                {colleagues.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}{p.active ? " · active now" : ""}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" variant="outline" disabled={!colleague} aria-label="Open a thread with the teacher">Open</Button>
+            </div>
+          </form>
         </nav>
       )}
 
@@ -457,10 +534,16 @@ function Conversations({
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
-          <Avatar avatar={roomFace(room?.id ?? "room")} size="md" />
+          <Face avatar={room?.peer?.avatar ?? roomFace(room?.id ?? "room")} active={room?.peer?.active === true} />
           <div className="min-w-0">
             <h2 id="ch-room-title" className={room?.kind === "section" ? "ch-room-title num" : "ch-room-title"}>{room?.title ?? "Room"}</h2>
-            <p className="ch-room-about">{room?.subtitle}</p>
+            <p className="ch-room-about" data-presence="">
+              {room?.kind === "staff_direct"
+                ? presenceWords(room.peer)
+                : room?.kind === "staff" && thread?.room.id === room.id
+                  ? `${thread.members.filter((p) => p.staff && p.active).length} of ${thread.members.filter((p) => p.staff).length} active now`
+                  : room?.subtitle}
+            </p>
           </div>
         </header>
         <div
@@ -572,9 +655,11 @@ function Conversations({
                                   )
                                 ) : (
                                   <>
-                                    <Button size="sm" variant="ghost" aria-label={`Remove ${m.author.name}'s message from ${when(m.createdAt)}`} onClick={() => onAsk({ kind: "remove-message", m })}>
-                                      Remove
-                                    </Button>
+                                    {!thread.room.readOnly && thread.room.kind !== "staff_direct" && (thread.room.kind !== "staff" || admin) && (
+                                      <Button size="sm" variant="ghost" aria-label={`Remove ${m.author.name}'s message from ${when(m.createdAt)}`} onClick={() => onAsk({ kind: "remove-message", m })}>
+                                        Remove
+                                      </Button>
+                                    )}
                                     {m.author.avatar?.removable && (
                                       <Button
                                         size="sm"
@@ -600,7 +685,12 @@ function Conversations({
             </>
           )}
         </div>
-        {thread && thread.room.id === roomId && (
+        {thread && thread.room.id === roomId && thread.room.readOnly && (
+          <p className="border-t border-line px-4 py-3 text-sm text-ink-muted" data-read-only-note="" role="note">
+            This class is one you can read and not post in: it has ended, or another teacher holds it.
+          </p>
+        )}
+        {thread && thread.room.id === roomId && !thread.room.readOnly && (
           <Composer
             thread={thread}
             me={rooms.me}

@@ -74,9 +74,20 @@ export function Window({ a }: { a: Assessment }) {
 export function Actions({ a, on }: { a: Assessment; on: RowActions }) {
   const setWindow = useRef<HTMLButtonElement>(null);
   const more = useRef<HTMLButtonElement>(null);
+  // T2: the course's papers are the admin's; a teacher reads them. aria-disabled, not disabled, so focus is kept.
+  const why = a.sectionId === null
+    ? "This paper is the whole course's, so only the admin changes it. You can read it."
+    : "You can read this paper and not change it.";
   return (
     <div className="assess-actions">
-      <Button ref={setWindow} size="sm" variant="outline" onClick={() => on.window(a, setWindow.current)}>
+      <Button
+        ref={setWindow}
+        size="sm"
+        variant="outline"
+        aria-disabled={!a.canEdit || undefined}
+        title={a.canEdit ? undefined : why}
+        onClick={() => a.canEdit && on.window(a, setWindow.current)}
+      >
         Set window
       </Button>
       <DropdownMenu>
@@ -86,7 +97,10 @@ export function Actions({ a, on }: { a: Assessment; on: RowActions }) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => on.bank(a, more.current)}>Check the bank…</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => on.rotate(a, more.current)}>Rotate exam salt…</DropdownMenuItem>
+          <DropdownMenuItem disabled={!a.canEdit} onSelect={() => on.rotate(a, more.current)}>Rotate exam salt…</DropdownMenuItem>
+          {a.canEdit ? null : (
+            <p className="max-w-[16rem] px-2 py-1.5 text-xs text-ink-muted" data-read-only-note="">{why}</p>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

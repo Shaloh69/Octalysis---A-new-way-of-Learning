@@ -39,6 +39,38 @@ export function registerConsoleRoutes(
   /* ----------------------------------------------------------
    * GET /api/v1/console/roster
    * -------------------------------------------------------- */
+  /* ----------------------------------------------------------
+   * GET /api/v1/console/classes/mine   (T2)
+   *
+   * The classes this person holds, so a page can say "you don't hold a class yet" instead of
+   * showing a blank. The admin's list is their own classes too: reading everyone's is not holding.
+   * -------------------------------------------------------- */
+  app.get("/api/v1/console/classes/mine", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const { rows } = await app.db.query(
+      `select c.id::text as id, c.section_id::text as section_id, s.code as section_code, c.subject_code,
+              c.term, (c.ended_at is not null) as ended,
+              (select count(*)::int from profiles p
+                where p.section_id = c.section_id and p.role = 'student' and p.deleted_at is null) as students
+         from classes c join sections s on s.id = c.section_id
+        where c.teacher_id = $1
+        order by s.code, c.term`,
+      [id.userId],
+    );
+    return reply.send({
+      classes: rows.map((r) => ({
+        id: r.id,
+        sectionId: r.section_id,
+        sectionCode: r.section_code,
+        subject: r.subject_code,
+        term: r.term,
+        ended: r.ended === true,
+        students: Number(r.students),
+      })),
+    });
+  });
+
   app.get("/api/v1/console/roster", async (req, reply) => {
     const id = await identityFrom(req, env);
     requireStaff(id);
@@ -88,6 +120,8 @@ export function registerConsoleRoutes(
         // soft-deleted; a row nobody has claimed yet is disabled, which the
         // claim's `where status = 'unclaimed'` refuses.
         deactivated: r.deleted_at !== null || r.status === "disabled",
+        // True: the class is read-only to this actor (it has ended, or another teacher holds it).
+        readOnly: !scope.writes(r.section_id as string | null),
         attempts: Number(r.attempts ?? 0),
         avgMastery: r.avg_mastery === null ? null : Number(r.avg_mastery),
       })),
@@ -473,6 +507,8 @@ export function registerConsoleRoutes(
         studentId: s.student_id,
         fullName: s.full_name,
         sectionId: s.section_id,
+        // The class is read-only to this viewer (ended, or another teacher's): the cells are shown, not changeable.
+        readOnly: !scope.writes(s.section_id as string | null),
       })),
       cells: cells.rows.map((c) => {
         // null means "auto" -- the curriculum policy decides.

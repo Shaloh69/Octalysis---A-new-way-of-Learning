@@ -127,6 +127,16 @@ const twosComplementSum: Solver = {
         value: sum < 0 ? 2 ** (w - 1) + sum : sum + 2 ** (w - 1),
         misconception: "used a bias of 2^(n-1) as if the format were excess-notation",
       },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: 2 ** (w - 1) + Math.abs(sum),
+        misconception: "set the sign bit and kept the magnitude (sign-magnitude, not two's complement)",
+      },
+      {
+        value: 2 ** w - Math.abs(p.a!) - Math.abs(p.b!),
+        misconception: "subtracted both magnitudes from 2^n",
+      },
     ];
   },
 
@@ -447,6 +457,20 @@ const instructionAddressBits: Solver = {
         value: p.regFields! * log2(p.regs!),
         misconception: "answered with the register fields' total width",
       },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: p.instrBits! - p.regFields! * log2(p.regs!),
+        misconception: "forgot the opcode",
+      },
+      {
+        value: p.instrBits! - p.opcodeBits! - (p.regFields! + 1) * log2(p.regs!),
+        misconception: "counted one register field too many",
+      },
+      {
+        value: p.opcodeBits!,
+        misconception: "answered with the opcode width",
+      },
     ];
   },
 
@@ -512,6 +536,20 @@ const effectiveAddressIndexed: Solver = {
       {
         value: p.index! * p.scale! + p.disp!,
         misconception: "omitted the base register",
+      },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: p.base! + p.index! + p.scale!,
+        misconception: "added the scale instead of multiplying by it",
+      },
+      {
+        value: p.base! + p.index! * 8 + p.disp!,
+        misconception: "assumed an eight-byte scale",
+      },
+      {
+        value: p.base! - p.index! * p.scale! + p.disp!,
+        misconception: "subtracted the scaled index",
       },
     ];
   },

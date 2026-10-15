@@ -26,11 +26,14 @@ import { BankBox } from "./Bank";
  * never show it.
  */
 export function CreateDialog({
-  open, blueprints, sections, onClose, onCreated, returnFocus,
+  open, blueprints, sections, admin, onClose, onCreated, returnFocus,
 }: {
   open: boolean;
   blueprints: Blueprint[];
+  /** The classes the signed-in person holds and that have not ended. */
   sections: Section[];
+  /** T2: a paper for every section is the course's, so only the admin makes one. A teacher picks a class. */
+  admin: boolean;
   onClose: () => void;
   onCreated: () => void;
   returnFocus: () => HTMLElement | null;
@@ -38,7 +41,7 @@ export function CreateDialog({
   const first = blueprints[0];
   const [blueprintId, setBlueprintId] = useState(first?.id ?? "");
   const [title, setTitle] = useState(first?.name ?? "");
-  const [sectionId, setSectionId] = useState("");
+  const [sectionId, setSectionId] = useState(admin ? "" : (sections[0]?.id ?? ""));
   const [attempts, setAttempts] = useState("5");
   const [opensAt, setOpensAt] = useState("");
   const [closesAt, setClosesAt] = useState("");
@@ -50,13 +53,13 @@ export function CreateDialog({
     if (!open) return;
     setBlueprintId(first?.id ?? "");
     setTitle(first?.name ?? "");
-    setSectionId("");
+    setSectionId(admin ? "" : (sections[0]?.id ?? ""));
     setAttempts("5");
     setOpensAt("");
     setClosesAt("");
     setSaving(false);
     setError(null);
-  }, [open, first]);
+  }, [open, first, admin, sections]);
 
   const feas = useAsync<Feasibility | null>(
     () => (open && blueprintId ? api.blueprintFeasibility(blueprintId) : Promise.resolve(null)),
@@ -70,7 +73,7 @@ export function CreateDialog({
   const opensIso = fromLocalInput(opensAt);
   const closesIso = fromLocalInput(closesAt);
   const backwards = opensIso !== null && closesIso !== null && closesIso <= opensIso;
-  const ready = Boolean(blueprintId) && title.trim().length >= 3 && attemptsOk && !saving;
+  const ready = Boolean(blueprintId) && title.trim().length >= 3 && attemptsOk && !saving && (admin || sectionId !== "");
 
   function pick(id: string) {
     const prev = blueprint;
@@ -165,7 +168,7 @@ export function CreateDialog({
             <div className="assess-field">
               <Label htmlFor="as-section">Who can see it</Label>
               <select id="as-section" className="assess-select" value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
-                <option value="">Every section</option>
+                {admin ? <option value="">Every section</option> : null}
                 {sections.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.code}

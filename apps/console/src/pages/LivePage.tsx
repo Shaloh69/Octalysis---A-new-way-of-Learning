@@ -167,6 +167,8 @@ function Question({
 
   if (!s) {
     const noLive = options !== null && options.items.length === 0;
+    // T2: a question is put to a class this teacher holds and that has not ended.
+    const noClass = options !== null && options.sections.length === 0;
     return (
       <section data-question data-state="none" aria-labelledby="lv-q-title" className="lv-card lv-question">
         <div className="lv-q-main">
@@ -178,10 +180,16 @@ function Question({
           {cannotAnswer}
         </div>
         <div className="lv-q-side">
-          <Button data-question-action onClick={onStart} disabled={!options || noLive}>
+          <Button data-question-action onClick={onStart} disabled={!options || noLive || noClass}>
             Start a question
           </Button>
-          {noLive ? (
+          {noClass ? (
+            <p className="lv-faint" data-no-class="">
+              You don&apos;t hold a class that is running, so there is no one to put a question to. Import a
+              roster on <Link to="/students" className="lv-link">Students</Link> to make your own, or ask the
+              admin for one.
+            </p>
+          ) : noLive ? (
             <p className="lv-faint">
               No item is live yet, so there is nothing to put to the room. An item reaches live on{" "}
               <Link to="/items" className="lv-link">Items</Link>.

@@ -63,6 +63,20 @@ const hammingCheckBits: Solver = {
         value: p.dataBits! / 8,
         misconception: "assumed one check bit per byte of data",
       },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: p.dataBits! / 4,
+        misconception: "assumed one check bit per nibble of data",
+      },
+      {
+        value: correct * 2,
+        misconception: "doubled the count to cover double-error detection",
+      },
+      {
+        value: p.dataBits! / 2,
+        misconception: "assumed one check bit per pair of data bits",
+      },
     ];
   },
 
@@ -188,6 +202,16 @@ const dramChipCount: Solver = {
       {
         value: p.chipWidth!,
         misconception: "answered with the chip width rather than a chip count",
+      },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: ((p.moduleMiB! * 8) / (p.chipDepthM! * p.chipWidth!)) * 2,
+        misconception: "doubled the count for a second rank",
+      },
+      {
+        value: ((p.moduleMiB! * 8) / (p.chipDepthM! * p.chipWidth!)) / 2,
+        misconception: "halved the count, thinking each chip is double-sided",
       },
     ];
   },
@@ -568,6 +592,17 @@ const raid5Overhead: Solver = {
         value: (2 / p.disks!) * 100,
         misconception: "costed two parity disks, which is RAID 6",
       },
+      // Added 15 Oct 2026: at 3 disks the first four collapse (1/(d-1) = 50 and (d-1)/d = 2/d), leaving two
+      // candidates and an item that could not be resolved. These two stay distinct from the others and the
+      // answer at every disk count the solver draws.
+      {
+        value: (1 / (p.disks! + 1)) * 100,
+        misconception: "counted one extra disk in the array, dividing parity by disks + 1",
+      },
+      {
+        value: (1 / p.disks!) * 50,
+        misconception: "halved the parity, thinking it is shared with the data",
+      },
     ];
   },
 
@@ -705,6 +740,16 @@ const programmedIoCost: Solver = {
         value: (p.bytes! / (p.totalMs! * 1000)) * 100,
         misconception: "ignored the per-byte cost",
       },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: (p.bytes! * p.pollUs!) / 1000 / p.totalMs!,
+        misconception: "left the share as a fraction rather than a percentage",
+      },
+      {
+        value: (((p.bytes! * p.pollUs!) / 1000) / p.totalMs!) * 1000,
+        misconception: "slipped a decimal place converting microseconds",
+      },
     ];
   },
 
@@ -831,6 +876,20 @@ const pageTableEntries: Solver = {
         value: 2 ** off,
         misconception: "used the offset field instead of the page-number field",
       },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: 2 ** (p.addrBits! - off) * 2,
+        misconception: "added a second entry per page for a valid bit",
+      },
+      {
+        value: 2 ** (p.addrBits! - off - 1),
+        misconception: "took one bit too many off the address for the offset",
+      },
+      {
+        value: (2 ** p.addrBits!) / (p.pageKiB! * 1000),
+        misconception: "used a decimal kilobyte for the page size",
+      },
     ];
   },
 
@@ -897,6 +956,20 @@ const tlbEffectiveAccess: Solver = {
       {
         value: h * (p.tlbNs! + p.memNs!) + (1 - h) * (p.tlbNs! + p.memNs!),
         misconception: "charged a miss the same as a hit, so the hit ratio had no effect",
+      },
+      // Added 15 Oct 2026: the candidates above collide at some drawn parameters, leaving fewer than three distinct
+      // (found by the all-solvers sweep in solvers.spec.ts). Each below is a real slip and stays distinct there.
+      {
+        value: (1 - h) * (p.tlbNs! + p.memNs!) + h * (p.tlbNs! + 2 * p.memNs!),
+        misconception: "swapped the hit and miss weights",
+      },
+      {
+        value: (p.tlbNs! + p.memNs! + p.tlbNs! + 2 * p.memNs!) / 2,
+        misconception: "averaged the two paths without weighting by the hit ratio",
+      },
+      {
+        value: h * (p.tlbNs! + p.memNs!) + (1 - h) * (2 * p.tlbNs! + 2 * p.memNs!),
+        misconception: "paid the TLB lookup twice on a miss",
       },
     ];
   },

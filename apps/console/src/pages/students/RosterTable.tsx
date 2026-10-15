@@ -10,6 +10,7 @@ import { Avatar } from "@/components/Avatar";
 import type { RosterRow } from "@/lib/api";
 import { rosterState, STATE_WORDS } from "@/lib/roster-view";
 import { RowMenu, type RowActions } from "./RowMenu";
+import { ReadOnly } from "@/components/ClassScope";
 
 export const STATE_TONE = { registered: "success", "not-registered": "neutral", deactivated: "locked" } as const;
 
@@ -138,7 +139,10 @@ export function RosterTable({
                   )}
                 </span>
               </td>
-              <td>{r.sectionCode ?? <span className="text-ink-muted">none</span>}</td>
+              <td>
+                {r.sectionCode ?? <span className="text-ink-muted">none</span>}
+                {r.readOnly ? <ReadOnly admin={on.admin} compact /> : null}
+              </td>
               <td>
                 <Badge tone={STATE_TONE[state]}>{STATE_WORDS[state]}</Badge>
               </td>

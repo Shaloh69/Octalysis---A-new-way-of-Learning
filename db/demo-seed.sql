@@ -96,6 +96,16 @@ insert into profiles (id, student_id, full_name, section_id, role, theme, accent
   ('dddddddd-0000-4000-8000-000000000001', null, 'Prof. Amalia R. Bontuyan',
    'dddddddd-5EC0-4000-8000-000000000001', 'teacher', 'blueprint', 210);
 
+-- T2 (9 Oct 2026): two more staff accounts, so the specs can look at what a teacher who holds NO class sees
+-- and what the admin sees of another teacher's class (read-only). The admin holds nothing here on purpose:
+-- reading BSCPE - 4 is not holding it.
+insert into auth.users (id, email, raw_app_meta_data) values
+  ('eeeeeeee-0000-4000-8000-000000000001', 'teacher-none@octa.local', '{"role":"teacher"}'::jsonb),
+  ('eeeeeeee-0000-4000-8000-000000000002', 'admin-view@octa.local',   '{"role":"admin"}'::jsonb);
+insert into profiles (id, student_id, full_name, role, theme, accent_hue) values
+  ('eeeeeeee-0000-4000-8000-000000000001', null, 'Prof. Noel Classless', 'teacher', 'blueprint', 150),
+  ('eeeeeeee-0000-4000-8000-000000000002', null, 'Dr. Ada Admin',        'admin',   'blueprint', 30);
+
 -- The section takes CPE 412 with that teacher: the profile pages list a person's
 -- classes, and addendum-teachers.sql only made classes for sections that existed
 -- when it was applied (this one is seeded after it).

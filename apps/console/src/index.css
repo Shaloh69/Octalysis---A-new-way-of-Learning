@@ -422,6 +422,9 @@
     box-shadow: var(--in), var(--out);
   }
   .lock-swatch { width: 1.5rem; height: 1.5rem; flex: none; }
+  /* T2: a student of a class the viewer may read and not change. The cell still says what the database says;
+     it simply is not pressable (the page ignores the click, and the route would refuse it). */
+  .lock-cell[aria-disabled="true"] { cursor: not-allowed; }
   [data-look="auto-open"]   { background: var(--success-bg); color: var(--success); border-color: var(--success); }
   [data-look="auto-closed"] { background: var(--locked-bg);  color: var(--locked);  border-color: var(--line-strong); }
   /* A PERSON decided: a thick accent border and a padlock. The fill is still
@@ -2982,6 +2985,18 @@
   .ch-room-count { font-size: var(--text-xs); font-weight: 600; color: var(--ink); }
   .ch-note { font-size: var(--text-xs); color: var(--ink-muted); }
   .ch-label { display: block; margin-bottom: var(--space-1); font-size: var(--text-sm); color: var(--ink-muted); }
+  /* A face, and a dot at its corner when the person is active now (staff about staff). */
+  .ch-face { position: relative; display: inline-flex; flex: none; }
+  .ch-active {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    background: var(--success);
+    border: var(--border-thick) solid var(--surface-1);
+  }
   .ch-open { margin-top: var(--space-2); padding-top: var(--space-3); border-top: var(--border-hair) solid var(--line); }
   .ch-open-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
   /* The rail is 15rem: the picker takes the row, Open sits under it (the first

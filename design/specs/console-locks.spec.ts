@@ -420,7 +420,7 @@ test.describe("course-wide and section overrides — their own tab", () => {
     await openLocks(page);
     const head = page.getByRole("button", { name: /select stage 04 for every student/i });
     await expect(head).toHaveAttribute("data-scope-lock", "global");
-    await expect(head).toHaveAccessibleDescription(/every student: closed by/i);
+    await expect(head).toHaveAccessibleDescription(/every student.*set before classes.*closed by/i);
   });
 
   test("lists each override with its window, who and when, and why", async ({ page }) => {
@@ -466,22 +466,27 @@ test.describe("course-wide and section overrides — their own tab", () => {
     await expect(page.locator("[data-toaster] [role=status]")).toContainText(/stage 11/i);
   });
 
-  test("a course-wide override says it changes every student before it is saved", async ({ page }) => {
+  test("T2: there is no lock for everyone: the form offers the classes held, and a legacy one is the admin's to return", async ({ page }) => {
     await openLocks(page);
     await page.getByRole("tab", { name: /sections & schedules/i }).click();
     const panel = page.getByRole("tabpanel");
-    await panel.getByLabel("Applies to").selectOption({ label: "Every student" });
-    await expect(panel).toContainText(/changes this stage for every student/i);
+    const options = await panel.getByLabel("Applies to").locator("option").allTextContents();
+    expect(options.join("|"), "an option still says Every student").not.toMatch(/every student/i);
+    // A lock set for everyone before classes existed stays in force; a teacher reads it and cannot return it.
+    const legacy = page.getByRole("button", { name: /return stage 04 to automatic for every student/i });
+    await expect(legacy).toHaveAttribute("aria-disabled", "true");
+    await legacy.click({ force: true });
+    await expect(page.getByRole("dialog"), "a teacher opened the return prompt on a lock for everyone").toHaveCount(0);
   });
 
   test("an override returns to automatic through the same reason prompt", async ({ page }) => {
     const { writes } = await openLocks(page);
     await page.getByRole("tab", { name: /sections & schedules/i }).click();
-    await page.getByRole("button", { name: /return stage 04 to automatic for every student/i }).click();
+    await page.getByRole("button", { name: new RegExp(`return stage ${FIX.section.stage} to automatic for section`, "i") }).click();
     await page.getByRole("dialog").getByRole("textbox").fill("Prelim week is over");
     await page.getByRole("button", { name: /save change/i }).click();
     await expect.poll(() => writes.single.length).toBe(1);
-    expect(writes.single[0]).toMatchObject({ scope: "global", stageId: "04", state: "auto" });
+    expect(writes.single[0]).toMatchObject({ scope: "section", stageId: FIX.section.stage, state: "auto" });
   });
 });
 
