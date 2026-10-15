@@ -179,6 +179,37 @@ function Teachers() {
             )}
           </section>
 
+          {(data.classless ?? []).length > 0 ? (
+            <section className="mt-6" aria-labelledby="classless-heading" data-classless="">
+              <h2 id="classless-heading" className="font-display text-lg text-ink">
+                <span className="num">{data.classless.length}</span> {data.classless.length === 1 ? "section has" : "sections have"} no class
+              </h2>
+              <p className="mb-2 text-sm text-ink-muted">
+                No teacher sees these students until the section has a class. You read them; give each one a class.
+              </p>
+              <ul className="roster-card unassigned-list">
+                {data.classless.map((s) => (
+                  <li key={s.id} className="unassigned-row">
+                    <span className="min-w-0">
+                      <span className="text-sm text-ink">{s.code}</span>
+                      <span className="block text-xs text-ink-muted">
+                        <span className="num">{s.term}</span> · <span className="num">{s.students}</span> {s.students === 1 ? "student" : "students"}
+                      </span>
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      aria-label={`Give ${s.code} a class`}
+                      onClick={(e) => { remember(e.currentTarget); setAssign({ teacher: null, sectionId: s.id, term: s.term }); }}
+                    >
+                      Assign…
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           {data.unassigned.length > 0 ? (
             <section className="mt-6" aria-labelledby="unassigned-heading">
               <h2 id="unassigned-heading" className="font-display text-lg text-ink">Classes nobody holds yet</h2>

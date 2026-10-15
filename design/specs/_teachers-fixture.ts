@@ -13,6 +13,7 @@ export const ADMIN_ID = "aaaaaaaa-0000-4000-8000-0000000000ad";
 const S2A = "5ec7f1a0-0000-4000-8000-00000000002a";
 const S2B = "5ec7f1a0-0000-4000-8000-00000000002b";
 const S4A = "5ec7f1a0-0000-4000-8000-00000000004a";
+const SEC = "5ec7f1a0-0000-4000-8000-0000000000ec";
 const BOOK9 = "b00c0000-0000-4000-8000-000000000009";
 const BOOK10 = "b00c0000-0000-4000-8000-000000000010";
 
@@ -51,10 +52,13 @@ export const TEACHERS = {
   ],
   counts: { total: 5, active: 3, unclaimed: 1, disabled: 1 },
   unassigned: [{ ...cls("c1a00000-0000-4000-8000-000000000009", S2B, "BSCPE-2B", 36), term: "2026-2" }],
+  // T2 5.1: a section imported with no class (BSECE-4A on the deployment before the rollout).
+  classless: [{ id: SEC, code: "BSECE-4A", term: "2026-1", students: 15 }],
   sections: [
     { id: S2A, code: "BSCPE-2A", term: "2026-1" },
     { id: S2B, code: "BSCPE-2B", term: "2026-1" },
     { id: S4A, code: "BSCPE-4A", term: "2026-1" },
+    { id: SEC, code: "BSECE-4A", term: "2026-1" },
   ],
   subjects: [{
     code: "CPE 412", title: "Computer Architecture and Organization", books: [

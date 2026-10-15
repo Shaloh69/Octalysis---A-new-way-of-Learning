@@ -176,6 +176,25 @@ test.describe("/teachers — SPEC.md", () => {
     });
   });
 
+  test("a section with no class is counted and named, and Assign… opens on it (T2 5.1)", async ({ page }) => {
+    const writes = await openTeachers(page);
+    const box = page.locator("[data-classless]");
+    await expect(box.getByRole("heading")).toHaveText("1 section has no class");
+    await expect(box).toContainText("BSECE-4A");
+    await expect(box).toContainText("15 students");
+    await box.getByRole("button", { name: "Give BSECE-4A a class" }).click();
+    const d = page.getByRole("dialog");
+    await expect(d.getByLabel("Section")).toHaveValue("5ec7f1a0-0000-4000-8000-0000000000ec");
+    await expect(d.getByLabel("Term")).toHaveValue("2026-1");
+    await d.getByLabel("Teacher").selectOption({ label: "Fixture Teacher Osmeña" });
+    await d.getByLabel("Reason (required)").fill("BSECE-4A gets its CPE 412 class");
+    await d.getByRole("button", { name: "Assign class" }).click();
+    await expect(d).toBeHidden();
+    expect(writes.classes[0]).toMatchObject({ sectionId: "5ec7f1a0-0000-4000-8000-0000000000ec", subjectCode: "CPE 412", term: "2026-1" });
+    if (wide()) await box.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `design/templates/console/teachers/current-classless${wide() ? "" : "-380"}.png`, fullPage: !wide() });
+  });
+
   test("a write that fails says so and keeps the dialog open", async ({ page }) => {
     await openTeachers(page, { failWrites: true });
     await openDisable(page);

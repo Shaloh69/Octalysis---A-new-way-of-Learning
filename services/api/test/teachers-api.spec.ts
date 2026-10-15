@@ -130,6 +130,13 @@ describe("the admin's list and a teacher's page", () => {
     expect(body.subjects[0]).toMatchObject({ code: "CPE 412" });
     expect(body.subjects[0].books.length).toBeGreaterThanOrEqual(2);
   });
+  it("T2 5.1: a section with no running class is listed in `classless`, with its students; a held one is not", async () => {
+    const sec = (await setup(`insert into sections (code, term) values ('NOCLASS-1', '2026-1') returning id::text`)).rows[0]!.id;
+    const r = await inject("GET", "/api/v1/console/teachers", adminTok);
+    const classless = r.json().classless as Array<{ id: string; code: string; students: number }>;
+    expect(classless.find((s) => s.id === sec)).toMatchObject({ code: "NOCLASS-1", students: 0 });
+    expect(classless.find((s) => s.id === w.sectionId), "the world's held section is not classless").toBeUndefined();
+  });
   it("opens one teacher by user id; an unknown key is 404", async () => {
     const r = await inject("GET", `/api/v1/console/teachers/${w.teacher}`, adminTok);
     expect(r.statusCode).toBe(200);

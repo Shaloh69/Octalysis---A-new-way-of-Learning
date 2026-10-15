@@ -1096,6 +1096,11 @@ export const TeachersResponse = z.object({
   }),
   /** Classes nobody holds yet: the admin assigns them. */
   unassigned: z.array(TeacherClass),
+  /**
+   * T2 5.1: sections with no running class at all, so no teacher sees their students (the admin reads
+   * them). Before the rollout BSECE-4A was one. The admin gives each a class.
+   */
+  classless: z.array(SectionRef.extend({ students: z.number().int() })),
   sections: z.array(SectionRef),
   subjects: z.array(Subject),
 });

@@ -176,6 +176,15 @@ export function registerTeacherRoutes(
         disabled: teachers.filter((t) => t.status === "disabled").length,
       },
       unassigned: classes.filter((c) => c.teacher_id === null && c.ended_at === null).map(toClass),
+      classless: (
+        await app.db.query<{ id: string; code: string; term: string; students: number }>(
+          `select s.id::text, s.code, s.term,
+                  (select count(*)::int from profiles p where p.section_id = s.id and p.role = 'student') as students
+             from sections s
+            where not exists (select 1 from classes c where c.section_id = s.id and c.ended_at is null)
+            order by s.code`,
+        )
+      ).rows,
       sections: await loadSections(app.db),
       subjects: await loadSubjects(app.db),
     };
