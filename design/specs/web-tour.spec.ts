@@ -200,6 +200,17 @@ test.describe("the tour — what it owes", () => {
     await expect(page.getByRole("button", { name: "Take the tour of the app" })).toBeVisible();
   });
 
+  test("Escape closes it from anywhere, not only with focus in the popover (parked 0zq, 15 Oct 2026)", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    await started(page);
+    // A click on the dimness takes focus off the popover's buttons.
+    await page.mouse.click(8, 400);
+    const inPop = await page.evaluate(() => !!document.activeElement?.closest(".tour-pop"));
+    expect(inPop, "the click should have left focus outside the popover").toBe(false);
+    await page.keyboard.press("Escape");
+    await expect(page.locator("[data-tour-root]")).toHaveCount(0);
+  });
+
   test("Next, Previous, the arrow keys and Skip; the last step says Done and has no Skip", async ({ page }, info) => {
     test.skip(!wide(info), "behaviour, one width");
     await started(page);

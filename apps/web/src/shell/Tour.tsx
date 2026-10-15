@@ -159,11 +159,20 @@ export function Tour({ onClose }: { onClose: () => void }): JSX.Element {
     };
   }, []);
 
-  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Escape") {
+  // Escape closes it wherever focus is (a click on the dimness leaves focus on the page, not the
+  // popover); the console's tour has done this since 9 Oct (NEXT-SESSION 0zq, parked).
+  useEffect(() => {
+    const esc = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape") return;
       e.preventDefault();
       onClose();
-    } else if (e.key === "ArrowRight") {
+    };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [onClose]);
+
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowRight") {
       e.preventDefault();
       if (!last) setI(i + 1);
     } else if (e.key === "ArrowLeft") {
