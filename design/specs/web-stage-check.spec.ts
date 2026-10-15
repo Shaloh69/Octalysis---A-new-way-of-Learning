@@ -197,6 +197,24 @@ test.describe("sitting a paper (instructor rulings 3 and 4, 30 Sep and 6 Oct 202
     await expect(page.getByRole("button", { name: "Start the paper", exact: true })).toBeFocused();
   });
 
+  test("every paper's prompt asks a phone to be locked to the page (instructor, 15 Oct 2026)", async ({ page }, info) => {
+    await prompt(page);
+    const rule = page.locator("[data-runner=ready] [data-rule=device-lock]");
+    await expect(rule).toContainText(/Guided Access/);
+    await expect(rule).toContainText(/App pinning/);
+    await expect(rule).toBeVisible();
+    // A longer prompt must not push Start under the biome's bottom bar at 380.
+    const start = page.getByRole("button", { name: "Start the paper", exact: true });
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const covered = await start.evaluate((b) => {
+      const r = b.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.bottom - 2);
+      return hit && (hit === b || b.contains(hit)) ? null : String(hit?.className ?? hit?.tagName);
+    });
+    expect(covered, "Start is covered by").toBeNull();
+    await page.screenshot({ path: `design/templates/web/stage-check/current-start-scrolled${wide(info) ? "" : "-380"}.png` });
+  });
+
   test("the prompt and the cover pass the gate: nothing clipped, AA, tokens", async ({ page }) => {
     await prompt(page);
     expect(await clippedElements(page, ROUTE), "prompt clipped").toEqual([]);

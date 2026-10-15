@@ -1120,6 +1120,11 @@ function StartPrompt({
           attempt</strong>. Away for less, the questions are hidden until you come back, and it is recorded.
         </li>
         <li>Your first recorded answer to each question is final.</li>
+        {/* Instructor, 15 Oct 2026 (docs/ANTI-CHEAT.md §6.1): words only; a page cannot check it. */}
+        <li data-rule="device-lock">
+          On a phone or tablet, turn on <strong>Guided Access</strong> (iPhone, iPad) or <strong>App pinning</strong>{" "}
+          (Android) before you start, so the device stays on this page. Your instructor may check.
+        </li>
       </ul>
       {refused && (
         <p className="check-refused" role="alert">
