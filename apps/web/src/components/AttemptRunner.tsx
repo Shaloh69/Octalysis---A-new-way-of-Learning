@@ -14,6 +14,9 @@ import {
 import { useRegister } from "../lib/registers";
 import { enterFullscreen, fullscreenSupported, inFullscreen, leaveFullscreen, setSitting } from "../lib/sitting";
 import type { AttemptEventKind } from "@octa/contracts";
+import {
+  classifyKey, hasSecondScreen, isTyping, lockKeys, makeDebounce, narrowed, unlockKeys,
+} from "../lib/sitting-guards";
 import { toast } from "../lib/toast";
 import { useDelayed } from "../lib/useDelayed";
 
@@ -384,13 +387,118 @@ export function AttemptRunner({ stageId, assessmentId, journey, title, eyebrow =
         hiddenAt = 0;
       }
     };
+    /*
+     * Working around the paper (docs/ANTI-CHEAT.md, 15 Oct 2026). Each of these is a FACT recorded for the
+     * instructor, never a verdict, and none of them can be seen by anyone but the student's own browser.
+     * The same report twice inside 1.5 s is one fact (a held key repeats; a blur and a hide arrive together).
+     */
+    const once = makeDebounce(1500);
+    const signal = (kind: AttemptEventKind) => {
+      if (once(kind)) report(kind);
+    };
+
+    // The Windows or Command key, Alt+Tab, desktop-switching chords, PrintScreen: covered at once. The window
+    // losing focus (below) is what starts the 15 seconds; a key alone only covers and records.
+    // Copy, paste, print, view source, the developer tools, the context menu: refused, and recorded.
+    const onKey = (e: KeyboardEvent) => {
+      const v = classifyKey(e, isTyping(document.activeElement));
+      if (!v) return;
+      if (v.kind === "system_key") {
+        signal("system_key");
+        setCover((c) => c ?? "page");
+      } else {
+        e.preventDefault();
+        signal("blocked_action");
+        toast.error("Not available during a paper", `${v.why} is switched off until you hand it in. It was recorded.`);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      // Browsers deliver PrintScreen on key-up only.
+      if (e.key === "PrintScreen") onKey(e);
+    };
+    const refuse = (e: Event) => {
+      e.preventDefault();
+      signal("blocked_action");
+    };
+
+    // The window loses focus while the page is still "visible": Alt+Tab, the Start menu, another virtual
+    // desktop, a click on a second monitor, a developer-tools window. Covered and recorded at once, handed in
+    // after GRACE_MS, or on coming back after it: the same rule as leaving the page.
+    let blurredAt = 0;
+    let blurTimer: number | undefined;
+    const onBlur = () => {
+      if (document.visibilityState === "hidden" || blurredAt || handingIn.current) return;
+      blurredAt = Date.now();
+      setCover((c) => c ?? "page");
+      signal("lost_focus");
+      blurTimer = window.setTimeout(() => void handIn("left_page"), GRACE_MS);
+    };
+    const onFocus = () => {
+      if (!blurredAt) return;
+      window.clearTimeout(blurTimer);
+      if (Date.now() - blurredAt > GRACE_MS) void handIn("left_page");
+      blurredAt = 0;
+    };
+
+    // Split screen, a floating window, a second screen: recorded, not acted on (a rotated phone is not cheating).
+    const startWidth = window.innerWidth;
+    const startOrientation = window.screen?.orientation?.type;
+    let resizeTimer: number | undefined;
+    const onResize = () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        const rotated = window.screen?.orientation?.type !== startOrientation;
+        if (!rotated && narrowed(startWidth, window.innerWidth)) signal("screen_changed");
+      }, 500);
+    };
+    if (hasSecondScreen()) signal("screen_changed");
+
+    // The same paper open in another tab of this browser.
+    let channel: BroadcastChannel | null = null;
+    if (attemptId && typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel(`octa-paper-${attemptId}`);
+      channel.onmessage = (m: MessageEvent) => {
+        if (m.data === "open") {
+          signal("second_tab");
+          channel?.postMessage("here");
+        } else if (m.data === "here") signal("second_tab");
+      };
+      channel.postMessage("open");
+    }
+
+    // In full screen, ask Chrome and Edge to pass Alt+Tab, the Windows key and the arrows to the page.
+    const lockWhenFull = () => {
+      if (inFullscreen()) void lockKeys();
+    };
+    lockWhenFull();
+
     window.addEventListener("popstate", onPop);
     window.addEventListener("beforeunload", onUnload);
     window.addEventListener("pagehide", onPageHide);
     document.addEventListener("fullscreenchange", onFullscreen);
+    document.addEventListener("fullscreenchange", lockWhenFull);
     document.addEventListener("visibilitychange", onVisibility);
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("keyup", onKeyUp, true);
+    for (const ev of ["copy", "cut", "paste", "contextmenu", "dragstart"] as const) document.addEventListener(ev, refuse, true);
+    window.addEventListener("beforeprint", refuse);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("resize", onResize);
     return () => {
       window.clearTimeout(timer);
+      window.clearTimeout(blurTimer);
+      window.clearTimeout(resizeTimer);
+      channel?.close();
+      unlockKeys();
+      document.removeEventListener("fullscreenchange", lockWhenFull);
+      document.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("keyup", onKeyUp, true);
+      for (const ev of ["copy", "cut", "paste", "contextmenu", "dragstart"] as const) document.removeEventListener(ev, refuse, true);
+      window.removeEventListener("beforeprint", refuse);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("popstate", onPop);
       window.removeEventListener("beforeunload", onUnload);
       window.removeEventListener("pagehide", onPageHide);

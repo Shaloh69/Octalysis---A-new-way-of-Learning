@@ -78,9 +78,9 @@ export async function leftPapers(db: Db, userId: string): Promise<Array<{ attemp
               when exists (select 1 from attempt_events e where e.attempt_id = o.id and e.kind = 'left_fullscreen') then 'left_fullscreen'
               when exists (select 1 from attempt_events e where e.attempt_id = o.id and e.kind = 'closed') then 'closed'
               when (select e.kind from attempt_events e
-                     where e.attempt_id = o.id and e.kind in ('left_page', 'returned')
-                     order by e.at desc, e.id desc limit 1) = 'left_page'
-                   and (select max(e.at) from attempt_events e where e.attempt_id = o.id and e.kind = 'left_page')
+                     where e.attempt_id = o.id and e.kind in ('left_page', 'lost_focus', 'returned')
+                     order by e.at desc, e.id desc limit 1) in ('left_page', 'lost_focus')
+                   and (select max(e.at) from attempt_events e where e.attempt_id = o.id and e.kind in ('left_page', 'lost_focus'))
                        < now() - make_interval(secs => $2)
                 then 'left_page'
               when greatest(o.started_at,

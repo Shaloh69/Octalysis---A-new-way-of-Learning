@@ -23,6 +23,7 @@ import {
   type PaperOptions,
   type Served,
   STAGE,
+  ATTEMPT_ID,
 } from "./_stage-check-fixture.ts";
 
 /**
@@ -758,5 +759,57 @@ test.describe("a question's figure, on the neutral paper", () => {
     await open(page, withFigure());
     await page.waitForTimeout(300);
     await page.screenshot({ path: "design/templates/web/stage-figure/current-check" + (wide(info) ? "" : "-380") + ".png" });
+  });
+});
+
+/* =====================================================================
+ * Anti-cheat (15 Oct 2026; docs/ANTI-CHEAT.md): what the page can see of
+ * someone working around the paper. Each is recorded, never judged.
+ * =================================================================== */
+test.describe("anti-cheat: keys, focus, copying, a second tab", () => {
+  test("the Windows key covers the paper at once and is recorded", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    const served = await open(page);
+    await page.keyboard.press("Meta");
+    await expect(page.locator("[data-runner=covered]")).toBeVisible();
+    await expect.poll(() => served.events).toContain("system_key");
+  });
+
+  test("Ctrl+Alt+Arrow (a desktop switch) and Alt+Tab are recorded; plain arrows and Tab are not", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    const served = await open(page);
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("ArrowDown");
+    await page.waitForTimeout(400);
+    expect(served.events, "ordinary keyboard use was recorded").not.toContain("system_key");
+    await page.keyboard.press("Control+Alt+ArrowRight");
+    await expect.poll(() => served.events).toContain("system_key");
+  });
+
+  test("copy, paste and the context menu are refused, recorded, and say so", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    const served = await open(page);
+    await page.keyboard.press("Control+c");
+    await expect(page.locator("[data-toaster] [role=alert]")).toContainText(/not available during a paper/i);
+    await expect.poll(() => served.events).toContain("blocked_action");
+    await expect(page.locator("main").getByText(/Question \d+ of/).first(), "a refused copy does not cover the paper").toBeVisible();
+  });
+
+  test("the window losing focus (another app, desktop or screen) covers the paper and is recorded", async ({ page }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    const served = await open(page);
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await expect(page.locator("[data-runner=covered]")).toBeVisible();
+    await expect.poll(() => served.events).toContain("lost_focus");
+  });
+
+  test("the same paper opened in a second tab is recorded", async ({ page, context }, info) => {
+    test.skip(!wide(info), "behaviour, one width");
+    const served = await open(page);
+    const other = await context.newPage();
+    await other.goto(checkUrl(assessment));
+    // The second tab announces itself on the paper's channel once its paper is open.
+    await other.evaluate((id) => new BroadcastChannel(`octa-paper-${id}`).postMessage("open"), ATTEMPT_ID);
+    await expect.poll(() => served.events).toContain("second_tab");
   });
 });

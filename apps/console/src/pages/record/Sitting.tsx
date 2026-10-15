@@ -19,6 +19,12 @@ const WORD: Record<NonNullable<AttemptDetail["events"]>[number]["kind"], string>
   fullscreen_unavailable: "Sat without full screen (the device cannot use it)",
   closed: "Closed or reloaded the page",
   auto_submitted: "Handed in because they left (ruling 4)",
+  // 15 Oct 2026 (docs/ANTI-CHEAT.md): facts, never verdicts.
+  lost_focus: "The window lost focus (another app, desktop or screen)",
+  system_key: "Pressed a system key (Windows/Command, Alt+Tab, a desktop switch, PrintScreen)",
+  blocked_action: "Tried to copy, paste, print or open the developer tools (refused)",
+  screen_changed: "Split the screen, narrowed the window or has a second screen",
+  second_tab: "Had the paper open in another tab",
 };
 
 function clock(iso: string): string {
@@ -26,7 +32,8 @@ function clock(iso: string): string {
 }
 
 export function Sitting({ events }: { events: NonNullable<AttemptDetail["events"]> }) {
-  const leaves = events.filter((e) => e.kind === "left_fullscreen" || e.kind === "left_page" || e.kind === "closed").length;
+  const leaves = events.filter((e) => e.kind === "left_fullscreen" || e.kind === "left_page" || e.kind === "closed" || e.kind === "lost_focus").length;
+  const signals = events.filter((e) => e.kind === "system_key" || e.kind === "blocked_action" || e.kind === "screen_changed" || e.kind === "second_tab").length;
   const handedIn = events.some((e) => e.kind === "auto_submitted");
   return (
     <div className="sitting" data-sitting-record="">
@@ -34,6 +41,11 @@ export function Sitting({ events }: { events: NonNullable<AttemptDetail["events"
         Left the paper <span className="num">{leaves}</span> {leaves === 1 ? "time" : "times"}
         {events.length === 0 ? <span className="text-ink-muted"> · nothing recorded</span> : null}
         {handedIn ? <span className="text-ink-muted"> · handed in automatically when they left</span> : null}
+        {signals > 0 ? (
+          <span className="text-ink-muted" data-signals="">
+            {" "}· <span className="num text-ink">{signals}</span> other {signals === 1 ? "signal" : "signals"} below
+          </span>
+        ) : null}
       </p>
       {events.length > 0 ? (
         <ol className="sitting-list">

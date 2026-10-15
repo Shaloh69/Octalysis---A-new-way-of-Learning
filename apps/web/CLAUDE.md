@@ -105,6 +105,13 @@ buzzer, never a shake. These students are already anxious about a hard course.
   the map (**remembered per account in the database since 9 Oct 2026**, `profiles.tour_seen_at`, `POST /profile/tour`), `inert` page behind it, StarShell only, never in a planet.
   An automated browser is not given it unless `octa:tour:force` is set.
 
+## Added 15 Oct 2026 (anti-cheat, `docs/ANTI-CHEAT.md`)
+- In a paper, `AttemptRunner` also listens for the window losing focus (a leave, 15 s rule), the
+  Windows/Command key, Alt+Tab, desktop-switching chords and PrintScreen (cover + record), copy/paste/print/
+  dev tools (refused + record), split screen and a second screen (record) and a second tab (record). The rules
+  are pure functions in `lib/sitting-guards.ts`, tested. Plain Tab and arrows are never touched: they are how
+  a keyboard student answers. Keyboard Lock is asked for in full screen (Chrome/Edge).
+
 ## Added 9 Oct 2026 (graded moons, `docs/GRADED-MOONS-PLAN.md`)
 - **A moon's panel leads with its CHECK** when the moon is graded (the default): **Sit the check** (also
   the Enter key) goes to `/app/stage/:id/moon/:objectiveId/check`, which asks `POST /objectives/:id/check`

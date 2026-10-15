@@ -154,10 +154,10 @@ describe("GET /chat/rooms — who is in which room", () => {
   it("T2: a teacher sees the room of the class they hold (2A), the admin every section's", async () => {
     const res = await get("/api/v1/chat/rooms", tT);
     const titles = res.json().rooms.map((r: { title: string }) => r.title);
-    expect(titles).toEqual(["BSCPE-2A"]);
+    expect(titles).toEqual(["Staff room", "BSCPE-2A"]); // the staff room leads every staff list (T2)
     expect(res.json().me.staff).toBe(true);
     const all = await get("/api/v1/chat/rooms", tAdmin);
-    expect(all.json().rooms.map((r: { title: string }) => r.title)).toEqual(["BSCPE-2A", "BSCPE-2B"]);
+    expect(all.json().rooms.map((r: { title: string }) => r.title)).toEqual(["Staff room", "BSCPE-2A", "BSCPE-2B"]);
   });
 });
 

@@ -739,7 +739,11 @@ export type LiveEndBody = z.infer<typeof LiveEndBody>;
  * back. The server stamps the time; the client never supplies one.
  * ------------------------------------------------------------------------- */
 /** What the runner reports. Ruling 4 (6 Oct 2026) adds `closed`: the page was closed, reloaded or left. */
-export const AttemptEventKind = z.enum(["left_fullscreen", "left_page", "returned", "fullscreen_unavailable", "closed"]);
+export const AttemptEventKind = z.enum([
+  "left_fullscreen", "left_page", "returned", "fullscreen_unavailable", "closed",
+  // 15 Oct 2026 (docs/ANTI-CHEAT.md): what the page can see of someone working around the paper.
+  "lost_focus", "system_key", "blocked_action", "screen_changed", "second_tab",
+]);
 export type AttemptEventKind = z.infer<typeof AttemptEventKind>;
 
 export const AttemptEventBody = z.object({ kind: AttemptEventKind }).strict();
@@ -753,7 +757,10 @@ export type SubmitBody = z.infer<typeof SubmitBody>;
 export type AttemptEventBody = z.infer<typeof AttemptEventBody>;
 
 /** The kinds that count as leaving the paper, for the console's tally. */
-export const LEAVING_KINDS: readonly AttemptEventKind[] = ["left_fullscreen", "left_page", "closed"];
+export const LEAVING_KINDS: readonly AttemptEventKind[] = ["left_fullscreen", "left_page", "closed", "lost_focus"];
+
+/** Signals the instructor reads that are not a leave: the paper was worked around, not walked away from. */
+export const SIGNAL_KINDS: readonly AttemptEventKind[] = ["system_key", "blocked_action", "screen_changed", "second_tab"];
 
 /* ---------------------------------------------------------------------------
  * The class chat (instructor, approved 6 Oct 2026; docs/CHAT-PLAN.md).

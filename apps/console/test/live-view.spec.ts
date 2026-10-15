@@ -28,7 +28,7 @@ describe("the split is the server's figure, said in words", () => {
 
 describe("the toasts say what happened to what", () => {
   it("start names the item and who may answer", () => {
-    expect(startedWords("P-04-cache-1", null)).toBe("P-04-cache-1 put to the room, for everyone");
+    expect(startedWords("P-04-cache-1", null)).toBe("P-04-cache-1 put to the room, for everyone (started before classes)"); // T2: none is started any more; an old one still reads right
     expect(startedWords("P-04-cache-1", "BSCPE - 4")).toBe("P-04-cache-1 put to the room, for section BSCPE - 4");
   });
   it("end names the item and how many answered", () => {
@@ -36,7 +36,7 @@ describe("the toasts say what happened to what", () => {
     expect(endedWords("P-04-cache-1", 1)).toBe("P-04-cache-1 ended after 1 answer");
   });
   it("who may answer", () => {
-    expect(whoMayAnswer(null)).toBe("everyone");
+    expect(whoMayAnswer(null)).toBe("everyone (started before classes)");
     expect(whoMayAnswer("BSCPE-2A")).toBe("section BSCPE-2A");
   });
   it("plural", () => {

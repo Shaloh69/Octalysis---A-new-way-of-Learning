@@ -49,6 +49,17 @@ Every structural rule that CAN be a constraint SHOULD be a constraint. `run_inva
 rules a constraint cannot express. Do not write a checker for something a unique index already
 guarantees.
 
+## T2, staff chat and the sitting guards (files twenty to twenty-three, 9-15 Oct 2026)
+
+- `addendum-class-scope.sql`: a teacher reads the students of the classes they hold (ended or not) and writes
+  only where the class runs; the admin reads all and writes only their own. `staff_reads_section()` and friends
+  read `auth.uid()` inside (no actor argument). One question per CLASS in Lecture Mode. **Never put `is_staff()`
+  back on a student-data policy**: `class-scope-rls.spec.ts` (807 tests) fails.
+- `addendum-class-avatars.sql`: `can_see_avatar()` / `can_remove_avatar()` ask the class.
+- `addendum-staff-chat.sql`: room kinds `staff` (one) and `staff_direct` (an ordered pair, its two members only,
+  not the admin); `profiles.last_seen_at`, written by the API for staff only.
+- `addendum-sitting-guards.sql`: five more `attempt_events` kinds (`docs/ANTI-CHEAT.md`).
+
 ## The first-run tour (the nineteenth file, 9 Oct 2026)
 
 `addendum-tour.sql`: one column, `profiles.tour_seen_at` (null = the account has not had the tour),

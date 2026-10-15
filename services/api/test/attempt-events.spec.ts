@@ -127,6 +127,20 @@ describe("POST /api/v1/attempts/:id/events — who may record a leave", () => {
     expect((att.json().events as Array<{ kind: string }>).map((e) => e.kind)).toContain("left_fullscreen");
   });
 
+  it("anti-cheat (15 Oct 2026): the five new facts are recorded, lost focus counts as a leave, and nobody else can write them", async () => {
+    for (const kind of ["lost_focus", "system_key", "blocked_action", "screen_changed", "second_tab"]) {
+      expect((await post(attemptId, tokenA, { kind })).statusCode, kind).toBe(201);
+      expect((await post(attemptId, tokenB, { kind })).statusCode, `another student wrote ${kind}`).toBe(404);
+      expect((await post(attemptId, tokenT, { kind })).statusCode, `staff wrote ${kind}`).toBe(404);
+    }
+    const before = (await app.inject({ method: "GET", url: `/api/v1/console/students/${w.studentA}`, headers: auth(tokenT) }))
+      .json().attempts.find((x: { attemptId: string }) => x.attemptId === attemptId).leaves as number;
+    await post(attemptId, tokenA, { kind: "lost_focus" });
+    const after = (await app.inject({ method: "GET", url: `/api/v1/console/students/${w.studentA}`, headers: auth(tokenT) }))
+      .json().attempts.find((x: { attemptId: string }) => x.attemptId === attemptId).leaves as number;
+    expect(after, "a lost focus is a leave").toBe(before + 1);
+  });
+
   it("a student cannot read the console's view of their own leaves", async () => {
     const res = await app.inject({ method: "GET", url: `/api/v1/console/attempts/${attemptId}`, headers: auth(tokenA) });
     expect(res.statusCode).toBe(403);

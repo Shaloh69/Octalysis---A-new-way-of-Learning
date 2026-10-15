@@ -74,6 +74,8 @@ const FILES = [
   "db/addendum-class-avatars.sql",
   // T2 (9 Oct 2026): teachers talk to one another: the staff room, private staff threads, last_seen_at. Idempotent.
   "db/addendum-staff-chat.sql",
+  // Anti-cheat (15 Oct 2026): five more kinds of sitting event: lost focus, system keys, blocked actions. Idempotent.
+  "db/addendum-sitting-guards.sql",
 ];
 const FORBIDDEN = "local-bootstrap";
 
