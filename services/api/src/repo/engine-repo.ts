@@ -178,11 +178,12 @@ export async function startAttempt(
     }
 
     const { rows: assessRows } = await client.query(
-      `select a.attempts_allowed, a.opens_at, a.closes_at,
+      // T2 5.10: the window and limit are THIS student's: their class's, else the shared paper's.
+      `select w.attempts_allowed, w.opens_at, w.closes_at,
               (a.section_id is null
                  or a.section_id = (select p.section_id from profiles p where p.id = $2))
                 as in_section
-         from assessments a where a.id = $1`,
+         from assessments a, effective_assessment_window($2, a.id) w where a.id = $1`,
       [opts.assessmentId, opts.userId],
     );
     const assessment = assessRows[0];

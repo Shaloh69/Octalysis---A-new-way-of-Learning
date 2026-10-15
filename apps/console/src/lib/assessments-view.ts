@@ -1,4 +1,4 @@
-import type { Assessment, Bank, Shortfall } from "./api";
+import type { Assessment, Bank, ClassWindow, Shortfall } from "./api";
 import { dayDate, TYPE_WORD } from "./record-view";
 
 /**
@@ -99,6 +99,39 @@ export function counts(rows: Array<Pick<Assessment, "opensAt" | "closesAt">>, no
  */
 export function unfillable(rows: Array<Pick<Assessment, "opensAt" | "closesAt" | "bank">>, now: Date = new Date()) {
   return rows.filter((r) => windowState(r, now) !== "closed" && !r.bank.satisfiable);
+}
+
+/**
+ * T2 5.10: the window a class's students actually have, field by field: the class's own where set, else
+ * the course's. The same rule as `effective_assessment_window()` in the database, for rendering only.
+ */
+export function effectiveWindow(
+  a: Pick<Assessment, "opensAt" | "closesAt" | "attemptsAllowed">,
+  own: Pick<ClassWindow, "opensAt" | "closesAt" | "attemptsAllowed"> | undefined,
+): { opensAt: string | null; closesAt: string | null; attemptsAllowed: number } {
+  return {
+    opensAt: own?.opensAt ?? a.opensAt,
+    closesAt: own?.closesAt ?? a.closesAt,
+    attemptsAllowed: own?.attemptsAllowed ?? a.attemptsAllowed,
+  };
+}
+
+/**
+ * The class window form as a request body. An empty field is null, "the course's"; an attempt count that
+ * is not a whole number from 1 to 10 makes the form not ready (null back).
+ */
+export function classWindowBody(
+  form: { opensAt: string; closesAt: string; attempts: string; reason: string },
+): { opensAt: string | null; closesAt: string | null; attemptsAllowed: number | null; reason: string } | null {
+  const reason = form.reason.trim();
+  if (reason.length < 3) return null;
+  let attemptsAllowed: number | null = null;
+  if (form.attempts.trim() !== "") {
+    const n = Number(form.attempts);
+    if (!Number.isInteger(n) || n < 1 || n > 10) return null;
+    attemptsAllowed = n;
+  }
+  return { opensAt: fromLocalInput(form.opensAt), closesAt: fromLocalInput(form.closesAt), attemptsAllowed, reason };
 }
 
 /** An ISO instant as a `datetime-local` value in the browser's own zone. */

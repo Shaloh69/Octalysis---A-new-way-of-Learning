@@ -68,7 +68,8 @@ export function registerJourneyRoutes(app: FastifyInstance, env: Env): void {
         saltSecret: env.EXAM_SALT_SECRET,
       });
       const { rows: s } = await app.db.query(
-        `select a.title, a.attempts_allowed,
+        // T2 5.10: a moon check follows its stage's window for this student's class.
+        `select a.title, (select w.attempts_allowed from effective_assessment_window($2, a.id) w) as attempts_allowed,
                 (select count(*)::int from attempts t where t.assessment_id = a.id and t.user_id = $2) as used,
                 (select max(t.score / t.max_score) from attempts t
                   where t.assessment_id = a.id and t.user_id = $2 and t.status = 'submitted' and t.max_score > 0) as best,

@@ -421,3 +421,17 @@ assessment id a class sees changes. (That is why it keys on the assessment, not 
 
 **Asked with this plan:** (1) do **moon checks** follow the same per-class window, or only stage checks? (2) may
 the admin set another teacher's class window (a fifth exception to §5.9 ruling 2), or only the class's teacher?
+
+**Ruled 15 Oct 2026 (question tool): approved as written; (1) moon checks too; (2) only the class's own teacher.**
+**BUILT the same day** (the 24th SQL file on the deployment, ref ddvxkbcelpqydnjkffdr, before the code):
+- (1) is built as **one setting per stage**, not one per moon: a moon check (scope `moon`, created lazily, one per
+  moon, never listed on `/assessments`) reads its class's row on **that stage's shared stage check**. So the table
+  holds stage checks only, the trigger refuses `moon` too, and a teacher sets about 18 rows rather than 115. The
+  attempt floor counts the class's stage-check AND moon-check attempts on that stage.
+- (2): the admin's "Class windows…" lists every class read-only ("Only a class's own teacher sets its window").
+- The student's class is the un-ended class of their section for the paper's subject; an ended class's row stops
+  applying (`class-windows-rls.spec.ts`).
+- Tests: `class-windows-rls.spec.ts` 20 (red first on a database without the table; mutation: the policy widened to
+  `is_staff()` turned the two cross-class reads red), `class-windows-api.spec.ts` 13 (red first: 10 of 13 against the
+  old routes; mutation: the own-teacher guard removed turned 3 red). Console gate `console-class-windows.spec.ts`,
+  24 at 1440 and 380, captures `design/templates/console/assessments/current-class-*.png`.

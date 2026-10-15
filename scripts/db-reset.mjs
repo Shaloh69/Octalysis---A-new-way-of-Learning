@@ -68,6 +68,8 @@ const FILES = [
   "db/addendum-staff-chat.sql",
   // Anti-cheat (15 Oct 2026): five more kinds of sitting event: lost focus, system keys, blocked actions. Idempotent.
   "db/addendum-sitting-guards.sql",
+  // T2 5.10 (15 Oct 2026): a class's own window and attempt limit on a stage check (moon checks follow). Idempotent.
+  "db/addendum-class-windows.sql",
 ];
 
 const c = {

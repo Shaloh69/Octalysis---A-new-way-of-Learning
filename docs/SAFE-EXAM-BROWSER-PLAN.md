@@ -1,4 +1,8 @@
-# Safe Exam Browser for the exams — plan v1, 15 Oct 2026 (for approval; nothing built)
+# Safe Exam Browser for the exams — plan v1, 15 Oct 2026 — **APPROVED** (exams only); nothing built
+
+**Ruled 15 Oct 2026 (question tool): "Exams only; lab PC exists."** Next is §3's spike on a lab PC with SEB 3.x
+installed by the instructor. §6's question 2 (who holds the `.seb` file and quit password) is still open; the
+recommendation is the instructor alone.
 
 Instructor, 15 Oct 2026 (question tool, `docs/ANTI-CHEAT.md` §6.2): **"Yes, plan it."**
 

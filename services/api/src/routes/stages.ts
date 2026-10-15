@@ -408,11 +408,14 @@ export function registerStageRoutes(app: FastifyInstance, env: Env): void {
      * how many tries remain rather than discovering it on a rejected POST.
      */
     const assessment = await app.db.query(
-      `select a.id, a.title, a.attempts_allowed, a.opens_at, a.closes_at,
+      // T2 5.10: the window and limit this student has (their class's, else the shared paper's).
+      `select a.id, a.title,
+              w.attempts_allowed, w.opens_at, w.closes_at,
               (select count(*)::int from attempts at
                 where at.assessment_id = a.id and at.user_id = $2) as used
          from assessments a
          join blueprints b on b.id = a.blueprint_id
+         cross join lateral effective_assessment_window($2::uuid, a.id) w
         where b.scope = 'stage' and b.stage_id = $1
           and (a.section_id is null or a.section_id = (
                 select section_id from profiles where id = $2))

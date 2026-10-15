@@ -78,8 +78,8 @@ another student's; a lost focus counts as a leave). SQL: `db/addendum-sitting-gu
    `StartPrompt`): turn on Guided Access (iPhone, iPad) or App pinning (Android) before you start; your
    instructor may check. Words only: a page cannot tell whether it is on. Tested in
    `design/specs/web-stage-check.spec.ts`.
-2. **Safe Exam Browser: plan it.** Its plan is `docs/SAFE-EXAM-BROWSER-PLAN.md`, stopped for approval;
-   nothing is built.
+2. **Safe Exam Browser: plan it.** Its plan is `docs/SAFE-EXAM-BROWSER-PLAN.md`, **approved the same day for the
+   three exams only**; the first step is a spike on a lab PC (the instructor installs SEB 3.x). Nothing built yet.
 3. Camera proctoring: not proposed (unchanged, see below).
 4. **No new signal hands a paper in.** Facts only; the 15-second rule stays the one automatic consequence.
 

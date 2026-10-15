@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, type Assessment } from "@/lib/api";
-import { fromLocalInput, saltState, toLocalInput } from "@/lib/assessments-view";
+import { api, type AssessClass, type Assessment } from "@/lib/api";
+import {
+  classWindowBody, effectiveWindow, fromLocalInput, saltState, toLocalInput, windowLines, windowSentence,
+} from "@/lib/assessments-view";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -169,6 +171,193 @@ export function WindowDialog({ assessment, onClose, onDone, returnFocus }: RowDi
           <Button onClick={() => void save()} disabled={!ready}>
             {saving ? "Saving…" : "Save window"}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------- class window */
+
+/**
+ * T2 5.10 (instructor, 15 Oct 2026): a class's own window and attempt limit over the one shared stage
+ * check; that stage's moon checks follow it. Every class the actor reads is listed with what its students
+ * actually have; only the class's own teacher, while it runs, gets the form (the server says so per class,
+ * `canSetWindow`). An empty field is the course's. Reason required; the API audits before and after.
+ */
+export function ClassWindowDialog({
+  assessment, classes, onClose, onDone, returnFocus,
+}: RowDialogProps & { classes: AssessClass[] }) {
+  const mine = classes.filter((c) => c.canSetWindow);
+  const [classId, setClassId] = useState("");
+  const [opensAt, setOpensAt] = useState("");
+  const [closesAt, setClosesAt] = useState("");
+  const [attempts, setAttempts] = useState("");
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const ownOf = (id: string) => assessment?.classWindows.find((w) => w.classId === id);
+  function load(id: string) {
+    const own = ownOf(id);
+    setClassId(id);
+    setOpensAt(toLocalInput(own?.opensAt ?? null));
+    setClosesAt(toLocalInput(own?.closesAt ?? null));
+    setAttempts(own?.attemptsAllowed == null ? "" : String(own.attemptsAllowed));
+  }
+  useEffect(() => {
+    if (!assessment) return;
+    load(mine[0]?.id ?? "");
+    setReason("");
+    setSaving(false);
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset once per opened assessment
+  }, [assessment]);
+
+  const name = assessment?.title ?? "";
+  const body = classWindowBody({ opensAt, closesAt, attempts, reason });
+  const klass = classes.find((c) => c.id === classId);
+
+  async function send(clear: boolean) {
+    if (!assessment || !klass || !body) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await api.setClassWindow(
+        assessment.id,
+        klass.id,
+        clear ? { opensAt: null, closesAt: null, attemptsAllowed: null, reason: body.reason } : body,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That change was not saved.");
+      toast.error(`${klass.sectionCode}'s window for ${name} was not saved`, "The dialog is still open with your reason in it.");
+      setSaving(false);
+      return;
+    }
+    toast.success(clear ? `${klass.sectionCode} is back on the course's window for ${name}` : `${klass.sectionCode}'s window saved for ${name}`);
+    setSaving(false);
+    onClose();
+    onDone();
+  }
+
+  const course = assessment ? windowSentence(assessment.opensAt, assessment.closesAt) : "";
+  return (
+    <Dialog open={assessment !== null} onOpenChange={(o) => !o && !saving && onClose()}>
+      <DialogContent className="ease-dialog max-w-lg max-sm:top-3 max-sm:translate-y-0" onCloseAutoFocus={homeFocus(returnFocus)}>
+        <DialogHeader>
+          <DialogTitle>{name}: class windows</DialogTitle>
+          <DialogDescription>
+            The course&apos;s window: {course} <span className="num">{assessment?.attemptsAllowed}</span> attempts. A class
+            may have its own; this stage&apos;s moon checks follow it.
+          </DialogDescription>
+        </DialogHeader>
+
+        <ul className="mb-4 flex flex-col gap-1 text-sm" aria-label="What each class has">
+          {classes.map((c) => {
+            const own = ownOf(c.id);
+            const e = assessment ? effectiveWindow(assessment, own) : null;
+            return (
+              <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-x-3" data-class-row={c.id}>
+                <span className="text-ink">
+                  {c.sectionCode} <span className="text-ink-muted">· {c.subjectCode}{c.ended ? " · ended" : ""}</span>
+                </span>
+                <span className="text-xs text-ink-muted">
+                  {own && e ? (
+                    <>
+                      own:{" "}
+                      {windowLines(e).map(([word, when]) => (
+                        <span key={word}>
+                          {word} <span className="num">{when}</span> ·{" "}
+                        </span>
+                      ))}
+                      <span className="num">{e.attemptsAllowed}</span> attempts
+                    </>
+                  ) : (
+                    "the course's"
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+
+        {mine.length === 0 ? (
+          <p className="assess-callout" data-class-window-readonly="">
+            Only a class&apos;s own teacher sets its window, while the class runs. You can read them here.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {mine.length > 1 ? (
+              <div className="assess-field">
+                <Label htmlFor="cw-class">Class</Label>
+                <select id="cw-class" className="assess-select" value={classId} onChange={(e) => load(e.target.value)}>
+                  {mine.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.sectionCode} · {c.subjectCode}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <p className="text-sm text-ink">
+                For <strong>{klass?.sectionCode}</strong> only. An empty field is the course&apos;s.
+              </p>
+            )}
+            <div className="assess-dates">
+              <div className="assess-field">
+                <Label htmlFor="cw-opens">Opens</Label>
+                <Input id="cw-opens" className="num" type="datetime-local" value={opensAt} onChange={(e) => setOpensAt(e.target.value)} />
+              </div>
+              <div className="assess-field">
+                <Label htmlFor="cw-closes">Closes</Label>
+                <Input id="cw-closes" className="num" type="datetime-local" value={closesAt} onChange={(e) => setClosesAt(e.target.value)} />
+              </div>
+            </div>
+            <div className="assess-field">
+              <Label htmlFor="cw-attempts">Attempts allowed</Label>
+              <Input
+                id="cw-attempts"
+                className="num w-24"
+                type="number"
+                min={1}
+                max={10}
+                placeholder={String(assessment?.attemptsAllowed ?? "")}
+                value={attempts}
+                onChange={(e) => setAttempts(e.target.value)}
+                aria-describedby="cw-attempts-hint"
+              />
+              <p id="cw-attempts-hint" className="assess-hint">
+                Empty is the course&apos;s. It cannot go below an attempt this class has already sat.
+              </p>
+            </div>
+            <div className="assess-field">
+              <Label htmlFor="cw-reason">Reason (required)</Label>
+              <Textarea id="cw-reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Our class meets on Thursdays" />
+              <p className="assess-hint">Recorded in the audit log with the old and new window.</p>
+            </div>
+          </div>
+        )}
+
+        {error ? (
+          <p className="mt-3 rounded-md border border-danger bg-danger-bg px-3 py-2 text-sm text-ink" role="alert">
+            Not saved. {error}
+          </p>
+        ) : null}
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
+            {mine.length === 0 ? "Close" : "Cancel"}
+          </Button>
+          {mine.length > 0 ? (
+            <>
+              <Button variant="outline" onClick={() => void send(true)} disabled={!body || saving || !ownOf(classId)}>
+                Use the course&apos;s
+              </Button>
+              <Button onClick={() => void send(false)} disabled={!body || saving}>
+                {saving ? "Saving…" : "Save for this class"}
+              </Button>
+            </>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

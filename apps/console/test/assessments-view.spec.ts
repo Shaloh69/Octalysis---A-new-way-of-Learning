@@ -1,9 +1,30 @@
 import { describe, it, expect } from "vitest";
 import {
-  bankWords, cellWords, counts, dayTime, fromLocalInput, saltState, toLocalInput,
+  bankWords, cellWords, classWindowBody, counts, dayTime, effectiveWindow, fromLocalInput, saltState, toLocalInput,
   unfillable, windowLines, windowSentence, windowState,
 } from "../src/lib/assessments-view";
 import type { Bank } from "../src/lib/api";
+
+describe("a class's own window (T2 5.10)", () => {
+  const course = { opensAt: "2026-10-01T00:00:00.000Z", closesAt: "2026-10-31T00:00:00.000Z", attemptsAllowed: 5 };
+  it("field by field: the class's where set, the course's where not", () => {
+    expect(effectiveWindow(course, { opensAt: null, closesAt: "2026-11-15T00:00:00.000Z", attemptsAllowed: null })).toEqual({
+      opensAt: course.opensAt, closesAt: "2026-11-15T00:00:00.000Z", attemptsAllowed: 5,
+    });
+    expect(effectiveWindow(course, undefined)).toEqual(course);
+  });
+  it("an empty field is the course's (null), never 'leave alone'", () => {
+    expect(classWindowBody({ opensAt: "", closesAt: "", attempts: "", reason: "back to the course" })).toEqual({
+      opensAt: null, closesAt: null, attemptsAllowed: null, reason: "back to the course",
+    });
+  });
+  it("is not ready without a reason, or with an attempt count outside 1 to 10", () => {
+    expect(classWindowBody({ opensAt: "", closesAt: "", attempts: "3", reason: "  " })).toBeNull();
+    expect(classWindowBody({ opensAt: "", closesAt: "", attempts: "0", reason: "a reason" })).toBeNull();
+    expect(classWindowBody({ opensAt: "", closesAt: "", attempts: "2.5", reason: "a reason" })).toBeNull();
+    expect(classWindowBody({ opensAt: "", closesAt: "", attempts: "7", reason: "a reason" })?.attemptsAllowed).toBe(7);
+  });
+});
 
 const NOW = new Date("2026-09-27T12:00:00");
 const iso = (s: string) => new Date(s).toISOString();

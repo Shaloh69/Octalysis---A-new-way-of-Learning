@@ -598,6 +598,28 @@ export interface Assessment {
   submitted: number;
   /** Can the live bank fill this assessment's blueprint? Same answer as `Feasibility`. */
   bank: Bank;
+  /** T2 5.10: the classes (that you read) with their own window on this stage check. Empty for an exam. */
+  classWindows: ClassWindow[];
+}
+
+/** A class's own window on a shared stage check. A null field is the course's (the shared paper's). */
+export interface ClassWindow {
+  classId: string;
+  opensAt: string | null;
+  closesAt: string | null;
+  attemptsAllowed: number | null;
+  setAt: string;
+}
+
+/** A class the signed-in person reads, as `/assessments` lists it. */
+export interface AssessClass {
+  id: string;
+  sectionCode: string;
+  subjectCode: string;
+  teacherName: string | null;
+  ended: boolean;
+  /** Only the class's own teacher, while it runs (instructor, 15 Oct 2026). */
+  canSetWindow: boolean;
 }
 
 export interface Shortfall { dimension: string; cell: string; need: number; have: number }
@@ -875,8 +897,22 @@ export const api = {
     }),
 
   assessments: () =>
-    request<{ assessments: Assessment[]; blueprints: Blueprint[]; sections: Section[] }>(
+    request<{ assessments: Assessment[]; blueprints: Blueprint[]; sections: Section[]; classes: AssessClass[] }>(
       "/api/v1/console/assessments",
+    ),
+
+  /**
+   * T2 5.10: a class's own window on a shared stage check (its moon checks follow). `undefined` leaves a
+   * field alone, `null` returns it to the course's; all three null clears the class's row. Reason required.
+   */
+  setClassWindow: (
+    assessmentId: string,
+    classId: string,
+    body: { opensAt?: string | null; closesAt?: string | null; attemptsAllowed?: number | null; reason: string },
+  ) =>
+    request<{ ok: true; cleared: boolean }>(
+      `/api/v1/console/assessments/${encodeURIComponent(assessmentId)}/classes/${encodeURIComponent(classId)}/window`,
+      { method: "PUT", body: JSON.stringify(body) },
     ),
 
   /**

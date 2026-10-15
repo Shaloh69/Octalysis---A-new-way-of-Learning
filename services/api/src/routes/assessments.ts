@@ -66,6 +66,17 @@ const WindowBody = z.object({
   reason: z.string().trim().min(3).max(500),
 });
 
+/**
+ * A class's own window (T2 5.10). `undefined` leaves a field alone; `null` returns it to the shared
+ * paper's value. Audited with a reason, as the shared window is.
+ */
+const ClassWindowBody = z.object({
+  opensAt: z.string().datetime().nullable().optional(),
+  closesAt: z.string().datetime().nullable().optional(),
+  attemptsAllowed: z.number().int().min(1).max(10).nullable().optional(),
+  reason: z.string().trim().min(3).max(500),
+});
+
 /** Rotating a salt changes every paper not yet started, so it carries a reason. */
 const RotateBody = z.object({
   reason: z.string().trim().min(3).max(500),
@@ -191,8 +202,51 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
          from blueprints where scope not in ('objective', 'moon') order by scope, name`,
     );
 
+    // T2 5.10: the classes this actor reads, and each class's own window on a stage check.
+    const cp: unknown[] = [];
+    const klasses = await app.db.query(
+      `select c.id::text as id, s.code as section_code, c.subject_code, c.teacher_id::text as teacher_id,
+              t.full_name as teacher_name, c.ended_at is not null as ended
+         from classes c join sections s on s.id = c.section_id left join profiles t on t.id = c.teacher_id
+        where ${sectionFilter(scope, "read", "c.section_id", cp)}
+        order by s.code, c.subject_code`,
+      cp,
+    );
+    const classIds = klasses.rows.map((k) => k.id as string);
+    const windows = classIds.length
+      ? (
+          await app.db.query(
+            `select class_id::text as class_id, assessment_id::text as assessment_id, opens_at, closes_at,
+                    attempts_allowed, set_at
+               from class_assessment_windows where class_id = any($1::uuid[])`,
+            [classIds],
+          )
+        ).rows
+      : [];
+
     return reply.send({
+      classes: klasses.rows.map((k) => ({
+        id: k.id,
+        sectionCode: k.section_code,
+        subjectCode: k.subject_code,
+        teacherName: k.teacher_name,
+        ended: k.ended === true,
+        // Only the class's own teacher, while it runs (instructor, 15 Oct 2026); the admin reads.
+        canSetWindow: k.teacher_id === scope.userId && k.ended !== true,
+      })),
       assessments: rows.map((r) => ({
+        classWindows:
+          r.scope === "stage"
+            ? windows
+                .filter((w) => w.assessment_id === r.id)
+                .map((w) => ({
+                  classId: w.class_id,
+                  opensAt: w.opens_at,
+                  closesAt: w.closes_at,
+                  attemptsAllowed: w.attempts_allowed === null ? null : Number(w.attempts_allowed),
+                  setAt: w.set_at,
+                }))
+            : [],
         id: r.id,
         title: r.title,
         attemptsAllowed: Number(r.attempts_allowed),
@@ -426,6 +480,128 @@ export function registerAssessmentRoutes(app: FastifyInstance, env: Env): void {
     );
 
     return reply.send({ ok: true });
+  });
+
+  /* ----------------------------------------------------------
+   * PUT /api/v1/console/assessments/:id/classes/:classId/window
+   *
+   * T2 5.10 (instructor, 15 Oct 2026): a class's own window and attempt limit on a shared stage
+   * check, over the one paper; that stage's moon checks follow it. A null field is the shared
+   * paper's; all three null clears the class's row. Only the class's own teacher, while the class
+   * runs: another teacher's class is 404 (or 403 if they read it), the admin reads only.
+   * The exams are refused (ruling 4), here and by the table's trigger.
+   * -------------------------------------------------------- */
+  app.put("/api/v1/console/assessments/:id/classes/:classId/window", async (req, reply) => {
+    const id = await identityFrom(req, env);
+    requireStaff(id);
+    const scope = await staffScope(app.db, id);
+    const p = req.params as { id: string; classId: string };
+    const uuid = z.string().uuid();
+    if (!uuid.safeParse(p.id).success || !uuid.safeParse(p.classId).success) throw errors.notFound("No such class.");
+
+    const body = ClassWindowBody.safeParse(req.body);
+    if (!body.success) throw errors.badRequest("That change could not be read.");
+    const b = body.data;
+
+    const k = (
+      await app.db.query(
+        `select c.section_id::text as section_id, c.teacher_id::text as teacher_id, c.ended_at, s.code
+           from classes c join sections s on s.id = c.section_id where c.id = $1`,
+        [p.classId],
+      )
+    ).rows[0];
+    if (!k || !scope.reads(k.section_id as string)) throw errors.notFound("No such class.");
+    if (k.teacher_id !== scope.userId) {
+      throw errors.forbidden("Only this class's own teacher sets its window. You can read it.");
+    }
+    if (k.ended_at) throw errors.forbidden("This class has ended, so it is read-only.");
+
+    const a = (
+      await app.db.query(
+        `select a.title, a.section_id, b.scope, b.stage_id from assessments a
+           join blueprints b on b.id = a.blueprint_id where a.id = $1`,
+        [p.id],
+      )
+    ).rows[0];
+    if (!a) throw errors.notFound("No such assessment.");
+    if (a.scope !== "stage" || a.section_id !== null) {
+      throw errors.badRequest("A class's own window is set on a shared stage check only. The exams are the course's.");
+    }
+
+    const result = await withTransaction(app.db, async (client) => {
+      await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [`cw:${p.classId}:${p.id}`]);
+      const prev = (
+        await client.query(
+          `select opens_at, closes_at, attempts_allowed from class_assessment_windows
+            where class_id = $1 and assessment_id = $2`,
+          [p.classId, p.id],
+        )
+      ).rows[0] ?? { opens_at: null, closes_at: null, attempts_allowed: null };
+      const next = {
+        opensAt: b.opensAt === undefined ? prev.opens_at : b.opensAt,
+        closesAt: b.closesAt === undefined ? prev.closes_at : b.closesAt,
+        attemptsAllowed: b.attemptsAllowed === undefined ? prev.attempts_allowed : b.attemptsAllowed,
+      };
+
+      // As the shared PATCH: never below an attempt this class's students have already sat
+      // (on the stage check or, since they follow it, on that stage's moon checks).
+      if (next.attemptsAllowed !== null) {
+        const used = await client.query(
+          `select coalesce(max(t.attempt_no), 0)::int as n
+             from attempts t
+             join profiles pr on pr.id = t.user_id and pr.section_id = $1
+             join assessments x on x.id = t.assessment_id join blueprints bx on bx.id = x.blueprint_id
+            where t.assessment_id = $2 or (bx.scope = 'moon' and bx.stage_id = $3)`,
+          [k.section_id, p.id, a.stage_id],
+        );
+        const highest = Number(used.rows[0]!.n);
+        if (Number(next.attemptsAllowed) < highest) {
+          throw errors.badRequest(
+            `A student in ${k.code as string} has already sat attempt ${highest}. The limit cannot go below that.`,
+          );
+        }
+      }
+
+      const clear = next.opensAt === null && next.closesAt === null && next.attemptsAllowed === null;
+      try {
+        if (clear) {
+          await client.query(`delete from class_assessment_windows where class_id = $1 and assessment_id = $2`, [p.classId, p.id]);
+        } else {
+          await client.query(
+            `insert into class_assessment_windows (class_id, assessment_id, opens_at, closes_at, attempts_allowed, set_by, set_at)
+             values ($1, $2, $3, $4, $5, $6, now())
+             on conflict (class_id, assessment_id) do update
+               set opens_at = excluded.opens_at, closes_at = excluded.closes_at,
+                   attempts_allowed = excluded.attempts_allowed, set_by = excluded.set_by, set_at = now()`,
+            [p.classId, p.id, next.opensAt, next.closesAt, next.attemptsAllowed, scope.userId],
+          );
+        }
+      } catch (e) {
+        // The table's guard: a window that closes before it opens, against the shared paper.
+        if ((e as { code?: string }).code === "23514") throw errors.badRequest("This class's window would close before it opens.");
+        throw e;
+      }
+
+      await client.query(
+        `insert into audit_log (actor_id, action, target_type, target_id, payload)
+         values ($1, 'assessment.class_window', 'assessment', $2, $3)`,
+        [
+          scope.userId,
+          p.id,
+          JSON.stringify({
+            title: a.title,
+            classId: p.classId,
+            section: k.code,
+            reason: b.reason,
+            from: { opensAt: prev.opens_at, closesAt: prev.closes_at, attemptsAllowed: prev.attempts_allowed },
+            to: clear ? null : next,
+          }),
+        ],
+      );
+      return { cleared: clear };
+    });
+
+    return reply.send({ ok: true, ...result });
   });
 
   /* ----------------------------------------------------------

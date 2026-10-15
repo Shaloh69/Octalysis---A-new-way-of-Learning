@@ -13,6 +13,10 @@ export interface RowActions {
   window: (a: Assessment, from: HTMLElement | null) => void;
   bank: (a: Assessment, from: HTMLElement | null) => void;
   rotate: (a: Assessment, from: HTMLElement | null) => void;
+  /** T2 5.10: a class's own window on a stage check. Absent when the actor reads no class. */
+  classWindow?: (a: Assessment, from: HTMLElement | null) => void;
+  /** The actor holds a running class whose window they may set. */
+  settable: boolean;
 }
 
 export function StatusBadge({ a }: { a: Assessment }) {
@@ -54,7 +58,21 @@ export function Salt({ a }: { a: Assessment }) {
 
 export function Window({ a }: { a: Assessment }) {
   const lines = windowLines(a);
-  if (lines.length === 0) return <span className="text-xs text-ink-muted">no window</span>;
+  const own = a.classWindows.length;
+  // T2 5.10: said beside the course's window, so the row never claims one window for every class.
+  const note = own > 0 ? (
+    <span className="text-xs text-ink-muted" data-class-windows="">
+      <span className="num">{own}</span> {own === 1 ? "class has" : "classes have"} its own
+    </span>
+  ) : null;
+  if (lines.length === 0) {
+    return (
+      <span className="assess-window">
+        <span className="text-xs text-ink-muted">no window</span>
+        {note}
+      </span>
+    );
+  }
   return (
     <span className="assess-window">
       {lines.map(([word, when]) => (
@@ -62,6 +80,7 @@ export function Window({ a }: { a: Assessment }) {
           <span className="text-ink-muted">{word}</span> <span className="num" data-date="">{when}</span>
         </span>
       ))}
+      {note}
     </span>
   );
 }
@@ -78,24 +97,36 @@ export function Actions({ a, on }: { a: Assessment; on: RowActions }) {
   const why = a.sectionId === null
     ? "This paper is the whole course's, so only the admin changes it. You can read it."
     : "You can read this paper and not change it.";
+  // T2 5.10: on a shared stage check a teacher cannot change, the change they CAN make is their class's window.
+  const stageShared = a.scope === "stage" && a.sectionId === null;
+  const forMyClass = stageShared && !a.canEdit && on.settable && on.classWindow;
   return (
     <div className="assess-actions">
-      <Button
-        ref={setWindow}
-        size="sm"
-        variant="outline"
-        aria-disabled={!a.canEdit || undefined}
-        title={a.canEdit ? undefined : why}
-        onClick={() => a.canEdit && on.window(a, setWindow.current)}
-      >
-        Set window
-      </Button>
+      {forMyClass ? (
+        <Button ref={setWindow} size="sm" variant="outline" onClick={() => on.classWindow?.(a, setWindow.current)}>
+          Set for my class
+        </Button>
+      ) : (
+        <Button
+          ref={setWindow}
+          size="sm"
+          variant="outline"
+          aria-disabled={!a.canEdit || undefined}
+          title={a.canEdit ? undefined : why}
+          onClick={() => a.canEdit && on.window(a, setWindow.current)}
+        >
+          Set window
+        </Button>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger ref={more} aria-label={`More for ${a.title}`} className="assess-more">
           <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => on.bank(a, more.current)}>Check the bank…</DropdownMenuItem>
+          {stageShared && on.classWindow ? (
+            <DropdownMenuItem onSelect={() => on.classWindow?.(a, more.current)}>Class windows…</DropdownMenuItem>
+          ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem disabled={!a.canEdit} onSelect={() => on.rotate(a, more.current)}>Rotate exam salt…</DropdownMenuItem>
           {a.canEdit ? null : (

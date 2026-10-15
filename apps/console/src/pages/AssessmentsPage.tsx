@@ -10,7 +10,7 @@ import { Empty } from "@/components/ui/empty";
 import { AssessList, AssessTable } from "./assessments/Views";
 import { useIdentity } from "./teachers/parts";
 import { CreateDialog } from "./assessments/CreateDialog";
-import { BankDialog, RotateDialog, WindowDialog } from "./assessments/RowDialogs";
+import { BankDialog, ClassWindowDialog, RotateDialog, WindowDialog } from "./assessments/RowDialogs";
 import type { RowActions } from "./assessments/Row";
 
 /**
@@ -55,6 +55,8 @@ export function AssessmentsPage() {
   const [windowFor, setWindowFor] = useState<Assessment | null>(null);
   const [bankFor, setBankFor] = useState<Assessment | null>(null);
   const [rotateFor, setRotateFor] = useState<Assessment | null>(null);
+  const [classWindowFor, setClassWindowFor] = useState<Assessment | null>(null);
+  const classes = data?.classes ?? [];
   /** What opened the dialog, so focus goes back there (NEXT-SESSION §0c.4). */
   const opener = useRef<HTMLElement | null>(null);
   const remember = (el?: HTMLElement | null) => {
@@ -65,6 +67,8 @@ export function AssessmentsPage() {
     window: (a, from) => { remember(from); setWindowFor(a); },
     bank: (a, from) => { remember(from); setBankFor(a); },
     rotate: (a, from) => { remember(from); setRotateFor(a); },
+    ...(classes.length > 0 ? { classWindow: (a: Assessment, from: HTMLElement | null) => { remember(from); setClassWindowFor(a); } } : {}),
+    settable: classes.some((k) => k.canSetWindow),
   };
 
   const rows = data?.assessments ?? [];
@@ -167,6 +171,13 @@ export function AssessmentsPage() {
         />
       ) : null}
       <WindowDialog assessment={windowFor} onClose={() => setWindowFor(null)} onDone={list.reload} returnFocus={() => opener.current} />
+      <ClassWindowDialog
+        assessment={classWindowFor}
+        classes={classes}
+        onClose={() => setClassWindowFor(null)}
+        onDone={list.reload}
+        returnFocus={() => opener.current}
+      />
       <RotateDialog assessment={rotateFor} onClose={() => setRotateFor(null)} onDone={list.reload} returnFocus={() => opener.current} />
       <BankDialog assessment={bankFor} onClose={() => setBankFor(null)} returnFocus={() => opener.current} />
     </div>

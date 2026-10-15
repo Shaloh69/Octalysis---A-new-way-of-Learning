@@ -49,6 +49,15 @@ Every structural rule that CAN be a constraint SHOULD be a constraint. `run_inva
 rules a constraint cannot express. Do not write a checker for something a unique index already
 guarantees.
 
+## A class's own window on a stage check (the twenty-fourth file, 15 Oct 2026)
+
+`addendum-class-windows.sql` (T2 5.10, instructor: "Build it now"): `class_assessment_windows` (class, assessment;
+opens, closes, attempts, each null = the shared paper's). **A stage check only**, by trigger (an exam is global,
+ruling 4; a moon check follows its stage's row). **`effective_assessment_window(user, assessment)` is the one
+rule**: Start (`engine-repo.ts`), the reader (`routes/stages.ts`) and the moon panel (`routes/journeys.ts`) all ask
+it; never compare `assessments.closes_at` directly again. API-written only (no write policy); staff read their
+classes' rows. Tested by `class-windows-rls.spec.ts` and `class-windows-api.spec.ts`.
+
 ## T2, staff chat and the sitting guards (files twenty to twenty-three, 9-15 Oct 2026)
 
 - `addendum-class-scope.sql`: a teacher reads the students of the classes they hold (ended or not) and writes
