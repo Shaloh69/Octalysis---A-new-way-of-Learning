@@ -2,6 +2,24 @@
   "_about": "The changelog's written highlights, one entry per day that shipped. Written from that day's commits (git log), in plain words; the commit list itself is added by scripts/changelog.mjs. `teachers` shows on the console's /changelog; `students` (under `studentTitle`, in a student's words) on the student app's What's new, and only student-facing changes go there. An empty `students` list keeps the day off the student page. Instructor, 7 Oct 2026 (night): both written highlights and the full commit list.",
   "updates": [
     {
+      "date": "2026-10-15",
+      "title": "Teachers hold their own classes; teachers can chat with each other; papers watch for workarounds",
+      "studentTitle": "Fixes for moon checks, and a stricter paper",
+      "teachers": [
+        "Each teacher now sees only the classes they hold: their students, records, attempts, locks, submissions, gradebook, Lecture Mode, chat and pictures. The admin reads every class and changes only their own (plus picture removal, password and account recovery, assigning classes, and the course's exams). Enforced in the database and in the server, with about 1,000 tests that check a teacher of another class is refused.",
+        "A class that has ended stays readable to its teacher and can no longer be changed. A teacher with no class sees a clear message on every page, with the way to get one.",
+        "No more locks or questions for 'everyone': locks are for one of your classes, or All my classes. The Prelim, Midterm and stage checks are shared papers the admin changes; a teacher can make a paper for their own class.",
+        "Importing a roster into a new section makes you its teacher. BSECE-4A, which had no class, was given to the admin on the deployment; reassign it on Teachers.",
+        "Chat has a Teachers group: a staff room for every teacher and the admin, private threads between two teachers that nobody else can read, and an 'Active now' dot.",
+        "Papers now also record the window losing focus (another app, a virtual desktop, a second monitor), the Windows key, Alt+Tab and desktop-switching keys, refused copy/paste/print, split screen and a second tab. Each is listed on the student's record as a fact; losing focus for 15 seconds hands the paper in, as leaving the page already did. docs/ANTI-CHEAT.md has what can and cannot be done on phones and PCs.",
+        "Fixed: eleven calculation questions could fail to build their choices for some numbers, which is why moon 04.7 would not open for a student and 06-raid5-overhead-p would not preview."
+      ],
+      "students": [
+        "Fixed: some moon checks (like 04.7) could not be opened. They open now.",
+        "During a paper, switching apps or desktops, the Windows key and copying are now noticed. Leaving for more than 15 seconds hands the paper in, as before."
+      ]
+    },
+    {
       "date": "2026-10-09",
       "title": "Every moon is graded; teachers get a profile, a tour and a Messenger-style chat",
       "studentTitle": "Moons have a graded check; the tour remembers you",

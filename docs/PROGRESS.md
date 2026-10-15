@@ -11,13 +11,19 @@
 > Still update it before ending a session or before `/clear`. Append new
 > findings; do not rewrite old ones.
 
-**Last updated:** 9 October 2026 (night).
+**Last updated:** 15 October 2026.
 **Branch:** `main`. Not a `redesign/*` branch — root `CLAUDE.md` is explicit
 about why (`shaloh-build` cost an hour when Vercel and Render both built `main`).
 
 ---
 
 ## STATE NOW
+
+**15 Oct 2026:** phase **239/245 (98%)**, unchanged. **T2 is built and on the deployment:** a teacher holds their
+own classes (RLS + API, ~1,100 denial tests), SQL files 20-23 pushed before the code, every class on the deployment
+held. Teachers' chat with active-now. Anti-cheat in papers (`docs/ANTI-CHEAT.md`). Eleven solvers fixed (the
+student's moon 04.7 report). `pnpm verify` exit 0. Prelim NOT runnable (39 of 96 act-1 items live). Detail:
+`NEXT-SESSION.md` §0zq. Next: the instructor's anti-cheat/T2 answers, parked defects, then CS2's plan.
 
 **9 Oct 2026 (night):** phase report **239/245 (98%)**, unchanged (no box in R0-R5 covers it).
 **PROFILES is finished:** the console's `/profile` and the picture on the shell, the roster, a student's

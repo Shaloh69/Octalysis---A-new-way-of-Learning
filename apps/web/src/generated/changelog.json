@@ -1,7 +1,7 @@
 {
   "madeAt": {
-    "commit": "f02d7c9",
-    "date": "2026-10-09"
+    "commit": "33f3542",
+    "date": "2026-10-15"
   },
   "progress": {
     "done": 239,
@@ -9,6 +9,14 @@
     "pct": 98
   },
   "updates": [
+    {
+      "date": "2026-10-15",
+      "title": "Fixes for moon checks, and a stricter paper",
+      "items": [
+        "Fixed: some moon checks (like 04.7) could not be opened. They open now.",
+        "During a paper, switching apps or desktops, the Windows key and copying are now noticed. Leaving for more than 15 seconds hands the paper in, as before."
+      ]
+    },
     {
       "date": "2026-10-09",
       "title": "Moons have a graded check; the tour remembers you",

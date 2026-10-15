@@ -23,134 +23,63 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: T2, BUILDING (the plan is written, section 5 of the teachers plan; the rulings come first)
+## 1. Start here — the next session: after T2 (the instructor's anti-cheat and T2 answers, parked defects, then CS2's plan)
 
 ```
-Read docs/NEXT-SESSION.md sections 0zp, 0zo and 0zn first (0zp: on 9 Oct T2's PLAN was written
-into docs/TEACHERS-AND-SUBJECTS-PLAN.md section 5 and the session stopped for the instructor's
-rulings; read section 5 in full, it replaces step 1 below. 0zo: on 9 Oct the
-console half of PROFILES was built and pushed, a real picture went through the
-real bucket, the first-run tour is remembered per account in the database
-(db/addendum-tour.sql, the NINETEENTH SQL file, on the deployment), and the
-console got the ? tour and the Messenger-shaped chat). PROFILES is finished. The
-order is T1 (done) -> CS1 (done) -> E1, E2, E1.5 (done) -> PROFILES (done) ->
-T2 (this session) -> CS2 -> the student bot and Study Session -> the app with
-CS3. Then docs/TEACHERS-AND-SUBJECTS-PLAN.md in full (section 3 T2, section 4
-question B: "a teacher sees ONLY their own classes; the admin sees all",
-instructor, 7 Oct 2026, with class-scoped RLS and denial tests),
-docs/PROFILES-PLAN.md section 5b (can_remove_avatar() is any teacher for any
-student until this session narrows it), db/CLAUDE.md (the classes table, V-29,
-V-30, the tour column), apps/console/CLAUDE.md (every row: this session touches
-most of them) and design/templates/console/teachers/SPEC.md. Then root
-CLAUDE.md: hard rules 3, 8 and 10, "Templates are ARTIFACTS", "THE HARDEST RULE",
-"NEVER PROCEED TO ANOTHER PAGE", "REDO THE PAGE". Do not re-derive what those
-carry.
+Read docs/NEXT-SESSION.md sections 0zq and 0zp first (0zq: 9-15 Oct, T2 was built and pushed: a teacher
+holds their own classes, through RLS and the API; teachers chat with each other with an active-now dot;
+papers record lost focus, system keys, blocked copy/print, split screen and a second tab; eleven solvers
+fixed so every calculation question builds three distinct choices). SQL files 20-23
+(addendum-class-scope, -class-avatars, -staff-chat, -sitting-guards) are on the deployment. Then
+docs/TEACHERS-AND-SUBJECTS-PLAN.md section 5 (5.9 holds every ruling, including ruling 4: exams are global,
+stage checks and moons follow the class's BOOK, which is T3), docs/ANTI-CHEAT.md section 6 (four questions
+for the instructor), db/CLAUDE.md "T2, staff chat and the sitting guards", and root CLAUDE.md: hard rules 3,
+8, 9 and 10, "THE HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE". Do not re-derive what those carry.
 
-Run pnpm phase. Show the table, say the percentage, name the live phase. On
-9 Oct it was 239/245, 98%: R3 87/88, R4 46/48, R5 21/24, every open box a
-person's; none of the PROFILES, chat, tour or graded-moons work has a box. Then
-say plainly whether Prelim-worth of data is okay to run on students, checking
-the five conditions in CLAUDE.md (the console's /changelog shows them live). On
-9 Oct it was NOT: on the deployment stage 01 has 15 live and 2 retired, 02 has 24
-live, 03 (33) and 04 (24) are at review, none live (39 of the act-1 bank's 96);
-every moon's Sit the check also needs 3 live questions in its moon; deployment
-invariants 0 failures (3 warnings).
+Run pnpm phase. Show the table, say the percentage (239/245, 98% on 15 Oct; R3 87/88, R4 46/48,
+R5 21/24, every open box a person's; T2 and the anti-cheat have no box). Say plainly whether Prelim-worth
+of data is okay to run on students, checking the five conditions: on 15 Oct it was NOT (39 of the act-1
+bank's 96 live; stages 03 and 04 still at review; deployment invariants 0 failures, 3 warnings).
 
-Confirm everything is green before touching anything, AGAINST BUILDS. After a
-reboot, start Docker Desktop first. Kill orphaned API trees and previews:
-stopping a background task does NOT stop its server, so kill by PID (netstat
--ano, then PowerShell taskkill /T /F /PID; git-bash's taskkill rejects //T) and
-prove the port is free. Run pnpm db:reset, THEN node scripts/db-demo.mjs
-(NINETEEN SQL files: addendum-tour.sql is the last; the demo section has a
-CPE 412 class). Start ONE pnpm dev:api and prove it with a real GET (readyz);
-curl again after EVERY db:reset. Build each app in the FOREGROUND (pnpm build),
-then start its preview with the Bash tool's run_in_background (npx vite preview
---port 5185 for web, 5186 for console) and kill it by PID before the next build.
-Export OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test run, and pnpm verify,
-empties the seeded database: reset, then reseed (db-demo) before any Playwright
-run, in that order. READ pnpm verify's exit code with $?. A script with an
-apostrophe, backtick or backslash goes through the Write tool, never a heredoc or
-node -e; a multi-line edit of a file with CRLF endings (StarShell.tsx, App.tsx,
-main.tsx, StudentDetailPage.tsx, TeacherDetailPage.tsx, teachers/parts.tsx, the
-contracts) needs a patch that matches on LF and writes back CRLF. Git Bash
-rewrites a leading-slash argument into a Windows path: MSYS_NO_PATHCONV=1. The
-keyboard-reach helper tabs from the top with a budget, so give it scope "main".
-Playwright's whole console run is about 1,300 tests and takes 30+ minutes: run it
-with run_in_background. design/specs/_profile-fixture.ts stands in for Storage
-(the local API has none); scripts/.bucket-e2e.tmp.mjs is the real-bucket test and
-scripts/.tour-e2e.tmp.mjs the tour flag's, both against the deployment
-(gitignored scratch; they refuse to run unless the project ref is the
-deployment's).
+FIRST, look at the deployment: the 15 Oct push built on Render and both Vercel apps (bundle contains
+"staff-threads" and "sitting-guards"' event kinds; the API answers 401 to GET /api/v1/chat/staff). No
+teacher credential is on this machine, so a signed-in look at the deployed console is the instructor's;
+ask them to open /students, /locks and /chat as the admin (Engr. MJ Butaya holds BSCPE-4A, BSECE-4A and
+TEST-SITTING since the rollout; Mr. Engi Shem holds BSCPE-2A) and report what they see.
 
-The deployment: API https://octa-api-noq2.onrender.com, student site
-https://octa-web-dusky.vercel.app, console https://octa-console.vercel.app,
-Supabase ddvxkbcelpqydnjkffdr (the root .env's SUPABASE_DB_SESSION; never print
-it; SUPABASE_DB_DIRECT and _POOLED name ANOTHER project).
-scripts/.deploy-q.tmp.mjs runs SQL there after checking the ref; pnpm
-db:push:check prints the host. FIRST, look at the deployed sites: that the 9 Oct
-push (the console's /profile, the ? tour, the Messenger chat) built on Render and
-both Vercel apps. The deployment still carries two TEST sections
-(TEST-PROFILES-A and -B, with one chat room and no classes) and two banned
-throwaway accounts that the append-only audit_log and chat_messages could not
-let go: do not mistake them for real sections in a roster or a picker; ask the
-instructor before removing them by any means that touches those guards.
+Confirm everything is green AGAINST BUILDS: start Docker Desktop after a reboot; kill orphaned API trees and
+previews by PID; pnpm db:reset (TWENTY-THREE SQL files), THEN node scripts/db-demo.mjs (it now seeds
+two T2 accounts: eeeeeeee-...0001 a teacher with no class, eeeeeeee-...0002 an admin holding none); ONE
+pnpm dev:api, proven with GET /readyz after every reset; build each app in the foreground, previews with
+run_in_background (pnpm --filter @octa/web exec vite preview --port 5185; @octa/console on 5186); export
+OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test run and pnpm verify empties the seeded database: reset
+then reseed before Playwright. Read pnpm verify's exit code with $?.
 
-The work: T2, in this order.
+The work, in this order, asking first where the instructor has not ruled:
+1. The instructor's answers to docs/ANTI-CHEAT.md section 6 (Guided Access / App pinning sentence on the
+   start prompt; Safe Exam Browser for exams; whether any new signal should hand a paper in) and to the
+   open T2 question in 5.9 (stage-check windows per class before T3: recommendation wait). Write each into
+   its doc. Build only what is ruled in, each through its page gate.
+2. Parked defects (each its own page gate): the web tour's Escape works only with focus inside the popover
+   (port the console's document-level listener to apps/web/src/shell/Tour.tsx); the console's /teachers page
+   should show "n sections have no class" (T2 plan 5.1) — none exist on the deployment now, but the import
+   path can still be reached by an admin who does not hold the section.
+3. Then CS2 (a subject as its own star system; docs/COURSE-STUDIO-PLAN.md section 5): plan first, stop for
+   approval. Ruling 4 makes stage checks and moons per BOOK; CS2/T3 owns that.
 
-1. THE PLAN IS WRITTEN (docs/TEACHERS-AND-SUBJECTS-PLAN.md section 5, 9 Oct). Open with the
-   instructor's rulings on its open points (5.3: per-class assessment windows (A) or a copy per
-   section (B), and who edits the 13 shared assessments; 5.4: the admin's four read-only
-   exceptions; 5.7: teacher-to-teacher chat and staff-only presence), write them into section 5,
-   and only then build. The old step 1, kept for what it asks:
-   Write "T2" into docs/TEACHERS-AND-SUBJECTS-PLAN.md: for each console page a
-   teacher uses (/locks, /live, /chat, /students, /students/:id, /attempts/:id,
-   /submissions, /gradebook, /assessments, /feedback, the Studio's subject pages
-   where classes are shown) and for the picture's removal, say what a teacher
-   sees when they hold a class (its section's students) and when they hold none
-   (a clear empty state, never a blank page); where the rule is enforced (RLS by
-   class through a function such as teacher_holds_section(), the API asking it
-   too because the API bypasses RLS), and what the admin sees (everything). Name
-   the existing tests and Playwright specs that sign in as the demo teacher (sub
-   dddddddd-0000-4000-8000-000000000001): that teacher must hold the demo
-   section's class for them to keep passing, which db-demo.mjs has to arrange.
-   Ask about anything the plan does not already rule (a section with no class; a
-   student moved between sections; a class that ended; two teachers on one
-   section; the teachers who read feedback and the audit log, which are not
-   class-shaped).
-2. Then, once approved: the denial tests FIRST, watched red (a teacher of
-   another section cannot read a student's record, attempts, grades, locks,
-   submissions, chat thread or picture, cannot write a lock for them, cannot
-   remove their picture; the admin can; a student still cannot read any of it),
-   then mutation-checked. The SQL is idempotent, in a new addendum (the
-   twentieth file), and reaches the deployment with pnpm db:push --file BEFORE the
-   code that uses it (hard rule 10); pnpm db:push:check first, and the ref in it
-   must be ddvxkbcelpqydnjkffdr.
-3. The console, page by page, each through its own page gate (the six assertions
-   at 1440 and 380, screenshots OPENED). This is a change to every listed page, so
-   each owes its spec green and a look.
-4. can_remove_avatar() narrowed to a teacher's own students in its own addendum
-   (it is any teacher until then), with its denial test.
+Still owed by the instructor (do not build around them): the first teacher roster import and a real claim;
+whether /teachers leaves Records; which STUDY-AND-BOT-PLAN section 4 features to build; the four engine
+keys; approving the 57 act-1 items at review (03 and 04; the Prelim needs 96 live), the 131 questions for
+09-12, chapter drafts 08-13, 17 figures, 8 summaries; the screen-reader pass; removing the two TEST-PROFILES
+sections and two banned throwaway accounts (append-only guards).
 
-Still owed by the instructor (do not build around them): the first teacher
-roster import on /teachers and a first real claim at /claim; whether /teachers
-leaves Records for a nav group of its own; which of STUDY-AND-BOT-PLAN.md
-section 4's features to build; the four engine keys; approving the act-1 items
-still at review (03 and 04, 57 of them; the Prelim needs 96 live), the 131
-questions for 09-12, the chapter drafts 08-13, 17 figures and the 8 summaries
-still to review (on the Studio's To review); the screen-reader pass. Parked, not
-this session: CS2, the student bot, CS3; the web tour's Escape works only with
-focus inside the popover (the console's works from anywhere: port the
-document-level listener to apps/web/src/shell/Tour.tsx behind its page gate).
+Hard rule 10 binds. Never stage apps/console/.env.example or any scripts/.*.tmp.* file (git add a whole
+folder has swept them in twice: add files by name). Before the last commit run pnpm changelog and add the
+day's entry to content/changelog/highlights.json and the roadmap.
 
-Hard rule 10 binds. Never stage apps/console/.env.example (the instructor put a
-key in it). Any visual change goes through its page gate. Before the last commit
-run pnpm changelog and add the day's entry to content/changelog/highlights.json
-(and the roadmap), so the changelogs say what shipped.
-
-End: pnpm phase with the percentage, the Prelim sentence checked,
-docs/NEXT-SESSION.md and PROGRESS.md updated, REVAMP-PROMPTS.md section 1
-rewritten for the session after, committed and pushed, and the next prompt given
-in one plain fenced block.
+End: pnpm phase with the percentage, the Prelim sentence checked, docs/NEXT-SESSION.md and PROGRESS.md
+updated, REVAMP-PROMPTS.md section 1 rewritten for the session after, committed and pushed, and the next
+prompt given in one plain fenced block.
 ```
 
 ## 1b. Parked — the session after: CS2 (a subject as its own star system)

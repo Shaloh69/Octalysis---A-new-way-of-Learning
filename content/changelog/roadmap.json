@@ -11,9 +11,9 @@
     {
       "id": "T2",
       "title": "Teachers see their own classes",
-      "what": "A teacher's students, gradebook, locks, submissions and chat show only the classes they hold; the admin sees all.",
+      "what": "A teacher's students, gradebook, locks, submissions, Lecture Mode and chat show only the classes they hold; the admin reads all and changes only their own. Teachers chat with each other and see who is active. Stage checks per book wait for T3.",
       "plan": "docs/TEACHERS-AND-SUBJECTS-PLAN.md",
-      "state": "planned"
+      "state": "built 15 Oct"
     },
     {
       "id": "CS2",

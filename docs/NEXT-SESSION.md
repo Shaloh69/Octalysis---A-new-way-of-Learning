@@ -1526,6 +1526,54 @@ left, or needing a decision:
 
 ---
 
+## 0zq. T2 built and pushed; teachers' chat; anti-cheat; the solver fix — 9-15 Oct 2026 (after 0zp)
+
+**Phase:** 239/245 (98%), unchanged (no R0-R5 box covers this). **Rulings asked and answered** (TEACHERS-AND-
+SUBJECTS-PLAN.md 5.9): assessments stay shared, the admin's four exceptions (decided by me as asked), staff chat
+yes; mid-session: exams global, stage checks and moons follow the class's book (T3); the rollout gave the unheld
+classes to the admin; stage-check windows per class wait for T3.
+
+**Built (commits 56ea782..HEAD):**
+- **SQL 20-23 on the deployment** (ref ddvxkbcelpqydnjkffdr checked) BEFORE the code: `addendum-class-scope`
+  (class-scoped read/write on every student-data table, chat membership by class, one Lecture Mode question per
+  class), `-class-avatars` (can_see/can_remove_avatar ask the class), `-staff-chat` (staff room, private staff
+  threads, last_seen_at), `-sitting-guards` (five event kinds). Checked there: functions, constraints, 14 class
+  policies, invariants 0 failures (3 warnings), 115 live moons unchanged.
+- **Rollout data step** (ruled): BSECE-4A got its CPE 412 class and TEST-SITTING's class went to the admin, one
+  transaction, audited as a system `admin.class_assign`. No class is unheld on the deployment.
+- **API** `services/api/src/scope.ts` (the API bypasses RLS, so it asks the same question): every console route
+  that returns a student; a record outside the reach is 404, read-only is 403. Roster import of a NEW section makes
+  its creator the class's teacher. `GET /console/classes/mine`. Chat: `POST /chat/staff-threads`, `GET /chat/staff`.
+- **Tests, red first and mutation-checked:** class-scope-rls 807, class-scope-api 237, class-avatars 27,
+  staff-chat-rls + -api 31. Older specs that assumed "any teacher" now read as the admin where they are about the
+  whole course, or give their teacher a class.
+- **Console** (page gates green at 1440 and 380; captures opened in `design/templates/console/class-scope/` and
+  `chat/staff-*`): no-class empty states; read-only padlock/badge and aria-disabled controls; All my classes
+  instead of Every student; Live picks one of your classes; the course's papers read-only to teachers; New
+  assessment only with a class; Message a teacher, staff room, active dot. New spec `console-class-scope.spec.ts`.
+- **Anti-cheat** (instructor 15 Oct; `docs/ANTI-CHEAT.md`): lost focus (a leave under the 15 s rule), system keys
+  (cover), copy/paste/print/devtools (refused), split screen / second screen / second tab (noted); Keyboard Lock in
+  full screen. Unit 9, browser 5 (mutation: 3 red), API.
+- **Feedback fixed:** the two student reports. "Moon 4.7 would not open" and the instructor's screenshot of
+  06-raid5-overhead-p were one bug: eleven solvers could leave fewer than three distinct choices at some
+  parameters. Distractors added; a sweep test over every solver. "Stage 00 was not recorded" (5 Oct) was the
+  bodiless-POST bug already fixed that day (api.ts sends no JSON content type without a body); left at 'new' for
+  the instructor to triage.
+
+**Found by looking or by the gate:** a Read-only badge on all 24 rows wrapped under the code (now a padlock);
+aria-disabled buttons looked enabled (button.tsx styles them now); the 380 lock list ignored read-only (the spec
+caught it); the staff room displaced the class room as the chat's default (classes first now); `git add scripts`
+swept 98 scratch files into a local commit twice (undone before any push; add files by name).
+
+**Measured:** pnpm verify exit 0 (API 2413 + 1 skipped, web 346, console 280, tokens 38). Playwright against
+builds: every changed console gate and the web paper gates green (latest runs 80, 101, 41, 93 + the anti-cheat 5).
+Not run this session: the whole ~1,300-test console suite in one go.
+
+**Not done, said so:** no signed-in look at the deployed console (no credential here). docs/IMPLEMENTED.md still
+stale. The T2 plan's "/teachers shows n sections have no class" line is not built.
+
+---
+
 ## 0zp. T2 planned, and stopped for the instructor's rulings — 9 Oct 2026 (after 0zo)
 
 **Phase:** R3/R4/R5 live, 239/245 (98%), unchanged; T2 has no box. **Built: nothing. Written:**
