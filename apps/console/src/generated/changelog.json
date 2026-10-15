@@ -1,6 +1,6 @@
 {
   "madeAt": {
-    "commit": "33f3542",
+    "commit": "0543d78",
     "date": "2026-10-15"
   },
   "updates": [
@@ -14,9 +14,37 @@
         "Importing a roster into a new section makes you its teacher. BSECE-4A, which had no class, was given to the admin on the deployment; reassign it on Teachers.",
         "Chat has a Teachers group: a staff room for every teacher and the admin, private threads between two teachers that nobody else can read, and an 'Active now' dot.",
         "Papers now also record the window losing focus (another app, a virtual desktop, a second monitor), the Windows key, Alt+Tab and desktop-switching keys, refused copy/paste/print, split screen and a second tab. Each is listed on the student's record as a fact; losing focus for 15 seconds hands the paper in, as leaving the page already did. docs/ANTI-CHEAT.md has what can and cannot be done on phones and PCs.",
-        "Fixed: eleven calculation questions could fail to build their choices for some numbers, which is why moon 04.7 would not open for a student and 06-raid5-overhead-p would not preview."
+        "Fixed: eleven calculation questions could fail to build their choices for some numbers, which is why moon 04.7 would not open for a student and 06-raid5-overhead-p would not preview.",
+        "A teacher can give their own class its own window and attempt limit on a stage check: Set for my class on Assessments. The paper stays the one everyone sits; only when it opens and closes and how many tries it allows change, for that class, and the stage's moon checks follow. The admin reads them and sets none. Every change needs a reason and is in the audit log.",
+        "Every paper's start prompt now asks students on a phone or tablet to turn on Guided Access (iPhone, iPad) or App pinning (Android) first.",
+        "Teachers shows how many sections have no class, so no section's students go unseen; Assign... gives one a class.",
+        "Planned and approved: Safe Exam Browser for the Prelim, Midterm and Finals in the lab (docs/SAFE-EXAM-BROWSER-PLAN.md), and a subject's books as their own curricula, starting from an uploaded PDF the AI drafts from (docs/COURSE-STUDIO-PLAN.md section 6)."
       ],
       "commits": [
+        {
+          "hash": "9ae5dc7",
+          "type": "feat",
+          "scope": "console,api",
+          "subject": "/teachers says n sections have no class (T2 5.1)"
+        },
+        {
+          "hash": "cecbb19",
+          "type": "fix",
+          "scope": "web",
+          "subject": "the tour's Escape closes it from anywhere"
+        },
+        {
+          "hash": "daa0aed",
+          "type": "feat",
+          "scope": "db,api,console",
+          "subject": "a class's own window and attempt limit on a stage check"
+        },
+        {
+          "hash": "5a78e45",
+          "type": "feat",
+          "scope": "web",
+          "subject": "every paper's start prompt asks for Guided Access or App pinning"
+        },
         {
           "hash": "33f3542",
           "type": "feat",
@@ -1859,9 +1887,9 @@
       {
         "id": "CS2",
         "title": "A subject as its own star system",
-        "what": "A second subject (CPE 413) gets its own planets, questions and grades; a student with two or more subjects sees their systems orbiting a black hole.",
-        "plan": "docs/COURSE-STUDIO-PLAN.md §5",
-        "state": "planned"
+        "what": "A book is its own curriculum: its chapters, moons, questions and checks. A new book starts from an uploaded PDF the AI drafts from, then teachers edit and approve; the exams draw from the subject's default book. A student with two or more subjects sees their systems orbiting a black hole. First step (CS2a): the data keyed by book, with nothing visible changing.",
+        "plan": "docs/COURSE-STUDIO-PLAN.md §5-§6",
+        "state": "planned, ruled 15 Oct"
       },
       {
         "id": "Bot",
@@ -1879,7 +1907,9 @@
       }
     ],
     "owed": [
-      "Approve the 83 act-1 questions at review on Items (the Prelim needs all 96 live).",
+      "Install Safe Exam Browser 3.x on a lab PC for the first spike, and say who holds the .seb file and its quit password.",
+      "Before book upload: the size cap for a book PDF, and whether scanned PDFs must be read (OCR).",
+      "Sit a stage check on the deployment as a real student, so the last Prelim condition is checked (all 96 act-1 questions are live as of 15 Oct).",
       "Approve the planet summaries (the redesign's last R3 box), the drafted chapters 08 to 13 and 17 figures on the Studio's To review.",
       "Review the 131 questions for stages 09 to 12 on Items.",
       "Import the first teacher roster on Teachers, and have a teacher make the first real claim at Claim.",

@@ -155,6 +155,89 @@ Battery Saver) all apply unchanged.
 5. **Seen:** captures of L0, L1, the zoom mid-way and L2, at 1440 and 380,
    opened and looked at; reduced motion and no-WebGL captured too.
 
+## 6. CS2 = T3, the data side — plan v1, 15 Oct 2026 — **RULED the same day (§6.6); nothing built**
+
+§5 and §5a own what a student SEES (the galaxy, the zoom, the LOD). This section is what the data must
+become first, with ruling 4 (9 Oct 2026, `TEACHERS-AND-SUBJECTS-PLAN.md` §5.9): **the Prelim, Midterm and
+Finals are global; stage checks and moons follow the class's BOOK.**
+
+### 6.1 What is true today (read from the schema, 15 Oct 2026)
+
+- A stage is `stages.id` text `'00'..'18'`, one global set; about ten tables key on that text (`objectives`,
+  `content_blocks`, `items`, `blueprints`, `stage_progress`, `stage_locks`, `chapter_drafts`, `figures`,
+  `submissions`, …). `content_subject_of(stage)` returns `'CPE 412'` for every stage: it is the one place
+  the subject is "known".
+- `classes.book_id` already records a class's book (null = the subject's default, Stallings 9th).
+- Every assessment's blueprint points at a stage or is a final; T2 5.10 (built today) adds a class's own
+  window over a shared stage check.
+
+### 6.2 The model, in one sentence
+
+> **A book is a curriculum: it owns its chapters (stages), their moons, questions, stage checks and moon
+> checks. A class takes one book; its students see that book's system. A subject owns its exams, drawn
+> from its own bank.**
+
+| Thing | Keyed by | Who changes it |
+|---|---|---|
+| chapters (stages), moons (objectives), lesson text, figures | **book** (`stages.book_id`) | the subject's teachers, through Studio (Draft then Publish, as CS1) |
+| questions (items) | the stage, so the book | as today (`/items`, approval rule) |
+| a stage check, a moon check | the stage, so the book; a class's window over it (5.10) | the admin sets the shared one; a class's teacher their class's |
+| Prelim, Midterm, Finals | **the subject** (global across its classes) | the admin |
+| locks, progress, mastery | the student and the stage (unchanged) | as today |
+
+### 6.3 Stage ids (the one decision that touches everything)
+
+**Proposed: keep CPE 412's `'00'..'18'` exactly as they are, bound to the 9th-edition book; every new
+stage gets an id `<book-key>-NN`** (e.g. `s10-12` for Stallings 10th, chapter 12). No existing row, URL or
+attempt changes; `stages.book_id` is added and back-filled; `content_subject_of(stage)` becomes a lookup.
+The rejected alternative (renumber everything to `cpe412-9e-07`) rewrites every foreign key and every
+student's history for no gain a student can see.
+
+### 6.4 Phases, each its own session and its own gate
+
+| | What | Students see |
+|---|---|---|
+| **CS2a** | `stages.book_id` (+ `subjects` linkage), `content_subject_of()` a lookup, the API and RLS asking "which book does this student's class take?" (the class's book, else the subject's default); every query that lists stages filters by it. Denial tests: a student never reads another book's stage, item, check or progress | **nothing changes** for CPE 412 (one book in use) |
+| **CS2b** | Studio makes a book's chapters: **Start this book's chapters** (empty, or as a DRAFT copy of the default book's, the teacher's choice), then the CS1 editor, moons (E2), figures; questions on `/items` per book | nothing until Publish |
+| **CS2c** | Per-book stage checks and moon checks (created with the book's stages, as the 13 today were); the exams per subject drawing from that subject's live bank across its books | a class on the new book sits that book's checks |
+| **CS2d** | The student galaxy, §5 and §5a, built to §5a's five proofs | the galaxy, for a student with two or more subjects |
+
+### 6.5 Asked with this plan
+
+1. **Stage ids**: keep `'00'..'18'` for CPE 412 and give new books `<book-key>-NN` (recommended), or renumber?
+2. **"A teacher uploads a book"**: in CS2 a book's chapters are **written in Studio** (or copied from the
+   default book as drafts); reading a PDF and drafting from it is the AI's work, CS3. Agreed?
+3. **The exams when one subject's classes take different books**: draw from **every live item of the
+   subject** (both books), or from **the default book's** only? Recommendation: the default book's, so every
+   student of the subject sits an equivalent paper (the uniqueness-with-equivalence rule).
+4. **Two classes on one book**: they **share** that book's stage checks (and each may set its own window,
+   5.10). Recommendation: share.
+
+### 6.6 Ruled 15 Oct 2026 (question tool)
+
+1. **Stage ids: keep `'00'..'18'`, prefix new books' chapters.** As recommended.
+2. **Changed: "Need PDF. Book upload is the start. Via the AI that will help draft and author all of the
+   objectives, the stages, the exams, the items, and [teachers are] left with editing and manual reviews."**
+   So a new book begins with **uploading its PDF**, and the AI drafts everything a book owns: chapters
+   (stages), moons (objectives), questions (items) and the exams. Teachers edit and review; nothing reaches a
+   student until it is published and approved (hard rule 5's third ruling stands).
+3. **The exams draw from the default book's live bank only.** As recommended.
+4. **Two classes on one book share its stage checks**, each with its own window (5.10). As recommended.
+
+**What ruling 2 changes in the phases.** The AI runs through each teacher's own app on their own keys (round
+six; `.claude/rules/assistant.md`), and that app does not exist yet. So:
+
+| | Revised |
+|---|---|
+| **CS2a** | unchanged: the data keyed by book, invisible to students. **Buildable now.** |
+| **CS2b** | **Upload a book**: a PDF to a private, staff-only bucket (one per book; storage counts against the free tier's 1 GB, so a size cap and a stated limit), its text extracted and kept beside it, and the book's page on Studio showing what was read. No AI yet. Buildable after CS2a. A textbook is copyrighted: the file is staff-only, never served to a student, never in a bundle |
+| **CS2c** | **The AI drafts the book**: chapters, moons, questions and exam blueprints as DRAFTS in Studio and `/items`, each with its source pages, every quote checked against the extracted text (as `sync-content --verify` does for Stallings today). **Needs the assistant's app (CS3)**: the two land together |
+| **CS2d** | per-book stage and moon checks; exams per subject from the default book's bank |
+| **CS2e** | the student galaxy (§5, §5a) |
+
+**Still to ask before CS2b:** the size cap for a book PDF (the free tier holds 1 GB in all, shared with chat
+attachments and pictures), and whether a scanned PDF (images, no text layer) must be read too (that needs OCR).
+
 ## 4. Order (APPROVED, 7 Oct 2026, night)
 
 T1 (done) → **CS1** → profiles → T2 → **CS2 (T3)** → the student bot and the

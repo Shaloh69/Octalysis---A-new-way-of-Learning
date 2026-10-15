@@ -1,6 +1,6 @@
 {
   "madeAt": {
-    "commit": "33f3542",
+    "commit": "0543d78",
     "date": "2026-10-15"
   },
   "progress": {
@@ -14,7 +14,10 @@
       "title": "Fixes for moon checks, and a stricter paper",
       "items": [
         "Fixed: some moon checks (like 04.7) could not be opened. They open now.",
-        "During a paper, switching apps or desktops, the Windows key and copying are now noticed. Leaving for more than 15 seconds hands the paper in, as before."
+        "During a paper, switching apps or desktops, the Windows key and copying are now noticed. Leaving for more than 15 seconds hands the paper in, as before.",
+        "Before a paper starts, phones and tablets are asked to turn on Guided Access or App pinning.",
+        "Your teacher can now give your class its own dates and number of tries for a stage check, and the stage counts your tries left from your class's number.",
+        "The tour now closes with Escape wherever you are on the page."
       ]
     },
     {

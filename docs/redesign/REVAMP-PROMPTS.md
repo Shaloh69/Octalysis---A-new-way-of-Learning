@@ -23,70 +23,71 @@ design work at all.
 
 ---
 
-## 1. Start here — the next session: after T2 (the instructor's anti-cheat and T2 answers, parked defects, then CS2's plan)
+## 1. Start here — the next session: CS2a (the data keyed by book, nothing visible changes)
 
 ```
-Read docs/NEXT-SESSION.md sections 0zq and 0zp first (0zq: 9-15 Oct, T2 was built and pushed: a teacher
-holds their own classes, through RLS and the API; teachers chat with each other with an active-now dot;
-papers record lost focus, system keys, blocked copy/print, split screen and a second tab; eleven solvers
-fixed so every calculation question builds three distinct choices). SQL files 20-23
-(addendum-class-scope, -class-avatars, -staff-chat, -sitting-guards) are on the deployment. Then
-docs/TEACHERS-AND-SUBJECTS-PLAN.md section 5 (5.9 holds every ruling, including ruling 4: exams are global,
-stage checks and moons follow the class's BOOK, which is T3), docs/ANTI-CHEAT.md section 6 (four questions
-for the instructor), db/CLAUDE.md "T2, staff chat and the sitting guards", and root CLAUDE.md: hard rules 3,
-8, 9 and 10, "THE HARDEST RULE", "NEVER PROCEED TO ANOTHER PAGE". Do not re-derive what those carry.
+Read docs/NEXT-SESSION.md sections 0zr and 0zq first (0zr, 15 Oct: the instructor ruled the anti-cheat
+questions, per-class stage-check windows were BUILT (the 24th SQL file, addendum-class-windows, is on the
+deployment), the web tour's Escape and /teachers' "n sections have no class" were fixed, Safe Exam Browser
+was planned and approved for exams, and CS2's data side was planned and ruled). Then
+docs/COURSE-STUDIO-PLAN.md section 6 (6.6 holds the CS2 rulings: keep stage ids '00'..'18' and prefix new
+books' chapters; a new book STARTS FROM AN UPLOADED PDF that the AI drafts from; exams draw from the default
+book only; classes on one book share its checks), docs/TEACHERS-AND-SUBJECTS-PLAN.md 5.9 and 5.10,
+db/CLAUDE.md "A class's own window", and root CLAUDE.md: hard rules 3, 5, 8 and 10, "THE HARDEST RULE",
+"NEVER PROCEED TO ANOTHER PAGE". Do not re-derive what those carry.
 
 Run pnpm phase. Show the table, say the percentage (239/245, 98% on 15 Oct; R3 87/88, R4 46/48,
-R5 21/24, every open box a person's; T2 and the anti-cheat have no box). Say plainly whether Prelim-worth
-of data is okay to run on students, checking the five conditions: on 15 Oct it was NOT (39 of the act-1
-bank's 96 live; stages 03 and 04 still at review; deployment invariants 0 failures, 3 warnings).
+R5 21/24, every open box a person's; T2, 5.10 and CS2 have no box). Say plainly whether Prelim-worth of
+data is okay to run on students, checking the five conditions: on 15 Oct FOUR of five were checked true
+(all 96 act-1 items live on the deployment; bank-feasibility green over that bank; deployment invariants
+25 clean, 0 warnings, 0 failures; stages 00-04 authored) and the fifth was NOT re-checked: a real student
+reading a stage, sitting its check and seeing the next unlock ON THE DEPLOYMENT. Do not round it up; ask the
+instructor to do that sitting, or say it is still unchecked.
 
-FIRST, look at the deployment: the 15 Oct push built on Render and both Vercel apps (bundle contains
-"staff-threads" and "sitting-guards"' event kinds; the API answers 401 to GET /api/v1/chat/staff). No
-teacher credential is on this machine, so a signed-in look at the deployed console is the instructor's;
-ask them to open /students, /locks and /chat as the admin (Engr. MJ Butaya holds BSCPE-4A, BSECE-4A and
-TEST-SITTING since the rollout; Mr. Engi Shem holds BSCPE-2A) and report what they see.
+FIRST, look at the deployment: the 15 Oct pushes (a405fe2..HEAD) should be built on Render and both Vercel
+apps. Check: the console bundle contains "Set for my class" and "classless"; the web bundle contains
+"device-lock"; PUT /api/v1/console/assessments/<uuid>/classes/<uuid>/window answers 401 (not 404). The
+signed-in look at the deployed console is still the instructor's (no credential here): ask them to open
+/assessments, /teachers and /students as the admin and say what they see.
 
 Confirm everything is green AGAINST BUILDS: start Docker Desktop after a reboot; kill orphaned API trees and
-previews by PID; pnpm db:reset (TWENTY-THREE SQL files), THEN node scripts/db-demo.mjs (it now seeds
-two T2 accounts: eeeeeeee-...0001 a teacher with no class, eeeeeeee-...0002 an admin holding none); ONE
-pnpm dev:api, proven with GET /readyz after every reset; build each app in the foreground, previews with
+previews by PID; pnpm db:reset (TWENTY-FOUR SQL files), THEN node scripts/db-demo.mjs; ONE pnpm dev:api,
+proven with GET /readyz after every reset; build each app in the foreground, previews with
 run_in_background (pnpm --filter @octa/web exec vite preview --port 5185; @octa/console on 5186); export
-OCTA_WEB_URL and OCTA_CONSOLE_URL. Every API test run and pnpm verify empties the seeded database: reset
-then reseed before Playwright. Read pnpm verify's exit code with $?.
+OCTA_WEB_URL and OCTA_CONSOLE_URL (the global setup needs BOTH). Every API test run and pnpm verify empties
+the seeded database: never run Playwright while verify runs; reset then reseed before it.
 
-The work, in this order, asking first where the instructor has not ruled:
-1. The instructor's answers to docs/ANTI-CHEAT.md section 6 (Guided Access / App pinning sentence on the
-   start prompt; Safe Exam Browser for exams; whether any new signal should hand a paper in) and to the
-   open T2 question in 5.9 (stage-check windows per class before T3: recommendation wait). Write each into
-   its doc. Build only what is ruled in, each through its page gate.
-2. Parked defects (each its own page gate): the web tour's Escape works only with focus inside the popover
-   (port the console's document-level listener to apps/web/src/shell/Tour.tsx); the console's /teachers page
-   should show "n sections have no class" (T2 plan 5.1) — none exist on the deployment now, but the import
-   path can still be reached by an admin who does not hold the section.
-3. Then CS2 (a subject as its own star system; docs/COURSE-STUDIO-PLAN.md section 5): plan first, stop for
-   approval. Ruling 4 makes stage checks and moons per BOOK; CS2/T3 owns that.
+The work: CS2a (docs/COURSE-STUDIO-PLAN.md 6.4 and 6.6), the data keyed by book, with NOTHING a student
+sees changing for CPE 412. stages.book_id (back-filled to the 9th-edition default book for '00'..'18'),
+content_subject_of() becomes a lookup, and the API and RLS answer "which book does this student's class
+take?" (the class's book, else the subject's default) wherever stages, items, objectives, checks and
+progress are listed. Write the denial tests FIRST and watch them fail (a student never reads another book's
+stage, item, check or progress; a teacher of another book's class reads nothing of it), then the 25th SQL
+file, idempotent, pushed to the deployment (pnpm db:push:check, ref ddvxkbcelpqydnjkffdr) BEFORE the code.
+Every existing page gate that reads stages stays green (web-stage, web-stage-check, web-moon-check, the map,
+console /studio, /locks, /gradebook). If a design question appears that 6.6 does not settle, stop and ask.
+CS2b (the PDF upload) waits for two answers: the size cap for a book PDF (the free tier has 1 GB in all) and
+whether scanned PDFs need OCR. Ask them this session; do not build CS2b.
 
-Still owed by the instructor (do not build around them): the first teacher roster import and a real claim;
-whether /teachers leaves Records; which STUDY-AND-BOT-PLAN section 4 features to build; the four engine
-keys; approving the 57 act-1 items at review (03 and 04; the Prelim needs 96 live), the 131 questions for
-09-12, chapter drafts 08-13, 17 figures, 8 summaries; the screen-reader pass; removing the two TEST-PROFILES
+Still owed by the instructor (do not build around them): the SEB spike on a lab PC (install SEB 3.x) and who
+holds the .seb file; the first teacher roster import and a real claim; whether /teachers leaves Records;
+which STUDY-AND-BOT-PLAN section 4 features to build; the four engine keys; the 131 questions for 09-12,
+chapter drafts 08-13, 17 figures, 8 summaries; the screen-reader pass; removing the two TEST-PROFILES
 sections and two banned throwaway accounts (append-only guards).
 
-Hard rule 10 binds. Never stage apps/console/.env.example or any scripts/.*.tmp.* file (git add a whole
-folder has swept them in twice: add files by name). Before the last commit run pnpm changelog and add the
-day's entry to content/changelog/highlights.json and the roadmap.
+Hard rule 10 binds. Never stage apps/console/.env.example or any scripts/.*.tmp.* file (add files by name).
+Before the last commit run pnpm changelog and add the day's entry to content/changelog/highlights.json and
+the roadmap.
 
 End: pnpm phase with the percentage, the Prelim sentence checked, docs/NEXT-SESSION.md and PROGRESS.md
 updated, REVAMP-PROMPTS.md section 1 rewritten for the session after, committed and pushed, and the next
 prompt given in one plain fenced block.
 ```
 
-## 1b. Parked — the session after: CS2 (a subject as its own star system)
+## 1b. Parked — the sessions after: CS2b (upload a book PDF), then CS2c with the assistant's app (CS3)
 
-No prompt is written yet: it is written by the T2 session, from
-`docs/COURSE-STUDIO-PLAN.md` §5. The order after it is the student bot and Study
-Session, then the app with CS3 (`docs/COURSE-STUDIO-PLAN.md` §4).
+CS2b waits on the PDF size cap and the OCR question; CS2c (the AI drafts a book) needs the assistant's app,
+so the two land together (`docs/COURSE-STUDIO-PLAN.md` §6.6). The galaxy (§5, §5a) is CS2e.
 
 ## 2. Continue — every session after the first
 

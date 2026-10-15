@@ -1526,6 +1526,51 @@ left, or needing a decision:
 
 ---
 
+## 0zr. Rulings answered; per-class stage-check windows built; two parked defects fixed; SEB and CS2 planned — 15 Oct 2026 (after 0zq)
+
+**Phase:** 239/245 (98%), unchanged (no R0-R5 box covers this work). **Pushed:** `a405fe2..HEAD` (with `5a78e45`).
+
+**Asked with the question tool, answered (each written into its doc):**
+- `ANTI-CHEAT.md` §6: Guided Access / App pinning **on every paper** (not only exams); **Safe Exam Browser:
+  plan it** (then approved: exams only, a lab PC exists); **no new signal hands a paper in**.
+- T2 5.9: stage-check windows per class: **"Build it now"** (against the recommendation to wait); then 5.10
+  approved as written, **moon checks follow**, **only the class's own teacher** sets one.
+- CS2 (`COURSE-STUDIO-PLAN.md` §6.6): keep `'00'..'18'`, prefix new books; **a new book starts from an
+  uploaded PDF the AI drafts from** (changed from my "write or copy in Studio"); exams from the default book;
+  classes on one book share its checks.
+
+**Built:**
+- **Start prompt** (`AttemptRunner` `StartPrompt`, `[data-rule=device-lock]`): the Guided Access / App pinning
+  rule; web-stage-check gate 77 green; the gate also asserts Start clears the biome's bottom bar at 380 once
+  scrolled to the end (it is under the bar at one scroll position, as any fixed bar is).
+- **T2 5.10** (24th SQL file `addendum-class-windows.sql`, **on the deployment before the code**, checked there:
+  RLS on, one policy, the trigger, 0 rows, the function resolving a real student's class). One rule,
+  `effective_assessment_window()`, asked by Start, the reader and the moon panel. **A moon check follows its
+  stage's row** (one setting per stage, not 115 per moon). API `PUT …/classes/:classId/window`. Console:
+  **Set for my class** / **Class windows…** (admin, read-only). Tests red first: rls 20, api 13, both
+  mutation-checked; console gate `console-class-windows.spec.ts` 24.
+- **Parked defects:** the web tour's Escape works from anywhere (test red on the old build);
+  `/teachers` **"n sections have no class"** (`classless` in the contract; API test red first; gate green).
+- **Plans:** `docs/SAFE-EXAM-BROWSER-PLAN.md` (approved; next a spike on a lab PC); CS2 data side,
+  `COURSE-STUDIO-PLAN.md` §6 (phases CS2a-e revised by the PDF ruling: CS2c, the AI drafting, needs the
+  assistant's app).
+
+**Found:** the deployment has **all 96 act-1 items live** (someone approved 03 and 04 since 15 Oct morning);
+deployment invariants 25 clean, 0 warnings. Prelim: four of five conditions checked true; **a real student's
+sitting on the deployment was not re-checked**, so the sentence is not claimed.
+
+**Measured:** `pnpm verify` exit 0 (API 2446 + 1 skipped, web 346, console 283, tokens 38), run before the last
+two fixes; those were then typechecked (all three apps exit 0) and their specs run (teachers-api 24; gates
+web-tour + console-teachers 60, 6 skipped). Gates also green: console-assessment-window + console-class-scope 92,
+web-moon-check + web-stage 99 (9 skipped). Captures opened: the start prompt 1440/380 (+ scrolled), the class
+window dialog 1440/380 (+ its foot at 380), the admin's read-only dialog, the row note at 380, /teachers
+classless 1440/380.
+
+**Not done, said so:** no signed-in look at the deployed console (no credential); CS2b's two questions (PDF size
+cap, OCR) not yet asked; docs/IMPLEMENTED.md still stale.
+
+---
+
 ## 0zq. T2 built and pushed; teachers' chat; anti-cheat; the solver fix — 9-15 Oct 2026 (after 0zp)
 
 **Phase:** 239/245 (98%), unchanged (no R0-R5 box covers this). **Rulings asked and answered** (TEACHERS-AND-

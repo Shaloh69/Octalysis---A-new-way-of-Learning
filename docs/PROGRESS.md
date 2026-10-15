@@ -19,6 +19,13 @@ about why (`shaloh-build` cost an hour when Vercel and Render both built `main`)
 
 ## STATE NOW
 
+**15 Oct 2026 (later):** phase **239/245 (98%)**, unchanged. Rulings in: phone lock sentence on every paper
+(built), SEB for exams (planned, approved), no new auto-submit. **T2 5.10 built:** a class's own window and attempt
+limit on a stage check (moon checks follow), the 24th SQL file on the deployment first. Tour Escape and /teachers
+"sections with no class" fixed. CS2's data side planned and ruled (a book starts from an uploaded PDF the AI
+drafts from). **All 96 act-1 items are live on the deployment**; Prelim: 4 of 5 conditions checked, a real
+student's sitting there not re-checked. Detail: `NEXT-SESSION.md` §0zr. Next: CS2a.
+
 **15 Oct 2026:** phase **239/245 (98%)**, unchanged. **T2 is built and on the deployment:** a teacher holds their
 own classes (RLS + API, ~1,100 denial tests), SQL files 20-23 pushed before the code, every class on the deployment
 held. Teachers' chat with active-now. Anti-cheat in papers (`docs/ANTI-CHEAT.md`). Eleven solvers fixed (the
